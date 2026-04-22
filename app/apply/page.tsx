@@ -273,10 +273,29 @@ export default function ApplyPage() {
                   accentColor: '#c58b57',
                 }}
               />
-              <span>
-                By submitting this application, I confirm that I have read, understand,
-                and agree to the terms and disclaimer above.
-              </span>
+                <span>
+  By submitting this application, I confirm that I have read, understand,
+  and agree to the{' '}
+  <a
+    href="/terms"
+    style={{
+      color: '#c58b57',
+      textDecoration: 'underline',
+    }}
+  >
+    Terms
+  </a>{' '}
+  and{' '}
+  <a
+    href="/conditions"
+    style={{
+      color: '#c58b57',
+      textDecoration: 'underline',
+    }}
+  >
+    Conditions
+  </a>.
+</span>
             </label>
           </div>
 
