@@ -91,7 +91,45 @@ export default function Home() {
     textAlign: 'center'
   }}
 >
-  <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+ <div
+  style={{
+    display: 'flex',
+    gap: '16px',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    marginTop: '40px'
+  }}
+>
+  <a
+    href="mailto:hello@anastasiselite.com"
+    style={{
+      background: '#c58b57',
+      color: '#000',
+      padding: '14px 24px',
+      textDecoration: 'none',
+      borderRadius: '999px',
+      fontWeight: 600,
+    }}
+  >
+    Begin Here
+  </a>
+
+  <a
+    href="#method"
+    style={{
+      border: '1px solid #c58b57',
+      color: '#f5f0e8',
+      padding: '14px 24px',
+      textDecoration: 'none',
+      borderRadius: '999px',
+      fontWeight: 500,
+      opacity: 0.8
+    }}
+  >
+    Explore the Method
+  </a>
+</div>
+            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
 
     <h2 style={{
       fontSize: 'clamp(2rem, 4vw, 3rem)',
