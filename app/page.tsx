@@ -26,9 +26,10 @@ export default function Home() {
     width={180}
     height={180}
     style={{
-      margin: '20 auto',
+      margin: '0 auto',
       display: 'block',
-      opacity: 0.9
+      opacity: 0.9,
+      marginBottom: '32px',
     }}
   />
 </div>
