@@ -39,6 +39,7 @@ export default function Home() {
     fontSize: '10px',
     color: '#c58b57',
     opacity: 0.8,
+    marginBottom: '40px',
   }}
 >
   ANASTASIS
