@@ -29,7 +29,7 @@ export default function Home() {
       margin: '0 auto',
       display: 'block',
       opacity: 0.9,
-      marginBottom: '60px',
+      marginBottom: '32px',
     }}
   />
 </div>
