@@ -28,16 +28,15 @@ export default function Home() {
     style={{
       margin: '0 auto',
       display: 'block',
-      opacity: 0.9,
-      filter: 'drop-shadow(0 0 10px rgba(197,139,87,0.25))'
+      opacity: 0.9
     }}
   />
 </div>
 <p
   style={{
-    marginTop: '20px',
+    marginTop: '10px',
     letterSpacing: '6px',
-    fontSize: '12px',
+    fontSize: '10px',
     color: '#c58b57',
     opacity: 0.8,
   }}
