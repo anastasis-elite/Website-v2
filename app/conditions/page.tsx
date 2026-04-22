@@ -20,7 +20,7 @@ export default function ConditionsPage() {
             textTransform: 'uppercase',
           }}
         >
-          Conditions
+          Health Disclaimer & Liability Waiver
         </p>
 
         <h1
