@@ -26,7 +26,7 @@ export default function Home() {
     width={180}
     height={180}
     style={{
-      margin: '0 auto',
+      margin: '20 auto',
       display: 'block',
       opacity: 0.9
     }}
