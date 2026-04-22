@@ -21,7 +21,7 @@ export default function Home() {
       >
         <div style={{ marginBottom: '80px' }}>
   <Image
-    src="/untitled design.png"
+    src="public/untitled design.png"
     alt="Anastasis"
     width={180}
     height={60}
