@@ -129,7 +129,7 @@ export default function Home() {
     Explore the Method
   </a>
 </div>
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            <div style={{ maxWidth: '800px', margin: '0 auto', padding: '120px' }}>
 
     <h2 style={{
       fontSize: 'clamp(2rem, 4vw, 3rem)',
