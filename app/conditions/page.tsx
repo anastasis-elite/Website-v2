@@ -20,7 +20,7 @@ export default function ConditionsPage() {
             textTransform: 'uppercase',
           }}
         >
-          Health Disclaimer & Liability Waiver
+          
         </p>
 
         <h1
@@ -30,7 +30,7 @@ export default function ConditionsPage() {
             marginBottom: '28px',
           }}
         >
-          Conditions
+          Health Disclaimer & Liability Waiver
         </h1>
 
         <p style={{ color: '#d7c7b6', lineHeight: 1.85 }}>
