@@ -33,7 +33,17 @@ export default function Home() {
     }}
   />
 </div>
-
+<p
+  style={{
+    marginTop: '20px',
+    letterSpacing: '6px',
+    fontSize: '12px',
+    color: '#c58b57',
+    opacity: 0.8,
+  }}
+>
+  ANASTASIS
+</p>
         <h1
           style={{
             fontSize: 'clamp(2.5rem, 6vw, 5.2rem)',
