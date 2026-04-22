@@ -283,7 +283,7 @@ export default function ApplyPage() {
       textDecoration: 'underline',
     }}
   >
-    Terms
+    Terms of use
   </a>{' '}
   and{' '}
   <a
@@ -293,7 +293,7 @@ export default function ApplyPage() {
       textDecoration: 'underline',
     }}
   >
-    Conditions
+    Health Disclaimer & Liability Waiver
   </a>.
 </span>
             </label>
