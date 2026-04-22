@@ -1,3 +1,4 @@
+import Image from 'next/image'
 export default function Home() {
   return (
     <main
@@ -18,17 +19,19 @@ export default function Home() {
           textAlign: 'center',
         }}
       >
-        <div
-          style={{
-            marginBottom: '64px',
-            color: '#c58b57',
-            letterSpacing: '0.35em',
-            textTransform: 'uppercase',
-            fontSize: '0.8rem',
-          }}
-        >
-          Anastasis
-        </div>
+        <div style={{ marginBottom: '80px' }}>
+  <Image
+    src="/logo.png"
+    alt="Anastasis"
+    width={180}
+    height={60}
+    style={{
+      margin: '0 auto',
+      display: 'block',
+      opacity: 0.9
+    }}
+  />
+</div>
 
         <h1
           style={{
