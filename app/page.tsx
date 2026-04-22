@@ -18,6 +18,60 @@ export default function Home() {
           textAlign: 'center',
         }}
       >
+        <section
+  id="method"
+  style={{
+    background: '#000',
+    color: '#f5f0e8',
+    padding: '120px 24px',
+    textAlign: 'center'
+  }}
+>
+  <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+
+    <h2 style={{
+      fontSize: 'clamp(2rem, 4vw, 3rem)',
+      marginBottom: '32px',
+      fontWeight: 500
+    }}>
+      Most women don’t plateau.
+      <br />
+      They adapt to systems that were never built for them.
+    </h2>
+
+    <p style={{
+      fontSize: '1.1rem',
+      lineHeight: 1.8,
+      color: '#d7c7b6',
+      marginBottom: '24px'
+    }}>
+      Training protocols, recovery expectations, and performance standards were
+      largely shaped around male physiology — faster recovery cycles, different
+      hormonal environments, and completely different stress responses.
+    </p>
+
+    <p style={{
+      fontSize: '1.1rem',
+      lineHeight: 1.8,
+      color: '#d7c7b6',
+      marginBottom: '24px'
+    }}>
+      When a woman follows those same structures, she doesn’t fail because she
+      lacks discipline. She stalls because her body is adapting to survive
+      something it was never designed to sustain.
+    </p>
+
+    <p style={{
+      fontSize: '1.1rem',
+      lineHeight: 1.8,
+      color: '#d7c7b6'
+    }}>
+      This method starts from a different premise: your body is not the problem.
+      It is the blueprint.
+    </p>
+
+  </div>
+</section>
         <div
           style={{
             marginBottom: '64px',
@@ -35,7 +89,8 @@ export default function Home() {
             fontSize: 'clamp(2.5rem, 6vw, 5.2rem)',
             lineHeight: 1.0,
             fontWeight: 500,
-            margin: '0 0 24px 0',
+            maxWidth: '900px',
+            margin: '0 auto 24px auto',
           }}
         >
           You did not fail your body.
