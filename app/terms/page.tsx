@@ -47,7 +47,13 @@ export default function TermsPage() {
         >
           Terms of Use
         </h1>
-
+<h1
+  style={{
+    fontSize: 'clamp(2.5rem, 5vw, 4.8rem)',
+    lineHeight: 1.12,
+    marginBottom: '48px', // was 28px
+  }}
+>
         <p style={bodyStyle}>
 This program is designed as a structured system for performance, physique development,
 and alignment with female physiology. By accessing or participating in this program,
