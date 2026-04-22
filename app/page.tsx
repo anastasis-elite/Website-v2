@@ -8,19 +8,19 @@ export default function Home() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '48px 24px',
+        padding: '80px 24px',
       }}
     >
       <section
         style={{
           width: '100%',
-          maxWidth: '920px',
+          maxWidth: '820px',
           textAlign: 'center',
         }}
       >
         <div
           style={{
-            marginBottom: '48px',
+            marginBottom: '64px',
             color: '#c58b57',
             letterSpacing: '0.35em',
             textTransform: 'uppercase',
@@ -33,7 +33,7 @@ export default function Home() {
         <h1
           style={{
             fontSize: 'clamp(2.5rem, 6vw, 5.2rem)',
-            lineHeight: 1.05,
+            lineHeight: 1.0,
             fontWeight: 500,
             margin: '0 0 24px 0',
           }}
@@ -104,6 +104,7 @@ export default function Home() {
               textDecoration: 'none',
               borderRadius: '999px',
               fontWeight: 500,
+              opacity: 0.8,
             }}
           >
             Explore the Method
