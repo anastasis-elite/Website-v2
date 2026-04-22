@@ -18,7 +18,7 @@ export default function Home() {
           padding: '140px 24px 120px 24px',
         }}
       >
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ marginBottom: '32px' }}>
           <Image
             src="/blacklogo.jpeg"
             alt="Anastasis"
