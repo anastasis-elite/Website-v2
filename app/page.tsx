@@ -37,7 +37,7 @@ export default function Home() {
   style={{
     marginTop: '32px',
     letterSpacing: '6px',
-    fontSize: '10px',
+    fontSize: '12px',
     color: '#c58b57',
     opacity: 0.8,
     marginBottom: '60px',
