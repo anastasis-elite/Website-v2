@@ -34,7 +34,7 @@ export default function Home() {
 </div>
 <p
   style={{
-    marginTop: '10px',
+    marginTop: '0px',
     letterSpacing: '6px',
     fontSize: '10px',
     color: '#c58b57',
