@@ -20,7 +20,7 @@ export default function TermsPage() {
             textTransform: 'uppercase',
           }}
         >
-          Terms
+          Terms of Use
         </p>
 
         <h1
