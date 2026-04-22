@@ -28,7 +28,8 @@ export default function Home() {
     style={{
       margin: '0 auto',
       display: 'block',
-      opacity: 0.9
+      opacity: 0.9,
+      filter: 'drop-shadow(0 0 10px rgba(197,139,87,0.25))'
     }}
   />
 </div>
