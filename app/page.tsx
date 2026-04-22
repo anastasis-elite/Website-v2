@@ -8,7 +8,7 @@ export default function Home() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '80px 24px',
+        padding: '140px 24px 120px 24px',
       }}
     >
       <section
@@ -33,10 +33,10 @@ export default function Home() {
         <h1
           style={{
             fontSize: 'clamp(2.5rem, 6vw, 5.2rem)',
-            lineHeight: 1.0,
+            lineHeight: 1.08,
             fontWeight: 500,
             maxWidth: '900px',
-            margin: '0 auto 24px auto',
+            margin: '0 auto 40px auto',
           }}
         >
           You did not fail your body.
@@ -87,7 +87,7 @@ export default function Home() {
   style={{
     background: '#000',
     color: '#f5f0e8',
-    padding: '120px 24px',
+    padding: '180px 24px',
     textAlign: 'center'
   }}
 >
