@@ -24,7 +24,7 @@ export default function Home() {
     src="/Logo.jpeg"
     alt="Anastasis"
     width={180}
-    height={60}
+    height={180}
     style={{
       margin: '0 auto',
       display: 'block',
