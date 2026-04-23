@@ -9,11 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest"
-    "stripe": "^14.0.0"
-  },
+  "next": "14.x.x",
+  "react": "^18",
+  "react-dom": "^18",
+  "stripe": "^14.0.0"
+},
   "devDependencies": {
     "typescript": "latest",
     "@types/node": "latest",
