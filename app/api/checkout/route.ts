@@ -5,16 +5,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const PRICE_MAP = {
   ember: {
-    subscription: process.env.STRIPE_PRICE_ID_EMBER_SUB,
-    annual: process.env.STRIPE_PRICE_ID_EMBER_YEAR,
+    subscription: process.env.EMBER_SUB_PRICE,
+    annual: process.env.EMBER_YEAR_PRICE,
   },
   ignite: {
-    subscription: process.env.STRIPE_PRICE_ID_IGNITE_SUB,
-    annual: process.env.STRIPE_PRICE_ID_IGNITE_YEAR,
+    subscription: process.env.IGNITE_SUB_PRICE,
+    annual: process.env.IGNITE_YEAR_PRICE,
   },
   phoenix: {
-    subscription: process.env.STRIPE_PRICE_ID_PHOENIX_SUB,
-    annual: process.env.STRIPE_PRICE_ID_PHOENIX_YEAR,
+    subscription: process.env.PHOENIX_SUB_PRICE,
+    annual: process.env.PHOENIX_YEAR_PRICE,
   },
 } as const
 
