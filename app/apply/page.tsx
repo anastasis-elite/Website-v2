@@ -4,15 +4,19 @@ import { useState } from 'react'
 
 export default function ApplyPage() {
   const [formData, setFormData] = useState({
-    email: '',
-    fullName: '',
-    dateOfBirth: '',
-    cityState: '',
-    injuries: '',
-    conditions: '',
-    supervision: '',
-    agreement: false,
-    programSelection: '',
+  "email": "",
+  "fullName": "",
+  "dateOfBirth": "",
+  "cityState": "",
+  "injuries": "",
+  "conditions": "",
+  "supervision": "",
+  "primaryGoal": "",
+  "whyNow": "",
+  "programSelection": "",
+  "agreementConfirmed": true,
+  "mediaConsent": false,
+  "researchConsent": false
   })
 
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
