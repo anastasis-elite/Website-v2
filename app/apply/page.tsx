@@ -511,7 +511,7 @@ export default function ApplyPage() {
 
 const gridTwoCol: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+  gridTemplateColumns: '1fr 1fr',
   gap: '18px',
 }
 
