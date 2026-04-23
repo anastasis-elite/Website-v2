@@ -3,11 +3,9 @@ import Stripe from 'stripe'
 
 export const runtime = 'nodejs'
 
-const secretKey = process.env.STRIPE_SECRET_KEY
-
-const stripe = secretKey
-  ? new Stripe(secretKey)
-  : null
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+  apiVersion: '2023-10-16',
+})
 
 const PRICE_MAP = {
   ember: {
