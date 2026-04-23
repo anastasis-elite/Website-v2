@@ -37,7 +37,7 @@ export default function PhoenixCartPage() {
         </section>
 
         <div style={buttonRowStyle}>
-          <a href="/why-phoenix" style={secondaryButtonStyle}>
+          <a href="/program/phoenix/why" style={secondaryButtonStyle}>
             Why was Phoenix recommended?
           </a>
           <a href="/ignite" style={secondaryButtonStyle}>
