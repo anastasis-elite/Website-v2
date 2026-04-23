@@ -50,7 +50,7 @@ export default function ApplyPage() {
 
   try {
     const response = await fetch(
-      'https://n8n.anastasiselite.com/webhook/Apply-intake',
+      '/api/apply',
       {
         method: 'POST',
         headers: {
