@@ -44,20 +44,39 @@ export default function ApplyPage() {
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setStatus('submitting')
-    setMessage('')
+  e.preventDefault()
+  setStatus('submitting')
+  setMessage('')
 
-    try {
-      console.log('Application submitted:', formData)
+  try {
+    const response = await fetch(
+      'https://n8n.anastasiselite.com/webhook/Apply-intake',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          timestamp: new Date().toISOString(),
+          source: 'apply_page',
+        }),
+      }
+    )
 
+    const data = await response.json()
+
+    if (data.redirect) {
+      window.location.href = data.redirect
+    } else {
       setStatus('success')
       setMessage('Application submitted successfully.')
-    } catch (error) {
-      setStatus('error')
-      setMessage('Something went wrong. Please try again.')
     }
+  } catch (error) {
+    setStatus('error')
+    setMessage('Something went wrong. Please try again.')
   }
+}
 
   return (
     <main
