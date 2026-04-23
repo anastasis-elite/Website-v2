@@ -3,44 +3,44 @@
 import { useState } from 'react'
 
 export default function ApplyPage() {
-const [formData, setFormData] = useState({
-  email: '',
-  fullName: '',
-  dateOfBirth: '',
-  cityState: '',
-  injuries: '',
-  conditions: '',
-  supervision: '',
-  postpartumMonths: '',
-  primaryGoal: '',
-  whyNow: '',
-  agreement: false,
-  mediaConsent: false,
-  researchConsent: false,
-  programSelection: '',
-})
+  const [formData, setFormData] = useState({
+    email: '',
+    fullName: '',
+    dateOfBirth: '',
+    cityState: '',
+    injuries: '',
+    conditions: '',
+    supervision: '',
+    postpartumMonths: '',
+    primaryGoal: '',
+    whyNow: '',
+    agreement: false,
+    mediaConsent: false,
+    researchConsent: false,
+    programSelection: '',
+  })
 
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
 
- function handleChange(
-  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-) {
-  const { name, value, type } = e.target
-  const checked = (e.target as HTMLInputElement).checked
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
+    const { name, value, type } = e.target
+    const checked = (e.target as HTMLInputElement).checked
 
-  setFormData((prev) => {
-    const updated = {
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      }
 
-    if (name === 'supervision' && value !== 'Yes - postpartum') {
-      updated.postpartumMonths = ''
-    }
+      if (name === 'supervision' && value !== 'Yes - postpartum') {
+        updated.postpartumMonths = ''
+      }
 
-    return updated
-  })
+      return updated
+    })
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -215,75 +215,77 @@ const [formData, setFormData] = useState({
             />
           </div>
 
-         <div style={fieldWrap}>
-  <label style={labelStyle} htmlFor="supervision">
-    Are you currently pregnant, nursing, postpartum, or under medical supervision?
-  </label>
-  <select
-    id="supervision"
-    name="supervision"
-    required
-    value={formData.supervision}
-    onChange={handleChange}
-    style={inputStyle}
-  >
-    <option value="">Select one</option>
-    <option value="No">No</option>
-    <option value="Yes - pregnant">Yes - pregnant</option>
-    <option value="Yes - nursing">Yes - nursing</option>
-    <option value="Yes - postpartum">Yes - postpartum</option>
-    <option value="Yes - under medical supervision">Yes - under medical supervision</option>
-    <option value="Other / needs discussion">Other / needs discussion</option>
-  </select>
-</div>
-          
-{formData.supervision === 'Yes - postpartum' && (
-  <div style={fieldWrap}>
-    <label style={labelStyle} htmlFor="postpartumMonths">
-      How many months postpartum are you?
-    </label>
-    <input
-      id="postpartumMonths"
-      name="postpartumMonths"
-      type="number"
-      min="0"
-      required
-      value={formData.postpartumMonths}
-      onChange={handleChange}
-      style={inputStyle}
-      placeholder="Enter number of months"
-    />
-  </div>
-)}
           <div style={fieldWrap}>
-  <label style={labelStyle} htmlFor="primaryGoal">
-    What are you hoping to change most right now?
-  </label>
-  <textarea
-    id="primaryGoal"
-    name="primaryGoal"
-    required
-    value={formData.primaryGoal}
-    onChange={handleChange}
-    style={textareaStyle}
-    placeholder="Share the main change or outcome you want most right now."
-  />
-</div>
+            <label style={labelStyle} htmlFor="supervision">
+              Are you currently pregnant, nursing, postpartum, or under medical supervision?
+            </label>
+            <select
+              id="supervision"
+              name="supervision"
+              required
+              value={formData.supervision}
+              onChange={handleChange}
+              style={inputStyle}
+            >
+              <option value="">Select one</option>
+              <option value="No">No</option>
+              <option value="Yes - pregnant">Yes - pregnant</option>
+              <option value="Yes - nursing">Yes - nursing</option>
+              <option value="Yes - postpartum">Yes - postpartum</option>
+              <option value="Yes - under medical supervision">Yes - under medical supervision</option>
+              <option value="Other / needs discussion">Other / needs discussion</option>
+            </select>
+          </div>
 
-<div style={fieldWrap}>
-  <label style={labelStyle} htmlFor="whyNow">
-    Why are you looking for support now?
-  </label>
-  <textarea
-    id="whyNow"
-    name="whyNow"
-    required
-    value={formData.whyNow}
-    onChange={handleChange}
-    style={textareaStyle}
-    placeholder="What makes this the right time for you to begin?"
-  />
-</div>
+          {formData.supervision === 'Yes - postpartum' && (
+            <div style={fieldWrap}>
+              <label style={labelStyle} htmlFor="postpartumMonths">
+                How many months postpartum are you?
+              </label>
+              <input
+                id="postpartumMonths"
+                name="postpartumMonths"
+                type="number"
+                min="0"
+                required
+                value={formData.postpartumMonths}
+                onChange={handleChange}
+                style={inputStyle}
+                placeholder="Enter number of months"
+              />
+            </div>
+          )}
+
+          <div style={fieldWrap}>
+            <label style={labelStyle} htmlFor="primaryGoal">
+              What are you hoping to change most right now?
+            </label>
+            <textarea
+              id="primaryGoal"
+              name="primaryGoal"
+              required
+              value={formData.primaryGoal}
+              onChange={handleChange}
+              style={textareaStyle}
+              placeholder="Share the main change or outcome you want most right now."
+            />
+          </div>
+
+          <div style={fieldWrap}>
+            <label style={labelStyle} htmlFor="whyNow">
+              Why are you looking for support now?
+            </label>
+            <textarea
+              id="whyNow"
+              name="whyNow"
+              required
+              value={formData.whyNow}
+              onChange={handleChange}
+              style={textareaStyle}
+              placeholder="What makes this the right time for you to begin?"
+            />
+          </div>
+
           <div style={fieldWrap}>
             <label style={labelStyle} htmlFor="programSelection">
               Program Selection
@@ -334,121 +336,122 @@ const [formData, setFormData] = useState({
                   accentColor: '#c58b57',
                 }}
               />
-                <span>
-  By submitting this application, I confirm that I have read, understand,
-  and agree to the{' '}
-  <a
-    href="/terms"
-    style={{
-      color: '#c58b57',
-      textDecoration: 'underline',
-    }}
-  >
-    Terms of use
-  </a>{' '}
-  and{' '}
-  <a
-    href="/conditions"
-    style={{
-      color: '#c58b57',
-      textDecoration: 'underline',
-    }}
-  >
-    Health Disclaimer & Liability Waiver
-  </a>.
-</span>
-              
+              <span>
+                By submitting this application, I confirm that I have read, understand,
+                and agree to the{' '}
+                <a
+                  href="/terms"
+                  style={{
+                    color: '#c58b57',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  Terms of Use
+                </a>{' '}
+                and{' '}
+                <a
+                  href="/conditions"
+                  style={{
+                    color: '#c58b57',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  Health Disclaimer &amp; Liability Waiver
+                </a>.
+              </span>
             </label>
           </div>
-<div
-  style={{
-    border: '1px solid rgba(197,139,87,0.16)',
-    borderRadius: '22px',
-    padding: '20px',
-    background: 'rgba(255,255,255,0.01)',
-  }}
->
-  <label
-    style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: '12px',
-      lineHeight: 1.7,
-      color: '#d7c7b6',
-      fontSize: '0.98rem',
-      cursor: 'pointer',
-    }}
-  >
-    <input
-      name="mediaConsent"
-      type="checkbox"
-      checked={formData.mediaConsent}
-      onChange={handleChange}
-      style={{
-        marginTop: '4px',
-        accentColor: '#c58b57',
-      }}
-    />
-    <span>
-      I authorize the use of my transformation photos, progress photos, or related
-      visual media according to the{' '}
-      <a
-        href="/consent/media"
-        style={{
-          color: '#c58b57',
-          textDecoration: 'underline',
-        }}
-      >
-        Media Consent
-      </a>.
-    </span>
-  </label>
-</div>
 
-<div
-  style={{
-    border: '1px solid rgba(197,139,87,0.16)',
-    borderRadius: '22px',
-    padding: '20px',
-    background: 'rgba(255,255,255,0.01)',
-  }}
->
-  <label
-    style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: '12px',
-      lineHeight: 1.7,
-      color: '#d7c7b6',
-      fontSize: '0.98rem',
-      cursor: 'pointer',
-    }}
-  >
-    <input
-      name="researchConsent"
-      type="checkbox"
-      checked={formData.researchConsent}
-      onChange={handleChange}
-      style={{
-        marginTop: '4px',
-        accentColor: '#c58b57',
-      }}
-    />
-    <span>
-      I authorize the use of approved, non-public personal data for research purposes
-      according to the{' '}
-      <a
-        href="/consent/research"
-        style={{
-          color: '#c58b57',
-          textDecoration: 'underline',
-        }}
-      >
-        Research Consent
-      </a>.
-    </span>
-  </label>
-</div>
+          <div
+            style={{
+              border: '1px solid rgba(197,139,87,0.16)',
+              borderRadius: '22px',
+              padding: '20px',
+              background: 'rgba(255,255,255,0.01)',
+            }}
+          >
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px',
+                lineHeight: 1.7,
+                color: '#d7c7b6',
+                fontSize: '0.98rem',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                name="mediaConsent"
+                type="checkbox"
+                checked={formData.mediaConsent}
+                onChange={handleChange}
+                style={{
+                  marginTop: '4px',
+                  accentColor: '#c58b57',
+                }}
+              />
+              <span>
+                I authorize the use of my transformation photos, progress photos, or related
+                visual media according to the{' '}
+                <a
+                  href="/consent/media"
+                  style={{
+                    color: '#c58b57',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  Media Consent
+                </a>.
+              </span>
+            </label>
+          </div>
+
+          <div
+            style={{
+              border: '1px solid rgba(197,139,87,0.16)',
+              borderRadius: '22px',
+              padding: '20px',
+              background: 'rgba(255,255,255,0.01)',
+            }}
+          >
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px',
+                lineHeight: 1.7,
+                color: '#d7c7b6',
+                fontSize: '0.98rem',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                name="researchConsent"
+                type="checkbox"
+                checked={formData.researchConsent}
+                onChange={handleChange}
+                style={{
+                  marginTop: '4px',
+                  accentColor: '#c58b57',
+                }}
+              />
+              <span>
+                I authorize the use of approved, non-public personal data for research
+                purposes according to the{' '}
+                <a
+                  href="/consent/research"
+                  style={{
+                    color: '#c58b57',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  Research Consent
+                </a>.
+              </span>
+            </label>
+          </div>
+
           <div
             style={{
               display: 'flex',
