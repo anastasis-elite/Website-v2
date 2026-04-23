@@ -31,7 +31,7 @@ export default function EmberCartPage() {
             Your recommended starting point.
           </p>
 
-          <a href="#" style={primaryButtonStyle}>
+          <a href="/program/ember/cart" style={primaryButtonStyle}>
             Continue to Checkout
           </a>
         </section>
@@ -40,7 +40,7 @@ export default function EmberCartPage() {
           <a href="/program/ember/why" style={secondaryButtonStyle}>
             Why was Ember recommended?
           </a>
-          <a href="/ignite" style={secondaryButtonStyle}>
+          <a href="/program/ignite" style={secondaryButtonStyle}>
             Need more support? Explore Ignite
           </a>
         </div>
