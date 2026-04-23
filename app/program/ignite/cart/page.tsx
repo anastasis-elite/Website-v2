@@ -31,7 +31,7 @@ export default function IgniteCartPage() {
             Your recommended starting point.
           </p>
 
-          <a href="#" style={primaryButtonStyle}>
+          <a href="/program/ignite/cart" style={primaryButtonStyle}>
             Continue to Checkout
           </a>
         </section>
