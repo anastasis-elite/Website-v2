@@ -37,7 +37,7 @@ export default function EmberCartPage() {
         </section>
 
         <div style={buttonRowStyle}>
-          <a href="/why-ember" style={secondaryButtonStyle}>
+          <a href="/program/ember/why" style={secondaryButtonStyle}>
             Why was Ember recommended?
           </a>
           <a href="/ignite" style={secondaryButtonStyle}>
