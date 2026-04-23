@@ -31,7 +31,7 @@ export default function PhoenixCartPage() {
             Your recommended starting point.
           </p>
 
-          <a href="#" style={primaryButtonStyle}>
+          <a href="/program/phoenix/cart" style={primaryButtonStyle}>
             Continue to Checkout
           </a>
         </section>
