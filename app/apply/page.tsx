@@ -66,10 +66,16 @@ export default function ApplyPage() {
     )
 
     const text = await response.text()
-    const data = text ? JSON.parse(text) : {}
+    let data: { redirect?: string; error?: string } = {}
+
+    try {
+      data = text ? JSON.parse(text) : {}
+    } catch {
+      data = {}
+    }
 
     if (!response.ok) {
-      throw new Error(data.error || 'Webhook request failed')
+      throw new Error(data.error || `Webhook failed with status ${response.status}`)
     }
 
     if (data.redirect) {
@@ -82,7 +88,7 @@ export default function ApplyPage() {
   } catch (error) {
     console.error('SUBMIT ERROR:', error)
     setStatus('error')
-    setMessage('Something went wrong. Please try again.')
+    setMessage(error instanceof Error ? error.message : 'Something went wrong.')
   }
 }
 
