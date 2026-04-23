@@ -37,7 +37,7 @@ export default function IgniteCartPage() {
         </section>
 
         <div style={buttonRowStyle}>
-          <a href="/why-ignite" style={secondaryButtonStyle}>
+          <a href="/program/ignite/why" style={secondaryButtonStyle}>
             Why was Ignite recommended?
           </a>
           <a href="/ember" style={secondaryButtonStyle}>
