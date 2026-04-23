@@ -158,15 +158,17 @@ export default function ApplyPage() {
                 Date of Birth
               </label>
               <input
-                id="dateOfBirth"
-                name="dateOfBirth"
-                type="date"
-                required
-                value={formData.dateOfBirth}
-                onChange={handleChange}
-                style={inputStyle}
-                maxWidth: '100%'
-              />
+  id="dateOfBirth"
+  name="dateOfBirth"
+  type="date"
+  required
+  value={formData.dateOfBirth}
+  onChange={handleChange}
+  style={{
+    ...inputStyle,
+    maxWidth: '100%',
+  }}
+/>
             </div>
 
             <div style={fieldWrap}>
