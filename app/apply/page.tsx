@@ -290,26 +290,6 @@ export default function ApplyPage() {
             />
           </div>
 
-          <div style={fieldWrap}>
-            <label style={labelStyle} htmlFor="programSelection">
-              Program Selection
-            </label>
-            <select
-              id="programSelection"
-              name="programSelection"
-              required
-              value={formData.programSelection}
-              onChange={handleChange}
-              style={inputStyle}
-            >
-              <option value="">Select a program</option>
-              <option value="Ember">Ember</option>
-              <option value="Ignite">Ignite</option>
-              <option value="Phoenix">Phoenix</option>
-              <option value="Not Sure Yet">Not Sure Yet</option>
-            </select>
-          </div>
-
           <div
             style={{
               border: '1px solid rgba(197,139,87,0.16)',
