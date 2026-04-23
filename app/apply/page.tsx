@@ -3,35 +3,41 @@
 import { useState } from 'react'
 
 export default function ApplyPage() {
-  const [formData, setFormData] = useState({
-  "email": "",
-  "fullName": "",
-  "dateOfBirth": "",
-  "cityState": "",
-  "injuries": "",
-  "conditions": "",
-  "supervision": "",
-  "primaryGoal": "",
-  "whyNow": "",
-  "programSelection": "",
-  "agreementConfirmed": true,
-  "mediaConsent": false,
-  "researchConsent": false
-  })
+const [formData, setFormData] = useState({
+  email: '',
+  fullName: '',
+  dateOfBirth: '',
+  cityState: '',
+  injuries: '',
+  conditions: '',
+  supervision: '',
+  postpartumMonths: '',
+  agreement: false,
+  programSelection: '',
+})
 
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
 
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) {
-    const { name, value, type } = e.target
-    const checked = (e.target as HTMLInputElement).checked
+ function handleChange(
+  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+) {
+  const { name, value, type } = e.target
+  const checked = (e.target as HTMLInputElement).checked
 
-    setFormData((prev) => ({
+  setFormData((prev) => {
+    const updated = {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
-    }))
+    }
+
+    if (name === 'supervision' && value !== 'Yes - postpartum') {
+      updated.postpartumMonths = ''
+    }
+
+    return updated
+  })
+}))
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -206,27 +212,46 @@ export default function ApplyPage() {
             />
           </div>
 
-          <div style={fieldWrap}>
-            <label style={labelStyle} htmlFor="supervision">
-              Are you currently pregnant, nursing, or under medical supervision?
-            </label>
-            <select
-              id="supervision"
-              name="supervision"
-              required
-              value={formData.supervision}
-              onChange={handleChange}
-              style={inputStyle}
-            >
-              <option value="">Select one</option>
-              <option value="No">No</option>
-              <option value="Yes - pregnant">Yes - pregnant</option>
-              <option value="Yes - nursing">Yes - nursing</option>
-              <option value="Yes - under medical supervision">Yes - under medical supervision</option>
-              <option value="Other / needs discussion">Other / needs discussion</option>
-            </select>
-          </div>
-
+         <div style={fieldWrap}>
+  <label style={labelStyle} htmlFor="supervision">
+    Are you currently pregnant, nursing, postpartum, or under medical supervision?
+  </label>
+  <select
+    id="supervision"
+    name="supervision"
+    required
+    value={formData.supervision}
+    onChange={handleChange}
+    style={inputStyle}
+  >
+    <option value="">Select one</option>
+    <option value="No">No</option>
+    <option value="Yes - pregnant">Yes - pregnant</option>
+    <option value="Yes - nursing">Yes - nursing</option>
+    <option value="Yes - postpartum">Yes - postpartum</option>
+    <option value="Yes - under medical supervision">Yes - under medical supervision</option>
+    <option value="Other / needs discussion">Other / needs discussion</option>
+  </select>
+</div>
+          
+{formData.supervision === 'Yes - postpartum' && (
+  <div style={fieldWrap}>
+    <label style={labelStyle} htmlFor="postpartumMonths">
+      How many months postpartum are you?
+    </label>
+    <input
+      id="postpartumMonths"
+      name="postpartumMonths"
+      type="number"
+      min="0"
+      required
+      value={formData.postpartumMonths}
+      onChange={handleChange}
+      style={inputStyle}
+      placeholder="Enter number of months"
+    />
+  </div>
+)}
           <div style={fieldWrap}>
             <label style={labelStyle} htmlFor="programSelection">
               Program Selection
