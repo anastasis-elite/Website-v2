@@ -165,6 +165,7 @@ export default function ApplyPage() {
                 value={formData.dateOfBirth}
                 onChange={handleChange}
                 style={inputStyle}
+                maxWidth={100%}
               />
             </div>
 
