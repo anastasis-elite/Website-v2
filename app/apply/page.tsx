@@ -166,7 +166,8 @@ export default function ApplyPage() {
   onChange={handleChange}
   style={{
     ...inputStyle,
-    maxWidth: '100%',
+    WebkitAppearance: 'none',
+    appearance: 'none',
   }}
 />
             </div>
@@ -514,15 +515,14 @@ export default function ApplyPage() {
 
 const gridTwoCol: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
+  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
   gap: '18px',
 }
 
 const fieldWrap: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
+  display: 'grid',
   gap: '10px',
-  width: '100%',
+  minWidth: 0,
 }
 
 const labelStyle: React.CSSProperties = {
@@ -533,6 +533,7 @@ const labelStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
+  minWidth: 0,
   background: '#0a0a0a',
   color: '#f5f0e8',
   border: '1px solid rgba(197,139,87,0.22)',
