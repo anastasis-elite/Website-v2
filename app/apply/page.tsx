@@ -519,8 +519,10 @@ const gridTwoCol: React.CSSProperties = {
 }
 
 const fieldWrap: React.CSSProperties = {
-  display: 'grid',
+  display: 'flex',
+  flexDirection: 'column',
   gap: '10px',
+  width: '100%',
 }
 
 const labelStyle: React.CSSProperties = {
