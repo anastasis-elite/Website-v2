@@ -64,7 +64,19 @@ export default function ApplyPage() {
       }
     )
 
-    const data = await response.json()
+    const text = await response.text()
+const data = text ? JSON.parse(text) : {}
+
+if (!response.ok) {
+  throw new Error(data.error || 'Webhook request failed')
+}
+
+if (data.redirect) {
+  window.location.href = data.redirect
+} else {
+  setStatus('success')
+  setMessage('Application submitted successfully.')
+}
 
     if (data.redirect) {
       window.location.href = data.redirect
