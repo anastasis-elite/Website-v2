@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+export const runtime = 'nodejs'
+
+const secretKey = process.env.STRIPE_SECRET_KEY
+
+const stripe = secretKey
+  ? new Stripe(secretKey)
+  : null
 
 const PRICE_MAP = {
   ember: {
@@ -20,6 +26,13 @@ const PRICE_MAP = {
 
 export async function POST(req: Request) {
   try {
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe is not configured yet.' },
+        { status: 500 }
+      )
+    }
+
     const { program, billing, email } = await req.json()
 
     if (!program || !billing) {
@@ -36,7 +49,7 @@ export async function POST(req: Request) {
 
     if (!priceId) {
       return NextResponse.json(
-        { error: 'Invalid program or billing type' },
+        { error: 'Invalid program or missing price ID' },
         { status: 400 }
       )
     }
@@ -65,6 +78,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: session.url })
   } catch (error) {
+    console.error('Checkout error:', error)
+
     return NextResponse.json(
       { error: 'Unable to create checkout session' },
       { status: 500 }
