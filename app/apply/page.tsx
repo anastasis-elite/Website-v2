@@ -37,7 +37,6 @@ const [formData, setFormData] = useState({
 
     return updated
   })
-}))
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
