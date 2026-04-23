@@ -12,6 +12,7 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest"
+    "stripe": "^14.0.0"
   },
   "devDependencies": {
     "typescript": "latest",
