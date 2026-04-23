@@ -49,50 +49,38 @@ export default function ApplyPage() {
   setMessage('')
 
   try {
-  console.log('Submitting:', formData)
+    const response = await fetch(
+      'https://n8n.anastasiselite.com/webhook/apply-intake',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          timestamp: new Date().toISOString(),
+          source: 'apply',
+          submitted: 'website',
+        }),
+      }
+    )
 
-  const res = await fetch('https://n8n.anastasiselite.com/webhook/apply-intake', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(formData),
-  })
-
-  console.log('Response status:', res.status)
-
-  const text = await res.text()
-  console.log('Response body:', text)
-
-  setStatus('success')
-  setMessage('Application submitted successfully.')
-} catch (error) {
-  console.error('SUBMIT ERROR:', error)
-  setStatus('error')
-  setMessage('Something went wrong. Please try again.')
-}
-    
     const text = await response.text()
-const data = text ? JSON.parse(text) : {}
+    const data = text ? JSON.parse(text) : {}
 
-if (!response.ok) {
-  throw new Error(data.error || 'Webhook request failed')
-}
-
-if (data.redirect) {
-  window.location.href = data.redirect
-} else {
-  setStatus('success')
-  setMessage('Application submitted successfully.')
-}
+    if (!response.ok) {
+      throw new Error(data.error || 'Webhook request failed')
+    }
 
     if (data.redirect) {
       window.location.href = data.redirect
-    } else {
-      setStatus('success')
-      setMessage('Application submitted successfully.')
+      return
     }
+
+    setStatus('success')
+    setMessage('Application submitted successfully.')
   } catch (error) {
+    console.error('SUBMIT ERROR:', error)
     setStatus('error')
     setMessage('Something went wrong. Please try again.')
   }
