@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import type { CSSProperties } from 'react'
 
 export default function ApplyPage() {
   const [formData, setFormData] = useState({
@@ -17,7 +18,6 @@ export default function ApplyPage() {
     agreement: false,
     mediaConsent: false,
     researchConsent: false,
-    programSelection: '',
   })
 
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
