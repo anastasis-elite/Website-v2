@@ -71,8 +71,7 @@ export default function ApplyPage() {
   setStatus('error')
   setMessage('Something went wrong. Please try again.')
 }
-    )
-
+    
     const text = await response.text()
 const data = text ? JSON.parse(text) : {}
 
