@@ -2,7 +2,10 @@
 
 import type { CSSProperties } from 'react'
 
-async function startCheckout(program: 'ember', billing: 'subscription' | 'annual') {
+async function startCheckout(
+  program: 'ember',
+  billing: 'subscription' | 'annual'
+) {
   const response = await fetch('/api/checkout', {
     method: 'POST',
     headers: {
