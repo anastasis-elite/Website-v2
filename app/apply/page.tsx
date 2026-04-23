@@ -12,7 +12,11 @@ const [formData, setFormData] = useState({
   conditions: '',
   supervision: '',
   postpartumMonths: '',
+  primaryGoal: '',
+  whyNow: '',
   agreement: false,
+  mediaConsent: false,
+  researchConsent: false,
   programSelection: '',
 })
 
@@ -252,6 +256,35 @@ const [formData, setFormData] = useState({
   </div>
 )}
           <div style={fieldWrap}>
+  <label style={labelStyle} htmlFor="primaryGoal">
+    What are you hoping to change most right now?
+  </label>
+  <textarea
+    id="primaryGoal"
+    name="primaryGoal"
+    required
+    value={formData.primaryGoal}
+    onChange={handleChange}
+    style={textareaStyle}
+    placeholder="Share the main change or outcome you want most right now."
+  />
+</div>
+
+<div style={fieldWrap}>
+  <label style={labelStyle} htmlFor="whyNow">
+    Why are you looking for support now?
+  </label>
+  <textarea
+    id="whyNow"
+    name="whyNow"
+    required
+    value={formData.whyNow}
+    onChange={handleChange}
+    style={textareaStyle}
+    placeholder="What makes this the right time for you to begin?"
+  />
+</div>
+          <div style={fieldWrap}>
             <label style={labelStyle} htmlFor="programSelection">
               Program Selection
             </label>
@@ -324,9 +357,98 @@ const [formData, setFormData] = useState({
     Health Disclaimer & Liability Waiver
   </a>.
 </span>
+              
             </label>
           </div>
+<div
+  style={{
+    border: '1px solid rgba(197,139,87,0.16)',
+    borderRadius: '22px',
+    padding: '20px',
+    background: 'rgba(255,255,255,0.01)',
+  }}
+>
+  <label
+    style={{
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '12px',
+      lineHeight: 1.7,
+      color: '#d7c7b6',
+      fontSize: '0.98rem',
+      cursor: 'pointer',
+    }}
+  >
+    <input
+      name="mediaConsent"
+      type="checkbox"
+      checked={formData.mediaConsent}
+      onChange={handleChange}
+      style={{
+        marginTop: '4px',
+        accentColor: '#c58b57',
+      }}
+    />
+    <span>
+      I authorize the use of my transformation photos, progress photos, or related
+      visual media according to the{' '}
+      <a
+        href="/consent/media"
+        style={{
+          color: '#c58b57',
+          textDecoration: 'underline',
+        }}
+      >
+        Media Consent
+      </a>.
+    </span>
+  </label>
+</div>
 
+<div
+  style={{
+    border: '1px solid rgba(197,139,87,0.16)',
+    borderRadius: '22px',
+    padding: '20px',
+    background: 'rgba(255,255,255,0.01)',
+  }}
+>
+  <label
+    style={{
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '12px',
+      lineHeight: 1.7,
+      color: '#d7c7b6',
+      fontSize: '0.98rem',
+      cursor: 'pointer',
+    }}
+  >
+    <input
+      name="researchConsent"
+      type="checkbox"
+      checked={formData.researchConsent}
+      onChange={handleChange}
+      style={{
+        marginTop: '4px',
+        accentColor: '#c58b57',
+      }}
+    />
+    <span>
+      I authorize the use of approved, non-public personal data for research purposes
+      according to the{' '}
+      <a
+        href="/consent/research"
+        style={{
+          color: '#c58b57',
+          textDecoration: 'underline',
+        }}
+      >
+        Research Consent
+      </a>.
+    </span>
+  </label>
+</div>
           <div
             style={{
               display: 'flex',
