@@ -53,9 +53,7 @@ export default function ApplyPage() {
 
     const res = await fetch('https://n8n.anastasiselite.com/webhook/apply-intake', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),
     })
 
@@ -73,33 +71,6 @@ export default function ApplyPage() {
     console.error('SUBMIT ERROR:', error)
     setStatus('error')
     setMessage('Something went wrong. Please try again.')
-  }
-}
-
-    const text = await response.text()
-    let data: { redirect?: string; error?: string } = {}
-
-    try {
-      data = text ? JSON.parse(text) : {}
-    } catch {
-      data = {}
-    }
-
-    if (!response.ok) {
-      throw new Error(data.error || `Webhook failed with status ${response.status}`)
-    }
-
-    if (data.redirect) {
-      window.location.href = data.redirect
-      return
-    }
-
-    setStatus('success')
-    setMessage('Application submitted successfully.')
-  } catch (error) {
-    console.error('SUBMIT ERROR:', error)
-    setStatus('error')
-    setMessage(error instanceof Error ? error.message : 'Something went wrong.')
   }
 }
 
