@@ -43,27 +43,38 @@ export default function ApplyPage() {
     })
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e) {
   e.preventDefault()
   setStatus('submitting')
   setMessage('')
 
   try {
-    const response = await fetch(
-      '/api/apply',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          timestamp: new Date().toISOString(),
-          source: 'apply',
-          submitted: 'website',
-        }),
-      }
-    )
+    console.log('Submitting:', formData)
+
+    const res = await fetch('https://n8n.anastasiselite.com/webhook/apply-intake', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    })
+
+    const text = await res.text()
+    console.log('Response:', text)
+
+    if (!res.ok) {
+      throw new Error('Request failed')
+    }
+
+    setStatus('success')
+    setMessage('Application submitted successfully.')
+
+  } catch (error) {
+    console.error('SUBMIT ERROR:', error)
+    setStatus('error')
+    setMessage('Something went wrong. Please try again.')
+  }
+}
 
     const text = await response.text()
     let data: { redirect?: string; error?: string } = {}
