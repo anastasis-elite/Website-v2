@@ -18,6 +18,8 @@ export default function ApplyPage() {
     agreement: false,
     mediaConsent: false,
     researchConsent: false,
+    medicalClearance: false,
+    medicalClearanceFile: null as File | null,
   })
 
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
@@ -234,6 +236,64 @@ export default function ApplyPage() {
             />
           </div>
 
+          {(formData.injuries || formData.conditions) && (
+  <div
+    style={{
+      border: '1px solid rgba(197,139,87,0.16)',
+      borderRadius: '22px',
+      padding: '20px',
+      background: 'rgba(255,255,255,0.01)',
+    }}
+  >
+    <label
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '12px',
+        lineHeight: 1.7,
+        color: '#d7c7b6',
+        fontSize: '0.98rem',
+        cursor: 'pointer',
+      }}
+    >
+      <input
+        name="medicalClearance"
+        type="checkbox"
+        checked={formData.medicalClearance}
+        onChange={handleChange}
+        style={{
+          marginTop: '4px',
+          accentColor: '#c58b57',
+        }}
+      />
+      <span>
+        I have medical clearance to participate in a structured fitness and nutrition program.
+      </span>
+    </label>
+  </div>
+)}
+
+          {formData.medicalClearance && (
+  <div style={fieldWrap}>
+    <label style={labelStyle} htmlFor="medicalClearanceFile">
+      Upload medical clearance documentation
+    </label>
+    <input
+      id="medicalClearanceFile"
+      name="medicalClearanceFile"
+      type="file"
+      accept="image/*,.pdf"
+      required
+      onChange={(e) =>
+        setFormData((prev) => ({
+          ...prev,
+          medicalClearanceFile: e.target.files?.[0] || null,
+        }))
+      }
+      style={inputStyle}
+    />
+  </div>
+)}
           <div style={fieldWrap}>
             <label style={labelStyle} htmlFor="supervision">
               Are you currently pregnant, nursing, postpartum, or under medical supervision?
