@@ -43,7 +43,7 @@ export default function ApplyPage() {
     })
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
   e.preventDefault()
   setStatus('submitting')
   setMessage('')
