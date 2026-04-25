@@ -79,7 +79,26 @@ export default function ApplyPage() {
     const res = await fetch('https://n8n.anastasiselite.com/webhook/apply-intake', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
+      body: JSON.stringify({
+  email: formData.email,
+  fullName: formData.fullName,
+  dateOfBirth: formData.dateOfBirth,
+  cityState: formData.cityState,
+  injuries: formData.injuries,
+  conditions: formData.conditions,
+  supervision: formData.supervision,
+  postpartumMonths: formData.postpartumMonths,
+  primaryGoal: formData.primaryGoal,
+  whyNow: formData.whyNow,
+  agreement: formData.agreement,
+  mediaConsent: formData.mediaConsent,
+  researchConsent: formData.researchConsent,
+  medicalClearance: formData.medicalClearance,
+  medicalClearanceFileName: formData.medicalClearanceFile?.name || '',
+  timestamp: new Date().toISOString(),
+  source: 'apply',
+  submitted: 'website',
+}),
     })
 
     const text = await res.text()
