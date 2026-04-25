@@ -76,7 +76,7 @@ export default function ApplyPage() {
   try {
     console.log('Submitting:', formData)
 
-    const res = await fetch('https://n8n.anastasiselite.com/webhook/apply-intake', {
+    const res = await fetch('/apply', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
