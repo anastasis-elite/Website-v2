@@ -3,6 +3,26 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 
+function hasRelevantHealthInfo(value: string) {
+  const cleaned = value.trim().toLowerCase()
+
+  const negativeAnswers = [
+    '',
+    'no',
+    'none',
+    'n/a',
+    'na',
+    'nope',
+    'not at this time',
+    'nothing',
+    'no injuries',
+    'no conditions',
+    'none at this time',
+  ]
+
+  return !negativeAnswers.includes(cleaned)
+}
+
 export default function ApplyPage() {
   const [formData, setFormData] = useState({
     email: '',
@@ -21,6 +41,7 @@ export default function ApplyPage() {
     medicalClearance: false,
     medicalClearanceFile: null as File | null,
   })
+
 
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
@@ -44,11 +65,13 @@ export default function ApplyPage() {
       return updated
     })
   }
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-  e.preventDefault()
-  setStatus('submitting')
-  setMessage('')
+        const needsMedicalClearanceQuestion =
+          hasRelevantHealthInfo(formData.injuries) ||
+          hasRelevantHealthInfo(formData.conditions)
+        async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+          e.preventDefault()
+          setStatus('submitting')
+          setMessage('')
 
   try {
     console.log('Submitting:', formData)
@@ -201,7 +224,7 @@ export default function ApplyPage() {
                 value={formData.cityState}
                 onChange={handleChange}
                 style={inputStyle}
-                placeholder="Lumberton, Texas"
+                placeholder="City, State"
               />
             </div>
           </div>
@@ -236,7 +259,7 @@ export default function ApplyPage() {
             />
           </div>
 
-          {(formData.injuries || formData.conditions) && (
+         {needsMedicalClearanceQuestion && (
   <div
     style={{
       border: '1px solid rgba(197,139,87,0.16)',
@@ -568,25 +591,25 @@ export default function ApplyPage() {
   )
 }
 
-const gridTwoCol: React.CSSProperties = {
+const gridTwoCol: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
   gap: '18px',
 }
 
-const fieldWrap: React.CSSProperties = {
+const fieldWrap: CSSProperties = {
   display: 'grid',
   gap: '10px',
   minWidth: 0,
 }
 
-const labelStyle: React.CSSProperties = {
+const labelStyle: CSSProperties = {
   color: '#f5f0e8',
   fontSize: '0.96rem',
   lineHeight: 1.5,
 }
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   width: '100%',
   minWidth: 0,
   background: '#0a0a0a',
@@ -598,7 +621,7 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
-const textareaStyle: React.CSSProperties = {
+const textareaStyle: CSSProperties = {
   ...inputStyle,
   minHeight: '120px',
   resize: 'vertical',
