@@ -101,15 +101,20 @@ export default function ApplyPage() {
 }),
     })
 
-    const text = await res.text()
-    console.log('Response:', text)
+   const data = await res.json()
+console.log('Response:', data)
 
-    if (!res.ok) {
-      throw new Error('Request failed')
-    }
+if (!res.ok) {
+  throw new Error(data.error || 'Request failed')
+}
 
-    setStatus('success')
-    setMessage('Application submitted successfully.')
+if (data.redirect) {
+  window.location.href = data.redirect
+  return
+}
+
+setStatus('success')
+setMessage('Application submitted successfully.')
 
   } catch (error) {
     console.error('SUBMIT ERROR:', error)
