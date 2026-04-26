@@ -1,66 +1,73 @@
+import type { CSSProperties } from 'react'
 
-export default function PhoenixCartPage() {
+export default function PhoenixRecommendPage() {
   return (
     <main style={pageStyle}>
       <div style={containerStyle}>
-        <p style={eyebrowStyle}>Recommended Starting Point</p>
+        <p style={eyebrowStyle}>Recommended Path</p>
 
         <h1 style={heroTitleStyle}>
-          Phoenix was recommended for you.
+          You’re not here to guess anymore.
+          <br />
+          You’re here to get it right.
         </h1>
 
         <p style={heroTextStyle}>
-          Based on what you shared, a deeper and more immersive level of support
-          appears to be the strongest fit for your current needs, complexity, and
-          desired level of precision.
+          Phoenix was recommended because your answers suggest you are ready for a
+          deeper, more personalized transformation system — not another generic plan.
         </p>
 
         <section style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>What you’re stepping into</h2>
+          <h2 style={sectionTitleStyle}>Why Phoenix fits</h2>
           <p style={bodyStyle}>
-            Phoenix is the most adaptive and high-support level of the system. It
-            is intended for women who want the deepest alignment, the greatest
-            responsiveness, and the strongest level of precision available inside
-            the work.
+            At this level, doing more is not the answer. The margin for error gets
+            smaller, and the cost of guessing gets higher. You need precision,
+            personalization, and strategic oversight.
+          </p>
+
+          <p style={bodyStyle}>
+            Phoenix is designed around your goals, physiology, progression, and
+            timeline. This is where decisions become deliberate and your system adapts
+            with you.
           </p>
         </section>
 
-        <section style={cartBoxStyle}>
-          <h2 style={sectionTitleStyle}>Phoenix</h2>
+        <section style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>What Phoenix gives you</h2>
           <p style={bodyStyle}>
-            Your recommended starting point.
+            Phoenix includes a more personalized program path, deeper structure,
+            the science behind the system, and one 1:1 session per quarter throughout
+            the year.
           </p>
-
-          <a href="/program/phoenix/cart" style={primaryButtonStyle}>
-            Continue to Checkout
-          </a>
         </section>
 
         <div style={buttonRowStyle}>
-          <a href="/program/phoenix/why" style={secondaryButtonStyle}>
-            Why was Phoenix recommended?
+          <a href="/program/phoenix/cart" style={primaryButtonStyle}>
+            Apply for Phoenix
           </a>
-          <a href="/ignite" style={secondaryButtonStyle}>
-            Need a lighter level? Explore Ignite
+
+          <a href="/apply" style={secondaryButtonStyle}>
+            Return to Application
           </a>
         </div>
       </div>
     </main>
   )
 }
-const pageStyle: React.CSSProperties = {
+
+const pageStyle: CSSProperties = {
   background: '#000',
   color: '#f5f0e8',
   minHeight: '100vh',
   padding: '120px 24px',
 }
 
-const containerStyle: React.CSSProperties = {
+const containerStyle: CSSProperties = {
   maxWidth: '980px',
   margin: '0 auto',
 }
 
-const eyebrowStyle: React.CSSProperties = {
+const eyebrowStyle: CSSProperties = {
   letterSpacing: '6px',
   fontSize: '12px',
   color: '#c58b57',
@@ -69,94 +76,58 @@ const eyebrowStyle: React.CSSProperties = {
   textTransform: 'uppercase',
 }
 
-const heroTitleStyle: React.CSSProperties = {
+const heroTitleStyle: CSSProperties = {
   fontSize: 'clamp(2.8rem, 5vw, 5rem)',
   lineHeight: 1.1,
   letterSpacing: '-0.02em',
-  margin: '0 0 28px 0',
-  maxWidth: '900px',
+  marginBottom: '28px',
 }
 
-const heroTextStyle: React.CSSProperties = {
+const heroTextStyle: CSSProperties = {
   fontSize: '1.12rem',
   lineHeight: 1.9,
   color: '#d7c7b6',
   maxWidth: '780px',
+  marginBottom: '64px',
+}
+
+const sectionStyle: CSSProperties = {
   marginBottom: '56px',
 }
 
-const sectionStyle: React.CSSProperties = {
-  marginBottom: '72px',
-}
-
-const sectionTitleStyle: React.CSSProperties = {
+const sectionTitleStyle: CSSProperties = {
   fontSize: '1.7rem',
   marginBottom: '18px',
   fontWeight: 500,
 }
 
-const bodyStyle: React.CSSProperties = {
+const bodyStyle: CSSProperties = {
   color: '#d7c7b6',
   lineHeight: 1.9,
-  fontSize: '1.05rem',
+  fontSize: '1.06rem',
   maxWidth: '820px',
 }
 
-const cardGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-  gap: '22px',
-}
-
-const cardStyle: React.CSSProperties = {
-  border: '1px solid rgba(197,139,87,0.18)',
-  borderRadius: '24px',
-  padding: '28px 24px',
-  background: 'rgba(255,255,255,0.01)',
-}
-
-const cardTitleStyle: React.CSSProperties = {
-  fontSize: '1.2rem',
-  marginBottom: '12px',
-  fontWeight: 500,
-}
-
-const cardTextStyle: React.CSSProperties = {
-  fontSize: '1rem',
-  lineHeight: 1.8,
-  color: '#d7c7b6',
-  margin: 0,
-}
-
-const cartBoxStyle: React.CSSProperties = {
-  border: '1px solid rgba(197,139,87,0.22)',
-  borderRadius: '28px',
-  padding: '32px',
-  background: 'rgba(255,255,255,0.01)',
-  marginBottom: '48px',
-}
-
-const buttonRowStyle: React.CSSProperties = {
+const buttonRowStyle: CSSProperties = {
   display: 'flex',
   gap: '16px',
   flexWrap: 'wrap',
 }
 
-const primaryButtonStyle: React.CSSProperties = {
+const primaryButtonStyle: CSSProperties = {
   background: '#c58b57',
   color: '#000',
   padding: '14px 24px',
-  textDecoration: 'none',
   borderRadius: '999px',
+  textDecoration: 'none',
   fontWeight: 600,
 }
 
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonStyle: CSSProperties = {
   border: '1px solid #c58b57',
   color: '#f5f0e8',
   padding: '14px 24px',
-  textDecoration: 'none',
   borderRadius: '999px',
-  fontWeight: 500,
+  textDecoration: 'none',
   opacity: 0.85,
 }
