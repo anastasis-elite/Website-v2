@@ -109,7 +109,6 @@ if (!res.ok) {
 }
 
 if (data.redirect) {
-  alert('Redirect received: ' + data.redirect)
   window.location.href = data.redirect
   return
 }
