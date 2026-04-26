@@ -109,9 +109,12 @@ if (!res.ok) {
 }
 
 if (data.redirect) {
+  alert('Redirect received: ' + data.redirect)
   window.location.href = data.redirect
   return
 }
+
+alert('No redirect received. Response was: ' + JSON.stringify(data))
 
 setStatus('success')
 setMessage('Application submitted successfully.')
