@@ -46,7 +46,7 @@ export default function EmberCartPage() {
               Ongoing access through a recurring monthly payment.
             </p>
             <button
-              onClick={() => startCheckout('ember', 'subscription')}
+              onClick={() => startCheckout('subscription')}
               style={primaryButtonStyle}
             >
               Choose Monthly
@@ -59,7 +59,7 @@ export default function EmberCartPage() {
               One-time annual payment for the full year.
             </p>
             <button
-              onClick={() => startCheckout('ember', 'annual')}
+              onClick={() => startCheckout('annual')}
               style={primaryButtonStyle}
             >
               Choose Annual
