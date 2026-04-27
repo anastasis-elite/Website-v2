@@ -1,4 +1,23 @@
 'use client'
+import {
+  pageStyle,
+  containerStyle,
+  eyebrowStyle,
+  heroTitleStyle,
+  heroTextStyle,
+  sectionStyle,
+  sectionTitleStyle,
+  bodyStyle,
+  cardGridStyle,
+  cardStyle,
+  cardTitleStyle,
+  cardTextStyle,
+  cartBoxStyle,
+  buttonRowStyle,
+  primaryButtonStyle,
+  secondaryButtonStyle,
+  quietLinkStyle,
+} from '@/styles/globalStyles'
 
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
@@ -617,38 +636,3 @@ setMessage('Application submitted successfully.')
   )
 }
 
-const gridTwoCol: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-  gap: '18px',
-}
-
-const fieldWrap: CSSProperties = {
-  display: 'grid',
-  gap: '10px',
-  minWidth: 0,
-}
-
-const labelStyle: CSSProperties = {
-  color: '#f5f0e8',
-  fontSize: '0.96rem',
-  lineHeight: 1.5,
-}
-
-const inputStyle: CSSProperties = {
-  width: '100%',
-  minWidth: 0,
-  background: '#0a0a0a',
-  color: '#f5f0e8',
-  border: '1px solid rgba(197,139,87,0.22)',
-  borderRadius: '16px',
-  padding: '14px 16px',
-  fontSize: '1rem',
-  boxSizing: 'border-box',
-}
-
-const textareaStyle: CSSProperties = {
-  ...inputStyle,
-  minHeight: '120px',
-  resize: 'vertical',
-}
