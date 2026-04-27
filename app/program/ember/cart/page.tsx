@@ -22,7 +22,7 @@ async function startCheckout(
   if (data.url) {
     window.location.href = data.url
   } else {
-    alert(data.error || 'Unable to start checkout.')
+    alert(data.error || JSON.stringify(data))
   }
 }
 
