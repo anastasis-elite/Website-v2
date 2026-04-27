@@ -76,6 +76,21 @@ export default function PhoenixPage() {
           </div>
         </section>
 
+<section style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>If this is you…</h2>
+          <p style={bodyStyle}>
+            If you’re done guessing completely…
+
+If you want your system to be built around you,
+not adjusted from something generic…
+
+If you’re ready for precision,
+not approximation…
+
+This is exactly where Phoenix fits.
+          </p>
+        </section>
+        
         <section style={cartBoxStyle}>
           <h2 style={sectionTitleStyle}>Begin Phoenix</h2>
           <p style={bodyStyle}>
