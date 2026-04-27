@@ -1,29 +1,6 @@
 'use client'
 
-import {
-  pageStyle,
-  containerStyle,
-  eyebrowStyle,
-  heroTitleStyle,
-  heroTextStyle,
-  sectionStyle,
-  sectionTitleStyle,
-  bodyStyle,
-  cardGridStyle,
-  cardStyle,
-  cardTitleStyle,
-  cardTextStyle,
-  cartBoxStyle,
-  buttonRowStyle,
-  primaryButtonStyle,
-  secondaryButtonStyle,
-  quietLinkStyle,
-  gridTwoCol,
-  fieldWrap,
-  labelStyle,
-  inputStyle,
-  textareaStyle,
-} from '../../../styles/globalstyles'
+import * as styles from '../../../styles/globalstyles'
 
 import type { CSSProperties } from 'react'
 
@@ -53,39 +30,39 @@ async function startCheckout(
 
 export default function EmberCartPage() {
   return (
-    <main style={pageStyle}>
-      <div style={containerStyle}>
-        <p style={eyebrowStyle}>Checkout</p>
+    <main style={styles.pageStyle}>
+      <div style={styles.containerStyle}>
+        <p style={styles.eyebrowStyle}>Checkout</p>
 
-        <h1 style={heroTitleStyle}>Choose how you want to enter Ember.</h1>
+        <h1 style={styles.heroTitleStyle}>Choose how you want to enter Ember.</h1>
 
-        <p style={heroTextStyle}>
+        <p style={styles.heroTextStyle}>
           Ember is your structured, self-led entry into the system. Choose the payment
           path that fits how you want to begin.
         </p>
 
-        <section style={cardGridStyle}>
-          <div style={cartBoxStyle}>
-            <h2 style={sectionTitleStyle}>Monthly Subscription</h2>
-            <p style={bodyStyle}>
+        <section style={styles.cardGridStyle}>
+          <div style={styles.cartBoxStyle}>
+            <h2 style={styles.sectionTitleStyle}>Monthly Subscription</h2>
+            <p style={styles.bodyStyle}>
               Ongoing access through a recurring monthly payment.
             </p>
             <button
               onClick={() => startCheckout('subscription')}
-              style={primaryButtonStyle}
+              style={styles.primaryButtonStyle}
             >
               Choose Monthly
             </button>
           </div>
 
-          <div style={cartBoxStyle}>
-            <h2 style={sectionTitleStyle}>Pay in Full</h2>
+          <div style={styles.cartBoxStyle}>
+            <h2 style={styles.sectionTitleStyle}>Pay in Full</h2>
             <p style={bodyStyle}>
               One-time annual payment for the full year.
             </p>
             <button
               onClick={() => startCheckout('annual')}
-              style={primaryButtonStyle}
+              style={styles.primaryButtonStyle}
             >
               Choose Annual
             </button>
