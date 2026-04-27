@@ -103,3 +103,82 @@ export default function EmberWhyPage() {
     </main>
   )
 }
+
+const pageStyle: React.CSSProperties = {
+  background: '#000',
+  color: '#f5f0e8',
+  minHeight: '100vh',
+  padding: '120px 24px',
+}
+
+const containerStyle: React.CSSProperties = {
+  maxWidth: '980px',
+  margin: '0 auto',
+}
+
+const eyebrowStyle: React.CSSProperties = {
+  letterSpacing: '6px',
+  fontSize: '12px',
+  color: '#c58b57',
+  opacity: 0.85,
+  marginBottom: '24px',
+  textTransform: 'uppercase',
+}
+
+const heroTitleStyle: React.CSSProperties = {
+  fontSize: 'clamp(2.8rem, 5vw, 5rem)',
+  lineHeight: 1.1,
+  letterSpacing: '-0.02em',
+  margin: '0 0 28px 0',
+  maxWidth: '900px',
+}
+
+const heroTextStyle: React.CSSProperties = {
+  fontSize: '1.12rem',
+  lineHeight: 1.9,
+  color: '#d7c7b6',
+  maxWidth: '780px',
+  marginBottom: '56px',
+}
+
+const sectionStyle: React.CSSProperties = {
+  marginBottom: '72px',
+}
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: '1.7rem',
+  marginBottom: '18px',
+  fontWeight: 500,
+}
+
+const bodyStyle: React.CSSProperties = {
+  color: '#d7c7b6',
+  lineHeight: 1.9,
+  fontSize: '1.05rem',
+  maxWidth: '820px',
+}
+
+const buttonRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '16px',
+  flexWrap: 'wrap',
+}
+
+const primaryButtonStyle: React.CSSProperties = {
+  background: '#c58b57',
+  color: '#000',
+  padding: '14px 24px',
+  textDecoration: 'none',
+  borderRadius: '999px',
+  fontWeight: 600,
+}
+
+const secondaryButtonStyle: React.CSSProperties = {
+  border: '1px solid #c58b57',
+  color: '#f5f0e8',
+  padding: '14px 24px',
+  textDecoration: 'none',
+  borderRadius: '999px',
+  fontWeight: 500,
+  opacity: 0.85,
+}
