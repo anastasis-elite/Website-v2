@@ -1,5 +1,30 @@
 'use client'
 
+import {
+  pageStyle,
+  containerStyle,
+  eyebrowStyle,
+  heroTitleStyle,
+  heroTextStyle,
+  sectionStyle,
+  sectionTitleStyle,
+  bodyStyle,
+  cardGridStyle,
+  cardStyle,
+  cardTitleStyle,
+  cardTextStyle,
+  cartBoxStyle,
+  buttonRowStyle,
+  primaryButtonStyle,
+  secondaryButtonStyle,
+  quietLinkStyle,
+  gridTwoCol,
+  fieldWrap,
+  labelStyle,
+  inputStyle,
+  textareaStyle,
+} from '../../../styles/globalstyles'
+
 import type { CSSProperties } from 'react'
 
 async function startCheckout(
