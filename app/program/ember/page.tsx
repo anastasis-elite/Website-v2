@@ -1,3 +1,26 @@
+'use client'
+
+import type { CSSProperties } from 'react'
+
+async function startCheckout(billing: 'subscription' | 'annual') {
+  const response = await fetch('/api/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      program: 'ember',
+      billing,
+      email: '',
+    }),
+  })
+
+  const data = await response.json()
+
+  if (data.url) {
+    window.location.href = data.url
+  } else {
+    alert(data.error || 'Unable to start checkout.')
+  }
+}
 
 export default function EmberPage() {
   return (
@@ -5,24 +28,20 @@ export default function EmberPage() {
       <div style={containerStyle}>
         <p style={eyebrowStyle}>Ember</p>
 
-        <h1 style={heroTitleStyle}>
-          Structured. Precise. Self-led.
-        </h1>
+        <h1 style={heroTitleStyle}>Structured. Precise. Self-led.</h1>
 
         <p style={heroTextStyle}>
-          Ember is designed for the woman who wants a clear, intelligent structure
-          without needing constant intervention. It gives you the framework,
-          removes guesswork, and creates a more aligned path forward without
-          taking your autonomy away.
+          Ember is designed for the woman who already knows how to support herself,
+          recover, regulate, and execute — but wants the numbers, structure, and
+          progression calculated so she does not have to carry every decision alone.
         </p>
 
         <section style={sectionStyle}>
           <h2 style={sectionTitleStyle}>Who Ember is for</h2>
           <p style={bodyStyle}>
-            Ember is for the woman who is capable of moving independently but
-            knows that the systems she has followed before were not built with
-            her physiology in mind. She does not need more chaos, more pressure,
-            or more punishment. She needs a structure that finally fits.
+            Ember is for the woman who is capable of moving independently. She does
+            not need more noise, more chaos, or more hand-holding. She needs a clean
+            structure that removes friction and lets her execute.
           </p>
         </section>
 
@@ -30,60 +49,86 @@ export default function EmberPage() {
           <h2 style={sectionTitleStyle}>What it offers</h2>
           <div style={cardGridStyle}>
             <div style={cardStyle}>
-              <h3 style={cardTitleStyle}>Clear structure</h3>
+              <h3 style={cardTitleStyle}>Calculated structure</h3>
               <p style={cardTextStyle}>
-                A defined path that removes guesswork and gives you a system to follow.
+                Training, progression, and foundational targets handled for you.
               </p>
             </div>
+
             <div style={cardStyle}>
               <h3 style={cardTitleStyle}>Self-led execution</h3>
               <p style={cardTextStyle}>
-                Ideal for women who want guidance without high-touch oversight.
+                Ideal for women who want precision without high-touch oversight.
               </p>
             </div>
+
             <div style={cardStyle}>
-              <h3 style={cardTitleStyle}>A better foundation</h3>
+              <h3 style={cardTitleStyle}>Less decision fatigue</h3>
               <p style={cardTextStyle}>
-                A starting point built around alignment instead of force.
+                The system gives you the structure so you can stop overthinking the process.
               </p>
             </div>
           </div>
         </section>
 
-        <section style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>The feel of Ember</h2>
+        <section style={cartBoxStyle}>
+          <h2 style={sectionTitleStyle}>Begin Ember</h2>
           <p style={bodyStyle}>
-            Controlled. Grounded. Clarifying. Ember is not less valuable because
-            it is more self-led. It is simply designed for a woman who needs the
-            system to finally make sense.
+            Choose how you want to enter Ember.
           </p>
+
+          <div style={buttonRowStyle}>
+            <button
+              onClick={() => startCheckout('subscription')}
+              style={primaryButtonStyle}
+            >
+              Choose Monthly
+            </button>
+
+            <button
+              onClick={() => startCheckout('annual')}
+              style={primaryButtonStyle}
+            >
+              Pay in Full
+            </button>
+          </div>
         </section>
 
-        <div style={buttonRowStyle}>
-          <a href="/ember/cart" style={primaryButtonStyle}>
-            Continue to Ember
-          </a>
-          <a href="/program" style={secondaryButtonStyle}>
-            Return to Program
-          </a>
-        </div>
+        <section style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>Want a different level of support?</h2>
+
+          <div style={buttonRowStyle}>
+            <a href="/program/ignite" style={secondaryButtonStyle}>
+              Need more structure? Explore Ignite
+            </a>
+
+            <a href="/program/phoenix" style={secondaryButtonStyle}>
+              Want full personalization? Explore Phoenix
+            </a>
+
+            <a href="/program" style={secondaryButtonStyle}>
+              Return to Program
+            </a>
+          </div>
+        </section>
       </div>
     </main>
   )
 }
-const pageStyle: React.CSSProperties = {
+
+const pageStyle: CSSProperties = {
   background: '#000',
   color: '#f5f0e8',
   minHeight: '100vh',
   padding: '120px 24px',
 }
 
-const containerStyle: React.CSSProperties = {
+const containerStyle: CSSProperties = {
   maxWidth: '980px',
   margin: '0 auto',
 }
 
-const eyebrowStyle: React.CSSProperties = {
+const eyebrowStyle: CSSProperties = {
   letterSpacing: '6px',
   fontSize: '12px',
   color: '#c58b57',
@@ -92,7 +137,7 @@ const eyebrowStyle: React.CSSProperties = {
   textTransform: 'uppercase',
 }
 
-const heroTitleStyle: React.CSSProperties = {
+const heroTitleStyle: CSSProperties = {
   fontSize: 'clamp(2.8rem, 5vw, 5rem)',
   lineHeight: 1.1,
   letterSpacing: '-0.02em',
@@ -100,7 +145,7 @@ const heroTitleStyle: React.CSSProperties = {
   maxWidth: '900px',
 }
 
-const heroTextStyle: React.CSSProperties = {
+const heroTextStyle: CSSProperties = {
   fontSize: '1.12rem',
   lineHeight: 1.9,
   color: '#d7c7b6',
@@ -108,73 +153,75 @@ const heroTextStyle: React.CSSProperties = {
   marginBottom: '56px',
 }
 
-const sectionStyle: React.CSSProperties = {
+const sectionStyle: CSSProperties = {
   marginBottom: '72px',
 }
 
-const sectionTitleStyle: React.CSSProperties = {
+const sectionTitleStyle: CSSProperties = {
   fontSize: '1.7rem',
   marginBottom: '18px',
   fontWeight: 500,
 }
 
-const bodyStyle: React.CSSProperties = {
+const bodyStyle: CSSProperties = {
   color: '#d7c7b6',
   lineHeight: 1.9,
   fontSize: '1.05rem',
   maxWidth: '820px',
 }
 
-const cardGridStyle: React.CSSProperties = {
+const cardGridStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
   gap: '22px',
 }
 
-const cardStyle: React.CSSProperties = {
+const cardStyle: CSSProperties = {
   border: '1px solid rgba(197,139,87,0.18)',
   borderRadius: '24px',
   padding: '28px 24px',
   background: 'rgba(255,255,255,0.01)',
 }
 
-const cardTitleStyle: React.CSSProperties = {
+const cardTitleStyle: CSSProperties = {
   fontSize: '1.2rem',
   marginBottom: '12px',
   fontWeight: 500,
 }
 
-const cardTextStyle: React.CSSProperties = {
+const cardTextStyle: CSSProperties = {
   fontSize: '1rem',
   lineHeight: 1.8,
   color: '#d7c7b6',
   margin: 0,
 }
 
-const cartBoxStyle: React.CSSProperties = {
+const cartBoxStyle: CSSProperties = {
   border: '1px solid rgba(197,139,87,0.22)',
   borderRadius: '28px',
   padding: '32px',
   background: 'rgba(255,255,255,0.01)',
-  marginBottom: '48px',
+  marginBottom: '72px',
 }
 
-const buttonRowStyle: React.CSSProperties = {
+const buttonRowStyle: CSSProperties = {
   display: 'flex',
   gap: '16px',
   flexWrap: 'wrap',
 }
 
-const primaryButtonStyle: React.CSSProperties = {
+const primaryButtonStyle: CSSProperties = {
   background: '#c58b57',
   color: '#000',
   padding: '14px 24px',
-  textDecoration: 'none',
   borderRadius: '999px',
+  border: 'none',
   fontWeight: 600,
+  cursor: 'pointer',
+  fontSize: '1rem',
 }
 
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonStyle: CSSProperties = {
   border: '1px solid #c58b57',
   color: '#f5f0e8',
   padding: '14px 24px',
