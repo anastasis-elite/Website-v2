@@ -74,6 +74,23 @@ export default function IgnitePage() {
           </div>
         </section>
 
+        <section style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>If this is you…</h2>
+          <p style={bodyStyle}>
+            If you’ve been consistent…
+but your body stopped responding…
+
+If you’ve been doing the work…
+but still feel like you’re guessing…
+
+If you’re tired of wondering
+if you’re doing too much, too little,
+or the wrong things entirely…
+
+This is exactly where Ignite fits.
+          </p>
+        </section>
+        
         <section style={cartBoxStyle}>
           <h2 style={sectionTitleStyle}>Begin Ignite</h2>
           <p style={bodyStyle}>
