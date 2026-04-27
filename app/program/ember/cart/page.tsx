@@ -3,7 +3,6 @@
 import type { CSSProperties } from 'react'
 
 async function startCheckout(
-  program: 'ember',
   billing: 'subscription' | 'annual'
 ) {
   const response = await fetch('/api/checkout', {
@@ -12,7 +11,7 @@ async function startCheckout(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      program,
+      program: 'ember',
       billing,
       email: '',
     }),
@@ -23,7 +22,7 @@ async function startCheckout(
   if (data.url) {
     window.location.href = data.url
   } else {
-    alert('Unable to start checkout right now.')
+    alert(data.error || 'Unable to start checkout.')
   }
 }
 
