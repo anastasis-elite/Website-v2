@@ -1,28 +1,5 @@
 'use client'
-import {
-  pageStyle,
-  containerStyle,
-  eyebrowStyle,
-  heroTitleStyle,
-  heroTextStyle,
-  sectionStyle,
-  sectionTitleStyle,
-  bodyStyle,
-  cardGridStyle,
-  cardStyle,
-  cardTitleStyle,
-  cardTextStyle,
-  cartBoxStyle,
-  buttonRowStyle,
-  primaryButtonStyle,
-  secondaryButtonStyle,
-  quietLinkStyle,
-  gridTwoCol,
-  fieldWrap,
-  labelStyle,
-  inputStyle,
-  textareaStyle,
-} from '../styles/globalstyles'
+import * as styles from '../styles/globalstyles'
 
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
@@ -210,9 +187,9 @@ setMessage('Application submitted successfully.')
             background: 'rgba(255,255,255,0.01)',
           }}
         >
-          <div style={gridTwoCol}>
-            <div style={fieldWrap}>
-              <label style={labelStyle} htmlFor="email">
+          <div style={styles.gridTwoCol}>
+            <div style={styles.fieldWrap}>
+              <label style={styles.labelStyle} htmlFor="email">
                 Email Address
               </label>
               <input
@@ -222,12 +199,12 @@ setMessage('Application submitted successfully.')
                 required
                 value={formData.email}
                 onChange={handleChange}
-                style={inputStyle}
+                style={styles.inputStyle}
               />
             </div>
 
-            <div style={fieldWrap}>
-              <label style={labelStyle} htmlFor="fullName">
+            <div style={styles.fieldWrap}>
+              <label style={styles.labelStyle} htmlFor="fullName">
                 Full Name
               </label>
               <input
@@ -237,14 +214,14 @@ setMessage('Application submitted successfully.')
                 required
                 value={formData.fullName}
                 onChange={handleChange}
-                style={inputStyle}
+                style={styles.inputStyle}
               />
             </div>
           </div>
 
-          <div style={gridTwoCol}>
-            <div style={fieldWrap}>
-              <label style={labelStyle} htmlFor="dateOfBirth">
+          <div style={styles.gridTwoCol}>
+            <div style={styles.fieldWrap}>
+              <label style={styles.labelStyle} htmlFor="dateOfBirth">
                 Date of Birth
               </label>
               <input
@@ -262,8 +239,8 @@ setMessage('Application submitted successfully.')
 />
             </div>
 
-            <div style={fieldWrap}>
-              <label style={labelStyle} htmlFor="cityState">
+            <div style={styles.fieldWrap}>
+              <label style={styles.labelStyle} htmlFor="cityState">
                 City &amp; State
               </label>
               <input
@@ -273,14 +250,14 @@ setMessage('Application submitted successfully.')
                 required
                 value={formData.cityState}
                 onChange={handleChange}
-                style={inputStyle}
+                style={styles.inputStyle}
                 placeholder="City, State"
               />
             </div>
           </div>
 
-          <div style={fieldWrap}>
-            <label style={labelStyle} htmlFor="injuries">
+          <div style={styles.fieldWrap}>
+            <label style={styles.labelStyle} htmlFor="injuries">
               Do you have any current or past injuries?
             </label>
             <textarea
@@ -289,13 +266,13 @@ setMessage('Application submitted successfully.')
               required
               value={formData.injuries}
               onChange={handleChange}
-              style={textareaStyle}
+              style={styles.textareaStyle}
               placeholder="Please share anything relevant."
             />
           </div>
 
-          <div style={fieldWrap}>
-            <label style={labelStyle} htmlFor="conditions">
+          <div style={styles.fieldWrap}>
+            <label style={styles.labelStyle} htmlFor="conditions">
               Do you have any chronic medical conditions or restrictions?
             </label>
             <textarea
@@ -304,7 +281,7 @@ setMessage('Application submitted successfully.')
               required
               value={formData.conditions}
               onChange={handleChange}
-              style={textareaStyle}
+              style={styles.textareaStyle}
               placeholder="Please share anything relevant."
             />
           </div>
@@ -347,8 +324,8 @@ setMessage('Application submitted successfully.')
 )}
 
           {formData.medicalClearance && (
-  <div style={fieldWrap}>
-    <label style={labelStyle} htmlFor="medicalClearanceFile">
+  <div style={styles.fieldWrap}>
+    <label style={styles.labelStyle} htmlFor="medicalClearanceFile">
       Upload medical clearance documentation
     </label>
     <input
@@ -363,12 +340,12 @@ setMessage('Application submitted successfully.')
           medicalClearanceFile: e.target.files?.[0] || null,
         }))
       }
-      style={inputStyle}
+      style={styles.inputStyle}
     />
   </div>
 )}
-          <div style={fieldWrap}>
-            <label style={labelStyle} htmlFor="supervision">
+          <div style={styles.fieldWrap}>
+            <label style={styles.labelStyle} htmlFor="supervision">
               Are you currently pregnant, nursing, postpartum, or under medical supervision?
             </label>
             <select
@@ -377,7 +354,7 @@ setMessage('Application submitted successfully.')
               required
               value={formData.supervision}
               onChange={handleChange}
-              style={inputStyle}
+              style={styles.inputStyle}
             >
               <option value="">Select one</option>
               <option value="No">No</option>
@@ -390,8 +367,8 @@ setMessage('Application submitted successfully.')
           </div>
 
           {formData.supervision === 'Yes - postpartum' && (
-            <div style={fieldWrap}>
-              <label style={labelStyle} htmlFor="postpartumMonths">
+            <div style={styles.fieldWrap}>
+              <label style={styles.labelStyle} htmlFor="postpartumMonths">
                 How many months postpartum are you?
               </label>
               <input
@@ -402,14 +379,14 @@ setMessage('Application submitted successfully.')
                 required
                 value={formData.postpartumMonths}
                 onChange={handleChange}
-                style={inputStyle}
+                style={styles.inputStyle}
                 placeholder="Enter number of months"
               />
             </div>
           )}
 
-          <div style={fieldWrap}>
-            <label style={labelStyle} htmlFor="primaryGoal">
+          <div style={styles.fieldWrap}>
+            <label style={styles.labelStyle} htmlFor="primaryGoal">
               What are you hoping to change most right now?
             </label>
             <textarea
@@ -418,13 +395,13 @@ setMessage('Application submitted successfully.')
               required
               value={formData.primaryGoal}
               onChange={handleChange}
-              style={textareaStyle}
+              style={styles.textareaStyle}
               placeholder="Share the main change or outcome you want most right now."
             />
           </div>
 
-          <div style={fieldWrap}>
-            <label style={labelStyle} htmlFor="whyNow">
+          <div style={styles.fieldWrap}>
+            <label style={styles.labelStyle} htmlFor="whyNow">
               Why are you looking for support now?
             </label>
             <textarea
@@ -433,7 +410,7 @@ setMessage('Application submitted successfully.')
               required
               value={formData.whyNow}
               onChange={handleChange}
-              style={textareaStyle}
+              style={styles.textareaStyle}
               placeholder="What makes this the right time for you to begin?"
             />
           </div>
