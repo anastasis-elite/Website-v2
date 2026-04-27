@@ -143,6 +143,15 @@ export const labelStyle: CSSProperties = {
   lineHeight: 1.5,
 }
 
+export const h2Style: CSSProperties = {
+  fontSize: '1.6rem',
+  fontWeight: 500,
+  marginTop: '48px',
+  marginBottom: '12px',
+  letterSpacing: '-0.01em',
+  color: '#f5f0e8',
+}
+
 export const inputStyle: CSSProperties = {
   width: '100%',
   minWidth: 0,
