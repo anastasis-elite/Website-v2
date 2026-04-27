@@ -24,21 +24,6 @@ import {
 
 } from '../styles/globalstyles'
 
-const bodyStyle = {
-  color: '#d7c7b6',
-  lineHeight: 1.9,
-  fontSize: '1.05rem',
-  marginBottom: '28px',
-  maxWidth: '800px',
-}
-
-const h2Style = {
-  fontSize: '1.4rem',
-  marginBottom: '10px',
-  marginTop: '36px',
-  fontWeight: 500,
-}
-
 export default function ConditionsPage() {
   return (
     <main
