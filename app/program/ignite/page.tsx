@@ -76,19 +76,18 @@ export default function IgnitePage() {
 
         <section style={sectionStyle}>
           <h2 style={sectionTitleStyle}>If this is you…</h2>
-          <p style={bodyStyle}>
-            If you’ve been consistent…
-but your body stopped responding…
+          <div style={bodyStyle}>
+  <p>If you’ve been consistent… but your body stopped responding…</p>
 
-If you’ve been doing the work…
-but still feel like you’re guessing…
+  <p>If you’ve been doing the work… but still feel like you’re guessing…</p>
 
-If you’re tired of wondering
-if you’re doing too much, too little,
-or the wrong things entirely…
+  <p>
+    If you’re tired of wondering if you’re doing too much, too little,
+    or the wrong things entirely…
+  </p>
 
-This is exactly where Ignite fits.
-          </p>
+  <p><strong>This is exactly where Ignite fits.</strong></p>
+</div>
         </section>
         
         <section style={cartBoxStyle}>
