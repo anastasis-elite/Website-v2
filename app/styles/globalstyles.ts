@@ -124,3 +124,39 @@ export const quietLinkStyle: CSSProperties = {
   display: 'inline-block',
   marginTop: '8px',
 }
+
+export const gridTwoCol: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+  gap: '18px',
+}
+
+export const fieldWrap: CSSProperties = {
+  display: 'grid',
+  gap: '10px',
+  minWidth: 0,
+}
+
+export const labelStyle: CSSProperties = {
+  color: '#f5f0e8',
+  fontSize: '0.96rem',
+  lineHeight: 1.5,
+}
+
+export const inputStyle: CSSProperties = {
+  width: '100%',
+  minWidth: 0,
+  background: '#0a0a0a',
+  color: '#f5f0e8',
+  border: '1px solid rgba(197,139,87,0.22)',
+  borderRadius: '16px',
+  padding: '14px 16px',
+  fontSize: '1rem',
+  boxSizing: 'border-box',
+}
+
+export const textareaStyle: CSSProperties = {
+  ...inputStyle,
+  minHeight: '120px',
+  resize: 'vertical',
+}
