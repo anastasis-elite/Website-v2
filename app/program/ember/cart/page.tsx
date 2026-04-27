@@ -57,7 +57,7 @@ export default function EmberCartPage() {
 
           <div style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>Pay in Full</h2>
-            <p style={bodyStyle}>
+            <p style={styles.bodyStyle}>
               One-time annual payment for the full year.
             </p>
             <button
