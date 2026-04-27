@@ -1,3 +1,26 @@
+'use client'
+
+import type { CSSProperties } from 'react'
+
+async function startCheckout(billing: 'subscription' | 'annual') {
+  const response = await fetch('/api/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      program: 'phoenix',
+      billing,
+      email: '',
+    }),
+  })
+
+  const data = await response.json()
+
+  if (data.url) {
+    window.location.href = data.url
+  } else {
+    alert(data.error || 'Unable to start checkout.')
+  }
+}
 
 export default function PhoenixPage() {
   return (
@@ -5,83 +28,108 @@ export default function PhoenixPage() {
       <div style={containerStyle}>
         <p style={eyebrowStyle}>Phoenix</p>
 
-        <h1 style={heroTitleStyle}>
-          Immersive. Adaptive. Built around you.
-        </h1>
+        <h1 style={heroTitleStyle}>Personalized. Precise. Built around you.</h1>
 
         <p style={heroTextStyle}>
-          Phoenix is designed for the woman who wants the highest level of
-          precision, support, and adaptation. This is not simply more. It is
-          deeper calibration, stronger alignment, and a system that is shaped
-          more fully around her.
+          Phoenix is for the woman who is no longer here to guess. This is the
+          deepest level of the system — personalized structure, deeper strategy,
+          and quarterly 1:1 support built around your body, your goals, and your
+          progression.
         </p>
 
         <section style={sectionStyle}>
           <h2 style={sectionTitleStyle}>Who Phoenix is for</h2>
           <p style={bodyStyle}>
-            Phoenix is for the woman who no longer wants to negotiate with
-            friction and is ready for the most immersive level of support. She
-            wants the system to move with her, not around her.
+            Phoenix is for the woman who wants a more personalized experience,
+            deeper calibration, and more direct strategic support. She is not
+            looking for another generic plan. She wants the system shaped around
+            where she is going.
           </p>
         </section>
 
         <section style={sectionStyle}>
           <h2 style={sectionTitleStyle}>What it offers</h2>
+
           <div style={cardGridStyle}>
             <div style={cardStyle}>
-              <h3 style={cardTitleStyle}>Deep support</h3>
+              <h3 style={cardTitleStyle}>Personalized program direction</h3>
               <p style={cardTextStyle}>
-                A higher-touch experience with deeper adaptation and refinement.
+                Customized program options based on the transformation you are building.
               </p>
             </div>
+
             <div style={cardStyle}>
-              <h3 style={cardTitleStyle}>More alignment</h3>
+              <h3 style={cardTitleStyle}>The science behind the structure</h3>
               <p style={cardTextStyle}>
-                Built for women who need the strongest level of calibration.
+                Deeper education around the system, your physiology, and the reason
+                behind the progression.
               </p>
             </div>
+
             <div style={cardStyle}>
-              <h3 style={cardTitleStyle}>Highest precision</h3>
+              <h3 style={cardTitleStyle}>Quarterly 1:1 support</h3>
               <p style={cardTextStyle}>
-                The most immersive level of the system.
+                One private session per quarter to refine the direction and keep the
+                system aligned with your evolution.
               </p>
             </div>
           </div>
         </section>
 
-        <section style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>The feel of Phoenix</h2>
+        <section style={cartBoxStyle}>
+          <h2 style={sectionTitleStyle}>Begin Phoenix</h2>
           <p style={bodyStyle}>
-            Held. Adaptive. Inevitable. Phoenix is for the woman ready to step
-            into the deepest version of the work.
+            Choose how you want to enter Phoenix.
           </p>
+
+          <div style={buttonRowStyle}>
+            <button
+              onClick={() => startCheckout('subscription')}
+              style={primaryButtonStyle}
+            >
+              Choose Monthly
+            </button>
+
+            <button
+              onClick={() => startCheckout('annual')}
+              style={primaryButtonStyle}
+            >
+              Pay in Full
+            </button>
+          </div>
         </section>
 
-        <div style={buttonRowStyle}>
-          <a href="/phoenix/cart" style={primaryButtonStyle}>
-            Continue to Phoenix
-          </a>
-          <a href="/program" style={secondaryButtonStyle}>
-            Return to Program
-          </a>
-        </div>
+        <section style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>Want a different level of support?</h2>
+
+          <div style={buttonRowStyle}>
+            <a href="/program/ignite" style={secondaryButtonStyle}>
+              Need a lighter level? Explore Ignite
+            </a>
+
+            <a href="/program" style={secondaryButtonStyle}>
+              Return to Program
+            </a>
+          </div>
+        </section>
       </div>
     </main>
   )
 }
-const pageStyle: React.CSSProperties = {
+
+const pageStyle: CSSProperties = {
   background: '#000',
   color: '#f5f0e8',
   minHeight: '100vh',
   padding: '120px 24px',
 }
 
-const containerStyle: React.CSSProperties = {
+const containerStyle: CSSProperties = {
   maxWidth: '980px',
   margin: '0 auto',
 }
 
-const eyebrowStyle: React.CSSProperties = {
+const eyebrowStyle: CSSProperties = {
   letterSpacing: '6px',
   fontSize: '12px',
   color: '#c58b57',
@@ -90,7 +138,7 @@ const eyebrowStyle: React.CSSProperties = {
   textTransform: 'uppercase',
 }
 
-const heroTitleStyle: React.CSSProperties = {
+const heroTitleStyle: CSSProperties = {
   fontSize: 'clamp(2.8rem, 5vw, 5rem)',
   lineHeight: 1.1,
   letterSpacing: '-0.02em',
@@ -98,7 +146,7 @@ const heroTitleStyle: React.CSSProperties = {
   maxWidth: '900px',
 }
 
-const heroTextStyle: React.CSSProperties = {
+const heroTextStyle: CSSProperties = {
   fontSize: '1.12rem',
   lineHeight: 1.9,
   color: '#d7c7b6',
@@ -106,73 +154,75 @@ const heroTextStyle: React.CSSProperties = {
   marginBottom: '56px',
 }
 
-const sectionStyle: React.CSSProperties = {
+const sectionStyle: CSSProperties = {
   marginBottom: '72px',
 }
 
-const sectionTitleStyle: React.CSSProperties = {
+const sectionTitleStyle: CSSProperties = {
   fontSize: '1.7rem',
   marginBottom: '18px',
   fontWeight: 500,
 }
 
-const bodyStyle: React.CSSProperties = {
+const bodyStyle: CSSProperties = {
   color: '#d7c7b6',
   lineHeight: 1.9,
   fontSize: '1.05rem',
   maxWidth: '820px',
 }
 
-const cardGridStyle: React.CSSProperties = {
+const cardGridStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
   gap: '22px',
 }
 
-const cardStyle: React.CSSProperties = {
+const cardStyle: CSSProperties = {
   border: '1px solid rgba(197,139,87,0.18)',
   borderRadius: '24px',
   padding: '28px 24px',
   background: 'rgba(255,255,255,0.01)',
 }
 
-const cardTitleStyle: React.CSSProperties = {
+const cardTitleStyle: CSSProperties = {
   fontSize: '1.2rem',
   marginBottom: '12px',
   fontWeight: 500,
 }
 
-const cardTextStyle: React.CSSProperties = {
+const cardTextStyle: CSSProperties = {
   fontSize: '1rem',
   lineHeight: 1.8,
   color: '#d7c7b6',
   margin: 0,
 }
 
-const cartBoxStyle: React.CSSProperties = {
+const cartBoxStyle: CSSProperties = {
   border: '1px solid rgba(197,139,87,0.22)',
   borderRadius: '28px',
   padding: '32px',
   background: 'rgba(255,255,255,0.01)',
-  marginBottom: '48px',
+  marginBottom: '72px',
 }
 
-const buttonRowStyle: React.CSSProperties = {
+const buttonRowStyle: CSSProperties = {
   display: 'flex',
   gap: '16px',
   flexWrap: 'wrap',
 }
 
-const primaryButtonStyle: React.CSSProperties = {
+const primaryButtonStyle: CSSProperties = {
   background: '#c58b57',
   color: '#000',
   padding: '14px 24px',
-  textDecoration: 'none',
   borderRadius: '999px',
+  border: 'none',
   fontWeight: 600,
+  cursor: 'pointer',
+  fontSize: '1rem',
 }
 
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonStyle: CSSProperties = {
   border: '1px solid #c58b57',
   color: '#f5f0e8',
   padding: '14px 24px',
