@@ -17,6 +17,12 @@ import {
   primaryButtonStyle,
   secondaryButtonStyle,
   quietLinkStyle,
+  gridTwoCol,
+  fieldWrap,
+  labelStyle,
+  inputStyle,
+  textareaStyle,
+
 } from '../styles/globalstyles'
 
 import { useState } from 'react'
