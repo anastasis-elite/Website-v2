@@ -235,3 +235,13 @@ const secondaryButtonStyle: React.CSSProperties = {
   fontWeight: 500,
   opacity: 0.85,
 }
+
+const quietLinkStyle: React.CSSProperties = {
+  color: '#c58b57',
+  fontSize: '0.9rem',
+  opacity: 0.7,
+  textDecoration: 'underline',
+  cursor: 'pointer',
+  display: 'inline-block',
+  marginTop: '8px',
+}
