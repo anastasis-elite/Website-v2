@@ -46,9 +46,11 @@ export default function PhoenixRecommendPage() {
             Apply for Phoenix
           </a>
 
-          <a href="/apply" style={secondaryButtonStyle}>
-            Return to Application
-          </a>
+           <a href="/program/ignite" style={secondaryButtonStyle}>
+
+    Prefer less structure? Explore Ignite
+
+  </a>
         </div>
       </div>
     </main>
