@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ url: session.url })
-  } } catch (error) {
+   } catch (error) {
   console.error('Checkout error:', error)
 
   const message =
