@@ -1,4 +1,30 @@
+'use client'
 
+import type { CSSProperties } from 'react'
+
+async function startCheckout(
+  billing: 'subscription' | 'annual'
+) {
+  const response = await fetch('/api/checkout', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      program: 'ignite',
+      billing,
+      email: '',
+    }),
+  })
+
+  const data = await response.json()
+
+  if (data.url) {
+    window.location.href = data.url
+  } else {
+    alert(data.error || 'Unable to start checkout.')
+  }
+}
 export default function IgniteCartPage() {
   return (
     <main style={pageStyle}>
