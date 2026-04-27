@@ -139,6 +139,19 @@ export default function PhoenixWhyPage() {
             Return to Programs
           </a>
         </div>
+        <section style={sectionStyle}>
+  <h2 style={sectionTitleStyle}>If moving forward feels complicated</h2>
+
+  <div style={bodyStyle}>
+    <p>If this feels out of reach financially…</p>
+    <p>If you feel like you need to justify this decision…</p>
+    <p>If something outside of you is making this harder to step into…</p>
+
+    <a href="/program/phoenix/support" style={quietLinkStyle}>
+      There are other ways to enter this.
+    </a>
+  </div>
+</section>
       </div>
     </main>
   )
