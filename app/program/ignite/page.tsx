@@ -1,3 +1,26 @@
+'use client'
+
+import type { CSSProperties } from 'react'
+
+async function startCheckout(billing: 'subscription' | 'annual') {
+  const response = await fetch('/api/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      program: 'ignite',
+      billing,
+      email: '',
+    }),
+  })
+
+  const data = await response.json()
+
+  if (data.url) {
+    window.location.href = data.url
+  } else {
+    alert(data.error || 'Unable to start checkout.')
+  }
+}
 
 export default function IgnitePage() {
   return (
@@ -5,83 +28,110 @@ export default function IgnitePage() {
       <div style={containerStyle}>
         <p style={eyebrowStyle}>Ignite</p>
 
-        <h1 style={heroTitleStyle}>
-          Guided. Responsive. Refined.
-        </h1>
+        <h1 style={heroTitleStyle}>Guided. Corrective. Aligned.</h1>
 
         <p style={heroTextStyle}>
-          Ignite is designed for the woman who no longer wants to interpret
-          everything alone. It adds a deeper layer of support, adjustment, and
-          responsiveness so the system begins to meet her where she is instead
-          of expecting her to force herself through it.
+          Ignite is for the woman who has been trying, showing up, and doing the
+          work — but needs the system corrected, explained, and structured around
+          what actually creates progress.
         </p>
 
         <section style={sectionStyle}>
           <h2 style={sectionTitleStyle}>Who Ignite is for</h2>
           <p style={bodyStyle}>
-            Ignite is for the woman who wants structure but knows she would
-            benefit from a more guided experience. She is ready for a system
-            that responds to friction instead of ignoring it.
+            Ignite is for the woman who does not need more pressure. She needs
+            more clarity. She needs the why behind the structure, the environment
+            aligned around the goal, and a system that helps her stop guessing.
           </p>
         </section>
 
         <section style={sectionStyle}>
           <h2 style={sectionTitleStyle}>What it offers</h2>
+
           <div style={cardGridStyle}>
             <div style={cardStyle}>
-              <h3 style={cardTitleStyle}>Responsive support</h3>
+              <h3 style={cardTitleStyle}>Structured guidance</h3>
               <p style={cardTextStyle}>
-                More guidance and refinement built into the process.
+                The plan, plus the reasoning behind the plan in digestible pieces.
               </p>
             </div>
+
             <div style={cardStyle}>
-              <h3 style={cardTitleStyle}>Better adaptation</h3>
+              <h3 style={cardTitleStyle}>System correction</h3>
               <p style={cardTextStyle}>
-                Designed for women who need more than a self-led framework.
+                Designed for women who are consistent but not getting the response
+                they should be getting.
               </p>
             </div>
+
             <div style={cardStyle}>
-              <h3 style={cardTitleStyle}>Greater precision</h3>
+              <h3 style={cardTitleStyle}>Environmental alignment</h3>
               <p style={cardTextStyle}>
-                A more supported version of the system with more responsiveness.
+                Guidance that helps your daily life start supporting where your body
+                and mind are going.
               </p>
             </div>
           </div>
         </section>
 
-        <section style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>The feel of Ignite</h2>
+        <section style={cartBoxStyle}>
+          <h2 style={sectionTitleStyle}>Begin Ignite</h2>
           <p style={bodyStyle}>
-            Supported. Seen. Calibrated. Ignite is for the woman who wants the
-            system to begin adjusting more directly around her.
+            Choose how you want to enter Ignite.
           </p>
+
+          <div style={buttonRowStyle}>
+            <button
+              onClick={() => startCheckout('subscription')}
+              style={primaryButtonStyle}
+            >
+              Choose Monthly
+            </button>
+
+            <button
+              onClick={() => startCheckout('annual')}
+              style={primaryButtonStyle}
+            >
+              Pay in Full
+            </button>
+          </div>
         </section>
 
-        <div style={buttonRowStyle}>
-          <a href="/ignite/cart" style={primaryButtonStyle}>
-            Continue to Ignite
-          </a>
-          <a href="/program" style={secondaryButtonStyle}>
-            Return to Program
-          </a>
-        </div>
+        <section style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>Want a different level of support?</h2>
+
+          <div style={buttonRowStyle}>
+            <a href="/program/ember" style={secondaryButtonStyle}>
+              Prefer simplicity? Explore Ember
+            </a>
+
+            <a href="/program/phoenix" style={secondaryButtonStyle}>
+              Want full personalization? Explore Phoenix
+            </a>
+
+            <a href="/program" style={secondaryButtonStyle}>
+              Return to Program
+            </a>
+          </div>
+        </section>
       </div>
     </main>
   )
 }
-const pageStyle: React.CSSProperties = {
+
+const pageStyle: CSSProperties = {
   background: '#000',
   color: '#f5f0e8',
   minHeight: '100vh',
   padding: '120px 24px',
 }
 
-const containerStyle: React.CSSProperties = {
+const containerStyle: CSSProperties = {
   maxWidth: '980px',
   margin: '0 auto',
 }
 
-const eyebrowStyle: React.CSSProperties = {
+const eyebrowStyle: CSSProperties = {
   letterSpacing: '6px',
   fontSize: '12px',
   color: '#c58b57',
@@ -90,7 +140,7 @@ const eyebrowStyle: React.CSSProperties = {
   textTransform: 'uppercase',
 }
 
-const heroTitleStyle: React.CSSProperties = {
+const heroTitleStyle: CSSProperties = {
   fontSize: 'clamp(2.8rem, 5vw, 5rem)',
   lineHeight: 1.1,
   letterSpacing: '-0.02em',
@@ -98,7 +148,7 @@ const heroTitleStyle: React.CSSProperties = {
   maxWidth: '900px',
 }
 
-const heroTextStyle: React.CSSProperties = {
+const heroTextStyle: CSSProperties = {
   fontSize: '1.12rem',
   lineHeight: 1.9,
   color: '#d7c7b6',
@@ -106,73 +156,75 @@ const heroTextStyle: React.CSSProperties = {
   marginBottom: '56px',
 }
 
-const sectionStyle: React.CSSProperties = {
+const sectionStyle: CSSProperties = {
   marginBottom: '72px',
 }
 
-const sectionTitleStyle: React.CSSProperties = {
+const sectionTitleStyle: CSSProperties = {
   fontSize: '1.7rem',
   marginBottom: '18px',
   fontWeight: 500,
 }
 
-const bodyStyle: React.CSSProperties = {
+const bodyStyle: CSSProperties = {
   color: '#d7c7b6',
   lineHeight: 1.9,
   fontSize: '1.05rem',
   maxWidth: '820px',
 }
 
-const cardGridStyle: React.CSSProperties = {
+const cardGridStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
   gap: '22px',
 }
 
-const cardStyle: React.CSSProperties = {
+const cardStyle: CSSProperties = {
   border: '1px solid rgba(197,139,87,0.18)',
   borderRadius: '24px',
   padding: '28px 24px',
   background: 'rgba(255,255,255,0.01)',
 }
 
-const cardTitleStyle: React.CSSProperties = {
+const cardTitleStyle: CSSProperties = {
   fontSize: '1.2rem',
   marginBottom: '12px',
   fontWeight: 500,
 }
 
-const cardTextStyle: React.CSSProperties = {
+const cardTextStyle: CSSProperties = {
   fontSize: '1rem',
   lineHeight: 1.8,
   color: '#d7c7b6',
   margin: 0,
 }
 
-const cartBoxStyle: React.CSSProperties = {
+const cartBoxStyle: CSSProperties = {
   border: '1px solid rgba(197,139,87,0.22)',
   borderRadius: '28px',
   padding: '32px',
   background: 'rgba(255,255,255,0.01)',
-  marginBottom: '48px',
+  marginBottom: '72px',
 }
 
-const buttonRowStyle: React.CSSProperties = {
+const buttonRowStyle: CSSProperties = {
   display: 'flex',
   gap: '16px',
   flexWrap: 'wrap',
 }
 
-const primaryButtonStyle: React.CSSProperties = {
+const primaryButtonStyle: CSSProperties = {
   background: '#c58b57',
   color: '#000',
   padding: '14px 24px',
-  textDecoration: 'none',
   borderRadius: '999px',
+  border: 'none',
   fontWeight: 600,
+  cursor: 'pointer',
+  fontSize: '1rem',
 }
 
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonStyle: CSSProperties = {
   border: '1px solid #c58b57',
   color: '#f5f0e8',
   padding: '14px 24px',
