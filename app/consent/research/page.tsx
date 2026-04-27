@@ -1,3 +1,27 @@
+import {
+  pageStyle,
+  containerStyle,
+  eyebrowStyle,
+  heroTitleStyle,
+  heroTextStyle,
+  sectionStyle,
+  sectionTitleStyle,
+  bodyStyle,
+  cardGridStyle,
+  cardStyle,
+  cardTitleStyle,
+  cardTextStyle,
+  cartBoxStyle,
+  buttonRowStyle,
+  primaryButtonStyle,
+  secondaryButtonStyle,
+  quietLinkStyle,
+  gridTwoCol,
+  fieldWrap,
+  labelStyle,
+  inputStyle,
+  textareaStyle,
+} from '../../styles/globalstyles'
 
 export default function ResearchConsentPage() {
   return (
@@ -80,19 +104,4 @@ export default function ResearchConsentPage() {
       </div>
     </main>
   )
-}
-
-const bodyStyle: React.CSSProperties = {
-  color: '#d7c7b6',
-  lineHeight: 1.9,
-  fontSize: '1.05rem',
-  marginBottom: '28px',
-  maxWidth: '800px',
-}
-
-const h2Style: React.CSSProperties = {
-  fontSize: '1.4rem',
-  marginBottom: '10px',
-  marginTop: '36px',
-  fontWeight: 500,
 }
