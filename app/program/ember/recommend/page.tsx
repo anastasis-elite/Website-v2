@@ -45,10 +45,13 @@ export default function EmberRecommendPage() {
             Continue with Ember
           </a>
 
-          <a href="/apply" style={secondaryButtonStyle}>
-            Return to Application
-          </a>
-        </div>
+          <a href="/program/ignite/cart" style={secondaryButtonStyle}>
+
+    Want deeper support? Explore Ignite
+
+  </a>
+
+</div>
       </div>
     </main>
   )
