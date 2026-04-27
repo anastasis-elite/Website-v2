@@ -17,7 +17,7 @@ import {
   primaryButtonStyle,
   secondaryButtonStyle,
   quietLinkStyle,
-} from '../styles/globalStyles'
+} from '../styles/globalstyles'
 
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
