@@ -21,7 +21,7 @@ import {
   labelStyle,
   inputStyle,
   textareaStyle,
-} from '../styles/globalStyles'
+} from '../../styles/globalStyles'
 
 export default function MediaConsentPage() {
   return (
