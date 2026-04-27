@@ -52,7 +52,9 @@ export default function EmberRecommendPage() {
     Want deeper support? Explore Ignite
 
   </a>
-
+<a href="/program/ember/why" style={styles.secondaryButtonStyle}>
+  See what we saw in your application
+</a>
 </div>
       </div>
     </main>
