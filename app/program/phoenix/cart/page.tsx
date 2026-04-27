@@ -2,14 +2,10 @@
 
 import type { CSSProperties } from 'react'
 
-async function startCheckout(
-  billing: 'subscription' | 'annual'
-) {
+async function startCheckout(billing: 'subscription' | 'annual') {
   const response = await fetch('/api/checkout', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       program: 'phoenix',
       billing,
@@ -25,68 +21,76 @@ async function startCheckout(
     alert(data.error || 'Unable to start checkout.')
   }
 }
+
 export default function PhoenixCartPage() {
   return (
     <main style={pageStyle}>
       <div style={containerStyle}>
-        <p style={eyebrowStyle}>Recommended Starting Point</p>
+        <p style={eyebrowStyle}>Phoenix Enrollment</p>
 
-        <h1 style={heroTitleStyle}>
-          Phoenix was recommended for you.
-        </h1>
+        <h1 style={heroTitleStyle}>Choose how you want to begin.</h1>
 
         <p style={heroTextStyle}>
-          Based on what you shared, a deeper and more immersive level of support
-          appears to be the strongest fit for your current needs, complexity, and
-          desired level of precision.
+          Phoenix is your recommended path. Select the payment option that fits best,
+          then you’ll be taken to secure checkout.
         </p>
 
-        <section style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>What you’re stepping into</h2>
-          <p style={bodyStyle}>
-            Phoenix is the most adaptive and high-support level of the system. It
-            is intended for women who want the deepest alignment, the greatest
-            responsiveness, and the strongest level of precision available inside
-            the work.
-          </p>
-        </section>
+        <section style={cardGridStyle}>
+          <div style={cartBoxStyle}>
+            <h2 style={sectionTitleStyle}>Monthly</h2>
+            <p style={bodyStyle}>
+              Begin Phoenix with monthly access.
+            </p>
 
-        <section style={cartBoxStyle}>
-          <h2 style={sectionTitleStyle}>Phoenix</h2>
-          <p style={bodyStyle}>
-            Your recommended starting point.
-          </p>
+            <button
+              onClick={() => startCheckout('subscription')}
+              style={primaryButtonStyle}
+            >
+              Choose Monthly
+            </button>
+          </div>
 
-          <a href="/program/phoenix/cart" style={primaryButtonStyle}>
-            Continue to Checkout
-          </a>
+          <div style={cartBoxStyle}>
+            <h2 style={sectionTitleStyle}>Pay in Full</h2>
+            <p style={bodyStyle}>
+              Secure the full Phoenix year upfront.
+            </p>
+
+            <button
+              onClick={() => startCheckout('annual')}
+              style={primaryButtonStyle}
+            >
+              Pay in Full
+            </button>
+          </div>
         </section>
 
         <div style={buttonRowStyle}>
-          <a href="/program/phoenix/why" style={secondaryButtonStyle}>
-            Why was Phoenix recommended?
+          <a href="/program/phoenix/recommend" style={secondaryButtonStyle}>
+            Back to Recommendation
           </a>
-          <a href="/ignite" style={secondaryButtonStyle}>
-            Need a lighter level? Explore Ignite
+          <a href="/program" style={secondaryButtonStyle}>
+            Review Programs
           </a>
         </div>
       </div>
     </main>
   )
 }
-const pageStyle: React.CSSProperties = {
+
+const pageStyle: CSSProperties = {
   background: '#000',
   color: '#f5f0e8',
   minHeight: '100vh',
   padding: '120px 24px',
 }
 
-const containerStyle: React.CSSProperties = {
+const containerStyle: CSSProperties = {
   maxWidth: '980px',
   margin: '0 auto',
 }
 
-const eyebrowStyle: React.CSSProperties = {
+const eyebrowStyle: CSSProperties = {
   letterSpacing: '6px',
   fontSize: '12px',
   color: '#c58b57',
@@ -95,7 +99,7 @@ const eyebrowStyle: React.CSSProperties = {
   textTransform: 'uppercase',
 }
 
-const heroTitleStyle: React.CSSProperties = {
+const heroTitleStyle: CSSProperties = {
   fontSize: 'clamp(2.8rem, 5vw, 5rem)',
   lineHeight: 1.1,
   letterSpacing: '-0.02em',
@@ -103,81 +107,60 @@ const heroTitleStyle: React.CSSProperties = {
   maxWidth: '900px',
 }
 
-const heroTextStyle: React.CSSProperties = {
+const heroTextStyle: CSSProperties = {
   fontSize: '1.12rem',
   lineHeight: 1.9,
   color: '#d7c7b6',
-  maxWidth: '780px',
+  maxWidth: '760px',
   marginBottom: '56px',
 }
 
-const sectionStyle: React.CSSProperties = {
-  marginBottom: '72px',
+const cardGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+  gap: '22px',
+  marginBottom: '48px',
 }
 
-const sectionTitleStyle: React.CSSProperties = {
+const cartBoxStyle: CSSProperties = {
+  border: '1px solid rgba(197,139,87,0.22)',
+  borderRadius: '28px',
+  padding: '32px',
+  background: 'rgba(255,255,255,0.01)',
+}
+
+const sectionTitleStyle: CSSProperties = {
   fontSize: '1.7rem',
   marginBottom: '18px',
   fontWeight: 500,
 }
 
-const bodyStyle: React.CSSProperties = {
+const bodyStyle: CSSProperties = {
   color: '#d7c7b6',
   lineHeight: 1.9,
   fontSize: '1.05rem',
   maxWidth: '820px',
+  marginBottom: '24px',
 }
 
-const cardGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-  gap: '22px',
-}
-
-const cardStyle: React.CSSProperties = {
-  border: '1px solid rgba(197,139,87,0.18)',
-  borderRadius: '24px',
-  padding: '28px 24px',
-  background: 'rgba(255,255,255,0.01)',
-}
-
-const cardTitleStyle: React.CSSProperties = {
-  fontSize: '1.2rem',
-  marginBottom: '12px',
-  fontWeight: 500,
-}
-
-const cardTextStyle: React.CSSProperties = {
-  fontSize: '1rem',
-  lineHeight: 1.8,
-  color: '#d7c7b6',
-  margin: 0,
-}
-
-const cartBoxStyle: React.CSSProperties = {
-  border: '1px solid rgba(197,139,87,0.22)',
-  borderRadius: '28px',
-  padding: '32px',
-  background: 'rgba(255,255,255,0.01)',
-  marginBottom: '48px',
-}
-
-const buttonRowStyle: React.CSSProperties = {
+const buttonRowStyle: CSSProperties = {
   display: 'flex',
   gap: '16px',
   flexWrap: 'wrap',
 }
 
-const primaryButtonStyle: React.CSSProperties = {
+const primaryButtonStyle: CSSProperties = {
   background: '#c58b57',
   color: '#000',
   padding: '14px 24px',
-  textDecoration: 'none',
   borderRadius: '999px',
+  border: 'none',
   fontWeight: 600,
+  cursor: 'pointer',
+  fontSize: '1rem',
 }
 
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonStyle: CSSProperties = {
   border: '1px solid #c58b57',
   color: '#f5f0e8',
   padding: '14px 24px',
