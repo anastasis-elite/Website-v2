@@ -47,9 +47,17 @@ export default function IgniteRecommendPage() {
             Continue with Ignite
           </a>
 
-          <a href="/apply" style={secondaryButtonStyle}>
-            Return to Application
-          </a>
+          <a href="/program/ember" style={secondaryButtonStyle}>
+
+    Prefer less structure? Explore Ember
+
+  </a>
+
+  <a href="/program/phoenix" style={secondaryButtonStyle}>
+
+    Want deeper support? Explore Phoenix
+
+  </a>
         </div>
       </div>
     </main>
