@@ -106,6 +106,28 @@ export default function PhoenixWhyPage() {
           <p style={bodyStyle}>
             This is where rebuilding becomes supported.
           </p>
+
+          <div style={{ ...bodyStyle, marginTop: '40px' }}>
+
+    <p style={{ marginBottom: '12px' }}>
+
+      I see you.
+
+    </p>
+
+    <p style={{ marginBottom: '12px' }}>
+
+      I have been you.
+
+    </p>
+
+    <p>
+
+      And you do not have to find your way out of this alone.
+
+    </p>
+
+  </div>
         </section>
 
         <div style={buttonRowStyle}>
