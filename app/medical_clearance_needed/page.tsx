@@ -21,7 +21,6 @@ import {
   labelStyle,
   inputStyle,
   textareaStyle,
-
 } from '../styles/globalstyles'
 
 import type { CSSProperties } from 'react'
