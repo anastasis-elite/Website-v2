@@ -22,8 +22,7 @@ import {
   labelStyle,
   inputStyle,
   textareaStyle,
-
-} from '../styles/globalstyles'
+} from '../styles/globalStyles'
 
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
