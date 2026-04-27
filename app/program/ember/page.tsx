@@ -70,7 +70,21 @@ export default function EmberPage() {
             </div>
           </div>
         </section>
+        
+       <section style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>If this is you…</h2>
+          <p style={bodyStyle}>
+            If you already know how to take care of yourself…
 
+If you don’t need more information,
+but you’re tired of making every decision alone…
+
+If you want structure without losing autonomy…
+
+This is exactly where Ember fits.
+          </p>
+        </section>
+        
         <section style={cartBoxStyle}>
           <h2 style={sectionTitleStyle}>Begin Ember</h2>
           <p style={bodyStyle}>
