@@ -1,27 +1,4 @@
-import {
-  pageStyle,
-  containerStyle,
-  eyebrowStyle,
-  heroTitleStyle,
-  heroTextStyle,
-  sectionStyle,
-  sectionTitleStyle,
-  bodyStyle,
-  cardGridStyle,
-  cardStyle,
-  cardTitleStyle,
-  cardTextStyle,
-  cartBoxStyle,
-  buttonRowStyle,
-  primaryButtonStyle,
-  secondaryButtonStyle,
-  quietLinkStyle,
-  gridTwoCol,
-  fieldWrap,
-  labelStyle,
-  inputStyle,
-  textareaStyle,
-} from '../../styles/globalstyles'
+import * as styles from '../styles/globalstyles'
 
 export default function ResearchConsentPage() {
   return (
@@ -58,35 +35,35 @@ export default function ResearchConsentPage() {
           Research Consent
         </h1>
 
-        <p style={bodyStyle}>
+        <p style={styles.bodyStyle}>
           Participation in research data collection is optional. Choosing not to
           participate does not prevent you from applying for or participating in the
           program itself.
         </p>
 
-        <h2 style={h2Style}>What this consent covers</h2>
-        <p style={bodyStyle}>
+        <h2 style={styles.h2Style}>What this consent covers</h2>
+        <p style={styles.bodyStyle}>
           If you choose to authorize research use, selected information related to your
           implementation, adherence, progress, and outcomes may be used to evaluate how
           the program is working across participants.
         </p>
 
-        <h2 style={h2Style}>Privacy and confidentiality</h2>
-        <p style={bodyStyle}>
+        <h2 style={styles.h2Style}>Privacy and confidentiality</h2>
+        <p style={styles.bodyStyle}>
           Your information remains private. Personal identifying information will not be
           shared publicly as part of research use unless separate and explicit
           permission is given. Research use is intended to focus on patterns, outcomes,
           and implementation rather than public disclosure of identity.
         </p>
 
-        <h2 style={h2Style}>Revoking consent</h2>
-        <p style={bodyStyle}>
+        <h2 style={styles.h2Style}>Revoking consent</h2>
+        <p style={styles.bodyStyle}>
           Research consent may be granted or revoked at any time. If consent is revoked,
           no new data moving forward will be used for research purposes.
         </p>
 
-        <h2 style={h2Style}>Previously used data</h2>
-        <p style={bodyStyle}>
+        <h2 style={styles.h2Style}>Previously used data</h2>
+        <p style={styles.bodyStyle}>
           If consent is revoked after data has already been included in internal
           research analysis, aggregated reporting, or anonymized evaluation already in
           use, that prior use may continue. Revocation applies moving forward and does
@@ -94,8 +71,8 @@ export default function ResearchConsentPage() {
           authorization.
         </p>
 
-        <h2 style={h2Style}>Your choice</h2>
-        <p style={bodyStyle}>
+        <h2 style={styles.h2Style}>Your choice</h2>
+        <p style={styles.bodyStyle}>
           By opting in, you are authorizing the use of approved data for research and
           evaluation purposes under these terms. By opting out, your program
           participation remains unaffected, but your data will not be newly included for
