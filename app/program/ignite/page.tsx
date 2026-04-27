@@ -1,6 +1,6 @@
 'use client'
 
-import * as styles from '../styles/globalstyles'
+import * as styles from '../../styles/globalstyles'
 
 import type { CSSProperties } from 'react'
 
