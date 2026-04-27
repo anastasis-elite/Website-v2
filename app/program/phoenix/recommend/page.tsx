@@ -51,6 +51,9 @@ export default function PhoenixRecommendPage() {
           <a href="/program/ignite" style={styles.secondaryButtonStyle}>
             Prefer less structure? Explore Ignite
           </a>
+          <a href="/program/phoenix/why" style={styles.secondaryButtonStyle}>
+  See what we saw in your application
+</a>
         </div>
       </div>
     </main>
