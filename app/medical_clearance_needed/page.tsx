@@ -34,7 +34,7 @@ export default function MedicalClearancePage() {
         </section>
 
         <div style={styles.buttonRowStyle}>
-          <a href="/apply" style={primaryButtonStyle}>
+          <a href="/apply" style={styles.primaryButtonStyle}>
             Return to Application
           </a>
         </div>
