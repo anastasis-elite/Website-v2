@@ -232,7 +232,7 @@ setMessage('Application submitted successfully.')
   value={formData.dateOfBirth}
   onChange={handleChange}
   style={{
-    ...inputStyle,
+    ...styles.inputStyle,
     WebkitAppearance: 'none',
     appearance: 'none',
   }}
