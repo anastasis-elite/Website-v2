@@ -1,27 +1,4 @@
-import {
-  pageStyle,
-  containerStyle,
-  eyebrowStyle,
-  heroTitleStyle,
-  heroTextStyle,
-  sectionStyle,
-  sectionTitleStyle,
-  bodyStyle,
-  cardGridStyle,
-  cardStyle,
-  cardTitleStyle,
-  cardTextStyle,
-  cartBoxStyle,
-  buttonRowStyle,
-  primaryButtonStyle,
-  secondaryButtonStyle,
-  quietLinkStyle,
-  gridTwoCol,
-  fieldWrap,
-  labelStyle,
-  inputStyle,
-  textareaStyle,
-} from '../../styles/globalstyles'
+import * as styles from '../../styles/globalstyles'
 
 export default function MediaConsentPage() {
   return (
@@ -58,35 +35,35 @@ export default function MediaConsentPage() {
           Media Consent
         </h1>
 
-        <p style={bodyStyle}>
+        <p style={styles.bodyStyle}>
           Authorization for the use of transformation photos, progress photos, and
           related visual media is optional. Choosing not to authorize media use does not
           prevent you from participating in the program itself.
         </p>
 
-        <h2 style={h2Style}>What this consent covers</h2>
-        <p style={bodyStyle}>
+        <h2 style={styles.h2Style}>What this consent covers</h2>
+        <p style={styles.bodyStyle}>
           If you choose to authorize media use, your approved transformation photos,
           progress photos, and related visual content may be used for educational,
           research, and marketing purposes.
         </p>
 
-        <h2 style={h2Style}>How your media may be used</h2>
-        <p style={bodyStyle}>
+        <h2 style={styles.h2Style}>How your media may be used</h2>
+        <p style={styles.bodyStyle}>
           Authorized media may be used in content, promotional materials, educational
           materials, case studies, or related brand communications. No personal
           identifying information will be shared unless separately and explicitly
           authorized or already included in previously approved content.
         </p>
 
-        <h2 style={h2Style}>Revoking consent</h2>
-        <p style={bodyStyle}>
+        <h2 style={styles.h2Style}>Revoking consent</h2>
+        <p style={styles.bodyStyle}>
           Media consent may be granted or revoked at any time. If consent is revoked, no
           new visual media will be used moving forward.
         </p>
 
-        <h2 style={h2Style}>Previously authorized content</h2>
-        <p style={bodyStyle}>
+        <h2 style={styles.h2Style}>Previously authorized content</h2>
+        <p style={styles.bodyStyle}>
           You acknowledge and agree that any media previously authorized and already
           used in published materials, distributed marketing assets, educational
           materials, or other completed content may continue to be used. Revocation
@@ -94,8 +71,8 @@ export default function MediaConsentPage() {
           that was created and used under valid authorization.
         </p>
 
-        <h2 style={h2Style}>Your choice</h2>
-        <p style={bodyStyle}>
+        <h2 style={styles.h2Style}>Your choice</h2>
+        <p style={styles.bodyStyle}>
           By opting in, you are authorizing approved visual media use under these terms.
           By opting out, your participation in the program remains unaffected, but your
           future images and related visual content will not be newly used for these
