@@ -60,7 +60,7 @@ function AssessmentStartContent() {
         throw new Error(data.error || 'Assessment submission failed')
       }
 
-      window.location.href = `/dashboard/plan?program=${formData.program}`
+      window.location.href = `/dashboard/assessment/start2?program=${formData.program}`
     } catch (error) {
       console.error('ASSESSMENT ERROR:', error)
       setStatus('error')
