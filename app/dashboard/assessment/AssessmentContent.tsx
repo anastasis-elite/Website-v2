@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation'
 import * as styles from '../../styles/globalstyles'
 
-export default function StartContent() {
+export default function AssessmentContent() {
   const searchParams = useSearchParams()
   const program = searchParams.get('program') || ''
 
