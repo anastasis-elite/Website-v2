@@ -6,7 +6,7 @@ import StartContent from './AssessmentContent'
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <AssessmentContent />
+      <StartContent />
     </Suspense>
   )
 }
