@@ -8,6 +8,15 @@ export async function POST(req: Request) {
 
     const webhookUrl = process.env.N8N_ASSESSMENT_WEBHOOK_URL
 
+    if (!webhookUrl) {
+
+    return NextResponse.json(
+      { error: 'Missing assessment webhook URL' },
+      { status: 500 }
+    )
+  }
+
+
     const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
