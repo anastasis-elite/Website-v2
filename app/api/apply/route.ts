@@ -6,15 +6,15 @@ export async function POST(req: Request) {
   try {
     const data = await req.json()
 
-    const response = await fetch(
-      'https://n8n.anastasiselite.com/webhook/Apply-intake',
-      {
+    const webhookUrl = process.env.N8N_ASSESSMENT_WEBHOOK_URL
+
+    const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      }
+          },
+        body: JSON.stringify(payload),
+      })
     )
 
     const text = await response.text()
