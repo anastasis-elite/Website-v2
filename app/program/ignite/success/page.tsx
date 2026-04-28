@@ -1,6 +1,6 @@
 'use client'
 
-import * as styles from '../../../../styles/globalstyles'
+import * as styles from '../../../styles/globalstyles'
 
 export default function IgniteSuccessPage() {
   return (
