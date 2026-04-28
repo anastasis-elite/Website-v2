@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense } from 'react'
-import StartContent from './StartContent'
+import StartContent from './AssessmentContent'
 
 export default function Page() {
   return (
