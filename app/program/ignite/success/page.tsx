@@ -51,6 +51,10 @@ export default function IgniteSuccessPage() {
           <a href="/" style={styles.secondaryButtonStyle}>
             Return Home
           </a>
+
+          <a href="/dashboard/signup?program=ignite" style={styles.primaryButtonStyle}>
+            Create Your Dashboard Login
+          </a>
         </div>
 
       </div>
