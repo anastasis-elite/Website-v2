@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import * as styles from '../../../styles/globalstyles'
+import * as styles from '../../styles/globalstyles'
 
 export default function StartContent() {
   const searchParams = useSearchParams()
