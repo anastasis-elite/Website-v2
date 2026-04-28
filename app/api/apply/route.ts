@@ -6,24 +6,30 @@ export async function POST(req: Request) {
   try {
     const data = await req.json()
 
-    const webhookUrl = process.env.N8N_ASSESSMENT_WEBHOOK_URL
+   const body = await req.json()
 
-    if (!webhookUrl) {
+const webhookUrl = process.env.N8N_APPLY_WEBHOOK_URL
 
-    return NextResponse.json(
-      { error: 'Missing assessment webhook URL' },
-      { status: 500 }
-    )
-  }
+if (!webhookUrl) {
+  return NextResponse.json(
+    { error: 'Missing apply webhook URL' },
+    { status: 500 }
+  )
+}
 
+const payload = {
+  ...body,
+  source: 'application',
+  submittedAt: new Date().toISOString(),
+}
 
-    const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          },
-        body: JSON.stringify(payload),
-      })
+const response = await fetch(webhookUrl, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(payload),
+})
     
 
     const text = await response.text()
