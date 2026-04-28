@@ -47,6 +47,10 @@ export default function EmberSuccessPage() {
           <a href="/" style={styles.secondaryButtonStyle}>
             Return Home
           </a>
+
+          <a href="/dashboard/signup?program=ember" style={styles.primaryButtonStyle}>
+            Create Your Dashboard Login
+          </a>
         </div>
       </div>
     </main>
