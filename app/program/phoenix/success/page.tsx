@@ -73,6 +73,10 @@ export default function PhoenixSuccessPage() {
           <a href="/" style={styles.secondaryButtonStyle}>
             Return Home
           </a>
+
+          <a href="/dashboard/signup?program=phoenix" style={styles.primaryButtonStyle}>
+            Create Your Dashboard Login
+          </a>
         </div>
       </div>
     </main>
