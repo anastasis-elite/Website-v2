@@ -49,7 +49,7 @@ export default function DashboardSignupPage() {
       }
 
       setStatus('success')
-      window.location.href = '/dashboard'
+      window.location.href = `/dashboard/assessment?program=${formData.program}`
     } catch (error) {
       console.error('DASHBOARD SIGNUP ERROR:', error)
       setStatus('error')
