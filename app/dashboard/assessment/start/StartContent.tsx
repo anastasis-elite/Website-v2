@@ -11,7 +11,7 @@ function AssessmentStartContent() {
   
   const [formData, setFormData] = useState({
     program,
-    client_id,
+    clientId,
     fullName: '',
     email: '',
     trainingDays: '',
