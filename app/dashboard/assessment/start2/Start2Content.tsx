@@ -10,11 +10,13 @@ export default function Start2Content() {
   const program = searchParams.get('program') || ''
   const email = searchParams.get('email') || ''
   const fullName = searchParams.get('fullName') || ''
-
+  const clientId = searchParams.get('client_id') || ''
+  
   const [formData, setFormData] = useState({
     program,
     email,
     fullName,
+    client_id: clientId,
     birthdate: '',
     height_in: '',
     weight: '',
@@ -95,7 +97,9 @@ export default function Start2Content() {
           <input type="hidden" name="email" value={formData.email} readOnly />
           <input type="hidden" name="program" value={formData.program} readOnly />
           <input type="hidden" name="fullName" value={formData.fullName} readOnly />
+          <input type="hidden" name="client_id" value={formData.client_id} />
 
+          
           <p style={styles.bodyStyle}>{formData.fullName}</p>
           <p style={styles.bodyStyle}>{formData.email}</p>
 
