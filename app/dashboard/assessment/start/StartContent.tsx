@@ -62,7 +62,7 @@ function AssessmentStartContent() {
         throw new Error(data.error || 'Assessment submission failed')
       }
 
-      window.location.href = `/dashboard/assessment/start2?program=${formData.program}&clientId=${encodeURIComponent(formData.client_id)}&email=${encodeURIComponent(formData.email)}&fullName=${encodeURIComponent(formData.fullName)}`
+      window.location.href = `/dashboard/assessment/start2?program=${formData.program}&clientId=${encodeURIComponent(formData.clientId)}&email=${encodeURIComponent(formData.email)}&fullName=${encodeURIComponent(formData.fullName)}`
     } catch (error) {
       console.error('ASSESSMENT ERROR:', error)
       setStatus('error')
