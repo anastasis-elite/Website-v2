@@ -7,9 +7,11 @@ import * as styles from '../../../styles/globalstyles'
 function AssessmentStartContent() {
   const searchParams = useSearchParams()
   const program = searchParams.get('program') || ''
-
+  const clientId = searchParams.get('client_id') || ''
+  
   const [formData, setFormData] = useState({
     program,
+    clientId'',
     fullName: '',
     email: '',
     trainingDays: '',
@@ -60,7 +62,7 @@ function AssessmentStartContent() {
         throw new Error(data.error || 'Assessment submission failed')
       }
 
-      window.location.href = `/dashboard/assessment/start2?program=${formData.program}&client_id=${encodeURIComponent(formData.client_id)}&email=${encodeURIComponent(formData.email)}&fullName=${encodeURIComponent(formData.fullName)}`
+      window.location.href = `/dashboard/assessment/start2?program=${formData.program}&clientId=${encodeURIComponent(formData.client_id)}&email=${encodeURIComponent(formData.email)}&fullName=${encodeURIComponent(formData.fullName)}`
     } catch (error) {
       console.error('ASSESSMENT ERROR:', error)
       setStatus('error')
@@ -100,6 +102,8 @@ function AssessmentStartContent() {
               />
             </div>
 
+            <input type="hidden" name="client_id" value={formData.client_id} readOnly />
+            
             <div style={styles.fieldWrap}>
               <label style={styles.labelStyle} htmlFor="email">
                 Email Address
