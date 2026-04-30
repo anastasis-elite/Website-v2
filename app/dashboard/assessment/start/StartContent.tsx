@@ -102,7 +102,7 @@ function AssessmentStartContent() {
               />
             </div>
 
-            <input type="hidden" name="client_id" value={formData.client_id} readOnly />
+            <input type="hidden" name="client_id" value={formData.clientId} readOnly />
             
             <div style={styles.fieldWrap}>
               <label style={styles.labelStyle} htmlFor="email">
