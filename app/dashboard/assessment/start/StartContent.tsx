@@ -8,10 +8,10 @@ function AssessmentStartContent() {
   const searchParams = useSearchParams()
   const program = searchParams.get('program') || ''
   const clientId = searchParams.get('client_id') || ''
-  
+
   const [formData, setFormData] = useState({
     program,
-    clientId,
+    client_id: clientId,
     fullName: '',
     email: '',
     trainingDays: '',
@@ -62,11 +62,18 @@ function AssessmentStartContent() {
         throw new Error(data.error || 'Assessment submission failed')
       }
 
-      window.location.href = `/dashboard/assessment/start2?program=${formData.program}&client_id=${encodeURIComponent(formData.clientId)}&email=${encodeURIComponent(formData.email)}&fullName=${encodeURIComponent(formData.fullName)}`
+      if (data.redirect) {
+        window.location.href = data.redirect
+        return
+      }
+
+      window.location.href = `/dashboard/assessment/start2?program=${formData.program}&email=${encodeURIComponent(
+        formData.email
+      )}&fullName=${encodeURIComponent(formData.fullName)}`
     } catch (error) {
       console.error('ASSESSMENT ERROR:', error)
       setStatus('error')
-      setMessage('Something went wrong. Please try again.')
+      setMessage(error instanceof Error ? error.message : 'Something went wrong. Please try again.')
     }
   }
 
@@ -86,6 +93,8 @@ function AssessmentStartContent() {
         </p>
 
         <form onSubmit={handleSubmit} style={styles.cartBoxStyle}>
+          <input type="hidden" name="client_id" value={formData.client_id} readOnly />
+
           <div style={styles.gridTwoCol}>
             <div style={styles.fieldWrap}>
               <label style={styles.labelStyle} htmlFor="fullName">
@@ -102,8 +111,6 @@ function AssessmentStartContent() {
               />
             </div>
 
-            <input type="hidden" name="client_id" value={formData.clientId} readOnly />
-            
             <div style={styles.fieldWrap}>
               <label style={styles.labelStyle} htmlFor="email">
                 Email Address
