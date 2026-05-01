@@ -22,7 +22,7 @@ const PRICE_MAP = {
 
 export async function POST(req: Request) {
   try {
-    const { program, billing, email } = await req.json()
+    const { program, billing, email, client_id } = await req.json()
 
     const priceId =
       PRICE_MAP[program as keyof typeof PRICE_MAP]?.[
@@ -42,12 +42,28 @@ export async function POST(req: Request) {
       mode: billing === 'subscription' ? 'subscription' : 'payment',
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: email || undefined,
-      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+
+      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}&program=${program}&client_id=${client_id || ''}`,
       cancel_url: `${origin}/program/${program}/cart`,
+
       metadata: {
+        client_id: client_id || '',
         program,
         billing,
+        email: email || '',
       },
+
+      subscription_data:
+        billing === 'subscription'
+          ? {
+              metadata: {
+                client_id: client_id || '',
+                program,
+                billing,
+                email: email || '',
+              },
+            }
+          : undefined,
     })
 
     return NextResponse.json({ url: session.url })
