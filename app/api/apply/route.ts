@@ -4,33 +4,30 @@ export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
   try {
-    const data = await req.json()
+    const body = await req.json()
 
-   const body = await req.json()
+    const webhookUrl = process.env.N8N_APPLY_WEBHOOK_URL
 
-const webhookUrl = process.env.N8N_APPLY_WEBHOOK_URL
+    if (!webhookUrl) {
+      return NextResponse.json(
+        { error: 'Missing apply webhook URL' },
+        { status: 500 }
+      )
+    }
 
-if (!webhookUrl) {
-  return NextResponse.json(
-    { error: 'Missing apply webhook URL' },
-    { status: 500 }
-  )
-}
+    const payload = {
+      ...body,
+      source: 'application',
+      submittedAt: new Date().toISOString(),
+    }
 
-const payload = {
-  ...body,
-  source: 'application',
-  submittedAt: new Date().toISOString(),
-}
-
-const response = await fetch(webhookUrl, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(payload),
-})
-    
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
 
     const text = await response.text()
 
@@ -56,8 +53,11 @@ const response = await fetch(webhookUrl, {
   } catch (error) {
     console.error('Apply API error:', error)
 
+    const message =
+      error instanceof Error ? error.message : 'Application submission failed'
+
     return NextResponse.json(
-      { error: 'Application submission failed' },
+      { error: message },
       { status: 500 }
     )
   }
