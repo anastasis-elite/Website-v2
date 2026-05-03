@@ -1,62 +1,57 @@
-'use client'
-
 import * as styles from '../../../styles/globalstyles'
 
 export default function IgniteSuccessPage() {
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        
         <p style={styles.eyebrowStyle}>Ignite • Confirmed</p>
 
-        <h1 style={styles.heroTitleStyle}>
-          You’re in.
-        </h1>
+        <h1 style={styles.heroTitleStyle}>You’re in.</h1>
 
         <p style={styles.heroTextStyle}>
-          Your decision has been confirmed. Everything from here moves with intention.
+          Your enrollment has been confirmed. Ignite is your next level of structure —
+          focused, guided, and built to move you forward with precision.
         </p>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>What happens next</h2>
 
           <div style={styles.bodyStyle}>
-            <p>You’ll receive a confirmation email shortly.</p>
-            <p>Your program access and next steps will be delivered there.</p>
-            <p>Make sure to check your inbox (and spam folder, just in case).</p>
+            <p>Your payment has been processed and your dashboard access is being prepared.</p>
+            <p>The next step is completing your assessment so your plan can be built around your current capacity, schedule, recovery, and equipment access.</p>
+            <p>You can complete it now, or explore your dashboard first and come back when you’re ready.</p>
           </div>
         </section>
 
         <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>What to expect</h2>
+          <h2 style={styles.sectionTitleStyle}>Before the assessment</h2>
 
           <div style={styles.bodyStyle}>
-            <p>You are not starting over.</p>
-            <p>You are stepping into a structure that holds.</p>
-            <p>This is where your effort begins to translate differently.</p>
+            <p>If you want to complete the strength portion now, be near your weights, gym equipment, or cable machine.</p>
+            <p>You do not need to max out. Use controlled reps, proper form, and steady breathing.</p>
+            <p>The goal is not to prove anything — it is to give the system accurate starting data.</p>
           </div>
         </section>
 
         <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>Before you begin</h2>
+          <h2 style={styles.sectionTitleStyle}>This is where Ignite begins</h2>
 
           <div style={styles.bodyStyle}>
-            <p>Do not try to change everything at once.</p>
-            <p>Follow the structure as it’s given.</p>
-            <p>Let the system do what it was designed to do.</p>
+            <p>This is where momentum gets structure.</p>
+            <p>This is where effort starts becoming repeatable.</p>
+            <p>You do not have to force the fire — you just have to follow the system.</p>
           </div>
         </section>
 
         <div style={styles.buttonRowStyle}>
-          <a href="/" style={styles.secondaryButtonStyle}>
-            Return Home
+          <a href="/dashboard" style={styles.secondaryButtonStyle}>
+            Explore Dashboard
           </a>
 
-          <a href="/dashboard/signup?program=ignite" style={styles.primaryButtonStyle}>
-            Create Your Dashboard Login
+          <a href="/dashboard/assessment/start?program=ignite" style={styles.primaryButtonStyle}>
+            Continue to Assessment
           </a>
         </div>
-
       </div>
     </main>
   )
