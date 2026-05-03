@@ -103,11 +103,12 @@ export default function ApplyPage() {
 }),
     })
 
-   const data = await res.json()
+   const data = await res.json().catch(() => null)
+
 console.log('Response:', data)
 
 if (!res.ok) {
-  throw new Error(data.error || 'Request failed')
+  throw new Error(data?.error || 'Request failed')
 }
 
 if (data.redirect) {
