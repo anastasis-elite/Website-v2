@@ -122,10 +122,15 @@ setStatus('success')
 setMessage('Application submitted successfully.')
 
   } catch (error) {
-    console.error('SUBMIT ERROR:', error)
-    setStatus('error')
-    setMessage('Something went wrong. Please try again.')
-  }
+  console.error('SUBMIT ERROR:', error)
+
+  setStatus('error')
+
+  setMessage(
+    error instanceof Error
+      ? error.message
+      : JSON.stringify(error)
+  )
 }
 
   return (
