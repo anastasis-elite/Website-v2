@@ -6,44 +6,30 @@ export default function PhoenixSuccessPage() {
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Phoenix • Confirmed</p>
 
-        <h1 style={styles.heroTitleStyle}>
-          You’re safe to begin.
-        </h1>
+        <h1 style={styles.heroTitleStyle}>You’re in.</h1>
 
         <p style={styles.heroTextStyle}>
-          Your enrollment has been confirmed. You do not have to rebuild yourself
-          alone anymore.
+          Your enrollment has been confirmed. Phoenix is your highest level of support,
+          precision, and adaptation — built for transformation that cannot be ignored.
         </p>
-
-        <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>Take a breath first</h2>
-
-          <div style={styles.bodyStyle}>
-            <p>You made a decision for yourself.</p>
-            <p>That matters.</p>
-            <p>This is not where you have to become someone else overnight.</p>
-            <p>This is where you begin coming back to yourself with support.</p>
-          </div>
-        </section>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>What happens next</h2>
 
           <div style={styles.bodyStyle}>
-            <p>You’ll receive a confirmation email shortly.</p>
-            <p>Your next steps will be delivered there with care and clarity.</p>
-            <p>Check your inbox and spam folder just in case.</p>
+            <p>Your payment has been processed and your dashboard access is being prepared.</p>
+            <p>The next step is completing your assessment so your plan can be built around your current capacity, schedule, recovery, and equipment access.</p>
+            <p>You can complete it now, or explore your dashboard first and come back when you’re ready.</p>
           </div>
         </section>
 
         <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>Before you begin</h2>
+          <h2 style={styles.sectionTitleStyle}>Before the assessment</h2>
 
           <div style={styles.bodyStyle}>
-            <p>You do not need to rush.</p>
-            <p>You do not need to prove anything today.</p>
-            <p>You do not need to know every step yet.</p>
-            <p>The system will guide you one step at a time.</p>
+            <p>If you want to complete the strength portion now, be near your weights, gym equipment, or cable machine.</p>
+            <p>You do not need to max out. Use controlled reps, proper form, and steady breathing.</p>
+            <p>The goal is not to prove anything — it is to give the system accurate starting data.</p>
           </div>
         </section>
 
@@ -51,31 +37,19 @@ export default function PhoenixSuccessPage() {
           <h2 style={styles.sectionTitleStyle}>This is where Phoenix begins</h2>
 
           <div style={styles.bodyStyle}>
-            <p>With safety.</p>
-            <p>With structure.</p>
-            <p>With your voice returning.</p>
-            <p>With support that does not shame you for needing it.</p>
-          </div>
-        </section>
-
-        <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>And hear this clearly</h2>
-
-          <div style={styles.bodyStyle}>
-            <p>You are not too much.</p>
-            <p>You are not too late.</p>
-            <p>You are not too far gone.</p>
-            <p>You are allowed to be held while you rebuild.</p>
+            <p>You are not here for random effort.</p>
+            <p>You are here to build a body and system that can sustain expansion.</p>
+            <p>This is precision, adaptation, and execution at the highest level.</p>
           </div>
         </section>
 
         <div style={styles.buttonRowStyle}>
-          <a href="/" style={styles.secondaryButtonStyle}>
-            Return Home
+          <a href="/dashboard" style={styles.secondaryButtonStyle}>
+            Explore Dashboard
           </a>
 
-          <a href="/dashboard/signup?program=phoenix" style={styles.primaryButtonStyle}>
-            Create Your Dashboard Login
+          <a href="/dashboard/assessment/start?program=phoenix" style={styles.primaryButtonStyle}>
+            Continue to Assessment
           </a>
         </div>
       </div>
