@@ -132,6 +132,7 @@ setMessage('Application submitted successfully.')
       : JSON.stringify(error)
   )
 }
+}
 
   return (
     <main
@@ -623,5 +624,4 @@ setMessage('Application submitted successfully.')
       </div>
     </main>
   )
-}
 }
