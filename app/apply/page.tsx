@@ -2,7 +2,6 @@
 import * as styles from '../styles/globalstyles'
 
 import { useState } from 'react'
-import type { CSSProperties } from 'react'
 
 function hasRelevantHealthInfo(value: string) {
   const cleaned = value.trim().toLowerCase()
@@ -73,7 +72,9 @@ export default function ApplyPage() {
           e.preventDefault()
           setStatus('submitting')
           setMessage('')
+          //remove required
 
+          
   try {
     console.log('Submitting:', formData)
 
