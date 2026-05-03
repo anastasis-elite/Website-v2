@@ -624,4 +624,4 @@ setMessage('Application submitted successfully.')
     </main>
   )
 }
-
+}
