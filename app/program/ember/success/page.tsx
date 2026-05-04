@@ -1,6 +1,17 @@
+'use client'
+
+import { Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import * as styles from '../../../styles/globalstyles'
 
-export default function EmberSuccessPage() {
+function EmberSuccessContent() {
+  const searchParams = useSearchParams()
+
+  const program = searchParams.get('program') || 'ember'
+  const clientId = searchParams.get('client_id') || ''
+  const fullName = searchParams.get('fullName') || ''
+  const email = searchParams.get('email') || ''
+
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
@@ -44,15 +55,41 @@ export default function EmberSuccessPage() {
         </section>
 
         <div style={styles.buttonRowStyle}>
-          <a href="/dashboard" style={styles.secondaryButtonStyle}>
+          <a
+            href={`/dashboard/main?program=${encodeURIComponent(
+              program
+            )}&client_id=${encodeURIComponent(
+              clientId
+            )}&fullName=${encodeURIComponent(
+              fullName
+            )}&email=${encodeURIComponent(email)}`}
+            style={styles.secondaryButtonStyle}
+          >
             Explore Dashboard
           </a>
 
-          <a href="/dashboard/assessment/start?program=ember" style={styles.primaryButtonStyle}>
+          <a
+            href={`/dashboard/assessment/start?program=${encodeURIComponent(
+              program
+            )}&client_id=${encodeURIComponent(
+              clientId
+            )}&fullName=${encodeURIComponent(
+              fullName
+            )}&email=${encodeURIComponent(email)}`}
+            style={styles.primaryButtonStyle}
+          >
             Continue to Assessment
           </a>
         </div>
       </div>
     </main>
+  )
+}
+
+export default function EmberSuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <EmberSuccessContent />
+    </Suspense>
   )
 }
