@@ -78,9 +78,13 @@ export default function Start2Content() {
         return
       }
 
-      window.location.href = `/dashboard/program/${formData.program}/plan?email=${encodeURIComponent(
-        formData.email
-      )}`
+      window.location.href = `/dashboard/program/${formData.program}/plan?program=${encodeURIComponent(
+  formData.program
+)}&client_id=${encodeURIComponent(
+  formData.client_id
+)}&fullName=${encodeURIComponent(
+  formData.fullName
+)}&email=${encodeURIComponent(formData.email)}`
     } catch (error) {
       console.error('ASSESSMENT 2 ERROR:', error)
       setStatus('error')
