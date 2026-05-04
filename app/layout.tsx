@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Script from "next/script";
-import CookieBanner from './components/CookieBanner'
+import CookieBanner from '../components/CookieBanner'
 
 export const metadata: Metadata = {
   title: "Anastasis | Woman-Centered Performance",
