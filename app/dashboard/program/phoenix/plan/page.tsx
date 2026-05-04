@@ -1,26 +1,41 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
 import * as styles from '../../../../styles/globalstyles'
 
-function PlanContent() {
+export default function PlanProcessingPage() {
   const searchParams = useSearchParams()
 
-  const program = searchParams.get('program') || 'unknown'
+  const program = searchParams.get('program') || ''
+  const clientId = searchParams.get('client_id') || ''
+  const fullName = searchParams.get('fullName') || ''
   const email = searchParams.get('email') || ''
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.location.href = `/dashboard/main?program=${encodeURIComponent(
+        program
+      )}&client_id=${encodeURIComponent(
+        clientId
+      )}&fullName=${encodeURIComponent(fullName)}`
+    }, 35000)
+
+    return () => clearTimeout(timer)
+  }, [program, clientId, fullName])
 
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Your Plan</p>
+        <p style={styles.eyebrowStyle}>Plan Processing</p>
 
         <h1 style={styles.heroTitleStyle}>
-          Your {program.charAt(0).toUpperCase() + program.slice(1)} plan is ready.
+          {fullName ? `${fullName}, your plan is being prepared.` : 'Your plan is being prepared.'}
         </h1>
 
         <p style={styles.heroTextStyle}>
-          This is your personalized execution plan based on your assessment inputs.
+          Your assessment has been submitted. The system is organizing your training data
+          and preparing your dashboard.
         </p>
 
         <section style={styles.cartBoxStyle}>
@@ -48,15 +63,16 @@ function PlanContent() {
             Client: <strong>{email}</strong>
           </p>
         </section>
+        
+        <section style={styles.sectionStyle}>
+          <h2 style={styles.sectionTitleStyle}>What happens next</h2>
+
+          <div style={styles.bodyStyle}>
+            <p>You’ll be redirected to your dashboard in about 35 seconds.</p>
+            <p>Your dashboard will become the place where your daily training, progress, and next steps live.</p>
+          </div>
+        </section>
       </div>
     </main>
-  )
-}
-
-export default function PlanPage() {
-  return (
-    <Suspense fallback={null}>
-      <PlanContent />
-    </Suspense>
   )
 }
