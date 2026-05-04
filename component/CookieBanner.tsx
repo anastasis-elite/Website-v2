@@ -16,7 +16,7 @@ function accept() {
 
   // Inject Google Analytics script AFTER consent
   const script1 = document.createElement('script')
-  script1.src = "https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"
+  script1.src = "https://www.googletagmanager.com/gtag/js?id=G-TVXM35PHD0"
   script1.async = true
   document.head.appendChild(script1)
 
