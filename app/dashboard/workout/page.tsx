@@ -49,7 +49,7 @@ function WorkoutContent() {
 
         <div style={styles.buttonRowStyle}>
           <Link
-            href={`/dashboard?program=${encodeURIComponent(program)}&client_id=${encodeURIComponent(clientId)}&fullName=${encodeURIComponent(fullName)}`}
+            href={`/dashboard/main?program=${encodeURIComponent(program)}&client_id=${encodeURIComponent(clientId)}&fullName=${encodeURIComponent(fullName)}`}
             style={styles.secondaryButtonStyle}
           >
             Back to Dashboard
