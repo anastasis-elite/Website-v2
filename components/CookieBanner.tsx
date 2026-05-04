@@ -5,11 +5,19 @@ import { useState, useEffect } from 'react'
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false)
 
-  useEffect(() => {
-    const consent = localStorage.getItem('cookie_consent')
-    if (!consent) setVisible(true)
-  }, [])
 
+useEffect(() => {
+  const consent = localStorage.getItem('cookie_consent')
+
+  if (!consent) {
+    setVisible(true)
+  }
+
+  if (consent === 'accepted') {
+    loadGoogleAnalytics()
+  }
+}, [])
+  
 function accept() {
   localStorage.setItem('cookie_consent', 'accepted')
   setVisible(false)
@@ -25,7 +33,7 @@ function accept() {
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-XXXXXXXXXX', {
+    gtag('config', 'G-TVXM35PHD0', {
       page_path: window.location.pathname,
     });
   `
