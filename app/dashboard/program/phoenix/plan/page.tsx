@@ -1,28 +1,30 @@
 'use client'
 
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import * as styles from '../../../../styles/globalstyles'
 
-export default function PlanProcessingPage() {
+function PlanProcessingContent() {
   const searchParams = useSearchParams()
 
   const program = searchParams.get('program') || ''
   const clientId = searchParams.get('client_id') || ''
   const fullName = searchParams.get('fullName') || ''
   const email = searchParams.get('email') || ''
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       window.location.href = `/dashboard/main?program=${encodeURIComponent(
         program
       )}&client_id=${encodeURIComponent(
         clientId
-      )}&fullName=${encodeURIComponent(fullName)}`
+      )}&fullName=${encodeURIComponent(
+        fullName
+      )}&email=${encodeURIComponent(email)}`
     }, 35000)
 
     return () => clearTimeout(timer)
-  }, [program, clientId, fullName])
+  }, [program, clientId, fullName, email])
 
   return (
     <main style={styles.pageStyle}>
@@ -30,7 +32,9 @@ export default function PlanProcessingPage() {
         <p style={styles.eyebrowStyle}>Plan Processing</p>
 
         <h1 style={styles.heroTitleStyle}>
-          {fullName ? `${fullName}, your plan is being prepared.` : 'Your plan is being prepared.'}
+          {fullName
+            ? `${fullName}, your plan is being prepared.`
+            : 'Your plan is being prepared.'}
         </h1>
 
         <p style={styles.heroTextStyle}>
@@ -60,10 +64,10 @@ export default function PlanProcessingPage() {
           </p>
 
           <p style={styles.bodyStyle}>
-            Client: <strong>{email}</strong>
+            Client: <strong>{email || fullName || clientId}</strong>
           </p>
         </section>
-        
+
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>What happens next</h2>
 
@@ -74,5 +78,13 @@ export default function PlanProcessingPage() {
         </section>
       </div>
     </main>
+  )
+}
+
+export default function PlanProcessingPage() {
+  return (
+    <Suspense fallback={null}>
+      <PlanProcessingContent />
+    </Suspense>
   )
 }
