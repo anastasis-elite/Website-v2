@@ -3,7 +3,7 @@
 import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import * as styles from '../styles/globalstyles'
+import * as styles from '../../styles/globalstyles'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -54,7 +54,7 @@ function DashboardContent() {
             View Today’s Workout
           </Link>
 
-          <Link href="/dashboard" style={styles.secondaryButtonStyle}>
+          <Link href="/dashboard/main" style={styles.secondaryButtonStyle}>
             Dashboard Home
           </Link>
         </div>
