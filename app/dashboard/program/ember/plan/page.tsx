@@ -10,7 +10,8 @@ export default function PlanProcessingPage() {
   const program = searchParams.get('program') || ''
   const clientId = searchParams.get('client_id') || ''
   const fullName = searchParams.get('fullName') || ''
-
+  const email = searchParams.get('email') || ''
+  
   useEffect(() => {
     const timer = setTimeout(() => {
       window.location.href = `/dashboard/main?program=${encodeURIComponent(
