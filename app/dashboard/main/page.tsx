@@ -19,7 +19,9 @@ function DashboardContent() {
   const fullName = searchParams.get('fullName') || ''
   const clientId = searchParams.get('client_id') || ''
   const program = searchParams.get('program') || ''
+  const email = searchParams.get('email') || ''
 
+  const email = email()
   const firstName = fullName ? fullName.split(' ')[0] : ''
   const greeting = getGreeting()
 
@@ -48,7 +50,7 @@ function DashboardContent() {
 
         <div style={styles.buttonRowStyle}>
           <Link
-            href={`/dashboard/workout?program=${encodeURIComponent(program)}&client_id=${encodeURIComponent(clientId)}&fullName=${encodeURIComponent(fullName)}`}
+            href={`/dashboard/workout?program=${encodeURIComponent(program)}&client_id=${encodeURIComponent(clientId)}&fullName=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}`}
             style={styles.primaryButtonStyle}
           >
             View Today’s Workout
