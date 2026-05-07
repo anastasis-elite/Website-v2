@@ -1,57 +1,112 @@
 import { NextResponse } from 'next/server'
 
-export const runtime = 'nodejs'
-
 export async function POST(req: Request) {
   try {
     const body = await req.json()
 
-    const webhookUrl = process.env.N8N_ASSESSMENT2_WEBHOOK_URL
+    const assessmentWebhookUrl = process.env.N8N_ASSESSMENT2_WEBHOOK_URL
+    const programGenerateWebhookUrl = process.env.N8N_PROGRAM_GENERATE_WEBHOOK_URL
 
-    if (!webhookUrl) {
+    if (!assessmentWebhookUrl) {
       return NextResponse.json(
-        { error: 'Missing assessment 2 webhook URL' },
+        { error: 'Missing N8N_ASSESSMENT2_WEBHOOK_URL' },
         { status: 500 }
       )
     }
 
-    const payload = {
-      ...body,
-      source: 'dashboard-assessment-strength',
-      submittedAt: new Date().toISOString(),
+    if (!programGenerateWebhookUrl) {
+      return NextResponse.json(
+        { error: 'Missing N8N_PROGRAM_GENERATE_WEBHOOK_URL' },
+        { status: 500 }
+      )
     }
 
-    const response = await fetch(webhookUrl, {
+    // 1. Save assessment first
+    const assessmentResponse = await fetch(assessmentWebhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     })
 
-    if (!response.ok) {
-      const text = await response.text()
+    const assessmentText = await assessmentResponse.text()
 
+    let assessmentData: any = null
+    try {
+      assessmentData = assessmentText ? JSON.parse(assessmentText) : null
+    } catch {
+      assessmentData = { raw: assessmentText }
+    }
+
+    if (!assessmentResponse.ok) {
       return NextResponse.json(
-        { error: `Assessment 2 webhook failed: ${text}` },
-        { status: 500 }
+        {
+          error: 'Assessment save failed',
+          details: assessmentData,
+        },
+        { status: assessmentResponse.status }
       )
     }
 
+    // 2. Trigger program generation immediately after assessment saves
+    const generationResponse = await fetch(programGenerateWebhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: body.client_id,
+        program: body.program,
+        fullName: body.fullName,
+        email: body.email,
+        source: 'assessment-strength-complete',
+        timestamp: new Date().toISOString(),
+      }),
+    })
+
+    const generationText = await generationResponse.text()
+
+    let generationData: any = null
+    try {
+      generationData = generationText ? JSON.parse(generationText) : null
+    } catch {
+      generationData = { raw: generationText }
+    }
+
+    if (!generationResponse.ok) {
+      return NextResponse.json(
+        {
+          error: 'Program generation failed',
+          details: generationData,
+        },
+        { status: generationResponse.status }
+      )
+    }
+
+    // 3. Send user to waiting page
+    const redirect = `/dashboard/program/${encodeURIComponent(
+      body.program
+    )}/plan?program=${encodeURIComponent(
+      body.program
+    )}&client_id=${encodeURIComponent(
+      body.client_id
+    )}&fullName=${encodeURIComponent(
+      body.fullName
+    )}&email=${encodeURIComponent(body.email)}`
+
     return NextResponse.json({
       success: true,
-      redirect: `/dashboard/program/${body.program || ''}/plan?program=${body.program || ''}`,
+      redirect,
+      assessment: assessmentData,
+      generation: generationData,
     })
   } catch (error) {
-    console.error('ASSESSMENT 2 API ERROR:', error)
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Assessment 2 submission failed'
-
     return NextResponse.json(
-      { error: message },
+      {
+        error: 'Assessment strength route failed',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     )
   }
