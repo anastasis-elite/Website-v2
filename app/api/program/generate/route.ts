@@ -1,10 +1,41 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  return NextResponse.json({
-    status: 'program generate route exists',
-    method: 'GET test only',
-  })
+  try {
+    const webhookUrl = process.env.N8N_PROGRAM_GENERATE_WEBHOOK_URL
+
+    if (!webhookUrl) {
+      return NextResponse.json({
+        error: 'Missing webhook URL env',
+      })
+    }
+
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: 'TEST123',
+        program: 'ignite',
+        fullName: 'Test User',
+        email: 'test@test.com',
+        source: 'manual-get-test',
+      }),
+    })
+
+    const text = await response.text()
+
+    return NextResponse.json({
+      success: response.ok,
+      status: response.status,
+      response: text,
+    })
+  } catch (error) {
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
 }
 
 export async function POST(req: Request) {
