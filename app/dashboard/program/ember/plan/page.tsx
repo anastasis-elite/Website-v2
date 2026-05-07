@@ -49,7 +49,7 @@ function PlanProcessingContent() {
   return () => clearTimeout(timer)
 }, [clientId, program, fullName, email])
     return () => clearTimeout(timer)
-  }, [program, clientId, fullName, email])
+  } [program, clientId, fullName, email])
 
   return (
     <main style={styles.pageStyle}>
