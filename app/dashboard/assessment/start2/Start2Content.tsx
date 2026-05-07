@@ -14,9 +14,9 @@ export default function Start2Content() {
   
   const [formData, setFormData] = useState({
     program,
-    email,
-    fullName,
-    client_id: clientId,
+    email: 'email',
+    fullName: 'fullName',
+    client_id: 'clientId',
     birthdate: '',
     height_in: '',
     weight: '',
