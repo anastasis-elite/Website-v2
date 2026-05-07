@@ -4,7 +4,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
 
-    const webhookUrl = process.env.N8N_PROGRAM_GENERATION_WEBHOOK
+    const webhookUrl = process.env.N8N_PROGRAM_GENERATE_WEBHOOK_URL
 
     if (!webhookUrl) {
       return NextResponse.json(
