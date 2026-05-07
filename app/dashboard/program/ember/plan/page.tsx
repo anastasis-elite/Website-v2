@@ -14,7 +14,7 @@ function PlanProcessingContent() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      window.location.href = `/dashboard/main?program=${encodeURIComponent(
+      window.location.href = `/dashboard/workout?program=${encodeURIComponent(
         program
       )}&client_id=${encodeURIComponent(
         clientId
