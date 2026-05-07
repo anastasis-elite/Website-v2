@@ -61,10 +61,10 @@ export default function Start2Content() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_id: body.client_id,
-          program: body.program,
-          fullName: body.fullName,
-          email: body.email,
+          client_id: client_id,
+          program: program,
+          fullName: fullName,
+          email: email,
         }),
       })
 
