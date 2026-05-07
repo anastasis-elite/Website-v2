@@ -13,43 +13,41 @@ function PlanProcessingContent() {
   const email = searchParams.get('email') || ''
 
   useEffect(() => {
-  async function generateProgram() {
-    try {
-      await fetch('/api/program/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          client_id: clientId,
-          program,
-          fullName,
-          email,
-        }),
-      })
-    } catch (error) {
-      console.error('Program generation failed:', error)
+    async function generateProgram() {
+      try {
+        await fetch('/api/program/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            client_id: clientId,
+            program,
+            fullName,
+            email,
+          }),
+        })
+      } catch (error) {
+        console.error('Program generation failed:', error)
+      }
     }
-  }
 
-  if (clientId && program) {
-    generateProgram()
-  }
+    if (clientId && program) {
+      generateProgram()
+    }
 
-  const timer = setTimeout(() => {
-    window.location.href = `/dashboard/workout?program=${encodeURIComponent(
-      program
-    )}&client_id=${encodeURIComponent(
-      clientId
-    )}&fullName=${encodeURIComponent(
-      fullName
-    )}&email=${encodeURIComponent(email)}`
-  }, 35000)
+    const timer = setTimeout(() => {
+      window.location.href = `/dashboard/workout?program=${encodeURIComponent(
+        program
+      )}&client_id=${encodeURIComponent(
+        clientId
+      )}&fullName=${encodeURIComponent(
+        fullName
+      )}&email=${encodeURIComponent(email)}`
+    }, 35000)
 
-  return () => clearTimeout(timer)
-}, [clientId, program, fullName, email])
     return () => clearTimeout(timer)
-  } [program, clientId, fullName, email]
+  }, [clientId, program, fullName, email])
 
   return (
     <main style={styles.pageStyle}>
@@ -68,13 +66,9 @@ function PlanProcessingContent() {
         </p>
 
         <section style={styles.cartBoxStyle}>
-          <p style={styles.bodyStyle}>
-            We’re finalizing your structured plan now.
-          </p>
+          <p style={styles.bodyStyle}>We’re finalizing your structured plan now.</p>
 
-          <p style={styles.bodyStyle}>
-            This page will soon display:
-          </p>
+          <p style={styles.bodyStyle}>Your dashboard will soon display:</p>
 
           <ul style={{ ...styles.bodyStyle, paddingLeft: '20px' }}>
             <li>Training split</li>
@@ -97,7 +91,7 @@ function PlanProcessingContent() {
           <h2 style={styles.sectionTitleStyle}>What happens next</h2>
 
           <div style={styles.bodyStyle}>
-            <p>You’ll be redirected to your dashboard in about 35 seconds.</p>
+            <p>You’ll be redirected to your workout in about 35 seconds.</p>
             <p>Your dashboard will become the place where your daily training, progress, and next steps live.</p>
           </div>
         </section>
