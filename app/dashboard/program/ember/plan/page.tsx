@@ -13,16 +13,41 @@ function PlanProcessingContent() {
   const email = searchParams.get('email') || ''
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      window.location.href = `/dashboard/workout?program=${encodeURIComponent(
-        program
-      )}&client_id=${encodeURIComponent(
-        clientId
-      )}&fullName=${encodeURIComponent(
-        fullName
-      )}&email=${encodeURIComponent(email)}`
-    }, 35000)
+  async function generateProgram() {
+    try {
+      await fetch('/api/program/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: clientId,
+          program,
+          fullName,
+          email,
+        }),
+      })
+    } catch (error) {
+      console.error('Program generation failed:', error)
+    }
+  }
 
+  if (clientId && program) {
+    generateProgram()
+  }
+
+  const timer = setTimeout(() => {
+    window.location.href = `/dashboard/workout?program=${encodeURIComponent(
+      program
+    )}&client_id=${encodeURIComponent(
+      clientId
+    )}&fullName=${encodeURIComponent(
+      fullName
+    )}&email=${encodeURIComponent(email)}`
+  }, 35000)
+
+  return () => clearTimeout(timer)
+}, [clientId, program, fullName, email])
     return () => clearTimeout(timer)
   }, [program, clientId, fullName, email])
 
