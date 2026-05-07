@@ -1,3 +1,3 @@
 {
-  "client_id": "AN..."
+  "client_id"; "AN..."
 }
