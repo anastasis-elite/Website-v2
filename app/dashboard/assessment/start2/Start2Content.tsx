@@ -57,13 +57,14 @@ export default function Start2Content() {
     setMessage('')
 
     try {
-      const res = await fetch('/api/assessment-strength', {
+      const res = await fetch('${process.env.N8N_PROGRAM_GENERATE_WEBHOOK_URL}/api/program/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
-          timestamp: new Date().toISOString(),
-          source: 'dashboard-assessment-strength',
+          client_id: body.client_id,
+          program: body.program,
+          fullName: body.fullName,
+          email: body.email,
         }),
       })
 
