@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server'
 
+export async function GET() {
+  return NextResponse.json({
+    status: 'program generate route exists',
+    method: 'GET test only',
+  })
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json()
@@ -8,7 +15,7 @@ export async function POST(req: Request) {
 
     if (!webhookUrl) {
       return NextResponse.json(
-        { error: 'Missing program generation webhook URL' },
+        { error: 'Missing N8N_PROGRAM_GENERATE_WEBHOOK_URL' },
         { status: 500 }
       )
     }
@@ -23,27 +30,37 @@ export async function POST(req: Request) {
         program: body.program,
         fullName: body.fullName,
         email: body.email,
-        source: 'plan-processing-page',
+        source: 'program-generate-route',
         timestamp: new Date().toISOString(),
       }),
     })
 
-    const data = await response.json().catch(() => null)
+    const text = await response.text()
 
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: 'Program generation failed', details: data },
-        { status: response.status }
-      )
+    let parsed = null
+    try {
+      parsed = text ? JSON.parse(text) : null
+    } catch {
+      parsed = { raw: text }
     }
 
     return NextResponse.json({
-      success: true,
-      data,
+      success: response.ok,
+      n8n_status: response.status,
+      n8n_response: parsed,
+      sent: {
+        client_id: body.client_id,
+        program: body.program,
+        fullName: body.fullName,
+        email: body.email,
+      },
     })
   } catch (error) {
     return NextResponse.json(
-      { error: 'Program generation route failed' },
+      {
+        error: 'Program generation route failed',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     )
   }
