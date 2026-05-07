@@ -16,13 +16,13 @@ function PlanProcessingContent() {
     async function generateProgram() {
       try {
         console.log('PLAN PAGE GENERATE TRIGGER', {
-  clientId,
-  program,
-  fullName,
-  email,
-})
-        
-        await fetch('/api/program/generate', {
+          clientId,
+          program,
+          fullName,
+          email,
+        })
+
+        const generateRes = await fetch('/api/program/generate', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -34,22 +34,10 @@ function PlanProcessingContent() {
             email,
           }),
         })
-        const generateRes = await fetch('/api/program/generate', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    client_id: clientId,
-    program,
-    fullName,
-    email,
-  }),
-})
 
-const generateData = await generateRes.json().catch(() => null)
+        const generateData = await generateRes.json().catch(() => null)
 
-console.log('PROGRAM GENERATE RESPONSE', generateRes.status, generateData)
+        console.log('PROGRAM GENERATE RESPONSE', generateRes.status, generateData)
       } catch (error) {
         console.error('Program generation failed:', error)
       }
