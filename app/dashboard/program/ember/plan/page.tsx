@@ -6,14 +6,15 @@ import * as styles from '../../../../styles/globalstyles'
 
 function PlanProcessingContent() {
   const searchParams = useSearchParams()
-
+  const [countdown, setCountdown] = useState(35)
+  
   const program = searchParams.get('program') || ''
   const clientId = searchParams.get('client_id') || ''
   const fullName = searchParams.get('fullName') || ''
   const email = searchParams.get('email') || ''
 
   useEffect(() => {
-  const timer = setTimeout(() => {
+  const redirectTimer = setTimeout(() => {
     window.location.href = `/dashboard/program/${encodeURIComponent(
       program
     )}/plan/content?program=${encodeURIComponent(
@@ -22,10 +23,26 @@ function PlanProcessingContent() {
       clientId
     )}&fullName=${encodeURIComponent(
       fullName
-    )}&email=${encodeURIComponent(email)}`
+    )}&email=${encodeURIComponent(
+      email
+    )}`
   }, 35000)
 
-  return () => clearTimeout(timer)
+  const countdownTimer = setInterval(() => {
+    setCountdown((prev) => {
+      if (prev <= 1) {
+        clearInterval(countdownTimer)
+        return 0
+      }
+
+      return prev - 1
+    })
+  }, 1000)
+
+  return () => {
+    clearTimeout(redirectTimer)
+    clearInterval(countdownTimer)
+  }
 }, [clientId, program, fullName, email])
 
   return (
@@ -70,7 +87,7 @@ function PlanProcessingContent() {
           <h2 style={styles.sectionTitleStyle}>What happens next</h2>
 
           <div style={styles.bodyStyle}>
-            <p>You’ll be redirected to your workout in about 35 seconds.</p>
+            <p style={styles.bodyStyle}>Redirecting in {countdown} seconds...</p>
             <p>Your dashboard will become the place where your daily training, progress, and next steps live.</p>
           </div>
         </section>
