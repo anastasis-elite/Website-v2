@@ -62,6 +62,7 @@ export async function POST(req: Request) {
         email: body.email,
         source: 'assessment-strength-complete',
         timestamp: new Date().toISOString(),
+        birthdate: body.birthdate,
       }),
     })
 
@@ -93,7 +94,11 @@ export async function POST(req: Request) {
       body.client_id
     )}&fullName=${encodeURIComponent(
       body.fullName
-    )}&email=${encodeURIComponent(body.email)}`
+    )}&email=${encodeURIComponent(
+      body.email
+    )}&birthdate=${encodeURIComponent(
+      body.birthdate
+    )}`
 
     return NextResponse.json({
       success: true,
