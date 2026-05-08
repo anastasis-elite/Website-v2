@@ -10,11 +10,12 @@ function AssessmentStartContent() {
   const clientId = searchParams.get('client_id') || ''
 
   const [formData, setFormData] = useState({
-    program,
+    program: program,
     client_id: clientId,
-    fullName: '',
-    email: '',
-    trainingDays: '',
+    fullName: name,
+    email: email,
+    birthdate: birthdate,
+    trainingDays: training_days,
     equipmentAccess: '',
     experienceLevel: '',
     primaryFocus: '',
