@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 
-export default function WorkoutRedirectPage() {
+function WorkoutRedirectContent() {
   const searchParams = useSearchParams()
 
   const program = searchParams.get('program') || ''
@@ -27,4 +27,12 @@ export default function WorkoutRedirectPage() {
   }, [program, clientId, fullName, email, birthdate])
 
   return null
+}
+
+export default function WorkoutRedirectPage() {
+  return (
+    <Suspense fallback={null}>
+      <WorkoutRedirectContent />
+    </Suspense>
+  )
 }
