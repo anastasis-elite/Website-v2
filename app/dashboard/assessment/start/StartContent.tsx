@@ -6,16 +6,17 @@ import * as styles from '../../../styles/globalstyles'
 
 function AssessmentStartContent() {
   const searchParams = useSearchParams()
-  const program = searchParams.get('program') || ''
-  const clientId = searchParams.get('client_id') || ''
+
+  const programFromUrl = searchParams.get('program') || ''
+  const clientIdFromUrl = searchParams.get('client_id') || ''
 
   const [formData, setFormData] = useState({
-    program: program,
-    client_id: clientId,
-    fullName: name,
-    email: email,
-    birthdate: birthdate,
-    trainingDays: training_days,
+    program: programFromUrl,
+    client_id: clientIdFromUrl,
+    fullName: '',
+    email: '',
+    birthdate: '',
+    trainingDays: '',
     equipmentAccess: '',
     experienceLevel: '',
     primaryFocus: '',
@@ -69,12 +70,13 @@ function AssessmentStartContent() {
       }
 
       window.location.href = `/dashboard/assessment/start2?program=${encodeURIComponent(
-  program
-)}&client_id=${encodeURIComponent(
-  clientId
-)}&fullName=${encodeURIComponent(
-  fullName
-)}&email=${encodeURIComponent(email)}`
+        formData.program
+      )}&client_id=${encodeURIComponent(
+        formData.client_id
+      )}&fullName=${encodeURIComponent(
+        formData.fullName
+      )}&email=${encodeURIComponent(formData.email)}`
+
     } catch (error) {
       console.error('ASSESSMENT ERROR:', error)
       setStatus('error')
