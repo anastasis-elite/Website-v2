@@ -13,52 +13,20 @@ function PlanProcessingContent() {
   const email = searchParams.get('email') || ''
 
   useEffect(() => {
-    async function generateProgram() {
-      try {
-        console.log('PLAN PAGE GENERATE TRIGGER', {
-          clientId,
-          program,
-          fullName,
-          email,
-        })
+  const timer = setTimeout(() => {
+    window.location.href = `/dashboard/program/${encodeURIComponent(
+      program
+    )}/plan/content?program=${encodeURIComponent(
+      program
+    )}&client_id=${encodeURIComponent(
+      clientId
+    )}&fullName=${encodeURIComponent(
+      fullName
+    )}&email=${encodeURIComponent(email)}`
+  }, 35000)
 
-        const generateRes = await fetch('/api/program/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            client_id: clientId,
-            program,
-            fullName,
-            email,
-          }),
-        })
-
-        const generateData = await generateRes.json().catch(() => null)
-
-        console.log('PROGRAM GENERATE RESPONSE', generateRes.status, generateData)
-      } catch (error) {
-        console.error('Program generation failed:', error)
-      }
-    }
-
-    if (clientId && program) {
-      generateProgram()
-    }
-
-    const timer = setTimeout(() => {
-      window.location.href = `/dashboard/workout?program=${encodeURIComponent(
-        program
-      )}&client_id=${encodeURIComponent(
-        clientId
-      )}&fullName=${encodeURIComponent(
-        fullName
-      )}&email=${encodeURIComponent(email)}`
-    }, 35000)
-
-    return () => clearTimeout(timer)
-  }, [clientId, program, fullName, email])
+  return () => clearTimeout(timer)
+}, [clientId, program, fullName, email])
 
   return (
     <main style={styles.pageStyle}>
