@@ -1,92 +1,179 @@
 'use client'
 
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import * as styles from '../../styles/globalstyles'
 
-export default function NutritionPage() {
+type NutritionData = {
+  tdee?: number | string
+  calories?: number | string
+  protein?: number | string
+  carbs?: number | string
+  fats?: number | string
+  water?: number | string
+  micros?: string
+  recipes?: string[]
+  error?: string
+}
+
+function NutritionContent() {
+  const searchParams = useSearchParams()
+
+  const clientId = searchParams.get('client_id') || ''
+  const program = searchParams.get('program') || ''
+  const fullName = searchParams.get('fullName') || ''
+
+  const [nutrition, setNutrition] = useState<NutritionData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadNutrition() {
+      try {
+        const res = await fetch(
+          `/api/nutrition?client_id=${encodeURIComponent(
+            clientId
+          )}&program=${encodeURIComponent(program)}`
+        )
+
+        const data = await res.json()
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Nutrition lookup failed')
+        }
+
+        setNutrition(data)
+      } catch (error) {
+        console.error('Nutrition load error:', error)
+
+        setNutrition({
+          error: 'Nutrition data is not available yet.',
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (clientId) {
+      loadNutrition()
+    } else {
+      setLoading(false)
+    }
+  }, [clientId, program])
+
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Nutrition System</p>
 
         <h1 style={styles.heroTitleStyle}>
-          Your nutrition targets are being prepared.
+          {fullName
+            ? `${fullName.split(' ')[0]}, here are your nutrition targets.`
+            : 'Your nutrition targets.'}
         </h1>
 
         <p style={styles.heroTextStyle}>
-          This page will eventually calculate and display your personalized energy,
-          macro, micro, hydration, and recipe recommendations based on your assessment
-          data and program phase.
+          Your nutrition system is designed around your assessment data,
+          recovery capacity, training demands, and current goal phase.
         </p>
 
-        <section style={styles.cartBoxStyle}>
-          <h2 style={styles.sectionTitleStyle}>Energy Target</h2>
+        {loading ? (
+          <section style={styles.cartBoxStyle}>
+            <p style={styles.bodyStyle}>
+              Loading nutrition targets...
+            </p>
+          </section>
+        ) : nutrition?.error ? (
+          <section style={styles.cartBoxStyle}>
+            <p style={styles.bodyStyle}>
+              {nutrition.error}
+            </p>
+          </section>
+        ) : (
+          <>
+            <section style={styles.cartBoxStyle}>
+              <h2 style={styles.sectionTitleStyle}>Energy Targets</h2>
 
-          <p style={styles.bodyStyle}>
-            <strong>Recommended Calories:</strong> Coming soon
-          </p>
+              <p style={styles.bodyStyle}>
+                <strong>TDEE:</strong> {nutrition?.tdee || '—'}
+              </p>
 
-          <p style={styles.bodyStyle}>
-            <strong>TDEE:</strong> Coming soon
-          </p>
+              <p style={styles.bodyStyle}>
+                <strong>Recommended Calories:</strong> {nutrition?.calories || '—'}
+              </p>
+            </section>
 
-          <p style={styles.bodyStyle}>
-            <strong>Goal Adjustment:</strong> Coming soon
-          </p>
-        </section>
+            <section style={styles.cartBoxStyle}>
+              <h2 style={styles.sectionTitleStyle}>Macro Targets</h2>
 
-        <section style={styles.cartBoxStyle}>
-          <h2 style={styles.sectionTitleStyle}>Macro Targets</h2>
+              <p style={styles.bodyStyle}>
+                <strong>Protein:</strong> {nutrition?.protein || '—'}
+              </p>
 
-          <p style={styles.bodyStyle}>
-            <strong>Protein:</strong> Coming soon
-          </p>
+              <p style={styles.bodyStyle}>
+                <strong>Carbohydrates:</strong> {nutrition?.carbs || '—'}
+              </p>
 
-          <p style={styles.bodyStyle}>
-            <strong>Carbohydrates:</strong> Coming soon
-          </p>
+              <p style={styles.bodyStyle}>
+                <strong>Fats:</strong> {nutrition?.fats || '—'}
+              </p>
+            </section>
 
-          <p style={styles.bodyStyle}>
-            <strong>Fats:</strong> Coming soon
-          </p>
-        </section>
+            <section style={styles.cartBoxStyle}>
+              <h2 style={styles.sectionTitleStyle}>Hydration</h2>
 
-        <section style={styles.cartBoxStyle}>
-          <h2 style={styles.sectionTitleStyle}>Micro Targets</h2>
+              <p style={styles.bodyStyle}>
+                <strong>Water Intake:</strong> {nutrition?.water || '—'}
+              </p>
+            </section>
 
-          <p style={styles.bodyStyle}>
-            Personalized micronutrient priorities will appear here once your nutrition
-            engine is connected.
-          </p>
-        </section>
+            <section style={styles.cartBoxStyle}>
+              <h2 style={styles.sectionTitleStyle}>Micronutrients</h2>
 
-        <section style={styles.cartBoxStyle}>
-          <h2 style={styles.sectionTitleStyle}>Hydration</h2>
+              <p style={styles.bodyStyle}>
+                {nutrition?.micros || 'No micronutrient recommendations yet.'}
+              </p>
+            </section>
 
-          <p style={styles.bodyStyle}>
-            <strong>Recommended Water Intake:</strong> Coming soon
-          </p>
+            <section style={styles.cartBoxStyle}>
+              <h2 style={styles.sectionTitleStyle}>Recommended Recipes</h2>
 
-          <p style={styles.bodyStyle}>
-            Electrolyte and training-day hydration recommendations will be added here.
-          </p>
-        </section>
-
-        <section style={styles.cartBoxStyle}>
-          <h2 style={styles.sectionTitleStyle}>Recommended Recipes</h2>
-
-          <p style={styles.bodyStyle}>
-            Recipe links will be personalized based on calorie target, macro needs,
-            digestion, schedule, and program phase.
-          </p>
-        </section>
+              {nutrition?.recipes?.length ? (
+                <ul style={styles.bodyStyle}>
+                  {nutrition.recipes.map((recipe, index) => (
+                    <li key={index}>{recipe}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={styles.bodyStyle}>
+                  No recipes available yet.
+                </p>
+              )}
+            </section>
+          </>
+        )}
 
         <div style={styles.buttonRowStyle}>
-          <Link href="/dashboard/main" style={styles.secondaryButtonStyle}>
+          <Link
+            href={`/dashboard/main?program=${encodeURIComponent(
+              program
+            )}&client_id=${encodeURIComponent(
+              clientId
+            )}&fullName=${encodeURIComponent(fullName)}`}
+            style={styles.secondaryButtonStyle}
+          >
             Back to Dashboard
           </Link>
         </div>
       </div>
     </main>
+  )
+}
+
+export default function NutritionPage() {
+  return (
+    <Suspense fallback={null}>
+      <NutritionContent />
+    </Suspense>
   )
 }
