@@ -11,6 +11,7 @@ export default function Start2Content() {
   const email = searchParams.get('email') || ''
   const fullName = searchParams.get('fullName') || ''
   const clientId = searchParams.get('client_id') || ''
+  const birthdate = searchParams.get('birthdate') || ''
   
   const [formData, setFormData] = useState({
     program,
