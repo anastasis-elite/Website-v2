@@ -70,12 +70,14 @@ function AssessmentStartContent() {
       }
 
       window.location.href = `/dashboard/assessment/start2?program=${encodeURIComponent(
-        formData.program
-      )}&client_id=${encodeURIComponent(
-        formData.client_id
-      )}&fullName=${encodeURIComponent(
-        formData.fullName
-      )}&email=${encodeURIComponent(formData.email)}`
+  formData.program
+)}&client_id=${encodeURIComponent(
+  formData.client_id
+)}&fullName=${encodeURIComponent(
+  formData.fullName
+)}&email=${encodeURIComponent(
+  formData.email
+)}&birthdate=${encodeURIComponent(formData.birthdate)}`
 
     } catch (error) {
       console.error('ASSESSMENT ERROR:', error)
