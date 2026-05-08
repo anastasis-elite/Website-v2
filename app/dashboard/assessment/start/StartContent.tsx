@@ -67,9 +67,13 @@ function AssessmentStartContent() {
         return
       }
 
-      window.location.href = `/dashboard/assessment/start2?program=${formData.program}&email=${encodeURIComponent(
-        formData.email
-      )}&fullName=${encodeURIComponent(formData.fullName)}`
+      window.location.href = `/dashboard/assessment/start2?program=${encodeURIComponent(
+  program
+)}&client_id=${encodeURIComponent(
+  clientId
+)}&fullName=${encodeURIComponent(
+  fullName
+)}&email=${encodeURIComponent(email)}`
     } catch (error) {
       console.error('ASSESSMENT ERROR:', error)
       setStatus('error')
