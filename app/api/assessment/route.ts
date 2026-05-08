@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      redirect: `/dashboard/assessment/start2?program=${body.program || ''}`,
+      redirect: `/dashboard/assessment/start2?program=${body.program || ''}&fullName=${body.fullName || ''}&email=${body.email || ''}&birthdate=${body.birthdate || ''}&client_id=${body.client_id || ''}`,
     })
   } catch (error) {
     console.error('ASSESSMENT API ERROR:', error)
