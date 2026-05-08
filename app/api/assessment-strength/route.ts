@@ -56,13 +56,9 @@ export async function POST(req: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        client_id: body.client_id,
-        program: body.program,
-        fullName: body.fullName,
-        email: body.email,
+        ...body,
         source: 'assessment-strength-complete',
         timestamp: new Date().toISOString(),
-        birthdate: body.birthdate,
       }),
     })
 
