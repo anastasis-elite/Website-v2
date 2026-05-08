@@ -62,7 +62,7 @@ export default function Start2Content() {
     setMessage('')
 
     try {
-      const res = await fetch('/api/program/generate', {
+      const res = await fetch('/api/assessment-strength', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
