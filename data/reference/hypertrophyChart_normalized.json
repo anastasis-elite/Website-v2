@@ -1,0 +1,102 @@
+[
+  {
+    "reps": 1,
+    "multiplier": 0.9
+  },
+  {
+    "reps": 2,
+    "multiplier": 0.875
+  },
+  {
+    "reps": 3,
+    "multiplier": 0.85
+  },
+  {
+    "reps": 4,
+    "multiplier": 0.825
+  },
+  {
+    "reps": 5,
+    "multiplier": 0.8
+  },
+  {
+    "reps": 6,
+    "multiplier": 0.775
+  },
+  {
+    "reps": 7,
+    "multiplier": 0.75
+  },
+  {
+    "reps": 8,
+    "multiplier": 0.725
+  },
+  {
+    "reps": 9,
+    "multiplier": 0.7
+  },
+  {
+    "reps": 10,
+    "multiplier": 0.675
+  },
+  {
+    "reps": 11,
+    "multiplier": 0.65
+  },
+  {
+    "reps": 12,
+    "multiplier": 0.625
+  },
+  {
+    "reps": 13,
+    "multiplier": 0.6
+  },
+  {
+    "reps": 14,
+    "multiplier": 0.575
+  },
+  {
+    "reps": 15,
+    "multiplier": 0.55
+  },
+  {
+    "reps": 16,
+    "multiplier": 0.525
+  },
+  {
+    "reps": 17,
+    "multiplier": 0.5
+  },
+  {
+    "reps": 18,
+    "multiplier": 0.475
+  },
+  {
+    "reps": 19,
+    "multiplier": 0.45
+  },
+  {
+    "reps": 20,
+    "multiplier": 0.425
+  },
+  {
+    "reps": 21,
+    "multiplier": 0.4
+  },
+  {
+    "reps": 22,
+    "multiplier": 0.375
+  },
+  {
+    "reps": 23,
+    "multiplier": 0.35
+  },
+  {
+    "reps": 24,
+    "multiplier": 0.325
+  },
+  {
+    "reps": 25,
+    "multiplier": 0.3
+  }
+]
