@@ -1,0 +1,624 @@
+{
+  "program": "phoenixHypertrophy",
+  "environment": "gym",
+  "source_sheet": "PhoenixHypertrophy",
+  "version": "v1",
+  "days": [
+    {
+      "day_name": "Monday",
+      "focus": "",
+      "exercises": [
+        {
+          "order": 1,
+          "exercise": "Barbell RDL",
+          "weight_placeholder": "#VALUE!",
+          "reps": 10,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 2,
+          "exercise": "Barbell Hip Thrust",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 3,
+          "exercise": "Seated Ham Curl",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 4,
+          "exercise": "Single-Leg RDL",
+          "weight_placeholder": "#VALUE!",
+          "reps": 10,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 5,
+          "exercise": "Hack Press",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 6,
+          "exercise": "Machine Kickback",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 7,
+          "exercise": "Step-Up",
+          "weight_placeholder": "#VALUE!",
+          "reps": 9,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 8,
+          "exercise": "45* Back Extension",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 9,
+          "exercise": "Seated Abduction",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 10,
+          "exercise": "Frog Pump",
+          "weight_placeholder": "#VALUE!",
+          "reps": 20,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "day_name": "Tuesday",
+      "focus": "",
+      "exercises": [
+        {
+          "order": 1,
+          "exercise": "Lat Pulldown",
+          "weight_placeholder": "#VALUE!",
+          "reps": 10,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 2,
+          "exercise": "Seated Cable Row",
+          "weight_placeholder": "#VALUE!",
+          "reps": 10,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 3,
+          "exercise": "Single-Arm Lat Pulldown",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 4,
+          "exercise": "Straight-Arm Lat Pulldown",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 5,
+          "exercise": "Reverse Pec Deck",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 6,
+          "exercise": "Cable Rear Delt Fly",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 7,
+          "exercise": "Reverse Pec Deck",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 8,
+          "exercise": "High Cable Rear Fly",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 9,
+          "exercise": "Face Pull",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": "",
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 10,
+          "exercise": "Shrug Hold",
+          "weight_placeholder": "",
+          "reps": "10s",
+          "sets": 2,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "day_name": "Wednesday",
+      "focus": "",
+      "exercises": [
+        {
+          "order": 1,
+          "exercise": "Smith Machine Hip Thrust",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 2,
+          "exercise": "Lateral Step-Up",
+          "weight_placeholder": "#VALUE!",
+          "reps": 11,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 3,
+          "exercise": "Seated Abduction",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 4,
+          "exercise": "Standing Abduction",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 5,
+          "exercise": "Kickbacks (Bent)",
+          "weight_placeholder": "#N/A",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 6,
+          "exercise": "Lateral Raises",
+          "weight_placeholder": "#N/A",
+          "reps": 12,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 7,
+          "exercise": "Cable Lateral Raise",
+          "weight_placeholder": "#N/A",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 8,
+          "exercise": "Rear Delt Fly",
+          "weight_placeholder": "#N/A",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 9,
+          "exercise": "Shoulder Press Machine",
+          "weight_placeholder": "#N/A",
+          "reps": 12,
+          "sets": 2,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 10,
+          "exercise": "Shoulder Pump Finisher",
+          "weight_placeholder": "",
+          "reps": "90s",
+          "sets": 1,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "day_name": "Thursday",
+      "focus": "",
+      "exercises": [
+        {
+          "order": 1,
+          "exercise": "Bulgarian Split Squat",
+          "weight_placeholder": "#VALUE!",
+          "reps": 7,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 2,
+          "exercise": "Leg Press",
+          "weight_placeholder": "#VALUE!",
+          "reps": 10,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 3,
+          "exercise": "Dumbbell Lunge",
+          "weight_placeholder": "#VALUE!",
+          "reps": 9,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 4,
+          "exercise": "Leg Extension",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 5,
+          "exercise": "Machine Adduction",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 6,
+          "exercise": "Cable Adduction",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 7,
+          "exercise": "Sissy Squat",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 2,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 8,
+          "exercise": "Bodyweight Squats",
+          "weight_placeholder": "",
+          "reps": 20,
+          "sets": 2,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "day_name": "Friday",
+      "focus": "",
+      "exercises": [
+        {
+          "order": 1,
+          "exercise": "KAS Glute Bridge",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 2,
+          "exercise": "Cable Kickback",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 3,
+          "exercise": "Seated Abduction",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 4,
+          "exercise": "Reverse Hyperextension",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 5,
+          "exercise": "Step-up",
+          "weight_placeholder": "#VALUE!",
+          "reps": 9,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 6,
+          "exercise": "Walking Lunge",
+          "weight_placeholder": "#VALUE!",
+          "reps": 19,
+          "sets": 2,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 7,
+          "exercise": "Frog Pump",
+          "weight_placeholder": "#VALUE!",
+          "reps": 20,
+          "sets": 2,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 8,
+          "exercise": "Back Extension",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": "",
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 9,
+          "exercise": "Machine Glute Bridge",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 2,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 10,
+          "exercise": "Band Burnout Circuit",
+          "weight_placeholder": "",
+          "reps": "90s",
+          "sets": 1,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "day_name": "Saturday",
+      "focus": "",
+      "exercises": [
+        {
+          "order": 1,
+          "exercise": "Cable Lateral",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 2,
+          "exercise": "Shoulder Press",
+          "weight_placeholder": "#VALUE!",
+          "reps": 10,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 3,
+          "exercise": "Rear Delt Machine",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 4,
+          "exercise": "Single-Arm Cable Row",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 5,
+          "exercise": "Lat Pulldown",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 6,
+          "exercise": "High Cable Fly",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 7,
+          "exercise": "Cable Bicep Curl",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 2,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 8,
+          "exercise": "Rope Pulldown",
+          "weight_placeholder": "#VALUE!",
+          "reps": 12,
+          "sets": 2,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 9,
+          "exercise": "Face Pull",
+          "weight_placeholder": "#VALUE!",
+          "reps": 15,
+          "sets": 2,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 10,
+          "exercise": "Delt Pump Finisher",
+          "weight_placeholder": "",
+          "reps": "60s",
+          "sets": 1,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        }
+      ]
+    }
+  ]
+}
