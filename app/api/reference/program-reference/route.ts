@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import igniteGym from '@/data/templates/igniteGym.json'
-import emberGym from '@/data/templates/emberGym.json'
+import igniteGym from '@/data/template/igniteGym.json'
+import emberGym from '@/data/template/emberGym.json'
 
-import phoenixStrength from '@/data/templates/phoenixStrength.json'
-import phoenixHypertrophy from '@/data/templates/phoenixHypertrophy.json'
-import phoenixBodybuilding from '@/data/templates/phoenixBodybuilding.json'
-import phoenixRecomposition from '@/data/templates/phoenixRecomposition.json'
-import phoenixEndurance from '@/data/templates/phoenixEndurance.json'
-import phoenixGluteSculpt from '@/data/templates/phoenixGluteSculpt.json'
-import phoenixWaistCincher from '@/data/templates/phoenixWaistCincher.json'
-import phoenixFullTransformation from '@/data/templates/phoenixFullTransformation.json'
+import phoenixStrength from '@/data/template/phoenixStrength.json'
+import phoenixHypertrophy from '@/data/template/phoenixHypertrophy.json'
+import phoenixBodybuilding from '@/data/template/phoenixBodybuilding.json'
+import phoenixRecomposition from '@/data/template/phoenixRecomposition.json'
+import phoenixEndurance from '@/data/template/phoenixEndurance.json'
+import phoenixGluteSculpt from '@/data/template/phoenixGluteSculpt.json'
+import phoenixWaistCincher from '@/data/template/phoenixWaistCincher.json'
+import phoenixFullTransformation from '@/data/template/phoenixFullTransformation.json'
 
 const templates: Record<string, any> = {
   ignite: igniteGym,
