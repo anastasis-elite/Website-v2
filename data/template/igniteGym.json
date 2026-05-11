@@ -1,0 +1,362 @@
+{
+  "program": "ignite",
+  "environment": "gym",
+  "source_sheet": "IgniteGym",
+  "version": "v1",
+  "days": [
+    {
+      "day_name": "Monday",
+      "focus": "",
+      "exercises": [
+        {
+          "order": 1,
+          "exercise": "Bench Press",
+          "weight_placeholder": "BW",
+          "reps": 10,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 2,
+          "exercise": "Shoulder Press",
+          "weight_placeholder": "BW",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 3,
+          "exercise": "Incline Press",
+          "weight_placeholder": "BW",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 4,
+          "exercise": "Low Cable Fly",
+          "weight_placeholder": "BW",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 5,
+          "exercise": "Rope Pulldown",
+          "weight_placeholder": "BW",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 6,
+          "exercise": "Dumbbell Lateral Raise",
+          "weight_placeholder": "BW",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 7,
+          "exercise": "Cable Front Raise",
+          "weight_placeholder": "BW",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 8,
+          "exercise": "Cable Crunch",
+          "weight_placeholder": "BW",
+          "reps": 20,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "day_name": "Tuesday",
+      "focus": "",
+      "exercises": [
+        {
+          "order": 1,
+          "exercise": "Hack Squat",
+          "weight_placeholder": "BW",
+          "reps": 10,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 2,
+          "exercise": "Leg Press",
+          "weight_placeholder": "BW",
+          "reps": 12,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 3,
+          "exercise": "Bulgarian Split Squat",
+          "weight_placeholder": "BW",
+          "reps": 9,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 4,
+          "exercise": "Walking Lunge",
+          "weight_placeholder": "BW",
+          "reps": 19,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 5,
+          "exercise": "Leg Extension",
+          "weight_placeholder": "BW",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 6,
+          "exercise": "Standing Abduction",
+          "weight_placeholder": "BW",
+          "reps": 20,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 7,
+          "exercise": "Cable Adduction",
+          "weight_placeholder": "BW",
+          "reps": 20,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 8,
+          "exercise": "Hanging Knee Raise",
+          "weight_placeholder": "BW",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "day_name": "Wednesday",
+      "focus": "",
+      "exercises": []
+    },
+    {
+      "day_name": "Thursday",
+      "focus": "",
+      "exercises": [
+        {
+          "order": 1,
+          "exercise": "Seated Cable Row",
+          "weight_placeholder": "BW",
+          "reps": 10,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 2,
+          "exercise": "Lat Pulldown",
+          "weight_placeholder": "BW",
+          "reps": 12,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 3,
+          "exercise": "Single-Arm Cable Row",
+          "weight_placeholder": "BW",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 4,
+          "exercise": "Face Pull",
+          "weight_placeholder": "BW",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 5,
+          "exercise": "Dumbbell Bicep Curl",
+          "weight_placeholder": "BW",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 6,
+          "exercise": "Hammer Curl",
+          "weight_placeholder": "BW",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 7,
+          "exercise": "Barbell Upright Row",
+          "weight_placeholder": "BW",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 8,
+          "exercise": "Side Plank",
+          "weight_placeholder": "BW",
+          "reps": 45,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "day_name": "Friday",
+      "focus": "",
+      "exercises": [
+        {
+          "order": 1,
+          "exercise": "Smith Machine RDL",
+          "weight_placeholder": "BW",
+          "reps": 10,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 2,
+          "exercise": "Smith Machine Hip Thrust",
+          "weight_placeholder": "BW",
+          "reps": 12,
+          "sets": 4,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 3,
+          "exercise": "Cable Kickback",
+          "weight_placeholder": "BW",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 4,
+          "exercise": "Seated Ham Curl",
+          "weight_placeholder": "BW",
+          "reps": 15,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 5,
+          "exercise": "Goblet Squat",
+          "weight_placeholder": "BW",
+          "reps": 12,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 6,
+          "exercise": "Reverse Lunge",
+          "weight_placeholder": "BW",
+          "reps": 9,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 7,
+          "exercise": "Hack Press",
+          "weight_placeholder": "BW",
+          "reps": 20,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        },
+        {
+          "order": 8,
+          "exercise": "Side Plank",
+          "weight_placeholder": "BW",
+          "reps": 30,
+          "sets": 3,
+          "rest": "",
+          "tempo": "",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "day_name": "Saturday",
+      "focus": "",
+      "exercises": []
+    }
+  ]
+}
