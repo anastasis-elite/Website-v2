@@ -1,0 +1,13 @@
+var R=require("../../../../chunks/ssr/[turbopack]_runtime.js")("server/app/program/phoenix/recommend/page.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0u90jhu._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_05a8cce.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0_tz8o2._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0nh3rsw._.js")
+R.c("server/chunks/ssr/_0~y-q~5._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_0inhx6q._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_forbidden_0ghu-f7.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_unauthorized_0cjv-23.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_global-error_0lgvd_..js")
+R.c("server/chunks/ssr/_next-internal_server_app_program_phoenix_recommend_page_actions_0-p3r.d.js")
+R.m(63337)
+module.exports=R.m(63337).exports

@@ -1,0 +1,13 @@
+var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/app/medical_clearance_needed/page.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0cf87q9._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_0y.hsxv.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0_tz8o2._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0nh3rsw._.js")
+R.c("server/chunks/ssr/_0~y-q~5._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_0inhx6q._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_forbidden_0ghu-f7.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_unauthorized_0cjv-23.js")
+R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_global-error_0lgvd_..js")
+R.c("server/chunks/ssr/_next-internal_server_app_medical_clearance_needed_page_actions_12289a5.js")
+R.m(36257)
+module.exports=R.m(36257).exports
