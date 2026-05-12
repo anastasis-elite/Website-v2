@@ -1,25 +1,48 @@
 'use client'
 
 import { Suspense, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import * as styles from '../../styles/globalstyles'
 
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
 function CreateLoginContent() {
+  const router = useRouter()
   const searchParams = useSearchParams()
 
   const program = searchParams.get('program') || ''
-  const emailFromUrl = searchParams.get('email') || ''
   const clientId = searchParams.get('client_id') || ''
+  const birthdate = searchParams.get('birthdate') || ''
+  const applicationEmail = searchParams.get('email') || ''
 
-  const [email, setEmail] = useState(emailFromUrl)
+  const [email, setEmail] = useState(applicationEmail)
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleCreateLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setLoading(true)
     setMessage('')
+
+    if (!isValidEmail(email)) {
+      setMessage('Please enter a valid email address.')
+      return
+    }
+
+    if (password.length < 8) {
+      setMessage('Password must be at least 8 characters.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setMessage('Passwords must match.')
+      return
+    }
+
+    setLoading(true)
 
     try {
       const res = await fetch('/api/auth/create-login', {
@@ -32,6 +55,7 @@ function CreateLoginContent() {
           password,
           program,
           client_id: clientId,
+          birthdate,
         }),
       })
 
@@ -43,10 +67,15 @@ function CreateLoginContent() {
         return
       }
 
-      window.location.href = `/dashboard/assessment/start?program=${encodeURIComponent(
-        program
-      )}&client_id=${encodeURIComponent(clientId)}&email=${encodeURIComponent(email)}`
-    } catch (error) {
+      router.push(
+        data.redirect ||
+          `/dashboard/assessment/start?program=${encodeURIComponent(
+            program
+          )}&client_id=${encodeURIComponent(clientId)}&email=${encodeURIComponent(
+            email
+          )}&birthdate=${encodeURIComponent(birthdate)}`
+      )
+    } catch {
       setMessage('Something went wrong. Please try again.')
       setLoading(false)
     }
@@ -60,12 +89,13 @@ function CreateLoginContent() {
         <h1 style={styles.heroTitleStyle}>Create your login.</h1>
 
         <p style={styles.heroTextStyle}>
-          This protects your assessment, program, progress, and dashboard access.
+          This login protects your assessment, program, dashboard, and future
+          progress updates.
         </p>
 
         <section style={styles.cartBoxStyle}>
           <form onSubmit={handleCreateLogin}>
-            <label style={styles.bodyStyle}>Email</label>
+            <label style={styles.bodyStyle}>Email Address</label>
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -74,10 +104,25 @@ function CreateLoginContent() {
               style={styles.inputStyle}
             />
 
+            <p style={styles.bodyStyle}>
+              We recommend using the same email address from your application so
+              your payment, dashboard, and assessment stay connected.
+            </p>
+
             <label style={styles.bodyStyle}>Password</label>
             <input
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
+              type="password"
+              minLength={8}
+              style={styles.inputStyle}
+            />
+
+            <label style={styles.bodyStyle}>Confirm Password</label>
+            <input
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               required
               type="password"
               minLength={8}
@@ -90,7 +135,7 @@ function CreateLoginContent() {
                 disabled={loading}
                 style={styles.primaryButtonStyle}
               >
-                {loading ? 'Creating Login...' : 'Create Login'}
+                {loading ? 'Creating Login...' : 'Continue'}
               </button>
             </div>
 
