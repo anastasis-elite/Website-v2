@@ -22,7 +22,14 @@ const PRICE_MAP = {
 
 export async function POST(req: Request) {
   try {
-    const { program, billing, email, client_id } = await req.json()
+    const {
+  program,
+  billing,
+  email,
+  client_id,
+  application_id,
+  fullName,
+} = await req.json()
 
     const priceId =
       PRICE_MAP[program as keyof typeof PRICE_MAP]?.[
