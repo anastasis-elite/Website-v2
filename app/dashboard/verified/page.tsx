@@ -8,6 +8,9 @@ import * as styles from '../../styles/globalstyles'
 function VerifiedContent() {
   const searchParams = useSearchParams()
   const program = searchParams.get('program') || ''
+  const email = searchParams.get('email') || ''
+  const client_id = searchParams.get('client_id') || ''
+  const birthdate = searchParams.get('birthdate') || ''
 
   return (
     <main style={styles.pageStyle}>
