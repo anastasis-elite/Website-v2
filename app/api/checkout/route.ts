@@ -60,6 +60,7 @@ export async function POST(req: Request) {
   billing,
   email: email || '',
   fullName: fullName || '',
+        birthdate: birthdate || '',
 },
 
       subscription_data:
