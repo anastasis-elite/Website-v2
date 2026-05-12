@@ -29,6 +29,7 @@ export async function POST(req: Request) {
   client_id,
   application_id,
   fullName,
+  birthdate,
 } = await req.json()
 
     const priceId =
