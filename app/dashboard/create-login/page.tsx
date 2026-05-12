@@ -68,13 +68,10 @@ function CreateLoginContent() {
       }
 
       router.push(
-        data.redirect ||
-          `/dashboard/assessment/start?program=${encodeURIComponent(
-            program
-          )}&client_id=${encodeURIComponent(clientId)}&email=${encodeURIComponent(
-            email
-          )}&birthdate=${encodeURIComponent(birthdate)}`
-      )
+  `/login?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(
+    `/dashboard/assessment/start?program=${program}&client_id=${clientId}&birthdate=${birthdate}`
+  )}`
+)
     } catch {
       setMessage('Something went wrong. Please try again.')
       setLoading(false)
