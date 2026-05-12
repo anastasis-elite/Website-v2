@@ -35,7 +35,7 @@ function VerifiedContent() {
 
           <div style={styles.buttonRowStyle}>
             <Link
-  href={`/create-login?program=${program}&email=${email}&client_id=${client_id}&birthdate=${birthdate}`}
+  href={`/dashboard/create-login?program=${program}&email=${email}&client_id=${client_id}&birthdate=${birthdate}`}
   style={styles.primaryButtonStyle}
 >
   Continue
