@@ -35,10 +35,16 @@ function VerifiedContent() {
 
           <div style={styles.buttonRowStyle}>
             <Link
-  href={`/dashboard/create-login?program=${program}&email=${email}&client_id=${client_id}&birthdate=${birthdate}`}
+  href={`/dashboard/create-login?program=${encodeURIComponent(
+    program
+  )}&email=${encodeURIComponent(
+    email
+  )}&client_id=${encodeURIComponent(
+    client_id
+  )}&birthdate=${encodeURIComponent(birthdate)}`}
   style={styles.primaryButtonStyle}
 >
-  Continue
+  Create Your Login
 </Link>
           </div>
         </section>
