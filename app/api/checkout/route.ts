@@ -54,23 +54,27 @@ export async function POST(req: Request) {
       cancel_url: `${origin}/program/${program}/cart`,
 
       metadata: {
-        client_id: client_id || '',
-        program,
-        billing,
-        email: email || '',
-      },
+  client_id: client_id || '',
+  application_id: application_id || '',
+  program,
+  billing,
+  email: email || '',
+  fullName: fullName || '',
+},
 
       subscription_data:
-        billing === 'subscription'
-          ? {
-              metadata: {
-                client_id: client_id || '',
-                program,
-                billing,
-                email: email || '',
-              },
-            }
-          : undefined,
+  billing === 'subscription'
+    ? {
+        metadata: {
+          client_id: client_id || '',
+          application_id: application_id || '',
+          program,
+          billing,
+          email: email || '',
+          fullName: fullName || '',
+        },
+      }
+    : undefined,
     })
 
     return NextResponse.json({ url: session.url })
