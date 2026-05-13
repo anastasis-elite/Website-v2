@@ -19,7 +19,7 @@ export async function getDashboardContext() {
     .single()
 
   if (!client) {
-    redirect('/dashboard/create-login')
+    redirect('/create-login')
   }
 
   return {
