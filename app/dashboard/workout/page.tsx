@@ -1,5 +1,3 @@
-'use client'
-
 import { Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getClientData } from '@/lib/supabase/getClient'
