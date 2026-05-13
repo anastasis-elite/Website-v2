@@ -1,21 +1,23 @@
 'use client'
 
-import { Suspense, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 import * as styles from '../../../styles/globalstyles'
 
-function AssessmentStartContent() {
-  const searchParams = useSearchParams()
+type ClientData = {
+  client_id: string
+  full_name?: string
+  email?: string
+  birthdate?: string
+  program?: string
+}
 
-  const programFromUrl = searchParams.get('program') || ''
-  const clientIdFromUrl = searchParams.get('client_id') || ''
-
+export default function StartContent({ client }: { client: ClientData }) {
   const [formData, setFormData] = useState({
-    program: programFromUrl,
-    client_id: clientIdFromUrl,
-    fullName: '',
-    email: '',
-    birthdate: '',
+    program: client.program || '',
+    client_id: client.client_id || '',
+    fullName: client.full_name || '',
+    email: client.email || '',
+    birthdate: client.birthdate || '',
     trainingDays: '',
     equipmentAccess: '',
     experienceLevel: '',
@@ -64,20 +66,7 @@ function AssessmentStartContent() {
         throw new Error(data.error || 'Assessment submission failed')
       }
 
-      if (data.redirect) {
-        window.location.href = data.redirect
-        return
-      }
-
-      window.location.href = `/dashboard/assessment/start2?program=${encodeURIComponent(
-  formData.program
-)}&client_id=${encodeURIComponent(
-  formData.client_id
-)}&fullName=${encodeURIComponent(
-  formData.fullName
-)}&email=${encodeURIComponent(
-  formData.email
-)}&birthdate=${encodeURIComponent(formData.birthdate)}`
+      window.location.href = '/dashboard/assessment/start2'
 
     } catch (error) {
       console.error('ASSESSMENT ERROR:', error)
