@@ -1,18 +1,12 @@
-'use client'
-
-import { Suspense } from 'react'
 import StartContent from './StartContent'
+import { getClientData } from '@/lib/supabase/getClient'
 
-export default function Page() {
-  return (
-    <Suspense
-      fallback={
-        <div style={{ color: 'white', padding: 40 }}>
-          Loading assessment…
-        </div>
-      }
-    >
-      <StartContent />
-    </Suspense>
-  )
+export default async function Page() {
+  const client = await getClientData()
+
+  if (!client) {
+    return null
+  }
+
+  return <StartContent client={client} />
 }
