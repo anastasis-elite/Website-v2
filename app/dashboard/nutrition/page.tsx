@@ -1,9 +1,6 @@
-'use client'
-
-import { Suspense, useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import * as styles from '../../styles/globalstyles'
+import { getClientData } from '@/lib/supabase/getClient'
 
 type NutritionData = {
   tdee?: number | string
@@ -17,49 +14,49 @@ type NutritionData = {
   error?: string
 }
 
-function NutritionContent() {
-  const searchParams = useSearchParams()
-
-  const clientId = searchParams.get('client_id') || ''
-  const program = searchParams.get('program') || ''
-  const fullName = searchParams.get('fullName') || ''
-
-  const [nutrition, setNutrition] = useState<NutritionData | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    async function loadNutrition() {
-      try {
-        const res = await fetch(
-          `/api/nutrition?client_id=${encodeURIComponent(
-            clientId
-          )}&program=${encodeURIComponent(program)}`
-        )
-
-        const data = await res.json()
-
-        if (!res.ok) {
-          throw new Error(data.error || 'Nutrition lookup failed')
-        }
-
-        setNutrition(data)
-      } catch (error) {
-        console.error('Nutrition load error:', error)
-
-        setNutrition({
-          error: 'Nutrition data is not available yet.',
-        })
-      } finally {
-        setLoading(false)
+async function getNutritionData(
+  clientId: string,
+  program: string
+): Promise<NutritionData> {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL}/api/nutrition?client_id=${encodeURIComponent(
+        clientId
+      )}&program=${encodeURIComponent(program)}`,
+      {
+        cache: 'no-store',
       }
+    )
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Nutrition lookup failed')
     }
 
-    if (clientId) {
-      loadNutrition()
-    } else {
-      setLoading(false)
+    return data
+  } catch {
+    return {
+      error: 'Nutrition data is not available yet.',
     }
-  }, [clientId, program])
+  }
+}
+
+export default async function NutritionPage() {
+  const client = await getClientData()
+
+  if (!client) {
+    return null
+  }
+
+  const clientId = client.client_id
+  const program = client.program || 'ignite'
+  const fullName = client.full_name || ''
+
+  const nutrition = await getNutritionData(
+    clientId,
+    program
+  )
 
   return (
     <main style={styles.pageStyle}>
@@ -77,13 +74,7 @@ function NutritionContent() {
           recovery capacity, training demands, and current goal phase.
         </p>
 
-        {loading ? (
-          <section style={styles.cartBoxStyle}>
-            <p style={styles.bodyStyle}>
-              Loading nutrition targets...
-            </p>
-          </section>
-        ) : nutrition?.error ? (
+        {nutrition?.error ? (
           <section style={styles.cartBoxStyle}>
             <p style={styles.bodyStyle}>
               {nutrition.error}
@@ -99,7 +90,8 @@ function NutritionContent() {
               </p>
 
               <p style={styles.bodyStyle}>
-                <strong>Recommended Calories:</strong> {nutrition?.calories || '—'}
+                <strong>Recommended Calories:</strong>{' '}
+                {nutrition?.calories || '—'}
               </p>
             </section>
 
@@ -111,7 +103,8 @@ function NutritionContent() {
               </p>
 
               <p style={styles.bodyStyle}>
-                <strong>Carbohydrates:</strong> {nutrition?.carbs || '—'}
+                <strong>Carbohydrates:</strong>{' '}
+                {nutrition?.carbs || '—'}
               </p>
 
               <p style={styles.bodyStyle}>
@@ -123,20 +116,26 @@ function NutritionContent() {
               <h2 style={styles.sectionTitleStyle}>Hydration</h2>
 
               <p style={styles.bodyStyle}>
-                <strong>Water Intake:</strong> {nutrition?.water || '—'}
+                <strong>Water Intake:</strong>{' '}
+                {nutrition?.water || '—'}
               </p>
             </section>
 
             <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>Micronutrients</h2>
+              <h2 style={styles.sectionTitleStyle}>
+                Micronutrients
+              </h2>
 
               <p style={styles.bodyStyle}>
-                {nutrition?.micros || 'No micronutrient recommendations yet.'}
+                {nutrition?.micros ||
+                  'No micronutrient recommendations yet.'}
               </p>
             </section>
 
             <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>Recommended Recipes</h2>
+              <h2 style={styles.sectionTitleStyle}>
+                Recommended Recipes
+              </h2>
 
               {nutrition?.recipes?.length ? (
                 <ul style={styles.bodyStyle}>
@@ -155,11 +154,7 @@ function NutritionContent() {
 
         <div style={styles.buttonRowStyle}>
           <Link
-            href={`/dashboard/main?program=${encodeURIComponent(
-              program
-            )}&client_id=${encodeURIComponent(
-              clientId
-            )}&fullName=${encodeURIComponent(fullName)}`}
+            href="/dashboard"
             style={styles.secondaryButtonStyle}
           >
             Back to Dashboard
@@ -167,13 +162,5 @@ function NutritionContent() {
         </div>
       </div>
     </main>
-  )
-}
-
-export default function NutritionPage() {
-  return (
-    <Suspense fallback={null}>
-      <NutritionContent />
-    </Suspense>
   )
 }
