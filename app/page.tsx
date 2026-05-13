@@ -107,8 +107,6 @@ export default function Home() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '270px',
-              height: '60px',
               textAlign: 'center',
               border: '1px solid #c58b57',
               color: '#f5f0e8',
