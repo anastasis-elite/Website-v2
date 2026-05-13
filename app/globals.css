@@ -148,6 +148,26 @@ a {
   background: transparent;
 }
 
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.dashboard-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.dashboard-checklist label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .section {
   padding: 72px 0;
   border-top: 1px solid rgba(181, 110, 67, 0.12);
