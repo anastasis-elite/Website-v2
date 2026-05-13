@@ -17,7 +17,10 @@ export default function DashboardPage() {
           and daily execution.
         </p>
 
-        <section style={styles.cartBoxStyle}>
+        <section
+  style={styles.cartBoxStyle}
+  className="dashboard-section"
+>
           <h2 style={styles.sectionTitleStyle}>Assessment</h2>
 
           <p style={styles.bodyStyle}>
@@ -35,7 +38,10 @@ export default function DashboardPage() {
           )}
         </section>
 
-        <section style={styles.cartBoxStyle}>
+        <section
+  style={styles.cartBoxStyle}
+  className="dashboard-section"
+>
           <h2 style={styles.sectionTitleStyle}>Today’s Training</h2>
 
           <p style={styles.bodyStyle}>
@@ -54,7 +60,10 @@ export default function DashboardPage() {
           </label>
         </section>
 
-        <section style={styles.cartBoxStyle}>
+        <section
+  style={styles.cartBoxStyle}
+  className="dashboard-section"
+>
           <h2 style={styles.sectionTitleStyle}>Nutrition</h2>
 
           <p style={styles.bodyStyle}>
@@ -90,7 +99,10 @@ export default function DashboardPage() {
           </Link>
         </section>
 
-        <section style={styles.cartBoxStyle}>
+        <section
+  style={styles.cartBoxStyle}
+  className="dashboard-section"
+>
           <h2 style={styles.sectionTitleStyle}>Daily Checklist</h2>
 
           <div className="dashboard-checklist">
@@ -101,7 +113,10 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section style={styles.cartBoxStyle}>
+        <section
+  style={styles.cartBoxStyle}
+  className="dashboard-section"
+>
           <h2 style={styles.sectionTitleStyle}>Progress Snapshot</h2>
 
           <p style={styles.bodyStyle}>
