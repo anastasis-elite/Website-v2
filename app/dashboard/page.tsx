@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import * as styles from '../styles/globalstyles'
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   const assessmentStatus = 'available'
   const program = 'ignite'
   const client = await getClientData()
