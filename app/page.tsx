@@ -110,7 +110,7 @@ export default function Home() {
               textAlign: 'center',
               border: '1px solid #c58b57',
               color: '#f5f0e8',
-              padding: '5px 10px',
+              padding: '15px 5px',
               textDecoration: 'none',
               borderRadius: '999px',
               fontWeight: 500,
