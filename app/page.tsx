@@ -108,7 +108,7 @@ export default function Home() {
               alignItems: 'center',
               justifyContent: 'center',
               width: '270px',
-              height: '64px',
+              height: '60px',
               textAlign: 'center',
               border: '1px solid #c58b57',
               color: '#f5f0e8',
