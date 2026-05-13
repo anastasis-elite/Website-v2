@@ -95,57 +95,6 @@ export default function StartContent({ client }: { client: ClientData }) {
 
           <div style={styles.gridTwoCol}>
             <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle} htmlFor="fullName">
-                Full Name
-              </label>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                required
-                value={formData.fullName}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              />
-            </div>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle} htmlFor="email">
-                Email Address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              />
-            </div>
-          </div>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle} htmlFor="program">
-              Program
-            </label>
-            <select
-              id="program"
-              name="program"
-              required
-              value={formData.program}
-              onChange={handleChange}
-              style={styles.inputStyle}
-            >
-              <option value="">Select program</option>
-              <option value="ember">Ember</option>
-              <option value="ignite">Ignite</option>
-              <option value="phoenix">Phoenix</option>
-            </select>
-          </div>
-
-          <div style={styles.gridTwoCol}>
-            <div style={styles.fieldWrap}>
               <label style={styles.labelStyle} htmlFor="trainingDays">
                 How many days per week can you realistically train?
               </label>
