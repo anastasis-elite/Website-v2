@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import * as styles from '../styles/globalstyles'
-import { getClientData } from '../../lib/supabase/getClient'
+import { getClientData } from '@/lib/supabase/getClient'
 
 export default async function DashboardPage() {
   const assessmentStatus = 'available'
