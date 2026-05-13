@@ -20,13 +20,11 @@ export async function getDashboardContext() {
     .maybeSingle()
 
   if (clientError) {
-    console.error('CLIENT LOOKUP ERROR:', clientError)
-    redirect('/login')
+    throw new Error(`Client lookup failed: ${clientError.message}`)
   }
 
   if (!client) {
-    console.error('NO CLIENT FOUND FOR AUTH USER:', user.id)
-    redirect('/create-login')
+    throw new Error(`No client found for auth user: ${user.id}`)
   }
 
   return {
