@@ -1,17 +1,7 @@
-'use client'
-
-import { Suspense } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import * as styles from '../../styles/globalstyles'
 
-function VerifiedContent() {
-  const searchParams = useSearchParams()
-  const program = searchParams.get('program') || ''
-  const email = searchParams.get('email') || ''
-  const client_id = searchParams.get('client_id') || ''
-  const birthdate = searchParams.get('birthdate') || ''
-
+export default function VerifiedPage() {
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
@@ -21,42 +11,29 @@ function VerifiedContent() {
 
         <p style={styles.heroTextStyle}>
           Your payment has been processed. The next step is creating your private
-          login so your assessment, program, and progress can stay connected to
-          your account.
+          login so your assessment, program, and progress stay securely connected
+          to your account.
         </p>
 
         <section style={styles.cartBoxStyle}>
           <h2 style={styles.sectionTitleStyle}>Your next step</h2>
 
           <p style={styles.bodyStyle}>
-            Create your private login first. Once your account is connected, your
-            assessment and dashboard will stay tied to your client profile.
+            Create your private login first. Once your account is connected,
+            your dashboard, assessments, and program data will automatically stay
+            linked to your client profile.
           </p>
 
           <div style={styles.buttonRowStyle}>
             <Link
-  href={`/dashboard/create-login?program=${encodeURIComponent(
-    program
-  )}&email=${encodeURIComponent(
-    email
-  )}&client_id=${encodeURIComponent(
-    client_id
-  )}&birthdate=${encodeURIComponent(birthdate)}`}
-  style={styles.primaryButtonStyle}
->
-  Create Your Login
-</Link>
+              href="/dashboard/create-login"
+              style={styles.primaryButtonStyle}
+            >
+              Create Your Login
+            </Link>
           </div>
         </section>
       </div>
     </main>
-  )
-}
-
-export default function VerifiedPage() {
-  return (
-    <Suspense fallback={null}>
-      <VerifiedContent />
-    </Suspense>
   )
 }
