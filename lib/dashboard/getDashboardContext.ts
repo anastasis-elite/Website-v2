@@ -6,19 +6,26 @@ export async function getDashboardContext() {
 
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser()
 
-  if (!user) {
+  if (userError || !user) {
     redirect('/login')
   }
 
-  const { data: client } = await supabase
+  const { data: client, error: clientError } = await supabase
     .from('clients')
     .select('*')
     .eq('auth_user_id', user.id)
-    .single()
+    .maybeSingle()
+
+  if (clientError) {
+    console.error('CLIENT LOOKUP ERROR:', clientError)
+    redirect('/login')
+  }
 
   if (!client) {
+    console.error('NO CLIENT FOUND FOR AUTH USER:', user.id)
     redirect('/create-login')
   }
 
