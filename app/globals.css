@@ -17,6 +17,20 @@ html {
   scroll-behavior: smooth;
 }
 
+.auth-nav {
+  justify-content: flex-end;
+  padding: 18px 7%;
+  background: transparent;
+  border-bottom: none;
+}
+
+.auth-nav .button {
+  min-width: auto;
+  height: auto;
+  padding: 10px 18px;
+  margin-bottom: 0;
+  font-size: 0.85rem;
+}
 body {
   margin: 0;
   background:
