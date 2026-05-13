@@ -19,7 +19,6 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <header className="nav">
-          <Link href="/">Anastasis Elite</Link>
           <AuthButton />
         </header>
 
