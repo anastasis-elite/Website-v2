@@ -1,24 +1,23 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import * as styles from '../../../styles/globalstyles'
 
-export default function Start2Content() {
-  const searchParams = useSearchParams()
+type ClientData = {
+  client_id: string
+  full_name?: string
+  email?: string
+  birthdate?: string
+  program?: string
+}
 
-  const program = searchParams.get('program') || ''
-  const email = searchParams.get('email') || ''
-  const fullName = searchParams.get('fullName') || ''
-  const clientId = searchParams.get('client_id') || ''
-  const birthdate = searchParams.get('birthdate') || ''
-
+export default function Start2Content({ client }: { client: ClientData }) {
   const [formData, setFormData] = useState({
-    program,
-    email,
-    fullName,
-    client_id: clientId,
-    birthdate,
+    program: client.program || '',
+    email: client.email || '',
+    fullName: client.full_name || '',
+    client_id: client.client_id || '',
+    birthdate: client.birthdate || '',
     height_in: '',
     weight: '',
     weight_goal: '',
@@ -78,20 +77,7 @@ export default function Start2Content() {
         throw new Error(data.error || 'Assessment 2 submission failed')
       }
 
-      if (data.redirect) {
-        window.location.href = data.redirect
-        return
-      }
-
-      window.location.href = `/dashboard/program/${formData.program}/plan?program=${encodeURIComponent(
-        formData.program
-      )}&client_id=${encodeURIComponent(
-        formData.client_id
-      )}&fullName=${encodeURIComponent(
-        formData.fullName
-      )}&email=${encodeURIComponent(
-        formData.email
-      )}&birthdate=${encodeURIComponent(formData.birthdate)}`
+     window.location.href = '/dashboard'
     } catch (error) {
       console.error('ASSESSMENT 2 ERROR:', error)
       setStatus('error')
