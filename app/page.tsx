@@ -109,7 +109,6 @@ export default function Home() {
               justifyContent: 'center',
               width: '270px',
               height: '64px',
-              padding: '0 24px',
               textAlign: 'center',
               border: '1px solid #c58b57',
               color: '#f5f0e8',
