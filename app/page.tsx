@@ -103,15 +103,6 @@ export default function Home() {
 
           <a
             href="#method"
-            style={{
-              border: '1px solid #c58b57',
-              color: '#f5f0e8',
-              padding: '14px 24px',
-              textDecoration: 'none',
-              borderRadius: '999px',
-              fontWeight: 500,
-              opacity: 0.85,
-            }}
           >
             Explore the Method
           </a>
