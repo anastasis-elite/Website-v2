@@ -36,8 +36,8 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const publicDashboardRoutes = [
-    '/dashboard/verified',
-    '/dashboard/create-login',
+    '/verified',
+    '/create-login',
   ]
 
   const isPublicDashboardRoute = publicDashboardRoutes.some((route) =>
