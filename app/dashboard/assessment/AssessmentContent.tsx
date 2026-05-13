@@ -1,11 +1,15 @@
-'use client'
-
-import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import * as styles from '../../styles/globalstyles'
+import { getClientData } from '@/lib/supabase/getClient'
 
-export default function AssessmentContent() {
-  const searchParams = useSearchParams()
-  const program = searchParams.get('program') || ''
+export default async function AssessmentContent() {
+  const client = await getClientData()
+
+  if (!client) {
+    return null
+  }
+
+  const program = client.program || ''
 
   const programLabel =
     program === 'ember'
@@ -26,22 +30,21 @@ export default function AssessmentContent() {
         </h1>
 
         <p style={styles.heroTextStyle}>
-          You’re beginning the assessment for {programLabel}. This step helps gather the
-          information needed to build your execution plan with more precision.
+          You’re beginning the assessment for {programLabel}. This step helps
+          gather the information needed to build your execution plan with more
+          precision.
         </p>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>This is not a max-out test</h2>
 
           <div style={styles.bodyStyle}>
-            <p>
-              Do not attempt a true one-rep max during this assessment.
-            </p>
+            <p>Do not attempt a true one-rep max during this assessment.</p>
 
             <p>
-              The goal is not to prove how strong you are in one lift. The goal is to
-              collect clean, useful data that can be used to calculate your starting
-              structure safely and intelligently.
+              The goal is not to prove how strong you are in one lift. The goal
+              is to collect clean, useful data that can be used to calculate
+              your starting structure safely and intelligently.
             </p>
           </div>
         </section>
@@ -51,13 +54,13 @@ export default function AssessmentContent() {
 
           <div style={styles.bodyStyle}>
             <p>
-              Every rep should be controlled, intentional, and performed with proper
-              alignment.
+              Every rep should be controlled, intentional, and performed with
+              proper alignment.
             </p>
 
             <p>
-              If your form breaks, the set is over. That number is more useful than a
-              heavier weight performed poorly.
+              If your form breaks, the set is over. That number is more useful
+              than a heavier weight performed poorly.
             </p>
           </div>
         </section>
@@ -67,13 +70,13 @@ export default function AssessmentContent() {
 
           <div style={styles.bodyStyle}>
             <p>
-              Breathe through each rep. Do not hold your breath aggressively or force
-              your body through the movement.
+              Breathe through each rep. Do not hold your breath aggressively or
+              force your body through the movement.
             </p>
 
             <p>
-              Your breathing, control, and ability to stay regulated matter just as much
-              as the weight you move.
+              Your breathing, control, and ability to stay regulated matter just
+              as much as the weight you move.
             </p>
           </div>
         </section>
@@ -83,13 +86,13 @@ export default function AssessmentContent() {
 
           <div style={styles.bodyStyle}>
             <p>
-              If you feel sharp pain, dizziness, unusual pressure, numbness, or anything
-              that feels unsafe, stop immediately.
+              If you feel sharp pain, dizziness, unusual pressure, numbness, or
+              anything that feels unsafe, stop immediately.
             </p>
 
             <p>
-              This assessment is here to support your progression — not override your
-              body’s signals.
+              This assessment is here to support your progression — not override
+              your body’s signals.
             </p>
           </div>
         </section>
@@ -107,12 +110,12 @@ export default function AssessmentContent() {
         </section>
 
         <div style={styles.buttonRowStyle}>
-          <a
-            href={`/dashboard/assessment/start?program=${program}`}
+          <Link
+            href="/dashboard/assessment/start"
             style={styles.primaryButtonStyle}
           >
             I understand — begin assessment
-          </a>
+          </Link>
         </div>
       </div>
     </main>
