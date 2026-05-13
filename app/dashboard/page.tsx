@@ -4,7 +4,8 @@ import * as styles from '../styles/globalstyles'
 export default function DashboardPage() {
   const assessmentStatus = 'available'
   const program = 'ignite'
-
+  const client = await getClientData()
+  
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
