@@ -26,7 +26,7 @@ export default function VerifiedPage() {
 
           <div style={styles.buttonRowStyle}>
             <Link
-              href="/dashboard/create-login"
+              href="/create-login"
               style={styles.primaryButtonStyle}
             >
               Create Your Login
