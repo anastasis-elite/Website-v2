@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import AuthAwareCta from '../components/AuthAwareCta'
 
 export default function Home() {
   return (
@@ -98,19 +99,7 @@ export default function Home() {
             marginTop: '60px',
           }}
         >
-          <a
-            href="/program"
-            style={{
-              background: '#c58b57',
-              color: '#000',
-              padding: '14px 24px',
-              textDecoration: 'none',
-              borderRadius: '999px',
-              fontWeight: 600,
-            }}
-          >
-            Begin Here
-          </a>
+          <AuthAwareCta />
 
           <a
             href="#method"
