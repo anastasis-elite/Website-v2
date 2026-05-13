@@ -103,6 +103,15 @@ export default function Home() {
 
           <a
             href="#method"
+            style = {{
+              display: 'flex',
+alignItems: 'center',
+justifyContent: 'center',
+width: '270px',
+height: '64px',
+padding: '0 24px',
+textAlign: 'center',
+            }}
           >
             Explore the Method
           </a>
