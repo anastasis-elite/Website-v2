@@ -5,7 +5,8 @@ import { useSearchParams } from 'next/navigation'
 
 function WorkoutRedirectContent() {
   const searchParams = useSearchParams()
-
+  const client = await getClientData()
+  
   const program = searchParams.get('program') || ''
   const clientId = searchParams.get('client_id') || ''
   const fullName = searchParams.get('fullName') || ''
