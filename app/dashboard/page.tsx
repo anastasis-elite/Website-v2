@@ -93,7 +93,7 @@ export default function DashboardPage() {
         <section style={styles.cartBoxStyle}>
           <h2 style={styles.sectionTitleStyle}>Daily Checklist</h2>
 
-          <div style={styles.bodyStyle}>
+          <div className="dashboard-checklist">
             <label><input type="checkbox" /> Workout completed</label><br />
             <label><input type="checkbox" /> Macros logged</label><br />
             <label><input type="checkbox" /> Water logged</label><br />
