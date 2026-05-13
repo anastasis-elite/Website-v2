@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import * as styles from '../../../styles/globalstyles'
 
 type ClientData = {
@@ -317,13 +316,5 @@ export default function StartContent({ client }: { client: ClientData }) {
         </form>
       </div>
     </main>
-  )
-}
-
-export default function AssessmentStartPage() {
-  return (
-    <Suspense fallback={null}>
-      <AssessmentStartContent />
-    </Suspense>
   )
 }
