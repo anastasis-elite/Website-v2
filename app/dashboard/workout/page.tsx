@@ -3,7 +3,7 @@
 import { Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 
-function WorkoutRedirectContent() {
+async function WorkoutRedirectContent() {
   const searchParams = useSearchParams()
   const client = await getClientData()
   
