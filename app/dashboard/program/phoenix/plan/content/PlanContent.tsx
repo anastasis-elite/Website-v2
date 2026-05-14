@@ -41,6 +41,14 @@ export default async function PlanContent() {
   const programJson = output.program_json || {}
   const days = programJson.days || []
 
+  const todayName = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+  })
+
+  const todaysWorkout = days.find(
+    (day: any) => day.day_name === todayName
+  )
+
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
@@ -55,37 +63,46 @@ export default async function PlanContent() {
         </p>
 
         {days.length ? (
-          days.map((day: any, index: number) => (
-            <section key={index} style={styles.cartBoxStyle}>
+          todaysWorkout ? (
+            <section style={styles.cartBoxStyle}>
               <h2 style={styles.sectionTitleStyle}>
-                {day.day_name || `Day ${index + 1}`}
+                {todaysWorkout.day_name}
               </h2>
 
-              {day.focus ? (
+              {todaysWorkout.focus ? (
                 <p style={styles.bodyStyle}>
-                  <strong>Focus:</strong> {day.focus}
+                  <strong>Focus:</strong> {todaysWorkout.focus}
                 </p>
               ) : null}
 
-              {day.exercises?.length ? (
-                day.exercises.map((exercise: any, i: number) => (
+              {todaysWorkout.exercises?.length ? (
+                todaysWorkout.exercises.map((exercise: any, i: number) => (
                   <div key={i} style={styles.bodyStyle}>
                     <p>
-                      <strong>{exercise.name}</strong>
+                      <strong>{exercise.exercise || exercise.name}</strong>
                     </p>
+
                     <p>
                       {exercise.sets} sets · {exercise.reps} reps ·{' '}
-{exercise.calculated_weight
-  ? `${exercise.calculated_weight} lbs`
-  : 'Calculated weight pending'}
+                      {exercise.calculated_weight
+                        ? `${exercise.calculated_weight} lbs`
+                        : 'Calculated weight pending'}
                     </p>
                   </div>
                 ))
               ) : (
-                <p style={styles.bodyStyle}>Exercises pending calculation.</p>
+                <p style={styles.bodyStyle}>
+                  Rest day or no workout assigned.
+                </p>
               )}
             </section>
-          ))
+          ) : (
+            <section style={styles.cartBoxStyle}>
+              <h2 style={styles.sectionTitleStyle}>
+                No workout found for today.
+              </h2>
+            </section>
+          )
         ) : (
           <section style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>Program saved.</h2>
