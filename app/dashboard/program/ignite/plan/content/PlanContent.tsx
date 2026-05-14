@@ -1,5 +1,6 @@
 import * as styles from '../../../../../styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import WorkoutTracker from '@/components/WorkoutTracker'
 
 export default async function PlanContent() {
   const { supabase, client } = await getDashboardContext()
