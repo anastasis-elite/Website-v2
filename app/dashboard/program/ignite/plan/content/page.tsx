@@ -1,12 +1,5 @@
-import { redirect } from 'next/navigation'
-import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import PlanContent from './PlanContent'
 
-export default async function PlanPage() {
-  const { client } = await getDashboardContext()
-
-  if (!client?.program) {
-    redirect('/dashboard')
-  }
-
-  redirect(`/dashboard/program/${client.program}/plan/content`)
+export default function Page() {
+  return <PlanContent />
 }
