@@ -90,11 +90,13 @@ function roundToNearest5(num: number) {
   return Math.round(num / 5) * 5
 }
 
-export function generateProgram(console.log(strengthAssessment){
+export function generateProgram({
   client,
   initialAssessment,
   strengthAssessment,
 }: any) {
+    console.log(strengthAssessment)
+  
   const template = getTemplate(client.program)
   const ifKey = getIfKey(client.program)
 
