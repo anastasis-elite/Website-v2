@@ -3,7 +3,7 @@ import hypertrophyChart from '@/data/reference/hypertrophyChart_normalized.json'
 
 import emberGym from '@/data/template/emberGym.json'
 import igniteGym from '@/data/template/igniteGym.json'
-console.log(strengthAssessment)
+
 
 function getTemplate(program: string) {
   switch (program) {
@@ -90,7 +90,7 @@ function roundToNearest5(num: number) {
   return Math.round(num / 5) * 5
 }
 
-export function generateProgram({
+export function generateProgram(console.log(strengthAssessment){
   client,
   initialAssessment,
   strengthAssessment,
