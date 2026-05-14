@@ -159,34 +159,30 @@ export default function WorkoutTracker({
             }}
           >
             <label>
-              Actual Weight
-              <input
-                type="number"
-                value={exercise.actual_weight}
-                onChange={(e) =>
-                  updateLog(
-                    index,
-                    'actual_weight',
-                    Number(e.target.value)
-                  )
-                }
-              />
-            </label>
+  Actual Weight
+  <NumberRoller
+    value={exercise.actual_weight}
+    min={0}
+    max={500}
+    step={5}
+    onChange={(value) =>
+      updateLog(index, 'actual_weight', value)
+    }
+  />
+</label>
 
             <label>
-              Actual Reps
-              <input
-                type="number"
-                value={exercise.actual_reps}
-                onChange={(e) =>
-                  updateLog(
-                    index,
-                    'actual_reps',
-                    Number(e.target.value)
-                  )
-                }
-              />
-            </label>
+  Actual Reps
+  <NumberRoller
+    value={exercise.actual_reps}
+    min={0}
+    max={50}
+    step={1}
+    onChange={(value) =>
+      updateLog(index, 'actual_reps', value)
+    }
+  />
+</label>
 
             <label>
               Notes
