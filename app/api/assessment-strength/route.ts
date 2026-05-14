@@ -147,8 +147,8 @@ const { error: programOutputError } = await supabase
     client_id: client.client_id,
     auth_user_id: user.id,
     program: client.program,
-    status: 'pending_calculation',
-    program_json: programJson,
+    status: 'generated',
+    program_json: generatedProgram,
     generated_at: new Date().toISOString(),
   })
 
