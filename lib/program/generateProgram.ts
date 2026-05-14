@@ -3,6 +3,7 @@ import hypertrophyChart from '@/data/reference/hypertrophyChart_normalized.json'
 
 import emberGym from '@/data/template/emberGym.json'
 import igniteGym from '@/data/template/igniteGym.json'
+console.log(strengthAssessment)
 
 function getTemplate(program: string) {
   switch (program) {
