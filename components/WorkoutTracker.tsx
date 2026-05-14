@@ -18,6 +18,48 @@ type Props = {
   exercises: Exercise[]
 }
 
+function NumberRoller({
+  value,
+  onChange,
+  min,
+  max,
+  step = 1,
+}: {
+  value: number
+  onChange: (value: number) => void
+  min: number
+  max: number
+  step?: number
+}) {
+  const options = []
+
+  for (let i = min; i <= max; i += step) {
+    options.push(i)
+  }
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      style={{
+        width: '100%',
+        padding: '14px',
+        borderRadius: '12px',
+        background: '#080808',
+        color: '#f3eee8',
+        border: '1px solid rgba(181,110,67,0.35)',
+        fontSize: '1rem',
+      }}
+    >
+      {options.map((num) => (
+        <option key={num} value={num}>
+          {num}
+        </option>
+      ))}
+    </select>
+  )
+}
+
 export default function WorkoutTracker({
   clientId,
   authUserId,
