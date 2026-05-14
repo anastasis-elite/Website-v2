@@ -1,18 +1,12 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 
-import { Suspense } from 'react'
-import PlanContent from './PlanContent'
+export default async function PlanPage() {
+  const { client } = await getDashboardContext()
 
-export default function Page() {
-  return (
-    <Suspense
-      fallback={
-        <div style={{ color: 'white', padding: 40 }}>
-          Loading program…
-        </div>
-      }
-    >
-      <PlanContent />
-    </Suspense>
-  )
+  if (!client?.program) {
+    redirect('/dashboard')
+  }
+
+  redirect(`/dashboard/program/${client.program}/plan/content`)
 }
