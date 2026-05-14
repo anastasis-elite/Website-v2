@@ -55,6 +55,25 @@ export async function POST(req: Request) {
       submittedAt: new Date().toISOString(),
     }
 
+    const { error: assessmentInsertError } = await supabase
+  .from('assessments')
+  .insert({
+    client_id: payload.client_id,
+    auth_user_id: payload.auth_user_id,
+    program: payload.program,
+    assessment_type: payload.assessment_type,
+    data: payload.data,
+    source: payload.source,
+    submitted_at: payload.submittedAt,
+  })
+
+if (assessmentInsertError) {
+  return NextResponse.json(
+    { error: assessmentInsertError.message },
+    { status: 500 }
+  )
+}
+    
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
