@@ -135,15 +135,11 @@ const { data: strengthAssessment } = await supabase
   .limit(1)
   .maybeSingle()
 
-const programJson = {
-  client_id: client.client_id,
-  program: client.program,
-  generated_at: new Date().toISOString(),
-  status: 'pending_calculation',
-  initial_assessment: initialAssessment?.data || null,
-  strength_assessment: strengthAssessment?.data || null,
-  days: [],
-}
+const generatedProgram = generateProgram({
+  client,
+  initialAssessment: initialAssessment?.data || null,
+  strengthAssessment: strengthAssessment?.data || body,
+})
 
 const { error: programOutputError } = await supabase
   .from('program_outputs')
