@@ -75,7 +75,9 @@ export default async function PlanContent() {
                     </p>
                     <p>
                       {exercise.sets} sets · {exercise.reps} reps ·{' '}
-                      {exercise.weight || 'Calculated weight pending'}
+{exercise.calculated_weight
+  ? `${exercise.calculated_weight} lbs`
+  : 'Calculated weight pending'}
                     </p>
                   </div>
                 ))
