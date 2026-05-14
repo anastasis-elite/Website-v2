@@ -116,6 +116,59 @@ if (assessmentInsertError) {
       )
     }
 
+    const { data: initialAssessment } = await supabase
+  .from('assessments')
+  .select('*')
+  .eq('client_id', client.client_id)
+  .eq('assessment_type', 'initial')
+  .order('submitted_at', { ascending: false })
+  .limit(1)
+  .maybeSingle()
+
+const { data: strengthAssessment } = await supabase
+  .from('assessments')
+  .select('*')
+  .eq('client_id', client.client_id)
+  .eq('assessment_type', 'strength')
+  .order('submitted_at', { ascending: false })
+  .limit(1)
+  .maybeSingle()
+
+const programJson = {
+  client_id: client.client_id,
+  program: client.program,
+  generated_at: new Date().toISOString(),
+  status: 'pending_calculation',
+  initial_assessment: initialAssessment?.data || null,
+  strength_assessment: strengthAssessment?.data || null,
+  days: [],
+}
+
+const { error: programOutputError } = await supabase
+  .from('program_outputs')
+  .insert({
+    client_id: client.client_id,
+    auth_user_id: user.id,
+    program: client.program,
+    status: 'pending_calculation',
+    program_json: programJson,
+    generated_at: new Date().toISOString(),
+  })
+
+if (programOutputError) {
+  return NextResponse.json(
+    { error: programOutputError.message },
+    { status: 500 }
+  )
+}
+
+    return NextResponse.json({
+  success: true,
+  redirect: '/dashboard/program',
+  assessment: assessmentData,
+  generation: generationData,
+})
+    
     return NextResponse.json({
       success: true,
       redirect: '/dashboard/program',
