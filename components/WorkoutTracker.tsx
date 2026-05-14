@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 type Exercise = {
   exercise?: string
@@ -67,16 +68,16 @@ export default function WorkoutTracker({
   dayName,
   exercises,
 }: Props) {
+  const router = useRouter()
+
   const [logs, setLogs] = useState(
     exercises.map((exercise) => ({
       exercise: exercise.exercise || exercise.name || '',
       planned_sets: exercise.sets || 0,
       planned_reps: exercise.reps || 0,
       planned_weight: exercise.calculated_weight || 0,
-
       actual_weight: exercise.calculated_weight || 0,
       actual_reps: exercise.reps || 0,
-
       completed: false,
       notes: '',
     }))
@@ -88,12 +89,7 @@ export default function WorkoutTracker({
   function updateLog(index: number, field: string, value: any) {
     setLogs((prev) =>
       prev.map((log, i) =>
-        i === index
-          ? {
-              ...log,
-              [field]: value,
-            }
-          : log
+        i === index ? { ...log, [field]: value } : log
       )
     )
   }
@@ -102,18 +98,22 @@ export default function WorkoutTracker({
     try {
       setSaving(true)
 
+      const completedLogs = logs.map((log) => ({
+        ...log,
+        completed: true,
+      }))
+
       const response = await fetch('/api/workout-log', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           client_id: clientId,
           auth_user_id: authUserId,
           program,
           day_name: dayName,
           workout_date: new Date().toISOString(),
-          exercise_logs: logs,
+          exercise_logs: completedLogs,
+          completed: true,
         }),
       })
 
@@ -121,7 +121,10 @@ export default function WorkoutTracker({
         throw new Error('Workout save failed')
       }
 
+      setLogs(completedLogs)
       setSaved(true)
+      router.push('/dashboard')
+      router.refresh()
     } catch (error) {
       console.error(error)
     } finally {
@@ -141,48 +144,39 @@ export default function WorkoutTracker({
             background: 'rgba(255,255,255,0.03)',
           }}
         >
-          <h3 style={{ marginBottom: 8 }}>
-            {exercise.exercise}
-          </h3>
+          <h3 style={{ marginBottom: 8 }}>{exercise.exercise}</h3>
 
           <p>
-            Planned: {exercise.planned_sets} sets ·{' '}
-            {exercise.planned_reps} reps ·{' '}
+            Planned: {exercise.planned_sets} sets · {exercise.planned_reps} reps ·{' '}
             {exercise.planned_weight} lbs
           </p>
 
-          <div
-            style={{
-              display: 'grid',
-              gap: 12,
-              marginTop: 16,
-            }}
-          >
+          <div style={{ display: 'grid', gap: 12, marginTop: 16 }}>
             <label>
-  Actual Weight
-  <NumberRoller
-    value={exercise.actual_weight}
-    min={0}
-    max={500}
-    step={5}
-    onChange={(value) =>
-      updateLog(index, 'actual_weight', value)
-    }
-  />
-</label>
+              Actual Weight
+              <NumberRoller
+                value={exercise.actual_weight}
+                min={0}
+                max={500}
+                step={5}
+                onChange={(value) =>
+                  updateLog(index, 'actual_weight', value)
+                }
+              />
+            </label>
 
             <label>
-  Actual Reps
-  <NumberRoller
-    value={exercise.actual_reps}
-    min={0}
-    max={50}
-    step={1}
-    onChange={(value) =>
-      updateLog(index, 'actual_reps', value)
-    }
-  />
-</label>
+              Actual Reps
+              <NumberRoller
+                value={exercise.actual_reps}
+                min={0}
+                max={50}
+                step={1}
+                onChange={(value) =>
+                  updateLog(index, 'actual_reps', value)
+                }
+              />
+            </label>
 
             <label>
               Notes
@@ -194,25 +188,14 @@ export default function WorkoutTracker({
               />
             </label>
 
-            <label
-              style={{
-                display: 'flex',
-                gap: 8,
-                alignItems: 'center',
-              }}
-            >
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
                 type="checkbox"
                 checked={exercise.completed}
                 onChange={(e) =>
-                  updateLog(
-                    index,
-                    'completed',
-                    e.target.checked
-                  )
+                  updateLog(index, 'completed', e.target.checked)
                 }
               />
-
               Completed
             </label>
           </div>
@@ -229,11 +212,7 @@ export default function WorkoutTracker({
           cursor: 'pointer',
         }}
       >
-        {saving
-          ? 'Saving Workout...'
-          : saved
-          ? 'Workout Saved'
-          : 'Save Workout'}
+        {saving ? 'Saving Workout...' : saved ? 'Workout Saved' : 'Save Workout'}
       </button>
     </div>
   )
