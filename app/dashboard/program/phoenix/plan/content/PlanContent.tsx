@@ -53,10 +53,10 @@ export default async function PlanContent() {
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Program Output</p>
+        <p style={styles.eyebrowStyle}>Today’s Workout</p>
 
         <h1 style={styles.heroTitleStyle}>
-          {client.full_name?.split(' ')[0] || 'Your'} personalized program.
+          {client.full_name?.split(' ')[0] || 'Your'} workout for {todayName}.
         </h1>
 
         <p style={styles.heroTextStyle}>
@@ -77,20 +77,13 @@ export default async function PlanContent() {
               ) : null}
 
               {todaysWorkout.exercises?.length ? (
-                todaysWorkout.exercises.map((exercise: any, i: number) => (
-                  <div key={i} style={styles.bodyStyle}>
-                    <p>
-                      <strong>{exercise.exercise || exercise.name}</strong>
-                    </p>
-
-                    <p>
-                      {exercise.sets} sets · {exercise.reps} reps ·{' '}
-                      {exercise.calculated_weight
-                        ? `${exercise.calculated_weight} lbs`
-                        : 'Calculated weight pending'}
-                    </p>
-                  </div>
-                ))
+                <WorkoutTracker
+                  clientId={client.client_id}
+                  authUserId={client.auth_user_id}
+                  program={output.program}
+                  dayName={todaysWorkout.day_name}
+                  exercises={todaysWorkout.exercises}
+                />
               ) : (
                 <p style={styles.bodyStyle}>
                   Rest day or no workout assigned.
