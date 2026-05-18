@@ -40,11 +40,14 @@ const res = await fetch(
     }
 
     return data
-  } catch {
-    return {
-      error: 'Nutrition data is not available yet.',
-    }
+  } catch (error) {
+  return {
+    error:
+      error instanceof Error
+        ? error.message
+        : 'Nutrition data is not available yet.',
   }
+}
 }
 
 export default async function NutritionPage() {
