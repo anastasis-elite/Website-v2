@@ -207,6 +207,20 @@ a {
   font-size: 1rem;
 }
 
+.dashboard-home-button {
+  display: flex;
+  justify-content: flex-end;
+  width: min(calc(100% - 48px), var(--max));
+  margin: 24px auto 0;
+}
+
+.dashboard-home-button .button {
+  min-width: auto;
+  padding: 10px 18px;
+  margin-bottom: 0;
+  font-size: 0.85rem;
+}
+
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
