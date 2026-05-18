@@ -182,6 +182,69 @@ a {
   gap: 10px;
 }
 
+.dashboard-menu {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1000;
+}
+
+.dashboard-menu details {
+  position: relative;
+}
+
+.dashboard-menu summary {
+  list-style: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: 1px solid rgba(181,110,67,0.35);
+  background: rgba(10,10,10,0.82);
+  backdrop-filter: blur(12px);
+  color: #f3eee8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: 0.2s ease;
+}
+
+.dashboard-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.dashboard-menu summary:hover {
+  border-color: rgba(181,110,67,0.65);
+  transform: scale(1.03);
+}
+
+.dashboard-dropdown {
+  position: absolute;
+  top: 56px;
+  right: 0;
+  min-width: 220px;
+  background: rgba(8,8,8,0.95);
+  border: 1px solid rgba(181,110,67,0.25);
+  border-radius: 18px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  backdrop-filter: blur(18px);
+}
+
+.dashboard-dropdown a {
+  color: #f3eee8;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 12px;
+  transition: 0.2s ease;
+}
+
+.dashboard-dropdown a:hover {
+  background: rgba(255,255,255,0.05);
+}
+
 .section {
   padding: 72px 0;
   border-top: 1px solid rgba(181, 110, 67, 0.12);
