@@ -245,6 +245,23 @@ a {
   background: rgba(255,255,255,0.05);
 }
 
+.dashboard-logout {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #f3eee8;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: 0.2s ease;
+}
+
+.dashboard-logout:hover {
+  background: rgba(255,255,255,0.05);
+}
+
 .section {
   padding: 72px 0;
   border-top: 1px solid rgba(181, 110, 67, 0.12);
