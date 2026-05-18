@@ -3,58 +3,10 @@ import * as styles from '../../styles/globalstyles'
 import NutritionTracker from '@/components/NutritionTracker'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 
-type NutritionData = {
-  tdee?: number | string
-  calories?: number | string
-  protein?: number | string
-  carbs?: number | string
-  fats?: number | string
-  water?: number | string
-  micros?: string
-  recipes?: string[]
-  error?: string
-}
-
-async function getNutritionData(
-  clientId: string,
-  program: string
-): Promise<NutritionData> {
-  try {
-    const baseUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'http://localhost:3000'
-
-const res = await fetch(
-  `${baseUrl}/api/nutrition?client_id=${encodeURIComponent(
-    clientId
-  )}&program=${encodeURIComponent(program)}`,
-  { cache: 'no-store' }
-)
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Nutrition lookup failed')
-    }
-
-    return data
-  } catch (error) {
-  return {
-    error:
-      error instanceof Error
-        ? error.message
-        : 'Nutrition data is not available yet.',
-  }
-}
-}
-
 export default async function NutritionPage() {
   const { supabase, client } = await getDashboardContext()
 
   const clientId = client.client_id
-  const program = client.program || 'ignite'
   const fullName = client.full_name || ''
 
   const today = new Date().toISOString().split('T')[0]
@@ -67,36 +19,35 @@ export default async function NutritionPage() {
     .maybeSingle()
 
   const { data: strengthAssessment } = await supabase
-  .from('assessments')
-  .select('*')
-  .eq('client_id', clientId)
-  .eq('assessment_type', 'strength')
-  .order('submitted_at', { ascending: false })
-  .limit(1)
-  .maybeSingle()
+    .from('assessments')
+    .select('*')
+    .eq('client_id', clientId)
+    .eq('assessment_type', 'strength')
+    .order('submitted_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
-const assessmentData = strengthAssessment?.data || {}
+  const assessmentData = strengthAssessment?.data || {}
+  const weight = Number(assessmentData.weight || 0)
 
-const weight = Number(assessmentData.weight || 0)
+  const tdee = weight ? Math.round(weight * 12) : 2000
+  const calories = tdee
+  const protein = weight ? Math.round(weight * 0.8) : 150
+  const fats = Math.round((calories * 0.28) / 9)
+  const carbs = Math.round((calories - protein * 4 - fats * 9) / 4)
+  const water = weight ? Math.round(weight * 0.6) : 100
 
-const tdee = weight ? Math.round(weight * 12) : 2000
-const calories = tdee
-const protein = weight ? Math.round(weight * 0.8) : 150
-const fats = Math.round((calories * 0.28) / 9)
-const carbs = Math.round((calories - protein * 4 - fats * 9) / 4)
-const water = weight ? Math.round(weight * 0.6) : 100
-
-const nutrition = {
-  tdee,
-  calories,
-  protein,
-  carbs,
-  fats,
-  water,
-  micros:
-    'Prioritize magnesium, potassium, sodium, calcium, iron, B vitamins, vitamin D, omega-3 rich foods, and electrolytes.',
-  recipes: [],
-}
+  const nutrition = {
+    tdee,
+    calories,
+    protein,
+    carbs,
+    fats,
+    water,
+    micros:
+      'Prioritize magnesium, potassium, sodium, calcium, iron, B vitamins, vitamin D, omega-3 rich foods, and electrolytes.',
+    recipes: [],
+  }
 
   return (
     <main style={styles.pageStyle}>
