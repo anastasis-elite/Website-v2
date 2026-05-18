@@ -66,7 +66,37 @@ export default async function NutritionPage() {
     .eq('log_date', today)
     .maybeSingle()
 
-  const nutrition = await getNutritionData(clientId, program)
+  const { data: strengthAssessment } = await supabase
+  .from('assessments')
+  .select('*')
+  .eq('client_id', clientId)
+  .eq('assessment_type', 'strength')
+  .order('submitted_at', { ascending: false })
+  .limit(1)
+  .maybeSingle()
+
+const assessmentData = strengthAssessment?.data || {}
+
+const weight = Number(assessmentData.weight || 0)
+
+const tdee = weight ? Math.round(weight * 12) : 2000
+const calories = tdee
+const protein = weight ? Math.round(weight * 0.8) : 150
+const fats = Math.round((calories * 0.28) / 9)
+const carbs = Math.round((calories - protein * 4 - fats * 9) / 4)
+const water = weight ? Math.round(weight * 0.6) : 100
+
+const nutrition = {
+  tdee,
+  calories,
+  protein,
+  carbs,
+  fats,
+  water,
+  micros:
+    'Prioritize magnesium, potassium, sodium, calcium, iron, B vitamins, vitamin D, omega-3 rich foods, and electrolytes.',
+  recipes: [],
+}
 
   return (
     <main style={styles.pageStyle}>
