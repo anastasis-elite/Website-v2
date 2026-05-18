@@ -28,13 +28,16 @@ export default async function NutritionPage() {
     .maybeSingle()
 
   const assessmentData = strengthAssessment?.data || {}
+
   const weight = Number(assessmentData.weight || 0)
 
   const tdee = weight ? Math.round(weight * 12) : 2000
   const calories = tdee
   const protein = weight ? Math.round(weight * 0.8) : 150
   const fats = Math.round((calories * 0.28) / 9)
-  const carbs = Math.round((calories - protein * 4 - fats * 9) / 4)
+  const carbs = Math.round(
+    (calories - protein * 4 - fats * 9) / 4
+  )
   const water = weight ? Math.round(weight * 0.6) : 100
 
   const nutrition = {
@@ -52,7 +55,9 @@ export default async function NutritionPage() {
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Nutrition System</p>
+        <p style={styles.eyebrowStyle}>
+          Nutrition System
+        </p>
 
         <h1 style={styles.heroTitleStyle}>
           {fullName
@@ -61,89 +66,108 @@ export default async function NutritionPage() {
         </h1>
 
         <p style={styles.heroTextStyle}>
-          Your nutrition system is designed around your assessment data,
-          recovery capacity, training demands, and current goal phase.
+          Your nutrition system is designed around
+          your assessment data, recovery capacity,
+          training demands, and current goal phase.
         </p>
 
-        {nutrition?.error ? (
+        <>
           <section style={styles.cartBoxStyle}>
-            <p style={styles.bodyStyle}>{nutrition.error}</p>
+            <h2 style={styles.sectionTitleStyle}>
+              Energy Targets
+            </h2>
+
+            <p style={styles.bodyStyle}>
+              <strong>TDEE:</strong>{' '}
+              {nutrition.tdee || '—'}
+            </p>
+
+            <p style={styles.bodyStyle}>
+              <strong>Recommended Calories:</strong>{' '}
+              {nutrition.calories || '—'}
+            </p>
           </section>
-        ) : (
-          <>
-            <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>Energy Targets</h2>
 
-              <p style={styles.bodyStyle}>
-                <strong>TDEE:</strong> {nutrition?.tdee || '—'}
-              </p>
+          <section style={styles.cartBoxStyle}>
+            <h2 style={styles.sectionTitleStyle}>
+              Macro Targets
+            </h2>
 
-              <p style={styles.bodyStyle}>
-                <strong>Recommended Calories:</strong>{' '}
-                {nutrition?.calories || '—'}
-              </p>
-            </section>
+            <p style={styles.bodyStyle}>
+              <strong>Protein:</strong>{' '}
+              {nutrition.protein || '—'}
+            </p>
 
-            <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>Macro Targets</h2>
+            <p style={styles.bodyStyle}>
+              <strong>Carbohydrates:</strong>{' '}
+              {nutrition.carbs || '—'}
+            </p>
 
-              <p style={styles.bodyStyle}>
-                <strong>Protein:</strong> {nutrition?.protein || '—'}
-              </p>
+            <p style={styles.bodyStyle}>
+              <strong>Fats:</strong>{' '}
+              {nutrition.fats || '—'}
+            </p>
+          </section>
 
-              <p style={styles.bodyStyle}>
-                <strong>Carbohydrates:</strong> {nutrition?.carbs || '—'}
-              </p>
+          <section style={styles.cartBoxStyle}>
+            <h2 style={styles.sectionTitleStyle}>
+              Hydration
+            </h2>
 
-              <p style={styles.bodyStyle}>
-                <strong>Fats:</strong> {nutrition?.fats || '—'}
-              </p>
-            </section>
+            <p style={styles.bodyStyle}>
+              <strong>Water Intake:</strong>{' '}
+              {nutrition.water || '—'}
+            </p>
+          </section>
 
-            <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>Hydration</h2>
+          <section style={styles.cartBoxStyle}>
+            <h2 style={styles.sectionTitleStyle}>
+              Today’s Nutrition Log
+            </h2>
 
-              <p style={styles.bodyStyle}>
-                <strong>Water Intake:</strong> {nutrition?.water || '—'}
-              </p>
-            </section>
+            <NutritionTracker
+              clientId={clientId}
+              todayLog={todayLog}
+            />
+          </section>
 
-            <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>Today’s Nutrition Log</h2>
+          <section style={styles.cartBoxStyle}>
+            <h2 style={styles.sectionTitleStyle}>
+              Micronutrients
+            </h2>
 
-              <NutritionTracker
-                clientId={clientId}
-                todayLog={todayLog}
-              />
-            </section>
+            <p style={styles.bodyStyle}>
+              {nutrition.micros ||
+                'No micronutrient recommendations yet.'}
+            </p>
+          </section>
 
-            <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>Micronutrients</h2>
+          <section style={styles.cartBoxStyle}>
+            <h2 style={styles.sectionTitleStyle}>
+              Recommended Recipes
+            </h2>
 
-              <p style={styles.bodyStyle}>
-                {nutrition?.micros ||
-                  'No micronutrient recommendations yet.'}
-              </p>
-            </section>
-
-            <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>Recommended Recipes</h2>
-
-              {nutrition?.recipes?.length ? (
-                <ul style={styles.bodyStyle}>
-                  {nutrition.recipes.map((recipe, index) => (
+            {nutrition.recipes?.length ? (
+              <ul style={styles.bodyStyle}>
+                {nutrition.recipes.map(
+                  (recipe, index) => (
                     <li key={index}>{recipe}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p style={styles.bodyStyle}>No recipes available yet.</p>
-              )}
-            </section>
-          </>
-        )}
+                  )
+                )}
+              </ul>
+            ) : (
+              <p style={styles.bodyStyle}>
+                No recipes available yet.
+              </p>
+            )}
+          </section>
+        </>
 
         <div style={styles.buttonRowStyle}>
-          <Link href="/dashboard" style={styles.secondaryButtonStyle}>
+          <Link
+            href="/dashboard"
+            style={styles.secondaryButtonStyle}
+          >
             Back to Dashboard
           </Link>
         </div>
