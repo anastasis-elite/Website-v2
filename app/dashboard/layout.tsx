@@ -10,10 +10,19 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <div className="dashboard-home-button">
-        <Link href="/dashboard" className="button secondary">
-          Dashboard
-        </Link>
+      <div className="dashboard-menu">
+        <details>
+          <summary>◌</summary>
+
+          <div className="dashboard-dropdown">
+            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/dashboard/program">Program</Link>
+            <Link href="/dashboard/nutrition">Nutrition</Link>
+            <Link href="/dashboard/assessment/start">
+              Assessments
+            </Link>
+          </div>
+        </details>
       </div>
 
       {children}
