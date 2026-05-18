@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import * as styles from '../../styles/globalstyles'
-import { getClientData } from '@/lib/supabase/getClient'
+import NutritionTracker from '@/components/NutritionTracker'
+import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 
 type NutritionData = {
   tdee?: number | string
@@ -23,9 +24,7 @@ async function getNutritionData(
       `${process.env.NEXT_PUBLIC_SITE_URL}/api/nutrition?client_id=${encodeURIComponent(
         clientId
       )}&program=${encodeURIComponent(program)}`,
-      {
-        cache: 'no-store',
-      }
+      { cache: 'no-store' }
     )
 
     const data = await res.json()
@@ -43,20 +42,22 @@ async function getNutritionData(
 }
 
 export default async function NutritionPage() {
-  const client = await getClientData()
-
-  if (!client) {
-    return null
-  }
+  const { supabase, client } = await getDashboardContext()
 
   const clientId = client.client_id
   const program = client.program || 'ignite'
   const fullName = client.full_name || ''
 
-  const nutrition = await getNutritionData(
-    clientId,
-    program
-  )
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data: todayLog } = await supabase
+    .from('nutrition_logs')
+    .select('*')
+    .eq('client_id', clientId)
+    .eq('log_date', today)
+    .maybeSingle()
+
+  const nutrition = await getNutritionData(clientId, program)
 
   return (
     <main style={styles.pageStyle}>
@@ -76,9 +77,7 @@ export default async function NutritionPage() {
 
         {nutrition?.error ? (
           <section style={styles.cartBoxStyle}>
-            <p style={styles.bodyStyle}>
-              {nutrition.error}
-            </p>
+            <p style={styles.bodyStyle}>{nutrition.error}</p>
           </section>
         ) : (
           <>
@@ -103,8 +102,7 @@ export default async function NutritionPage() {
               </p>
 
               <p style={styles.bodyStyle}>
-                <strong>Carbohydrates:</strong>{' '}
-                {nutrition?.carbs || '—'}
+                <strong>Carbohydrates:</strong> {nutrition?.carbs || '—'}
               </p>
 
               <p style={styles.bodyStyle}>
@@ -116,15 +114,21 @@ export default async function NutritionPage() {
               <h2 style={styles.sectionTitleStyle}>Hydration</h2>
 
               <p style={styles.bodyStyle}>
-                <strong>Water Intake:</strong>{' '}
-                {nutrition?.water || '—'}
+                <strong>Water Intake:</strong> {nutrition?.water || '—'}
               </p>
             </section>
 
             <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>
-                Micronutrients
-              </h2>
+              <h2 style={styles.sectionTitleStyle}>Today’s Nutrition Log</h2>
+
+              <NutritionTracker
+                clientId={clientId}
+                todayLog={todayLog}
+              />
+            </section>
+
+            <section style={styles.cartBoxStyle}>
+              <h2 style={styles.sectionTitleStyle}>Micronutrients</h2>
 
               <p style={styles.bodyStyle}>
                 {nutrition?.micros ||
@@ -133,9 +137,7 @@ export default async function NutritionPage() {
             </section>
 
             <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>
-                Recommended Recipes
-              </h2>
+              <h2 style={styles.sectionTitleStyle}>Recommended Recipes</h2>
 
               {nutrition?.recipes?.length ? (
                 <ul style={styles.bodyStyle}>
@@ -144,19 +146,14 @@ export default async function NutritionPage() {
                   ))}
                 </ul>
               ) : (
-                <p style={styles.bodyStyle}>
-                  No recipes available yet.
-                </p>
+                <p style={styles.bodyStyle}>No recipes available yet.</p>
               )}
             </section>
           </>
         )}
 
         <div style={styles.buttonRowStyle}>
-          <Link
-            href="/dashboard"
-            style={styles.secondaryButtonStyle}
-          >
+          <Link href="/dashboard" style={styles.secondaryButtonStyle}>
             Back to Dashboard
           </Link>
         </div>
