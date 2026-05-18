@@ -1,12 +1,21 @@
 import Link from 'next/link'
 import * as styles from '../styles/globalstyles'
-import { getClientData } from '@/lib/supabase/getClient'
+import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import { getNextLesson } from '@/lib/education/getNextLesson'
 
 export default async function DashboardPage() {
   const assessmentStatus = 'available'
-  const program = 'ignite'
-  const client = await getClientData()
-  
+
+  const { supabase, client, user } = await getDashboardContext()
+
+  const program = client.program || 'ignite'
+
+  const lesson = await getNextLesson({
+    supabase,
+    client,
+    user,
+  })
+
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
@@ -19,10 +28,25 @@ export default async function DashboardPage() {
           and daily execution.
         </p>
 
+        {lesson ? (
+          <section
+            style={styles.cartBoxStyle}
+            className="dashboard-section"
+          >
+            <h2 style={styles.sectionTitleStyle}>Today’s Insight</h2>
+
+            <p style={styles.bodyStyle}>
+              <strong>{lesson.title}</strong>
+            </p>
+
+            <p style={styles.bodyStyle}>{lesson.body}</p>
+          </section>
+        ) : null}
+
         <section
-  style={styles.cartBoxStyle}
-  className="dashboard-section"
->
+          style={styles.cartBoxStyle}
+          className="dashboard-section"
+        >
           <h2 style={styles.sectionTitleStyle}>Assessment</h2>
 
           <p style={styles.bodyStyle}>
@@ -41,9 +65,9 @@ export default async function DashboardPage() {
         </section>
 
         <section
-  style={styles.cartBoxStyle}
-  className="dashboard-section"
->
+          style={styles.cartBoxStyle}
+          className="dashboard-section"
+        >
           <h2 style={styles.sectionTitleStyle}>Today’s Training</h2>
 
           <p style={styles.bodyStyle}>
@@ -63,9 +87,9 @@ export default async function DashboardPage() {
         </section>
 
         <section
-  style={styles.cartBoxStyle}
-  className="dashboard-section"
->
+          style={styles.cartBoxStyle}
+          className="dashboard-section"
+        >
           <h2 style={styles.sectionTitleStyle}>Nutrition</h2>
 
           <p style={styles.bodyStyle}>
@@ -75,50 +99,37 @@ export default async function DashboardPage() {
           <Link href="/dashboard/nutrition" style={styles.primaryButtonStyle}>
             View Nutrition Dashboard
           </Link>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle}>Protein</label>
-            <input style={styles.inputStyle} placeholder="grams" />
-          </div>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle}>Carbs</label>
-            <input style={styles.inputStyle} placeholder="grams" />
-          </div>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle}>Fats</label>
-            <input style={styles.inputStyle} placeholder="grams" />
-          </div>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle}>Water Intake</label>
-            <input style={styles.inputStyle} placeholder="ounces" />
-          </div>
-
-          <Link href="/dashboard/nutrition/meals" style={styles.secondaryButtonStyle}>
-            Log Per Meal
-          </Link>
         </section>
 
         <section
-  style={styles.cartBoxStyle}
-  className="dashboard-section"
->
+          style={styles.cartBoxStyle}
+          className="dashboard-section"
+        >
           <h2 style={styles.sectionTitleStyle}>Daily Checklist</h2>
 
           <div className="dashboard-checklist">
-            <label><input type="checkbox" /> Workout completed</label><br />
-            <label><input type="checkbox" /> Macros logged</label><br />
-            <label><input type="checkbox" /> Water logged</label><br />
-            <label><input type="checkbox" /> Daily check-in completed</label>
+            <label>
+              <input type="checkbox" /> Workout completed
+            </label>
+            <br />
+            <label>
+              <input type="checkbox" /> Macros logged
+            </label>
+            <br />
+            <label>
+              <input type="checkbox" /> Water logged
+            </label>
+            <br />
+            <label>
+              <input type="checkbox" /> Daily check-in completed
+            </label>
           </div>
         </section>
 
         <section
-  style={styles.cartBoxStyle}
-  className="dashboard-section"
->
+          style={styles.cartBoxStyle}
+          className="dashboard-section"
+        >
           <h2 style={styles.sectionTitleStyle}>Progress Snapshot</h2>
 
           <p style={styles.bodyStyle}>
@@ -126,9 +137,15 @@ export default async function DashboardPage() {
           </p>
 
           <div style={styles.bodyStyle}>
-            <p><strong>Starting Point:</strong> Pending</p>
-            <p><strong>Current Progress:</strong> Pending</p>
-            <p><strong>Change Over Time:</strong> Pending</p>
+            <p>
+              <strong>Starting Point:</strong> Pending
+            </p>
+            <p>
+              <strong>Current Progress:</strong> Pending
+            </p>
+            <p>
+              <strong>Change Over Time:</strong> Pending
+            </p>
           </div>
         </section>
       </div>
