@@ -15,13 +15,26 @@ export default async function DashboardLayout({
           <summary>◌</summary>
 
           <div className="dashboard-dropdown">
-            <Link href="/dashboard">Dashboard</Link>
-            <Link href="/dashboard/program">Program</Link>
-            <Link href="/dashboard/nutrition">Nutrition</Link>
-            <Link href="/dashboard/assessment/start">
-              Assessments
-            </Link>
-          </div>
+  <Link href="/dashboard">Dashboard</Link>
+
+  <Link href="/dashboard/program">
+    Program
+  </Link>
+
+  <Link href="/dashboard/nutrition">
+    Nutrition
+  </Link>
+
+  <Link href="/dashboard/assessment/start">
+    Assessments
+  </Link>
+
+  <form action="/auth/signout" method="post">
+    <button type="submit" className="dashboard-logout">
+      Logout
+    </button>
+  </form>
+</div>
         </details>
       </div>
 
