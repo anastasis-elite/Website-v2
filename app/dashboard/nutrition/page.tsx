@@ -20,12 +20,18 @@ async function getNutritionData(
   program: string
 ): Promise<NutritionData> {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL}/api/nutrition?client_id=${encodeURIComponent(
-        clientId
-      )}&program=${encodeURIComponent(program)}`,
-      { cache: 'no-store' }
-    )
+    const baseUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3000'
+
+const res = await fetch(
+  `${baseUrl}/api/nutrition?client_id=${encodeURIComponent(
+    clientId
+  )}&program=${encodeURIComponent(program)}`,
+  { cache: 'no-store' }
+)
 
     const data = await res.json()
 
