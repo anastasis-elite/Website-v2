@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 
 export default async function DashboardLayout({
@@ -7,5 +8,15 @@ export default async function DashboardLayout({
 }) {
   await getDashboardContext()
 
-  return <>{children}</>
+  return (
+    <>
+      <div className="dashboard-home-button">
+        <Link href="/dashboard" className="button secondary">
+          Dashboard
+        </Link>
+      </div>
+
+      {children}
+    </>
+  )
 }
