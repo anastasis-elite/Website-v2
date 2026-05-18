@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 export async function GET(req: Request) {
   try {
@@ -7,36 +8,48 @@ export async function GET(req: Request) {
     const client_id = searchParams.get('client_id') || ''
     const program = searchParams.get('program') || ''
 
-    const webhookUrl = process.env.N8N_NUTRITION_WEBHOOK_URL
+    const supabase = await createClient()
 
-    if (!webhookUrl) {
-      return NextResponse.json(
-        { error: 'Missing N8N_NUTRITION_WEBHOOK_URL' },
-        { status: 500 }
-      )
-    }
+    const { data: strengthAssessment } = await supabase
+      .from('assessments')
+      .select('*')
+      .eq('client_id', client_id)
+      .eq('assessment_type', 'strength')
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-    const res = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id,
-        program,
-        source: 'dashboard-nutrition',
-        timestamp: new Date().toISOString(),
-      }),
+    const data = strengthAssessment?.data || {}
+
+    const weight = Number(data.weight || 0)
+    const goal = data.weight_goal || ''
+
+    const baseCalories = weight ? Math.round(weight * 12) : 2000
+    const calories =
+      goal === 'fat-loss'
+        ? baseCalories - 250
+        : goal === 'muscle-building'
+          ? baseCalories + 250
+          : baseCalories
+
+    const protein = weight ? Math.round(weight * 0.8) : 150
+    const fats = Math.round((calories * 0.28) / 9)
+    const carbs = Math.round((calories - protein * 4 - fats * 9) / 4)
+    const water = weight ? Math.round(weight * 0.6) : 100
+
+    return NextResponse.json({
+      client_id,
+      program,
+      tdee: baseCalories,
+      calories,
+      protein,
+      carbs,
+      fats,
+      water,
+      micros:
+        'Prioritize magnesium, potassium, sodium, calcium, iron, B vitamins, vitamin D, and omega-3 rich foods.',
+      recipes: [],
     })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: 'Nutrition lookup failed', details: data },
-        { status: res.status }
-      )
-    }
-
-    return NextResponse.json(data)
   } catch (error) {
     return NextResponse.json(
       {
