@@ -1,5 +1,3 @@
-import { differenceInCalendarDays } from 'date-fns'
-
 export async function getNextLesson({
   supabase,
   client,
@@ -13,8 +11,12 @@ export async function getNextLesson({
     ? new Date(client.started_program_at)
     : new Date()
 
-  const daysInProgram =
-    differenceInCalendarDays(new Date(), startedAt) + 1
+  const msPerDay = 1000 * 60 * 60 * 24
+
+const daysInProgram =
+  Math.floor(
+    (new Date().getTime() - startedAt.getTime()) / msPerDay
+  ) + 1
 
   const phase = client.current_phase || 'foundation'
   const executionScore = Number(client.execution_score || 0)
