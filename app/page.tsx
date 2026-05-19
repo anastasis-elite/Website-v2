@@ -131,13 +131,15 @@ export default function Home() {
         </p>
 
         <div
-  className="hero-actions"
-  style={{
-    marginTop: '56px',
-    animation: 'floatIn 1.6s ease both',
-  }}
->
-  <AuthAwareCta />
+          style={{
+            display: 'flex',
+            gap: '18px',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            marginTop: '56px',
+          }}
+        >
+          <AuthAwareCta />
 
   <a href="#method" className="button secondary">
     Explore the Method
