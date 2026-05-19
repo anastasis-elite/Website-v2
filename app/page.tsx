@@ -284,13 +284,23 @@ export default function Home() {
             and create progress that actually fits your physiology.
           </p>
 
-          <Button href="/program">
-  View the Program
-</Button>
+          <div
+  style={{
+    display: 'flex',
+    gap: '18px',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    marginTop: '32px',
+  }}
+>
+  <Button href="/program">
+    View the Program
+  </Button>
 
-<Button href="/apply" variant="secondary">
-  Apply Now
-</Button>
+  <Button href="/apply" variant="secondary">
+    Apply Now
+  </Button>
+</div>
         </div>
       </section>
     </main>
