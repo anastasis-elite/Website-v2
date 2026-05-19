@@ -372,6 +372,8 @@ a {
   cursor: pointer;
   font-size: 1.25rem;
   transition: 0.24s ease;
+  overflow: hidden;
+  padding: 0;
   box-shadow:
     0 12px 40px rgba(0,0,0,0.26),
     0 0 30px rgba(181,110,67,0.08);
