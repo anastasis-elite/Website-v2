@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import AuthAwareCta from '../components/AuthAwareCta'
 import MistReveal from '../components/MistReveal'
+import Button from '../components/Button'
 
 export default function Home() {
   return (
