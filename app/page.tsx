@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import AuthAwareCta from '../components/AuthAwareCta'
+import MistReveal from '../components/MistReveal'
 
 export default function Home() {
   return (
@@ -73,26 +74,27 @@ export default function Home() {
           Anastasis
         </p>
 
-        <h1
-          className="reveal-on-scroll"
-          style={{
-            fontSize: 'clamp(2.3rem, 5vw, 4.8rem)',
-            lineHeight: 1.18,
-            fontWeight: 400,
-            maxWidth: '980px',
-            margin: '120px auto 54px auto',
-            letterSpacing: '-0.04em',
-            textAlign: 'center',
-            color: '#f5f0e8',
-            textWrap: 'balance',
-          }}
-        >
-          You did not fail your body.
-          <br />
-          You were handed a system
-          <br />
-          that was never built for women.
-        </h1>
+        <MistReveal>
+          <h1
+            style={{
+              fontSize: 'clamp(2.3rem, 5vw, 4.8rem)',
+              lineHeight: 1.18,
+              fontWeight: 400,
+              maxWidth: '980px',
+              margin: '120px auto 54px auto',
+              letterSpacing: '-0.04em',
+              textAlign: 'center',
+              color: '#f5f0e8',
+              textWrap: 'balance',
+            }}
+          >
+            You did not fail your body.
+            <br />
+            You were handed a system
+            <br />
+            that was never built for women.
+          </h1>
+        </MistReveal>
 
         <p
           style={{
