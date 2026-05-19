@@ -10,6 +10,20 @@ export default async function DashboardPage() {
 
   const program = client.program || 'ignite'
 
+  const monthStart = new Date()
+    monthStart.setDate(1)
+    monthStart.setHours(0, 0, 0, 0)
+
+  const { data: monthlyAssessment } = await supabase
+    .from('assessments')
+    .select('id')
+    .eq('client_id', client.client_id)
+    .gte('submitted_at', monthStart.toISOString())
+    .limit(1)
+    .maybeSingle()
+
+  const assessmentCompletedThisMonth = !!monthlyAssessment
+  
   const lesson = await getNextLesson({
     supabase,
     client,
@@ -54,7 +68,11 @@ export default async function DashboardPage() {
             current body, strength, recovery, and goals.
           </p>
 
-          {assessmentStatus === 'available' && (
+          {assessmentCompletedThisMonth ? (
+            <p style={styles.bodyStyle}>
+              Your assessment is complete for this month.
+            </p>
+          ) : (
             <Link
               href={`/dashboard/assessment/start?program=${program}`}
               style={styles.primaryButtonStyle}
