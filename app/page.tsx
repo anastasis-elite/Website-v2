@@ -137,7 +137,6 @@ export default function Home() {
             justifyContent: 'center',
             flexWrap: 'wrap',
             marginTop: '56px',
-            animation: 'floatIn 1.6s ease both',
           }}
         >
           <AuthAwareCta />
