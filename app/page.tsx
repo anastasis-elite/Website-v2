@@ -40,7 +40,7 @@ export default function Home() {
           }}
         >
           <Image
-            src="/blacklogo.jpeg"
+            src="/Logo.png"
             alt="Anastasis"
             width={180}
             height={180}
