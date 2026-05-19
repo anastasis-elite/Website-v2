@@ -1,6 +1,6 @@
 'use client'
 import * as styles from '../styles/globalstyles'
-
+import Button from '../../components/Button'
 import { useState } from 'react'
 
 function hasRelevantHealthInfo(value: string) {
@@ -570,45 +570,34 @@ setMessage('Application submitted successfully.')
           </div>
 
           <div
-            style={{
-              display: 'flex',
-              gap: '16px',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              marginTop: '8px',
-            }}
-          >
-            <button
-              type="submit"
-              disabled={status === 'submitting'}
-              style={{
-                background: '#c58b57',
-                color: '#000',
-                padding: '14px 24px',
-                borderRadius: '999px',
-                border: 'none',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {status === 'submitting' ? 'Submitting...' : 'Submit Application'}
-            </button>
+  style={{
+    display: 'flex',
+    gap: '18px',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap',
+    marginTop: '8px',
+  }}
+>
+  <button
+    type="submit"
+    disabled={status === 'submitting'}
+    style={{
+      ...styles.primaryButtonStyle,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: '220px',
+      opacity: status === 'submitting' ? 0.65 : 1,
+    }}
+  >
+    {status === 'submitting' ? 'Submitting...' : 'Submit Application'}
+  </button>
 
-            <a
-              href="/program"
-              style={{
-                border: '1px solid #c58b57',
-                color: '#f5f0e8',
-                padding: '14px 24px',
-                textDecoration: 'none',
-                borderRadius: '999px',
-                fontWeight: 500,
-                opacity: 0.85,
-              }}
-            >
-              Return to Program
-            </a>
-          </div>
+  <Button href="/program" variant="secondary">
+    Return to Program
+  </Button>
+</div>
 
           {message ? (
             <p
