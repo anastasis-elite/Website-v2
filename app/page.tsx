@@ -17,7 +17,7 @@ export default function Home() {
           maxWidth: '980px',
           textAlign: 'center',
           margin: '0 auto',
-          padding: '120px 24px 180px 24px',
+          padding: '72px 24px 120px 24px',
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
@@ -40,7 +40,7 @@ export default function Home() {
 
         <div
           style={{
-            marginBottom: '72px',
+            marginBottom: '28px',
             animation: 'floatIn 1s ease both',
           }}
         >
@@ -61,12 +61,12 @@ export default function Home() {
 
         <p
           style={{
-            marginTop: '52px',
+            marginTop: '22px',
             letterSpacing: '7px',
             fontSize: '12px',
             color: '#c58b57',
             opacity: 0.82,
-            marginBottom: '72px',
+            marginBottom: '32px',
             textTransform: 'uppercase',
             animation: 'floatIn 1.2s ease both',
           }}
@@ -81,7 +81,7 @@ export default function Home() {
               lineHeight: 1.18,
               fontWeight: 400,
               maxWidth: '980px',
-              margin: '120px auto 54px auto',
+              margin: '72px auto 42px auto',
               letterSpacing: '-0.04em',
               textAlign: 'center',
               color: '#f5f0e8',
