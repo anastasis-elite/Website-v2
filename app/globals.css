@@ -67,11 +67,11 @@ a {
 
 .reveal-on-scroll {
   opacity: 0;
-  transform: translateY(28px);
-  filter: blur(10px);
+  transform: translateY(42px);
+  filter: blur(14px);
   animation: revealFromMist linear forwards;
   animation-timeline: view();
-  animation-range: entry 10% cover 35%;
+  animation-range: entry 25% cover 45%;
 }
 
 @keyframes revealFromMist {
