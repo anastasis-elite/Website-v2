@@ -81,6 +81,21 @@ a {
   filter: blur(0);
 }
 
+.hero-headline-delay {
+  opacity: 0;
+  transform: translateY(34px);
+  filter: blur(14px);
+  animation: heroHeadlineAppear 1.8s ease forwards;
+  animation-delay: 1.15s;
+}
+
+@keyframes heroHeadlineAppear {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+  
 .logo-wrap {
   padding-top: 8px;
   margin-bottom: 52px;
