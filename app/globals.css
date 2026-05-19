@@ -180,13 +180,15 @@ a {
 
 .button.primary {
   background:
-    linear-gradient(180deg, rgba(181, 110, 67, 0.28), rgba(181, 110, 67, 0.13));
-  box-shadow: 0 16px 50px rgba(181, 110, 67, 0.09);
+    linear-gradient(180deg, rgba(181,110,67,0.58), rgba(120,72,44,0.46));
+  color: #f5f0e8;
+  box-shadow: 0 12px 34px rgba(120,72,44,0.16);
 }
 
 .button.secondary {
-  background: transparent;
-  border: 1px solid rgba(181, 110, 67, 0.22);
+  background: rgba(181,110,67,0.055);
+  border: 1px solid rgba(181,110,67,0.28);
+  color: #f5f0e8;
 }
 
 .auth-nav {
