@@ -74,8 +74,9 @@ export default function Home() {
           Anastasis
         </p>
 
-        <MistReveal>
+        
           <h1
+            className="hero-headline-delay"
             style={{
               fontSize: 'clamp(2.3rem, 5vw, 4.8rem)',
               lineHeight: 1.18,
@@ -94,7 +95,7 @@ export default function Home() {
             <br />
             that was never built for women.
           </h1>
-        </MistReveal>
+        
 
         <p
           style={{
