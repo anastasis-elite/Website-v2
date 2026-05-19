@@ -70,6 +70,7 @@ export default function Home() {
         </p>
 
         <h1
+          className="reveal-on-scroll"
           style={{
             fontSize: 'clamp(2.3rem, 5vw, 4.8rem)',
             lineHeight: 1.18,
