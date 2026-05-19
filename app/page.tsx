@@ -283,15 +283,16 @@ export default function Home() {
             and create progress that actually fits your physiology.
           </p>
 
-          <div className="hero-actions">
-  <a href="/program" className="button primary">
-    View the Program
-  </a>
-
-  <a href="/apply" className="button secondary">
-    Apply Now
-  </a>
-</div>
+          <a
+            href="#method"
+            className="button secondary"
+            style={{
+              minWidth: '220px',
+              textAlign: 'center',
+            }}
+          >
+            Explore the Method
+          </a>
         </div>
       </section>
     </main>
