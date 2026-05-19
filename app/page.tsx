@@ -81,7 +81,6 @@ export default function Home() {
             textAlign: 'center',
             color: '#f5f0e8',
             textWrap: 'balance',
-            animation: 'riseIn 1.2s ease both',
           }}
         >
           You did not fail your body.
