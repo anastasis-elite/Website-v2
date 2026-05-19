@@ -16,7 +16,7 @@ export default function Home() {
           maxWidth: '980px',
           textAlign: 'center',
           margin: '0 auto',
-          padding: '140px 24px 140px 24px',
+          padding: '170px 24px 180px 24px',
           position: 'relative',
           zIndex: 2,
         }}
@@ -35,7 +35,7 @@ export default function Home() {
 
         <div
           style={{
-            marginBottom: '42px',
+            marginBottom: '72px',
             animation: 'floatIn 1s ease both',
           }}
         >
@@ -71,13 +71,16 @@ export default function Home() {
 
         <h1
           style={{
-            fontSize: 'clamp(2.8rem, 6vw, 5.8rem)',
-            lineHeight: 1.02,
-            fontWeight: 500,
+            fontSize: 'clamp(2.3rem, 5vw, 4.8rem)',
+            lineHeight: 1.18,
+            fontWeight: 400,
             maxWidth: '980px',
-            margin: '0 auto 44px auto',
+            margin: '0 auto 54px auto',
             letterSpacing: '-0.04em',
-            animation: 'riseIn 0.9s ease both',
+            textAlign: 'center',
+            color: '#f5f0e8',
+            textWrap: 'balance',
+            animation: 'riseIn 1.2s ease both',
           }}
         >
           You did not fail your body.
