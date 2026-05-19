@@ -44,6 +44,7 @@ export default function Home() {
             animation: 'floatIn 1s ease both',
           }}
         >
+        <MistReveal>
           <Image
             src="/Logo.png"
             alt="Anastasis"
@@ -58,7 +59,8 @@ export default function Home() {
             }}
           />
         </div>
-
+      </MistReveal>
+        
         <p
           style={{
             marginTop: '22px',
