@@ -11,13 +11,12 @@ export default function Button({
   variant?: 'primary' | 'secondary'
 }) {
   const baseStyle = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: '220px',
-    textAlign: 'center' as const,
-    marginBottom: '24px',
-  }
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: '220px',
+  textAlign: 'center' as const,
+}
 
   return (
     <Link
