@@ -390,6 +390,21 @@ a {
     0 0 40px rgba(181,110,67,0.14);
 }
 
+.dashboard-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.dashboard-menu summary::marker {
+  display: none;
+  content: "";
+}
+
+.dashboard-menu summary {
+  list-style: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .dashboard-dropdown {
   position: absolute;
   top: 60px;
