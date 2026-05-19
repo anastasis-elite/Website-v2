@@ -142,9 +142,9 @@ export default function Home() {
         >
           <AuthAwareCta />
 
-  <a href="#method" className="button secondary">
-    Explore the Method
-  </a>
+  <Button href="#method" variant="secondary">
+  Explore the Method
+</Button>
 </div>
 
         <div style={{ height: '160px' }} />
@@ -284,16 +284,13 @@ export default function Home() {
             and create progress that actually fits your physiology.
           </p>
 
-          <a
-            href="#method"
-            className="button secondary"
-            style={{
-              minWidth: '220px',
-              textAlign: 'center',
-            }}
-          >
-            Explore the Method
-          </a>
+          <Button href="/program">
+  View the Program
+</Button>
+
+<Button href="/apply" variant="secondary">
+  Apply Now
+</Button>
         </div>
       </section>
     </main>
