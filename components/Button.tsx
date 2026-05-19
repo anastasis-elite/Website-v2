@@ -10,14 +10,24 @@ export default function Button({
   children: React.ReactNode
   variant?: 'primary' | 'secondary'
 }) {
+  const baseStyle = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: '220px',
+    textAlign: 'center' as const,
+    marginBottom: '24px',
+  }
+
   return (
     <Link
       href={href}
-      style={
-        variant === 'primary'
+      style={{
+        ...baseStyle,
+        ...(variant === 'primary'
           ? styles.primaryButtonStyle
-          : styles.secondaryButtonStyle
-      }
+          : styles.secondaryButtonStyle),
+      }}
     >
       {children}
     </Link>
