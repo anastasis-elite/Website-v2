@@ -110,45 +110,27 @@ export const buttonRowStyle: CSSProperties = {
 
 export const primaryButtonStyle: CSSProperties = {
   background:
-    'linear-gradient(180deg, rgba(197,139,87,0.92), rgba(181,110,67,0.78))',
-
-  color: '#050505',
-
+    'linear-gradient(180deg, rgba(181,110,67,0.58), rgba(120,72,44,0.46))',
+  color: '#f5f0e8',
   padding: '15px 26px',
-
   borderRadius: '999px',
-
   border: 'none',
-
-  fontWeight: 600,
-
+  fontWeight: 500,
   cursor: 'pointer',
-
   fontSize: '1rem',
-
-  boxShadow:
-    '0 14px 40px rgba(181,110,67,0.18)',
-
+  boxShadow: '0 12px 34px rgba(120,72,44,0.16)',
   transition: 'all 0.22s ease',
 }
 
 export const secondaryButtonStyle: CSSProperties = {
-  border: '1px solid rgba(197,139,87,0.22)',
-
+  border: '1px solid rgba(181,110,67,0.28)',
   color: '#f5f0e8',
-
   padding: '14px 24px',
-
   textDecoration: 'none',
-
   borderRadius: '999px',
-
   fontWeight: 500,
-
-  background: 'rgba(255,255,255,0.02)',
-
+  background: 'rgba(181,110,67,0.055)',
   backdropFilter: 'blur(12px)',
-
   transition: 'all 0.22s ease',
 }
 
