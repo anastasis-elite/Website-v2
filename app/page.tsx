@@ -58,8 +58,7 @@ export default function Home() {
                 'drop-shadow(0 0 38px rgba(181,110,67,0.16))',
             }}
           />
-        </MistReveal>
-      </div>
+        
       
         
         <p
@@ -76,7 +75,8 @@ export default function Home() {
         >
           Anastasis
         </p>
-
+      </MistReveal>
+    </div>
         
           <h1
             className="hero-headline-delay"
