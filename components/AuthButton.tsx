@@ -38,7 +38,32 @@ export default function AuthButton() {
   return (
     <div className="dashboard-menu">
       <details>
-        <summary>◌</summary>
+        <summary aria-label="Open navigation menu">
+  {insideDashboard ? (
+    <img
+      src="/Logo.png"
+      alt="Menu"
+      style={{
+        width: '22px',
+        height: '22px',
+        objectFit: 'contain',
+        opacity: 0.92,
+        filter: 'drop-shadow(0 0 12px rgba(181,110,67,0.18))',
+      }}
+    />
+  ) : (
+    <span
+      style={{
+        width: '8px',
+        height: '8px',
+        borderRadius: '999px',
+        background: 'rgba(181,110,67,0.88)',
+        display: 'block',
+        boxShadow: '0 0 14px rgba(181,110,67,0.22)',
+      }}
+    />
+  )}
+</summary>
 
         <div className="dashboard-dropdown">
           {loggedIn && insideDashboard ? (
