@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import * as styles from '@/styles/globalstyles'
+import * as styles from '@/app/styles/globalstyles'
 
 export default function Button({
   href,
