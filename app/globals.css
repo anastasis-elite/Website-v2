@@ -428,6 +428,16 @@ a {
   font-size: 0.95rem;
 }
 
+.dashboard-menu summary::marker {
+  content: "";
+  display: none;
+}
+
+.dashboard-menu summary {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 /* Forms */
 
 .field-wrap {
