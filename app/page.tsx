@@ -58,8 +58,9 @@ export default function Home() {
                 'drop-shadow(0 0 38px rgba(181,110,67,0.16))',
             }}
           />
-        </div>
-      </MistReveal>
+        </MistReveal>
+      </div>
+      
         
         <p
           style={{
