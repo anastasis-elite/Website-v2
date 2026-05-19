@@ -24,8 +24,6 @@ export default function AuthAwareCta() {
 
   if (loading) return null
 
-  if (loading) return null
-
 return loggedIn ? (
   <Button href="/dashboard">
     Continue Your Program
