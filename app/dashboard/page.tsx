@@ -4,18 +4,40 @@ import { getNextLesson } from '@/lib/education/getNextLesson'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import DashboardMiniCards from '@/components/DashboardMiniCards'
 import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
+import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 
 function getCycleMiniCard(client: any) {
-  if (!client.cycle_tracking_enabled || !client.last_period_start) {
+  const cycleStatus = getCycleStatus(client)
+
+  if (!cycleStatus.enabled) {
     return {
       id: 'cycle',
       title: 'Cycle Note',
       value: 'Not active',
-      body: 'Cycle tracking can be added when ready.',
+      body: 'Tap to add cycle awareness.',
       href: '/dashboard/cycle',
       status: 'neutral' as const,
     }
   }
+
+  const phaseLabel =
+    cycleStatus.phase === 'extended_cycle'
+      ? 'Extended cycle'
+      : cycleStatus.phase
+      ? `${cycleStatus.phase.charAt(0).toUpperCase()}${cycleStatus.phase.slice(1)} estimate`
+      : 'Awareness only'
+
+  return {
+    id: 'cycle',
+    title: 'Cycle Note',
+    value: `Day ${cycleStatus.cycleDay}`,
+    body: `${phaseLabel} · tap to view`,
+    href: '/dashboard/cycle',
+    status: cycleStatus.recoveryCaution
+      ? ('caution' as const)
+      : ('neutral' as const),
+  }
+}
 
   const today = new Date()
   const lastStart = new Date(client.last_period_start)
