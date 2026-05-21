@@ -16,6 +16,7 @@ type FlowCard = {
     fats?: number
     water?: number
   }
+  items?: string[]
   buttonHref?: string
   buttonLabel?: string
 }
@@ -183,6 +184,23 @@ export default function DashboardFlowCarousel({
               >
                 {card.body}
               </p>
+
+              {card.items?.length ? (
+  <ul
+    style={{
+      margin: '24px 0 0',
+      paddingLeft: '20px',
+      color: 'rgba(215,199,182,0.82)',
+      lineHeight: 1.75,
+      display: 'grid',
+      gap: '10px',
+    }}
+  >
+    {card.items.map((item, index) => (
+      <li key={index}>{item}</li>
+    ))}
+  </ul>
+) : null}
 
               {card.macroTarget ? (
                 <div
