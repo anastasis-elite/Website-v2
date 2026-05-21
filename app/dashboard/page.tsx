@@ -4,6 +4,7 @@ import { getNextLesson } from '@/lib/education/getNextLesson'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import DashboardMiniCards from '@/components/DashboardMiniCards'
 import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
+import DashboardAssessmentMiniCard from '@/components/DashboardAssessmentMiniCard'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 
 function getCycleMiniCard(client: any) {
@@ -69,27 +70,35 @@ export default async function DashboardPage() {
     client,
   })
 
-  const miniCards = [
-    getCycleMiniCard(client),
+  const miniCards = [getCycleMiniCard(client)]
 
-    assessmentCompletedThisMonth
-      ? {
-          id: 'assessment',
-          title: 'Assessment',
-          value: 'Complete',
-          body: 'Your monthly assessment is complete.',
-          href: '/dashboard',
-          status: 'complete' as const,
-        }
-      : {
-          id: 'assessment',
-          title: 'Assessment',
-          value: 'Due',
-          body: 'Complete this month’s check-in.',
-          href: `/dashboard/assessment/start?program=${program}`,
-          status: 'attention' as const,
-        },
-  ]
+  const dailyStructureSet =
+    !!client.execution_style &&
+    !!client.carousel_style &&
+    (
+      !!client.wake_time ||
+      !!client.bed_time ||
+      !!client.preferred_workout_time ||
+      !!client.work_start_time ||
+      !!client.lunch_window_time ||
+      !!client.dinner_window_time ||
+      (
+        Array.isArray(client.daily_non_negotiables) &&
+        client.daily_non_negotiables.length > 0
+      )
+    )
+
+  const dailyStructureReviewedThisMonth =
+    client.daily_structure_reviewed_at
+      ? new Date(client.daily_structure_reviewed_at) >= monthStart
+      : false
+
+  const dailyStructureLabel =
+    client.carousel_style === 'step'
+      ? 'Step-by-step'
+      : client.carousel_style === 'section'
+      ? 'Daily blocks'
+      : 'Daily rhythm'
 
   return (
     <main style={styles.pageStyle}>
@@ -104,7 +113,26 @@ export default async function DashboardPage() {
           once.
         </p>
 
-        <DashboardMiniCards cards={miniCards} />
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '14px',
+            marginBottom: '36px',
+          }}
+        >
+          <DashboardMiniCards cards={miniCards} />
+
+          <DashboardAssessmentMiniCard
+            clientId={client.client_id}
+            program={program}
+            monthlyAssessmentComplete={assessmentCompletedThisMonth}
+            dailyStructureSet={dailyStructureSet}
+            dailyStructureReviewedThisMonth={dailyStructureReviewedThisMonth}
+            dailyStructureLabel={dailyStructureLabel}
+            previousReviewedAt={client.daily_structure_reviewed_at}
+          />
+        </div>
 
         {lesson ? (
           <section
