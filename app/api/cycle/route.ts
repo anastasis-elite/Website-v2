@@ -27,20 +27,21 @@ function getCycleDayAndPhase({
 
   const cycleLength = Number(averageCycleLength || 28)
 
-  const cycleDay =
-    ((daysSinceStart - 1) % cycleLength) + 1
+  const cycleDay = daysSinceStart
 
-  let cyclePhase = 'follicular'
+let cyclePhase = 'follicular'
 
-  if (cycleDay <= 5) {
-    cyclePhase = 'menstrual'
-  } else if (cycleDay <= 13) {
-    cyclePhase = 'follicular'
-  } else if (cycleDay <= 16) {
-    cyclePhase = 'ovulatory'
-  } else {
-    cyclePhase = 'luteal'
-  }
+if (cycleDay > cycleLength + 3) {
+  cyclePhase = 'extended_cycle'
+} else if (cycleDay <= 5) {
+  cyclePhase = 'menstrual'
+} else if (cycleDay <= 13) {
+  cyclePhase = 'follicular'
+} else if (cycleDay <= 16) {
+  cyclePhase = 'ovulatory'
+} else {
+  cyclePhase = 'luteal'
+}
 
   return {
     cycleDay,
