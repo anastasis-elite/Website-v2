@@ -117,21 +117,9 @@ export async function getDailyExecutionPlan({
   const workoutMinutes = parseTimeToMinutes(workoutTime)
   const workStartMinutes = parseTimeToMinutes(workStartTime)
 
-  const firstMealMinutes =
-    wakeMinutes !== null ? wakeMinutes + 120 : null
-
-  const carbWindowMinutes =
-    workoutMinutes !== null
-      ? workoutMinutes
-      : workStartMinutes !== null
-      ? workStartMinutes
-      : null
-
-  const carbCutoffMinutes =
-    bedMinutes !== null ? bedMinutes - 240 : null
-
-  const eveningAnchorMinutes =
-    bedMinutes !== null ? bedMinutes - 120 : null
+  const morningMinutes = wakeMinutes
+  const middayMinutes = workStartMinutes || 12 * 60
+  const eveningMinutes = bedMinutes !== null ? bedMinutes - 240 : 18 * 60
 
   const { data: strengthAssessment } = await supabase
     .from('assessments')
@@ -191,196 +179,166 @@ export async function getDailyExecutionPlan({
     nutritionLogged,
   })
 
-  const firstMealTarget = {
+  const morningTarget = {
     protein: roundMacro(protein * 0.35),
     carbs: 0,
     fats: roundMacro(fats * 0.35),
-    water: roundMacro(water * 0.25),
+    water: roundMacro(water * 0.35),
   }
 
-  const carbMealTarget = {
+  const middayTarget = {
+    protein: roundMacro(protein * 0.4),
+    carbs: roundMacro(carbs * 0.65),
+    fats: roundMacro(fats * 0.35),
+    water: roundMacro(water * 0.4),
+  }
+
+  const eveningTarget = {
     protein: roundMacro(protein * 0.25),
-    carbs: roundMacro(carbs * 0.5),
-    fats: roundMacro(fats * 0.15),
+    carbs: roundMacro(carbs * 0.35),
+    fats: roundMacro(fats * 0.3),
     water: roundMacro(water * 0.25),
   }
 
-  const lunchTarget = {
-    protein: roundMacro(protein * 0.2),
-    carbs: roundMacro(carbs * 0.25),
-    fats: roundMacro(fats * 0.25),
-    water: roundMacro(water * 0.25),
+  const morningItems = [
+    'Start with a small fat/protein-forward wake anchor if it helps you feel steady.',
+    'Complete your first full meal within 2 hours of waking when possible.',
+    'Keep carbs held until training or your work-entry fuel window when possible.',
+  ]
+
+  if (workoutMinutes !== null && workoutMinutes < 12 * 60) {
+    morningItems.push(
+      'Training is planned in your morning window. Use your carb fuel close to training instead of forcing it early.'
+    )
   }
 
-  const dinnerTarget = {
-    protein: roundMacro(protein * 0.2),
-    carbs: roundMacro(carbs * 0.25),
-    fats: roundMacro(fats * 0.25),
-    water: roundMacro(water * 0.25),
+  const middayItems = [
+    'Use your midday meal to protect your afternoon momentum.',
+    'Place most of your healthier carbs here if this is your training or work-entry fuel window.',
+    'Aim for about 30 minutes of easy movement if your day allows.',
+    'Movement can be a light walk, gentle bike ride, swimming, park time with the kids, or low-pressure mobility.',
+  ]
+
+  if (workoutMinutes !== null && workoutMinutes >= 12 * 60 && workoutMinutes < 17 * 60) {
+    middayItems.push(
+      'Training is planned in your midday window. Use this block to fuel and execute without overthinking.'
+    )
+  }
+
+  const eveningItems = [
+    'Use dinner as your recovery meal.',
+    'Stop carb-heavy meals about 4 hours before bed when possible.',
+    'Use an evening fat/protein-forward anchor about 2 hours before bed if it helps you feel steady overnight.',
+  ]
+
+  if (workoutMinutes !== null && workoutMinutes >= 17 * 60) {
+    eveningItems.push(
+      'Training is planned in your evening window. Keep the post-training meal supportive without turning the night into another stressor.'
+    )
+  }
+
+  if (recoveryTools.saunaRecommended) {
+    eveningItems.push(
+      'Sauna is available today if you feel hydrated, steady, well-fed, and unrestricted.'
+    )
+  }
+
+  if (recoveryTools.tubSoakRecommended) {
+    eveningItems.push(
+      'A warm tub soak is recommended about 30–60 minutes before bed.'
+    )
+  }
+
+  if (recoveryTools.mobilityRecommended) {
+    middayItems.push(
+      'Gentle movement is recommended today to support recovery without adding pressure.'
+    )
+  }
+
+  const macroTargetsMet =
+    !!todayNutritionLog &&
+    Number(todayNutritionLog.protein || 0) >= protein * 0.9 &&
+    Number(todayNutritionLog.carbs || 0) >= carbs * 0.85 &&
+    Number(todayNutritionLog.fats || 0) >= fats * 0.85 &&
+    Number(todayNutritionLog.water_oz || 0) >= water * 0.85
+
+  const dayFullyComplete =
+    workoutCompleted &&
+    macroTargetsMet
+
+  if (dayFullyComplete) {
+    eveningItems.push(
+      'Your core targets are complete for today. Let the day count and let your body receive the work you gave it.'
+    )
+  } else {
+    eveningItems.push(
+      'If you did not get to everything today, it is okay. Tomorrow is a new day, and your effort was not lost.'
+    )
   }
 
   const cards: DailyCard[] = [
     {
-      id: 'wake-anchor',
-      title: 'Wake Anchor',
+      id: 'morning',
+      title: 'Morning',
       timing: wakeTime
         ? `After waking around ${formatTime(wakeTime)}`
         : 'After waking',
       status: getStatus({
         nowMinutes,
-        targetMinutes: wakeMinutes,
-        executionStyle,
-        windowMinutes: 90,
-      }),
-      body:
-        'Begin with a small fat/protein-forward anchor if your body does better with steadier energy before your first full meal.',
-      buttonHref: '/dashboard/nutrition',
-      buttonLabel: 'Log Anchor',
-    },
-    {
-      id: 'first-meal',
-      title: 'First Meal Anchor',
-      timing: 'Within 2 hours of waking',
-      status: getStatus({
-        nowMinutes,
-        targetMinutes: firstMealMinutes,
+        targetMinutes: morningMinutes,
         executionStyle,
         completed: nutritionLogged,
-        windowMinutes: 90,
+        windowMinutes: 180,
       }),
       body:
-        'This is your larger stabilizing meal. Protein and fats lead here. Carbs stay held until training or your work-entry fuel window when possible.',
-      macroTarget: firstMealTarget,
+        'This block is designed to help you start steady instead of immediately carrying the whole day.',
+      macroTarget: morningTarget,
+      items: morningItems,
       buttonHref: '/dashboard/nutrition',
-      buttonLabel: 'Log First Meal',
+      buttonLabel: 'Open Morning Support',
     },
     {
-      id: 'carb-window',
-      title: workoutTime ? 'Training Fuel' : 'Work-Entry Fuel',
-      timing: workoutTime
-        ? `Around training${formatTime(workoutTime) ? ` near ${formatTime(workoutTime)}` : ''}`
-        : workStartTime
-        ? `Before work near ${formatTime(workStartTime)}`
-        : 'Around training or before your highest-demand window',
+      id: 'midday',
+      title: 'Midday',
+      timing: 'Lunch through early afternoon',
       status: getStatus({
         nowMinutes,
-        targetMinutes: carbWindowMinutes,
+        targetMinutes: middayMinutes,
         executionStyle,
-        windowMinutes: 90,
+        windowMinutes: 180,
       }),
       body:
-        'This is where healthier carbs belong: fruit, oats, rice, potatoes, sweet potatoes, or other simple whole-food sources that support performance and momentum.',
-      macroTarget: carbMealTarget,
-      buttonHref: '/dashboard/nutrition',
-      buttonLabel: 'Log Fuel Meal',
+        'This block protects your afternoon energy and gives your body a chance to wake back up instead of crashing.',
+      macroTarget: middayTarget,
+      items: middayItems,
+      buttonHref: workoutTime
+        ? `/dashboard/program/${client.program || 'ignite'}/plan`
+        : '/dashboard/nutrition',
+      buttonLabel: workoutTime ? 'Open Workout' : 'Open Midday Support',
     },
     {
-      id: 'training',
-      title: 'Training Window',
-      timing: workoutTime
-        ? `Target: ${formatTime(workoutTime)}`
-        : 'Complete when your day opens',
-      status: getStatus({
-        nowMinutes,
-        targetMinutes: workoutMinutes,
-        executionStyle,
-        completed: workoutCompleted,
-        windowMinutes: 75,
-      }),
-      body:
-        executionStyle === 'schedule'
-          ? 'This is your planned training window. If you are late, do not spiral. Redirect into the next best available opening.'
-          : 'Your training is assigned for today. Complete it when your day gives you the cleanest opening.',
-      buttonHref: `/dashboard/program/${client.program || 'ignite'}/plan`,
-      buttonLabel: workoutCompleted ? 'Workout Complete' : 'Open Workout',
-    },
-    {
-      id: 'lunch',
-      title: 'Midday Support',
-      timing: 'Midday',
-      status: 'upcoming',
-      body:
-        'Lunch is designed to protect your afternoon momentum. The goal is steady energy, not a crash-and-recover cycle.',
-      macroTarget: lunchTarget,
-      buttonHref: '/dashboard/nutrition',
-      buttonLabel: 'Log Lunch',
-    },
-    {
-      id: 'dinner',
-      title: 'Dinner / Recovery Meal',
-      timing: carbCutoffMinutes
-        ? 'Finish carbs before the final 4-hour sleep window when possible'
-        : 'Evening recovery meal',
-      status: 'upcoming',
-      body:
-        'Dinner supports recovery without overloading the end of the day. When possible, stop carb-heavy meals about 4 hours before bed.',
-      macroTarget: dinnerTarget,
-      buttonHref: '/dashboard/nutrition',
-      buttonLabel: 'Log Dinner',
-    },
-    {
-      id: 'evening-anchor',
-      title: 'Evening Anchor',
-      timing: 'About 2 hours before bed',
-      status: getStatus({
-        nowMinutes,
-        targetMinutes: eveningAnchorMinutes,
-        executionStyle,
-        windowMinutes: 75,
-      }),
-      body:
-        'A small fat/protein-forward snack may help some women feel steadier overnight and reduce bedtime hunger without turning the night into another full meal.',
-      buttonHref: '/dashboard/nutrition',
-      buttonLabel: 'Log Evening Anchor',
+      id: 'evening',
+      title: dayFullyComplete ? 'Evening Complete' : 'Evening',
+      timing: bedTime
+        ? `Before bed near ${formatTime(bedTime)}`
+        : 'Evening into bedtime',
+      status: dayFullyComplete
+        ? 'complete'
+        : getStatus({
+            nowMinutes,
+            targetMinutes: eveningMinutes,
+            executionStyle,
+            windowMinutes: 180,
+          }),
+      body: dayFullyComplete
+        ? 'Your system is complete for today. Close the day with pride, softness, and relief.'
+        : 'This block is for recovery, sleep preparation, and a soft landing at the end of the day.',
+      macroTarget: eveningTarget,
+      items: eveningItems,
+      buttonHref: dayFullyComplete ? '/dashboard' : '/dashboard/check-in',
+      buttonLabel: dayFullyComplete ? 'Receive Today' : 'Close Today',
     },
   ]
-
-  if (recoveryTools.saunaRecommended) {
-    cards.push({
-      id: 'sauna',
-      title: 'Sauna Recovery',
-      timing: 'After training or later today',
-      status: 'upcoming',
-      body:
-        'Sauna is available today if you feel hydrated, steady, well-fed, and not dizzy, sick, overheated, or medically restricted.',
-      buttonHref: '/dashboard/recovery/sauna',
-      buttonLabel: 'Open Sauna Check',
-    })
-  }
-
-  if (recoveryTools.tubSoakRecommended) {
-  cards.push({
-    id: 'tub-soak',
-    title: 'Tub Soak',
-    timing: bedTime
-      ? `About 30–60 minutes before bed${formatTime(bedTime) ? ` near ${formatTime(bedTime)}` : ''}`
-      : 'About 30–60 minutes before bed',
-    status: getStatus({
-      nowMinutes,
-      targetMinutes:
-        bedMinutes !== null ? bedMinutes - 60 : null,
-      executionStyle,
-      windowMinutes: 60,
-    }),
-    body:
-      'A warm soak may be a better recovery fit today if your system needs downshifting, soreness support, or lower-pressure recovery before sleep.',
-    buttonHref: '/dashboard/recovery',
-    buttonLabel: 'Open Recovery',
-  })
-}
-
-  if (recoveryTools.mobilityRecommended) {
-  cards.push({
-    id: 'gentle-movement',
-    title: 'Gentle Movement',
-    timing: 'When your body needs space',
-    status: 'upcoming',
-    body:
-      'Choose low-pressure movement today: a light walk, gentle bike ride, taking the kids to the park, easy swimming, or another calm form of movement that helps your body recover without turning recovery into another workout.',
-    buttonHref: '/dashboard/recovery',
-    buttonLabel: 'Open Recovery',
-  })
-}
 
   const currentCard = pickCurrentCard(cards)
 
@@ -405,5 +363,7 @@ export async function getDailyExecutionPlan({
     workoutCompleted,
     nutritionLogged,
     recoveryTools,
+    dayFullyComplete,
+    macroTargetsMet,
   }
 }
