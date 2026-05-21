@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Button from './Button'
 import * as styles from '@/app/styles/globalstyles'
 
-export default function DashboardAssessmentCard({
+export default function DashboardAssessmentMiniCard({
   clientId,
   program,
   monthlyAssessmentComplete,
@@ -91,105 +91,131 @@ export default function DashboardAssessmentCard({
     }
   }
 
+  const monthlyStatus = monthlyAssessmentComplete ? 'Complete' : 'Due'
+
+  const structureStatus = !dailyStructureSet
+    ? 'Not set'
+    : structureReviewed
+    ? `${dailyStructureLabel} · reviewed`
+    : `${dailyStructureLabel} · review due`
+
   return (
     <section
       style={{
-        ...styles.cartBoxStyle,
-        marginBottom: '36px',
+        background: 'rgba(255,255,255,0.035)',
+        borderRadius: '24px',
+        padding: '20px',
+        minHeight: '128px',
+        boxShadow:
+          '0 18px 54px rgba(0,0,0,0.16), inset 0 0 26px rgba(255,255,255,0.012)',
+        backdropFilter: 'blur(16px)',
       }}
     >
-      <p style={styles.eyebrowStyle}>Assessments</p>
-
-      <h2 style={styles.sectionTitleStyle}>
-        Keep your system aligned.
-      </h2>
-
-      <div
+      <p
         style={{
-          display: 'grid',
-          gap: '22px',
-          marginTop: '22px',
+          ...styles.eyebrowStyle,
+          marginBottom: '12px',
+          letterSpacing: '3px',
+          fontSize: '10px',
         }}
       >
-        <div>
-          <p style={styles.bodyStyle}>
-            <strong>Monthly Assessment:</strong>{' '}
-            {monthlyAssessmentComplete ? 'Complete' : 'Due'}
-          </p>
+        Assessments
+      </p>
 
-          {monthlyAssessmentComplete ? (
-            <p style={{ ...styles.bodyStyle, opacity: 0.72 }}>
-              Your monthly assessment is complete.
-            </p>
-          ) : (
+      <div style={{ display: 'grid', gap: '16px' }}>
+        <div>
+          <h3
+            style={{
+              margin: '0 0 6px',
+              fontSize: '1.12rem',
+              fontWeight: 500,
+              letterSpacing: '-0.02em',
+              color: '#f5f0e8',
+            }}
+          >
+            Monthly: {monthlyStatus}
+          </h3>
+
+          {!monthlyAssessmentComplete ? (
             <Button href={`/dashboard/assessment/start?program=${program}`}>
-              Start Monthly Assessment
+              Start
             </Button>
+          ) : (
+            <p
+              style={{
+                margin: 0,
+                color: 'rgba(215,199,182,0.72)',
+                fontSize: '0.9rem',
+                lineHeight: 1.5,
+              }}
+            >
+              Complete for this month.
+            </p>
           )}
         </div>
 
         <div>
-          <p style={styles.bodyStyle}>
-            <strong>Daily Structure:</strong>{' '}
-            {dailyStructureSet
-              ? structureReviewed
-                ? `${dailyStructureLabel} · reviewed`
-                : `${dailyStructureLabel} · review due`
-              : 'Not set'}
-          </p>
+          <h3
+            style={{
+              margin: '0 0 6px',
+              fontSize: '1.12rem',
+              fontWeight: 500,
+              letterSpacing: '-0.02em',
+              color: '#f5f0e8',
+            }}
+          >
+            Structure: {structureStatus}
+          </h3>
 
           {!dailyStructureSet ? (
-            <>
-              <p style={{ ...styles.bodyStyle, opacity: 0.72 }}>
-                Set how your day should flow so the system can support your
-                real life.
-              </p>
-
-              <Button href="/dashboard/assessment/daily-structure">
-                Set Daily Structure
-              </Button>
-            </>
+            <Button href="/dashboard/assessment/daily-structure">
+              Set Rhythm
+            </Button>
           ) : structureReviewed ? (
-            <>
-              <p style={{ ...styles.bodyStyle, opacity: 0.72 }}>
-                Your daily rhythm is confirmed for this month.
+            undoVisible ? (
+              <button
+                type="button"
+                onClick={undoNoChange}
+                disabled={saving}
+                style={{
+                  ...styles.secondaryButtonStyle,
+                  cursor: 'pointer',
+                }}
+              >
+                Undo
+              </button>
+            ) : (
+              <p
+                style={{
+                  margin: 0,
+                  color: 'rgba(215,199,182,0.72)',
+                  fontSize: '0.9rem',
+                  lineHeight: 1.5,
+                }}
+              >
+                Rhythm confirmed.
               </p>
-
-              {undoVisible ? (
-                <button
-                  type="button"
-                  onClick={undoNoChange}
-                  disabled={saving}
-                  style={{
-                    ...styles.secondaryButtonStyle,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Undo
-                </button>
-              ) : null}
-            </>
+            )
           ) : (
             <div
               style={{
-                display: 'flex',
-                gap: '16px',
-                flexWrap: 'wrap',
-                alignItems: 'center',
+                display: 'grid',
+                gap: '10px',
               }}
             >
               <Button href="/dashboard/assessment/daily-structure">
-                Review Daily Structure
+                Review
               </Button>
 
               <label
                 style={{
-                  ...styles.bodyStyle,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
+                  color: 'rgba(215,199,182,0.82)',
+                  fontSize: '0.9rem',
+                  lineHeight: 1.5,
                   cursor: 'pointer',
-                  margin: 0,
                 }}
               >
                 <input
