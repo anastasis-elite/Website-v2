@@ -2,12 +2,22 @@ import Link from 'next/link'
 import * as styles from '../../styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
+import CycleTracker from '@/components/CycleTracker'
 
 export default async function CyclePage() {
-  const { client } = await getDashboardContext()
+  const { supabase, client } = await getDashboardContext()
 
   const cycleStatus = getCycleStatus(client)
 
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data: todayLog } = await supabase
+    .from('cycle_logs')
+    .select('*')
+    .eq('client_id', client.client_id)
+    .eq('log_date', today)
+    .maybeSingle()
+  
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
@@ -56,15 +66,14 @@ export default async function CyclePage() {
           )}
         </section>
 
-        <section style={styles.cartBoxStyle}>
-          <h2 style={styles.sectionTitleStyle}>Today’s Check-In</h2>
-
-          <p style={styles.bodyStyle}>
-            Soon this area will let clients log bleeding, cramps, headaches,
-            fatigue, mood sensitivity, and notes so the system can learn their
-            actual patterns over time.
-          </p>
-        </section>
+        <CycleTracker
+          clientId={client.client_id}
+          cycleStatus={cycleStatus}
+          lastPeriodStart={client.last_period_start}
+          averageCycleLength={client.average_cycle_length}
+          cycleTrackingEnabled={client.cycle_tracking_enabled}
+          todayLog={todayLog}
+        />
 
         <div style={styles.buttonRowStyle}>
           <Link href="/dashboard" style={styles.secondaryButtonStyle}>
