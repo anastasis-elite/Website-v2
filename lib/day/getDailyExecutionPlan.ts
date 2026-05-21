@@ -12,6 +12,7 @@ type DailyCard = {
     fats?: number
     water?: number
   }
+  items?: string[]
   buttonHref?: string
   buttonLabel?: string
 }
