@@ -44,6 +44,8 @@ export default function DashboardMiniCards({
                 boxShadow:
                   '0 18px 54px rgba(0,0,0,0.16), inset 0 0 26px rgba(255,255,255,0.012)',
                 backdropFilter: 'blur(16px)',
+                cursor: card.href ? 'pointer' : 'default',
+                transition: 'all 0.22s ease',
               }}
             >
               <p
