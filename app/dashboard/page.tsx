@@ -1,18 +1,66 @@
-import Link from 'next/link'
 import * as styles from '../styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getNextLesson } from '@/lib/education/getNextLesson'
+import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
+import DashboardMiniCards from '@/components/DashboardMiniCards'
+import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
+
+function getCycleMiniCard(client: any) {
+  if (!client.cycle_tracking_enabled || !client.last_period_start) {
+    return {
+      id: 'cycle',
+      title: 'Cycle Note',
+      value: 'Not active',
+      body: 'Cycle tracking can be added when ready.',
+      href: '/dashboard/cycle',
+      status: 'neutral' as const,
+    }
+  }
+
+  const today = new Date()
+  const lastStart = new Date(client.last_period_start)
+  const msPerDay = 1000 * 60 * 60 * 24
+
+  const daysSinceStart =
+    Math.floor((today.getTime() - lastStart.getTime()) / msPerDay) + 1
+
+  const cycleLength = Number(client.average_cycle_length || 28)
+
+  const cycleDay = ((daysSinceStart - 1) % cycleLength) + 1
+
+  let phase = 'Follicular'
+
+  if (cycleDay <= 5) {
+    phase = 'Menstrual'
+  } else if (cycleDay <= 13) {
+    phase = 'Follicular'
+  } else if (cycleDay <= 16) {
+    phase = 'Ovulatory'
+  } else {
+    phase = 'Luteal'
+  }
+
+  return {
+    id: 'cycle',
+    title: 'Cycle Note',
+    value: `Day ${cycleDay}`,
+    body: `${phase} estimate · awareness only`,
+    href: '/dashboard/cycle',
+    status:
+      phase === 'Menstrual' || phase === 'Luteal'
+        ? ('caution' as const)
+        : ('neutral' as const),
+  }
+}
 
 export default async function DashboardPage() {
-  const assessmentStatus = 'available'
-
   const { supabase, client, user } = await getDashboardContext()
 
   const program = client.program || 'ignite'
 
   const monthStart = new Date()
-    monthStart.setDate(1)
-    monthStart.setHours(0, 0, 0, 0)
+  monthStart.setDate(1)
+  monthStart.setHours(0, 0, 0, 0)
 
   const { data: monthlyAssessment } = await supabase
     .from('assessments')
@@ -23,12 +71,39 @@ export default async function DashboardPage() {
     .maybeSingle()
 
   const assessmentCompletedThisMonth = !!monthlyAssessment
-  
+
   const lesson = await getNextLesson({
     supabase,
     client,
     user,
   })
+
+  const dailyPlan = await getDailyExecutionPlan({
+    supabase,
+    client,
+  })
+
+  const miniCards = [
+    getCycleMiniCard(client),
+
+    assessmentCompletedThisMonth
+      ? {
+          id: 'assessment',
+          title: 'Assessment',
+          value: 'Complete',
+          body: 'Your monthly assessment is complete.',
+          href: '/dashboard',
+          status: 'complete' as const,
+        }
+      : {
+          id: 'assessment',
+          title: 'Assessment',
+          value: 'Due',
+          body: 'Complete this month’s check-in.',
+          href: `/dashboard/assessment/start?program=${program}`,
+          status: 'attention' as const,
+        },
+  ]
 
   return (
     <main style={styles.pageStyle}>
@@ -38,134 +113,33 @@ export default async function DashboardPage() {
         <h1 style={styles.heroTitleStyle}>Your system for today.</h1>
 
         <p style={styles.heroTextStyle}>
-          This is your home base for assessment, training, nutrition, recovery,
-          and daily execution.
+          This is your home base for today’s execution. The system shows what
+          matters now, so you do not have to hold the whole day in your head at
+          once.
         </p>
+
+        <DashboardMiniCards cards={miniCards} />
 
         {lesson ? (
           <section
-            style={styles.cartBoxStyle}
+            style={{
+              ...styles.cartBoxStyle,
+              marginBottom: '42px',
+            }}
             className="dashboard-section"
           >
-            <h2 style={styles.sectionTitleStyle}>Today’s Insight</h2>
+            <p style={styles.eyebrowStyle}>Today’s Insight</p>
 
-            <p style={styles.bodyStyle}>
-              <strong>{lesson.title}</strong>
-            </p>
+            <h2 style={styles.sectionTitleStyle}>{lesson.title}</h2>
 
             <p style={styles.bodyStyle}>{lesson.body}</p>
           </section>
         ) : null}
 
-        <section
-          style={styles.cartBoxStyle}
-          className="dashboard-section"
-        >
-          <h2 style={styles.sectionTitleStyle}>Assessment</h2>
-
-          <p style={styles.bodyStyle}>
-            Complete your assessment so your program can stay aligned with your
-            current body, strength, recovery, and goals.
-          </p>
-
-          {assessmentCompletedThisMonth ? (
-            <p style={styles.bodyStyle}>
-              Your assessment is complete for this month.
-            </p>
-          ) : (
-            <Link
-              href={`/dashboard/assessment/start?program=${program}`}
-              style={styles.primaryButtonStyle}
-            >
-              Start Assessment
-            </Link>
-          )}
-        </section>
-
-        <section
-          style={styles.cartBoxStyle}
-          className="dashboard-section"
-        >
-          <h2 style={styles.sectionTitleStyle}>Today’s Training</h2>
-
-          <p style={styles.bodyStyle}>
-            View your current program and complete today’s assigned workout.
-          </p>
-
-          <Link
-            href={`/dashboard/program/${program}/plan`}
-            style={styles.primaryButtonStyle}
-          >
-            View Workout Program
-          </Link>
-
-          <label style={styles.bodyStyle}>
-            <input type="checkbox" /> Today’s workout completed
-          </label>
-        </section>
-
-        <section
-          style={styles.cartBoxStyle}
-          className="dashboard-section"
-        >
-          <h2 style={styles.sectionTitleStyle}>Nutrition</h2>
-
-          <p style={styles.bodyStyle}>
-            Track your macros, meals, and water intake for the day.
-          </p>
-
-          <Link href="/dashboard/nutrition" style={styles.primaryButtonStyle}>
-            View Nutrition Dashboard
-          </Link>
-        </section>
-
-        <section
-          style={styles.cartBoxStyle}
-          className="dashboard-section"
-        >
-          <h2 style={styles.sectionTitleStyle}>Daily Checklist</h2>
-
-          <div className="dashboard-checklist">
-            <label>
-              <input type="checkbox" /> Workout completed
-            </label>
-            <br />
-            <label>
-              <input type="checkbox" /> Macros logged
-            </label>
-            <br />
-            <label>
-              <input type="checkbox" /> Water logged
-            </label>
-            <br />
-            <label>
-              <input type="checkbox" /> Daily check-in completed
-            </label>
-          </div>
-        </section>
-
-        <section
-          style={styles.cartBoxStyle}
-          className="dashboard-section"
-        >
-          <h2 style={styles.sectionTitleStyle}>Progress Snapshot</h2>
-
-          <p style={styles.bodyStyle}>
-            Your progress chart will appear here after your second assessment.
-          </p>
-
-          <div style={styles.bodyStyle}>
-            <p>
-              <strong>Starting Point:</strong> Pending
-            </p>
-            <p>
-              <strong>Current Progress:</strong> Pending
-            </p>
-            <p>
-              <strong>Change Over Time:</strong> Pending
-            </p>
-          </div>
-        </section>
+        <DashboardFlowCarousel
+          cards={dailyPlan.cards}
+          currentCardId={dailyPlan.currentCard?.id}
+        />
       </div>
     </main>
   )
