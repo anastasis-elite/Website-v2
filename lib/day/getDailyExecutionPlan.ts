@@ -294,8 +294,8 @@ export async function getDailyExecutionPlan({
         'This block is designed to help you start steady instead of immediately carrying the whole day.',
       macroTarget: morningTarget,
       items: morningItems,
-      buttonHref: '/dashboard/nutrition',
-      buttonLabel: 'Open Morning Support',
+      buttonHref: '/dashboard/day/morning',
+      buttonLabel: 'Open Morning Flow',
     },
     {
       id: 'midday',
@@ -311,10 +311,8 @@ export async function getDailyExecutionPlan({
         'This block protects your afternoon energy and gives your body a chance to wake back up instead of crashing.',
       macroTarget: middayTarget,
       items: middayItems,
-      buttonHref: workoutTime
-        ? `/dashboard/program/${client.program || 'ignite'}/plan`
-        : '/dashboard/nutrition',
-      buttonLabel: workoutTime ? 'Open Workout' : 'Open Midday Support',
+      buttonHref: '/dashboard/day/midday',
+      buttonLabel: 'Open Midday Flow',
     },
     {
       id: 'evening',
@@ -335,8 +333,8 @@ export async function getDailyExecutionPlan({
         : 'This block is for recovery, sleep preparation, and a soft landing at the end of the day.',
       macroTarget: eveningTarget,
       items: eveningItems,
-      buttonHref: dayFullyComplete ? '/dashboard' : '/dashboard/check-in',
-      buttonLabel: dayFullyComplete ? 'Receive Today' : 'Close Today',
+      buttonHref: '/dashboard/day/evening',
+      buttonLabel: dayFullyComplete ? 'Receive Today' : 'Open Evening Flow',
     },
   ]
 
