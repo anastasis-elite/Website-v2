@@ -39,42 +39,6 @@ function getCycleMiniCard(client: any) {
   }
 }
 
-  const today = new Date()
-  const lastStart = new Date(client.last_period_start)
-  const msPerDay = 1000 * 60 * 60 * 24
-
-  const daysSinceStart =
-    Math.floor((today.getTime() - lastStart.getTime()) / msPerDay) + 1
-
-  const cycleLength = Number(client.average_cycle_length || 28)
-
-  const cycleDay = ((daysSinceStart - 1) % cycleLength) + 1
-
-  let phase = 'Follicular'
-
-  if (cycleDay <= 5) {
-    phase = 'Menstrual'
-  } else if (cycleDay <= 13) {
-    phase = 'Follicular'
-  } else if (cycleDay <= 16) {
-    phase = 'Ovulatory'
-  } else {
-    phase = 'Luteal'
-  }
-
-  return {
-    id: 'cycle',
-    title: 'Cycle Note',
-    value: `Day ${cycleDay}`,
-    body: `${phase} estimate · awareness only`,
-    href: '/dashboard/cycle',
-    status:
-      phase === 'Menstrual' || phase === 'Luteal'
-        ? ('caution' as const)
-        : ('neutral' as const),
-  }
-}
-
 export default async function DashboardPage() {
   const { supabase, client, user } = await getDashboardContext()
 
