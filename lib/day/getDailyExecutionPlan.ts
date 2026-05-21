@@ -369,17 +369,17 @@ export async function getDailyExecutionPlan({
 }
 
   if (recoveryTools.mobilityRecommended) {
-    cards.push({
-      id: 'mobility',
-      title: 'Gentle Mobility',
-      timing: 'When your body needs space',
-      status: 'upcoming',
-      body:
-        'Gentle mobility is recommended today to support blood flow, reduce stiffness, and help your body recover without turning recovery into another workout.',
-      buttonHref: '/dashboard/recovery',
-      buttonLabel: 'Open Recovery',
-    })
-  }
+  cards.push({
+    id: 'gentle-movement',
+    title: 'Gentle Movement',
+    timing: 'When your body needs space',
+    status: 'upcoming',
+    body:
+      'Choose low-pressure movement today: a light walk, gentle bike ride, taking the kids to the park, easy swimming, or another calm form of movement that helps your body recover without turning recovery into another workout.',
+    buttonHref: '/dashboard/recovery',
+    buttonLabel: 'Open Recovery',
+  })
+}
 
   const currentCard = pickCurrentCard(cards)
 
