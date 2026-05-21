@@ -1,3 +1,5 @@
+import { getRecoveryTools } from '@/lib/recovery/getRecoveryTools'
+
 type DailyCard = {
   id: string
   title: string
@@ -163,6 +165,13 @@ export async function getDailyExecutionPlan({
     .lte('workout_date', `${today}T23:59:59.999Z`)
     .maybeSingle()
 
+  const { data: todayRecoveryLog } = await supabase
+    .from('recovery_logs')
+    .select('*')
+    .eq('client_id', client.client_id)
+    .eq('log_date', today)
+    .maybeSingle()
+
   const workoutCompleted = !!todayWorkoutLog?.completed
 
   const nutritionLogged =
@@ -173,6 +182,13 @@ export async function getDailyExecutionPlan({
       Number(todayNutritionLog.fats || 0) > 0 ||
       Number(todayNutritionLog.water_oz || 0) > 0
     )
+
+  const recoveryTools = getRecoveryTools({
+    client,
+    recoveryLog: todayRecoveryLog,
+    workoutCompleted,
+    nutritionLogged,
+  })
 
   const firstMealTarget = {
     protein: roundMacro(protein * 0.35),
@@ -223,9 +239,7 @@ export async function getDailyExecutionPlan({
     {
       id: 'first-meal',
       title: 'First Meal Anchor',
-      timing: firstMealMinutes
-        ? `Within 2 hours of waking`
-        : 'Within 2 hours of waking',
+      timing: 'Within 2 hours of waking',
       status: getStatus({
         nowMinutes,
         targetMinutes: firstMealMinutes,
@@ -294,7 +308,7 @@ export async function getDailyExecutionPlan({
       id: 'dinner',
       title: 'Dinner / Recovery Meal',
       timing: carbCutoffMinutes
-        ? `Finish carbs before the final 4-hour sleep window when possible`
+        ? 'Finish carbs before the final 4-hour sleep window when possible'
         : 'Evening recovery meal',
       status: 'upcoming',
       body:
@@ -306,9 +320,7 @@ export async function getDailyExecutionPlan({
     {
       id: 'evening-anchor',
       title: 'Evening Anchor',
-      timing: eveningAnchorMinutes
-        ? `About 2 hours before bed`
-        : 'About 2 hours before bed',
+      timing: 'About 2 hours before bed',
       status: getStatus({
         nowMinutes,
         targetMinutes: eveningAnchorMinutes,
@@ -321,6 +333,45 @@ export async function getDailyExecutionPlan({
       buttonLabel: 'Log Evening Anchor',
     },
   ]
+
+  if (recoveryTools.saunaRecommended) {
+    cards.push({
+      id: 'sauna',
+      title: 'Sauna Recovery',
+      timing: 'After training or later today',
+      status: 'upcoming',
+      body:
+        'Sauna is available today if you feel hydrated, steady, well-fed, and not dizzy, sick, overheated, or medically restricted.',
+      buttonHref: '/dashboard/recovery/sauna',
+      buttonLabel: 'Open Sauna Check',
+    })
+  }
+
+  if (recoveryTools.tubSoakRecommended) {
+    cards.push({
+      id: 'tub-soak',
+      title: 'Tub Soak',
+      timing: 'Evening recovery',
+      status: 'upcoming',
+      body:
+        'A warm soak may be a better recovery fit today if your system needs downshifting, soreness support, or lower-pressure recovery.',
+      buttonHref: '/dashboard/recovery',
+      buttonLabel: 'Open Recovery',
+    })
+  }
+
+  if (recoveryTools.mobilityRecommended) {
+    cards.push({
+      id: 'mobility',
+      title: 'Gentle Mobility',
+      timing: 'When your body needs space',
+      status: 'upcoming',
+      body:
+        'Gentle mobility is recommended today to support blood flow, reduce stiffness, and help your body recover without turning recovery into another workout.',
+      buttonHref: '/dashboard/recovery',
+      buttonLabel: 'Open Recovery',
+    })
+  }
 
   const currentCard = pickCurrentCard(cards)
 
@@ -344,5 +395,6 @@ export async function getDailyExecutionPlan({
     cards,
     workoutCompleted,
     nutritionLogged,
+    recoveryTools,
   }
 }
