@@ -1,3 +1,5 @@
+import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
+  
 export async function getRecoveryRecommendation({
   supabase,
   client,
@@ -9,6 +11,8 @@ export async function getRecoveryRecommendation({
 }) {
   const today = new Date().toISOString().split('T')[0]
 
+  const cycleStatus = getCycleStatus(client)
+  
   const { data: todayRecoveryLog } = await supabase
     .from('recovery_logs')
     .select('*')
@@ -95,10 +99,11 @@ export async function getRecoveryRecommendation({
       'High stress changes how your body responds to training. Prioritize a downshift today: slower breathing, a calmer pace, food, hydration, and reduced pressure.'
     saunaAllowed = false
     intensity = 'low'
-  } else if (cycleSymptoms) {
+  } else if (cycleSymptoms || cycleStatus.recoveryCaution) {
     recoveryFocus = 'cycle_support'
-    title = 'Support the phase you are in'
+    title = 'Cycle awareness matters today'
     recommendation =
+      cycleStatus.recoveryNote ||
       'Cycle symptoms are useful data. Keep recovery supportive today with hydration, minerals, enough food, and lower-pressure movement if your body is asking for it.'
     saunaAllowed = false
     intensity = 'moderate'
@@ -128,5 +133,6 @@ export async function getRecoveryRecommendation({
     workoutCompleted,
     nutritionLogged,
     hasRecoveryCheckIn: !!todayRecoveryLog,
+    cycleStatus,
   }
 }
