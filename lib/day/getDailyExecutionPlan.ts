@@ -348,17 +348,25 @@ export async function getDailyExecutionPlan({
   }
 
   if (recoveryTools.tubSoakRecommended) {
-    cards.push({
-      id: 'tub-soak',
-      title: 'Tub Soak',
-      timing: 'Evening recovery',
-      status: 'upcoming',
-      body:
-        'A warm soak may be a better recovery fit today if your system needs downshifting, soreness support, or lower-pressure recovery.',
-      buttonHref: '/dashboard/recovery',
-      buttonLabel: 'Open Recovery',
-    })
-  }
+  cards.push({
+    id: 'tub-soak',
+    title: 'Tub Soak',
+    timing: bedTime
+      ? `About 30–60 minutes before bed${formatTime(bedTime) ? ` near ${formatTime(bedTime)}` : ''}`
+      : 'About 30–60 minutes before bed',
+    status: getStatus({
+      nowMinutes,
+      targetMinutes:
+        bedMinutes !== null ? bedMinutes - 60 : null,
+      executionStyle,
+      windowMinutes: 60,
+    }),
+    body:
+      'A warm soak may be a better recovery fit today if your system needs downshifting, soreness support, or lower-pressure recovery before sleep.',
+    buttonHref: '/dashboard/recovery',
+    buttonLabel: 'Open Recovery',
+  })
+}
 
   if (recoveryTools.mobilityRecommended) {
     cards.push({
