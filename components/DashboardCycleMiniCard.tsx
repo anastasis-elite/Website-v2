@@ -130,10 +130,10 @@ export default function DashboardCycleMiniCard({
 
   const phaseLabel =
     cycleStatus.phase === 'extended_cycle'
-      ? 'Extended cycle'
+      ? 'Extended'
       : cycleStatus.phase
-      ? `${cycleStatus.phase.charAt(0).toUpperCase()}${cycleStatus.phase.slice(1)} estimate`
-      : 'Awareness only'
+      ? `${cycleStatus.phase.charAt(0).toUpperCase()}${cycleStatus.phase.slice(1)}`
+      : 'Awareness'
 
   return (
     <section
@@ -152,7 +152,7 @@ export default function DashboardCycleMiniCard({
       <p
         style={{
           ...styles.eyebrowStyle,
-          marginBottom: '12px',
+          margin: '0 0 10px',
           letterSpacing: '3px',
           fontSize: '10px',
         }}
@@ -160,45 +160,68 @@ export default function DashboardCycleMiniCard({
         Cycle Note
       </p>
 
-      <h3
+      <div
         style={{
-          margin: '0 0 8px',
-          fontSize: '1.3rem',
-          fontWeight: 500,
-          letterSpacing: '-0.02em',
-          color: '#f5f0e8',
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: '12px',
+          alignItems: 'flex-start',
+          marginBottom: cycleStatus.enabled ? '10px' : '0',
         }}
       >
-        {cycleStatus.enabled && cycleStatus.cycleDay
-          ? `Day ${cycleStatus.cycleDay}`
-          : 'Not active'}
-      </h3>
+        <div>
+          <h3
+            style={{
+              margin: '0 0 4px',
+              fontSize: '1.12rem',
+              fontWeight: 500,
+              letterSpacing: '-0.02em',
+              color: '#f5f0e8',
+            }}
+          >
+            {cycleStatus.enabled && cycleStatus.cycleDay
+              ? `Day ${cycleStatus.cycleDay}`
+              : 'Not active'}
+          </h3>
 
-      <p
-        style={{
-          margin: '0 0 14px',
-          color: 'rgba(215,199,182,0.76)',
-          fontSize: '0.92rem',
-          lineHeight: 1.6,
-        }}
-      >
-        {cycleStatus.enabled
-          ? `${phaseLabel} · quick check-in`
-          : 'Tap to add cycle awareness.'}
-      </p>
+          <p
+            style={{
+              margin: 0,
+              color: 'rgba(215,199,182,0.68)',
+              fontSize: '0.82rem',
+              lineHeight: 1.4,
+            }}
+          >
+            {cycleStatus.enabled
+              ? `${phaseLabel} estimate`
+              : 'Add cycle awareness.'}
+          </p>
+        </div>
+
+        <Link
+          href="/dashboard/cycle"
+          style={{
+            color: 'rgba(197,139,87,0.92)',
+            fontSize: '0.78rem',
+            whiteSpace: 'nowrap',
+            marginTop: '2px',
+          }}
+        >
+          Open →
+        </Link>
+      </div>
 
       {cycleStatus.enabled ? (
         <div
           style={{
             display: 'grid',
             gap: '8px',
-            marginTop: '10px',
           }}
         >
           <div
             style={{
               display: 'grid',
-              gap: '6px',
+              gap: '5px',
             }}
           >
             {symptomPredictions.slice(0, 3).map((symptom) => (
@@ -208,9 +231,9 @@ export default function DashboardCycleMiniCard({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '7px',
-                  color: 'rgba(215,199,182,0.86)',
-                  fontSize: '0.82rem',
-                  lineHeight: 1.35,
+                  color: 'rgba(215,199,182,0.82)',
+                  fontSize: '0.78rem',
+                  lineHeight: 1.25,
                   cursor: 'pointer',
                 }}
               >
@@ -222,16 +245,21 @@ export default function DashboardCycleMiniCard({
                   }
                   style={{
                     accentColor: '#b56e43',
-                    width: '13px',
-                    height: '13px',
+                    width: '11px',
+                    height: '11px',
+                    minWidth: '11px',
+                    minHeight: '11px',
+                    padding: 0,
                     margin: 0,
+                    boxShadow: 'none',
+                    borderRadius: '2px',
                     flexShrink: 0,
                   }}
                 />
 
                 <span>
                   {symptom.label}
-                  <span style={{ opacity: 0.52 }}>
+                  <span style={{ opacity: 0.48 }}>
                     {' '}
                     · {intensities[symptom.key] || symptom.mostCommonIntensity}
                   </span>
@@ -246,50 +274,31 @@ export default function DashboardCycleMiniCard({
             disabled={saving}
             style={{
               ...styles.primaryButtonStyle,
-              padding: '9px 14px',
-              fontSize: '0.84rem',
-              marginTop: '4px',
+              padding: '7px 12px',
+              fontSize: '0.78rem',
+              marginTop: '2px',
               opacity: saving ? 0.65 : 1,
+              width: 'fit-content',
+              minWidth: 'unset',
             }}
           >
-            {saving ? 'Saving...' : saved ? 'Cycle Saved' : 'Save Cycle Note'}
+            {saving ? 'Saving...' : saved ? 'Saved' : 'Save'}
           </button>
 
           {error ? (
             <p
               style={{
-                margin: '4px 0 0',
+                margin: '2px 0 0',
                 color: '#ffb4b4',
-                fontSize: '0.86rem',
-                lineHeight: 1.5,
+                fontSize: '0.76rem',
+                lineHeight: 1.35,
               }}
             >
               {error}
             </p>
           ) : null}
-
-          <Link
-            href="/dashboard/cycle"
-            style={{
-              color: 'rgba(197,139,87,0.92)',
-              fontSize: '0.86rem',
-              marginTop: '2px',
-            }}
-          >
-            Open full cycle tracker →
-          </Link>
         </div>
-      ) : (
-        <Link
-          href="/dashboard/cycle"
-          style={{
-            color: 'rgba(197,139,87,0.92)',
-            fontSize: '0.86rem',
-          }}
-        >
-          Open cycle tracker →
-        </Link>
-      )}
+      ) : null}
     </section>
   )
 }
