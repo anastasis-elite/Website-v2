@@ -149,9 +149,11 @@ export function applyCycleTrainingAdjustment({
         0
     ) || 0
 
-  const adjustedWeight = baselineWeight
-    ? Math.max(0, Math.round(baselineWeight * adjustment.weightMultiplier))
-    : null
+  const rawAdjustedWeight = baselineWeight
+  ? baselineWeight * adjustment.weightMultiplier
+  : 0
+
+const adjustedWeight = roundRecommendedWeight(rawAdjustedWeight)
 
   const adjustedReps = baselineReps
     ? Math.max(1, baselineReps + adjustment.repAdjustment)
