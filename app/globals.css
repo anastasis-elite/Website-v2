@@ -504,11 +504,27 @@ a {
   line-height: 1.35;
 }
 
+.dashboard-dropdown a,
+.dashboard-logout {
+  min-width: unset !important;
+  width: 100%;
+  height: auto !important;
+  margin: 0 !important;
+  display: block !important;
+  box-sizing: border-box;
+}
+
 .dashboard-dropdown a:hover,
 .dashboard-logout:hover {
   background: rgba(181,110,67,0.10);
   color: #f5f0e8;
   transform: translateX(2px);
+}
+
+.dashboard-dropdown .button {
+  min-width: unset !important;
+  width: 100% !important;
+  margin: 0 !important;
 }
 
 .dashboard-logout {
