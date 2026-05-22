@@ -419,7 +419,6 @@ export default function WorkoutTracker({
     cardRefs.current[index] = element
   }}
   style={{
-              style={{
                 flex: '0 0 min(86vw, 620px)',
                 scrollSnapAlign: 'center',
                 border: exercise.cycle_caution_active
