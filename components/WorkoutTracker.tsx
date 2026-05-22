@@ -224,6 +224,12 @@ export default function WorkoutTracker({
   const router = useRouter()
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
+  function setCardRef(index: number) {
+  return (element: HTMLDivElement | null): void => {
+    cardRefs.current[index] = element
+  }
+}
+  
   const [activeIndex, setActiveIndex] = useState(0)
 
   const [logs, setLogs] = useState<WorkoutLog[]>(
