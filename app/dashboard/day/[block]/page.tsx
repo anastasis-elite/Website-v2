@@ -7,20 +7,20 @@ import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 export default async function DayBlockPage({
   params,
 }: {
-  params: { block: string }
+  params: Promise<{ block: string }>
 }) {
+  const { block } = await params
+
+  if (!['morning', 'midday', 'evening'].includes(block)) {
+    notFound()
+  }
+
   const { supabase, client } = await getDashboardContext()
 
   const dailyPlan = await getDailyExecutionPlan({
     supabase,
     client,
   })
-
-  const block = params.block
-
-  if (!['morning', 'midday', 'evening'].includes(block)) {
-    notFound()
-  }
 
   const card = dailyPlan.cards.find((item: any) => item.id === block)
 
