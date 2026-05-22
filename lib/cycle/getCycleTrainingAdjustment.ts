@@ -9,6 +9,22 @@ type CycleTrainingAdjustment = {
   cautionActive: boolean
 }
 
+function roundRecommendedWeight(weight: number) {
+  if (!weight || weight <= 0) return null
+
+  const lowWeightOptions = [1, 2, 2.5, 5, 8, 10, 12]
+
+  if (weight < 15) {
+    return lowWeightOptions.reduce((closest, option) => {
+      return Math.abs(option - weight) < Math.abs(closest - weight)
+        ? option
+        : closest
+    }, lowWeightOptions[0])
+  }
+
+  return Math.round(weight / 5) * 5
+}
+
 export function getCycleTrainingAdjustment(client: any): CycleTrainingAdjustment {
   const cycleStatus = getCycleStatus(client)
 
