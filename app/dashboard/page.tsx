@@ -2,7 +2,8 @@ import * as styles from '../styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getNextLesson } from '@/lib/education/getNextLesson'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
-import DashboardMiniCards from '@/components/DashboardMiniCards'
+import DashboardCycleMiniCard from '@/components/DashboardCycleMiniCard'
+import { getCycleSymptomPattern } from '@/lib/cycle/getCycleSymptomPattern'
 import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
 import DashboardAssessmentMiniCard from '@/components/DashboardAssessmentMiniCard'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
@@ -70,7 +71,30 @@ export default async function DashboardPage() {
     client,
   })
 
-  const miniCards = [getCycleMiniCard(client)]
+  const cycleStatus = getCycleStatus(client)
+
+const today = new Date().toISOString().split('T')[0]
+
+const { data: todayCycleLog } = await supabase
+  .from('cycle_logs')
+  .select('*')
+  .eq('client_id', client.client_id)
+  .eq('log_date', today)
+  .maybeSingle()
+
+const { data: recentCycleLogs } = await supabase
+  .from('cycle_logs')
+  .select('*')
+  .eq('client_id', client.client_id)
+  .not('symptoms', 'is', null)
+  .order('log_date', { ascending: false })
+  .limit(180)
+
+const symptomPredictions = getCycleSymptomPattern({
+  logs: recentCycleLogs || [],
+  cycleDay: cycleStatus.cycleDay,
+  phase: cycleStatus.phase,
+})
 
   const dailyStructureSet =
     !!client.execution_style &&
@@ -121,7 +145,12 @@ export default async function DashboardPage() {
             marginBottom: '36px',
           }}
         >
-          <DashboardMiniCards cards={miniCards} />
+          <DashboardCycleMiniCard
+  clientId={client.client_id}
+  cycleStatus={cycleStatus}
+  symptomPredictions={symptomPredictions}
+  todayCycleLog={todayCycleLog}
+/>
 
           <DashboardAssessmentMiniCard
             clientId={client.client_id}
