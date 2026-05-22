@@ -566,62 +566,6 @@ details > summary {
   list-style: none;
 }
 
-.dashboard-menu summary {
-  list-style: none;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.dashboard-dropdown {
-  position: absolute;
-  top: 60px;
-  right: 0;
-  min-width: 230px;
-  background: rgba(8,8,8,0.88);
-  border-radius: 24px;
-  padding: 14px;
-  display: grid;
-  gap: 8px;
-  backdrop-filter: blur(22px);
-  box-shadow:
-    0 24px 90px rgba(0,0,0,0.35),
-    inset 0 0 35px rgba(255,255,255,0.02);
-  animation: floatIn 0.22s ease both;
-}
-
-.dashboard-dropdown a,
-.dashboard-logout {
-  color: #f3eee8;
-  text-decoration: none;
-  padding: 11px 13px;
-  border-radius: 14px;
-  transition: 0.2s ease;
-}
-
-.dashboard-dropdown a:hover,
-.dashboard-logout:hover {
-  background: rgba(255,255,255,0.055);
-}
-
-.dashboard-logout {
-  width: 100%;
-  background: transparent;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-.dashboard-menu summary::marker {
-  content: "";
-  display: none;
-}
-
-.dashboard-menu summary {
-  -webkit-appearance: none;
-  appearance: none;
-}
-
 /* Forms */
 
 .field-wrap {
