@@ -414,10 +414,11 @@ export default function WorkoutTracker({
 
           return (
             <section
-              key={index}
-              ref={(element) => {
-                cardRefs.current[index] = element
-              }}
+  key={index}
+  ref={(element) => {
+    cardRefs.current[index] = element
+  }}
+  style={{
               style={{
                 flex: '0 0 min(86vw, 620px)',
                 scrollSnapAlign: 'center',
