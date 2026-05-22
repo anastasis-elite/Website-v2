@@ -184,9 +184,7 @@ function ScrollPicker({
           return (
             <button
               key={option}
-              ref={(element) => {
-                itemRefs.current[String(option)] = element
-              }}
+              ref={setItemRef(String(option))}
               type="button"
               onClick={() => onChange(option)}
               style={{
@@ -410,20 +408,22 @@ export default function WorkoutTracker({
         }}
       >
         {logs.map((exercise, index) => {
-          const weightOptions = buildNumberOptions({
-            min: exercise.planned_weight < 15 ? 1 : 0,
-            max: Math.max(100, exercise.planned_weight + 100),
-            step: exercise.planned_weight < 15 ? 0.5 : 5,
-            includeValue: exercise.actual_weight,
-          })
+          const weightOptions =
+  exercise.planned_weight < 15
+    ? [1, 2, 2.5, 5, 8, 10, 12, 15]
+    : buildNumberOptions({
+        min: Math.max(0, exercise.planned_weight - 30),
+        max: exercise.planned_weight + 30,
+        step: 5,
+        includeValue: exercise.actual_weight,
+      })
 
-          const repOptions = buildNumberOptions({
-            min: 0,
-            max: Math.max(30, exercise.planned_reps + 15),
-            step: 1,
-            includeValue: exercise.actual_reps,
-          })
-
+const repOptions = buildNumberOptions({
+  min: Math.max(0, exercise.planned_reps - 8),
+  max: exercise.planned_reps + 8,
+  step: 1,
+  includeValue: exercise.actual_reps,
+})
           return (
             <section
   key={index}
