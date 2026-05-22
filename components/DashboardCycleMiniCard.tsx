@@ -27,8 +27,6 @@ type Props = {
   todayCycleLog?: any
 }
 
-const intensityOptions = ['mild', 'moderate', 'heavy'] as const
-
 export default function DashboardCycleMiniCard({
   clientId,
   cycleStatus,
@@ -49,14 +47,16 @@ export default function DashboardCycleMiniCard({
     return initial
   })
 
-  const [intensities, setIntensities] = useState<
+  const [intensities] = useState<
     Record<string, 'mild' | 'moderate' | 'heavy'>
   >(() => {
     const initial: Record<string, 'mild' | 'moderate' | 'heavy'> = {}
 
     symptomPredictions.forEach((symptom) => {
       initial[symptom.key] =
-        existingSymptoms[symptom.key] || symptom.mostCommonIntensity || 'moderate'
+        existingSymptoms[symptom.key] ||
+        symptom.mostCommonIntensity ||
+        'moderate'
     })
 
     return initial
@@ -70,23 +70,6 @@ export default function DashboardCycleMiniCard({
     setSelectedSymptoms((prev) => ({
       ...prev,
       [key]: checked,
-    }))
-
-    setSaved(false)
-  }
-
-  function updateIntensity(
-    key: string,
-    intensity: 'mild' | 'moderate' | 'heavy'
-  ) {
-    setIntensities((prev) => ({
-      ...prev,
-      [key]: intensity,
-    }))
-
-    setSelectedSymptoms((prev) => ({
-      ...prev,
-      [key]: true,
     }))
 
     setSaved(false)
@@ -193,7 +176,7 @@ export default function DashboardCycleMiniCard({
 
       <p
         style={{
-          margin: '0 0 16px',
+          margin: '0 0 14px',
           color: 'rgba(215,199,182,0.76)',
           fontSize: '0.92rem',
           lineHeight: 1.6,
@@ -208,28 +191,26 @@ export default function DashboardCycleMiniCard({
         <div
           style={{
             display: 'grid',
-            gap: '12px',
-            marginTop: '14px',
+            gap: '8px',
+            marginTop: '10px',
           }}
         >
-          {symptomPredictions.slice(0, 3).map((symptom) => (
-            <div
-              key={symptom.key}
-              style={{
-                display: 'grid',
-                gap: '8px',
-                padding: '12px',
-                borderRadius: '16px',
-                background: 'rgba(255,255,255,0.03)',
-              }}
-            >
+          <div
+            style={{
+              display: 'grid',
+              gap: '6px',
+            }}
+          >
+            {symptomPredictions.slice(0, 3).map((symptom) => (
               <label
+                key={symptom.key}
                 style={{
                   display: 'flex',
-                  gap: '10px',
                   alignItems: 'center',
-                  color: 'rgba(215,199,182,0.9)',
-                  fontSize: '0.92rem',
+                  gap: '7px',
+                  color: 'rgba(215,199,182,0.86)',
+                  fontSize: '0.82rem',
+                  lineHeight: 1.35,
                   cursor: 'pointer',
                 }}
               >
@@ -239,44 +220,25 @@ export default function DashboardCycleMiniCard({
                   onChange={(e) =>
                     toggleSymptom(symptom.key, e.target.checked)
                   }
-                  style={{ accentColor: '#b56e43' }}
+                  style={{
+                    accentColor: '#b56e43',
+                    width: '13px',
+                    height: '13px',
+                    margin: 0,
+                    flexShrink: 0,
+                  }}
                 />
 
                 <span>
-                  {symptom.label}{' '}
-                  <span style={{ opacity: 0.62 }}>
-                    · usually {symptom.mostCommonIntensity}
+                  {symptom.label}
+                  <span style={{ opacity: 0.52 }}>
+                    {' '}
+                    · {intensities[symptom.key] || symptom.mostCommonIntensity}
                   </span>
                 </span>
               </label>
-
-              {selectedSymptoms[symptom.key] ? (
-                <select
-                  value={intensities[symptom.key]}
-                  onChange={(e) =>
-                    updateIntensity(
-                      symptom.key,
-                      e.target.value as 'mild' | 'moderate' | 'heavy'
-                    )
-                  }
-                  style={{
-                    width: '100%',
-                    borderRadius: '14px',
-                    padding: '10px 12px',
-                    background: 'rgba(8,8,8,0.78)',
-                    color: '#f5f0e8',
-                    border: '1px solid rgba(181,110,67,0.22)',
-                  }}
-                >
-                  {intensityOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option.charAt(0).toUpperCase() + option.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
-            </div>
-          ))}
+            ))}
+          </div>
 
           <button
             type="button"
@@ -284,8 +246,8 @@ export default function DashboardCycleMiniCard({
             disabled={saving}
             style={{
               ...styles.primaryButtonStyle,
-              padding: '11px 16px',
-              fontSize: '0.9rem',
+              padding: '9px 14px',
+              fontSize: '0.84rem',
               marginTop: '4px',
               opacity: saving ? 0.65 : 1,
             }}
