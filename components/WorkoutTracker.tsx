@@ -135,6 +135,12 @@ function ScrollPicker({
 }) {
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
+  function setItemRef(key: string) {
+  return (element: HTMLButtonElement | null): void => {
+    itemRefs.current[key] = element
+  }
+}
+  
   useEffect(() => {
     const key = String(value)
     const current = itemRefs.current[key]
