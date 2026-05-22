@@ -20,7 +20,7 @@ const symptomLabels: Record<string, string> = {
 
 const fallbackByPhase: Record<string, string[]> = {
   menstrual: ['bleeding', 'cramps', 'fatigue'],
-  follicular: ['energy_shift', 'mood_sensitivity', 'cravings'],
+  follicular: ['fatigue', 'mood_sensitivity', 'cravings'],
   ovulatory: ['bloating', 'mood_sensitivity', 'breast_tenderness'],
   luteal: ['fatigue', 'cravings', 'mood_sensitivity'],
   extended_cycle: ['fatigue', 'mood_sensitivity', 'bloating'],
