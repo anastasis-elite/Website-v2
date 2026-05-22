@@ -57,13 +57,9 @@ export function getCycleTrainingAdjustment(client: any): CycleTrainingAdjustment
     daysBeforeExpectedPeriod <= 3
 
   const isDuringPeriod = cycleStatus.phase === 'menstrual'
-
   const isExtendedCycle = cycleStatus.phase === 'extended_cycle'
-
   const isFollicular = cycleStatus.phase === 'follicular'
-
   const isOvulatory = cycleStatus.phase === 'ovulatory'
-
   const isLuteal = cycleStatus.phase === 'luteal'
 
   const programModifier =
@@ -150,10 +146,10 @@ export function applyCycleTrainingAdjustment({
     ) || 0
 
   const rawAdjustedWeight = baselineWeight
-  ? baselineWeight * adjustment.weightMultiplier
-  : 0
+    ? baselineWeight * adjustment.weightMultiplier
+    : 0
 
-const adjustedWeight = roundRecommendedWeight(rawAdjustedWeight)
+  const adjustedWeight = roundRecommendedWeight(rawAdjustedWeight)
 
   const adjustedReps = baselineReps
     ? Math.max(1, baselineReps + adjustment.repAdjustment)
