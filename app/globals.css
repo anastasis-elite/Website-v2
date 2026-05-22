@@ -354,49 +354,168 @@ a {
   z-index: 1001;
 }
 
-.dashboard-menu details {
-  position: relative;
-}
-
-.dashboard-menu summary {
-  list-style: none;
+.dashboard-menu-trigger {
   width: 48px;
   height: 48px;
   border-radius: 999px;
-  background: rgba(12,12,12,0.78);
-  backdrop-filter: blur(16px);
-  color: #f3eee8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1.25rem;
-  transition: 0.24s ease;
-  overflow: hidden;
+  border: none;
   padding: 0;
+  background:
+    radial-gradient(circle at 35% 25%, rgba(245,240,232,0.12), transparent 32%),
+    radial-gradient(circle at 60% 70%, rgba(181,110,67,0.16), transparent 38%),
+    rgba(12,12,12,0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: #b56e43;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    transform 0.24s ease,
+    box-shadow 0.24s ease,
+    background 0.24s ease;
   box-shadow:
-    0 12px 40px rgba(0,0,0,0.26),
-    0 0 30px rgba(181,110,67,0.08);
+    0 16px 48px rgba(0,0,0,0.28),
+    0 0 36px rgba(181,110,67,0.10),
+    inset 0 0 28px rgba(255,255,255,0.018);
 }
 
-.dashboard-menu summary::-webkit-details-marker {
-  display: none;
-}
-
-.dashboard-menu summary:hover {
+.dashboard-menu-trigger:hover {
   transform: translateY(-1px) scale(1.04);
   box-shadow:
-    0 18px 50px rgba(0,0,0,0.3),
-    0 0 40px rgba(181,110,67,0.14);
+    0 22px 62px rgba(0,0,0,0.34),
+    0 0 46px rgba(181,110,67,0.16),
+    inset 0 0 30px rgba(255,255,255,0.024);
 }
 
-.dashboard-menu summary::-webkit-details-marker {
-  display: none;
+.dashboard-menu-trigger:focus-visible {
+  outline: 1px solid rgba(181,110,67,0.55);
+  outline-offset: 4px;
 }
 
-.dashboard-menu summary::marker {
-  display: none;
+.dashboard-menu-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  opacity: 0.94;
+  pointer-events: none;
+  filter: drop-shadow(0 0 12px rgba(181,110,67,0.22));
+}
+
+.dashboard-menu-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: block;
+  background: rgba(181,110,67,0.9);
+  box-shadow:
+    0 0 14px rgba(181,110,67,0.35),
+    0 0 28px rgba(181,110,67,0.18);
+}
+
+.dashboard-dropdown {
+  position: absolute;
+  top: 62px;
+  right: 0;
+  min-width: 238px;
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+  border-radius: 28px;
+
+  background:
+    radial-gradient(circle at 15% 0%, rgba(181,110,67,0.18), transparent 38%),
+    radial-gradient(circle at 90% 100%, rgba(245,240,232,0.055), transparent 42%),
+    linear-gradient(
+      145deg,
+      rgba(12,12,12,0.88) 0%,
+      rgba(9,8,7,0.74) 46%,
+      rgba(5,5,5,0.58) 100%
+    );
+
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+
+  box-shadow:
+    0 28px 90px rgba(0,0,0,0.42),
+    0 0 48px rgba(181,110,67,0.08),
+    inset 0 0 40px rgba(255,255,255,0.018);
+
+  animation: menuMistIn 0.22s ease both;
+  overflow: hidden;
+}
+
+.dashboard-dropdown::before {
   content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,0.035),
+      transparent 34%,
+      rgba(181,110,67,0.035)
+    );
+  opacity: 0.75;
+}
+
+.dashboard-dropdown a,
+.dashboard-logout {
+  position: relative;
+  z-index: 1;
+  color: rgba(197,139,87,0.95);
+  text-decoration: none;
+  padding: 11px 13px;
+  border-radius: 16px;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.dashboard-dropdown a:hover,
+.dashboard-logout:hover {
+  background: rgba(181,110,67,0.10);
+  color: #f5f0e8;
+  transform: translateX(2px);
+}
+
+.dashboard-logout {
+  width: 100%;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+@keyframes menuMistIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+    filter: blur(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-menu {
+    top: 18px;
+    right: 18px;
+  }
+
+  .dashboard-dropdown {
+    min-width: 230px;
+    right: 0;
+  }
 }
 
 details > summary {
