@@ -355,25 +355,48 @@ a {
 }
 
 .dashboard-menu-trigger {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+
+  aspect-ratio: 1 / 1;
+  border-radius: 50% !important;
+
   border: none;
-  padding: 0;
+  padding: 0 !important;
+  margin: 0;
+
   background:
     radial-gradient(circle at 35% 25%, rgba(245,240,232,0.12), transparent 32%),
     radial-gradient(circle at 60% 70%, rgba(181,110,67,0.16), transparent 38%),
     rgba(12,12,12,0.72);
+
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+
   color: #b56e43;
-  display: grid;
+
+  display: inline-grid !important;
   place-items: center;
+
   cursor: pointer;
+
+  font-size: 0;
+  line-height: 1;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  overflow: hidden;
+
   transition:
     transform 0.24s ease,
     box-shadow 0.24s ease,
     background 0.24s ease;
+
   box-shadow:
     0 16px 48px rgba(0,0,0,0.28),
     0 0 36px rgba(181,110,67,0.10),
