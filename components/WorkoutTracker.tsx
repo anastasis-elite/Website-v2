@@ -134,13 +134,14 @@ function ScrollPicker({
   suffix?: string
 }) {
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   function setItemRef(key: string) {
-  return (element: HTMLButtonElement | null): void => {
-    itemRefs.current[key] = element
+    return (element: HTMLButtonElement | null): void => {
+      itemRefs.current[key] = element
+    }
   }
-}
-  
+
   useEffect(() => {
     const key = String(value)
     const current = itemRefs.current[key]
@@ -148,8 +149,8 @@ function ScrollPicker({
     if (current) {
       current.scrollIntoView({
         behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
+        block: 'center',
+        inline: 'nearest',
       })
     }
   }, [value])
@@ -169,15 +170,35 @@ function ScrollPicker({
       </p>
 
       <div
+        ref={containerRef}
         style={{
-          display: 'flex',
-          gap: '8px',
-          overflowX: 'auto',
-          scrollSnapType: 'x mandatory',
+          position: 'relative',
+          height: '142px',
+          overflowY: 'auto',
+          scrollSnapType: 'y mandatory',
           WebkitOverflowScrolling: 'touch',
-          padding: '4px 2px 10px',
+          borderRadius: '26px',
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.045), rgba(255,255,255,0.025))',
+          boxShadow:
+            'inset 0 0 34px rgba(0,0,0,0.22), 0 16px 42px rgba(0,0,0,0.12)',
+          padding: '46px 0',
         }}
       >
+        <div
+          style={{
+            pointerEvents: 'none',
+            position: 'sticky',
+            top: '46px',
+            height: '50px',
+            marginTop: '-46px',
+            borderTop: '1px solid rgba(181,110,67,0.28)',
+            borderBottom: '1px solid rgba(181,110,67,0.28)',
+            background: 'rgba(181,110,67,0.055)',
+            zIndex: 1,
+          }}
+        />
+
         {options.map((option) => {
           const active = option === value
 
@@ -188,24 +209,20 @@ function ScrollPicker({
               type="button"
               onClick={() => onChange(option)}
               style={{
-                flex: '0 0 auto',
+                position: 'relative',
+                zIndex: 2,
+                width: '100%',
+                height: '50px',
                 scrollSnapAlign: 'center',
-                border: active
-                  ? '1px solid rgba(181,110,67,0.52)'
-                  : '1px solid rgba(181,110,67,0.16)',
-                borderRadius: '999px',
-                padding: '10px 14px',
-                minWidth: '64px',
-                background: active
-                  ? 'rgba(181,110,67,0.16)'
-                  : 'rgba(255,255,255,0.035)',
+                border: 'none',
+                background: 'transparent',
                 color: active
                   ? '#f5f0e8'
-                  : 'rgba(215,199,182,0.76)',
+                  : 'rgba(215,199,182,0.44)',
+                fontSize: active ? '1.35rem' : '1rem',
+                fontFamily: 'inherit',
                 cursor: 'pointer',
-                fontSize: active ? '1rem' : '0.92rem',
-                transform: active ? 'scale(1.03)' : 'scale(1)',
-                transition: 'all 0.18s ease',
+                transition: 'all 0.16s ease',
               }}
             >
               {option}
@@ -412,8 +429,8 @@ export default function WorkoutTracker({
   exercise.planned_weight < 15
     ? [1, 2, 2.5, 5, 8, 10, 12, 15]
     : buildNumberOptions({
-        min: Math.max(0, exercise.planned_weight - 30),
-        max: exercise.planned_weight + 30,
+        min: Math.max(0, exercise.planned_weight - 20),
+        max: exercise.planned_weight + 20,
         step: 5,
         includeValue: exercise.actual_weight,
       })
