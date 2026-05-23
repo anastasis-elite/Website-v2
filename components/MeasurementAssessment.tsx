@@ -575,168 +575,206 @@ function MeasurementDiagram({
       </p>
 
       <svg
-  viewBox="0 0 320 620"
+  viewBox="0 0 360 720"
   style={{
     width: '100%',
-    maxHeight: large ? '720px' : '500px',
+    maxHeight: large ? '760px' : '560px',
     display: 'block',
   }}
 >
-  <defs>
-    <filter id="softGlow">
-      <feGaussianBlur stdDeviation="2.5" result="blur" />
-      <feMerge>
-        <feMergeNode in="blur" />
-        <feMergeNode in="SourceGraphic" />
-      </feMerge>
-    </filter>
-  </defs>
-
-  {/* More realistic front-facing female outline */}
-<path
-  d="
-    M160 38
-    C140 38 126 54 126 76
-    C126 98 140 116 160 116
-    C180 116 194 98 194 76
-    C194 54 180 38 160 38
-
-    M145 116
-    C143 130 136 144 122 158
-
-    M175 116
-    C177 130 184 144 198 158
-
-    M122 158
-    C104 174 96 200 96 232
-    C96 270 108 305 118 338
-
-    M198 158
-    C216 174 224 200 224 232
-    C224 270 212 305 202 338
-
-    M122 158
-    C134 171 146 177 160 177
-    C174 177 186 171 198 158
-
-    M126 184
-    C118 220 120 256 132 286
-    C140 306 148 318 160 320
-    C172 318 180 306 188 286
-    C200 256 202 220 194 184
-
-    M132 286
-    C118 328 104 374 98 430
-    C94 472 98 522 106 584
-
-    M188 286
-    C202 328 216 374 222 430
-    C226 472 222 522 214 584
-
-    M151 320
-    C148 370 145 430 141 488
-    C138 528 132 560 124 602
-
-    M169 320
-    C172 370 175 430 179 488
-    C182 528 188 560 196 602
-  "
-  fill="none"
-  stroke="rgba(245,240,232,0.46)"
-  strokeWidth="3"
-  strokeLinecap="round"
-  strokeLinejoin="round"
-/>
-
-{/* Arms / hands */}
-<path
-  d="
-    M100 222
-    C92 258 88 288 92 318
-    C94 336 101 350 109 358
-
-    M220 222
-    C228 258 232 288 228 318
-    C226 336 219 350 211 358
-
-    M108 358
-    C103 370 102 382 106 394
-
-    M212 358
-    C217 370 218 382 214 394
-  "
-  fill="none"
-  stroke="rgba(245,240,232,0.42)"
-  strokeWidth="3"
-  strokeLinecap="round"
-  strokeLinejoin="round"
-/>
-
-{/* Subtle bust line */}
-<path
-  d="M124 220 C137 207 151 208 160 223 C169 208 183 207 196 220"
-  fill="none"
-  stroke="rgba(245,240,232,0.22)"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
-
-{/* Subtle lower abdomen / pelvis line */}
-<path
-  d="M134 338 C146 354 174 354 186 338"
-  fill="none"
-  stroke="rgba(245,240,232,0.18)"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
-
-  {/* Neck / collarbone */}
+  {/* Anatomical female guide silhouette */}
   <path
-    d="M132 138 C145 150 175 150 188 138"
+    d="
+      M180 58
+      C156 58 140 77 140 104
+      C140 131 156 150 180 150
+      C204 150 220 131 220 104
+      C220 77 204 58 180 58
+
+      M164 150
+      C162 170 156 188 144 205
+      C132 222 111 229 98 238
+
+      M196 150
+      C198 170 204 188 216 205
+      C228 222 249 229 262 238
+
+      M98 238
+      C83 250 78 278 78 320
+      C78 365 70 396 66 438
+      C64 458 72 477 88 486
+
+      M262 238
+      C277 250 282 278 282 320
+      C282 365 290 396 294 438
+      C296 458 288 477 272 486
+
+      M104 246
+      C108 286 105 330 92 371
+      C83 400 79 426 79 454
+
+      M256 246
+      C252 286 255 330 268 371
+      C277 400 281 426 281 454
+
+      M98 238
+      C125 228 151 226 180 226
+      C209 226 235 228 262 238
+
+      M126 232
+      C119 270 120 315 135 354
+      C146 382 160 398 180 400
+      C200 398 214 382 225 354
+      C240 315 241 270 234 232
+
+      M135 354
+      C118 394 105 437 98 488
+      C91 540 99 600 113 672
+
+      M225 354
+      C242 394 255 437 262 488
+      C269 540 261 600 247 672
+
+      M166 400
+      C162 460 159 526 155 584
+      C152 625 146 657 138 696
+
+      M194 400
+      C198 460 201 526 205 584
+      C208 625 214 657 222 696
+    "
     fill="none"
-    stroke="rgba(245,240,232,0.20)"
+    stroke="rgba(245,240,232,0.54)"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+
+  {/* Hair / bun */}
+  <path
+    d="M158 70 C162 48 198 48 202 70"
+    fill="none"
+    stroke="rgba(245,240,232,0.42)"
     strokeWidth="2"
     strokeLinecap="round"
   />
 
-  {/* Bust curve */}
   <path
-    d="M122 214 C136 197 150 198 160 214 C170 198 184 197 198 214"
+    d="M145 92 C160 70 200 70 215 92"
+    fill="none"
+    stroke="rgba(245,240,232,0.32)"
+    strokeWidth="2"
+    strokeLinecap="round"
+  />
+
+  {/* Collarbones / shoulders */}
+  <path
+    d="M104 240 C130 252 158 256 180 258 C202 256 230 252 256 240"
+    fill="none"
+    stroke="rgba(245,240,232,0.34)"
+    strokeWidth="2"
+    strokeLinecap="round"
+  />
+
+  {/* Bust */}
+  <path
+    d="M121 294 C138 269 164 274 180 301 C196 274 222 269 239 294"
+    fill="none"
+    stroke="rgba(245,240,232,0.38)"
+    strokeWidth="2"
+    strokeLinecap="round"
+  />
+
+  {/* Ribcage */}
+  <path
+    d="M132 320 C145 337 162 346 180 346 C198 346 215 337 228 320"
+    fill="none"
+    stroke="rgba(245,240,232,0.28)"
+    strokeWidth="2"
+    strokeLinecap="round"
+  />
+
+  <path
+    d="M137 345 C149 360 164 368 180 368 C196 368 211 360 223 345"
     fill="none"
     stroke="rgba(245,240,232,0.24)"
     strokeWidth="2"
     strokeLinecap="round"
   />
 
-  {/* Waist contour accent */}
+  {/* Abdomen center */}
   <path
-    d="M129 268 C142 286 178 286 191 268"
+    d="M180 374 C180 390 180 406 180 420"
     fill="none"
-    stroke="rgba(245,240,232,0.18)"
+    stroke="rgba(245,240,232,0.28)"
     strokeWidth="2"
     strokeLinecap="round"
   />
 
-  {/* Hip / glute curve */}
+  {/* Hip / pelvis definition */}
   <path
-    d="M104 336 C124 362 145 371 160 371 C175 371 196 362 216 336"
+    d="M112 425 C133 394 158 390 180 430 C202 390 227 394 248 425"
     fill="none"
-    stroke="rgba(245,240,232,0.20)"
+    stroke="rgba(245,240,232,0.42)"
     strokeWidth="2"
     strokeLinecap="round"
   />
 
-  <GuideLine y={132} color={lineColor('neck')} label="Neck" />
-<GuideLine y={166} color={lineColor('shoulders')} label="Shoulders" />
-<GuideLine y={222} color={lineColor('bust_chest')} label="Chest" />
-<GuideLine y={250} color={lineColor('underbust')} label="Underbust" />
-<GuideLine y={294} color={lineColor('waist')} label="Waist" />
-<GuideLine y={322} color={lineColor('lower_waist')} label="Low Waist" />
-<GuideLine y={350} color={lineColor('high_hip')} label="High Hip" />
-<GuideLine y={374} color={lineColor('hips_glutes')} label="Hips" />
+  <path
+    d="M174 450 C178 462 182 462 186 450"
+    fill="none"
+    stroke="rgba(245,240,232,0.42)"
+    strokeWidth="2"
+    strokeLinecap="round"
+  />
+
+  {/* Elbows */}
+  <circle cx="76" cy="370" r="7" fill="none" stroke="rgba(245,240,232,0.42)" strokeWidth="2" />
+  <circle cx="284" cy="370" r="7" fill="none" stroke="rgba(245,240,232,0.42)" strokeWidth="2" />
+
+  {/* Knees */}
+  <path
+    d="M130 548 C117 556 115 585 132 595 C149 585 147 556 130 548"
+    fill="none"
+    stroke="rgba(245,240,232,0.38)"
+    strokeWidth="2"
+  />
+
+  <path
+    d="M230 548 C213 556 211 585 228 595 C245 585 243 556 230 548"
+    fill="none"
+    stroke="rgba(245,240,232,0.38)"
+    strokeWidth="2"
+  />
+
+  {/* Feet */}
+  <path
+    d="M117 672 C108 690 105 704 126 704 C138 704 144 699 138 692"
+    fill="none"
+    stroke="rgba(245,240,232,0.42)"
+    strokeWidth="2"
+    strokeLinecap="round"
+  />
+
+  <path
+    d="M243 672 C252 690 255 704 234 704 C222 704 216 699 222 692"
+    fill="none"
+    stroke="rgba(245,240,232,0.42)"
+    strokeWidth="2"
+    strokeLinecap="round"
+  />
+
+  <GuideLine y={182} color={lineColor('neck')} label="Neck" />
+  <GuideLine y={238} color={lineColor('shoulders')} label="Shoulders" />
+  <GuideLine y={300} color={lineColor('bust_chest')} label="Chest" />
+  <GuideLine y={330} color={lineColor('underbust')} label="Underbust" />
+  <GuideLine y={385} color={lineColor('waist')} label="Waist" />
+  <GuideLine y={425} color={lineColor('lower_waist')} label="Low Waist" />
+  <GuideLine y={455} color={lineColor('high_hip')} label="High Hip" />
+  <GuideLine y={485} color={lineColor('hips_glutes')} label="Hips" />
 
   <GuideLine
-    y={460}
+    y={548}
     color={
       activeKey === 'left_thigh' || activeKey === 'right_thigh'
         ? active
@@ -746,7 +784,7 @@ function MeasurementDiagram({
   />
 
   <GuideLine
-    y={548}
+    y={650}
     color={
       activeKey === 'left_calf' || activeKey === 'right_calf'
         ? active
@@ -754,13 +792,6 @@ function MeasurementDiagram({
     }
     label="Calf"
   />
-
-  {/* Arm guides */}
-  <line x1="84" y1="226" x2="116" y2="226" stroke={lineColor('left_upper_arm')} strokeWidth="4" strokeLinecap="round" />
-  <line x1="204" y1="226" x2="236" y2="226" stroke={lineColor('right_upper_arm')} strokeWidth="4" strokeLinecap="round" />
-
-  <line x1="88" y1="292" x2="120" y2="292" stroke={lineColor('left_forearm')} strokeWidth="4" strokeLinecap="round" />
-  <line x1="200" y1="292" x2="232" y2="292" stroke={lineColor('right_forearm')} strokeWidth="4" strokeLinecap="round" />
 </svg>
 
             {!large ? (
@@ -790,8 +821,8 @@ function GuideLine({
   return (
     <>
       <line
-        x1="62"
-        x2="250"
+        x1="72"
+        x2="282"
         y1={y}
         y2={y}
         stroke={color}
@@ -800,10 +831,10 @@ function GuideLine({
       />
 
       <text
-        x="258"
+        x="292"
         y={y + 4}
         fill={color}
-        fontSize="10"
+        fontSize="11"
         fontFamily="Georgia, serif"
       >
         {label}
