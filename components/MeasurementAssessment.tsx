@@ -580,17 +580,16 @@ function MeasurementDiagram({
             pointerEvents: 'none',
           }}
         >
-          <GuideLine y={130} color={lineColor('neck')} label="Neck" />
-          <GuideLine y={175} color={lineColor('shoulders')} label="Shoulders" />
-          <GuideLine y={245} color={lineColor('bust_chest')} label="Chest" />
-          <GuideLine y={285} color={lineColor('underbust')} label="Underbust" />
-          <GuideLine y={340} color={lineColor('waist')} label="Waist" />
-          <GuideLine y={390} color={lineColor('lower_waist')} label="Low Waist" />
+          <GuideLine y={215} color={lineColor('neck')} label="Neck" />
+          <GuideLine y={250} color={lineColor('shoulders')} label="Shoulders" />
+          <GuideLine y={300} color={lineColor('bust_chest')} label="Chest" />
+          <GuideLine y={325} color={lineColor('underbust')} label="Underbust" />
+          <GuideLine y={375} color={lineColor('waist')} label="Waist" />
           <GuideLine y={430} color={lineColor('high_hip')} label="High Hip" />
           <GuideLine y={470} color={lineColor('hips_glutes')} label="Hips" />
 
           <GuideLine
-            y={535}
+            y={550}
             color={
               activeKey === 'left_thigh' || activeKey === 'right_thigh'
                 ? active
@@ -600,7 +599,7 @@ function MeasurementDiagram({
           />
 
           <GuideLine
-            y={635}
+            y={735}
             color={
               activeKey === 'left_calf' || activeKey === 'right_calf'
                 ? active
