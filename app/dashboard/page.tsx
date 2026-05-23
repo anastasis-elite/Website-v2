@@ -8,47 +8,14 @@ import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
 import DashboardAssessmentMiniCard from '@/components/DashboardAssessmentMiniCard'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 
-function getCycleMiniCard(client: any) {
-  const cycleStatus = getCycleStatus(client)
-
-  if (!cycleStatus.enabled) {
-    return {
-      id: 'cycle',
-      title: 'Cycle Note',
-      value: 'Not active',
-      body: 'Tap to add cycle awareness.',
-      href: '/dashboard/cycle',
-      status: 'neutral' as const,
-    }
-  }
-
-  const phaseLabel =
-    cycleStatus.phase === 'extended_cycle'
-      ? 'Extended cycle'
-      : cycleStatus.phase
-      ? `${cycleStatus.phase.charAt(0).toUpperCase()}${cycleStatus.phase.slice(1)} estimate`
-      : 'Awareness only'
-
-  return {
-    id: 'cycle',
-    title: 'Cycle Note',
-    value: `Day ${cycleStatus.cycleDay}`,
-    body: `${phaseLabel} · tap to view`,
-    href: '/dashboard/cycle',
-    status: cycleStatus.recoveryCaution
-      ? ('caution' as const)
-      : ('neutral' as const),
-  }
-}
-
 export default async function DashboardPage() {
   const { supabase, client, user } = await getDashboardContext()
-
-  const program = client.program || 'ignite'
 
   const monthStart = new Date()
   monthStart.setDate(1)
   monthStart.setHours(0, 0, 0, 0)
+
+  const monthStartDate = monthStart.toISOString().split('T')[0]
 
   const { data: monthlyAssessment } = await supabase
     .from('assessments')
@@ -58,31 +25,29 @@ export default async function DashboardPage() {
     .limit(1)
     .maybeSingle()
 
-  const monthStartDate = monthStart.toISOString().split('T')[0]
-
-const { data: monthlyMeasurements } = await supabase
-  .from('measurement_logs')
-  .select('id')
-  .eq('client_id', client.client_id)
-  .gte('log_date', monthStartDate)
-  .limit(1)
-  .maybeSingle()
-
-const measurementsCompletedThisMonth = !!monthlyMeasurements
-
-  const dailyStructureReviewedThisMonth =
-  client.daily_structure_reviewed_at
-    ? new Date(client.daily_structure_reviewed_at) >= monthStart
-    : false
-  
   const assessmentCompletedThisMonth = !!monthlyAssessment
 
+  const { data: monthlyMeasurements } = await supabase
+    .from('measurement_logs')
+    .select('id')
+    .eq('client_id', client.client_id)
+    .gte('log_date', monthStartDate)
+    .limit(1)
+    .maybeSingle()
+
+  const measurementsCompletedThisMonth = !!monthlyMeasurements
+
+  const dailyStructureReviewedThisMonth =
+    client.daily_structure_reviewed_at
+      ? new Date(client.daily_structure_reviewed_at) >= monthStart
+      : false
+
   const monthlyAssessmentsDueCount = [
-  !assessmentCompletedThisMonth,
-  !dailyStructureReviewedThisMonth,
-  !measurementsCompletedThisMonth,
-].filter(Boolean).length
-  
+    !assessmentCompletedThisMonth,
+    !dailyStructureReviewedThisMonth,
+    !measurementsCompletedThisMonth,
+  ].filter(Boolean).length
+
   const lesson = await getNextLesson({
     supabase,
     client,
@@ -96,56 +61,28 @@ const measurementsCompletedThisMonth = !!monthlyMeasurements
 
   const cycleStatus = getCycleStatus(client)
 
-const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0]
 
-const { data: todayCycleLog } = await supabase
-  .from('cycle_logs')
-  .select('*')
-  .eq('client_id', client.client_id)
-  .eq('log_date', today)
-  .maybeSingle()
+  const { data: todayCycleLog } = await supabase
+    .from('cycle_logs')
+    .select('*')
+    .eq('client_id', client.client_id)
+    .eq('log_date', today)
+    .maybeSingle()
 
-const { data: recentCycleLogs } = await supabase
-  .from('cycle_logs')
-  .select('*')
-  .eq('client_id', client.client_id)
-  .not('symptoms', 'is', null)
-  .order('log_date', { ascending: false })
-  .limit(180)
+  const { data: recentCycleLogs } = await supabase
+    .from('cycle_logs')
+    .select('*')
+    .eq('client_id', client.client_id)
+    .not('symptoms', 'is', null)
+    .order('log_date', { ascending: false })
+    .limit(180)
 
-const symptomPredictions = getCycleSymptomPattern({
-  logs: recentCycleLogs || [],
-  cycleDay: cycleStatus.cycleDay,
-  phase: cycleStatus.phase,
-})
-
-  const dailyStructureSet =
-    !!client.execution_style &&
-    !!client.carousel_style &&
-    (
-      !!client.wake_time ||
-      !!client.bed_time ||
-      !!client.preferred_workout_time ||
-      !!client.work_start_time ||
-      !!client.lunch_window_time ||
-      !!client.dinner_window_time ||
-      (
-        Array.isArray(client.daily_non_negotiables) &&
-        client.daily_non_negotiables.length > 0
-      )
-    )
-
-  const dailyStructureReviewedThisMonth =
-    client.daily_structure_reviewed_at
-      ? new Date(client.daily_structure_reviewed_at) >= monthStart
-      : false
-
-  const dailyStructureLabel =
-    client.carousel_style === 'step'
-      ? 'Step-by-step'
-      : client.carousel_style === 'section'
-      ? 'Daily blocks'
-      : 'Daily rhythm'
+  const symptomPredictions = getCycleSymptomPattern({
+    logs: recentCycleLogs || [],
+    cycleDay: cycleStatus.cycleDay,
+    phase: cycleStatus.phase,
+  })
 
   return (
     <main style={styles.pageStyle}>
@@ -169,15 +106,15 @@ const symptomPredictions = getCycleSymptomPattern({
           }}
         >
           <DashboardCycleMiniCard
-  clientId={client.client_id}
-  cycleStatus={cycleStatus}
-  symptomPredictions={symptomPredictions}
-  todayCycleLog={todayCycleLog}
-/>
+            clientId={client.client_id}
+            cycleStatus={cycleStatus}
+            symptomPredictions={symptomPredictions}
+            todayCycleLog={todayCycleLog}
+          />
 
           <DashboardAssessmentMiniCard
-  dueCount={monthlyAssessmentsDueCount}
-/>
+            dueCount={monthlyAssessmentsDueCount}
+          />
         </div>
 
         {lesson ? (
