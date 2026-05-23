@@ -557,31 +557,32 @@ function MeasurementDiagram({
     aspectRatio: '360 / 720',
   }}
 >
-        <img
-  src="/woman-silhouette.png"
-  alt="Woman measurement guide silhouette"
-  style={{
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    display: 'block',
-    opacity: 0.92,
-    objectFit: 'contain',
-  }}
-/>
+  <img
+    src="/woman-silhouette.png"
+    alt="Woman measurement guide silhouette"
+    style={{
+      position: 'absolute',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      display: 'block',
+      opacity: 0.92,
+      objectFit: 'contain',
+    }}
+  />
 
-        <svg
-          viewBox="0 0 360 720"
-          preserveAspectRatio="xMidYMid meet"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-          }}
-        >
+  <svg
+    viewBox="0 0 360 720"
+    preserveAspectRatio="xMidYMid meet"
+    style={{
+      position: 'absolute',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none',
+    }}
+  >
+          {/* your corrected lines stay here */}
           <GuideLine y={215} color={lineColor('neck')} label="Neck" />
           <GuideLine y={250} color={lineColor('shoulders')} label="Shoulders" />
           <GuideLine y={300} color={lineColor('bust_chest')} label="Chest" />
