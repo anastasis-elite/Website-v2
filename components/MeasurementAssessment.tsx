@@ -135,7 +135,6 @@ const measurementFields: MeasurementField[] = [
     description:
       'Measure around the widest part of the calf while standing naturally.',
   },
-
   {
     key: 'lower_waist',
     label: 'Lower Waist / Lower Abdomen',
@@ -217,11 +216,7 @@ function getDefaultValues() {
   }, {})
 }
 
-export default function MeasurementAssessment({
-  clientId,
-}: {
-  clientId: string
-}) {
+export default function MeasurementAssessment({ clientId }: { clientId: string }) {
   const [values, setValues] = useState(getDefaultValues)
   const [advancedEnabled, setAdvancedEnabled] = useState(false)
   const [activeKey, setActiveKey] = useState<MeasurementKey>('waist')
@@ -271,9 +266,7 @@ export default function MeasurementAssessment({
 
       const response = await fetch('/api/measurements', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           client_id: clientId,
           advanced_enabled: advancedEnabled,
@@ -332,20 +325,12 @@ export default function MeasurementAssessment({
               type="checkbox"
               checked={advancedEnabled}
               onChange={(e) => setAdvancedEnabled(e.target.checked)}
-              style={{
-                accentColor: '#b56e43',
-              }}
+              style={{ accentColor: '#b56e43' }}
             />
             Enable advanced measurements
           </label>
 
-          <div
-            style={{
-              display: 'grid',
-              gap: '30px',
-              marginTop: '30px',
-            }}
-          >
+          <div style={{ display: 'grid', gap: '30px', marginTop: '30px' }}>
             {Object.entries(groupedFields).map(([group, fields]) => (
               <div key={group}>
                 <p
@@ -359,12 +344,7 @@ export default function MeasurementAssessment({
                   {group}
                 </p>
 
-                <div
-                  style={{
-                    display: 'grid',
-                    gap: '16px',
-                  }}
-                >
+                <div style={{ display: 'grid', gap: '16px' }}>
                   {fields.map((field) => (
                     <div key={field.key} style={styles.fieldWrap}>
                       <button
@@ -374,9 +354,7 @@ export default function MeasurementAssessment({
                           all: 'unset',
                           cursor: 'pointer',
                           color:
-                            activeKey === field.key
-                              ? '#c58b57'
-                              : '#f5f0e8',
+                            activeKey === field.key ? '#c58b57' : '#f5f0e8',
                           fontSize: '0.98rem',
                           lineHeight: 1.5,
                         }}
@@ -390,9 +368,7 @@ export default function MeasurementAssessment({
                         step="0.25"
                         value={values[field.key]}
                         onFocus={() => setActiveKey(field.key)}
-                        onChange={(e) =>
-                          updateValue(field.key, e.target.value)
-                        }
+                        onChange={(e) => updateValue(field.key, e.target.value)}
                         placeholder="Inches"
                         style={styles.inputStyle}
                       />
@@ -574,197 +550,108 @@ function MeasurementDiagram({
         {activeField.description}
       </p>
 
-      <svg
-  viewBox="0 0 360 720"
-  style={{
-    width: '100%',
-    maxHeight: large ? '760px' : '560px',
-    display: 'block',
-  }}
->
-  {/* More natural woman silhouette */}
-<path
-  d="
-    M180 58
-    C156 58 140 78 140 104
-    C140 130 156 150 180 150
-    C204 150 220 130 220 104
-    C220 78 204 58 180 58
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxHeight: large ? '760px' : '560px',
+          overflow: 'hidden',
+        }}
+      >
+        <img
+          src="/woman-silhouette.png"
+          alt="Woman measurement guide silhouette"
+          style={{
+            width: '100%',
+            display: 'block',
+            opacity: 0.92,
+            objectFit: 'contain',
+          }}
+        />
 
-    M165 150
-    C164 174 156 198 139 218
-    C124 235 104 238 92 250
+        <svg
+          viewBox="0 0 360 720"
+          preserveAspectRatio="xMidYMid meet"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+          }}
+        >
+          <GuideLine y={130} color={lineColor('neck')} label="Neck" />
+          <GuideLine y={175} color={lineColor('shoulders')} label="Shoulders" />
+          <GuideLine y={245} color={lineColor('bust_chest')} label="Chest" />
+          <GuideLine y={285} color={lineColor('underbust')} label="Underbust" />
+          <GuideLine y={340} color={lineColor('waist')} label="Waist" />
+          <GuideLine y={390} color={lineColor('lower_waist')} label="Low Waist" />
+          <GuideLine y={430} color={lineColor('high_hip')} label="High Hip" />
+          <GuideLine y={470} color={lineColor('hips_glutes')} label="Hips" />
 
-    M195 150
-    C196 174 204 198 221 218
-    C236 235 256 238 268 250
+          <GuideLine
+            y={535}
+            color={
+              activeKey === 'left_thigh' || activeKey === 'right_thigh'
+                ? active
+                : muted
+            }
+            label="Thigh"
+          />
 
-    M92 250
-    C82 264 78 294 80 332
-    C82 374 76 420 70 466
-    C68 486 76 502 90 510
+          <GuideLine
+            y={635}
+            color={
+              activeKey === 'left_calf' || activeKey === 'right_calf'
+                ? active
+                : muted
+            }
+            label="Calf"
+          />
 
-    M268 250
-    C278 264 282 294 280 332
-    C278 374 284 420 290 466
-    C292 486 284 502 270 510
+          <line
+            x1="72"
+            x2="118"
+            y1="292"
+            y2="292"
+            stroke={lineColor('left_upper_arm')}
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
 
-    M113 248
-    C106 296 110 342 128 378
-    C140 402 158 414 180 414
-    C202 414 220 402 232 378
-    C250 342 254 296 247 248
+          <line
+            x1="242"
+            x2="288"
+            y1="292"
+            y2="292"
+            stroke={lineColor('right_upper_arm')}
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
 
-    M128 378
-    C110 416 96 466 96 520
-    C96 574 107 632 124 688
+          <line
+            x1="68"
+            x2="112"
+            y1="400"
+            y2="400"
+            stroke={lineColor('left_forearm')}
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
 
-    M232 378
-    C250 416 264 466 264 520
-    C264 574 253 632 236 688
+          <line
+            x1="248"
+            x2="292"
+            y1="400"
+            y2="400"
+            stroke={lineColor('right_forearm')}
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+        </svg>
+      </div>
 
-    M166 414
-    C160 474 156 536 152 598
-    C149 640 143 674 136 704
-
-    M194 414
-    C200 474 204 536 208 598
-    C211 640 217 674 224 704
-  "
-  fill="none"
-  stroke="rgba(245,240,232,0.54)"
-  strokeWidth="3"
-  strokeLinecap="round"
-  strokeLinejoin="round"
-/>
-
-{/* Hair / head detail */}
-<path
-  d="M150 82 C158 62 202 62 210 82"
-  fill="none"
-  stroke="rgba(245,240,232,0.34)"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
-
-{/* Collarbones */}
-<path
-  d="M110 252 C135 264 158 266 180 266 C202 266 225 264 250 252"
-  fill="none"
-  stroke="rgba(245,240,232,0.30)"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
-
-{/* Breast line */}
-<path
-  d="M119 312 C136 288 162 292 180 321 C198 292 224 288 241 312"
-  fill="none"
-  stroke="rgba(245,240,232,0.36)"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
-
-{/* Ribcage definition */}
-<path
-  d="M132 338 C145 356 162 365 180 365 C198 365 215 356 228 338"
-  fill="none"
-  stroke="rgba(245,240,232,0.26)"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
-
-<path
-  d="M139 362 C151 376 166 383 180 383 C194 383 209 376 221 362"
-  fill="none"
-  stroke="rgba(245,240,232,0.22)"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
-
-{/* Waist / abdomen */}
-<path
-  d="M180 390 C180 405 180 420 180 436"
-  fill="none"
-  stroke="rgba(245,240,232,0.28)"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
-
-{/* Pelvis / hips */}
-<path
-  d="M112 445 C136 410 162 410 180 455 C198 410 224 410 248 445"
-  fill="none"
-  stroke="rgba(245,240,232,0.38)"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
-
-{/* Elbows */}
-<circle cx="78" cy="392" r="7" fill="none" stroke="rgba(245,240,232,0.38)" strokeWidth="2" />
-<circle cx="282" cy="392" r="7" fill="none" stroke="rgba(245,240,232,0.38)" strokeWidth="2" />
-
-{/* Hands */}
-<path
-  d="M86 510 C75 520 75 540 91 552 C100 540 100 522 90 510"
-  fill="none"
-  stroke="rgba(245,240,232,0.38)"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
-<path
-  d="M274 510 C285 520 285 540 269 552 C260 540 260 522 270 510"
-  fill="none"
-  stroke="rgba(245,240,232,0.38)"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
-
-{/* Knees */}
-<path
-  d="M128 556 C113 566 113 594 130 606 C147 594 147 566 128 556"
-  fill="none"
-  stroke="rgba(245,240,232,0.36)"
-  strokeWidth="2"
-/>
-<path
-  d="M232 556 C213 566 213 594 230 606 C247 594 247 566 232 556"
-  fill="none"
-  stroke="rgba(245,240,232,0.36)"
-  strokeWidth="2"
-/>
-
-  <GuideLine y={190} color={lineColor('neck')} label="Neck" />
-<GuideLine y={252} color={lineColor('shoulders')} label="Shoulders" />
-<GuideLine y={314} color={lineColor('bust_chest')} label="Chest" />
-<GuideLine y={348} color={lineColor('underbust')} label="Underbust" />
-<GuideLine y={392} color={lineColor('waist')} label="Waist" />
-<GuideLine y={430} color={lineColor('lower_waist')} label="Low Waist" />
-<GuideLine y={458} color={lineColor('high_hip')} label="High Hip" />
-<GuideLine y={496} color={lineColor('hips_glutes')} label="Hips" />
-
-  <GuideLine
-    y={548}
-    color={
-      activeKey === 'left_thigh' || activeKey === 'right_thigh'
-        ? active
-        : muted
-    }
-    label="Thigh"
-  />
-
-  <GuideLine
-    y={650}
-    color={
-      activeKey === 'left_calf' || activeKey === 'right_calf'
-        ? active
-        : muted
-    }
-    label="Calf"
-  />
-</svg>
-
-            {!large ? (
+      {!large ? (
         <p
           style={{
             margin: '14px 0 0',
@@ -791,8 +678,8 @@ function GuideLine({
   return (
     <>
       <line
-        x1="72"
-        x2="282"
+        x1="58"
+        x2="284"
         y1={y}
         y2={y}
         stroke={color}
@@ -801,7 +688,7 @@ function GuideLine({
       />
 
       <text
-        x="292"
+        x="294"
         y={y + 4}
         fill={color}
         fontSize="11"
