@@ -583,13 +583,13 @@ function MeasurementDiagram({
     }}
   >
           {/* your corrected lines stay here */}
-          <GuideLine y={215} color={lineColor('neck')} label="Neck" />
-          <GuideLine y={250} color={lineColor('shoulders')} label="Shoulders" />
-          <GuideLine y={300} color={lineColor('bust_chest')} label="Chest" />
-          <GuideLine y={325} color={lineColor('underbust')} label="Underbust" />
-          <GuideLine y={375} color={lineColor('waist')} label="Waist" />
-          <GuideLine y={430} color={lineColor('high_hip')} label="High Hip" />
-          <GuideLine y={470} color={lineColor('hips_glutes')} label="Hips" />
+          <GuideLine y={175} color={lineColor('neck')} label="Neck" />
+          <GuideLine y={220} color={lineColor('shoulders')} label="Shoulders" />
+          <GuideLine y={250} color={lineColor('bust_chest')} label="Chest" />
+          <GuideLine y={275} color={lineColor('underbust')} label="Underbust" />
+          <GuideLine y={300} color={lineColor('waist')} label="Waist" />
+          <GuideLine y={350} color={lineColor('high_hip')} label="High Hip" />
+          <GuideLine y={360} color={lineColor('hips_glutes')} label="Hips" />
 
           <GuideLine
             y={550}
