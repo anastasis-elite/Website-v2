@@ -667,16 +667,33 @@ function MeasurementDiagram({
   />
 
   <GuideLine y={116} color={lineColor('neck')} label="Neck" />
-  <GuideLine y={146} color={lineColor('shoulders')} label="Shoulders" />
-  <GuideLine y={190} color={lineColor('bust_chest')} label="Chest" />
-  <GuideLine y={216} color={lineColor('underbust')} label="Underbust" />
-  <GuideLine y={258} color={lineColor('waist')} label="Waist" />
-  <GuideLine y={284} color={lineColor('lower_waist')} label="Low Waist" />
-  <GuideLine y={316} color={lineColor('high_hip')} label="High Hip" />
-  <GuideLine y={340} color={lineColor('hips_glutes')} label="Hips" />
-  <GuideLine y={404} color={lineColor('left_thigh')} label="Thigh" />
-  <GuideLine y={482} color={lineColor('left_calf')} label="Calf" />
+<GuideLine y={146} color={lineColor('shoulders')} label="Shoulders" />
+<GuideLine y={190} color={lineColor('bust_chest')} label="Chest" />
+<GuideLine y={216} color={lineColor('underbust')} label="Underbust" />
+<GuideLine y={258} color={lineColor('waist')} label="Waist" />
+<GuideLine y={284} color={lineColor('lower_waist')} label="Low Waist" />
+<GuideLine y={316} color={lineColor('high_hip')} label="High Hip" />
+<GuideLine y={340} color={lineColor('hips_glutes')} label="Hips" />
 
+<GuideLine
+  y={404}
+  color={
+    activeKey === 'left_thigh' || activeKey === 'right_thigh'
+      ? active
+      : muted
+  }
+  label="Thigh"
+/>
+
+<GuideLine
+  y={482}
+  color={
+    activeKey === 'left_calf' || activeKey === 'right_calf'
+      ? active
+      : muted
+  }
+  label="Calf"
+/>
   {/* Upper arm guides */}
   <line
     x1="67"
