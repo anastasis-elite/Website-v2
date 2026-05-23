@@ -592,57 +592,103 @@ function MeasurementDiagram({
     </filter>
   </defs>
 
-  {/* Elegant female silhouette */}
-  <path
-    d="
-      M160 36
-      C139 36 123 53 123 75
-      C123 98 139 115 160 115
-      C181 115 197 98 197 75
-      C197 53 181 36 160 36
+  {/* More realistic front-facing female outline */}
+<path
+  d="
+    M160 38
+    C140 38 126 54 126 76
+    C126 98 140 116 160 116
+    C180 116 194 98 194 76
+    C194 54 180 38 160 38
 
-      M145 116
-      C143 132 136 144 124 156
-      C104 176 94 205 96 236
-      C98 266 110 286 122 304
+    M145 116
+    C143 130 136 144 122 158
 
-      M175 116
-      C177 132 184 144 196 156
-      C216 176 226 205 224 236
-      C222 266 210 286 198 304
+    M175 116
+    C177 130 184 144 198 158
 
-      M124 156
-      C134 174 146 182 160 182
-      C174 182 186 174 196 156
+    M122 158
+    C104 174 96 200 96 232
+    C96 270 108 305 118 338
 
-      M124 174
-      C116 205 117 238 130 268
-      C138 287 148 296 160 298
-      C172 296 182 287 190 268
-      C203 238 204 205 196 174
+    M198 158
+    C216 174 224 200 224 232
+    C224 270 212 305 202 338
 
-      M130 268
-      C116 306 104 352 96 398
-      C89 440 91 486 99 548
+    M122 158
+    C134 171 146 177 160 177
+    C174 177 186 171 198 158
 
-      M190 268
-      C204 306 216 352 224 398
-      C231 440 229 486 221 548
+    M126 184
+    C118 220 120 256 132 286
+    C140 306 148 318 160 320
+    C172 318 180 306 188 286
+    C200 256 202 220 194 184
 
-      M151 298
-      C145 352 143 410 139 470
-      C136 513 130 548 121 588
+    M132 286
+    C118 328 104 374 98 430
+    C94 472 98 522 106 584
 
-      M169 298
-      C175 352 177 410 181 470
-      C184 513 190 548 199 588
-    "
-    fill="none"
-    stroke="rgba(245,240,232,0.42)"
-    strokeWidth="3"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  />
+    M188 286
+    C202 328 216 374 222 430
+    C226 472 222 522 214 584
+
+    M151 320
+    C148 370 145 430 141 488
+    C138 528 132 560 124 602
+
+    M169 320
+    C172 370 175 430 179 488
+    C182 528 188 560 196 602
+  "
+  fill="none"
+  stroke="rgba(245,240,232,0.46)"
+  strokeWidth="3"
+  strokeLinecap="round"
+  strokeLinejoin="round"
+/>
+
+{/* Arms / hands */}
+<path
+  d="
+    M100 222
+    C92 258 88 288 92 318
+    C94 336 101 350 109 358
+
+    M220 222
+    C228 258 232 288 228 318
+    C226 336 219 350 211 358
+
+    M108 358
+    C103 370 102 382 106 394
+
+    M212 358
+    C217 370 218 382 214 394
+  "
+  fill="none"
+  stroke="rgba(245,240,232,0.42)"
+  strokeWidth="3"
+  strokeLinecap="round"
+  strokeLinejoin="round"
+/>
+
+{/* Subtle bust line */}
+<path
+  d="M124 220 C137 207 151 208 160 223 C169 208 183 207 196 220"
+  fill="none"
+  stroke="rgba(245,240,232,0.22)"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
+
+{/* Subtle lower abdomen / pelvis line */}
+<path
+  d="M134 338 C146 354 174 354 186 338"
+  fill="none"
+  stroke="rgba(245,240,232,0.18)"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
 
   {/* Neck / collarbone */}
   <path
@@ -680,14 +726,14 @@ function MeasurementDiagram({
     strokeLinecap="round"
   />
 
-  <GuideLine y={136} color={lineColor('neck')} label="Neck" />
-  <GuideLine y={166} color={lineColor('shoulders')} label="Shoulders" />
-  <GuideLine y={214} color={lineColor('bust_chest')} label="Chest" />
-  <GuideLine y={242} color={lineColor('underbust')} label="Underbust" />
-  <GuideLine y={292} color={lineColor('waist')} label="Waist" />
-  <GuideLine y={322} color={lineColor('lower_waist')} label="Low Waist" />
-  <GuideLine y={352} color={lineColor('high_hip')} label="High Hip" />
-  <GuideLine y={374} color={lineColor('hips_glutes')} label="Hips" />
+  <GuideLine y={132} color={lineColor('neck')} label="Neck" />
+<GuideLine y={166} color={lineColor('shoulders')} label="Shoulders" />
+<GuideLine y={222} color={lineColor('bust_chest')} label="Chest" />
+<GuideLine y={250} color={lineColor('underbust')} label="Underbust" />
+<GuideLine y={294} color={lineColor('waist')} label="Waist" />
+<GuideLine y={322} color={lineColor('lower_waist')} label="Low Waist" />
+<GuideLine y={350} color={lineColor('high_hip')} label="High Hip" />
+<GuideLine y={374} color={lineColor('hips_glutes')} label="Hips" />
 
   <GuideLine
     y={460}
