@@ -550,24 +550,26 @@ function MeasurementDiagram({
         {activeField.description}
       </p>
 
-      <div
-        style={{
-          position: 'relative',
-          width: '100%',
-          maxHeight: large ? '760px' : '560px',
-          overflow: 'hidden',
-        }}
-      >
+     <div
+  style={{
+    position: 'relative',
+    width: '100%',
+    aspectRatio: '360 / 720',
+  }}
+>
         <img
-          src="/woman-silhouette.png"
-          alt="Woman measurement guide silhouette"
-          style={{
-            width: '100%',
-            display: 'block',
-            opacity: 0.92,
-            objectFit: 'contain',
-          }}
-        />
+  src="/woman-silhouette.png"
+  alt="Woman measurement guide silhouette"
+  style={{
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    display: 'block',
+    opacity: 0.92,
+    objectFit: 'contain',
+  }}
+/>
 
         <svg
           viewBox="0 0 360 720"
@@ -599,7 +601,7 @@ function MeasurementDiagram({
           />
 
           <GuideLine
-            y={735}
+            y={675}
             color={
               activeKey === 'left_calf' || activeKey === 'right_calf'
                 ? active
