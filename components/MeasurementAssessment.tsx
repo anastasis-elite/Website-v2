@@ -575,79 +575,148 @@ function MeasurementDiagram({
       </p>
 
       <svg
-        viewBox="0 0 240 520"
-        style={{
-          width: '100%',
-          maxHeight: large ? '620px' : '440px',
-          display: 'block',
-        }}
-      >
-        <path
-          d="M120 34 C96 34 82 52 82 78 C82 96 92 112 104 118 L96 150 C78 164 68 202 70 248 L76 320 L68 474 M136 118 L144 150 C162 164 172 202 170 248 L164 320 L172 474 M100 150 C94 210 92 278 98 342 L92 474 M140 150 C146 210 148 278 142 342 L148 474 M92 474 L82 500 M148 474 L158 500"
-          fill="none"
-          stroke="rgba(245,240,232,0.38)"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
+  viewBox="0 0 280 560"
+  style={{
+    width: '100%',
+    maxHeight: large ? '680px' : '460px',
+    display: 'block',
+  }}
+>
+  {/* Female silhouette outline */}
+  <path
+    d="
+      M140 34
+      C122 34 108 49 108 68
+      C108 87 122 102 140 102
+      C158 102 172 87 172 68
+      C172 49 158 34 140 34
 
-        <circle
-          cx="120"
-          cy="24"
-          r="19"
-          fill="none"
-          stroke="rgba(245,240,232,0.38)"
-          strokeWidth="3"
-        />
+      M124 103
+      C121 118 116 130 104 142
 
-        <GuideLine y={92} color={lineColor('neck')} label="Neck" />
-        <GuideLine y={124} color={lineColor('shoulders')} label="Shoulders" />
-        <GuideLine y={156} color={lineColor('bust_chest')} label="Chest" />
-        <GuideLine y={178} color={lineColor('underbust')} label="Underbust" />
-        <GuideLine y={222} color={lineColor('waist')} label="Waist" />
-        <GuideLine y={250} color={lineColor('lower_waist')} label="Low Waist" />
-        <GuideLine y={282} color={lineColor('high_hip')} label="High Hip" />
-        <GuideLine y={306} color={lineColor('hips_glutes')} label="Hips" />
-        <GuideLine y={364} color={lineColor('left_thigh')} label="Thigh" />
-        <GuideLine y={432} color={lineColor('left_calf')} label="Calf" />
+      M156 103
+      C159 118 164 130 176 142
 
-        <line
-          x1="73"
-          y1="178"
-          x2="93"
-          y2="178"
-          stroke={lineColor('left_upper_arm')}
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-        <line
-          x1="147"
-          y1="178"
-          x2="167"
-          y2="178"
-          stroke={lineColor('right_upper_arm')}
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
+      M104 142
+      C82 154 68 182 66 218
+      C64 246 72 270 82 294
 
-        <line
-          x1="72"
-          y1="236"
-          x2="91"
-          y2="236"
-          stroke={lineColor('left_forearm')}
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-        <line
-          x1="149"
-          y1="236"
-          x2="168"
-          y2="236"
-          stroke={lineColor('right_forearm')}
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-      </svg>
+      M176 142
+      C198 154 212 182 214 218
+      C216 246 208 270 198 294
+
+      M106 144
+      C116 158 126 166 140 166
+      C154 166 164 158 174 144
+
+      M104 158
+      C92 188 94 218 108 246
+      C116 262 124 270 132 274
+
+      M176 158
+      C188 188 186 218 172 246
+      C164 262 156 270 148 274
+
+      M108 246
+      C102 278 96 312 88 344
+      C82 368 74 396 72 430
+      C70 470 76 510 82 532
+
+      M172 246
+      C178 278 184 312 192 344
+      C198 368 206 396 208 430
+      C210 470 204 510 198 532
+
+      M132 274
+      C124 322 120 370 118 426
+      C116 470 112 506 104 536
+
+      M148 274
+      C156 322 160 370 162 426
+      C164 470 168 506 176 536
+
+      M118 426
+      C108 462 98 500 92 544
+
+      M162 426
+      C172 462 182 500 188 544
+    "
+    fill="none"
+    stroke="rgba(245,240,232,0.42)"
+    strokeWidth="3.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+
+  {/* Bust curve */}
+  <path
+    d="M108 188 C118 178 130 176 140 188 C150 176 162 178 172 188"
+    fill="none"
+    stroke="rgba(245,240,232,0.24)"
+    strokeWidth="2"
+    strokeLinecap="round"
+  />
+
+  {/* Glute / hip curve */}
+  <path
+    d="M100 300 C114 320 126 326 140 326 C154 326 166 320 180 300"
+    fill="none"
+    stroke="rgba(245,240,232,0.20)"
+    strokeWidth="2"
+    strokeLinecap="round"
+  />
+
+  <GuideLine y={116} color={lineColor('neck')} label="Neck" />
+  <GuideLine y={146} color={lineColor('shoulders')} label="Shoulders" />
+  <GuideLine y={190} color={lineColor('bust_chest')} label="Chest" />
+  <GuideLine y={216} color={lineColor('underbust')} label="Underbust" />
+  <GuideLine y={258} color={lineColor('waist')} label="Waist" />
+  <GuideLine y={284} color={lineColor('lower_waist')} label="Low Waist" />
+  <GuideLine y={316} color={lineColor('high_hip')} label="High Hip" />
+  <GuideLine y={340} color={lineColor('hips_glutes')} label="Hips" />
+  <GuideLine y={404} color={lineColor('left_thigh')} label="Thigh" />
+  <GuideLine y={482} color={lineColor('left_calf')} label="Calf" />
+
+  {/* Upper arm guides */}
+  <line
+    x1="67"
+    y1="202"
+    x2="96"
+    y2="202"
+    stroke={lineColor('left_upper_arm')}
+    strokeWidth="4"
+    strokeLinecap="round"
+  />
+  <line
+    x1="184"
+    y1="202"
+    x2="213"
+    y2="202"
+    stroke={lineColor('right_upper_arm')}
+    strokeWidth="4"
+    strokeLinecap="round"
+  />
+
+  {/* Forearm guides */}
+  <line
+    x1="72"
+    y1="260"
+    x2="100"
+    y2="260"
+    stroke={lineColor('left_forearm')}
+    strokeWidth="4"
+    strokeLinecap="round"
+  />
+  <line
+    x1="180"
+    y1="260"
+    x2="208"
+    y2="260"
+    stroke={lineColor('right_forearm')}
+    strokeWidth="4"
+    strokeLinecap="round"
+  />
+</svg>
 
       {!large ? (
         <p
