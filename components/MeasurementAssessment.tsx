@@ -582,196 +582,166 @@ function MeasurementDiagram({
     display: 'block',
   }}
 >
-  {/* Anatomical female guide silhouette */}
-  <path
-    d="
-      M180 58
-      C156 58 140 77 140 104
-      C140 131 156 150 180 150
-      C204 150 220 131 220 104
-      C220 77 204 58 180 58
+  {/* More natural woman silhouette */}
+<path
+  d="
+    M180 58
+    C156 58 140 78 140 104
+    C140 130 156 150 180 150
+    C204 150 220 130 220 104
+    C220 78 204 58 180 58
 
-      M164 150
-      C162 170 156 188 144 205
-      C132 222 111 229 98 238
+    M165 150
+    C164 174 156 198 139 218
+    C124 235 104 238 92 250
 
-      M196 150
-      C198 170 204 188 216 205
-      C228 222 249 229 262 238
+    M195 150
+    C196 174 204 198 221 218
+    C236 235 256 238 268 250
 
-      M98 238
-      C83 250 78 278 78 320
-      C78 365 70 396 66 438
-      C64 458 72 477 88 486
+    M92 250
+    C82 264 78 294 80 332
+    C82 374 76 420 70 466
+    C68 486 76 502 90 510
 
-      M262 238
-      C277 250 282 278 282 320
-      C282 365 290 396 294 438
-      C296 458 288 477 272 486
+    M268 250
+    C278 264 282 294 280 332
+    C278 374 284 420 290 466
+    C292 486 284 502 270 510
 
-      M104 246
-      C108 286 105 330 92 371
-      C83 400 79 426 79 454
+    M113 248
+    C106 296 110 342 128 378
+    C140 402 158 414 180 414
+    C202 414 220 402 232 378
+    C250 342 254 296 247 248
 
-      M256 246
-      C252 286 255 330 268 371
-      C277 400 281 426 281 454
+    M128 378
+    C110 416 96 466 96 520
+    C96 574 107 632 124 688
 
-      M98 238
-      C125 228 151 226 180 226
-      C209 226 235 228 262 238
+    M232 378
+    C250 416 264 466 264 520
+    C264 574 253 632 236 688
 
-      M126 232
-      C119 270 120 315 135 354
-      C146 382 160 398 180 400
-      C200 398 214 382 225 354
-      C240 315 241 270 234 232
+    M166 414
+    C160 474 156 536 152 598
+    C149 640 143 674 136 704
 
-      M135 354
-      C118 394 105 437 98 488
-      C91 540 99 600 113 672
+    M194 414
+    C200 474 204 536 208 598
+    C211 640 217 674 224 704
+  "
+  fill="none"
+  stroke="rgba(245,240,232,0.54)"
+  strokeWidth="3"
+  strokeLinecap="round"
+  strokeLinejoin="round"
+/>
 
-      M225 354
-      C242 394 255 437 262 488
-      C269 540 261 600 247 672
+{/* Hair / head detail */}
+<path
+  d="M150 82 C158 62 202 62 210 82"
+  fill="none"
+  stroke="rgba(245,240,232,0.34)"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
 
-      M166 400
-      C162 460 159 526 155 584
-      C152 625 146 657 138 696
+{/* Collarbones */}
+<path
+  d="M110 252 C135 264 158 266 180 266 C202 266 225 264 250 252"
+  fill="none"
+  stroke="rgba(245,240,232,0.30)"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
 
-      M194 400
-      C198 460 201 526 205 584
-      C208 625 214 657 222 696
-    "
-    fill="none"
-    stroke="rgba(245,240,232,0.54)"
-    strokeWidth="3"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  />
+{/* Breast line */}
+<path
+  d="M119 312 C136 288 162 292 180 321 C198 292 224 288 241 312"
+  fill="none"
+  stroke="rgba(245,240,232,0.36)"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
 
-  {/* Hair / bun */}
-  <path
-    d="M158 70 C162 48 198 48 202 70"
-    fill="none"
-    stroke="rgba(245,240,232,0.42)"
-    strokeWidth="2"
-    strokeLinecap="round"
-  />
+{/* Ribcage definition */}
+<path
+  d="M132 338 C145 356 162 365 180 365 C198 365 215 356 228 338"
+  fill="none"
+  stroke="rgba(245,240,232,0.26)"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
 
-  <path
-    d="M145 92 C160 70 200 70 215 92"
-    fill="none"
-    stroke="rgba(245,240,232,0.32)"
-    strokeWidth="2"
-    strokeLinecap="round"
-  />
+<path
+  d="M139 362 C151 376 166 383 180 383 C194 383 209 376 221 362"
+  fill="none"
+  stroke="rgba(245,240,232,0.22)"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
 
-  {/* Collarbones / shoulders */}
-  <path
-    d="M104 240 C130 252 158 256 180 258 C202 256 230 252 256 240"
-    fill="none"
-    stroke="rgba(245,240,232,0.34)"
-    strokeWidth="2"
-    strokeLinecap="round"
-  />
+{/* Waist / abdomen */}
+<path
+  d="M180 390 C180 405 180 420 180 436"
+  fill="none"
+  stroke="rgba(245,240,232,0.28)"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
 
-  {/* Bust */}
-  <path
-    d="M121 294 C138 269 164 274 180 301 C196 274 222 269 239 294"
-    fill="none"
-    stroke="rgba(245,240,232,0.38)"
-    strokeWidth="2"
-    strokeLinecap="round"
-  />
+{/* Pelvis / hips */}
+<path
+  d="M112 445 C136 410 162 410 180 455 C198 410 224 410 248 445"
+  fill="none"
+  stroke="rgba(245,240,232,0.38)"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
 
-  {/* Ribcage */}
-  <path
-    d="M132 320 C145 337 162 346 180 346 C198 346 215 337 228 320"
-    fill="none"
-    stroke="rgba(245,240,232,0.28)"
-    strokeWidth="2"
-    strokeLinecap="round"
-  />
+{/* Elbows */}
+<circle cx="78" cy="392" r="7" fill="none" stroke="rgba(245,240,232,0.38)" strokeWidth="2" />
+<circle cx="282" cy="392" r="7" fill="none" stroke="rgba(245,240,232,0.38)" strokeWidth="2" />
 
-  <path
-    d="M137 345 C149 360 164 368 180 368 C196 368 211 360 223 345"
-    fill="none"
-    stroke="rgba(245,240,232,0.24)"
-    strokeWidth="2"
-    strokeLinecap="round"
-  />
+{/* Hands */}
+<path
+  d="M86 510 C75 520 75 540 91 552 C100 540 100 522 90 510"
+  fill="none"
+  stroke="rgba(245,240,232,0.38)"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
+<path
+  d="M274 510 C285 520 285 540 269 552 C260 540 260 522 270 510"
+  fill="none"
+  stroke="rgba(245,240,232,0.38)"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
 
-  {/* Abdomen center */}
-  <path
-    d="M180 374 C180 390 180 406 180 420"
-    fill="none"
-    stroke="rgba(245,240,232,0.28)"
-    strokeWidth="2"
-    strokeLinecap="round"
-  />
+{/* Knees */}
+<path
+  d="M128 556 C113 566 113 594 130 606 C147 594 147 566 128 556"
+  fill="none"
+  stroke="rgba(245,240,232,0.36)"
+  strokeWidth="2"
+/>
+<path
+  d="M232 556 C213 566 213 594 230 606 C247 594 247 566 232 556"
+  fill="none"
+  stroke="rgba(245,240,232,0.36)"
+  strokeWidth="2"
+/>
 
-  {/* Hip / pelvis definition */}
-  <path
-    d="M112 425 C133 394 158 390 180 430 C202 390 227 394 248 425"
-    fill="none"
-    stroke="rgba(245,240,232,0.42)"
-    strokeWidth="2"
-    strokeLinecap="round"
-  />
-
-  <path
-    d="M174 450 C178 462 182 462 186 450"
-    fill="none"
-    stroke="rgba(245,240,232,0.42)"
-    strokeWidth="2"
-    strokeLinecap="round"
-  />
-
-  {/* Elbows */}
-  <circle cx="76" cy="370" r="7" fill="none" stroke="rgba(245,240,232,0.42)" strokeWidth="2" />
-  <circle cx="284" cy="370" r="7" fill="none" stroke="rgba(245,240,232,0.42)" strokeWidth="2" />
-
-  {/* Knees */}
-  <path
-    d="M130 548 C117 556 115 585 132 595 C149 585 147 556 130 548"
-    fill="none"
-    stroke="rgba(245,240,232,0.38)"
-    strokeWidth="2"
-  />
-
-  <path
-    d="M230 548 C213 556 211 585 228 595 C245 585 243 556 230 548"
-    fill="none"
-    stroke="rgba(245,240,232,0.38)"
-    strokeWidth="2"
-  />
-
-  {/* Feet */}
-  <path
-    d="M117 672 C108 690 105 704 126 704 C138 704 144 699 138 692"
-    fill="none"
-    stroke="rgba(245,240,232,0.42)"
-    strokeWidth="2"
-    strokeLinecap="round"
-  />
-
-  <path
-    d="M243 672 C252 690 255 704 234 704 C222 704 216 699 222 692"
-    fill="none"
-    stroke="rgba(245,240,232,0.42)"
-    strokeWidth="2"
-    strokeLinecap="round"
-  />
-
-  <GuideLine y={182} color={lineColor('neck')} label="Neck" />
-  <GuideLine y={238} color={lineColor('shoulders')} label="Shoulders" />
-  <GuideLine y={300} color={lineColor('bust_chest')} label="Chest" />
-  <GuideLine y={330} color={lineColor('underbust')} label="Underbust" />
-  <GuideLine y={385} color={lineColor('waist')} label="Waist" />
-  <GuideLine y={425} color={lineColor('lower_waist')} label="Low Waist" />
-  <GuideLine y={455} color={lineColor('high_hip')} label="High Hip" />
-  <GuideLine y={485} color={lineColor('hips_glutes')} label="Hips" />
+  <GuideLine y={190} color={lineColor('neck')} label="Neck" />
+<GuideLine y={252} color={lineColor('shoulders')} label="Shoulders" />
+<GuideLine y={314} color={lineColor('bust_chest')} label="Chest" />
+<GuideLine y={348} color={lineColor('underbust')} label="Underbust" />
+<GuideLine y={392} color={lineColor('waist')} label="Waist" />
+<GuideLine y={430} color={lineColor('lower_waist')} label="Low Waist" />
+<GuideLine y={458} color={lineColor('high_hip')} label="High Hip" />
+<GuideLine y={496} color={lineColor('hips_glutes')} label="Hips" />
 
   <GuideLine
     y={548}
