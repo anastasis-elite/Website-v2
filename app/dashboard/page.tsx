@@ -58,8 +58,31 @@ export default async function DashboardPage() {
     .limit(1)
     .maybeSingle()
 
+  const monthStartDate = monthStart.toISOString().split('T')[0]
+
+const { data: monthlyMeasurements } = await supabase
+  .from('measurement_logs')
+  .select('id')
+  .eq('client_id', client.client_id)
+  .gte('log_date', monthStartDate)
+  .limit(1)
+  .maybeSingle()
+
+const measurementsCompletedThisMonth = !!monthlyMeasurements
+
+  const dailyStructureReviewedThisMonth =
+  client.daily_structure_reviewed_at
+    ? new Date(client.daily_structure_reviewed_at) >= monthStart
+    : false
+  
   const assessmentCompletedThisMonth = !!monthlyAssessment
 
+  const monthlyAssessmentsDueCount = [
+  !assessmentCompletedThisMonth,
+  !dailyStructureReviewedThisMonth,
+  !measurementsCompletedThisMonth,
+].filter(Boolean).length
+  
   const lesson = await getNextLesson({
     supabase,
     client,
@@ -153,14 +176,8 @@ const symptomPredictions = getCycleSymptomPattern({
 />
 
           <DashboardAssessmentMiniCard
-            clientId={client.client_id}
-            program={program}
-            monthlyAssessmentComplete={assessmentCompletedThisMonth}
-            dailyStructureSet={dailyStructureSet}
-            dailyStructureReviewedThisMonth={dailyStructureReviewedThisMonth}
-            dailyStructureLabel={dailyStructureLabel}
-            previousReviewedAt={client.daily_structure_reviewed_at}
-          />
+  dueCount={monthlyAssessmentsDueCount}
+/>
         </div>
 
         {lesson ? (
