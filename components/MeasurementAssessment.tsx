@@ -592,7 +592,7 @@ function MeasurementDiagram({
           <GuideLine y={350} color={lineColor('hips_glutes')} label="Hips" />
 
           <GuideLine
-            y={550}
+            y={450}
             color={
               activeKey === 'left_thigh' || activeKey === 'right_thigh'
                 ? active
@@ -602,7 +602,7 @@ function MeasurementDiagram({
           />
 
           <GuideLine
-            y={675}
+            y={575}
             color={
               activeKey === 'left_calf' || activeKey === 'right_calf'
                 ? active
