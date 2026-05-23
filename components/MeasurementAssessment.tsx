@@ -735,7 +735,7 @@ function MeasurementDiagram({
   />
 </svg>
 
-      {!large ? (
+            {!large ? (
         <p
           style={{
             margin: '14px 0 0',
@@ -750,22 +750,36 @@ function MeasurementDiagram({
   )
 }
 
-<GuideLine
-  y={404}
-  color={
-    activeKey === 'left_thigh' || activeKey === 'right_thigh'
-      ? active
-      : muted
-  }
-  label="Thigh"
-/>
+function GuideLine({
+  y,
+  color,
+  label,
+}: {
+  y: number
+  color: string
+  label: string
+}) {
+  return (
+    <>
+      <line
+        x1="54"
+        x2="226"
+        y1={y}
+        y2={y}
+        stroke={color}
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
 
-<GuideLine
-  y={482}
-  color={
-    activeKey === 'left_calf' || activeKey === 'right_calf'
-      ? active
-      : muted
-  }
-  label="Calf"
-/>
+      <text
+        x="232"
+        y={y + 4}
+        fill={color}
+        fontSize="10"
+        fontFamily="Georgia, serif"
+      >
+        {label}
+      </text>
+    </>
+  )
+}
