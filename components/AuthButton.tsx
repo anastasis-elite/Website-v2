@@ -32,10 +32,7 @@ export default function AuthButton() {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node)
-      ) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setOpen(false)
       }
     }
@@ -77,11 +74,7 @@ export default function AuthButton() {
         onClick={() => setOpen((prev) => !prev)}
       >
         {insideDashboard ? (
-          <img
-            src="/Logo.png"
-            alt=""
-            className="dashboard-menu-logo"
-          />
+          <img src="/Logo.png" alt="" className="dashboard-menu-logo" />
         ) : (
           <span className="dashboard-menu-dot" />
         )}
@@ -91,14 +84,55 @@ export default function AuthButton() {
         <nav className="dashboard-dropdown" aria-label="Main navigation">
           {loggedIn && insideDashboard ? (
             <>
-              <Link href="/dashboard" onClick={closeMenu}>Dashboard</Link>
-              <Link href="/dashboard/program" onClick={closeMenu}>Program</Link>
-              <Link href="/dashboard/nutrition" onClick={closeMenu}>Nutrition</Link>
-              <Link href="/dashboard/cycle" onClick={closeMenu}>Cycle</Link>
-              <Link href="/dashboard/assessment/daily-structure" onClick={closeMenu}>Daily Structure</Link>
-              <Link href="/program" onClick={closeMenu}>Explore Programs</Link>
-              <Link href="/about" onClick={closeMenu}>About</Link>
-              <Link href="/why" onClick={closeMenu}>Why</Link>
+              <Link href="/dashboard" onClick={closeMenu}>
+                Dashboard
+              </Link>
+
+              <Link href="/dashboard/program" onClick={closeMenu}>
+                Program
+              </Link>
+
+              <Link href="/dashboard/nutrition" onClick={closeMenu}>
+                Nutrition
+              </Link>
+
+              <Link href="/dashboard/cycle" onClick={closeMenu}>
+                Cycle
+              </Link>
+
+              <Link
+                href="/dashboard/community"
+                onClick={closeMenu}
+                className="dashboard-menu-link-with-badge"
+              >
+                <span>
+                  <span className="dashboard-menu-link-title">Ascent</span>
+                  <span className="dashboard-menu-link-subtitle">
+                    The Ascent Collective
+                  </span>
+                </span>
+
+                <span className="dashboard-menu-badge">3</span>
+              </Link>
+
+              <Link
+                href="/dashboard/assessment/daily-structure"
+                onClick={closeMenu}
+              >
+                Daily Structure
+              </Link>
+
+              <Link href="/program" onClick={closeMenu}>
+                Explore Programs
+              </Link>
+
+              <Link href="/about" onClick={closeMenu}>
+                About
+              </Link>
+
+              <Link href="/why" onClick={closeMenu}>
+                Why
+              </Link>
 
               <button
                 type="button"
@@ -110,13 +144,48 @@ export default function AuthButton() {
             </>
           ) : loggedIn ? (
             <>
-              <Link href="/dashboard" onClick={closeMenu}>Dashboard</Link>
-              <Link href="/dashboard/program" onClick={closeMenu}>Program</Link>
-              <Link href="/dashboard/nutrition" onClick={closeMenu}>Nutrition</Link>
-              <Link href="/program" onClick={closeMenu}>Explore Programs</Link>
-              <Link href="/about" onClick={closeMenu}>About</Link>
-              <Link href="/why" onClick={closeMenu}>Why</Link>
-              <Link href="/apply" onClick={closeMenu}>Apply</Link>
+              <Link href="/dashboard" onClick={closeMenu}>
+                Dashboard
+              </Link>
+
+              <Link href="/dashboard/program" onClick={closeMenu}>
+                Program
+              </Link>
+
+              <Link href="/dashboard/nutrition" onClick={closeMenu}>
+                Nutrition
+              </Link>
+
+              <Link
+                href="/dashboard/community"
+                onClick={closeMenu}
+                className="dashboard-menu-link-with-badge"
+              >
+                <span>
+                  <span className="dashboard-menu-link-title">Ascent</span>
+                  <span className="dashboard-menu-link-subtitle">
+                    The Ascent Collective
+                  </span>
+                </span>
+
+                <span className="dashboard-menu-badge">3</span>
+              </Link>
+
+              <Link href="/program" onClick={closeMenu}>
+                Explore Programs
+              </Link>
+
+              <Link href="/about" onClick={closeMenu}>
+                About
+              </Link>
+
+              <Link href="/why" onClick={closeMenu}>
+                Why
+              </Link>
+
+              <Link href="/apply" onClick={closeMenu}>
+                Apply
+              </Link>
 
               <button
                 type="button"
@@ -128,12 +197,29 @@ export default function AuthButton() {
             </>
           ) : (
             <>
-              <Link href="/" onClick={closeMenu}>Home</Link>
-              <Link href="/about" onClick={closeMenu}>About</Link>
-              <Link href="/why" onClick={closeMenu}>Why</Link>
-              <Link href="/program" onClick={closeMenu}>Programs</Link>
-              <Link href="/apply" onClick={closeMenu}>Apply</Link>
-              <Link href="/login" onClick={closeMenu}>Login</Link>
+              <Link href="/" onClick={closeMenu}>
+                Home
+              </Link>
+
+              <Link href="/about" onClick={closeMenu}>
+                About
+              </Link>
+
+              <Link href="/why" onClick={closeMenu}>
+                Why
+              </Link>
+
+              <Link href="/program" onClick={closeMenu}>
+                Programs
+              </Link>
+
+              <Link href="/apply" onClick={closeMenu}>
+                Apply
+              </Link>
+
+              <Link href="/login" onClick={closeMenu}>
+                Login
+              </Link>
             </>
           )}
         </nav>
