@@ -106,9 +106,8 @@ export default function AuthButton() {
                 className="dashboard-menu-link-with-badge"
               >
                 <span>
-                  <span className="dashboard-menu-link-title">Ascent</span>
-                  <span className="dashboard-menu-link-subtitle">
-                    The Ascent Collective
+                  <span className="dashboard-menu-link-title">
+                    Ascent Collective
                   </span>
                 </span>
 
