@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import styles from './styles/page.module.css'
+import styles from './styles/globalstyles.ts'
 
 export default function AboutPage() {
   return (
