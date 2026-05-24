@@ -111,7 +111,7 @@ export default function AuthButton() {
                   </span>
                 </span>
 
-                <span className="dashboard-menu-badge">3</span>
+                <span className="dashboard-menu-badge"> • 3</span>
               </Link>
 
               <Link
