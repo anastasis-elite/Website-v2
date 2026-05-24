@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import styles from './styles/page.module.css'
+import styles from './styles/globalStyles.tsx'
 
 export default function WhyPage() {
   return (
