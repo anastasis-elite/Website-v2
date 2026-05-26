@@ -78,13 +78,13 @@ export default function AboutPage() {
         </p>
       </section>
 
-      <section style={styles.ctaStyle}>
+      <section style={styles.primaryButtonStyle}>
         <h2>Rise with structure that finally makes sense.</h2>
         <p>
           Anastasis exists to help women feel safe, strong, informed, and
           supported inside their own bodies again.
         </p>
-        <Link href="/apply" style={styles.buttonStyle}>
+        <Link href="/apply" style={styles.secondaryButtonStyle}>
           See if you’re ready
         </Link>
       </section>
