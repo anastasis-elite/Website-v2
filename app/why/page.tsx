@@ -1,26 +1,27 @@
 import Link from 'next/link'
+import * as styles from '../styles/globalstyles'
 
 export default function WhyPage() {
   return (
-    <main className={"page-shell"}>
-      <section className={"hero"}>
-        <p className={"eyebrow"}>Why Anastasis Exists</p>
+    <main style={styles.pageStyles}>
+      <section style={styles.h1Style}>
+        <p style={styles.eyebrowStyle}>Why Anastasis Exists</p>
         <h1>Because Women Deserved Better Systems.</h1>
-        <p className={"heroText"}>
+        <p style={styles.heroTextStyle}>
           For decades, women were handed systems built around restriction,
           punishment, burnout, and generic programming — then blamed when their
           bodies adapted.
         </p>
       </section>
 
-      <section className={"section"}>
+      <section style={styles.sectionStyle}>
         <h2>Why We Built This Differently</h2>
         <p>
           Anastasis exists because “eat less and move more” was never the whole
           story.
         </p>
 
-        <div className={"grid"}>
+        <div style={styles.cardGridStyle}>
           {[
             'Recovery matters.',
             'Hormones matter.',
@@ -29,14 +30,14 @@ export default function WhyPage() {
             'Inflammation matters.',
             'Sustainability matters.',
           ].map((item) => (
-            <div key={item} className={"card"}>
+            <div key={item} style={styles.cardStyle}>
               {item}
             </div>
           ))}
         </div>
       </section>
 
-      <section className={"section"}>
+      <section style={styles.sectionStyle}>
         <h2>Why Assessments Matter</h2>
         <p>
           Most programs give everyone the same plan. Anastasis adapts.
@@ -50,11 +51,11 @@ export default function WhyPage() {
         </p>
       </section>
 
-      <section className={"section"}>
+      <section style={styles.sectionStyle}>
         <h2>Why We Track More Than Weight</h2>
         <p>The scale cannot tell you the full truth.</p>
 
-        <div className={"grid"}>
+        <div style={styles.gridCardStyle}>
           {[
             'It cannot show inflammation.',
             'It cannot show posture changes.',
@@ -63,14 +64,14 @@ export default function WhyPage() {
             'It cannot show muscle gain clearly.',
             'It cannot show real body recomposition alone.',
           ].map((item) => (
-            <div key={item} className={"card"}>
+            <div key={item} style={styles.cardStyle}>
               {item}
             </div>
           ))}
         </div>
       </section>
 
-      <section className={"section"}>
+      <section style={styles.sectionStyle}>
         <h2>Why This Feels Different</h2>
         <p>
           Anastasis was not built to keep women dependent. It was built to
@@ -82,13 +83,13 @@ export default function WhyPage() {
         </p>
       </section>
 
-      <section className={"cta"}>
+      <section style={styles.sectionStyle}>
         <h2>This is not about becoming smaller.</h2>
         <p>
           It is about becoming more connected, more informed, more regulated,
           more powerful, and more supported.
         </p>
-        <Link href="/apply" className={"button"}>
+        <Link href="/apply" style={styles.primaryButtonStyle}>
           Begin the readiness check
         </Link>
       </section>
