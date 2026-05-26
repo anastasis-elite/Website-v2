@@ -162,6 +162,15 @@ export const labelStyle: CSSProperties = {
   lineHeight: 1.5,
 }
 
+export const h1Style: CSSProperties = {
+  fontSize: '1.9rem',
+  fontWeight: 700,
+  marginTop: '64px',
+  marginBottom: '16px',
+  letterSpacing: '-0.01em',
+  color: '#f5f0e8',
+}
+
 export const h2Style: CSSProperties = {
   fontSize: '1.6rem',
   fontWeight: 500,
