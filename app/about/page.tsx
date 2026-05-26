@@ -34,7 +34,7 @@ export default function AboutPage() {
         <p>Most fitness platforms ask, “How many calories did you burn?”</p>
         <p>Anastasis asks better questions.</p>
 
-        <div style={styles.gridStyle}>
+        <div style={styles.cardGridStyle}>
           {[
             'How is your body adapting?',
             'Is recovery being supported?',
