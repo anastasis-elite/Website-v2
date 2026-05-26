@@ -55,7 +55,7 @@ export default function WhyPage() {
         <h2>Why We Track More Than Weight</h2>
         <p>The scale cannot tell you the full truth.</p>
 
-        <div style={styles.gridCardStyle}>
+        <div style={styles.cardGridStyle}>
           {[
             'It cannot show inflammation.',
             'It cannot show posture changes.',
