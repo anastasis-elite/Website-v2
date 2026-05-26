@@ -3,7 +3,7 @@ import * as styles from '../styles/globalstyles'
 
 export default function WhyPage() {
   return (
-    <main style={styles.pageStyles}>
+    <main style={styles.pageStyle}>
       <section style={styles.h1Style}>
         <p style={styles.eyebrowStyle}>Why Anastasis Exists</p>
         <h1>Because Women Deserved Better Systems.</h1>
