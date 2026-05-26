@@ -4,7 +4,7 @@ import * as styles from '../styles/globalstyles'
 export default function AboutPage() {
   return (
     <main style={styles.pageStyle}>
-      <section style={styles.heroTitleStyle}>
+      <section style={styles.h1Style}>
         <p style={styles.eyebrowStyle}>About Anastasis</p>
         <h1>This Was Never Meant To Be Another Fitness Program.</h1>
         <p style={styles.heroTextStyle}>
