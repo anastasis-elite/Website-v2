@@ -78,7 +78,7 @@ export default function AboutPage() {
         </p>
       </section>
 
-      <section style={styles.primaryButtonStyle}>
+      <section style={styles.sectionStyle}>
         <h2>Rise with structure that finally makes sense.</h2>
         <p>
           Anastasis exists to help women feel safe, strong, informed, and
