@@ -84,7 +84,7 @@ export default function AboutPage() {
           Anastasis exists to help women feel safe, strong, informed, and
           supported inside their own bodies again.
         </p>
-        <Link href="/apply" style={styles.secondaryButtonStyle}>
+        <Link href="/apply" style={styles.primaryButtonStyle}>
           See if you’re ready
         </Link>
       </section>
