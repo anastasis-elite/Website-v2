@@ -67,9 +67,22 @@ export default async function NutritionPage() {
         magnesium_target_mg: 320,
         calcium_target_mg: 1000,
         iron_target_mg: 18,
+        zinc_target_mg: 8,
+        selenium_target_mcg: 55,
+        cholesterol_limit_mg: 300,
         choline_target_mg: 425,
+        vitamin_a_target_mcg: 700,
         vitamin_c_target_mg: 75,
         vitamin_d_target_mcg: 15,
+        vitamin_e_target_mg: 15,
+        vitamin_k_target_mcg: 90,
+        b1_target_mg: 1.1,
+        b2_target_mg: 1.1,
+        b3_target_mg: 14,
+        b5_target_mg: 5,
+        b6_target_mg: 1.3,
+        b9_target_mcg: 400,
+        b12_target_mcg: 2.4,
       })
       .select('*')
       .single()
@@ -77,30 +90,44 @@ export default async function NutritionPage() {
     todayLog = newLog
   }
 
-  const { data: remainingData } = todayLog?.id
-  ? await supabase
-      .from('nutrition_log_remaining')
-      .select('*')
-      .eq('nutrition_log_id', todayLog.id)
-      .maybeSingle()
-  : { data: null }
+  const { data: remainingData } =
+    todayLog?.id && hasAdvancedNutrition
+      ? await supabase
+          .from('nutrition_log_remaining')
+          .select('*')
+          .eq('nutrition_log_id', todayLog.id)
+          .maybeSingle()
+      : { data: null }
 
-const initialRemaining = remainingData || {
-  calories_remaining: todayLog?.calories || calories,
-  protein_remaining_g: todayLog?.protein || protein,
-  carbs_remaining_g: todayLog?.carbs || carbs,
-  fat_remaining_g: todayLog?.fats || fats,
-  fiber_remaining_g: todayLog?.fiber_target_g || 30,
-  sodium_remaining_mg: todayLog?.sodium_target_mg || 2300,
-  potassium_remaining_mg: todayLog?.potassium_target_mg || 4700,
-  magnesium_remaining_mg: todayLog?.magnesium_target_mg || 320,
-  calcium_remaining_mg: todayLog?.calcium_target_mg || 1000,
-  iron_remaining_mg: todayLog?.iron_target_mg || 18,
-  choline_remaining_mg: todayLog?.choline_target_mg || 425,
-  vitamin_c_remaining_mg: todayLog?.vitamin_c_target_mg || 75,
-  vitamin_d_remaining_mcg: todayLog?.vitamin_d_target_mcg || 15,
-}
-  
+  const initialRemaining = remainingData || {
+    calories_remaining: todayLog?.calories || calories,
+    protein_remaining_g: todayLog?.protein || protein,
+    carbs_remaining_g: todayLog?.carbs || carbs,
+    fat_remaining_g: todayLog?.fats || fats,
+    fiber_remaining_g: todayLog?.fiber_target_g || 30,
+    sodium_remaining_mg: todayLog?.sodium_target_mg || 2300,
+    potassium_remaining_mg: todayLog?.potassium_target_mg || 4700,
+    magnesium_remaining_mg: todayLog?.magnesium_target_mg || 320,
+    calcium_remaining_mg: todayLog?.calcium_target_mg || 1000,
+    iron_remaining_mg: todayLog?.iron_target_mg || 18,
+    zinc_remaining_mg: todayLog?.zinc_target_mg || 8,
+    selenium_remaining_mcg: todayLog?.selenium_target_mcg || 55,
+    cholesterol_remaining_mg: todayLog?.cholesterol_limit_mg || 300,
+    choline_remaining_mg: todayLog?.choline_target_mg || 425,
+    vitamin_a_remaining_mcg: todayLog?.vitamin_a_target_mcg || 700,
+    vitamin_c_remaining_mg: todayLog?.vitamin_c_target_mg || 75,
+    vitamin_d_remaining_mcg: todayLog?.vitamin_d_target_mcg || 15,
+    vitamin_e_remaining_mg: todayLog?.vitamin_e_target_mg || 15,
+    vitamin_k_remaining_mcg: todayLog?.vitamin_k_target_mcg || 90,
+    b1_remaining_mg: todayLog?.b1_target_mg || 1.1,
+    b2_remaining_mg: todayLog?.b2_target_mg || 1.1,
+    b3_remaining_mg: todayLog?.b3_target_mg || 14,
+    b5_remaining_mg: todayLog?.b5_target_mg || 5,
+    b6_remaining_mg: todayLog?.b6_target_mg || 1.3,
+    b9_remaining_mcg: todayLog?.b9_target_mcg || 400,
+    b12_remaining_mcg: todayLog?.b12_target_mcg || 2.4,
+  }
+
   const nutrition = {
     tdee,
     calories,
@@ -108,8 +135,29 @@ const initialRemaining = remainingData || {
     carbs,
     fats,
     water,
-    micros:
-      'Prioritize magnesium, potassium, sodium, calcium, iron, B vitamins, vitamin D, omega-3 rich foods, and electrolytes.',
+    micros: [
+      'Fiber',
+      'Sodium',
+      'Potassium',
+      'Magnesium',
+      'Calcium',
+      'Iron',
+      'Zinc',
+      'Selenium',
+      'Choline',
+      'Vitamin A',
+      'Vitamin C',
+      'Vitamin D',
+      'Vitamin E',
+      'Vitamin K',
+      'B1',
+      'B2',
+      'B3',
+      'B5',
+      'B6',
+      'B9',
+      'B12',
+    ],
     recipes: [],
   }
 
@@ -173,30 +221,36 @@ const initialRemaining = remainingData || {
         {!hasAdvancedNutrition && (
           <section style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>Today’s Nutrition Log</h2>
+
             <NutritionTracker clientId={clientId} todayLog={todayLog} />
           </section>
         )}
 
         {hasAdvancedNutrition && todayLog?.id && (
-          <section style={styles.cartBoxStyle}>
-            <h2 style={styles.sectionTitleStyle}>
-              Food + Micronutrient Tracking
-            </h2>
-
-            <NutritionFoodLogger
-              nutritionLogId={todayLog.id}
-              initialRemaining={initialRemaining}    
-            />
-          </section>
-        )}
-        
+          <>
             <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>Micronutrients</h2>
+              <h2 style={styles.sectionTitleStyle}>
+                Food + Micronutrient Tracking
+              </h2>
 
-              <p style={styles.bodyStyle}>
-                {nutrition.micros ||
-                  'No micronutrient recommendations yet.'}
-              </p>
+              <NutritionFoodLogger
+                nutritionLogId={todayLog.id}
+                initialRemaining={initialRemaining}
+              />
+            </section>
+
+            <section style={styles.cartBoxStyle}>
+              <h2 style={styles.sectionTitleStyle}>
+                Micronutrients Tracked
+              </h2>
+
+              <div style={styles.cardGridStyle}>
+                {nutrition.micros.map((micro) => (
+                  <div key={micro} style={styles.cardStyle}>
+                    <h3 style={styles.cardTitleStyle}>{micro}</h3>
+                  </div>
+                ))}
+              </div>
             </section>
 
             <section style={styles.cartBoxStyle}>
@@ -204,7 +258,7 @@ const initialRemaining = remainingData || {
                 Recommended Recipes
               </h2>
 
-              {nutrition.recipes?.length ? (
+              {nutrition.recipes.length ? (
                 <ul style={styles.bodyStyle}>
                   {nutrition.recipes.map((recipe, index) => (
                     <li key={index}>{recipe}</li>
@@ -216,7 +270,8 @@ const initialRemaining = remainingData || {
                 </p>
               )}
             </section>
-        )
+          </>
+        )}
 
         <div style={styles.buttonRowStyle}>
           <Link href="/dashboard" style={styles.secondaryButtonStyle}>
