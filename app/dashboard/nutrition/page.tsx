@@ -200,7 +200,7 @@ export default async function NutritionPage() {
                 </p>
               )}
             </section>
-        )}
+        )
 
         <div style={styles.buttonRowStyle}>
           <Link href="/dashboard" style={styles.secondaryButtonStyle}>
