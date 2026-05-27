@@ -190,59 +190,59 @@ export default function NutritionFoodLogger({
         <div style={{ marginTop: '28px' }}>
           <h3 style={styles.sectionTitleStyle}>Remaining Today</h3>
 
-          <div style={styles.cardGridStyle}>
-            <div style={styles.cardStyle}>
-              <h4 style={styles.cardTitleStyle}>Calories</h4>
-              <p style={styles.cardTextStyle}>
+          <div style={styles.compactCardGridStyle}>
+            <div style={styles.copmactCardStyle}>
+              <h4 style={styles.compactCardTitleStyle}>Calories</h4>
+              <p style={styles.compactCardTextStyle}>
                 {roundValue(remaining.calories_remaining)}
               </p>
             </div>
 
-            <div style={styles.cardStyle}>
-              <h4 style={styles.cardTitleStyle}>Protein</h4>
-              <p style={styles.cardTextStyle}>
+            <div style={styles.compactCardStyle}>
+              <h4 style={styles.compactCardTitleStyle}>Protein</h4>
+              <p style={styles.compactCardTextStyle}>
                 {roundValue(remaining.protein_remaining_g)}g
               </p>
             </div>
 
-            <div style={styles.cardStyle}>
-              <h4 style={styles.cardTitleStyle}>Carbs</h4>
-              <p style={styles.cardTextStyle}>
+            <div style={styles.compactCardStyle}>
+              <h4 style={styles.compactCardTitleStyle}>Carbs</h4>
+              <p style={styles.compactCardTextStyle}>
                 {roundValue(remaining.carbs_remaining_g)}g
               </p>
             </div>
 
-            <div style={styles.cardStyle}>
-              <h4 style={styles.cardTitleStyle}>Fats</h4>
-              <p style={styles.cardTextStyle}>
+            <div style={styles.compactCardStyle}>
+              <h4 style={styles.compactCardTitleStyle}>Fats</h4>
+              <p style={styles.compactCardTextStyle}>
                 {roundValue(remaining.fat_remaining_g)}g
               </p>
             </div>
 
-            <div style={styles.cardStyle}>
-              <h4 style={styles.cardTitleStyle}>Fiber</h4>
-              <p style={styles.cardTextStyle}>
+            <div style={styles.compactCardStyle}>
+              <h4 style={styles.compactCardTitleStyle}>Fiber</h4>
+              <p style={styles.compactCardTextStyle}>
                 {roundValue(remaining.fiber_remaining_g)}g
               </p>
             </div>
 
-            <div style={styles.cardStyle}>
-              <h4 style={styles.cardTitleStyle}>Magnesium</h4>
-              <p style={styles.cardTextStyle}>
+            <div style={styles.compactCardStyle}>
+              <h4 style={styles.compactCardTitleStyle}>Magnesium</h4>
+              <p style={styles.compactCardTextStyle}>
                 {roundValue(remaining.magnesium_remaining_mg)}mg
               </p>
             </div>
 
-            <div style={styles.cardStyle}>
-              <h4 style={styles.cardTitleStyle}>Potassium</h4>
-              <p style={styles.cardTextStyle}>
+            <div style={styles.compactCardStyle}>
+              <h4 style={styles.compactCardTitleStyle}>Potassium</h4>
+              <p style={styles.compactCardTextStyle}>
                 {roundValue(remaining.potassium_remaining_mg)}mg
               </p>
             </div>
 
-            <div style={styles.cardStyle}>
-              <h4 style={styles.cardTitleStyle}>Vitamin C</h4>
-              <p style={styles.cardTextStyle}>
+            <div style={styles.compactCardStyle}>
+              <h4 style={styles.compactCardTitleStyle}>Vitamin C</h4>
+              <p style={styles.compactCardTextStyle}>
                 {roundValue(remaining.vitamin_c_remaining_mg)}mg
               </p>
             </div>
