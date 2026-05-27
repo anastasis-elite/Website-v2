@@ -173,6 +173,7 @@ export default async function NutritionPage() {
             />
           </section>
         )}
+        
             <section style={styles.cartBoxStyle}>
               <h2 style={styles.sectionTitleStyle}>Micronutrients</h2>
 
@@ -199,7 +200,6 @@ export default async function NutritionPage() {
                 </p>
               )}
             </section>
-          </>
         )}
 
         <div style={styles.buttonRowStyle}>
