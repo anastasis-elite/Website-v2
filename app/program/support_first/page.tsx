@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import * as styles from '../../styles/globalstyles'
 
 export default function SupportFirstPage() {
@@ -12,34 +13,54 @@ export default function SupportFirstPage() {
 
         <p style={styles.heroTextStyle}>
           Based on your responses, the most aligned next step is to prioritize
-          stability, support, and safety before moving into a structured program.
+          stability, support, and self-trust before moving into a structured
+          training program.
         </p>
 
-        <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>Why this matters</h2>
+        <section style={styles.cartBoxStyle}>
+          <h2 style={styles.sectionTitleStyle}>
+            This is not a rejection.
+          </h2>
+
           <p style={styles.bodyStyle}>
-            Your body is not something to push through — it’s something to work
-            with. Creating the right environment now allows you to progress faster,
-            safer, and more sustainably long-term.
+            It simply means your body, nervous system, schedule, or current
+            capacity may need a different starting point before structured
+            progression can be effective and sustainable.
           </p>
         </section>
 
-        <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>What happens next</h2>
+        <section style={styles.cartBoxStyle}>
+          <h2 style={styles.sectionTitleStyle}>
+            Why this matters
+          </h2>
+
           <p style={styles.bodyStyle}>
-            We’ll take a more supportive approach first, ensuring that your body is
-            ready for higher demand training and structured progression.
+            Your body is not something to push through. It is something to work
+            with. Creating the right foundation now allows you to progress
+            faster, safer, and more sustainably long-term.
+          </p>
+        </section>
+
+        <section style={styles.cartBoxStyle}>
+          <h2 style={styles.sectionTitleStyle}>
+            The next best step
+          </h2>
+
+          <p style={styles.bodyStyle}>
+            The Anastasis Shift was created for women who are not quite ready
+            to enter the full program yet, but who are ready to rebuild the
+            structure, trust, and execution capacity needed to get there.
           </p>
         </section>
 
         <div style={styles.buttonRowStyle}>
-          <a href="/apply" style={styles.secondaryButtonStyle}>
-            Revisit Application
-          </a>
+          <Link href="/guide" style={styles.primaryButtonStyle}>
+            Begin The Anastasis Shift
+          </Link>
 
-          <a href="/program" style={styles.primaryButtonStyle}>
-            Explore Programs
-          </a>
+          <Link href="/apply" style={styles.secondaryButtonStyle}>
+            Revisit Application
+          </Link>
         </div>
       </div>
     </main>
