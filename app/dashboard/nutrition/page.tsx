@@ -2,21 +2,51 @@ import Link from 'next/link'
 import * as styles from '../../styles/globalstyles'
 import NutritionTracker from '@/components/NutritionTracker'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import NutritionFoodLogger from '@/components/NutritionFoodLogger'
 
 export default async function NutritionPage() {
   const { supabase, client } = await getDashboardContext()
 
-  const clientId = client.client_id
+  const clientId = client.id
+  const authUserId = client.auth_user_id
   const fullName = client.full_name || ''
 
   const today = new Date().toISOString().split('T')[0]
 
-  const { data: todayLog } = await supabase
+  let { data: todayLog } = await supabase
+  .from('nutrition_logs')
+  .select('*')
+  .eq('client_id', clientId)
+  .eq('log_date', today)
+  .maybeSingle()
+
+if (!todayLog) {
+  const { data: newLog } = await supabase
     .from('nutrition_logs')
+    .insert({
+      client_id: clientId,
+      auth_user_id: authUserId,
+      log_date: today,
+      protein,
+      carbs,
+      fats,
+      calories,
+      water_oz: water,
+      fiber_target_g: 30,
+      sodium_target_mg: 2300,
+      potassium_target_mg: 4700,
+      magnesium_target_mg: 320,
+      calcium_target_mg: 1000,
+      iron_target_mg: 18,
+      choline_target_mg: 425,
+      vitamin_c_target_mg: 75,
+      vitamin_d_target_mcg: 15,
+    })
     .select('*')
-    .eq('client_id', clientId)
-    .eq('log_date', today)
-    .maybeSingle()
+    .single()
+
+  todayLog = newLog
+}
 
   const { data: strengthAssessment } = await supabase
     .from('assessments')
@@ -131,6 +161,10 @@ export default async function NutritionPage() {
             />
           </section>
 
+          <NutritionFoodLogger
+            nutritionLogId={todayLog?.id}
+          />
+          
           <section style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>
               Micronutrients
