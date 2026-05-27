@@ -191,7 +191,7 @@ export default function NutritionFoodLogger({
           <h3 style={styles.sectionTitleStyle}>Remaining Today</h3>
 
           <div style={styles.compactCardGridStyle}>
-            <div style={styles.copmactCardStyle}>
+            <div style={styles.compactCardStyle}>
               <h4 style={styles.compactCardTitleStyle}>Calories</h4>
               <p style={styles.compactCardTextStyle}>
                 {roundValue(remaining.calories_remaining)}
