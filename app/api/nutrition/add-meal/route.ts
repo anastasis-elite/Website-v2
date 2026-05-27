@@ -58,14 +58,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const { data: remaining } = await supabase
-    .from('nutrition_log_remaining')
-    .select('*')
-    .eq('nutrition_log_id', nutritionLogId)
-    .maybeSingle()
+  const { data: remaining, error: remainingError } = await supabase
+  .from('nutrition_log_remaining')
+  .select('*')
+  .eq('nutrition_log_id', nutritionLogId)
+  .maybeSingle()
 
-  return NextResponse.json({
-    success: true,
-    remaining,
-  })
+if (remainingError) {
+  return NextResponse.json(
+    { error: remainingError.message },
+    { status: 500 }
+  )
+}
+
+return NextResponse.json({
+  success: true,
+  remaining,
+})
 }
