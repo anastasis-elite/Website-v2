@@ -218,34 +218,6 @@ export default function NutritionFoodLogger({
                 {roundValue(remaining.fat_remaining_g)}g
               </p>
             </div>
-
-            <div style={styles.compactCardStyle}>
-              <h4 style={styles.compactCardTitleStyle}>Fiber</h4>
-              <p style={styles.compactCardTextStyle}>
-                {roundValue(remaining.fiber_remaining_g)}g
-              </p>
-            </div>
-
-            <div style={styles.compactCardStyle}>
-              <h4 style={styles.compactCardTitleStyle}>Magnesium</h4>
-              <p style={styles.compactCardTextStyle}>
-                {roundValue(remaining.magnesium_remaining_mg)}mg
-              </p>
-            </div>
-
-            <div style={styles.compactCardStyle}>
-              <h4 style={styles.compactCardTitleStyle}>Potassium</h4>
-              <p style={styles.compactCardTextStyle}>
-                {roundValue(remaining.potassium_remaining_mg)}mg
-              </p>
-            </div>
-
-            <div style={styles.compactCardStyle}>
-              <h4 style={styles.compactCardTitleStyle}>Vitamin C</h4>
-              <p style={styles.compactCardTextStyle}>
-                {roundValue(remaining.vitamin_c_remaining_mg)}mg
-              </p>
-            </div>
           </div>
         </div>
       )}
