@@ -77,6 +77,14 @@ export default async function NutritionPage() {
     todayLog = newLog
   }
 
+  const { data: remainingData } = todayLog?.id
+  ? await supabase
+      .from('nutrition_log_remaining')
+      .select('*')
+      .eq('nutrition_log_id', todayLog.id)
+      .maybeSingle()
+  : { data: null }
+  
   const nutrition = {
     tdee,
     calories,
@@ -150,7 +158,10 @@ export default async function NutritionPage() {
   <section style={styles.cartBoxStyle}>
     <h2 style={styles.sectionTitleStyle}>Today’s Nutrition Log</h2>
 
-    <NutritionTracker clientId={clientId} todayLog={todayLog} />
+    <NutritionFoodLogger
+  nutritionLogId={todayLog.id}
+  initialRemaining={remainingData}
+/>
   </section>
 )}
 
