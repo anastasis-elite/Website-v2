@@ -242,7 +242,7 @@ export default async function NutritionPage() {
             {hasAdvancedNutrition && (
   <section style={styles.cartBoxStyle}>
     <h2 style={styles.sectionTitleStyle}>
-      Micronutrients Tracked
+      Micronutrients Remaining
     </h2>
 
     <div style={styles.compactCardGridStyle}>
