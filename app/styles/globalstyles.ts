@@ -210,3 +210,34 @@ export const textareaStyle: CSSProperties = {
   minHeight: '120px',
   resize: 'vertical',
 }
+
+export const compactCardGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+  gap: '14px',
+}
+
+export const compactCardStyle: CSSProperties = {
+  border: '1px solid rgba(181,110,67,0.12)',
+  borderRadius: '22px',
+  padding: '20px 18px',
+  background: 'rgba(255,255,255,0.022)',
+  boxShadow: `
+    0 14px 44px rgba(0,0,0,0.14),
+    inset 0 0 22px rgba(255,255,255,0.012)
+  `,
+}
+
+export const compactCardTitleStyle: CSSProperties = {
+  fontSize: '0.92rem',
+  color: '#f5f0e8',
+  margin: '0 0 8px 0',
+  fontWeight: 500,
+}
+
+export const compactCardTextStyle: CSSProperties = {
+  fontSize: '0.98rem',
+  lineHeight: 1.5,
+  color: '#d7c7b6',
+  margin: 0,
+}
