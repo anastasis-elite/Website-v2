@@ -239,19 +239,105 @@ export default async function NutritionPage() {
               />
             </section>
 
-            <section style={styles.cartBoxStyle}>
-              <h2 style={styles.sectionTitleStyle}>
-                Micronutrients Tracked
-              </h2>
+            {hasAdvancedNutrition && (
+  <section style={styles.cartBoxStyle}>
+    <h2 style={styles.sectionTitleStyle}>
+      Micronutrients Tracked
+    </h2>
 
-              <div style={styles.cardGridStyle}>
-                {nutrition.micros.map((micro) => (
-                  <div key={micro} style={styles.cardStyle}>
-                    <h3 style={styles.cardTitleStyle}>{micro}</h3>
-                  </div>
-                ))}
-              </div>
-            </section>
+    <div style={styles.compactCardGridStyle}>
+      <div style={styles.compactCardStyle}>
+        <h3 style={styles.compactCardTitleStyle}>
+          Fiber
+        </h3>
+
+        <p style={styles.compactCardTextStyle}>
+          {initialRemaining.fiber_remaining_g}g remaining
+        </p>
+      </div>
+
+      <div style={styles.compactCardStyle}>
+        <h3 style={styles.compactCardTitleStyle}>
+          Sodium
+        </h3>
+
+        <p style={styles.compactCardTextStyle}>
+          {initialRemaining.sodium_remaining_mg}mg remaining
+        </p>
+      </div>
+
+      <div style={styles.compactCardStyle}>
+        <h3 style={styles.compactCardTitleStyle}>
+          Potassium
+        </h3>
+
+        <p style={styles.compactCardTextStyle}>
+          {initialRemaining.potassium_remaining_mg}mg remaining
+        </p>
+      </div>
+
+      <div style={styles.compactCardStyle}>
+        <h3 style={styles.compactCardTitleStyle}>
+          Magnesium
+        </h3>
+
+        <p style={styles.compactCardTextStyle}>
+          {initialRemaining.magnesium_remaining_mg}mg remaining
+        </p>
+      </div>
+
+      <div style={styles.compactCardStyle}>
+        <h3 style={styles.compactCardTitleStyle}>
+          Calcium
+        </h3>
+
+        <p style={styles.compactCardTextStyle}>
+          {initialRemaining.calcium_remaining_mg}mg remaining
+        </p>
+      </div>
+
+      <div style={styles.compactCardStyle}>
+        <h3 style={styles.compactCardTitleStyle}>
+          Iron
+        </h3>
+
+        <p style={styles.compactCardTextStyle}>
+          {initialRemaining.iron_remaining_mg}mg remaining
+        </p>
+      </div>
+
+      <div style={styles.compactCardStyle}>
+        <h3 style={styles.compactCardTitleStyle}>
+          Choline
+        </h3>
+
+        <p style={styles.compactCardTextStyle}>
+          {initialRemaining.choline_remaining_mg}mg remaining
+        </p>
+      </div>
+
+      <div style={styles.compactCardStyle}>
+        <h3 style={styles.compactCardTitleStyle}>
+          Vitamin C
+        </h3>
+
+        <p style={styles.compactCardTextStyle}>
+          {initialRemaining.vitamin_c_remaining_mg}mg remaining
+        </p>
+      </div>
+
+      <div style={styles.compactCardStyle}>
+        <h3 style={styles.compactCardTitleStyle}>
+          Vitamin D
+        </h3>
+
+        <p style={styles.compactCardTextStyle}>
+          {initialRemaining.vitamin_d_remaining_mcg}mcg remaining
+        </p>
+      </div>
+    </div>
+  </section>
+)}
 
             <section style={styles.cartBoxStyle}>
               <h2 style={styles.sectionTitleStyle}>
