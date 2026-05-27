@@ -155,26 +155,24 @@ export default async function NutritionPage() {
         </section>
 
         {!hasAdvancedNutrition && (
-  <section style={styles.cartBoxStyle}>
-    <h2 style={styles.sectionTitleStyle}>Today’s Nutrition Log</h2>
+          <section style={styles.cartBoxStyle}>
+            <h2 style={styles.sectionTitleStyle}>Today’s Nutrition Log</h2>
+            <NutritionTracker clientId={clientId} todayLog={todayLog} />
+          </section>
+        )}
 
-    <NutritionFoodLogger
-  nutritionLogId={todayLog.id}
-  initialRemaining={remainingData}
-/>
-  </section>
-)}
+        {hasAdvancedNutrition && todayLog?.id && (
+          <section style={styles.cartBoxStyle}>
+            <h2 style={styles.sectionTitleStyle}>
+              Food + Micronutrient Tracking
+            </h2>
 
-{hasAdvancedNutrition && todayLog?.id && (
-  <>
-    <section style={styles.cartBoxStyle}>
-      <h2 style={styles.sectionTitleStyle}>
-        Food + Micronutrient Tracking
-      </h2>
-
-      <NutritionFoodLogger nutritionLogId={todayLog.id} />
-    </section>
-
+            <NutritionFoodLogger
+              nutritionLogId={todayLog.id}
+              initialRemaining={initialRemaining}    
+            />
+          </section>
+        )}
             <section style={styles.cartBoxStyle}>
               <h2 style={styles.sectionTitleStyle}>Micronutrients</h2>
 
