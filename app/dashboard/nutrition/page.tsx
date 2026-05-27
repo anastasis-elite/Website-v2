@@ -7,7 +7,7 @@ import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 export default async function NutritionPage() {
   const { supabase, client } = await getDashboardContext()
 
-  const clientId = client.id
+  const clientId = client.client_id
   const authUserId = client.auth_user_id
   const fullName = client.full_name || ''
 
