@@ -188,7 +188,7 @@ export default function NutritionFoodLogger({
 
       {remaining && (
         <div style={{ marginTop: '28px' }}>
-          <h3 style={styles.sectionTitleStyle}>Remaining Today</h3>
+          <h3 style={styles.sectionTitleStyle}>Remaining Macros</h3>
 
           <div style={styles.compactCardGridStyle}>
             <div style={styles.compactCardStyle}>
