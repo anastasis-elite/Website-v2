@@ -26,13 +26,17 @@ type Remaining = {
 
 type Props = {
   nutritionLogId: string
+  initialRemaining?: Remaining | null
 }
 
 function roundValue(value: number | null | undefined) {
   return Math.round(Number(value || 0))
 }
 
-export default function NutritionFoodLogger({ nutritionLogId }: Props) {
+export default function NutritionFoodLogger({
+  nutritionLogId,
+  initialRemaining = null,
+}: Props) {
   const [search, setSearch] = useState('')
   const [foods, setFoods] = useState<Food[]>([])
   const [selectedFood, setSelectedFood] = useState<Food | null>(null)
@@ -40,7 +44,7 @@ export default function NutritionFoodLogger({ nutritionLogId }: Props) {
   const [mealName, setMealName] = useState('Breakfast')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const [remaining, setRemaining] = useState<Remaining | null>(null)
+  const [remaining, setRemaining] = useState<Remaining | null>(initialRemaining)
 
   async function searchFoods() {
     setLoading(true)
