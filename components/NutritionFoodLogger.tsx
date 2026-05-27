@@ -8,8 +8,28 @@ type Food = {
   name: string
 }
 
+type Remaining = {
+  calories_remaining: number | null
+  protein_remaining_g: number | null
+  carbs_remaining_g: number | null
+  fat_remaining_g: number | null
+  fiber_remaining_g: number | null
+  sodium_remaining_mg: number | null
+  potassium_remaining_mg: number | null
+  magnesium_remaining_mg: number | null
+  calcium_remaining_mg: number | null
+  iron_remaining_mg: number | null
+  choline_remaining_mg: number | null
+  vitamin_c_remaining_mg: number | null
+  vitamin_d_remaining_mcg: number | null
+}
+
 type Props = {
   nutritionLogId: string
+}
+
+function roundValue(value: number | null | undefined) {
+  return Math.round(Number(value || 0))
 }
 
 export default function NutritionFoodLogger({ nutritionLogId }: Props) {
@@ -20,6 +40,7 @@ export default function NutritionFoodLogger({ nutritionLogId }: Props) {
   const [mealName, setMealName] = useState('Breakfast')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [remaining, setRemaining] = useState<Remaining | null>(null)
 
   async function searchFoods() {
     setLoading(true)
@@ -70,6 +91,7 @@ export default function NutritionFoodLogger({ nutritionLogId }: Props) {
       return
     }
 
+    setRemaining(data.remaining || null)
     setMessage('Meal added.')
     setSearch('')
     setFoods([])
@@ -105,7 +127,7 @@ export default function NutritionFoodLogger({ nutritionLogId }: Props) {
         onClick={searchFoods}
         disabled={loading || !search.trim()}
       >
-        Search Foods
+        {loading ? 'Searching...' : 'Search Foods'}
       </button>
 
       <div style={{ display: 'grid', gap: '10px', marginTop: '20px' }}>
@@ -149,13 +171,77 @@ export default function NutritionFoodLogger({ nutritionLogId }: Props) {
         onClick={addMeal}
         disabled={loading || !selectedFood}
       >
-        Add Meal
+        {loading ? 'Adding...' : 'Add Meal'}
       </button>
 
       {message && (
         <p style={{ ...styles.bodyStyle, marginTop: '18px' }}>
           {message}
         </p>
+      )}
+
+      {remaining && (
+        <div style={{ marginTop: '28px' }}>
+          <h3 style={styles.sectionTitleStyle}>Remaining Today</h3>
+
+          <div style={styles.cardGridStyle}>
+            <div style={styles.cardStyle}>
+              <h4 style={styles.cardTitleStyle}>Calories</h4>
+              <p style={styles.cardTextStyle}>
+                {roundValue(remaining.calories_remaining)}
+              </p>
+            </div>
+
+            <div style={styles.cardStyle}>
+              <h4 style={styles.cardTitleStyle}>Protein</h4>
+              <p style={styles.cardTextStyle}>
+                {roundValue(remaining.protein_remaining_g)}g
+              </p>
+            </div>
+
+            <div style={styles.cardStyle}>
+              <h4 style={styles.cardTitleStyle}>Carbs</h4>
+              <p style={styles.cardTextStyle}>
+                {roundValue(remaining.carbs_remaining_g)}g
+              </p>
+            </div>
+
+            <div style={styles.cardStyle}>
+              <h4 style={styles.cardTitleStyle}>Fats</h4>
+              <p style={styles.cardTextStyle}>
+                {roundValue(remaining.fat_remaining_g)}g
+              </p>
+            </div>
+
+            <div style={styles.cardStyle}>
+              <h4 style={styles.cardTitleStyle}>Fiber</h4>
+              <p style={styles.cardTextStyle}>
+                {roundValue(remaining.fiber_remaining_g)}g
+              </p>
+            </div>
+
+            <div style={styles.cardStyle}>
+              <h4 style={styles.cardTitleStyle}>Magnesium</h4>
+              <p style={styles.cardTextStyle}>
+                {roundValue(remaining.magnesium_remaining_mg)}mg
+              </p>
+            </div>
+
+            <div style={styles.cardStyle}>
+              <h4 style={styles.cardTitleStyle}>Potassium</h4>
+              <p style={styles.cardTextStyle}>
+                {roundValue(remaining.potassium_remaining_mg)}mg
+              </p>
+            </div>
+
+            <div style={styles.cardStyle}>
+              <h4 style={styles.cardTitleStyle}>Vitamin C</h4>
+              <p style={styles.cardTextStyle}>
+                {roundValue(remaining.vitamin_c_remaining_mg)}mg
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
