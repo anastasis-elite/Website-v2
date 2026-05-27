@@ -95,7 +95,9 @@ export default function NutritionFoodLogger({
       return
     }
 
-    setRemaining(data.remaining || null)
+    if (data.remaining) {
+      setRemaining(data.remaining)
+    }
     setMessage('Meal added.')
     setSearch('')
     setFoods([])
