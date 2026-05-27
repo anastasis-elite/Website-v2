@@ -3,6 +3,7 @@ import * as styles from '../../styles/globalstyles'
 import NutritionTracker from '@/components/NutritionTracker'
 import NutritionFoodLogger from '@/components/NutritionFoodLogger'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
 
 export default async function NutritionPage() {
   const { supabase, client } = await getDashboardContext()
@@ -41,7 +42,13 @@ export default async function NutritionPage() {
   const fats = Math.round((calories * 0.28) / 9)
   const carbs = Math.round((calories - protein * 4 - fats * 9) / 4)
   const water = weight ? Math.round(weight * 0.6) : 100
-
+  const microTargets = calculateMicronutrientTargets({
+    calories,
+    weightLbs: weight,
+    waterOz: water,
+    cyclePhase: 'unknown',
+    trainingLevel: 'general_fitness',
+  })
   let { data: todayLog } = await supabase
     .from('nutrition_logs')
     .select('*')
@@ -61,28 +68,7 @@ export default async function NutritionPage() {
         fats,
         calories,
         water_oz: water,
-        fiber_target_g: 30,
-        sodium_target_mg: 2300,
-        potassium_target_mg: 4700,
-        magnesium_target_mg: 320,
-        calcium_target_mg: 1000,
-        iron_target_mg: 18,
-        zinc_target_mg: 8,
-        selenium_target_mcg: 55,
-        cholesterol_limit_mg: 300,
-        choline_target_mg: 425,
-        vitamin_a_target_mcg: 700,
-        vitamin_c_target_mg: 75,
-        vitamin_d_target_mcg: 15,
-        vitamin_e_target_mg: 15,
-        vitamin_k_target_mcg: 90,
-        b1_target_mg: 1.1,
-        b2_target_mg: 1.1,
-        b3_target_mg: 14,
-        b5_target_mg: 5,
-        b6_target_mg: 1.3,
-        b9_target_mcg: 400,
-        b12_target_mcg: 2.4,
+        ...microTargets,
       })
       .select('*')
       .single()
