@@ -84,6 +84,22 @@ export default async function NutritionPage() {
       .eq('nutrition_log_id', todayLog.id)
       .maybeSingle()
   : { data: null }
+
+const initialRemaining = remainingData || {
+  calories_remaining: todayLog?.calories || calories,
+  protein_remaining_g: todayLog?.protein || protein,
+  carbs_remaining_g: todayLog?.carbs || carbs,
+  fat_remaining_g: todayLog?.fats || fats,
+  fiber_remaining_g: todayLog?.fiber_target_g || 30,
+  sodium_remaining_mg: todayLog?.sodium_target_mg || 2300,
+  potassium_remaining_mg: todayLog?.potassium_target_mg || 4700,
+  magnesium_remaining_mg: todayLog?.magnesium_target_mg || 320,
+  calcium_remaining_mg: todayLog?.calcium_target_mg || 1000,
+  iron_remaining_mg: todayLog?.iron_target_mg || 18,
+  choline_remaining_mg: todayLog?.choline_target_mg || 425,
+  vitamin_c_remaining_mg: todayLog?.vitamin_c_target_mg || 75,
+  vitamin_d_remaining_mcg: todayLog?.vitamin_d_target_mcg || 15,
+}
   
   const nutrition = {
     tdee,
