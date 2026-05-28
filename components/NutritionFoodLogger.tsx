@@ -58,9 +58,11 @@ export default function NutritionFoodLogger({
   const [selectedServingOptionId, setSelectedServingOptionId] = useState('')
 
   async function selectFood(food: Food) {
-  setSelectedFood(food)
-  setServingOptions([])
-  setSelectedServingOptionId('')
+    setSelectedFood(food)
+    setServingOptions([])
+    setSelectedServingOptionId('')
+    setServingOptions([])
+    setSelectedServingOptionId('')
 
   const res = await fetch(
     `/api/nutrition/serving-options?foodId=${food.id}`
