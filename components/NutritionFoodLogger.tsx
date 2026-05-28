@@ -57,15 +57,26 @@ function roundValue(value: number | null | undefined) {
 function getDayBlock(mealName: string) {
   const normalized = mealName.toLowerCase()
 
-  if (normalized.includes('breakfast') || normalized.includes('morning')) {
+  if (
+    normalized.includes('breakfast') ||
+    normalized.includes('pre-workout')
+  ) {
     return 'morning'
   }
 
-  if (normalized.includes('lunch') || normalized.includes('midday')) {
+  if (
+    normalized.includes('post-workout') ||
+    normalized.includes('lunch') ||
+    normalized.includes('snack')
+  ) {
     return 'midday'
   }
 
-  if (normalized.includes('dinner') || normalized.includes('evening')) {
+  if (
+    normalized.includes('supper') ||
+    normalized.includes('dinner') ||
+    normalized.includes('evening')
+  ) {
     return 'evening'
   }
 
@@ -236,11 +247,18 @@ export default function NutritionFoodLogger({
     <div>
       <div style={styles.fieldWrap}>
         <label style={styles.labelStyle}>Meal</label>
-        <input
-          style={styles.inputStyle}
-          value={mealName}
-          onChange={(e) => setMealName(e.target.value)}
-        />
+        <select
+  style={styles.inputStyle}
+  value={mealName}
+  onChange={(e) => setMealName(e.target.value)}
+>
+  <option value="Breakfast">Breakfast</option>
+  <option value="Pre-Workout">Pre-Workout</option>
+  <option value="Post-Workout">Post-Workout</option>
+  <option value="Lunch">Lunch</option>
+  <option value="Snack">Snack</option>
+  <option value="Supper">Supper</option>
+</select>
       </div>
 
       <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
