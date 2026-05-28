@@ -1,0 +1,204 @@
+'use client'
+
+import Link from 'next/link'
+import { useState } from 'react'
+
+type Props = {
+  client: any
+  cycleStatus: any
+  dailyPlan: any
+}
+
+function percent(remaining: number, target: number) {
+  if (!target) return 0
+  const used = target - remaining
+  return Math.max(0, Math.min(100, Math.round((used / target) * 100)))
+}
+
+export default function DashboardStatusDock({
+  cycleStatus,
+  dailyPlan,
+}: Props) {
+  const [open, setOpen] = useState(false)
+
+  const morning = dailyPlan?.cards?.find((card: any) => card.id === 'morning')
+  const macros = morning?.macroTarget || {}
+
+  const proteinRemaining = macros.protein || 0
+  const carbsRemaining = macros.carbs || 0
+  const fatsRemaining = macros.fats || 0
+  const waterRemaining = macros.water || 0
+
+  return (
+    <div
+      style={{
+        position: 'sticky',
+        top: '88px',
+        zIndex: 50,
+        display: 'flex',
+        justifyContent: 'center',
+        marginBottom: '34px',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 12px',
+          borderRadius: '999px',
+          background:
+            'linear-gradient(145deg, rgba(12,12,12,0.72), rgba(5,5,5,0.48))',
+          backdropFilter: 'blur(22px)',
+          WebkitBackdropFilter: 'blur(22px)',
+          boxShadow:
+            '0 22px 70px rgba(0,0,0,0.32), inset 0 0 28px rgba(255,255,255,0.025)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          style={circleStyle}
+          title="Daily status"
+        >
+          {cycleStatus?.cycleDay ? `${cycleStatus.cycleDay}` : '○'}
+        </button>
+
+        <div style={miniTextStyle}>
+          <strong>{proteinRemaining}g</strong>
+          <span>protein</span>
+        </div>
+
+        <div style={miniTextStyle}>
+          <strong>{carbsRemaining}g</strong>
+          <span>carbs</span>
+        </div>
+
+        <div style={miniTextStyle}>
+          <strong>{waterRemaining}oz</strong>
+          <span>water</span>
+        </div>
+
+        <Link href="/dashboard/nutrition" style={actionCircleStyle}>
+          +
+        </Link>
+
+        <Link href="/dashboard/assessment" style={actionCircleStyle}>
+          *
+        </Link>
+      </div>
+
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '64px',
+            width: 'min(92vw, 420px)',
+            padding: '24px',
+            borderRadius: '28px',
+            background:
+              'linear-gradient(145deg, rgba(12,12,12,0.88), rgba(5,5,5,0.72))',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            boxShadow:
+              '0 28px 90px rgba(0,0,0,0.42), inset 0 0 34px rgba(255,255,255,0.02)',
+          }}
+        >
+          <p style={eyebrowStyle}>Today’s Status</p>
+
+          <h3 style={titleStyle}>Your body dashboard</h3>
+
+          <p style={bodyStyle}>
+            Cycle Day: {cycleStatus?.cycleDay || '—'} · Phase:{' '}
+            {cycleStatus?.phase || 'unknown'}
+          </p>
+
+          <p style={bodyStyle}>
+            Remaining: {proteinRemaining}g protein · {carbsRemaining}g carbs ·{' '}
+            {fatsRemaining}g fats · {waterRemaining}oz water
+          </p>
+
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <Link href="/dashboard/nutrition" style={buttonStyle}>
+              Add Meal
+            </Link>
+
+            <Link href="/dashboard/assessment" style={buttonStyle}>
+              Assessments
+            </Link>
+
+            <Link href="/dashboard/cycle" style={buttonStyle}>
+              Cycle
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const circleStyle = {
+  width: '42px',
+  height: '42px',
+  borderRadius: '999px',
+  border: '1px solid rgba(181,110,67,0.32)',
+  background: 'rgba(181,110,67,0.12)',
+  color: '#f5f0e8',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  fontSize: '0.9rem',
+}
+
+const actionCircleStyle = {
+  width: '38px',
+  height: '38px',
+  borderRadius: '999px',
+  border: '1px solid rgba(181,110,67,0.32)',
+  background: 'rgba(181,110,67,0.08)',
+  color: '#f5f0e8',
+  display: 'grid',
+  placeItems: 'center',
+  textDecoration: 'none',
+  fontSize: '1.05rem',
+}
+
+const miniTextStyle = {
+  display: 'grid',
+  gap: '1px',
+  minWidth: '52px',
+  color: '#f5f0e8',
+  fontSize: '0.76rem',
+  lineHeight: 1.15,
+} as const
+
+const eyebrowStyle = {
+  color: '#c58b57',
+  letterSpacing: '4px',
+  textTransform: 'uppercase',
+  fontSize: '0.68rem',
+  marginBottom: '10px',
+} as const
+
+const titleStyle = {
+  color: '#f5f0e8',
+  fontSize: '1.25rem',
+  margin: '0 0 10px 0',
+  fontWeight: 500,
+} as const
+
+const bodyStyle = {
+  color: '#d7c7b6',
+  lineHeight: 1.7,
+  fontSize: '0.95rem',
+} as const
+
+const buttonStyle = {
+  border: '1px solid rgba(181,110,67,0.28)',
+  color: '#f5f0e8',
+  padding: '10px 14px',
+  textDecoration: 'none',
+  borderRadius: '999px',
+  fontWeight: 500,
+  background: 'rgba(181,110,67,0.055)',
+  fontSize: '0.86rem',
+}
