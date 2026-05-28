@@ -21,6 +21,8 @@ export async function POST(request: Request) {
     servingAmount,
     servingUnit,
     servingOptionId,
+    symptoms = [],
+    symptomNotes,
   } = body
 
   if (!nutritionLogId || !foodId) {
@@ -84,18 +86,47 @@ export async function POST(request: Request) {
     resolvedServingUnit = servingOption.label
   }
 
-  const { error } = await supabase.from('meal_entries').insert({
-    nutrition_log_id: nutritionLogId,
-    food_id: foodId,
-    meal_name: mealName || 'Meal',
-    serving_amount: amount,
-    serving_unit: resolvedServingUnit,
-    serving_option_id: servingOptionId || null,
-    grams,
-  })
+  const { data: mealEntry, error } = await supabase
+    .from('meal_entries')
+    .insert({
+      nutrition_log_id: nutritionLogId,
+      food_id: foodId,
+      meal_name: mealName || 'Meal',
+      serving_amount: amount,
+      serving_unit: resolvedServingUnit,
+      serving_option_id: servingOptionId || null,
+      grams,
+      symptoms_after: symptomNotes || null,
+      notes: symptomNotes || null,
+    })
+    .select('id')
+    .single()
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error || !mealEntry) {
+    return NextResponse.json(
+      { error: error?.message || 'Unable to add meal.' },
+      { status: 500 }
+    )
+  }
+
+  if (Array.isArray(symptoms) && symptoms.length > 0) {
+    const symptomRows = symptoms.map((symptomTypeId: string) => ({
+      meal_entry_id: mealEntry.id,
+      symptom_type_id: symptomTypeId,
+      severity: null,
+      notes: symptomNotes || null,
+    }))
+
+    const { error: symptomError } = await supabase
+      .from('meal_symptoms')
+      .insert(symptomRows)
+
+    if (symptomError) {
+      return NextResponse.json(
+        { error: symptomError.message },
+        { status: 500 }
+      )
+    }
   }
 
   const { data: remaining, error: remainingError } = await supabase
@@ -113,6 +144,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     success: true,
+    mealEntryId: mealEntry.id,
     remaining,
   })
 }
