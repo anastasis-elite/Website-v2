@@ -116,10 +116,7 @@ export default async function DashboardPage() {
           <DashboardAssessmentMiniCard
             dueCount={monthlyAssessmentsDueCount}
           />
-          
-          <SymptomQuickLog 
-            clientId={client.client_id} 
-          />
+         
         </div>
 
         {lesson ? (
@@ -135,6 +132,18 @@ export default async function DashboardPage() {
             <h2 style={styles.sectionTitleStyle}>{lesson.title}</h2>
 
             <p style={styles.bodyStyle}>{lesson.body}</p>
+          </section>
+
+          <section
+            style={{
+              ...styles.cartBoxStyle,
+              marginBottom: '42px',
+            }}
+            className="dashboard-section"
+          >
+            <p style={styles.eyebrowStyle}>Today’s Symptoms</p>
+
+            <SymptomQuickLog clientId={client.client_id} />
           </section>
         ) : null}
 
