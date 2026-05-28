@@ -5,6 +5,7 @@ import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
 import DashboardStatusDock from '@/components/DashboardStatusDock'
+import SymptomQuickLog from '@/components/SymptomQuickLog'
 
 export default async function DashboardPage() {
   const { supabase, client, user } = await getDashboardContext()
@@ -99,6 +100,10 @@ export default async function DashboardPage() {
             cards={dailyPlan.cards}
             currentCardId={dailyPlan.currentCard?.id}
           />
+        </section>
+
+        <section style={{ marginTop: '54px' }}>
+          <SymptomQuickLog clientId={client.client_id} />
         </section>
       </div>
     </main>
