@@ -58,21 +58,12 @@ export default async function DashboardPage() {
             dailyPlan={dailyPlan}
           />
         
-        <section style={{ marginTop: '54px' }}>
-          <p style={styles.eyebrowStyle}>Today’s Flow</p>
-
-          <h2 style={styles.sectionTitleStyle}>Your day, simplified.</h2>
-
-          <p style={styles.bodyStyle}>
-            Start with the block that matches where you are now. The system
-            will keep the rest organized for you.
-          </p>
-
-          <DashboardFlowCarousel
-            cards={dailyPlan.cards}
-            currentCardId={dailyPlan.currentCard?.id}
-          />
-        </section>
+      <section style={{ marginTop: '54px' }}>
+  <DashboardFlowCarousel
+    cards={dailyPlan.cards}
+    currentCardId={dailyPlan.currentCard?.id}
+  />
+</section>
       </div>
     </main>
   )
