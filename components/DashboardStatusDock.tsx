@@ -2,26 +2,27 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import DashboardAssessmentMiniCard from '@/components/DashboardAssessmentMiniCard'
 
 type Props = {
   client: any
   cycleStatus: any
   dailyPlan: any
-}
-
-function percent(remaining: number, target: number) {
-  if (!target) return 0
-  const used = target - remaining
-  return Math.max(0, Math.min(100, Math.round((used / target) * 100)))
+  assessmentDueCount?: number
 }
 
 export default function DashboardStatusDock({
   cycleStatus,
   dailyPlan,
+  assessmentDueCount = 0,
 }: Props) {
   const [open, setOpen] = useState(false)
+  const [assessmentOpen, setAssessmentOpen] = useState(false)
 
-  const morning = dailyPlan?.cards?.find((card: any) => card.id === 'morning')
+  const morning = dailyPlan?.cards?.find(
+    (card: any) => card.id === 'morning'
+  )
+
   const macros = morning?.macroTarget || {}
 
   const proteinRemaining = macros.protein || 0
@@ -82,9 +83,13 @@ export default function DashboardStatusDock({
           +
         </Link>
 
-        <Link href="/dashboard/assessment" style={actionCircleStyle}>
+        <button
+          type="button"
+          onClick={() => setAssessmentOpen(!assessmentOpen)}
+          style={actionCircleStyle}
+        >
           *
-        </Link>
+        </button>
       </div>
 
       {open && (
@@ -104,33 +109,49 @@ export default function DashboardStatusDock({
               '0 28px 90px rgba(0,0,0,0.42), inset 0 0 34px rgba(255,255,255,0.02)',
           }}
         >
-          <p style={eyebrowStyle}>Today’s Status</p>
-
-          <h3 style={titleStyle}>Your body dashboard</h3>
-
           <p style={bodyStyle}>
             Cycle Day: {cycleStatus?.cycleDay || '—'} · Phase:{' '}
             {cycleStatus?.phase || 'unknown'}
           </p>
 
           <p style={bodyStyle}>
-            Remaining: {proteinRemaining}g protein · {carbsRemaining}g carbs ·{' '}
-            {fatsRemaining}g fats · {waterRemaining}oz water
+            Remaining: {proteinRemaining}g protein ·{' '}
+            {carbsRemaining}g carbs · {fatsRemaining}g fats ·{' '}
+            {waterRemaining}oz water
           </p>
 
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '10px',
+              flexWrap: 'wrap',
+              marginTop: '18px',
+            }}
+          >
             <Link href="/dashboard/nutrition" style={buttonStyle}>
               Add Meal
-            </Link>
-
-            <Link href="/dashboard/assessment" style={buttonStyle}>
-              Assessments
             </Link>
 
             <Link href="/dashboard/cycle" style={buttonStyle}>
               Cycle
             </Link>
           </div>
+        </div>
+      )}
+
+      {assessmentOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            left: '74px',
+            top: '120px',
+            width: 'min(92vw, 420px)',
+            zIndex: 90,
+          }}
+        >
+          <DashboardAssessmentMiniCard
+            dueCount={assessmentDueCount}
+          />
         </div>
       )}
     </div>
@@ -160,6 +181,7 @@ const actionCircleStyle = {
   placeItems: 'center',
   textDecoration: 'none',
   fontSize: '1.05rem',
+  cursor: 'pointer',
 }
 
 const miniTextStyle = {
@@ -169,21 +191,6 @@ const miniTextStyle = {
   color: '#f5f0e8',
   fontSize: '0.76rem',
   lineHeight: 1.15,
-} as const
-
-const eyebrowStyle = {
-  color: '#c58b57',
-  letterSpacing: '4px',
-  textTransform: 'uppercase',
-  fontSize: '0.68rem',
-  marginBottom: '10px',
-} as const
-
-const titleStyle = {
-  color: '#f5f0e8',
-  fontSize: '1.25rem',
-  margin: '0 0 10px 0',
-  fontWeight: 500,
 } as const
 
 const bodyStyle = {
