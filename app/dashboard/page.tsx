@@ -119,33 +119,35 @@ export default async function DashboardPage() {
          
         </div>
 
-        {lesson ? (
-          <section
-            style={{
-              ...styles.cartBoxStyle,
-              marginBottom: '42px',
-            }}
-            className="dashboard-section"
-          >
-            <p style={styles.eyebrowStyle}>Today’s Insight</p>
+       {lesson ? (
+  <>
+    <section
+      style={{
+        ...styles.cartBoxStyle,
+        marginBottom: '42px',
+      }}
+      className="dashboard-section"
+    >
+      <p style={styles.eyebrowStyle}>Today’s Insight</p>
 
-            <h2 style={styles.sectionTitleStyle}>{lesson.title}</h2>
+      <h2 style={styles.sectionTitleStyle}>{lesson.title}</h2>
 
-            <p style={styles.bodyStyle}>{lesson.body}</p>
-          </section>
+      <p style={styles.bodyStyle}>{lesson.body}</p>
+    </section>
 
-          <section
-            style={{
-              ...styles.cartBoxStyle,
-              marginBottom: '42px',
-            }}
-            className="dashboard-section"
-          >
-            <p style={styles.eyebrowStyle}>Today’s Symptoms</p>
+    <section
+      style={{
+        ...styles.cartBoxStyle,
+        marginBottom: '42px',
+      }}
+      className="dashboard-section"
+    >
+      <p style={styles.eyebrowStyle}>Today’s Symptoms</p>
 
-            <SymptomQuickLog clientId={client.client_id} />
-          </section>
-        ) : null}
+      <SymptomQuickLog clientId={client.client_id} />
+    </section>
+  </>
+) : null}
 
         <DashboardFlowCarousel
           cards={dailyPlan.cards}
