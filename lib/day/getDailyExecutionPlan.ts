@@ -1,4 +1,8 @@
 import { getRecoveryTools } from '@/lib/recovery/getRecoveryTools'
+import {
+  getNutritionBlockTargets,
+  type NutritionBlockKey,
+} from '@/lib/nutrition/getNutritionBlockTargets'
 
 type DailyCard = {
   id: string
@@ -11,6 +15,7 @@ type DailyCard = {
     carbs?: number
     fats?: number
     water?: number
+    calories?: number
   }
   items?: string[]
   buttonHref?: string
@@ -19,13 +24,8 @@ type DailyCard = {
 
 function parseTimeToMinutes(time?: string | null) {
   if (!time) return null
-
   const [hours, minutes] = time.split(':').map(Number)
-
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
-    return null
-  }
-
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null
   return hours * 60 + minutes
 }
 
@@ -36,9 +36,7 @@ function formatTime(time?: string | null) {
   const hour = Number(hourString)
   const minute = Number(minuteString)
 
-  if (Number.isNaN(hour) || Number.isNaN(minute)) {
-    return null
-  }
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return null
 
   const suffix = hour >= 12 ? 'PM' : 'AM'
   const displayHour = hour % 12 || 12
@@ -70,9 +68,7 @@ function getStatus({
     return 'flex'
   }
 
-  if (nowMinutes > targetMinutes + windowMinutes) {
-    return 'late'
-  }
+  if (nowMinutes > targetMinutes + windowMinutes) return 'late'
 
   if (
     nowMinutes >= targetMinutes - windowMinutes &&
@@ -133,10 +129,12 @@ export async function getDailyExecutionPlan({
   const assessmentData = strengthAssessment?.data || {}
   const weight = Number(assessmentData.weight || 0)
 
-  const calories = weight ? Math.round(weight * 12) : 2000
-  const protein = weight ? Math.round(weight * 0.8) : 150
-  const fats = Math.round((calories * 0.28) / 9)
-  const carbs = Math.round((calories - protein * 4 - fats * 9) / 4)
+  const fallbackCalories = weight ? Math.round(weight * 12) : 2000
+  const fallbackProtein = weight ? Math.round(weight * 0.8) : 150
+  const fallbackFats = Math.round((fallbackCalories * 0.28) / 9)
+  const fallbackCarbs = Math.round(
+    (fallbackCalories - fallbackProtein * 4 - fallbackFats * 9) / 4
+  )
   const water = weight ? Math.round(weight * 0.6) : 100
 
   const { data: todayNutritionLog } = await supabase
@@ -145,6 +143,68 @@ export async function getDailyExecutionPlan({
     .eq('client_id', client.client_id)
     .eq('log_date', today)
     .maybeSingle()
+
+  const calories = Number(todayNutritionLog?.calories || fallbackCalories)
+  const protein = Number(todayNutritionLog?.protein || fallbackProtein)
+  const carbs = Number(todayNutritionLog?.carbs || fallbackCarbs)
+  const fats = Number(todayNutritionLog?.fats || fallbackFats)
+
+  let blockRemaining: Record<NutritionBlockKey, any> | null = null
+
+  if (todayNutritionLog?.id) {
+    const blockTargets = getNutritionBlockTargets({
+      calories,
+      protein,
+      carbs,
+      fats,
+      fiber_target_g: todayNutritionLog.fiber_target_g,
+      sodium_target_mg: todayNutritionLog.sodium_target_mg,
+      potassium_target_mg: todayNutritionLog.potassium_target_mg,
+      magnesium_target_mg: todayNutritionLog.magnesium_target_mg,
+      calcium_target_mg: todayNutritionLog.calcium_target_mg,
+      iron_target_mg: todayNutritionLog.iron_target_mg,
+      choline_target_mg: todayNutritionLog.choline_target_mg,
+    })
+
+    const { data: eatenByBlock } = await supabase
+      .from('nutrition_log_totals_by_block')
+      .select('*')
+      .eq('nutrition_log_id', todayNutritionLog.id)
+
+    blockRemaining = Object.fromEntries(
+      Object.entries(blockTargets).map(([block, target]) => {
+        const eaten = eatenByBlock?.find(
+          (row: any) => row.day_block === block
+        )
+
+        return [
+          block,
+          {
+            calories: roundMacro(
+              target.calories - Number(eaten?.calories_eaten || 0)
+            ),
+            protein: roundMacro(
+              target.protein_g - Number(eaten?.protein_eaten_g || 0)
+            ),
+            carbs: roundMacro(
+              target.carbs_g - Number(eaten?.carbs_eaten_g || 0)
+            ),
+            fats: roundMacro(
+              target.fat_g - Number(eaten?.fat_eaten_g || 0)
+            ),
+            water:
+              block === 'morning'
+                ? roundMacro(water * 0.35)
+                : block === 'midday'
+                  ? roundMacro(water * 0.4)
+                  : block === 'evening'
+                    ? roundMacro(water * 0.25)
+                    : 0,
+          },
+        ]
+      })
+    ) as Record<NutritionBlockKey, any>
+  }
 
   const { data: todayWorkoutLog } = await supabase
     .from('workout_logs')
@@ -162,15 +222,7 @@ export async function getDailyExecutionPlan({
     .maybeSingle()
 
   const workoutCompleted = !!todayWorkoutLog?.completed
-
-  const nutritionLogged =
-    !!todayNutritionLog &&
-    (
-      Number(todayNutritionLog.protein || 0) > 0 ||
-      Number(todayNutritionLog.carbs || 0) > 0 ||
-      Number(todayNutritionLog.fats || 0) > 0 ||
-      Number(todayNutritionLog.water_oz || 0) > 0
-    )
+  const nutritionLogged = !!todayNutritionLog
 
   const recoveryTools = getRecoveryTools({
     client,
@@ -179,24 +231,27 @@ export async function getDailyExecutionPlan({
     nutritionLogged,
   })
 
-  const morningTarget = {
-    protein: roundMacro(protein * 0.35),
-    carbs: 0,
-    fats: roundMacro(fats * 0.35),
+  const morningTarget = blockRemaining?.morning || {
+    calories: roundMacro(calories * 0.3),
+    protein: roundMacro(protein * 0.3),
+    carbs: roundMacro(carbs * 0.3),
+    fats: roundMacro(fats * 0.3),
     water: roundMacro(water * 0.35),
   }
 
-  const middayTarget = {
-    protein: roundMacro(protein * 0.4),
-    carbs: roundMacro(carbs * 0.65),
+  const middayTarget = blockRemaining?.midday || {
+    calories: roundMacro(calories * 0.35),
+    protein: roundMacro(protein * 0.35),
+    carbs: roundMacro(carbs * 0.35),
     fats: roundMacro(fats * 0.35),
     water: roundMacro(water * 0.4),
   }
 
-  const eveningTarget = {
+  const eveningTarget = blockRemaining?.evening || {
+    calories: roundMacro(calories * 0.25),
     protein: roundMacro(protein * 0.25),
-    carbs: roundMacro(carbs * 0.35),
-    fats: roundMacro(fats * 0.3),
+    carbs: roundMacro(carbs * 0.25),
+    fats: roundMacro(fats * 0.25),
     water: roundMacro(water * 0.25),
   }
 
@@ -219,7 +274,11 @@ export async function getDailyExecutionPlan({
     'Movement can be a light walk, gentle bike ride, swimming, park time with the kids, or low-pressure mobility.',
   ]
 
-  if (workoutMinutes !== null && workoutMinutes >= 12 * 60 && workoutMinutes < 17 * 60) {
+  if (
+    workoutMinutes !== null &&
+    workoutMinutes >= 12 * 60 &&
+    workoutMinutes < 17 * 60
+  ) {
     middayItems.push(
       'Training is planned in your midday window. Use this block to fuel and execute without overthinking.'
     )
@@ -262,9 +321,7 @@ export async function getDailyExecutionPlan({
     Number(todayNutritionLog.fats || 0) >= fats * 0.85 &&
     Number(todayNutritionLog.water_oz || 0) >= water * 0.85
 
-  const dayFullyComplete =
-    workoutCompleted &&
-    macroTargetsMet
+  const dayFullyComplete = workoutCompleted && macroTargetsMet
 
   if (dayFullyComplete) {
     eveningItems.push(
@@ -287,7 +344,7 @@ export async function getDailyExecutionPlan({
         nowMinutes,
         targetMinutes: morningMinutes,
         executionStyle,
-        completed: nutritionLogged,
+        completed: false,
         windowMinutes: 180,
       }),
       body:
