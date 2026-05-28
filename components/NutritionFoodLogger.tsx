@@ -56,6 +56,33 @@ export default function NutritionFoodLogger({
 
   const [servingOptions, setServingOptions] = useState<ServingOption[]>([])
   const [selectedServingOptionId, setSelectedServingOptionId] = useState('')
+
+  async function selectFood(food: Food) {
+  setSelectedFood(food)
+  setServingOptions([])
+  setSelectedServingOptionId('')
+
+  const res = await fetch(
+    `/api/nutrition/serving-options?foodId=${food.id}`
+  )
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    setMessage(data.error || 'Unable to load serving options.')
+    return
+  }
+
+  const options = data.servingOptions || []
+  setServingOptions(options)
+
+  const defaultOption =
+    options.find((option: ServingOption) => option.is_default) || options[0]
+
+  if (defaultOption) {
+    setSelectedServingOptionId(defaultOption.id)
+  }
+}
   
   async function searchFoods() {
     setLoading(true)
@@ -98,33 +125,6 @@ export default function NutritionFoodLogger({
         servingOptionId: selectedServingOptionId,
       }),
     })
-
-    async function selectFood(food: Food) {
-  setSelectedFood(food)
-  setServingOptions([])
-  setSelectedServingOptionId('')
-
-  const res = await fetch(
-    `/api/nutrition/serving-options?foodId=${food.id}`
-  )
-
-  const data = await res.json()
-
-  if (!res.ok) {
-    setMessage(data.error || 'Unable to load serving options.')
-    return
-  }
-
-  const options = data.servingOptions || []
-  setServingOptions(options)
-
-  const defaultOption =
-    options.find((option: ServingOption) => option.is_default) || options[0]
-
-  if (defaultOption) {
-    setSelectedServingOptionId(defaultOption.id)
-  }
-}
     
     const data = await res.json()
 
