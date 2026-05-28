@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import * as styles from '../styles/globalstyles'
+import Image from 'next/image'
 
 export default function GuidePage() {
   return (
@@ -17,6 +18,30 @@ export default function GuidePage() {
           into a structured transformation program.
         </p>
 
+        <div
+          style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: '72px',
+          }}
+        >
+        <Image
+          src="/TheAnastasisShift.png"
+          alt="The Anastasis Shift"
+          width={420}
+          height={620}
+          style={{
+            width: '100%',
+            maxWidth: '420px',
+            height: 'auto',
+            borderRadius: '28px',
+            boxShadow:
+              '0 28px 90px rgba(0,0,0,0.42), 0 0 48px rgba(181,110,67,0.12)',
+          }}
+          priority
+        />
+      </div>
+        
         <section style={styles.cartBoxStyle}>
           <h2 style={styles.sectionTitleStyle}>
             You do not need more pressure.
