@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import DashboardAssessmentMiniCard from '@/components/DashboardAssessmentMiniCard'
 import WaterCup from '@/components/WaterCup'
+import CycleProgressOrb from '@/components/CycleProgressOrb'
 
 type Props = {
   client: any
@@ -56,14 +57,13 @@ export default function DashboardStatusDock({
             '0 22px 70px rgba(0,0,0,0.32), inset 0 0 28px rgba(255,255,255,0.025)',
         }}
       >
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          style={circleStyle}
-          title="Daily status"
-        >
-          {cycleStatus?.cycleDay ? `${cycleStatus.cycleDay}` : '○'}
-        </button>
+       <div onClick={() => setOpen(!open)}>
+  <CycleProgressOrb
+    cycleDay={cycleStatus?.cycleDay}
+    typicalCycleLength={cycleStatus?.typicalCycleLength || 30}
+    phase={cycleStatus?.phase}
+  />
+</div>
 
         <div style={miniTextStyle}>
           <strong>{proteinRemaining}g</strong>
@@ -120,9 +120,23 @@ export default function DashboardStatusDock({
           }}
         >
           <p style={bodyStyle}>
-            Cycle Day: {cycleStatus?.cycleDay || '—'} · Phase:{' '}
-            {cycleStatus?.phase || 'unknown'}
-          </p>
+  Cycle Day: {cycleStatus?.cycleDay || '—'} · Phase:{' '}
+  {cycleStatus?.phase || 'unknown'}
+</p>
+
+{cycleStatus?.cycleDay >=
+  (cycleStatus?.typicalCycleLength || 30) * 3 && (
+  <p
+    style={{
+      ...bodyStyle,
+      color: '#d89b9b',
+      marginTop: '10px',
+    }}
+  >
+    Your cycle appears significantly delayed. Consider whether pregnancy
+    testing or professional guidance may be appropriate.
+  </p>
+)}
 
           <p style={bodyStyle}>
             Remaining: {proteinRemaining}g protein ·{' '}
