@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import DashboardAssessmentMiniCard from '@/components/DashboardAssessmentMiniCard'
+import WaterCup from '@/components/WaterCup'
 
 type Props = {
   client: any
@@ -74,10 +75,14 @@ export default function DashboardStatusDock({
           <span>carbs</span>
         </div>
 
-        <div style={miniTextStyle}>
-          <strong>{waterRemaining}oz</strong>
-          <span>water</span>
-        </div>
+        <WaterCup
+  percentFull={Math.round(
+    ((dailyPlan.dailyTargets.water - waterRemaining) /
+      dailyPlan.dailyTargets.water) *
+      100
+  )}
+  ouncesRemaining={waterRemaining}
+/>
 
         <Link href="/dashboard/nutrition" style={actionCircleStyle}>
           +
