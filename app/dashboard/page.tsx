@@ -44,7 +44,7 @@ export default async function DashboardPage() {
             }}
             className="dashboard-section"
           >
-            <p style={styles.eyebrowStyle}>Today’s Words</p>
+            <p style={styles.eyebrowStyle}>Today’s Insight</p>
 
             <h2 style={styles.sectionTitleStyle}>{lesson.title}</h2>
 
