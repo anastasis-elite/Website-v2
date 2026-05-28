@@ -29,6 +29,14 @@ type Props = {
   initialRemaining?: Remaining | null
 }
 
+type ServingOption = {
+  id: string
+  label: string
+  unit: string
+  grams: number
+  is_default: boolean
+}
+
 function roundValue(value: number | null | undefined) {
   return Math.round(Number(value || 0))
 }
@@ -46,6 +54,9 @@ export default function NutritionFoodLogger({
   const [loading, setLoading] = useState(false)
   const [remaining, setRemaining] = useState<Remaining | null>(initialRemaining)
 
+  const [servingOptions, setServingOptions] = useState<ServingOption[]>([])
+  const [selectedServingOptionId, setSelectedServingOptionId] = useState('')
+  
   async function searchFoods() {
     setLoading(true)
     setMessage('')
@@ -84,9 +95,37 @@ export default function NutritionFoodLogger({
         mealName,
         servingAmount: Number(servingAmount),
         servingUnit: 'serving',
+        servingOptionId: selectedServingOptionId,
       }),
     })
 
+    async function selectFood(food: Food) {
+  setSelectedFood(food)
+  setServingOptions([])
+  setSelectedServingOptionId('')
+
+  const res = await fetch(
+    `/api/nutrition/serving-options?foodId=${food.id}`
+  )
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    setMessage(data.error || 'Unable to load serving options.')
+    return
+  }
+
+  const options = data.servingOptions || []
+  setServingOptions(options)
+
+  const defaultOption =
+    options.find((option: ServingOption) => option.is_default) || options[0]
+
+  if (defaultOption) {
+    setSelectedServingOptionId(defaultOption.id)
+  }
+}
+    
     const data = await res.json()
 
     if (!res.ok) {
@@ -141,7 +180,7 @@ export default function NutritionFoodLogger({
           <button
             key={food.id}
             type="button"
-            onClick={() => setSelectedFood(food)}
+            onClick={() => selectFood(food)}
             style={{
               ...styles.secondaryButtonStyle,
               textAlign: 'left',
@@ -171,6 +210,24 @@ export default function NutritionFoodLogger({
         />
       </div>
 
+      {servingOptions.length > 0 && (
+  <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
+    <label style={styles.labelStyle}>Serving Size</label>
+
+    <select
+      style={styles.inputStyle}
+      value={selectedServingOptionId}
+      onChange={(e) => setSelectedServingOptionId(e.target.value)}
+    >
+      {servingOptions.map((option) => (
+        <option key={option.id} value={option.id}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+      
       <button
         type="button"
         style={{ ...styles.primaryButtonStyle, marginTop: '18px' }}
