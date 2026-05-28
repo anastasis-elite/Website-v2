@@ -75,6 +75,11 @@ export default function DashboardStatusDock({
           <span>carbs</span>
         </div>
 
+        <div style={miniTextStyle}>
+          <strong>{fatsRemaining}g</strong>
+          <span>fats</span>
+        </div>
+        
         <WaterCup
   percentFull={Math.round(
     ((dailyPlan.dailyTargets.water - waterRemaining) /
@@ -191,6 +196,9 @@ const actionCircleStyle = {
 
 const miniTextStyle = {
   display: 'grid',
+  justifyItems: 'center',
+  alignItems: 'center',
+  textAlign: 'center',
   gap: '1px',
   minWidth: '52px',
   color: '#f5f0e8',
