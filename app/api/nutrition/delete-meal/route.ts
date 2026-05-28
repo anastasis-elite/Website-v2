@@ -21,30 +21,20 @@ export async function POST(request: Request) {
     )
   }
 
-  const { data: meal, error: mealError } = await supabase
-    .from('meal_entries')
-    .select(`
-      id,
-      nutrition_log_id,
-      nutrition_logs (
-        auth_user_id
-      )
-    `)
-    .eq('id', mealEntryId)
+  const { data: log, error: logError } = await supabase
+    .from('nutrition_logs')
+    .select('id, auth_user_id')
+    .eq('id', nutritionLogId)
     .single()
 
-  if (mealError || !meal) {
+  if (logError || !log) {
     return NextResponse.json(
-      { error: 'Meal not found.' },
+      { error: 'Nutrition log not found.' },
       { status: 404 }
     )
   }
 
-  const ownerId = Array.isArray(meal.nutrition_logs)
-    ? meal.nutrition_logs[0]?.auth_user_id
-    : meal.nutrition_logs?.auth_user_id
-
-  if (ownerId !== user.id) {
+  if (log.auth_user_id !== user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -52,6 +42,7 @@ export async function POST(request: Request) {
     .from('meal_entries')
     .delete()
     .eq('id', mealEntryId)
+    .eq('nutrition_log_id', nutritionLogId)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
