@@ -141,6 +141,3 @@ export default function GuidePage() {
         </div>
       </div>
     </main>
-  )
-      }
-      }
