@@ -25,22 +25,47 @@ export default function GuidePage() {
           marginBottom: '72px',
           }}
         >
-        <Image
-          src="/AA8E8B4D-7C51-42CC-9C18-6B53F085A673.png"
-          alt="The Anastasis Shift"
-          width={420}
-          height={620}
-          style={{
-            width: '100%',
-            maxWidth: '420px',
-            height: 'auto',
-            borderRadius: '28px',
-            boxShadow:
-              '0 28px 90px rgba(0,0,0,0.42), 0 0 48px rgba(181,110,67,0.12)',
-          }}
-          priority
-        />
-      </div>
+        <div
+  style={{
+    position: 'relative',
+    width: '100%',
+    maxWidth: '420px',
+    margin: '0 auto 42px auto',
+  }}
+>
+  <img
+    src="/AA8E8B4D-7C51-42CC-9C18-6B53F085A673.png"
+    alt="The Anastasis Shift"
+    style={{
+      width: '100%',
+      borderRadius: '28px',
+      display: 'block',
+      boxShadow: '0 24px 80px rgba(0,0,0,0.35)',
+    }}
+  />
+
+  <div
+    style={{
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%) rotate(-12deg)',
+      background: 'rgba(181,110,67,0.88)',
+      color: '#f5f0e8',
+      padding: '14px 42px',
+      borderRadius: '999px',
+      fontSize: '1rem',
+      letterSpacing: '0.18em',
+      textTransform: 'uppercase',
+      fontWeight: 600,
+      boxShadow: '0 18px 50px rgba(0,0,0,0.35)',
+      backdropFilter: 'blur(10px)',
+      whiteSpace: 'nowrap',
+    }}
+  >
+    Coming Soon
+  </div>
+</div>
         
         <section style={styles.cartBoxStyle}>
           <h2 style={styles.sectionTitleStyle}>
@@ -102,11 +127,13 @@ export default function GuidePage() {
 
         <div style={styles.buttonRowStyle}>
           <a
-            href="#"
-            style={styles.primaryButtonStyle}
-          >
-            Access The Guide
-          </a>
+  href="https://checkout.anastasiselite.com/b/fZu3cu7rdgQvc5T8D74ko02"
+  target="_blank"
+  rel="noopener noreferrer"
+  style={styles.primaryButtonStyle}
+>
+  Join The Waitlist
+</a>
 
           <Link href="/apply" style={styles.secondaryButtonStyle}>
             Return to Application
