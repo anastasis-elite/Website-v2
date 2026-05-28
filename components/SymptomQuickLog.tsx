@@ -100,27 +100,44 @@ export default function SymptomQuickLog({ clientId }: Props) {
         Capture what your body is telling you in the moment.
       </p>
 
-      <div style={styles.compactCardGridStyle}>
-        {visibleSymptoms.map((symptom) => {
-          const selected = selectedSymptomId === symptom.id
+      <div
+  style={{
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+    marginTop: '16px',
+  }}
+>
+  {visibleSymptoms.map((symptom) => {
+    const selected = selectedSymptomId === symptom.id
 
-          return (
-            <button
-              key={symptom.id}
-              type="button"
-              onClick={() => setSelectedSymptomId(symptom.id)}
-              style={{
-                ...styles.compactCardStyle,
-                opacity: selected ? 1 : 0.65,
-              }}
-            >
-              <h3 style={styles.compactCardTitleStyle}>
-                {symptom.name}
-              </h3>
-            </button>
-          )
-        })}
-      </div>
+    return (
+      <button
+        key={symptom.id}
+        type="button"
+        onClick={() => setSelectedSymptomId(symptom.id)}
+        style={{
+          border: selected
+            ? '1px solid rgba(181,110,67,0.75)'
+            : '1px solid rgba(181,110,67,0.22)',
+          background: selected
+            ? 'rgba(181,110,67,0.22)'
+            : 'rgba(255,255,255,0.035)',
+          color: '#f5f0e8',
+          borderRadius: '999px',
+          padding: '8px 12px',
+          fontSize: '0.82rem',
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+          opacity: selected ? 1 : 0.72,
+          transition: 'all 0.2s ease',
+        }}
+      >
+        {symptom.name}
+      </button>
+    )
+  })}
+</div>
 
       <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
         <label style={styles.labelStyle}>Body Area</label>
