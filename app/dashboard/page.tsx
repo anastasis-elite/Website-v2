@@ -4,7 +4,7 @@ import { getNextLesson } from '@/lib/education/getNextLesson'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
-// import DashboardStatusDock from '@/components/DashboardStatusDock'
+import DashboardStatusDock from '@/components/DashboardStatusDock'
 
 export default async function DashboardPage() {
   const { supabase, client, user } = await getDashboardContext()
@@ -35,15 +35,12 @@ export default async function DashboardPage() {
           once.
         </p>
 
-        {/* 
-          Add this back after creating DashboardStatusDock:
-
           <DashboardStatusDock
             client={client}
             cycleStatus={cycleStatus}
             dailyPlan={dailyPlan}
           />
-        */}
+        
 
         {lesson && (
           <section
