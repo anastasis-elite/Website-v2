@@ -32,17 +32,16 @@ export default function DashboardStatusDock({
   return (
     <div
       style={{
-        position: 'sticky',
-        top: '88px',
-        zIndex: 50,
-        display: 'flex',
-        justifyContent: 'center',
-        marginBottom: '34px',
+        position: 'fixed',
+        left: '18px',
+        top: '34vh',
+        zIndex: 80,
       }}
     >
       <div
         style={{
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           gap: '10px',
           padding: '10px 12px',
@@ -92,7 +91,8 @@ export default function DashboardStatusDock({
         <div
           style={{
             position: 'absolute',
-            top: '64px',
+            left: '58px',
+            top: '0',
             width: 'min(92vw, 420px)',
             padding: '24px',
             borderRadius: '28px',
