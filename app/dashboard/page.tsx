@@ -34,12 +34,6 @@ export default async function DashboardPage() {
           matters now, so you do not have to hold the whole day in your head at
           once.
         </p>
-
-          <DashboardStatusDock
-            client={client}
-            cycleStatus={cycleStatus}
-            dailyPlan={dailyPlan}
-          />
         
 
         {lesson && (
@@ -58,6 +52,12 @@ export default async function DashboardPage() {
           </section>
         )}
 
+        <DashboardStatusDock
+            client={client}
+            cycleStatus={cycleStatus}
+            dailyPlan={dailyPlan}
+          />
+        
         <section style={{ marginTop: '54px' }}>
           <p style={styles.eyebrowStyle}>Today’s Flow</p>
 
