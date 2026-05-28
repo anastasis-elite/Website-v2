@@ -37,11 +37,12 @@ export default async function DashboardPage() {
         
 
         {lesson && (
-          <section
-            style={{
-              ...styles.cartBoxStyle,
-              marginBottom: '42px',
-            }}
+        <DashboardStatusDock
+  client={client}
+  cycleStatus={cycleStatus}
+  dailyPlan={dailyPlan}
+  assessmentDueCount={monthlyAssessmentsDueCount}
+/>
             className="dashboard-section"
           >
             <p style={styles.eyebrowStyle}>Today’s Insight</p>
