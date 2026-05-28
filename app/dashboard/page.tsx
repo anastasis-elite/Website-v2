@@ -7,6 +7,7 @@ import { getCycleSymptomPattern } from '@/lib/cycle/getCycleSymptomPattern'
 import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
 import DashboardAssessmentMiniCard from '@/components/DashboardAssessmentMiniCard'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
+import SymptomQuickLog from '@/components/SymptomQuickLog'
 
 export default async function DashboardPage() {
   const { supabase, client, user } = await getDashboardContext()
@@ -114,6 +115,10 @@ export default async function DashboardPage() {
 
           <DashboardAssessmentMiniCard
             dueCount={monthlyAssessmentsDueCount}
+          />
+          
+          <SymptomQuickLog 
+            clientId={client.client_id} 
           />
         </div>
 
