@@ -26,7 +26,7 @@ export default function GuidePage() {
           }}
         >
         <Image
-          src="/TheAnastasisShift.png"
+          src="/AA8E8B4D-7C51-42CC-9C18-6B53F085A673.png"
           alt="The Anastasis Shift"
           width={420}
           height={620}
