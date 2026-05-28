@@ -66,6 +66,7 @@ export default function GuidePage() {
     Coming Soon
   </div>
 </div>
+        </div>
         
         <section style={styles.cartBoxStyle}>
           <h2 style={styles.sectionTitleStyle}>
