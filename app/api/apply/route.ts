@@ -20,7 +20,6 @@ export async function POST(req: Request) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     const payload = {
-  source: 'application',
   status: 'new',
   submitted_at: new Date().toISOString(),
 
