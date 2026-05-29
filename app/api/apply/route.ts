@@ -49,14 +49,18 @@ export async function POST(req: Request) {
       .single()
 
     if (error) {
-      return NextResponse.json(
-        {
-          error: 'Application save failed',
-          details: error.message,
-        },
-        { status: 500 }
-      )
-    }
+  console.error('APPLICATION SAVE ERROR:', error)
+
+  return NextResponse.json(
+    {
+      error: 'Application save failed',
+      details: error.message,
+      code: error.code,
+      hint: error.hint,
+    },
+    { status: 500 }
+  )
+}
 
     return NextResponse.json({
       success: true,
