@@ -124,6 +124,7 @@ export default function NutritionFoodLogger({
   }
 
   async function searchFoods() {
+  try {
     setSearching(true)
     setMessage('')
 
@@ -135,13 +136,17 @@ export default function NutritionFoodLogger({
 
     if (!res.ok) {
       setMessage(data.error || 'Food search failed.')
-      setSearching(false)
       return
     }
 
     setFoods(data.foods || [])
+  } catch (error) {
+    console.error(error)
+    setMessage('Food search failed.')
+  } finally {
     setSearching(false)
   }
+}
 
   async function addMeal() {
     if (!selectedFood) {
@@ -223,13 +228,13 @@ export default function NutritionFoodLogger({
       </div>
 
       <button
-        type="button"
-        style={{ ...styles.primaryButtonStyle, marginTop: '18px' }}
-        onClick={searchFoods}
-        disabled={searching || adding || !search.trim()}
-      >
-        {searching ? 'Searching...' : 'Search Foods'}
-      </button>
+  type="button"
+  style={{ ...styles.primaryButtonStyle, marginTop: '18px' }}
+  onClick={searchFoods}
+  disabled={searching || !search.trim()}
+>
+  {searching ? 'Searching...' : 'Search Foods'}
+</button>
 
       <div style={{ display: 'grid', gap: '10px', marginTop: '20px' }}>
         {foods.map((food) => (
