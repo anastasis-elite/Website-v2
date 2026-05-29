@@ -3,13 +3,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+type ExerciseVariant = {
+  id: string
+  name: string
+  equipment: string
+  load_type: string
+  equipment_modifier: number
+}
+
 type Exercise = {
   exercise?: string
   name?: string
+  display_name?: string
 
-  sets?: number
+  sets?: number | string
 
-  reps?: number
+  reps?: number | string
   target_reps?: number
   recommended_reps?: number
   cycle_adjusted_reps?: number
@@ -20,6 +29,12 @@ type Exercise = {
   cycle_adjusted_weight?: number
   baseline_weight?: number
 
+  selected_variant_id?: string
+  selected_variant_name?: string
+  selected_equipment?: string
+  load_type?: string
+  available_variants?: ExerciseVariant[]
+
   cycle_adjustment_label?: string
   cycle_adjustment_note?: string
   cycle_caution_active?: boolean
@@ -27,6 +42,15 @@ type Exercise = {
 
 type WorkoutLog = {
   exercise: string
+  display_name: string
+
+  selected_variant_id: string | null
+  selected_variant_name: string
+  selected_equipment: string | null
+  load_type: string
+
+  available_variants: ExerciseVariant[]
+
   planned_sets: number
   planned_reps: number
   planned_weight: number
@@ -34,9 +58,11 @@ type WorkoutLog = {
   baseline_weight: number
   actual_weight: number
   actual_reps: number
+
   cycle_adjustment_label: string
   cycle_adjustment_note: string
   cycle_caution_active: boolean
+
   completed: boolean
   notes: string
 }
@@ -51,6 +77,10 @@ type Props = {
 
 function getExerciseName(exercise: Exercise) {
   return exercise.exercise || exercise.name || 'Exercise'
+}
+
+function getDisplayName(exercise: Exercise) {
+  return exercise.display_name || getExerciseName(exercise)
 }
 
 function getRecommendedWeight(exercise: Exercise) {
@@ -91,6 +121,45 @@ function getBaselineReps(exercise: Exercise) {
       exercise.recommended_reps ||
       0
   )
+}
+
+function roundTrainingWeight(weight: number) {
+  if (!weight || Number.isNaN(weight)) return 0
+
+  if (weight < 5) return Math.round(weight * 2) / 2
+  if (weight < 20) return Math.round(weight)
+
+  return Math.round(weight / 5) * 5
+}
+
+function getVariantAdjustedWeight({
+  baselineWeight,
+  variant,
+}: {
+  baselineWeight: number
+  variant?: ExerciseVariant | null
+}) {
+  if (!variant) return roundTrainingWeight(baselineWeight)
+
+  return roundTrainingWeight(
+    baselineWeight * Number(variant.equipment_modifier || 1)
+  )
+}
+
+function getLoadLabel(loadType: string) {
+  switch (loadType) {
+    case 'per_hand':
+      return 'per hand'
+    case 'single_side':
+      return 'single side'
+    case 'machine_total':
+      return 'machine total'
+    case 'band_tension':
+      return 'band tension'
+    case 'total_load':
+    default:
+      return 'total'
+  }
 }
 
 function buildNumberOptions({
@@ -134,7 +203,6 @@ function ScrollPicker({
   suffix?: string
 }) {
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({})
-  const containerRef = useRef<HTMLDivElement | null>(null)
 
   function setItemRef(key: string) {
     return (element: HTMLButtonElement | null): void => {
@@ -170,7 +238,6 @@ function ScrollPicker({
       </p>
 
       <div
-        ref={containerRef}
         style={{
           position: 'relative',
           height: '142px',
@@ -246,11 +313,11 @@ export default function WorkoutTracker({
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
   function setCardRef(index: number) {
-  return (element: HTMLDivElement | null): void => {
-    cardRefs.current[index] = element
+    return (element: HTMLDivElement | null): void => {
+      cardRefs.current[index] = element
+    }
   }
-}
-  
+
   const [activeIndex, setActiveIndex] = useState(0)
 
   const [logs, setLogs] = useState<WorkoutLog[]>(
@@ -260,11 +327,30 @@ export default function WorkoutTracker({
       const baselineWeight = getBaselineWeight(exercise)
       const baselineReps = getBaselineReps(exercise)
 
+      const availableVariants = exercise.available_variants || []
+      const selectedVariant =
+        availableVariants.find(
+          (variant) => variant.id === exercise.selected_variant_id
+        ) || availableVariants[0]
+
       return {
         exercise: getExerciseName(exercise),
+        display_name: getDisplayName(exercise),
 
-        planned_sets: exercise.sets || 0,
+        selected_variant_id:
+          selectedVariant?.id || exercise.selected_variant_id || null,
+        selected_variant_name:
+          selectedVariant?.name ||
+          exercise.selected_variant_name ||
+          getExerciseName(exercise),
+        selected_equipment:
+          selectedVariant?.equipment || exercise.selected_equipment || null,
+        load_type:
+          selectedVariant?.load_type || exercise.load_type || 'total_load',
 
+        available_variants: availableVariants,
+
+        planned_sets: Number(exercise.sets || 0),
         planned_reps: recommendedReps,
         planned_weight: recommendedWeight,
 
@@ -293,6 +379,36 @@ export default function WorkoutTracker({
       prev.map((log, i) =>
         i === index ? { ...log, [field]: value } : log
       )
+    )
+  }
+
+  function changeVariant(index: number, variantId: string) {
+    setLogs((prev) =>
+      prev.map((log, i) => {
+        if (i !== index) return log
+
+        const selectedVariant = log.available_variants.find(
+          (variant) => variant.id === variantId
+        )
+
+        if (!selectedVariant) return log
+
+        const adjustedWeight = getVariantAdjustedWeight({
+          baselineWeight: log.baseline_weight,
+          variant: selectedVariant,
+        })
+
+        return {
+          ...log,
+          selected_variant_id: selectedVariant.id,
+          selected_variant_name: selectedVariant.name,
+          selected_equipment: selectedVariant.equipment,
+          load_type: selectedVariant.load_type,
+          planned_weight: adjustedWeight,
+          actual_weight: adjustedWeight,
+          notes: log.notes,
+        }
+      })
     )
   }
 
@@ -425,27 +541,30 @@ export default function WorkoutTracker({
         }}
       >
         {logs.map((exercise, index) => {
-          const weightOptions =
-  exercise.planned_weight < 15
-    ? [1, 2, 2.5, 5, 8, 10, 12, 15]
-    : buildNumberOptions({
-        min: Math.max(0, exercise.planned_weight - 20),
-        max: exercise.planned_weight + 20,
-        step: 5,
-        includeValue: exercise.actual_weight,
-      })
+          const loadLabel = getLoadLabel(exercise.load_type)
 
-const repOptions = buildNumberOptions({
-  min: Math.max(0, exercise.planned_reps - 8),
-  max: exercise.planned_reps + 8,
-  step: 1,
-  includeValue: exercise.actual_reps,
-})
+          const weightOptions =
+            exercise.planned_weight < 15
+              ? [1, 2, 2.5, 5, 8, 10, 12, 15]
+              : buildNumberOptions({
+                  min: Math.max(0, exercise.planned_weight - 20),
+                  max: exercise.planned_weight + 20,
+                  step: 5,
+                  includeValue: exercise.actual_weight,
+                })
+
+          const repOptions = buildNumberOptions({
+            min: Math.max(0, exercise.planned_reps - 8),
+            max: exercise.planned_reps + 8,
+            step: 1,
+            includeValue: exercise.actual_reps,
+          })
+
           return (
             <section
-  key={index}
-  ref={setCardRef(index)}
-  style={{
+              key={index}
+              ref={setCardRef(index)}
+              style={{
                 flex: '0 0 min(86vw, 620px)',
                 scrollSnapAlign: 'center',
                 border: exercise.cycle_caution_active
@@ -453,7 +572,7 @@ const repOptions = buildNumberOptions({
                   : '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '34px',
                 padding: '32px',
-                minHeight: '520px',
+                minHeight: '560px',
                 background: exercise.cycle_caution_active
                   ? 'rgba(181,110,67,0.08)'
                   : 'rgba(18,18,18,0.48)',
@@ -480,7 +599,7 @@ const repOptions = buildNumberOptions({
 
                 <h3
                   style={{
-                    margin: '0 0 12px',
+                    margin: '0 0 8px',
                     fontSize: 'clamp(1.8rem, 4vw, 2.8rem)',
                     lineHeight: 1.05,
                     fontWeight: 500,
@@ -488,8 +607,57 @@ const repOptions = buildNumberOptions({
                     color: '#f5f0e8',
                   }}
                 >
-                  {exercise.exercise}
+                  {exercise.display_name}
                 </h3>
+
+                <p
+                  style={{
+                    margin: '0 0 18px',
+                    color: 'rgba(215,199,182,0.68)',
+                    fontSize: '0.92rem',
+                  }}
+                >
+                  Selected: {exercise.selected_variant_name}
+                </p>
+
+                {exercise.available_variants.length > 1 && (
+                  <label>
+                    <p
+                      style={{
+                        margin: '0 0 8px',
+                        color: 'rgba(215,199,182,0.72)',
+                        fontSize: '0.78rem',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Equipment / Variation
+                    </p>
+
+                    <select
+                      value={exercise.selected_variant_id || ''}
+                      onChange={(event) =>
+                        changeVariant(index, event.target.value)
+                      }
+                      style={{
+                        width: '100%',
+                        borderRadius: '999px',
+                        border: '1px solid rgba(181,110,67,0.26)',
+                        background: 'rgba(5,5,5,0.34)',
+                        color: '#f5f0e8',
+                        padding: '14px 16px',
+                        marginBottom: '18px',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {exercise.available_variants.map((variant) => (
+                        <option key={variant.id} value={variant.id}>
+                          {variant.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
 
                 <p
                   style={{
@@ -527,14 +695,21 @@ const repOptions = buildNumberOptions({
                   <p style={{ margin: 0 }}>
                     <strong>Recommended today:</strong>{' '}
                     {exercise.planned_sets} sets · {exercise.planned_reps} reps ·{' '}
-                    {exercise.planned_weight} lbs
+                    {exercise.planned_weight} lbs {loadLabel}
                   </p>
 
                   <p style={{ margin: 0, opacity: 0.72 }}>
                     <strong>Program baseline:</strong>{' '}
                     {exercise.planned_sets} sets · {exercise.baseline_reps} reps ·{' '}
-                    {exercise.baseline_weight} lbs
+                    {exercise.baseline_weight} lbs before equipment conversion
                   </p>
+
+                  {exercise.load_type === 'per_hand' && (
+                    <p style={{ margin: 0, opacity: 0.72 }}>
+                      Dumbbell load is shown per hand. It is intentionally not
+                      calculated by simply dividing a barbell load in half.
+                    </p>
+                  )}
                 </div>
 
                 <div
@@ -545,7 +720,7 @@ const repOptions = buildNumberOptions({
                   }}
                 >
                   <ScrollPicker
-                    label="Actual Weight"
+                    label={`Actual Weight (${loadLabel})`}
                     value={exercise.actual_weight}
                     options={weightOptions}
                     suffix=" lb"
