@@ -13,7 +13,12 @@ function CreateLoginContent() {
   const searchParams = useSearchParams()
 
   const program = searchParams.get('program') || ''
-  const clientId = searchParams.get('client_id') || ''
+  const clientId =
+  searchParams?.clientId ||
+  searchParams?.client_id ||
+  ''
+  console.log('CREATE LOGIN PARAMS:', searchParams)
+console.log('CLIENT ID:', clientId)
   const birthdate = searchParams.get('birthdate') || ''
   const applicationEmail = searchParams.get('email') || ''
 
