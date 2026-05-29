@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getApplicationRedirect } from '@/lib/applications/getApplicationRedirect'
 
 export const runtime = 'nodejs'
 
@@ -61,10 +62,19 @@ export async function POST(req: Request) {
 }
 
     return NextResponse.json({
-      success: true,
-      application: data,
-      redirect: '/apply/thank-you',
-    })
+  success: true,
+  redirect: getApplicationRedirect({
+    changeGoal:
+      body.changeGoal ||
+      body.goal ||
+      body.whatAreYouHopingToChangeMostRightNow,
+
+    supportReason:
+      body.supportReason ||
+      body.whyAreYouLookingForSupportNow ||
+      body.currentStruggle,
+  }),
+})
   } catch (error) {
     console.error('Apply API error:', error)
 
