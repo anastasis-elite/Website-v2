@@ -32,17 +32,6 @@ export async function POST(req: Request) {
       )
     }
 
-    const assessmentWebhookUrl = process.env.N8N_ASSESSMENT2_WEBHOOK_URL
-    const programGenerateWebhookUrl =
-      process.env.N8N_PROGRAM_GENERATE_WEBHOOK_URL
-
-    if (!assessmentWebhookUrl || !programGenerateWebhookUrl) {
-      return NextResponse.json(
-        { error: 'Missing n8n webhook URL.' },
-        { status: 500 }
-      )
-    }
-
     const trustedPayload = {
       client_id: client.client_id,
       auth_user_id: user.id,
@@ -74,48 +63,6 @@ if (assessmentInsertError) {
     { status: 500 }
   )
 }
-    
-    const assessmentResponse = await fetch(assessmentWebhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(trustedPayload),
-    })
-
-    const assessmentText = await assessmentResponse.text()
-    const assessmentData = assessmentText ? JSON.parse(assessmentText) : null
-
-    if (!assessmentResponse.ok) {
-      return NextResponse.json(
-        {
-          error: 'Assessment save failed',
-          details: assessmentData,
-        },
-        { status: assessmentResponse.status }
-      )
-    }
-
-    const generationResponse = await fetch(programGenerateWebhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...trustedPayload,
-        source: 'assessment-strength-complete',
-        timestamp: new Date().toISOString(),
-      }),
-    })
-
-    const generationText = await generationResponse.text()
-    const generationData = generationText ? JSON.parse(generationText) : null
-
-    if (!generationResponse.ok) {
-      return NextResponse.json(
-        {
-          error: 'Program generation failed',
-          details: generationData,
-        },
-        { status: generationResponse.status }
-      )
-    }
 
     const { data: initialAssessment } = await supabase
   .from('assessments')
@@ -162,17 +109,10 @@ if (programOutputError) {
     return NextResponse.json({
   success: true,
   redirect: '/dashboard/program',
-  assessment: assessmentData,
-  generation: generationData,
+  program: generatedProgram,
 })
-    
-    return NextResponse.json({
-      success: true,
-      redirect: '/dashboard/program',
-      assessment: assessmentData,
-      generation: generationData,
-    })
-  } catch (error) {
+  }    
+  catch (error) {
     return NextResponse.json(
       {
         error: 'Assessment strength route failed',
