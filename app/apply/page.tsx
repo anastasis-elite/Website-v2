@@ -111,7 +111,6 @@ export default function ApplyPage() {
       medicalClearance: formData.medicalClearance,
       medicalClearanceFileName: formData.medicalClearanceFile?.name || '',
       timestamp: new Date().toISOString(),
-      source: 'apply',
       submitted: 'website',
     }),
   })
