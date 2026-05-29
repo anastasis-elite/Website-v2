@@ -28,19 +28,6 @@ export async function POST(req: Request) {
   email: body.email || null,
   phone: body.phone || null,
 
-  program_interest: body.programInterest || body.program_interest || null,
-  goal: body.goal || null,
-  current_struggle: body.currentStruggle || body.current_struggle || null,
-  training_history: body.trainingHistory || body.training_history || null,
-  nutrition_history: body.nutritionHistory || body.nutrition_history || null,
-  cycle_status: body.cycleStatus || body.cycle_status || null,
-  injuries_or_limitations:
-    body.injuriesOrLimitations || body.injuries_or_limitations || null,
-
-  readiness_level: body.readinessLevel || body.readiness_level || null,
-  preferred_support: body.preferredSupport || body.preferred_support || null,
-  notes: body.notes || null,
-
   address_line_1: body.addressLine1 || body.address_line_1 || null,
   address_line_2: body.addressLine2 || body.address_line_2 || null,
   city: body.city || null,
@@ -52,7 +39,7 @@ export async function POST(req: Request) {
   applicant_acknowledged_terms: true,
   terms_version: 'v1',
 
-  raw_payload: body,
+  application_data: body,
 }
 
     const { data, error } = await supabase
