@@ -4,6 +4,14 @@ import exerciseVariants from '@/data/reference/exerciseVariants.json'
 
 import emberGym from '@/data/template/emberGym.json'
 import igniteGym from '@/data/template/igniteGym.json'
+import phoenixBodybuilding from '@/data/template/phoenixBodybuilding.json'
+import phoenixEndurance from '@/data/template/phoenixEndurance.json'
+import phoenixFullTransformation from '@/data/template/phoenixFullTransformation.json'
+import phoenixGluteSculpt from '@/data/template/phoenixGluteSculpt.json'
+import phoenixHypertrophy from '@/data/template/phoenixHypertrophy.json'
+import phoenixRecomposition from '@/data/template/phoenixRecomposition.json'
+import phoenixStrength from '@/data/template/phoenixStrength.json'
+import phoenixWaistCincher from '@/data/template/phoenixWaistCincher.json'
 
 import { getEquipmentAdjustedLoad } from '@/lib/program/getEquipmentAdjustedLoad'
 
@@ -13,6 +21,22 @@ function getTemplate(program: string) {
       return emberGym
     case 'ignite':
       return igniteGym
+    case 'phoenixBodybuilding':
+      return phoenixBodybuilding
+    case 'phoenixEndurance':
+      return phoenixEndurance
+    case 'phoenixFullTransformation':
+      return phoenixFullTransformation
+    case 'phoenixGluteSculpt':
+      return phoenixGluteSculpt
+    case 'phoenixHypertrophy':
+      return phoenixHypertrophy
+    case 'phoenixRecomposition':
+      return phoenixRecomposition
+    case 'phoenixStrength':
+      return phoenixStrength
+    case 'phoenixWaistCincher':
+      return phoenixWaistCincher
     default:
       return emberGym
   }
@@ -24,6 +48,20 @@ function getIfKey(program: string) {
       return 'ember_if'
     case 'ignite':
       return 'ignite_if'
+    case 'phoenixHypertrophy':
+      return 'phoenix_hypertrophy_if'
+    case 'phoenixStrength':
+      return 'phoenix_strength_if'
+    case 'phoenixBodybuilding':
+      return 'phoenix_bodybuilding_if'
+    case 'phoenixEndurance':
+      return 'phoenix_endurance_if'
+    case 'phoenixRecomposition':
+      return 'phoenix_recomposition_if'
+    case 'phoenixWaistCincher':
+      return 'phoenix_waist_cincher_if'
+    case 'phoenixGluteSculpt':
+      return 'phoenix_glute_sculpt_if'
     default:
       return 'ember_if'
   }
