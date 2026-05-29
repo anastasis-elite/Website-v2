@@ -1,0 +1,236 @@
+[
+  {
+    "pattern": "lateral_raise",
+    "display_name": "Lateral Raise",
+    "default_variant": "dumbbell_lateral_raise",
+    "assessment_key": "LateralRaise",
+    "category": "isolation",
+    "base_equipment": "dumbbell",
+    "variants": [
+      {
+        "id": "dumbbell_lateral_raise",
+        "name": "Dumbbell Lateral Raise",
+        "equipment": "dumbbell",
+        "load_type": "per_hand",
+        "equipment_modifier": 1
+      },
+      {
+        "id": "cable_lateral_raise",
+        "name": "Cable Lateral Raise",
+        "equipment": "cable",
+        "load_type": "single_side",
+        "equipment_modifier": 0.75
+      },
+      {
+        "id": "machine_lateral_raise",
+        "name": "Machine Lateral Raise",
+        "equipment": "machine",
+        "load_type": "machine_total",
+        "equipment_modifier": 0.9
+      },
+      {
+        "id": "band_lateral_raise",
+        "name": "Banded Lateral Raise",
+        "equipment": "band",
+        "load_type": "band_tension",
+        "equipment_modifier": 0.45
+      }
+    ],
+    "aliases": [
+      "Dumbbell Lateral Raise",
+      "Cable Lateral",
+      "Cable Lateral Raise",
+      "Lateral Raise",
+      "Lateral Raises"
+    ]
+  },
+  {
+    "pattern": "shoulder_press",
+    "display_name": "Shoulder Press",
+    "default_variant": "dumbbell_shoulder_press",
+    "assessment_key": "Shoulder",
+    "category": "compound",
+    "base_equipment": "dumbbell",
+    "variants": [
+      {
+        "id": "dumbbell_shoulder_press",
+        "name": "Dumbbell Shoulder Press",
+        "equipment": "dumbbell",
+        "load_type": "per_hand",
+        "equipment_modifier": 1
+      },
+      {
+        "id": "barbell_shoulder_press",
+        "name": "Barbell Shoulder Press",
+        "equipment": "barbell",
+        "load_type": "total_load",
+        "equipment_modifier": 2.25
+      },
+      {
+        "id": "machine_shoulder_press",
+        "name": "Machine Shoulder Press",
+        "equipment": "machine",
+        "load_type": "machine_total",
+        "equipment_modifier": 1.15
+      },
+      {
+        "id": "smith_machine_press",
+        "name": "Smith Machine Shoulder Press",
+        "equipment": "smith",
+        "load_type": "total_load",
+        "equipment_modifier": 1.2
+      }
+    ],
+    "aliases": [
+      "Shoulder Press",
+      "Machine Shoulder Press",
+      "Shoulder Press Machine",
+      "Smith Machine Press",
+      "Dumbbell Press"
+    ]
+  },
+  {
+    "pattern": "bench_press",
+    "display_name": "Chest Press",
+    "default_variant": "barbell_bench_press",
+    "assessment_key": "Bench",
+    "category": "compound",
+    "base_equipment": "barbell",
+    "variants": [
+      {
+        "id": "barbell_bench_press",
+        "name": "Barbell Bench Press",
+        "equipment": "barbell",
+        "load_type": "total_load",
+        "equipment_modifier": 1
+      },
+      {
+        "id": "dumbbell_bench_press",
+        "name": "Dumbbell Chest Press",
+        "equipment": "dumbbell",
+        "load_type": "per_hand",
+        "equipment_modifier": 0.42
+      },
+      {
+        "id": "machine_chest_press",
+        "name": "Machine Chest Press",
+        "equipment": "machine",
+        "load_type": "machine_total",
+        "equipment_modifier": 1.05
+      },
+      {
+        "id": "smith_chest_press",
+        "name": "Smith Machine Chest Press",
+        "equipment": "smith",
+        "load_type": "total_load",
+        "equipment_modifier": 1.1
+      }
+    ],
+    "aliases": [
+      "Bench Press",
+      "Incline Press",
+      "Dumbbell Press",
+      "Incline Dumbbell Press",
+      "High Cable Fly",
+      "Low Cable Fly"
+    ]
+  },
+  {
+    "pattern": "row",
+    "display_name": "Row",
+    "default_variant": "seated_cable_row",
+    "assessment_key": "Row",
+    "category": "compound",
+    "base_equipment": "cable",
+    "variants": [
+      {
+        "id": "seated_cable_row",
+        "name": "Seated Cable Row",
+        "equipment": "cable",
+        "load_type": "total_load",
+        "equipment_modifier": 1
+      },
+      {
+        "id": "single_arm_dumbbell_row",
+        "name": "Single-Arm Dumbbell Row",
+        "equipment": "dumbbell",
+        "load_type": "single_side",
+        "equipment_modifier": 0.42
+      },
+      {
+        "id": "machine_row",
+        "name": "Machine Row",
+        "equipment": "machine",
+        "load_type": "machine_total",
+        "equipment_modifier": 1.1
+      },
+      {
+        "id": "barbell_row",
+        "name": "Barbell Row",
+        "equipment": "barbell",
+        "load_type": "total_load",
+        "equipment_modifier": 1.15
+      }
+    ],
+    "aliases": [
+      "Seated Cable Row",
+      "Cable Row",
+      "Single-Arm Cable Row",
+      "Single Arm Lat Row",
+      "Single-Arm Dumbbell Row",
+      "Machine Row",
+      "Chest Supported Row",
+      "Barbell Row",
+      "Meadows Row",
+      "T-Bar Row",
+      "Landmine Row"
+    ]
+  },
+  {
+    "pattern": "rdl",
+    "display_name": "Romanian Deadlift",
+    "default_variant": "barbell_rdl",
+    "assessment_key": "RDL",
+    "category": "compound",
+    "base_equipment": "barbell",
+    "variants": [
+      {
+        "id": "barbell_rdl",
+        "name": "Barbell Romanian Deadlift",
+        "equipment": "barbell",
+        "load_type": "total_load",
+        "equipment_modifier": 1
+      },
+      {
+        "id": "dumbbell_rdl",
+        "name": "Dumbbell Romanian Deadlift",
+        "equipment": "dumbbell",
+        "load_type": "per_hand",
+        "equipment_modifier": 0.42
+      },
+      {
+        "id": "smith_machine_rdl",
+        "name": "Smith Machine Romanian Deadlift",
+        "equipment": "smith",
+        "load_type": "total_load",
+        "equipment_modifier": 1.1
+      },
+      {
+        "id": "cable_rdl",
+        "name": "Cable Romanian Deadlift",
+        "equipment": "cable",
+        "load_type": "total_load",
+        "equipment_modifier": 0.75
+      }
+    ],
+    "aliases": [
+      "Barbell RDL",
+      "Smith Machine RDL",
+      "Dumbbell RDL",
+      "Cable RDL",
+      "B Stance RDL",
+      "B-Stance RDL",
+      "Single-Leg RDL"
+    ]
+  }
+]
