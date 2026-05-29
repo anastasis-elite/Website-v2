@@ -29,7 +29,24 @@ By submitting your application, you acknowledged that:
 
 Terms version: ${termsVersion}
 
-Please keep this email for your records.
+Important Documents:
+
+Terms of Use:
+https://anastasiselite.com/terms
+
+Health Conditions & Participation Requirements:
+https://anastasiselite.com/conditions
+
+General Disclaimer:
+https://anastasiselite.com/disclaimer
+
+Media & Content Consent:
+https://anastasiselite.com/consent/media
+
+Research & Data Consent:
+https://anastasiselite.com/consent/research
+
+Please review and retain these documents for your records.
 
 With respect,
 Anastasis Elite
