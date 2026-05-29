@@ -1,90 +1,106 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { generateProgram } from '@/lib/program/generateProgram'
 
-export async function GET() {
-  try {
-    const webhookUrl = process.env.N8N_PROGRAM_GENERATE_WEBHOOK_URL
+export const runtime = 'nodejs'
 
-    if (!webhookUrl) {
-      return NextResponse.json({
-        error: 'Missing webhook URL env',
-      })
-    }
-
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: 'TEST123',
-        program: 'ignite',
-        fullName: 'Test User',
-        email: 'test@test.com',
-        source: 'manual-get-test',
-      }),
-    })
-
-    const text = await response.text()
-
-    return NextResponse.json({
-      success: response.ok,
-      status: response.status,
-      response: text,
-    })
-  } catch (error) {
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : String(error),
-    })
-  }
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-
-    const webhookUrl = process.env.N8N_PROGRAM_GENERATE_WEBHOOK_URL
-
-    if (!webhookUrl) {
+    if (!supabaseUrl || !supabaseServiceKey) {
       return NextResponse.json(
-        { error: 'Missing N8N_PROGRAM_GENERATE_WEBHOOK_URL' },
+        { error: 'Missing Supabase server environment variables.' },
         { status: 500 }
       )
     }
 
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: body.client_id,
-        program: body.program,
-        fullName: body.fullName,
-        email: body.email,
-        source: 'program-generate-route',
-        timestamp: new Date().toISOString(),
-      }),
+    const body = await req.json()
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    const clientId = body.client_id || body.clientId
+
+    if (!clientId) {
+      return NextResponse.json(
+        { error: 'Missing client_id.' },
+        { status: 400 }
+      )
+    }
+
+    const { data: client, error: clientError } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('client_id', clientId)
+      .maybeSingle()
+
+    if (clientError || !client) {
+      return NextResponse.json(
+        {
+          error: 'Client not found.',
+          details: clientError?.message,
+        },
+        { status: 404 }
+      )
+    }
+
+    const { data: initialAssessment } = await supabase
+      .from('assessments')
+      .select('*')
+      .eq('client_id', clientId)
+      .eq('assessment_type', 'initial')
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const { data: strengthAssessment } = await supabase
+      .from('assessments')
+      .select('*')
+      .eq('client_id', clientId)
+      .eq('assessment_type', 'strength')
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!strengthAssessment) {
+      return NextResponse.json(
+        { error: 'Strength assessment is required before generating a program.' },
+        { status: 400 }
+      )
+    }
+
+    const generatedProgram = generateProgram({
+      client,
+      initialAssessment: initialAssessment?.data || initialAssessment,
+      strengthAssessment: strengthAssessment?.data || strengthAssessment,
     })
 
-    const text = await response.text()
+    const { data: savedProgram, error: saveError } = await supabase
+      .from('program_outputs')
+      .insert({
+        client_id: clientId,
+        program: client.program,
+        output: generatedProgram,
+        generated_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
 
-    let parsed = null
-    try {
-      parsed = text ? JSON.parse(text) : null
-    } catch {
-      parsed = { raw: text }
+    if (saveError) {
+      return NextResponse.json(
+        {
+          error: 'Program generated but failed to save.',
+          details: saveError.message,
+        },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({
-      success: response.ok,
-      n8n_status: response.status,
-      n8n_response: parsed,
-      sent: {
-        client_id: body.client_id,
-        program: body.program,
-        fullName: body.fullName,
-        email: body.email,
-      },
+      success: true,
+      redirect: '/dashboard/program',
+      program: generatedProgram,
+      savedProgram,
     })
   } catch (error) {
     return NextResponse.json(
