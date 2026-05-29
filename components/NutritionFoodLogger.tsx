@@ -54,35 +54,6 @@ function roundValue(value: number | null | undefined) {
   return Math.round(Number(value || 0))
 }
 
-function getDayBlock(mealName: string) {
-  const normalized = mealName.toLowerCase()
-
-  if (
-    normalized.includes('breakfast') ||
-    normalized.includes('pre-workout')
-  ) {
-    return 'morning'
-  }
-
-  if (
-    normalized.includes('post-workout') ||
-    normalized.includes('lunch') ||
-    normalized.includes('snack')
-  ) {
-    return 'midday'
-  }
-
-  if (
-    normalized.includes('supper') ||
-    normalized.includes('dinner') ||
-    normalized.includes('evening')
-  ) {
-    return 'evening'
-  }
-
-  return 'other'
-}
-
 export default function NutritionFoodLogger({
   nutritionLogId,
   initialRemaining = null,
@@ -93,8 +64,11 @@ export default function NutritionFoodLogger({
   const [servingAmount, setServingAmount] = useState('1')
   const [mealName, setMealName] = useState('Breakfast')
   const [message, setMessage] = useState('')
-  const [loading, setLoading] = useState(false)
   const [remaining, setRemaining] = useState<Remaining | null>(initialRemaining)
+
+  const [searching, setSearching] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [loadingServingOptions, setLoadingServingOptions] = useState(false)
 
   const [servingOptions, setServingOptions] = useState<ServingOption[]>([])
   const [selectedServingOptionId, setSelectedServingOptionId] = useState('')
@@ -104,6 +78,38 @@ export default function NutritionFoodLogger({
   useEffect(() => {
     loadTodayMeals()
   }, [nutritionLogId])
+
+  async function selectFood(food: Food) {
+    setSelectedFood(food)
+    setServingOptions([])
+    setSelectedServingOptionId('')
+    setMessage('')
+    setLoadingServingOptions(true)
+
+    const res = await fetch(
+      `/api/nutrition/serving-options?foodId=${food.id}`
+    )
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setMessage(data.error || 'Unable to load serving options.')
+      setLoadingServingOptions(false)
+      return
+    }
+
+    const options = data.servingOptions || []
+    setServingOptions(options)
+
+    const defaultOption =
+      options.find((option: ServingOption) => option.is_default) || options[0]
+
+    if (defaultOption) {
+      setSelectedServingOptionId(defaultOption.id)
+    }
+
+    setLoadingServingOptions(false)
+  }
 
   async function loadTodayMeals() {
     const res = await fetch(
@@ -117,36 +123,8 @@ export default function NutritionFoodLogger({
     }
   }
 
-  async function selectFood(food: Food) {
-    setSelectedFood(food)
-    setServingOptions([])
-    setSelectedServingOptionId('')
-    setMessage('')
-
-    const res = await fetch(
-      `/api/nutrition/serving-options?foodId=${food.id}`
-    )
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      setMessage(data.error || 'Unable to load serving options.')
-      return
-    }
-
-    const options = data.servingOptions || []
-    setServingOptions(options)
-
-    const defaultOption =
-      options.find((option: ServingOption) => option.is_default) || options[0]
-
-    if (defaultOption) {
-      setSelectedServingOptionId(defaultOption.id)
-    }
-  }
-
   async function searchFoods() {
-    setLoading(true)
+    setSearching(true)
     setMessage('')
 
     const res = await fetch(
@@ -157,12 +135,12 @@ export default function NutritionFoodLogger({
 
     if (!res.ok) {
       setMessage(data.error || 'Food search failed.')
-      setLoading(false)
+      setSearching(false)
       return
     }
 
     setFoods(data.foods || [])
-    setLoading(false)
+    setSearching(false)
   }
 
   async function addMeal() {
@@ -171,8 +149,12 @@ export default function NutritionFoodLogger({
       return
     }
 
-    setLoading(true)
+    setAdding(true)
     setMessage('')
+
+    const selectedServingOption = servingOptions.find(
+      (option) => option.id === selectedServingOptionId
+    )
 
     const res = await fetch('/api/nutrition/add-meal', {
       method: 'POST',
@@ -182,9 +164,8 @@ export default function NutritionFoodLogger({
         foodId: selectedFood.id,
         mealName,
         servingAmount: Number(servingAmount),
-        servingUnit: 'serving',
+        servingUnit: selectedServingOption?.label || 'serving',
         servingOptionId: selectedServingOptionId,
-        dayBlock: getDayBlock(mealName),
       }),
     })
 
@@ -192,73 +173,43 @@ export default function NutritionFoodLogger({
 
     if (!res.ok) {
       setMessage(data.error || 'Unable to add meal.')
-      setLoading(false)
+      setAdding(false)
       return
     }
 
     if (data.remaining) {
       setRemaining(data.remaining)
     }
-
-    await loadTodayMeals()
 
     setMessage('Meal added.')
     setSearch('')
     setFoods([])
     setSelectedFood(null)
+    setServingAmount('1')
     setServingOptions([])
     setSelectedServingOptionId('')
-    setServingAmount('1')
-    setLoading(false)
-  }
-
-  async function deleteMeal(mealEntryId: string) {
-    setLoading(true)
-    setMessage('')
-
-    const res = await fetch('/api/nutrition/delete-meal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mealEntryId,
-        nutritionLogId,
-      }),
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      setMessage(data.error || 'Unable to delete meal.')
-      setLoading(false)
-      return
-    }
-
-    if (data.remaining) {
-      setRemaining(data.remaining)
-    }
+    setAdding(false)
 
     await loadTodayMeals()
-
-    setMessage('Meal removed.')
-    setLoading(false)
   }
 
   return (
     <div>
       <div style={styles.fieldWrap}>
         <label style={styles.labelStyle}>Meal</label>
+
         <select
-  style={styles.inputStyle}
-  value={mealName}
-  onChange={(e) => setMealName(e.target.value)}
->
-  <option value="Breakfast">Breakfast</option>
-  <option value="Pre-Workout">Pre-Workout</option>
-  <option value="Post-Workout">Post-Workout</option>
-  <option value="Lunch">Lunch</option>
-  <option value="Snack">Snack</option>
-  <option value="Supper">Supper</option>
-</select>
+          style={styles.inputStyle}
+          value={mealName}
+          onChange={(e) => setMealName(e.target.value)}
+        >
+          <option value="Breakfast">Breakfast</option>
+          <option value="Pre Workout">Pre Workout</option>
+          <option value="Post Workout">Post Workout</option>
+          <option value="Lunch">Lunch</option>
+          <option value="Snack">Snack</option>
+          <option value="Supper">Supper</option>
+        </select>
       </div>
 
       <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
@@ -275,9 +226,9 @@ export default function NutritionFoodLogger({
         type="button"
         style={{ ...styles.primaryButtonStyle, marginTop: '18px' }}
         onClick={searchFoods}
-        disabled={loading || !search.trim()}
+        disabled={searching || adding || !search.trim()}
       >
-        {loading ? 'Searching...' : 'Search Foods'}
+        {searching ? 'Searching...' : 'Search Foods'}
       </button>
 
       <div style={{ display: 'grid', gap: '10px', marginTop: '20px' }}>
@@ -300,6 +251,12 @@ export default function NutritionFoodLogger({
       {selectedFood && (
         <p style={{ ...styles.bodyStyle, marginTop: '18px' }}>
           Selected: <strong>{selectedFood.name}</strong>
+        </p>
+      )}
+
+      {loadingServingOptions && (
+        <p style={{ ...styles.bodyStyle, marginTop: '12px' }}>
+          Loading serving sizes...
         </p>
       )}
 
@@ -337,9 +294,9 @@ export default function NutritionFoodLogger({
         type="button"
         style={{ ...styles.primaryButtonStyle, marginTop: '18px' }}
         onClick={addMeal}
-        disabled={loading || !selectedFood}
+        disabled={adding || searching || !selectedFood}
       >
-        {loading ? 'Adding...' : 'Add Meal'}
+        {adding ? 'Adding...' : 'Add Meal'}
       </button>
 
       {message && (
@@ -349,45 +306,28 @@ export default function NutritionFoodLogger({
       )}
 
       {todayMeals.length > 0 && (
-        <div style={{ marginTop: '32px' }}>
-          <h3 style={styles.sectionTitleStyle}>Today’s Meals</h3>
+        <div style={{ marginTop: '28px' }}>
+          <h3 style={styles.sectionTitleStyle}>Today’s Logged Food</h3>
 
-          <div style={{ display: 'grid', gap: '12px' }}>
+          <div style={{ display: 'grid', gap: '10px' }}>
             {todayMeals.map((meal) => (
               <div
                 key={meal.id}
                 style={{
                   ...styles.compactCardStyle,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: '16px',
-                  alignItems: 'center',
+                  display: 'grid',
+                  gap: '4px',
                 }}
               >
-                <div>
-                  <h4 style={styles.compactCardTitleStyle}>
-                    {meal.foods?.name || 'Food'}
-                  </h4>
+                <h4 style={styles.compactCardTitleStyle}>
+                  {meal.foods?.name || 'Food'}
+                </h4>
 
-                  <p style={styles.compactCardTextStyle}>
-                    {meal.meal_name} · {meal.serving_amount}{' '}
-                    {meal.serving_unit || 'serving'}
-                    {meal.grams ? ` · ${Math.round(meal.grams)}g` : ''}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => deleteMeal(meal.id)}
-                  disabled={loading}
-                  style={{
-                    ...styles.secondaryButtonStyle,
-                    padding: '8px 14px',
-                    fontSize: '0.82rem',
-                  }}
-                >
-                  Remove
-                </button>
+                <p style={styles.compactCardTextStyle}>
+                  {meal.meal_name} · {meal.serving_amount}{' '}
+                  {meal.serving_unit || 'serving'}
+                  {meal.grams ? ` · ${meal.grams}g` : ''}
+                </p>
               </div>
             ))}
           </div>
