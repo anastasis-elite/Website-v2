@@ -151,6 +151,14 @@ export async function getDailyExecutionPlan({
 
   let blockRemaining: Record<NutritionBlockKey, any> | null = null
 
+  let dailyRemaining = {
+    calories,
+    protein,
+    carbs,
+    fats,
+    water,
+  }
+
   if (todayNutritionLog?.id) {
     const blockTargets = getNutritionBlockTargets({
       calories,
@@ -170,6 +178,32 @@ export async function getDailyExecutionPlan({
       .from('nutrition_log_totals_by_block')
       .select('*')
       .eq('nutrition_log_id', todayNutritionLog.id)
+
+    const totalEaten = (eatenByBlock || []).reduce(
+      (acc: any, row: any) => {
+        acc.calories += Number(row.calories_eaten || 0)
+        acc.protein += Number(row.protein_eaten_g || 0)
+        acc.carbs += Number(row.carbs_eaten_g || 0)
+        acc.fats += Number(row.fat_eaten_g || 0)
+        return acc
+      },
+      {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fats: 0,
+      }
+    )
+
+    dailyRemaining = {
+      calories: roundMacro(calories - totalEaten.calories),
+      protein: roundMacro(protein - totalEaten.protein),
+      carbs: roundMacro(carbs - totalEaten.carbs),
+      fats: roundMacro(fats - totalEaten.fats),
+      water: roundMacro(
+        water - Number(todayNutritionLog.water_consumed_oz || 0)
+      ),
+    }
 
     blockRemaining = Object.fromEntries(
       Object.entries(blockTargets).map(([block, target]) => {
@@ -316,10 +350,10 @@ export async function getDailyExecutionPlan({
 
   const macroTargetsMet =
     !!todayNutritionLog &&
-    Number(todayNutritionLog.protein || 0) >= protein * 0.9 &&
-    Number(todayNutritionLog.carbs || 0) >= carbs * 0.85 &&
-    Number(todayNutritionLog.fats || 0) >= fats * 0.85 &&
-    Number(todayNutritionLog.water_oz || 0) >= water * 0.85
+    dailyRemaining.protein <= protein * 0.1 &&
+    dailyRemaining.carbs <= carbs * 0.15 &&
+    dailyRemaining.fats <= fats * 0.15 &&
+    dailyRemaining.water <= water * 0.15
 
   const dayFullyComplete = workoutCompleted && macroTargetsMet
 
@@ -407,6 +441,7 @@ export async function getDailyExecutionPlan({
       fats,
       water,
     },
+    dailyRemaining,
     timing: {
       wakeTime,
       bedTime,
