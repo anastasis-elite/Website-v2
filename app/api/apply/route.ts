@@ -21,7 +21,6 @@ export async function POST(req: Request) {
 
     const payload = {
   status: 'new',
-  submitted_at: new Date().toISOString(),
 
   full_name: body.fullName || body.full_name || null,
   email: body.email || null,
