@@ -121,7 +121,16 @@ export default function ApplyPage() {
 console.log('Response:', data)
 
 if (!res.ok) {
-  throw new Error(data?.error || 'Request failed')
+  throw new Error(
+    [
+      data?.error,
+      data?.details,
+      data?.code ? `Code: ${data.code}` : '',
+      data?.hint ? `Hint: ${data.hint}` : '',
+    ]
+      .filter(Boolean)
+      .join(' — ') || 'Request failed'
+  )
 }
 
 if (data.redirect) {
