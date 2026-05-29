@@ -21,16 +21,12 @@ export default function DashboardStatusDock({
   const [open, setOpen] = useState(false)
   const [assessmentOpen, setAssessmentOpen] = useState(false)
 
-  const morning = dailyPlan?.cards?.find(
-    (card: any) => card.id === 'morning'
-  )
+  const dailyRemaining = dailyPlan?.dailyRemaining || {}
 
-  const macros = morning?.macroTarget || {}
-
-  const proteinRemaining = macros.protein || 0
-  const carbsRemaining = macros.carbs || 0
-  const fatsRemaining = macros.fats || 0
-  const waterRemaining = macros.water || 0
+const proteinRemaining = dailyRemaining.protein || 0
+const carbsRemaining = dailyRemaining.carbs || 0
+const fatsRemaining = dailyRemaining.fats || 0
+const waterRemaining = dailyRemaining.water || 0
 
   return (
     <div
