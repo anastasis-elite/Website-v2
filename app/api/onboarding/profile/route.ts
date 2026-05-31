@@ -34,6 +34,16 @@ export async function POST(req: Request) {
         onboarding_completed: true,
         onboarding_completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        last_six_cycle_starts: body.knowsLastSixCycles
+  ? [
+      body.cycleStart1,
+      body.cycleStart2,
+      body.cycleStart3,
+      body.cycleStart4,
+      body.cycleStart5,
+      body.cycleStart6,
+    ].filter(Boolean)
+  : null,
       })
       .eq('auth_user_id', user.id)
 
