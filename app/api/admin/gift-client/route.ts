@@ -14,6 +14,7 @@ export async function POST(req: Request) {
       phone,
       program,
       durationMonths,
+      temporaryPassword,
     } = body
 
     if (
@@ -55,11 +56,43 @@ export async function POST(req: Request) {
       endsAt.getMonth() + months
     )
 
+    if (!temporaryPassword || temporaryPassword.length < 8) {
+  return NextResponse.json(
+    { error: 'Temporary password must be at least 8 characters.' },
+    { status: 400 }
+  )
+}
+
+const { data: authData, error: authError } =
+  await supabase.auth.admin.createUser({
+    email,
+    password: temporaryPassword,
+    email_confirm: true,
+    user_metadata: {
+      full_name: fullName,
+      program,
+      access_type: 'gifted',
+    },
+  })
+
+if (authError || !authData.user) {
+  return NextResponse.json(
+    {
+      error: 'Auth user creation failed',
+      details: authError?.message,
+    },
+    { status: 500 }
+  )
+}
+
+const authUserId = authData.user.id
+    
     const payload = {
       client_id: clientId,
       full_name: fullName,
       email,
       login_email: email,
+      auth_user_id: authUserId,
       phone,
       program,
       subscription_status: 'gifted',
