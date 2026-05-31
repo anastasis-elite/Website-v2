@@ -28,14 +28,6 @@ export default function OnboardingProfileForm({ client }: { client: any }) {
     cycleStart4: '',
     cycleStart5: '',
     cycleStart6: '',
-    primaryGoal: client.onboarding_data?.primaryGoal || '',
-    whyNow: client.onboarding_data?.whyNow || '',
-    currentStruggle: client.onboarding_data?.currentStruggle || '',
-    trainingHistory: client.onboarding_data?.trainingHistory || '',
-    nutritionHistory: client.onboarding_data?.nutritionHistory || '',
-    injuriesOrLimitations: client.onboarding_data?.injuriesOrLimitations || '',
-    preferredSupport: client.onboarding_data?.preferredSupport || '',
-    readinessLevel: client.onboarding_data?.readinessLevel || '',
   })
 
   function handleChange(
@@ -136,110 +128,6 @@ export default function OnboardingProfileForm({ client }: { client: any }) {
           onChange={handleChange}
           style={styles.inputStyle}
         />
-        <div style={{ display: 'grid', gap: 16 }}>
-  <label style={styles.labelStyle}>
-    What are you hoping to change most right now?
-  </label>
-  <textarea
-    name="primaryGoal"
-    value={formData.primaryGoal}
-    onChange={handleChange}
-    required
-    style={styles.inputStyle}
-    placeholder="Tell us what you most want support with."
-  />
-
-  <label style={styles.labelStyle}>
-    Why are you looking for support now?
-  </label>
-  <textarea
-    name="whyNow"
-    value={formData.whyNow}
-    onChange={handleChange}
-    required
-    style={styles.inputStyle}
-    placeholder="What made this feel important now?"
-  />
-
-  <label style={styles.labelStyle}>
-    What feels hardest right now?
-  </label>
-  <textarea
-    name="currentStruggle"
-    value={formData.currentStruggle}
-    onChange={handleChange}
-    style={styles.inputStyle}
-    placeholder="Energy, consistency, food, workouts, confidence, stress, symptoms, etc."
-  />
-
-  <label style={styles.labelStyle}>
-    Training history
-  </label>
-  <textarea
-    name="trainingHistory"
-    value={formData.trainingHistory}
-    onChange={handleChange}
-    style={styles.inputStyle}
-    placeholder="Tell us what your training has looked like recently."
-  />
-
-  <label style={styles.labelStyle}>
-    Nutrition history
-  </label>
-  <textarea
-    name="nutritionHistory"
-    value={formData.nutritionHistory}
-    onChange={handleChange}
-    style={styles.inputStyle}
-    placeholder="Tell us what your nutrition has looked like recently."
-  />
-
-  <label style={styles.labelStyle}>
-    Injuries, limitations, or medical considerations
-  </label>
-  <textarea
-    name="injuriesOrLimitations"
-    value={formData.injuriesOrLimitations}
-    onChange={handleChange}
-    style={styles.inputStyle}
-    placeholder="Include anything that may affect exercise, nutrition, recovery, or cycle tracking."
-  />
-
-  <label style={styles.labelStyle}>
-    What kind of support helps you most?
-  </label>
-  <select
-    name="preferredSupport"
-    value={formData.preferredSupport}
-    onChange={handleChange}
-    style={styles.inputStyle}
-  >
-    <option value="">Select one</option>
-    <option value="gentle_accountability">Gentle accountability</option>
-    <option value="direct_structure">Direct structure</option>
-    <option value="high_accountability">High accountability</option>
-    <option value="education_first">Education first</option>
-    <option value="emotional_support">Emotional support</option>
-    <option value="not_sure">Not sure yet</option>
-  </select>
-
-  <label style={styles.labelStyle}>
-    How ready do you feel to begin?
-  </label>
-  <select
-    name="readinessLevel"
-    value={formData.readinessLevel}
-    onChange={handleChange}
-    required
-    style={styles.inputStyle}
-  >
-    <option value="">Select one</option>
-    <option value="curious">Curious, but nervous</option>
-    <option value="ready">Ready to begin</option>
-    <option value="very_ready">Very ready</option>
-    <option value="all_in">All in</option>
-  </select>
-</div>
         
         <select
           name="reproductiveStatus"
