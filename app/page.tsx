@@ -1,74 +1,114 @@
 import Image from 'next/image'
 import AuthAwareCta from '../components/AuthAwareCta'
+import MistReveal from '../components/MistReveal'
+import Button from '../components/Button'
 
 export default function Home() {
   return (
     <main
       style={{
-        background: '#000',
-        color: '#f5f0e8',
         minHeight: '100vh',
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
       <section
         style={{
           width: '100%',
-          maxWidth: '820px',
+          maxWidth: '980px',
           textAlign: 'center',
           margin: '0 auto',
-          padding: '140px 24px 120px 24px',
+          padding: '72px 24px 120px 24px',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          position: 'relative',
+          zIndex: 2,
         }}
       >
-        <div style={{ marginBottom: '32px' }}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            background:
+              'radial-gradient(circle at top, rgba(181,110,67,0.12), transparent 34%)',
+            filter: 'blur(60px)',
+            opacity: 0.9,
+          }}
+        />
+
+        <div
+          style={{
+            marginBottom: '28px',
+            animation: 'floatIn 1s ease both',
+          }}
+        >
+        <MistReveal>
           <Image
-            src="/blacklogo.jpeg"
+            src="/Logo.png"
             alt="Anastasis"
             width={180}
             height={180}
             style={{
               margin: '0 auto',
               display: 'block',
-              opacity: 0.9,
+              opacity: 0.92,
+              filter:
+                'drop-shadow(0 0 38px rgba(181,110,67,0.16))',
             }}
           />
-        </div>
-
+        
+      
+        
         <p
           style={{
-            marginTop: '64px',
-            letterSpacing: '6px',
-            fontSize: '14px',
+            marginTop: '22px',
+            letterSpacing: '7px',
+            fontSize: '12px',
             color: '#c58b57',
-            opacity: 0.9,
-            marginBottom: '80px',
+            opacity: 0.82,
+            marginBottom: '32px',
+            textTransform: 'uppercase',
+            animation: 'floatIn 1.2s ease both',
           }}
         >
-          ANASTASIS
+          Anastasis
         </p>
-
-        <h1
-          style={{
-            fontSize: 'clamp(2.5rem, 6vw, 5.2rem)',
-            lineHeight: 1.08,
-            fontWeight: 500,
-            maxWidth: '900px',
-            margin: '0 auto 40px auto',
-          }}
-        >
-          You did not fail your body.
-          <br />
-          You were handed a system
-          <br />
-          that was never built for women.
-        </h1>
+      </MistReveal>
+    </div>
+        
+          <h1
+            className="hero-headline-delay"
+            style={{
+              fontSize: 'clamp(2.3rem, 5vw, 4.8rem)',
+              lineHeight: 1.18,
+              fontWeight: 400,
+              maxWidth: '980px',
+              margin: '72px auto 42px auto',
+              letterSpacing: '-0.04em',
+              textAlign: 'center',
+              color: '#f5f0e8',
+              textWrap: 'balance',
+            }}
+          >
+            You did not fail your body.
+            <br />
+            You were handed a system
+            <br />
+            that was never built for women.
+          </h1>
+        
 
         <p
           style={{
             maxWidth: '760px',
-            margin: '0 auto 20px auto',
-            fontSize: 'clamp(1rem, 2vw, 1.25rem)',
-            lineHeight: 1.7,
-            color: '#d7c7b6',
+            margin: '0 auto 22px auto',
+            fontSize: 'clamp(1rem, 2vw, 1.2rem)',
+            lineHeight: 1.92,
+            color: 'rgba(215,199,182,0.84)',
+            animation: 'floatIn 1.3s ease both',
           }}
         >
           Most performance systems were shaped around male physiology, male recovery,
@@ -79,10 +119,11 @@ export default function Home() {
         <p
           style={{
             maxWidth: '760px',
-            margin: '0 auto 40px auto',
-            fontSize: 'clamp(1rem, 2vw, 1.15rem)',
-            lineHeight: 1.7,
-            color: '#d7c7b6',
+            margin: '0 auto 52px auto',
+            fontSize: 'clamp(1rem, 2vw, 1.12rem)',
+            lineHeight: 1.92,
+            color: 'rgba(215,199,182,0.78)',
+            animation: 'floatIn 1.45s ease both',
           }}
         >
           This is a woman-centered space for precision, relief, and answers. A place
@@ -93,53 +134,43 @@ export default function Home() {
         <div
           style={{
             display: 'flex',
-            gap: '16px',
+            gap: '18px',
             justifyContent: 'center',
             flexWrap: 'wrap',
-            marginTop: '60px',
+            marginTop: '56px',
           }}
         >
           <AuthAwareCta />
 
-          <a
-            href="#method"
-            style = {{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              border: '1px solid #c58b57',
-              color: '#f5f0e8',
-              padding: '15px 5px',
-              textDecoration: 'none',
-              borderRadius: '999px',
-              fontWeight: 500,
-              opacity: 0.85,
-            }}
-          >
-            Explore the Method
-          </a>
-        </div>
+  <Button href="#method" variant="secondary">
+  Explore the Method
+</Button>
+</div>
 
-        <div style={{ height: '120px' }} />
+        <div style={{ height: '160px' }} />
       </section>
 
       <section
         id="method"
         style={{
-          background: '#000',
-          color: '#f5f0e8',
-          padding: '180px 24px',
-          textAlign: 'center',
+          padding: '140px 24px 180px',
+          position: 'relative',
+          zIndex: 2,
         }}
       >
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <div
+          style={{
+            maxWidth: '980px',
+            margin: '0 auto',
+            textAlign: 'center',
+          }}
+        >
           <p
             style={{
               letterSpacing: '6px',
               fontSize: '12px',
               color: '#c58b57',
-              opacity: 0.85,
+              opacity: 0.78,
               marginBottom: '28px',
               textTransform: 'uppercase',
             }}
@@ -149,11 +180,12 @@ export default function Home() {
 
           <h2
             style={{
-              fontSize: 'clamp(2.2rem, 4.5vw, 4rem)',
-              lineHeight: 1.12,
-              letterSpacing: '-0.02em',
-              margin: '0 auto 36px auto',
-              maxWidth: '860px',
+              fontSize: 'clamp(2.3rem, 5vw, 4.6rem)',
+              lineHeight: 1.04,
+              letterSpacing: '-0.04em',
+              margin: '0 auto 42px auto',
+              maxWidth: '920px',
+              fontWeight: 500,
             }}
           >
             Most women do not plateau.
@@ -165,10 +197,10 @@ export default function Home() {
 
           <p
             style={{
-              fontSize: '1.15rem',
-              lineHeight: 1.85,
-              color: '#d7c7b6',
-              margin: '0 auto 70px auto',
+              fontSize: '1.12rem',
+              lineHeight: 1.95,
+              color: 'rgba(215,199,182,0.82)',
+              margin: '0 auto 90px auto',
               maxWidth: '760px',
             }}
           >
@@ -180,110 +212,70 @@ export default function Home() {
           <div
             style={{
               display: 'grid',
-              gap: '28px',
-              maxWidth: '820px',
-              margin: '0 auto 70px auto',
+              gap: '26px',
+              maxWidth: '860px',
+              margin: '0 auto 90px auto',
             }}
           >
-            <div
-              style={{
-                border: '1px solid rgba(197,139,87,0.22)',
-                borderRadius: '28px',
-                padding: '32px 28px',
-                background: 'rgba(255,255,255,0.01)',
-              }}
-            >
-              <h3
+            {[
+              {
+                title: 'You were taught to override signals.',
+                body:
+                  'Hunger, fatigue, inflammation, stalled progress, poor recovery, and nervous system stress were framed as weaknesses to push past instead of data to understand.',
+              },
+              {
+                title: 'You were given discipline without design.',
+                body:
+                  'Most women do not need more pressure. They need a system that accounts for female recovery, female stress response, female physiology, and real life.',
+              },
+              {
+                title: 'This method starts somewhere different.',
+                body:
+                  'Your body is not the problem to conquer. It is the blueprint to read. Once the system begins there, progress stops feeling forced and starts becoming inevitable.',
+              },
+            ].map((item, index) => (
+              <div
+                key={index}
                 style={{
-                  fontSize: '1.35rem',
-                  marginBottom: '14px',
-                  fontWeight: 500,
+                  background: 'rgba(18,18,18,0.56)',
+                  borderRadius: '34px',
+                  padding: '40px 34px',
+                  backdropFilter: 'blur(18px)',
+                  boxShadow:
+                    '0 24px 80px rgba(0,0,0,0.16)',
                 }}
               >
-                You were taught to override signals.
-              </h3>
-              <p
-                style={{
-                  fontSize: '1.02rem',
-                  lineHeight: 1.8,
-                  color: '#d7c7b6',
-                  margin: 0,
-                }}
-              >
-                Hunger, fatigue, inflammation, stalled progress, poor recovery, and nervous
-                system stress were framed as weaknesses to push past instead of data to
-                understand.
-              </p>
-            </div>
+                <h3
+                  style={{
+                    fontSize: '1.38rem',
+                    marginBottom: '18px',
+                    fontWeight: 500,
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  {item.title}
+                </h3>
 
-            <div
-              style={{
-                border: '1px solid rgba(197,139,87,0.22)',
-                borderRadius: '28px',
-                padding: '32px 28px',
-                background: 'rgba(255,255,255,0.01)',
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: '1.35rem',
-                  marginBottom: '14px',
-                  fontWeight: 500,
-                }}
-              >
-                You were given discipline without design.
-              </h3>
-              <p
-                style={{
-                  fontSize: '1.02rem',
-                  lineHeight: 1.8,
-                  color: '#d7c7b6',
-                  margin: 0,
-                }}
-              >
-                Most women do not need more pressure. They need a system that accounts for
-                female recovery, female stress response, female physiology, and real life.
-              </p>
-            </div>
-
-            <div
-              style={{
-                border: '1px solid rgba(197,139,87,0.22)',
-                borderRadius: '28px',
-                padding: '32px 28px',
-                background: 'rgba(255,255,255,0.01)',
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: '1.35rem',
-                  marginBottom: '14px',
-                  fontWeight: 500,
-                }}
-              >
-                This method starts somewhere different.
-              </h3>
-              <p
-                style={{
-                  fontSize: '1.02rem',
-                  lineHeight: 1.8,
-                  color: '#d7c7b6',
-                  margin: 0,
-                }}
-              >
-                Your body is not the problem to conquer. It is the blueprint to read. Once
-                the system begins there, progress stops feeling forced and starts becoming
-                inevitable.
-              </p>
-            </div>
+                <p
+                  style={{
+                    fontSize: '1.02rem',
+                    lineHeight: 1.95,
+                    color: 'rgba(215,199,182,0.82)',
+                    margin: 0,
+                  }}
+                >
+                  {item.body}
+                </p>
+              </div>
+            ))}
           </div>
 
           <p
             style={{
               fontSize: '1.08rem',
-              lineHeight: 1.85,
-              color: '#d7c7b6',
-              margin: '0 auto 38px auto',
+              lineHeight: 1.95,
+              color: 'rgba(215,199,182,0.8)',
+              margin: '0 auto 44px auto',
               maxWidth: '760px',
             }}
           >
@@ -293,42 +285,22 @@ export default function Home() {
           </p>
 
           <div
-            style={{
-              display: 'flex',
-              gap: '16px',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-            }}
-          >
-            <a
-              href="/program"
-              style={{
-                background: '#c58b57',
-                color: '#000',
-                padding: '14px 24px',
-                textDecoration: 'none',
-                borderRadius: '999px',
-                fontWeight: 600,
-              }}
-            >
-              View the Program
-            </a>
+  style={{
+    display: 'flex',
+    gap: '18px',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    marginTop: '32px',
+  }}
+>
+  <Button href="/program">
+    View the Program
+  </Button>
 
-            <a
-              href="/apply"
-              style={{
-                border: '1px solid #c58b57',
-                color: '#f5f0e8',
-                padding: '14px 24px',
-                textDecoration: 'none',
-                borderRadius: '999px',
-                fontWeight: 500,
-                opacity: 0.85,
-              }}
-            >
-              Apply Now
-            </a>
-          </div>
+  <Button href="/apply" variant="secondary">
+    Apply Now
+  </Button>
+</div>
         </div>
       </section>
     </main>

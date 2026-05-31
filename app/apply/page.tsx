@@ -1,6 +1,6 @@
 'use client'
 import * as styles from '../styles/globalstyles'
-
+import Button from '../../components/Button'
 import { useState } from 'react'
 
 function hasRelevantHealthInfo(value: string) {
@@ -29,6 +29,12 @@ export default function ApplyPage() {
     fullName: '',
     dateOfBirth: '',
     cityState: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: 'US',
     injuries: '',
     conditions: '',
     supervision: '',
@@ -82,33 +88,48 @@ export default function ApplyPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-  email: formData.email,
-  fullName: formData.fullName,
-  dateOfBirth: formData.dateOfBirth,
-  cityState: formData.cityState,
-  injuries: formData.injuries,
-  conditions: formData.conditions,
-  supervision: formData.supervision,
-  postpartumMonths: formData.postpartumMonths,
-  primaryGoal: formData.primaryGoal,
-  whyNow: formData.whyNow,
-  agreement: formData.agreement,
-  mediaConsent: formData.mediaConsent,
-  researchConsent: formData.researchConsent,
-  medicalClearance: formData.medicalClearance,
-  medicalClearanceFileName: formData.medicalClearanceFile?.name || '',
-  timestamp: new Date().toISOString(),
-  source: 'apply',
-  submitted: 'website',
-}),
-    })
+      email: formData.email,
+      fullName: formData.fullName,
+      dateOfBirth: formData.dateOfBirth,
+      cityState: formData.cityState,
+      address_line_1: formData.addressLine1,
+      address_line_2: formData.addressLine2,
+      city: formData.city,
+      state: formData.state,
+      postal_code: formData.postalCode,
+      country: formData.country,
+      address_verified: false,
+      injuries: formData.injuries,
+      conditions: formData.conditions,
+      supervision: formData.supervision,
+      postpartumMonths: formData.postpartumMonths,
+      primaryGoal: formData.primaryGoal,
+      whyNow: formData.whyNow,
+      agreement: formData.agreement,
+      mediaConsent: formData.mediaConsent,
+      researchConsent: formData.researchConsent,
+      medicalClearance: formData.medicalClearance,
+      medicalClearanceFileName: formData.medicalClearanceFile?.name || '',
+      timestamp: new Date().toISOString(),
+      submitted: 'website',
+    }),
+  })
 
    const data = await res.json().catch(() => null)
 
 console.log('Response:', data)
 
 if (!res.ok) {
-  throw new Error(data?.error || 'Request failed')
+  throw new Error(
+    [
+      data?.error,
+      data?.details,
+      data?.code ? `Code: ${data.code}` : '',
+      data?.hint ? `Hint: ${data.hint}` : '',
+    ]
+      .filter(Boolean)
+      .join(' — ') || 'Request failed'
+  )
 }
 
 if (data.redirect) {
@@ -248,22 +269,159 @@ setMessage('Application submitted successfully.')
             </div>
 
             <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle} htmlFor="cityState">
-                City &amp; State
-              </label>
-              <input
-                id="cityState"
-                name="cityState"
-                type="text"
-                required
-                value={formData.cityState}
-                onChange={handleChange}
-                style={styles.inputStyle}
-                placeholder="City, State"
-              />
-            </div>
+  <label style={styles.labelStyle} htmlFor="cityState">
+    City &amp; State
+  </label>
+  <input
+    id="cityState"
+    name="cityState"
+    type="text"
+    required
+    value={formData.cityState}
+    onChange={handleChange}
+    style={styles.inputStyle}
+    placeholder="City, State"
+  />
+</div>
           </div>
+<section
+  style={{
+    border: '1px solid rgba(197,139,87,0.16)',
+    borderRadius: '24px',
+    padding: '24px',
+    background: 'rgba(255,255,255,0.01)',
+    display: 'grid',
+    gap: '18px',
+  }}
+>
+  <div>
+    <p
+      style={{
+        margin: '0 0 8px',
+        color: '#c58b57',
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase',
+        fontSize: '0.74rem',
+      }}
+    >
+      Shipping Address
+    </p>
 
+    <p
+      style={{
+        margin: 0,
+        color: '#d7c7b6',
+        lineHeight: 1.6,
+        fontSize: '0.95rem',
+      }}
+    >
+      This is used for program-related shipments, Phoenix supplement fulfillment,
+      and future member gifts if applicable.
+    </p>
+  </div>
+
+  <div style={styles.fieldWrap}>
+    <label style={styles.labelStyle} htmlFor="addressLine1">
+      Address Line 1
+    </label>
+    <input
+      id="addressLine1"
+      name="addressLine1"
+      type="text"
+      required
+      value={formData.addressLine1}
+      onChange={handleChange}
+      style={styles.inputStyle}
+      placeholder="Street address"
+      autoComplete="address-line1"
+    />
+  </div>
+
+  <div style={styles.fieldWrap}>
+    <label style={styles.labelStyle} htmlFor="addressLine2">
+      Address Line 2
+    </label>
+    <input
+      id="addressLine2"
+      name="addressLine2"
+      type="text"
+      value={formData.addressLine2}
+      onChange={handleChange}
+      style={styles.inputStyle}
+      placeholder="Apartment, suite, unit, etc. optional"
+      autoComplete="address-line2"
+    />
+  </div>
+
+  <div style={styles.gridTwoCol}>
+    <div style={styles.fieldWrap}>
+      <label style={styles.labelStyle} htmlFor="city">
+        City
+      </label>
+      <input
+        id="city"
+        name="city"
+        type="text"
+        required
+        value={formData.city}
+        onChange={handleChange}
+        style={styles.inputStyle}
+        autoComplete="address-level2"
+      />
+    </div>
+
+    <div style={styles.fieldWrap}>
+      <label style={styles.labelStyle} htmlFor="state">
+        State
+      </label>
+      <input
+        id="state"
+        name="state"
+        type="text"
+        required
+        value={formData.state}
+        onChange={handleChange}
+        style={styles.inputStyle}
+        placeholder="TX"
+        autoComplete="address-level1"
+      />
+    </div>
+  </div>
+
+  <div style={styles.gridTwoCol}>
+    <div style={styles.fieldWrap}>
+      <label style={styles.labelStyle} htmlFor="postalCode">
+        ZIP / Postal Code
+      </label>
+      <input
+        id="postalCode"
+        name="postalCode"
+        type="text"
+        required
+        value={formData.postalCode}
+        onChange={handleChange}
+        style={styles.inputStyle}
+        autoComplete="postal-code"
+      />
+    </div>
+
+    <div style={styles.fieldWrap}>
+      <label style={styles.labelStyle} htmlFor="country">
+        Country
+      </label>
+      <input
+        id="country"
+        name="country"
+        type="text"
+        required
+        value={formData.country}
+        onChange={handleChange}
+        style={styles.inputStyle}
+        autoComplete="country-name"
+      />
+    </div>
+  </div>
+</section>
           <div style={styles.fieldWrap}>
             <label style={styles.labelStyle} htmlFor="injuries">
               Do you have any current or past injuries?
@@ -570,45 +728,34 @@ setMessage('Application submitted successfully.')
           </div>
 
           <div
-            style={{
-              display: 'flex',
-              gap: '16px',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              marginTop: '8px',
-            }}
-          >
-            <button
-              type="submit"
-              disabled={status === 'submitting'}
-              style={{
-                background: '#c58b57',
-                color: '#000',
-                padding: '14px 24px',
-                borderRadius: '999px',
-                border: 'none',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {status === 'submitting' ? 'Submitting...' : 'Submit Application'}
-            </button>
+  style={{
+    display: 'flex',
+    gap: '18px',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap',
+    marginTop: '8px',
+  }}
+>
+  <button
+    type="submit"
+    disabled={status === 'submitting'}
+    style={{
+      ...styles.primaryButtonStyle,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: '220px',
+      opacity: status === 'submitting' ? 0.65 : 1,
+    }}
+  >
+    {status === 'submitting' ? 'Submitting...' : 'Submit Application'}
+  </button>
 
-            <a
-              href="/program"
-              style={{
-                border: '1px solid #c58b57',
-                color: '#f5f0e8',
-                padding: '14px 24px',
-                textDecoration: 'none',
-                borderRadius: '999px',
-                fontWeight: 500,
-                opacity: 0.85,
-              }}
-            >
-              Return to Program
-            </a>
-          </div>
+  <Button href="/program" variant="secondary">
+    Return to Program
+  </Button>
+</div>
 
           {message ? (
             <p

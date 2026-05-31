@@ -1,12 +1,64 @@
-import Link from 'next/link'
 import * as styles from '../styles/globalstyles'
-import { getClientData } from '@/lib/supabase/getClient'
+import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import { getNextLesson } from '@/lib/education/getNextLesson'
+import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
+import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
+import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
+import DashboardStatusDock from '@/components/DashboardStatusDock'
+import SymptomQuickLog from '@/components/SymptomQuickLog'
 
 export default async function DashboardPage() {
-  const assessmentStatus = 'available'
-  const program = 'ignite'
-  const client = await getClientData()
-  
+  const { supabase, client, user } = await getDashboardContext()
+
+  const monthStart = new Date()
+  monthStart.setDate(1)
+  monthStart.setHours(0, 0, 0, 0)
+
+  const monthStartDate = monthStart.toISOString().split('T')[0]
+
+  const { data: monthlyAssessment } = await supabase
+    .from('assessments')
+    .select('id')
+    .eq('client_id', client.client_id)
+    .gte('submitted_at', monthStart.toISOString())
+    .limit(1)
+    .maybeSingle()
+
+  const { data: monthlyMeasurements } = await supabase
+    .from('measurement_logs')
+    .select('id')
+    .eq('client_id', client.client_id)
+    .gte('log_date', monthStartDate)
+    .limit(1)
+    .maybeSingle()
+
+  const assessmentCompletedThisMonth = !!monthlyAssessment
+  const measurementsCompletedThisMonth = !!monthlyMeasurements
+
+  const dailyStructureReviewedThisMonth =
+    client.daily_structure_reviewed_at
+      ? new Date(client.daily_structure_reviewed_at) >= monthStart
+      : false
+
+  const monthlyAssessmentsDueCount = [
+    !assessmentCompletedThisMonth,
+    !dailyStructureReviewedThisMonth,
+    !measurementsCompletedThisMonth,
+  ].filter(Boolean).length
+
+  const lesson = await getNextLesson({
+    supabase,
+    client,
+    user,
+  })
+
+  const dailyPlan = await getDailyExecutionPlan({
+    supabase,
+    client,
+  })
+
+  const cycleStatus = getCycleStatus(client)
+
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
@@ -15,121 +67,43 @@ export default async function DashboardPage() {
         <h1 style={styles.heroTitleStyle}>Your system for today.</h1>
 
         <p style={styles.heroTextStyle}>
-          This is your home base for assessment, training, nutrition, recovery,
-          and daily execution.
+          This is your home base for today’s execution. The system shows what
+          matters now, so you do not have to hold the whole day in your head at
+          once.
         </p>
 
-        <section
-  style={styles.cartBoxStyle}
-  className="dashboard-section"
->
-          <h2 style={styles.sectionTitleStyle}>Assessment</h2>
-
-          <p style={styles.bodyStyle}>
-            Complete your assessment so your program can stay aligned with your
-            current body, strength, recovery, and goals.
-          </p>
-
-          {assessmentStatus === 'available' && (
-            <Link
-              href={`/dashboard/assessment/start?program=${program}`}
-              style={styles.primaryButtonStyle}
-            >
-              Start Assessment
-            </Link>
-          )}
-        </section>
-
-        <section
-  style={styles.cartBoxStyle}
-  className="dashboard-section"
->
-          <h2 style={styles.sectionTitleStyle}>Today’s Training</h2>
-
-          <p style={styles.bodyStyle}>
-            View your current program and complete today’s assigned workout.
-          </p>
-
-          <Link
-            href={`/dashboard/program/${program}/plan`}
-            style={styles.primaryButtonStyle}
+        {lesson && (
+          <section
+            style={{
+              ...styles.cartBoxStyle,
+              marginBottom: '42px',
+            }}
+            className="dashboard-section"
           >
-            View Workout Program
-          </Link>
+            <p style={styles.eyebrowStyle}>Today’s Insight</p>
 
-          <label style={styles.bodyStyle}>
-            <input type="checkbox" /> Today’s workout completed
-          </label>
+            <h2 style={styles.sectionTitleStyle}>{lesson.title}</h2>
+
+            <p style={styles.bodyStyle}>{lesson.body}</p>
+          </section>
+        )}
+
+        <DashboardStatusDock
+          client={client}
+          cycleStatus={cycleStatus}
+          dailyPlan={dailyPlan}
+          assessmentDueCount={monthlyAssessmentsDueCount}
+        />
+
+        <section style={{ marginTop: '54px' }}>
+          <DashboardFlowCarousel
+            cards={dailyPlan.cards}
+            currentCardId={dailyPlan.currentCard?.id}
+          />
         </section>
 
-        <section
-  style={styles.cartBoxStyle}
-  className="dashboard-section"
->
-          <h2 style={styles.sectionTitleStyle}>Nutrition</h2>
-
-          <p style={styles.bodyStyle}>
-            Track your macros, meals, and water intake for the day.
-          </p>
-
-          <Link href="/dashboard/nutrition" style={styles.primaryButtonStyle}>
-            View Nutrition Dashboard
-          </Link>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle}>Protein</label>
-            <input style={styles.inputStyle} placeholder="grams" />
-          </div>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle}>Carbs</label>
-            <input style={styles.inputStyle} placeholder="grams" />
-          </div>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle}>Fats</label>
-            <input style={styles.inputStyle} placeholder="grams" />
-          </div>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle}>Water Intake</label>
-            <input style={styles.inputStyle} placeholder="ounces" />
-          </div>
-
-          <Link href="/dashboard/nutrition/meals" style={styles.secondaryButtonStyle}>
-            Log Per Meal
-          </Link>
-        </section>
-
-        <section
-  style={styles.cartBoxStyle}
-  className="dashboard-section"
->
-          <h2 style={styles.sectionTitleStyle}>Daily Checklist</h2>
-
-          <div className="dashboard-checklist">
-            <label><input type="checkbox" /> Workout completed</label><br />
-            <label><input type="checkbox" /> Macros logged</label><br />
-            <label><input type="checkbox" /> Water logged</label><br />
-            <label><input type="checkbox" /> Daily check-in completed</label>
-          </div>
-        </section>
-
-        <section
-  style={styles.cartBoxStyle}
-  className="dashboard-section"
->
-          <h2 style={styles.sectionTitleStyle}>Progress Snapshot</h2>
-
-          <p style={styles.bodyStyle}>
-            Your progress chart will appear here after your second assessment.
-          </p>
-
-          <div style={styles.bodyStyle}>
-            <p><strong>Starting Point:</strong> Pending</p>
-            <p><strong>Current Progress:</strong> Pending</p>
-            <p><strong>Change Over Time:</strong> Pending</p>
-          </div>
+        <section style={{ marginTop: '54px' }}>
+          <SymptomQuickLog clientId={client.client_id} />
         </section>
       </div>
     </main>

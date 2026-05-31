@@ -1,51 +1,86 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
 export async function POST(req: Request) {
   try {
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: 'Missing Supabase server environment variables.' },
+        { status: 500 }
+      )
+    }
+
     const body = await req.json()
 
-    const webhookUrl = process.env.N8N_CHECK_ACCESS_WEBHOOK_URL
+    const clientId = body.client_id || body.clientId || ''
+    const email = body.email || ''
 
-    if (!webhookUrl) {
+    if (!clientId && !email) {
       return NextResponse.json(
-        { error: 'Missing check access webhook URL' },
+        { error: 'Missing client_id or email.' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    let query = supabase.from('clients').select('*').limit(1)
+
+    if (clientId) {
+      query = query.eq('client_id', clientId)
+    } else {
+      query = query.eq('email', email)
+    }
+
+    const { data: clients, error } = await query
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'Access check failed.', details: error.message },
         { status: 500 }
       )
     }
 
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: body.client_id || '',
-        email: body.email || '',
+    const client = clients?.[0]
+
+    if (!client) {
+      return NextResponse.json({
+        access: false,
+        client_id: clientId,
+        email,
         program: body.program || '',
-        source: 'dashboard-access-check',
-        checkedAt: new Date().toISOString(),
-      }),
-    })
-
-    const data = await response.json().catch(() => null)
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: data?.error || 'Access check failed' },
-        { status: 500 }
-      )
+        verified_purchase: false,
+        subscription_status: '',
+        redirect: '',
+      })
     }
+
+    const subscriptionStatus =
+      client.subscription_status || client.status || ''
+
+    const hasAccess =
+      client.access === true ||
+      client.active === true ||
+      client.verified_purchase === true ||
+      ['active', 'trialing', 'paid', 'gifted'].includes(
+        String(subscriptionStatus).toLowerCase()
+      )
 
     return NextResponse.json({
-      access: Boolean(data?.access),
-      client_id: data?.client_id || body.client_id || '',
-      email: data?.email || body.email || '',
-      program: data?.program || body.program || '',
-      verified_purchase: Boolean(data?.verified_purchase),
-      subscription_status: data?.subscription_status || '',
-      redirect: data?.redirect || '',
+      access: hasAccess,
+      client_id: client.client_id,
+      email: client.email,
+      program: client.program || body.program || '',
+      verified_purchase: Boolean(
+        client.verified_purchase || hasAccess
+      ),
+      subscription_status: subscriptionStatus,
+      redirect: hasAccess ? '/dashboard' : '',
     })
   } catch (error) {
     console.error('CHECK ACCESS ERROR:', error)

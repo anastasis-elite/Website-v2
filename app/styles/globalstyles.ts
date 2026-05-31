@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 
 export const pageStyle: CSSProperties = {
-  background: '#000',
+  background: 'transparent',
   color: '#f5f0e8',
   minHeight: '100vh',
   padding: '120px 24px',
@@ -10,6 +10,8 @@ export const pageStyle: CSSProperties = {
 export const containerStyle: CSSProperties = {
   maxWidth: '980px',
   margin: '0 auto',
+  position: 'relative',
+  zIndex: 2,
 }
 
 export const eyebrowStyle: CSSProperties = {
@@ -30,21 +32,22 @@ export const heroTitleStyle: CSSProperties = {
 }
 
 export const heroTextStyle: CSSProperties = {
-  fontSize: '1.12rem',
-  lineHeight: 1.9,
-  color: '#d7c7b6',
-  maxWidth: '780px',
-  marginBottom: '56px',
-}
-
-export const sectionStyle: CSSProperties = {
+  fontSize: '1.08rem',
+  lineHeight: 1.95,
+  color: 'rgba(215,199,182,0.82)',
+  maxWidth: '760px',
   marginBottom: '72px',
 }
 
+export const sectionStyle: CSSProperties = {
+  marginBottom: '92px',
+}
+
 export const sectionTitleStyle: CSSProperties = {
-  fontSize: '1.7rem',
-  marginBottom: '18px',
+  fontSize: '1.55rem',
+  marginBottom: '16px',
   fontWeight: 500,
+  letterSpacing: '-0.02em',
 }
 
 export const bodyStyle: CSSProperties = {
@@ -61,10 +64,14 @@ export const cardGridStyle: CSSProperties = {
 }
 
 export const cardStyle: CSSProperties = {
-  border: '1px solid rgba(197,139,87,0.18)',
-  borderRadius: '24px',
-  padding: '28px 24px',
-  background: 'rgba(255,255,255,0.01)',
+  border: 'none',
+  borderRadius: '28px',
+  padding: '32px 28px',
+  background: 'rgba(255,255,255,0.025)',
+
+  boxShadow: `
+    0 18px 60px rgba(0,0,0,0.16)
+  `,
 }
 
 export const cardTitleStyle: CSSProperties = {
@@ -81,11 +88,18 @@ export const cardTextStyle: CSSProperties = {
 }
 
 export const cartBoxStyle: CSSProperties = {
-  border: '1px solid rgba(197,139,87,0.22)',
-  borderRadius: '28px',
-  padding: '32px',
-  background: 'rgba(255,255,255,0.01)',
-  marginBottom: '48px',
+  background: 'rgba(18,18,18,0.52)',
+  border: 'none',
+  borderRadius: '34px',
+  padding: '38px',
+  marginBottom: '36px',
+
+  backdropFilter: 'blur(18px)',
+
+  boxShadow: `
+    0 24px 80px rgba(0,0,0,0.18),
+    inset 0 0 30px rgba(255,255,255,0.015)
+  `,
 }
 
 export const buttonRowStyle: CSSProperties = {
@@ -95,24 +109,29 @@ export const buttonRowStyle: CSSProperties = {
 }
 
 export const primaryButtonStyle: CSSProperties = {
-  background: '#c58b57',
-  color: '#000',
-  padding: '14px 24px',
+  background:
+    'linear-gradient(180deg, rgba(181,110,67,0.58), rgba(120,72,44,0.46))',
+  color: '#f5f0e8',
+  padding: '15px 26px',
   borderRadius: '999px',
   border: 'none',
-  fontWeight: 600,
+  fontWeight: 500,
   cursor: 'pointer',
   fontSize: '1rem',
+  boxShadow: '0 12px 34px rgba(120,72,44,0.16)',
+  transition: 'all 0.22s ease',
 }
 
 export const secondaryButtonStyle: CSSProperties = {
-  border: '1px solid #c58b57',
+  border: '1px solid rgba(181,110,67,0.28)',
   color: '#f5f0e8',
   padding: '14px 24px',
   textDecoration: 'none',
   borderRadius: '999px',
   fontWeight: 500,
-  opacity: 0.85,
+  background: 'rgba(181,110,67,0.055)',
+  backdropFilter: 'blur(12px)',
+  transition: 'all 0.22s ease',
 }
 
 export const quietLinkStyle: CSSProperties = {
@@ -143,6 +162,15 @@ export const labelStyle: CSSProperties = {
   lineHeight: 1.5,
 }
 
+export const h1Style: CSSProperties = {
+  fontSize: '1.9rem',
+  fontWeight: 700,
+  marginTop: '64px',
+  marginBottom: '16px',
+  letterSpacing: '-0.01em',
+  color: '#f5f0e8',
+}
+
 export const h2Style: CSSProperties = {
   fontSize: '1.6rem',
   fontWeight: 500,
@@ -155,17 +183,61 @@ export const h2Style: CSSProperties = {
 export const inputStyle: CSSProperties = {
   width: '100%',
   minWidth: 0,
-  background: '#0a0a0a',
+
+  background: 'rgba(255,255,255,0.03)',
+
   color: '#f5f0e8',
-  border: '1px solid rgba(197,139,87,0.22)',
-  borderRadius: '16px',
-  padding: '14px 16px',
+
+  border: 'none',
+
+  borderRadius: '18px',
+
+  padding: '16px 18px',
+
   fontSize: '1rem',
+
   boxSizing: 'border-box',
+
+  backdropFilter: 'blur(14px)',
+
+  boxShadow: `
+    inset 0 0 24px rgba(0,0,0,0.18)
+  `,
 }
 
 export const textareaStyle: CSSProperties = {
   ...inputStyle,
   minHeight: '120px',
   resize: 'vertical',
+}
+
+export const compactCardGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+  gap: '14px',
+}
+
+export const compactCardStyle: CSSProperties = {
+  border: '1px solid rgba(181,110,67,0.12)',
+  borderRadius: '22px',
+  padding: '20px 18px',
+  background: 'rgba(255,255,255,0.022)',
+  boxShadow: `
+    0 14px 44px rgba(0,0,0,0.14),
+    inset 0 0 22px rgba(255,255,255,0.012)
+  `,
+}
+
+export const compactCardTitleStyle: CSSProperties = {
+  fontSize: '0.92rem',
+  color: '#f5f0e8',
+  margin: '0 0 8px 0',
+  fontWeight: 500,
+}
+
+export const compactCardTextStyle: CSSProperties = {
+  fontSize: '0.98rem',
+  lineHeight: 1.5,
+  color: '#d7c7b6',
+  margin: 0,
 }

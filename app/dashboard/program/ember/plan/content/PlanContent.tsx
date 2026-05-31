@@ -1,6 +1,10 @@
 import * as styles from '../../../../../styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import WorkoutTracker from '@/components/WorkoutTracker'
+import {
+  getCycleTrainingAdjustment,
+  applyCycleTrainingAdjustment,
+} from '@/lib/cycle/getCycleTrainingAdjustment'
 
 export default async function PlanContent() {
   const { supabase, client } = await getDashboardContext()
@@ -49,7 +53,17 @@ export default async function PlanContent() {
   const todaysWorkout = days.find(
     (day: any) => day.day_name === todayName
   )
+const cycleAdjustment = getCycleTrainingAdjustment(client)
 
+const adjustedExercises = todaysWorkout?.exercises?.length
+  ? todaysWorkout.exercises.map((exercise: any) =>
+      applyCycleTrainingAdjustment({
+        exercise,
+        adjustment: cycleAdjustment,
+      })
+    )
+  : []
+  
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
@@ -76,15 +90,15 @@ export default async function PlanContent() {
                 </p>
               ) : null}
 
-              {todaysWorkout.exercises?.length ? (
-                <WorkoutTracker
-                  clientId={client.client_id}
-                  authUserId={client.auth_user_id}
-                  program={output.program}
-                  dayName={todaysWorkout.day_name}
-                  exercises={todaysWorkout.exercises}
-                />
-              ) : (
+            {adjustedExercises.length ? (
+  <WorkoutTracker
+    clientId={client.client_id}
+    authUserId={client.auth_user_id}
+    program={output.program}
+    dayName={todaysWorkout.day_name}
+    exercises={adjustedExercises}
+  />
+) : (
                 <p style={styles.bodyStyle}>
                   Rest day or no workout assigned.
                 </p>

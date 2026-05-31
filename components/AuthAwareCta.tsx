@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { createClient } from '../lib/supabase/client'
+import Button from './Button'
 
 export default function AuthAwareCta() {
   const [loggedIn, setLoggedIn] = useState(false)
@@ -24,13 +24,13 @@ export default function AuthAwareCta() {
 
   if (loading) return null
 
-  return loggedIn ? (
-    <Link href="/dashboard" className="button primary">
-      Continue Your Program
-    </Link>
-  ) : (
-    <Link href="/apply" className="button primary">
-      Apply Now
-    </Link>
-  )
+return loggedIn ? (
+  <Button href="/dashboard">
+    Continue Your Program
+  </Button>
+) : (
+  <Button href="/apply">
+    Apply Now
+  </Button>
+)
 }

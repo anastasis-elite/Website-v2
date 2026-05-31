@@ -1,7 +1,11 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export async function getDashboardContext() {
+export async function getDashboardContext({
+  allowIncompleteOnboarding = false,
+}: {
+  allowIncompleteOnboarding?: boolean
+} = {}) {
   const supabase = await createClient()
 
   const {
@@ -25,6 +29,17 @@ export async function getDashboardContext() {
 
   if (!client) {
     throw new Error(`No client found for auth user: ${user.id}`)
+  }
+
+  if (
+    !allowIncompleteOnboarding &&
+    (
+      client.onboarding_completed !== true ||
+      !client.birthdate ||
+      !client.address_line_1
+    )
+  ) {
+    redirect('/onboarding/profile')
   }
 
   return {

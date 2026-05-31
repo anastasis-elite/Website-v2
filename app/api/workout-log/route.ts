@@ -36,7 +36,7 @@ export async function POST(req: Request) {
         day_name,
         workout_date,
         exercise_logs,
-        completed: false,
+        completed: body.completed ?? true,
         updated_at: new Date().toISOString(),
       })
 

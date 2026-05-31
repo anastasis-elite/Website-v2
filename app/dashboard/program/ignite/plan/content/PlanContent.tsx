@@ -1,6 +1,10 @@
 import * as styles from '../../../../../styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import WorkoutTracker from '@/components/WorkoutTracker'
+import {
+  getCycleTrainingAdjustment,
+  applyCycleTrainingAdjustment,
+} from '@/lib/cycle/getCycleTrainingAdjustment'
 
 export default async function PlanContent() {
   const { supabase, client } = await getDashboardContext()
@@ -32,7 +36,8 @@ export default async function PlanContent() {
           <p style={styles.eyebrowStyle}>Program Output</p>
           <h1 style={styles.heroTitleStyle}>Your program is being built.</h1>
           <p style={styles.heroTextStyle}>
-            Once your assessment data has been processed, your personalized plan will appear here.
+            Once your assessment data has been processed, your personalized plan
+            will appear here.
           </p>
         </div>
       </main>
@@ -49,6 +54,17 @@ export default async function PlanContent() {
   const todaysWorkout = days.find(
     (day: any) => day.day_name === todayName
   )
+
+  const cycleAdjustment = getCycleTrainingAdjustment(client)
+
+  const adjustedExercises = todaysWorkout?.exercises?.length
+    ? todaysWorkout.exercises.map((exercise: any) =>
+        applyCycleTrainingAdjustment({
+          exercise,
+          adjustment: cycleAdjustment,
+        })
+      )
+    : []
 
   return (
     <main style={styles.pageStyle}>
@@ -76,13 +92,53 @@ export default async function PlanContent() {
                 </p>
               ) : null}
 
-              {todaysWorkout.exercises?.length ? (
+              <div
+                style={{
+                  background: cycleAdjustment.cautionActive
+                    ? 'rgba(181,110,67,0.12)'
+                    : 'rgba(255,255,255,0.03)',
+                  borderRadius: '24px',
+                  padding: '22px',
+                  marginBottom: '28px',
+                }}
+              >
+                <p
+                  style={{
+                    ...styles.eyebrowStyle,
+                    marginBottom: '10px',
+                  }}
+                >
+                  Cycle-Aware Training
+                </p>
+
+                <h3
+                  style={{
+                    margin: '0 0 10px',
+                    fontSize: '1.2rem',
+                    fontWeight: 500,
+                    color: '#f5f0e8',
+                  }}
+                >
+                  {cycleAdjustment.label}
+                </h3>
+
+                <p
+                  style={{
+                    ...styles.bodyStyle,
+                    margin: 0,
+                  }}
+                >
+                  {cycleAdjustment.note}
+                </p>
+              </div>
+
+              {adjustedExercises.length ? (
                 <WorkoutTracker
                   clientId={client.client_id}
                   authUserId={client.auth_user_id}
                   program={output.program}
                   dayName={todaysWorkout.day_name}
-                  exercises={todaysWorkout.exercises}
+                  exercises={adjustedExercises}
                 />
               ) : (
                 <p style={styles.bodyStyle}>
@@ -101,7 +157,8 @@ export default async function PlanContent() {
           <section style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>Program saved.</h2>
             <p style={styles.bodyStyle}>
-              The program output row exists, but workout days have not been calculated yet.
+              The program output row exists, but workout days have not been
+              calculated yet.
             </p>
           </section>
         )}
