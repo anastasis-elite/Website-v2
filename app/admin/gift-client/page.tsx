@@ -13,6 +13,7 @@ export default function GiftClientPage() {
     phone: '',
     program: 'ignite',
     durationMonths: '12',
+    temporaryPassword: '',
   })
 
   const [responseMessage, setResponseMessage] = useState('')
