@@ -131,8 +131,7 @@ const authUserId = authData.user.id
   process.env.NEXT_PUBLIC_APP_URL ||
   'https://anastasiselite.com'
 
-const dashboardLink =
-  `${appUrl}/dashboard`
+const onboardingLink = `${appUrl}/onboarding/profile`
 
 const termsLinks = {
   terms: `${appUrl}/terms`,
@@ -160,7 +159,7 @@ await fetch(`${appUrl}/api/email/send`, {
       <p><strong>Temporary Password:</strong> ${temporaryPassword}</p>
 
       <p>
-        <a href="${dashboardLink}">
+        <a href="${onboardingLink}">
           Access Your Dashboard
         </a>
       </p>
