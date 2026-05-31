@@ -1,7 +1,29 @@
 import Link from 'next/link'
 import * as styles from '../styles/globalstyles'
 
-export default function VerifiedPage() {
+type Props = {
+  searchParams?: {
+    session_id?: string
+    program?: string
+    client_id?: string
+    clientId?: string
+    email?: string
+    birthdate?: string
+  }
+}
+
+export default function VerifiedPage({ searchParams }: Props) {
+  const program = searchParams?.program || ''
+  const clientId = searchParams?.client_id || searchParams?.clientId || ''
+  const email = searchParams?.email || ''
+  const birthdate = searchParams?.birthdate || ''
+
+  const createLoginHref = `/create-login?program=${encodeURIComponent(
+    program
+  )}&client_id=${encodeURIComponent(clientId)}&email=${encodeURIComponent(
+    email
+  )}&birthdate=${encodeURIComponent(birthdate)}`
+
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
@@ -25,10 +47,7 @@ export default function VerifiedPage() {
           </p>
 
           <div style={styles.buttonRowStyle}>
-            <Link
-              href="/create-login"
-              style={styles.primaryButtonStyle}
-            >
+            <Link href={createLoginHref} style={styles.primaryButtonStyle}>
               Create Your Login
             </Link>
           </div>
