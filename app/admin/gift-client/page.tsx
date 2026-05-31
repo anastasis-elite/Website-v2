@@ -82,7 +82,13 @@ export default function GiftClientPage() {
           onSubmit={handleSubmit}
           style={styles.cartBoxStyle}
         >
-          <div style={styles.formGridStyle}>
+          <div
+  style={{
+    display: 'grid',
+    gap: 16,
+    width: '100%',
+  }}
+>
             <input
               type="password"
               name="adminSecret"
@@ -90,7 +96,14 @@ export default function GiftClientPage() {
               value={formData.adminSecret}
               onChange={handleChange}
               required
-              style={styles.inputStyle}
+              style={{
+  width: '100%',
+  padding: '14px 16px',
+  borderRadius: 12,
+  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'rgba(255,255,255,0.04)',
+  color: 'white',
+}}
             />
 
             <input
@@ -100,7 +113,14 @@ export default function GiftClientPage() {
               value={formData.fullName}
               onChange={handleChange}
               required
-              style={styles.inputStyle}
+              style={{
+  width: '100%',
+  padding: '14px 16px',
+  borderRadius: 12,
+  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'rgba(255,255,255,0.04)',
+  color: 'white',
+}}
             />
 
             <input
@@ -110,7 +130,14 @@ export default function GiftClientPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              style={styles.inputStyle}
+              style={{
+  width: '100%',
+  padding: '14px 16px',
+  borderRadius: 12,
+  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'rgba(255,255,255,0.04)',
+  color: 'white',
+}}
             />
 
             <input
@@ -119,14 +146,28 @@ export default function GiftClientPage() {
               placeholder="Phone"
               value={formData.phone}
               onChange={handleChange}
-              style={styles.inputStyle}
+              style={{
+  width: '100%',
+  padding: '14px 16px',
+  borderRadius: 12,
+  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'rgba(255,255,255,0.04)',
+  color: 'white',
+}}
             />
 
             <select
               name="program"
               value={formData.program}
               onChange={handleChange}
-              style={styles.inputStyle}
+              style={{
+  width: '100%',
+  padding: '14px 16px',
+  borderRadius: 12,
+  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'rgba(255,255,255,0.04)',
+  color: 'white',
+}}
             >
               <option value="ember">Ember</option>
               <option value="ignite">Ignite</option>
