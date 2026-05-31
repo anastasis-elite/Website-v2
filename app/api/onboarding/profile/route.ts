@@ -28,6 +28,7 @@ export async function POST(req: Request) {
         six_month_cycle_status: body.sixMonthCycleStatus || null,
         last_period_start: body.lastPeriodStart || null,
         average_cycle_length: Number(body.averageCycleLength || 28),
+        onboarding_data: body,
         cycle_tracking_enabled:
           body.reproductiveStatus === 'cycling' ||
           body.reproductiveStatus === 'irregular_cycles',
