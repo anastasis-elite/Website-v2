@@ -47,7 +47,16 @@ export default function GiftClientPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data?.error || 'Gift client failed')
+        throw new Error(
+  [
+    data?.error,
+    data?.details,
+    data?.code ? `Code: ${data.code}` : '',
+    data?.status ? `Status: ${data.status}` : '',
+  ]
+    .filter(Boolean)
+    .join(' — ') || 'Gift client failed'
+)
       }
 
       setResponseMessage('Gifted client created successfully.')
