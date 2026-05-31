@@ -76,10 +76,14 @@ const { data: authData, error: authError } =
   })
 
 if (authError || !authData.user) {
+  console.error('GIFT AUTH ERROR:', authError)
+
   return NextResponse.json(
     {
       error: 'Auth user creation failed',
       details: authError?.message,
+      code: authError?.code,
+      status: authError?.status,
     },
     { status: 500 }
   )
