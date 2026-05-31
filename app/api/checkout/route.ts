@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: email || undefined,
       customer_creation: 'always',
-      success_url: `${origin}/dashboard/verified?session_id={CHECKOUT_SESSION_ID}&program=${program}`,
+      success_url: `${origin}/verified?session_id={CHECKOUT_SESSION_ID}&program=${program}`,
       cancel_url: `${origin}/program/${program}/cart`,
 
       metadata: {
