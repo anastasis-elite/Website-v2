@@ -123,6 +123,59 @@ const authUserId = authData.user.id
       `&email=${encodeURIComponent(email)}` +
       `&program=${encodeURIComponent(program)}`
 
+    const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  'https://anastasiselite.com'
+
+const dashboardLink =
+  `${appUrl}/dashboard`
+
+const termsLinks = {
+  terms: `${appUrl}/terms`,
+  disclaimer: `${appUrl}/disclaimer`,
+  conditions: `${appUrl}/conditions`,
+  media: `${appUrl}/consent/media`,
+  research: `${appUrl}/consent/research`,
+}
+
+await fetch(`${appUrl}/api/email/send`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    to: email,
+    subject: 'Welcome to Anastasis Elite',
+    html: `
+      <h1>Welcome to Anastasis Elite</h1>
+
+      <p>Your gifted access has been activated.</p>
+
+      <p><strong>Program:</strong> ${program}</p>
+
+      <p><strong>Temporary Password:</strong> ${temporaryPassword}</p>
+
+      <p>
+        <a href="${dashboardLink}">
+          Access Your Dashboard
+        </a>
+      </p>
+
+      <hr />
+
+      <p>Please review the following:</p>
+
+      <ul>
+        <li><a href="${termsLinks.terms}">Terms of Use</a></li>
+        <li><a href="${termsLinks.disclaimer}">Disclaimer</a></li>
+        <li><a href="${termsLinks.conditions}">Conditions</a></li>
+        <li><a href="${termsLinks.media}">Media Consent</a></li>
+        <li><a href="${termsLinks.research}">Research Consent</a></li>
+      </ul>
+    `,
+  }),
+})
+    
     return NextResponse.json({
       success: true,
       clientId,
