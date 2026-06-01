@@ -310,11 +310,9 @@ a {
   .dashboard-status-dock {
     top: 8px;
     left: 35px;
-    right: 150px;
-    transform: none;
+    position: fixed;
+    transform: translateX(-58%);
     z-index: 1002;
-    justify-content: center;
-    maxWidth: 75%;
   }
 }
 /* Dashboard */
