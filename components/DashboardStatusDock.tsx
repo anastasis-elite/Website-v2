@@ -29,14 +29,7 @@ const fatsRemaining = dailyRemaining.fats || 0
 const waterRemaining = dailyRemaining.water || 0
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        left: '18px',
-        top: '34vh',
-        zIndex: 80,
-      }}
-    >
+    <div className="dashboard-status-dock">
       <div
         style={{
           display: 'flex',
