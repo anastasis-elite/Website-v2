@@ -690,8 +690,8 @@ main > *,
   }
 
   .dashboard-menu {
-  top: 18px;
-  right: 18px;
+  top: 20px;
+  right: 10px;
   transform: translateX(-50%);
   width: 44px;
   height: 44px;
@@ -708,8 +708,8 @@ main > *,
 
 .dashboard-dropdown {
   top: 54px;
-  right: auto;
-  transform: translateX(-50%);
+  right: 50%;
+  transform: translateX(50%);
   width: min(238px, calc(100vw - 24px));
 }
 
