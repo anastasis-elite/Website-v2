@@ -308,10 +308,13 @@ a {
 
 @media (max-width: 700px) {
   .dashboard-status-dock {
-    left: 50%;
     top: 12px;
-    transform: translateX(-50%);
+    left: 12px;
+    right: 74px;
+    transform: none;
     z-index: 1002;
+    display: flex;
+    justify-content: center;
   }
 }
 /* Dashboard */
