@@ -96,33 +96,19 @@ export default function DashboardStatusDock({
         </div>
 
         <div
-          onClick={async () => {
-  const res = await fetch('/api/nutrition/add-water', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      clientId: client?.client_id,
-      ounces: oz,
-    }),
-  })
-
-  if (!res.ok) {
-    console.error('Water add failed:', await res.json())
-    return
-  }
-
-  setLocalWaterRemaining((prev) => Math.max(0, prev - oz))
-  setWaterOpen(false)
-}}
-          style={{ cursor: 'pointer' }}
-        >
-         <WaterCup
-  percentFull={waterPercent}
-  ouncesRemaining={localWaterRemaining}
-/>
-        </div>
+  onClick={() => {
+    setWaterOpen(!waterOpen)
+    setCycleOpen(false)
+    setMealOpen(false)
+    setAssessmentOpen(false)
+  }}
+  style={{ cursor: 'pointer' }}
+>
+  <WaterCup
+    percentFull={waterPercent}
+    ouncesRemaining={localWaterRemaining}
+  />
+</div>
 
         <button
           type="button"
