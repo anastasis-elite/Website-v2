@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { Resend } from 'resend'
 
 export const runtime = 'nodejs'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
   try {
@@ -17,17 +20,25 @@ export async function POST(req: Request) {
       temporaryPassword,
     } = body
 
-    if (
-      adminSecret !== process.env.ADMIN_GIFT_SECRET
-    ) {
+    if (adminSecret !== process.env.ADMIN_GIFT_SECRET) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!email || !fullName || !program || !temporaryPassword) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: 'Missing required fields' },
+        { status: 400 }
       )
     }
 
-    const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (temporaryPassword.length < 8) {
+      return NextResponse.json(
+        { error: 'Temporary password must be at least 8 characters.' },
+        { status: 400 }
+      )
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 
     const supabaseKey =
       process.env.SUPABASE_SERVICE_ROLE_KEY ||
@@ -40,62 +51,55 @@ export async function POST(req: Request) {
       )
     }
 
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseKey
-    )
+    if (!process.env.RESEND_API_KEY) {
+      return NextResponse.json(
+        { error: 'Missing Resend API key' },
+        { status: 500 }
+      )
+    }
 
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const normalizedEmail = email.toLowerCase().trim()
     const clientId = `AN-${Date.now()}`
 
-    const months =
-      Number(durationMonths || 12)
-
+    const months = Number(durationMonths || 12)
     const endsAt = new Date()
+    endsAt.setMonth(endsAt.getMonth() + months)
 
-    endsAt.setMonth(
-      endsAt.getMonth() + months
-    )
+    const { data: authData, error: authError } =
+      await supabase.auth.admin.createUser({
+        email: normalizedEmail,
+        password: temporaryPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName,
+          program,
+          access_type: 'gifted',
+        },
+      })
 
-    if (!temporaryPassword || temporaryPassword.length < 8) {
-  return NextResponse.json(
-    { error: 'Temporary password must be at least 8 characters.' },
-    { status: 400 }
-  )
-}
+    if (authError || !authData.user) {
+      console.error('GIFT AUTH ERROR:', authError)
 
-const { data: authData, error: authError } =
-  await supabase.auth.admin.createUser({
-    email,
-    password: temporaryPassword,
-    email_confirm: true,
-    user_metadata: {
-      full_name: fullName,
-      program,
-      access_type: 'gifted',
-    },
-  })
+      return NextResponse.json(
+        {
+          error: 'Auth user creation failed',
+          details: authError?.message,
+          code: authError?.code,
+          status: authError?.status,
+        },
+        { status: 500 }
+      )
+    }
 
-if (authError || !authData.user) {
-  console.error('GIFT AUTH ERROR:', authError)
+    const authUserId = authData.user.id
 
-  return NextResponse.json(
-    {
-      error: 'Auth user creation failed',
-      details: authError?.message,
-      code: authError?.code,
-      status: authError?.status,
-    },
-    { status: 500 }
-  )
-}
-
-const authUserId = authData.user.id
-    
     const payload = {
       client_id: clientId,
       full_name: fullName,
-      email,
-      login_email: email,
+      email: normalizedEmail,
+      login_email: normalizedEmail,
       auth_user_id: authUserId,
       phone,
       program,
@@ -103,88 +107,107 @@ const authUserId = authData.user.id
       verified_purchase: true,
       access: true,
       active: true,
-      subscription_started_at:
-        new Date().toISOString(),
-      subscription_ends_at:
-        endsAt.toISOString(),
+      subscription_started_at: new Date().toISOString(),
+      subscription_ends_at: endsAt.toISOString(),
     }
 
-    const { error } = await supabase
+    const { error: clientError } = await supabase
       .from('clients')
       .insert(payload)
 
-    if (error) {
+    if (clientError) {
+      return NextResponse.json(
+        { error: clientError.message },
+        { status: 500 }
+      )
+    }
+
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      'https://anastasiselite.com'
+
+    const onboardingLink = `${appUrl}/onboarding/profile`
+
+    const createLoginLink =
+      `${appUrl}/create-login?client_id=${clientId}` +
+      `&email=${encodeURIComponent(normalizedEmail)}` +
+      `&program=${encodeURIComponent(program)}`
+
+    const termsLinks = {
+      terms: `${appUrl}/terms`,
+      disclaimer: `${appUrl}/disclaimer`,
+      conditions: `${appUrl}/conditions`,
+      research: `${appUrl}/consent/research`,
+    }
+
+    const emailResult = await resend.emails.send({
+      from: 'Anastasis <onboarding@anastasiselite.com>',
+      to: normalizedEmail,
+      subject: 'Welcome to Anastasis Elite',
+      html: `
+        <h1>Welcome to Anastasis Elite</h1>
+
+        <p>Hi ${fullName},</p>
+
+        <p>Your gifted Anastasis access has been activated.</p>
+
+        <p><strong>Program:</strong> ${program}</p>
+
+        <p><strong>Temporary Password:</strong> ${temporaryPassword}</p>
+
+        <p>
+          <a href="${createLoginLink}">
+            Create Your Login
+          </a>
+        </p>
+
+        <p>
+          After creating your login, begin onboarding here:
+          <br />
+          <a href="${onboardingLink}">
+            Begin Your Onboarding
+          </a>
+        </p>
+
+        <hr />
+
+        <p>Please review the following:</p>
+
+        <ul>
+          <li><a href="${termsLinks.terms}">Terms of Use</a></li>
+          <li><a href="${termsLinks.disclaimer}">Disclaimer</a></li>
+          <li><a href="${termsLinks.conditions}">Conditions</a></li>
+          <li><a href="${termsLinks.research}">Research Consent</a></li>
+        </ul>
+
+        <p>
+          Your progress, photos, and personal information are private.
+          Anastasis does not require permission to use your transformation for marketing.
+        </p>
+      `,
+    })
+
+    if (emailResult.error) {
+      console.error('RESEND EMAIL ERROR:', emailResult.error)
+
       return NextResponse.json(
         {
-          error: error.message,
+          error: 'Client was created, but email failed to send.',
+          details: emailResult.error.message,
         },
         { status: 500 }
       )
     }
 
-    const createLoginLink =
-      `/create-login?client_id=${clientId}` +
-      `&email=${encodeURIComponent(email)}` +
-      `&program=${encodeURIComponent(program)}`
-
-    const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL ||
-  'https://anastasiselite.com'
-
-const onboardingLink = `${appUrl}/onboarding/profile`
-
-const termsLinks = {
-  terms: `${appUrl}/terms`,
-  disclaimer: `${appUrl}/disclaimer`,
-  conditions: `${appUrl}/conditions`,
-  media: `${appUrl}/consent/media`,
-  research: `${appUrl}/consent/research`,
-}
-
-await fetch(`${appUrl}/api/email/send`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    to: email,
-    subject: 'Welcome to Anastasis Elite',
-    html: `
-      <h1>Welcome to Anastasis Elite</h1>
-
-      <p>Your gifted access has been activated.</p>
-
-      <p><strong>Program:</strong> ${program}</p>
-
-      <p><strong>Temporary Password:</strong> ${temporaryPassword}</p>
-
-      <p>
-        <a href="${onboardingLink}">
-          Access Your Dashboard
-        </a>
-      </p>
-
-      <hr />
-
-      <p>Please review the following:</p>
-
-      <ul>
-        <li><a href="${termsLinks.terms}">Terms of Use</a></li>
-        <li><a href="${termsLinks.disclaimer}">Disclaimer</a></li>
-        <li><a href="${termsLinks.conditions}">Conditions</a></li>
-        <li><a href="${termsLinks.media}">Media Consent</a></li>
-        <li><a href="${termsLinks.research}">Research Consent</a></li>
-      </ul>
-    `,
-  }),
-})
-    
     return NextResponse.json({
       success: true,
       clientId,
       createLoginLink,
+      emailSent: true,
     })
   } catch (error) {
+    console.error('GIFT CLIENT ROUTE ERROR:', error)
+
     return NextResponse.json(
       {
         error:
