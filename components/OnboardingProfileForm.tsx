@@ -79,6 +79,7 @@ export default function OnboardingProfileForm({ client }: { client: any }) {
         <input
           name="birthdate"
           type="date"
+          placeholder="Birthdate"
           required
           value={formData.birthdate}
           onChange={handleChange}
