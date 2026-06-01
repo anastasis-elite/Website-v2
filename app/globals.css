@@ -309,8 +309,8 @@ a {
 @media (max-width: 700px) {
   .dashboard-status-dock {
     top: 10px;
-    left: 18px;
-    right: 100px;
+    left: 25px;
+    right: 110px;
     transform: none;
     z-index: 1002;
     display: flex;
@@ -690,8 +690,8 @@ main > *,
   }
 
   .dashboard-menu {
-  top: 20px;
-  right: 10px;
+  top: 25px;
+  right: 5px;
   transform: translateX(-50%);
   width: 44px;
   height: 44px;
@@ -708,9 +708,9 @@ main > *,
 
 .dashboard-dropdown {
   top: 54px;
-  right: 50%;
+  right: 60%;
   transform: translateX(50%);
-  width: min(238px, calc(100vw - 24px));
+  width: min(200px, calc(100vw - 24px));
 }
 
   input,
