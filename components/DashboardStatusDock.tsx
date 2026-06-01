@@ -18,26 +18,34 @@ export default function DashboardStatusDock({
   dailyPlan,
   assessmentDueCount = 0,
 }: Props) {
-  const [open, setOpen] = useState(false)
+  const [cycleOpen, setCycleOpen] = useState(false)
+  const [mealOpen, setMealOpen] = useState(false)
+  const [waterOpen, setWaterOpen] = useState(false)
   const [assessmentOpen, setAssessmentOpen] = useState(false)
 
   const dailyRemaining = dailyPlan?.dailyRemaining || {}
+  const dailyTargets = dailyPlan?.dailyTargets || {}
 
-const proteinRemaining = dailyRemaining.protein || 0
-const carbsRemaining = dailyRemaining.carbs || 0
-const fatsRemaining = dailyRemaining.fats || 0
-const waterRemaining = dailyRemaining.water || 0
+  const proteinRemaining = dailyRemaining.protein || 0
+  const carbsRemaining = dailyRemaining.carbs || 0
+  const fatsRemaining = dailyRemaining.fats || 0
+  const waterRemaining = dailyRemaining.water || 0
+  const waterTarget = dailyTargets.water || 1
+
+  const waterPercent = Math.round(
+    ((waterTarget - waterRemaining) / waterTarget) * 100
+  )
 
   return (
     <div
-  className="dashboard-status-dock"
-  style={{
-    width: window.innerWidth <= 700 ? 'fit-content' : 'auto',
-    maxWidth: window.innerWidth <= 700 ? '80%' : 'none',
-    display: 'flex',
-    justifyContent: 'center',
-  }}
->
+      className="dashboard-status-dock"
+      style={{
+        width: window.innerWidth <= 700 ? 'fit-content' : 'auto',
+        maxWidth: window.innerWidth <= 700 ? '80%' : 'none',
+        display: 'flex',
+        justifyContent: 'center',
+      }}
+    >
       <div
         style={{
           display: 'flex',
@@ -54,13 +62,21 @@ const waterRemaining = dailyRemaining.water || 0
             '0 22px 70px rgba(0,0,0,0.32), inset 0 0 28px rgba(255,255,255,0.025)',
         }}
       >
-       <div onClick={() => setOpen(!open)}>
-  <CycleProgressOrb
-    cycleDay={cycleStatus?.cycleDay}
-    typicalCycleLength={cycleStatus?.typicalCycleLength || 30}
-    phase={cycleStatus?.phase}
-  />
-</div>
+        <div
+          onClick={() => {
+            setCycleOpen(!cycleOpen)
+            setMealOpen(false)
+            setWaterOpen(false)
+            setAssessmentOpen(false)
+          }}
+          style={{ cursor: 'pointer' }}
+        >
+          <CycleProgressOrb
+            cycleDay={cycleStatus?.cycleDay}
+            typicalCycleLength={cycleStatus?.typicalCycleLength || 30}
+            phase={cycleStatus?.phase}
+          />
+        </div>
 
         <div style={miniTextStyle}>
           <strong>{proteinRemaining}g</strong>
@@ -76,119 +92,126 @@ const waterRemaining = dailyRemaining.water || 0
           <strong>{fatsRemaining}g</strong>
           <span>fats</span>
         </div>
-        
-        <WaterCup
-  percentFull={Math.round(
-    ((dailyPlan.dailyTargets.water - waterRemaining) /
-      dailyPlan.dailyTargets.water) *
-      100
-  )}
-  ouncesRemaining={waterRemaining}
-/>
 
-        <Link href="/dashboard/nutrition" style={actionCircleStyle}>
-          +
-        </Link>
+        <div
+          onClick={() => {
+            setWaterOpen(!waterOpen)
+            setCycleOpen(false)
+            setMealOpen(false)
+            setAssessmentOpen(false)
+          }}
+          style={{ cursor: 'pointer' }}
+        >
+          <WaterCup
+            percentFull={waterPercent}
+            ouncesRemaining={waterRemaining}
+          />
+        </div>
 
         <button
           type="button"
-          onClick={() => setAssessmentOpen(!assessmentOpen)}
+          onClick={() => {
+            setMealOpen(!mealOpen)
+            setCycleOpen(false)
+            setWaterOpen(false)
+            setAssessmentOpen(false)
+          }}
+          style={actionCircleStyle}
+        >
+          +
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setAssessmentOpen(!assessmentOpen)
+            setCycleOpen(false)
+            setMealOpen(false)
+            setWaterOpen(false)
+          }}
           style={actionCircleStyle}
         >
           *
         </button>
       </div>
 
-      {open && (
-        <div
-          style={{
-            position: 'absolute',
-            left: '58px',
-            top: '0',
-            width: 'min(92vw, 420px)',
-            padding: '24px',
-            borderRadius: '28px',
-            background:
-              'linear-gradient(145deg, rgba(12,12,12,0.88), rgba(5,5,5,0.72))',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            boxShadow:
-              '0 28px 90px rgba(0,0,0,0.42), inset 0 0 34px rgba(255,255,255,0.02)',
-          }}
-        >
+      {cycleOpen && (
+        <div style={cyclePopupStyle}>
           <p style={bodyStyle}>
-  Cycle Day: {cycleStatus?.cycleDay || '—'} · Phase:{' '}
-  {cycleStatus?.phase || 'unknown'}
-</p>
-
-{cycleStatus?.cycleDay >=
-  (cycleStatus?.typicalCycleLength || 30) * 3 && (
-  <p
-    style={{
-      ...bodyStyle,
-      color: '#d89b9b',
-      marginTop: '10px',
-    }}
-  >
-    Your cycle appears significantly delayed. Consider whether pregnancy
-    testing or professional guidance may be appropriate.
-  </p>
-)}
-
-          <p style={bodyStyle}>
-            Remaining: {proteinRemaining}g protein ·{' '}
-            {carbsRemaining}g carbs · {fatsRemaining}g fats ·{' '}
-            {waterRemaining}oz water
+            Cycle Day: {cycleStatus?.cycleDay || '—'} · Phase:{' '}
+            {cycleStatus?.phase || 'unknown'}
           </p>
 
-          <div
-            style={{
-              display: 'flex',
-              gap: '10px',
-              flexWrap: 'wrap',
-              marginTop: '18px',
-            }}
-          >
-            <Link href="/dashboard/nutrition" style={buttonStyle}>
-              Add Meal
+          {cycleStatus?.cycleDay >=
+            (cycleStatus?.typicalCycleLength || 30) * 3 && (
+            <p
+              style={{
+                ...bodyStyle,
+                color: '#d89b9b',
+                marginTop: '10px',
+              }}
+            >
+              Your cycle appears significantly delayed. Consider whether
+              pregnancy testing or professional guidance may be appropriate.
+            </p>
+          )}
+
+          <div style={popupButtonRowStyle}>
+            <Link href="/dashboard/cycle" style={buttonStyle}>
+              Open Cycle
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {waterOpen && (
+        <div data-water-popup="true" style={waterPopupStyle}>
+          <p style={bodyStyle}>Quick Add Water</p>
+
+          <div style={waterGridStyle}>
+            {[8, 12, 16, 24].map((oz) => (
+              <button
+                key={oz}
+                type="button"
+                style={buttonStyle}
+                onClick={() => {
+                  // API wiring comes next.
+                  setWaterOpen(false)
+                }}
+              >
+                +{oz} oz
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {mealOpen && (
+        <div style={mealPopupStyle}>
+          <p style={bodyStyle}>
+            Remaining: {proteinRemaining}g protein · {carbsRemaining}g carbs ·{' '}
+            {fatsRemaining}g fats
+          </p>
+
+          <div style={mealButtonGridStyle}>
+            <Link href="/dashboard/nutrition?quick=meal" style={buttonStyle}>
+              Quick Add Meal
             </Link>
 
-            <Link href="/dashboard/cycle" style={buttonStyle}>
-              Cycle
+            <Link href="/dashboard/nutrition" style={buttonStyle}>
+              Open Nutrition Log
             </Link>
           </div>
         </div>
       )}
 
       {assessmentOpen && (
-        <div
-          style={{
-            position: 'absolute',
-            left: '74px',
-            top: '120px',
-            width: 'min(92vw, 420px)',
-            zIndex: 90,
-          }}
-        >
-          <DashboardAssessmentMiniCard
-            dueCount={assessmentDueCount}
-          />
+        <div style={assessmentPopupStyle}>
+          <DashboardAssessmentMiniCard dueCount={assessmentDueCount} />
         </div>
       )}
     </div>
   )
-}
-
-const circleStyle = {
-  width: '42px',
-  height: '42px',
-  borderRadius: '999px',
-  border: '1px solid rgba(181,110,67,0.32)',
-  background: 'rgba(181,110,67,0.12)',
-  color: '#f5f0e8',
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-  fontSize: '0.9rem',
 }
 
 const actionCircleStyle = {
@@ -203,7 +226,8 @@ const actionCircleStyle = {
   textDecoration: 'none',
   fontSize: '1.05rem',
   cursor: 'pointer',
-}
+  fontFamily: 'inherit',
+} as const
 
 const miniTextStyle = {
   display: 'grid',
@@ -221,6 +245,7 @@ const bodyStyle = {
   color: '#d7c7b6',
   lineHeight: 1.7,
   fontSize: '0.95rem',
+  margin: 0,
 } as const
 
 const buttonStyle = {
@@ -232,4 +257,67 @@ const buttonStyle = {
   fontWeight: 500,
   background: 'rgba(181,110,67,0.055)',
   fontSize: '0.86rem',
-}
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  textAlign: 'center',
+} as const
+
+const popupBaseStyle = {
+  position: 'absolute',
+  left: '58px',
+  padding: '20px',
+  borderRadius: '26px',
+  background:
+    'linear-gradient(145deg, rgba(12,12,12,0.9), rgba(5,5,5,0.74))',
+  backdropFilter: 'blur(24px)',
+  WebkitBackdropFilter: 'blur(24px)',
+  boxShadow:
+    '0 28px 90px rgba(0,0,0,0.42), inset 0 0 34px rgba(255,255,255,0.02)',
+  zIndex: 95,
+} as const
+
+const cyclePopupStyle = {
+  ...popupBaseStyle,
+  top: '0',
+  width: 'min(92vw, 420px)',
+} as const
+
+const waterPopupStyle = {
+  ...popupBaseStyle,
+  top: '180px',
+  width: '220px',
+} as const
+
+const mealPopupStyle = {
+  ...popupBaseStyle,
+  top: '230px',
+  width: 'min(92vw, 320px)',
+} as const
+
+const assessmentPopupStyle = {
+  position: 'absolute',
+  left: '74px',
+  top: '120px',
+  width: 'min(92vw, 420px)',
+  zIndex: 90,
+} as const
+
+const popupButtonRowStyle = {
+  display: 'flex',
+  gap: '10px',
+  flexWrap: 'wrap',
+  marginTop: '18px',
+} as const
+
+const waterGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: '10px',
+  marginTop: '12px',
+} as const
+
+const mealButtonGridStyle = {
+  display: 'grid',
+  gap: '10px',
+  marginTop: '14px',
+} as const
