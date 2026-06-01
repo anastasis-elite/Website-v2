@@ -603,6 +603,22 @@ select:focus {
   }
 }
 
+main,
+.page-shell,
+.hero,
+.section,
+.dashboard-section,
+form {
+  max-width: 100%;
+}
+
+main > *,
+.page-shell > *,
+.section > *,
+.hero > * {
+  max-width: 100%;
+}
+
 /* Mobile */
 
 @media (max-width: 700px) {
@@ -676,4 +692,24 @@ select:focus {
   select {
     font-size: 16px;
   }
+
+  main,
+.page-shell {
+  width: 100%;
+  max-width: 100%;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.hero,
+.section,
+.dashboard-home-button {
+  width: min(calc(100% - 28px), var(--max));
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dashboard-section {
+  width: 100%;
+}
 }
