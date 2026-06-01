@@ -186,18 +186,34 @@ export default function DashboardStatusDock({
 
           <div style={waterGridStyle}>
             {[8, 12, 16, 24].map((oz) => (
-              <button
-                key={oz}
-                type="button"
-                style={buttonStyle}
-                onClick={() => {
-                  // API wiring comes next.
-                  setWaterOpen(false)
-                }}
-              >
-                +{oz} oz
-              </button>
-            ))}
+  <button
+    key={oz}
+    type="button"
+    style={buttonStyle}
+    onClick={async () => {
+      const res = await fetch('/api/nutrition/add-water', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clientId: client?.client_id,
+          ounces: oz,
+        }),
+      })
+
+      if (!res.ok) {
+        console.error('Water add failed:', await res.json())
+        return
+      }
+
+      setLocalWaterRemaining((prev) => Math.max(0, prev - oz))
+      setWaterOpen(false)
+    }}
+  >
+    +{oz} oz
+  </button>
+))}
           </div>
         </div>
       )}
