@@ -156,12 +156,6 @@ export async function POST(req: Request) {
         <p><strong>Temporary Password:</strong> ${temporaryPassword}</p>
 
         <p>
-          <a href="${createLoginLink}">
-            Create Your Login
-          </a>
-        </p>
-
-        <p>
           After creating your login, begin onboarding here:
           <br />
           <a href="${onboardingLink}">
