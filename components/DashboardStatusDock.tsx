@@ -32,7 +32,8 @@ const waterRemaining = dailyRemaining.water || 0
     <div
   className="dashboard-status-dock"
   style={{
-    width: window.innerWidth <= 700 ? 'calc(100vw - 24px)' : 'auto',
+    width: window.innerWidth <= 700 ? 'fit-content' : 'auto',
+    maxWidth: window.innerWidth <= 700 ? '80%' : 'none',
     display: 'flex',
     justifyContent: 'center',
   }}
@@ -42,8 +43,8 @@ const waterRemaining = dailyRemaining.water || 0
           display: 'flex',
           flexDirection: window.innerWidth <= 700 ? 'row' : 'column',
           alignItems: 'center',
-          gap: window.innerWidth <= 700 ? '14px' : '10px',
-          padding: window.innerWidth <= 700 ? '10px 18px' : '10px 12px',
+          gap: window.innerWidth <= 700 ? '8px' : '10px',
+          padding: window.innerWidth <= 700 ? '8px 10px' : '10px 12px',
           borderRadius: '999px',
           background:
             'linear-gradient(145deg, rgba(12,12,12,0.72), rgba(5,5,5,0.48))',
