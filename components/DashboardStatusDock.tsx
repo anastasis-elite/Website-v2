@@ -14,6 +14,7 @@ type Props = {
 }
 
 export default function DashboardStatusDock({
+  client,
   cycleStatus,
   dailyPlan,
   assessmentDueCount = 0,
@@ -21,6 +22,7 @@ export default function DashboardStatusDock({
   const [cycleOpen, setCycleOpen] = useState(false)
   const [mealOpen, setMealOpen] = useState(false)
   const [waterOpen, setWaterOpen] = useState(false)
+  const [localWaterRemaining, setLocalWaterRemaining] = useState(waterRemaining)
   const [assessmentOpen, setAssessmentOpen] = useState(false)
 
   const dailyRemaining = dailyPlan?.dailyRemaining || {}
@@ -33,8 +35,8 @@ export default function DashboardStatusDock({
   const waterTarget = dailyTargets.water || 1
 
   const waterPercent = Math.round(
-    ((waterTarget - waterRemaining) / waterTarget) * 100
-  )
+  ((waterTarget - localWaterRemaining) / waterTarget) * 100
+)
 
   return (
     <div
@@ -94,18 +96,32 @@ export default function DashboardStatusDock({
         </div>
 
         <div
-          onClick={() => {
-            setWaterOpen(!waterOpen)
-            setCycleOpen(false)
-            setMealOpen(false)
-            setAssessmentOpen(false)
-          }}
+          onClick={async () => {
+  const res = await fetch('/api/nutrition/add-water', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      clientId: client?.client_id,
+      ounces: oz,
+    }),
+  })
+
+  if (!res.ok) {
+    console.error('Water add failed:', await res.json())
+    return
+  }
+
+  setLocalWaterRemaining((prev) => Math.max(0, prev - oz))
+  setWaterOpen(false)
+}}
           style={{ cursor: 'pointer' }}
         >
-          <WaterCup
-            percentFull={waterPercent}
-            ouncesRemaining={waterRemaining}
-          />
+         <WaterCup
+  percentFull={waterPercent}
+  ouncesRemaining={localWaterRemaining}
+/>
         </div>
 
         <button
