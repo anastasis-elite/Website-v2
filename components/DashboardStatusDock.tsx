@@ -22,7 +22,6 @@ export default function DashboardStatusDock({
   const [cycleOpen, setCycleOpen] = useState(false)
   const [mealOpen, setMealOpen] = useState(false)
   const [waterOpen, setWaterOpen] = useState(false)
-  const [localWaterRemaining, setLocalWaterRemaining] = useState(waterRemaining)
   const [assessmentOpen, setAssessmentOpen] = useState(false)
 
   const dailyRemaining = dailyPlan?.dailyRemaining || {}
@@ -32,6 +31,7 @@ export default function DashboardStatusDock({
   const carbsRemaining = dailyRemaining.carbs || 0
   const fatsRemaining = dailyRemaining.fats || 0
   const waterRemaining = dailyRemaining.water || 0
+  const [localWaterRemaining, setLocalWaterRemaining] = useState(waterRemaining)
   const waterTarget = dailyTargets.water || 1
 
   const waterPercent = Math.round(
