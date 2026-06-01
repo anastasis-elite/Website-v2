@@ -76,6 +76,7 @@ export default function OnboardingProfileForm({ client }: { client: any }) {
   return (
     <form onSubmit={handleSubmit} style={styles.cartBoxStyle}>
       <div style={{ display: 'grid', gap: 16 }}>
+        <label>Birthdate</label>
         <input
           name="birthdate"
           type="date"
