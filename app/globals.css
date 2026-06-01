@@ -310,11 +310,11 @@ a {
   .dashboard-status-dock {
     top: 8px;
     left: 35px;
-    right: 125px;
+    right: 150px;
     transform: none;
     z-index: 1002;
-    display: flex;
     justify-content: center;
+    maxWidth: 75%;
   }
 }
 /* Dashboard */
