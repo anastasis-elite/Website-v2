@@ -31,7 +31,8 @@ export default function DashboardStatusDock({
   const carbsRemaining = dailyRemaining.carbs || 0
   const fatsRemaining = dailyRemaining.fats || 0
   const waterRemaining = dailyRemaining.water || 0
-  const [localWaterRemaining, setLocalWaterRemaining] = useState(waterRemaining)
+  const [localWaterRemaining, setLocalWaterRemaining] =
+  useState<number>(waterRemaining)
   const waterTarget = dailyTargets.water || 1
 
   const waterPercent = Math.round(
