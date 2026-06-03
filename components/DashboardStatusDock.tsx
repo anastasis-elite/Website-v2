@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import DashboardAssessmentMiniCard from '@/components/DashboardAssessmentMiniCard'
 import WaterCup from '@/components/WaterCup'
 import CycleProgressOrb from '@/components/CycleProgressOrb'
@@ -27,6 +27,15 @@ export default function DashboardStatusDock({
   const [mealSuggestions, setMealSuggestions] = useState<any[]>([])
   const [mealLoading, setMealLoading] = useState(false)
 
+  useEffect(() => {
+  if (assessmentDueCount > 0) {
+    setAssessmentOpen(true)
+    setCycleOpen(false)
+    setMealOpen(false)
+    setWaterOpen(false)
+  }
+}, [assessmentDueCount])
+  
   const dailyRemaining = dailyPlan?.dailyRemaining || {}
   const dailyTargets = dailyPlan?.dailyTargets || {}
 
