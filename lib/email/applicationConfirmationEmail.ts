@@ -40,9 +40,6 @@ https://anastasiselite.com/conditions
 General Disclaimer:
 https://anastasiselite.com/disclaimer
 
-Media & Content Consent:
-https://anastasiselite.com/consent/media
-
 Research & Data Consent:
 https://anastasiselite.com/consent/research
 
