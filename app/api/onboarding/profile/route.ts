@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getTimezoneFromState } from '@/lib/timezone'
 
 export async function POST(req: Request) {
   try {
@@ -55,6 +56,12 @@ export async function POST(req: Request) {
       )
     }
 
+    timezone: getTimezoneFromState(body.state),
+onboarding_data: {
+  ...body,
+  timezone: getTimezoneFromState(body.state),
+},
+    
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json(
