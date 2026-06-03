@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
-import Button from './Button'
 
 type Props = {
   clientId: string
@@ -24,16 +23,17 @@ type Props = {
 
 const nonNegotiableOptions = [
   'Work',
-  'Kids’ school drop-off',
-  'Kids’ school pickup',
+  'School drop-off',
+  'School pickup',
   'Commute',
-  'Nursing / pumping',
+  'Nursing or pumping',
   'Caregiving',
   'Appointments',
   'Dinner / family time',
-  'Kids’ bedtime routine',
-  'My training window',
-  'My recovery window',
+  'Bedtime routine',
+  'Training window',
+  'Recovery window',
+  'Other fixed commitments',
 ]
 
 export default function DailyStructureAssessment({
@@ -111,7 +111,8 @@ export default function DailyStructureAssessment({
         body: JSON.stringify({
           client_id: clientId,
           execution_style: executionStyle,
-          carousel_style: carouselStyle,
+          carousel_style:
+            executionStyle === 'schedule' ? 'step' : carouselStyle,
           daily_non_negotiables: selectedNonNegotiables,
           ...formData,
         }),
@@ -148,18 +149,15 @@ export default function DailyStructureAssessment({
           step at a time.
         </p>
 
-        <div
-          style={{
-            display: 'grid',
-            gap: '14px',
-            marginTop: '24px',
-          }}
-        >
+        <div style={{ display: 'grid', gap: '14px', marginTop: '24px' }}>
           <Choice
             active={executionStyle === 'schedule'}
             title="Structured schedule"
             body="I feel best when things have target times and clear windows."
-            onClick={() => setExecutionStyle('schedule')}
+            onClick={() => {
+              setExecutionStyle('schedule')
+              setCarouselStyle('step')
+            }}
           />
 
           <Choice
@@ -179,21 +177,13 @@ export default function DailyStructureAssessment({
       </section>
 
       <section style={styles.cartBoxStyle}>
-        <h2 style={styles.sectionTitleStyle}>
-          Dashboard style
-        </h2>
+        <h2 style={styles.sectionTitleStyle}>Dashboard style</h2>
 
         <p style={styles.bodyStyle}>
           Choose how much of the day you want to see at once.
         </p>
 
-        <div
-          style={{
-            display: 'grid',
-            gap: '14px',
-            marginTop: '24px',
-          }}
-        >
+        <div style={{ display: 'grid', gap: '14px', marginTop: '24px' }}>
           <Choice
             active={carouselStyle === 'section'}
             title="Morning / Midday / Evening"
@@ -211,9 +201,7 @@ export default function DailyStructureAssessment({
       </section>
 
       <section style={styles.cartBoxStyle}>
-        <h2 style={styles.sectionTitleStyle}>
-          Time anchors
-        </h2>
+        <h2 style={styles.sectionTitleStyle}>Time anchors</h2>
 
         <p style={styles.bodyStyle}>
           These help the system place meals, training, recovery, and check-ins
@@ -284,55 +272,55 @@ export default function DailyStructureAssessment({
       </section>
 
       <section style={styles.cartBoxStyle}>
-  <h2 style={styles.sectionTitleStyle}>
-    Daily anchors / non-negotiables
-  </h2>
+        <h2 style={styles.sectionTitleStyle}>
+          Daily anchors / non-negotiables
+        </h2>
 
-  <p style={styles.bodyStyle}>
-    These are the fixed pieces of your day — the things your plan needs to
-    respect before anything else gets added.
-  </p>
+        <p style={styles.bodyStyle}>
+          These are the fixed pieces of your day — the things your plan needs to
+          respect before anything else gets added.
+        </p>
 
-  <div
-    style={{
-      display: 'grid',
-      gap: '12px',
-      marginTop: '22px',
-      justifyItems: 'start',
-    }}
-  >
-    {nonNegotiableOptions.map((option) => (
-      <label
-        key={option}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          gap: '12px',
-          width: 'fit-content',
-          maxWidth: '100%',
-          color: 'rgba(215,199,182,0.88)',
-          lineHeight: 1.6,
-          cursor: 'pointer',
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={selectedNonNegotiables.includes(option)}
-          onChange={() => toggleNonNegotiable(option)}
+        <div
           style={{
-            accentColor: '#b56e43',
-            width: 22,
-            height: 22,
-            flexShrink: 0,
+            display: 'grid',
+            gap: '12px',
+            marginTop: '22px',
+            justifyItems: 'start',
           }}
-        />
+        >
+          {nonNegotiableOptions.map((option) => (
+            <label
+              key={option}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                gap: '12px',
+                width: 'fit-content',
+                maxWidth: '100%',
+                color: 'rgba(215,199,182,0.88)',
+                lineHeight: 1.6,
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={selectedNonNegotiables.includes(option)}
+                onChange={() => toggleNonNegotiable(option)}
+                style={{
+                  accentColor: '#b56e43',
+                  width: 22,
+                  height: 22,
+                  flexShrink: 0,
+                }}
+              />
 
-        <span>{option}</span>
-      </label>
-    ))}
-  </div>
-</section>
+              <span>{option}</span>
+            </label>
+          ))}
+        </div>
+      </section>
 
       <section style={styles.cartBoxStyle}>
         <h2 style={styles.sectionTitleStyle}>
