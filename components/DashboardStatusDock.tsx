@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import DashboardAssessmentMiniCard from '@/components/DashboardAssessmentMiniCard'
 import WaterCup from '@/components/WaterCup'
 import CycleProgressOrb from '@/components/CycleProgressOrb'
@@ -27,6 +27,9 @@ export default function DashboardStatusDock({
   const [mealSuggestions, setMealSuggestions] = useState<any[]>([])
   const [mealLoading, setMealLoading] = useState(false)
 
+  
+  const dockRef = useRef<HTMLDivElement | null>(null)
+  
   useEffect(() => {
   if (assessmentDueCount > 0) {
     setAssessmentOpen(true)
@@ -35,6 +38,28 @@ export default function DashboardStatusDock({
     setWaterOpen(false)
   }
 }, [assessmentDueCount])
+
+  useEffect(() => {
+  function handleClickOutside(event: MouseEvent | TouchEvent) {
+    if (
+      dockRef.current &&
+      !dockRef.current.contains(event.target as Node)
+    ) {
+      setCycleOpen(false)
+      setMealOpen(false)
+      setWaterOpen(false)
+      setAssessmentOpen(false)
+    }
+  }
+
+  document.addEventListener('mousedown', handleClickOutside)
+  document.addEventListener('touchstart', handleClickOutside)
+
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside)
+    document.removeEventListener('touchstart', handleClickOutside)
+  }
+}, [])
   
   const dailyRemaining = dailyPlan?.dailyRemaining || {}
   const dailyTargets = dailyPlan?.dailyTargets || {}
@@ -73,7 +98,7 @@ export default function DashboardStatusDock({
   }
 
   return (
-    <div className="dashboard-status-dock">
+    <div ref={dockRef} className="dashboard-status-dock">
       <div className="dashboard-status-dock-inner">
         <div
           onClick={() => {
