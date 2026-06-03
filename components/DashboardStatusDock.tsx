@@ -24,6 +24,9 @@ export default function DashboardStatusDock({
   const [waterOpen, setWaterOpen] = useState(false)
   const [assessmentOpen, setAssessmentOpen] = useState(false)
 
+  const [mealSuggestions, setMealSuggestions] = useState<any[]>([])
+  const [mealLoading, setMealLoading] = useState(false)
+
   const dailyRemaining = dailyPlan?.dailyRemaining || {}
   const dailyTargets = dailyPlan?.dailyTargets || {}
 
@@ -31,40 +34,38 @@ export default function DashboardStatusDock({
   const carbsRemaining = dailyRemaining.carbs || 0
   const fatsRemaining = dailyRemaining.fats || 0
   const waterRemaining = dailyRemaining.water || 0
-  const [localWaterRemaining, setLocalWaterRemaining] =
-  useState<number>(waterRemaining)
   const waterTarget = dailyTargets.water || 1
 
+  const [localWaterRemaining, setLocalWaterRemaining] =
+    useState<number>(waterRemaining)
+
   const waterPercent = Math.round(
-  ((waterTarget - localWaterRemaining) / waterTarget) * 100
-)
+    ((waterTarget - localWaterRemaining) / waterTarget) * 100
+  )
+
+  async function loadMealSuggestions() {
+    try {
+      setMealLoading(true)
+
+      const res = await fetch('/api/nutrition/quick-add-suggestions')
+      const data = await res.json()
+
+      if (!res.ok) {
+        console.error('Meal suggestions failed:', data)
+        return
+      }
+
+      setMealSuggestions(data.suggestions || [])
+    } catch (error) {
+      console.error('Meal suggestions error:', error)
+    } finally {
+      setMealLoading(false)
+    }
+  }
 
   return (
-    <div
-      className="dashboard-status-dock"
-      style={{
-        width: window.innerWidth <= 700 ? 'fit-content' : 'auto',
-        maxWidth: window.innerWidth <= 700 ? '80%' : 'none',
-        display: 'flex',
-        justifyContent: 'center',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: window.innerWidth <= 700 ? 'row' : 'column',
-          alignItems: 'center',
-          gap: window.innerWidth <= 700 ? '8px' : '10px',
-          padding: window.innerWidth <= 700 ? '8px 10px' : '10px 12px',
-          borderRadius: '999px',
-          background:
-            'linear-gradient(145deg, rgba(12,12,12,0.72), rgba(5,5,5,0.48))',
-          backdropFilter: 'blur(22px)',
-          WebkitBackdropFilter: 'blur(22px)',
-          boxShadow:
-            '0 22px 70px rgba(0,0,0,0.32), inset 0 0 28px rgba(255,255,255,0.025)',
-        }}
-      >
+    <div className="dashboard-status-dock">
+      <div className="dashboard-status-dock-inner">
         <div
           onClick={() => {
             setCycleOpen(!cycleOpen)
@@ -97,27 +98,33 @@ export default function DashboardStatusDock({
         </div>
 
         <div
-  onClick={() => {
-    setWaterOpen(!waterOpen)
-    setCycleOpen(false)
-    setMealOpen(false)
-    setAssessmentOpen(false)
-  }}
-  style={{ cursor: 'pointer' }}
->
-  <WaterCup
-    percentFull={waterPercent}
-    ouncesRemaining={localWaterRemaining}
-  />
-</div>
+          onClick={() => {
+            setWaterOpen(!waterOpen)
+            setCycleOpen(false)
+            setMealOpen(false)
+            setAssessmentOpen(false)
+          }}
+          style={{ cursor: 'pointer' }}
+        >
+          <WaterCup
+            percentFull={waterPercent}
+            ouncesRemaining={localWaterRemaining}
+          />
+        </div>
 
         <button
           type="button"
-          onClick={() => {
-            setMealOpen(!mealOpen)
+          onClick={async () => {
+            const next = !mealOpen
+
+            setMealOpen(next)
             setCycleOpen(false)
             setWaterOpen(false)
             setAssessmentOpen(false)
+
+            if (next) {
+              await loadMealSuggestions()
+            }
           }}
           style={actionCircleStyle}
         >
@@ -173,34 +180,36 @@ export default function DashboardStatusDock({
 
           <div style={waterGridStyle}>
             {[8, 12, 16, 24].map((oz) => (
-  <button
-    key={oz}
-    type="button"
-    style={buttonStyle}
-    onClick={async () => {
-      const res = await fetch('/api/nutrition/add-water', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          clientId: client?.client_id,
-          ounces: oz,
-        }),
-      })
+              <button
+                key={oz}
+                type="button"
+                style={buttonStyle}
+                onClick={async () => {
+                  const res = await fetch('/api/nutrition/add-water', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      clientId: client?.client_id,
+                      ounces: oz,
+                    }),
+                  })
 
-      if (!res.ok) {
-        console.error('Water add failed:', await res.json())
-        return
-      }
+                  if (!res.ok) {
+                    console.error('Water add failed:', await res.json())
+                    return
+                  }
 
-      setLocalWaterRemaining((prev) => Math.max(0, prev - oz))
-      setWaterOpen(false)
-    }}
-  >
-    +{oz} oz
-  </button>
-))}
+                  setLocalWaterRemaining((prev: number) =>
+                    Math.max(0, prev - oz)
+                  )
+                  setWaterOpen(false)
+                }}
+              >
+                +{oz} oz
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -213,9 +222,35 @@ export default function DashboardStatusDock({
           </p>
 
           <div style={mealButtonGridStyle}>
-            <Link href="/dashboard/nutrition?quick=meal" style={buttonStyle}>
-              Quick Add Meal
-            </Link>
+            {mealLoading ? (
+              <p style={bodyStyle}>Loading suggestions...</p>
+            ) : mealSuggestions.length > 0 ? (
+              mealSuggestions.map((meal, index) => (
+                <button
+                  key={`${meal.foodName}-${meal.servingLabel}-${index}`}
+                  type="button"
+                  style={buttonStyle}
+                  onClick={() => {
+                    console.log('Quick add meal selected:', meal)
+                  }}
+                >
+                  {meal.foodName}
+                  <br />
+                  <span
+                    style={{
+                      opacity: 0.72,
+                      fontSize: '0.78rem',
+                    }}
+                  >
+                    {meal.servingLabel}
+                  </span>
+                </button>
+              ))
+            ) : (
+              <p style={bodyStyle}>
+                No repeat meals found yet.
+              </p>
+            )}
 
             <Link href="/dashboard/nutrition" style={buttonStyle}>
               Open Nutrition Log
