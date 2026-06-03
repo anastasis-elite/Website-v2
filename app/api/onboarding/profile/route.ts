@@ -37,11 +37,6 @@ export async function POST(req: Request) {
         onboarding_completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         last_six_cycle_starts: body.knowsLastSixCycles,
-            timezone: getTimezoneFromState(body.state),
-onboarding_data: {
-  ...body,
-  timezone: getTimezoneFromState(body.state),
-},
   ? [
       body.cycleStart1,
       body.cycleStart2,
@@ -51,6 +46,11 @@ onboarding_data: {
       body.cycleStart6,
     ].filter(Boolean)
   : null,
+              timezone: getTimezoneFromState(body.state),
+onboarding_data: {
+  ...body,
+  timezone: getTimezoneFromState(body.state),
+},
       })
       .eq('auth_user_id', user.id)
 
