@@ -285,12 +285,12 @@ export default function DailyStructureAssessment({
 
       <section style={styles.cartBoxStyle}>
   <h2 style={styles.sectionTitleStyle}>
-    Absolutes / non-negotiables
+    Daily anchors / non-negotiables
   </h2>
 
   <p style={styles.bodyStyle}>
-    These are the pieces your day has to hold. The system will respect
-    them instead of acting like your life is empty space.
+    These are the fixed pieces of your day — the things your plan needs to
+    respect before anything else gets added.
   </p>
 
   <div
@@ -298,27 +298,37 @@ export default function DailyStructureAssessment({
       display: 'grid',
       gap: '12px',
       marginTop: '22px',
+      justifyItems: 'start',
     }}
   >
     {nonNegotiableOptions.map((option) => (
       <label
         key={option}
         style={{
-          display: 'flex',
-          gap: '12px',
+          display: 'inline-flex',
           alignItems: 'center',
+          justifyContent: 'flex-start',
+          gap: '12px',
+          width: 'fit-content',
+          maxWidth: '100%',
           color: 'rgba(215,199,182,0.88)',
           lineHeight: 1.6,
+          cursor: 'pointer',
         }}
       >
         <input
           type="checkbox"
           checked={selectedNonNegotiables.includes(option)}
           onChange={() => toggleNonNegotiable(option)}
-          style={{ accentColor: '#b56e43' }}
+          style={{
+            accentColor: '#b56e43',
+            width: 22,
+            height: 22,
+            flexShrink: 0,
+          }}
         />
 
-        {option}
+        <span>{option}</span>
       </label>
     ))}
   </div>
