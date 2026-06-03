@@ -108,6 +108,18 @@ export async function POST(req: Request) {
         right_photo_url: uploadedPaths.right_photo_url,
         analysis_status: 'pending',
         uploaded_at: new Date().toISOString(),
+        analysis_type: 'posture_assessment',
+posture_flags: {
+  front_view_uploaded: Boolean(uploadedPaths.front_photo_url),
+  back_view_uploaded: Boolean(uploadedPaths.back_photo_url),
+  left_view_uploaded: Boolean(uploadedPaths.left_photo_url),
+  right_view_uploaded: Boolean(uploadedPaths.right_photo_url),
+  ready_for_posture_review:
+    Boolean(uploadedPaths.front_photo_url) &&
+    Boolean(uploadedPaths.back_photo_url) &&
+    Boolean(uploadedPaths.left_photo_url) &&
+    Boolean(uploadedPaths.right_photo_url),
+},
       })
       .select()
       .single()
