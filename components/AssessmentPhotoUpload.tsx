@@ -39,27 +39,27 @@ export default function AssessmentPhotoUpload() {
     right: null,
   })
 
+  const [previews, setPreviews] = useState<Record<PhotoKey, string | null>>({
+    front: null,
+    back: null,
+    left: null,
+    right: null,
+  })
+
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
-  const [previews, setPreviews] = useState<Record<PhotoKey, string | null>>({
-  front: null,
-  back: null,
-  left: null,
-  right: null,
-})
-  
   function handleFileChange(key: PhotoKey, file: File | null) {
-  setFiles((prev) => ({
-    ...prev,
-    [key]: file,
-  }))
+    setFiles((prev) => ({
+      ...prev,
+      [key]: file,
+    }))
 
-  setPreviews((prev) => ({
-    ...prev,
-    [key]: file ? URL.createObjectURL(file) : null,
-  }))
-}
+    setPreviews((prev) => ({
+      ...prev,
+      [key]: file ? URL.createObjectURL(file) : null,
+    }))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -89,7 +89,15 @@ export default function AssessmentPhotoUpload() {
       }
 
       setMessage('Assessment photos uploaded successfully.')
+
       setFiles({
+        front: null,
+        back: null,
+        left: null,
+        right: null,
+      })
+
+      setPreviews({
         front: null,
         back: null,
         left: null,
@@ -123,7 +131,10 @@ export default function AssessmentPhotoUpload() {
         {photoFields.map((field) => (
           <label key={field.key} style={uploadBoxStyle}>
             <strong>{field.label}</strong>
-            <span style={smallTextStyle}>{field.description}</span>
+
+            <span style={smallTextStyle}>
+              {field.description}
+            </span>
 
             <input
               type="file"
@@ -138,19 +149,13 @@ export default function AssessmentPhotoUpload() {
             />
 
             {previews[field.key] ? (
-  <img
-    src={previews[field.key] as string}
-    alt={`${field.label} preview`}
-    style={{
-      width: '100%',
-      maxHeight: 220,
-      objectFit: 'cover',
-      borderRadius: 16,
-      marginTop: 10,
-    }}
-  />
-) : null}
-            
+              <img
+                src={previews[field.key] as string}
+                alt={`${field.label} preview`}
+                style={previewImageStyle}
+              />
+            ) : null}
+
             <span style={selectedStyle}>
               {files[field.key]?.name || 'Choose photo'}
             </span>
@@ -163,12 +168,6 @@ export default function AssessmentPhotoUpload() {
       </button>
 
       {message ? <p style={bodyStyle}>{message}</p> : null}
-      setPreviews({
-  front: null,
-  back: null,
-  left: null,
-  right: null,
-})
     </form>
   )
 }
@@ -231,6 +230,14 @@ const smallTextStyle = {
 
 const fileInputStyle = {
   display: 'none',
+} as const
+
+const previewImageStyle = {
+  width: '100%',
+  maxHeight: 220,
+  objectFit: 'cover',
+  borderRadius: 16,
+  marginTop: 10,
 } as const
 
 const selectedStyle = {
