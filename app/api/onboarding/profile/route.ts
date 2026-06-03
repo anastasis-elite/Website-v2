@@ -36,7 +36,12 @@ export async function POST(req: Request) {
         onboarding_completed: true,
         onboarding_completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        last_six_cycle_starts: body.knowsLastSixCycles
+        last_six_cycle_starts: body.knowsLastSixCycles,
+            timezone: getTimezoneFromState(body.state),
+onboarding_data: {
+  ...body,
+  timezone: getTimezoneFromState(body.state),
+},
   ? [
       body.cycleStart1,
       body.cycleStart2,
@@ -55,12 +60,6 @@ export async function POST(req: Request) {
         { status: 500 }
       )
     }
-
-    timezone: getTimezoneFromState(body.state),
-onboarding_data: {
-  ...body,
-  timezone: getTimezoneFromState(body.state),
-},
     
     return NextResponse.json({ success: true })
   } catch (error) {
