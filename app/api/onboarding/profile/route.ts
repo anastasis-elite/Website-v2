@@ -18,40 +18,45 @@ export async function POST(req: Request) {
     const { error } = await supabase
       .from('clients')
       .update({
-        birthdate: body.birthdate || null,
-        address_line_1: body.addressLine1 || null,
-        address_line_2: body.addressLine2 || null,
-        city: body.city || null,
-        state: body.state || null,
-        postal_code: body.postalCode || null,
-        country: body.country || 'US',
-        reproductive_status: body.reproductiveStatus || 'cycling',
-        six_month_cycle_status: body.sixMonthCycleStatus || null,
-        last_period_start: body.lastPeriodStart || null,
-        average_cycle_length: Number(body.averageCycleLength || 28),
-        onboarding_data: body,
-        cycle_tracking_enabled:
-          body.reproductiveStatus === 'cycling' ||
-          body.reproductiveStatus === 'irregular_cycles',
-        onboarding_completed: true,
-        onboarding_completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        last_six_cycle_starts: body.knowsLastSixCycles,
-  ? [
-      body.cycleStart1,
-      body.cycleStart2,
-      body.cycleStart3,
-      body.cycleStart4,
-      body.cycleStart5,
-      body.cycleStart6,
-    ].filter(Boolean)
-  : null,
-              timezone: getTimezoneFromState(body.state),
-onboarding_data: {
-  ...body,
+  birthdate: body.birthdate || null,
+  address_line_1: body.addressLine1 || null,
+  address_line_2: body.addressLine2 || null,
+  city: body.city || null,
+  state: body.state || null,
+  postal_code: body.postalCode || null,
+  country: body.country || 'US',
+
   timezone: getTimezoneFromState(body.state),
-},
-      })
+
+  reproductive_status: body.reproductiveStatus || 'cycling',
+  six_month_cycle_status: body.sixMonthCycleStatus || null,
+  last_period_start: body.lastPeriodStart || null,
+  average_cycle_length: Number(body.averageCycleLength || 28),
+
+  onboarding_data: {
+    ...body,
+    timezone: getTimezoneFromState(body.state),
+  },
+
+  cycle_tracking_enabled:
+    body.reproductiveStatus === 'cycling' ||
+    body.reproductiveStatus === 'irregular_cycles',
+
+  onboarding_completed: true,
+  onboarding_completed_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+
+  last_six_cycle_starts: body.knowsLastSixCycles
+    ? [
+        body.cycleStart1,
+        body.cycleStart2,
+        body.cycleStart3,
+        body.cycleStart4,
+        body.cycleStart5,
+        body.cycleStart6,
+      ].filter(Boolean)
+    : null,
+})
       .eq('auth_user_id', user.id)
 
     if (error) {
