@@ -42,7 +42,6 @@ export default function ApplyPage() {
     primaryGoal: '',
     whyNow: '',
     agreement: false,
-    mediaConsent: false,
     researchConsent: false,
     medicalClearance: false,
     medicalClearanceFile: null as File | null,
@@ -106,7 +105,6 @@ export default function ApplyPage() {
       primaryGoal: formData.primaryGoal,
       whyNow: formData.whyNow,
       agreement: formData.agreement,
-      mediaConsent: formData.mediaConsent,
       researchConsent: formData.researchConsent,
       medicalClearance: formData.medicalClearance,
       medicalClearanceFileName: formData.medicalClearanceFile?.name || '',
@@ -632,51 +630,6 @@ setMessage('Application submitted successfully.')
                   }}
                 >
                   Health Disclaimer &amp; Liability Waiver
-                </a>.
-              </span>
-            </label>
-          </div>
-
-          <div
-            style={{
-              border: '1px solid rgba(197,139,87,0.16)',
-              borderRadius: '22px',
-              padding: '20px',
-              background: 'rgba(255,255,255,0.01)',
-            }}
-          >
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                lineHeight: 1.7,
-                color: '#d7c7b6',
-                fontSize: '0.98rem',
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                name="mediaConsent"
-                type="checkbox"
-                checked={formData.mediaConsent}
-                onChange={handleChange}
-                style={{
-                  marginTop: '4px',
-                  accentColor: '#c58b57',
-                }}
-              />
-              <span>
-                I authorize the use of my transformation photos, progress photos, or related
-                visual media according to the{' '}
-                <a
-                  href="/consent/media"
-                  style={{
-                    color: '#c58b57',
-                    textDecoration: 'underline',
-                  }}
-                >
-                  Media Consent
                 </a>.
               </span>
             </label>
