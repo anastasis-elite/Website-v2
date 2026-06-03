@@ -42,12 +42,24 @@ export default function AssessmentPhotoUpload() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
+  const [previews, setPreviews] = useState<Record<PhotoKey, string | null>>({
+  front: null,
+  back: null,
+  left: null,
+  right: null,
+})
+  
   function handleFileChange(key: PhotoKey, file: File | null) {
-    setFiles((prev) => ({
-      ...prev,
-      [key]: file,
-    }))
-  }
+  setFiles((prev) => ({
+    ...prev,
+    [key]: file,
+  }))
+
+  setPreviews((prev) => ({
+    ...prev,
+    [key]: file ? URL.createObjectURL(file) : null,
+  }))
+}
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -125,6 +137,20 @@ export default function AssessmentPhotoUpload() {
               style={fileInputStyle}
             />
 
+            {previews[field.key] ? (
+  <img
+    src={previews[field.key] as string}
+    alt={`${field.label} preview`}
+    style={{
+      width: '100%',
+      maxHeight: 220,
+      objectFit: 'cover',
+      borderRadius: 16,
+      marginTop: 10,
+    }}
+  />
+) : null}
+            
             <span style={selectedStyle}>
               {files[field.key]?.name || 'Choose photo'}
             </span>
@@ -137,6 +163,12 @@ export default function AssessmentPhotoUpload() {
       </button>
 
       {message ? <p style={bodyStyle}>{message}</p> : null}
+      setPreviews({
+  front: null,
+  back: null,
+  left: null,
+  right: null,
+})
     </form>
   )
 }
