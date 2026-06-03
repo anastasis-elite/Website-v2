@@ -176,7 +176,6 @@ export async function POST(req: Request) {
 
         <p>
           Your progress, photos, and personal information are private.
-          Anastasis does not require permission to use your transformation for marketing.
         </p>
       `,
     })
