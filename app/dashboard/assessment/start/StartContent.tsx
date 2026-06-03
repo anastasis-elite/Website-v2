@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import * as styles from '../../../styles/globalstyles'
+import AssessmentPhotoUpload from '@/components/AssessmentPhotoUpload'
 
 type ClientData = {
   client_id: string
@@ -315,6 +316,9 @@ export default function StartContent({ client }: { client: ClientData }) {
             </p>
           ) : null}
         </form>
+                <div style={{ marginTop: 32 }}>
+          <AssessmentPhotoUpload />
+        </div>
       </div>
     </main>
   )
