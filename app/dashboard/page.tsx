@@ -1,5 +1,6 @@
 import * as styles from '../styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import { getAdaptiveDashboard } from '@/lib/dashboard/getAdaptiveDashboard'
 import { getNextLesson } from '@/lib/education/getNextLesson'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
@@ -59,6 +60,8 @@ export default async function DashboardPage() {
 
   const cycleStatus = getCycleStatus(client)
 
+  const adaptiveDashboard = await getAdaptiveDashboard(client)
+  
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
@@ -72,6 +75,61 @@ export default async function DashboardPage() {
           once.
         </p>
 
+        <section
+  style={{
+    ...styles.cartBoxStyle,
+    marginTop: '36px',
+    marginBottom: '42px',
+  }}
+  className="dashboard-section"
+>
+  <p style={styles.eyebrowStyle}>Adaptive Dashboard</p>
+
+  <h2 style={styles.sectionTitleStyle}>
+    {adaptiveDashboard.phaseName}
+  </h2>
+
+  <p style={styles.bodyStyle}>
+    {adaptiveDashboard.adaptiveMessage}
+  </p>
+
+  <div style={{ marginTop: '22px' }}>
+    <p style={styles.bodyStyle}>
+      <strong>Today’s Focus</strong>
+    </p>
+
+    <div
+      style={{
+        display: 'flex',
+        gap: '10px',
+        flexWrap: 'wrap',
+        marginTop: '12px',
+      }}
+    >
+      {adaptiveDashboard.todayFocus.map((focus: string) => (
+        <span
+          key={focus}
+          style={{
+            padding: '10px 14px',
+            borderRadius: '999px',
+            background: 'rgba(181,110,67,0.12)',
+            color: '#f5f0e8',
+            fontSize: '0.86rem',
+          }}
+        >
+          {focus}
+        </span>
+      ))}
+    </div>
+  </div>
+
+  <div style={{ marginTop: '22px' }}>
+    <p style={styles.bodyStyle}>
+      <strong>Flame:</strong> {adaptiveDashboard.flameScore}/100
+    </p>
+  </div>
+</section>
+        
         {lesson && (
           <section
             style={{
