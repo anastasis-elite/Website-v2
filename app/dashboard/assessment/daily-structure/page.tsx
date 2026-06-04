@@ -36,6 +36,11 @@ export default async function DailyStructureAssessmentPage() {
           dinnerWindowTime={client.dinner_window_time}
           dailyNonNegotiables={client.daily_non_negotiables}
           dayStructureNotes={client.day_structure_notes}
+          workoutDaysAvailable={client.workout_days_available}
+          currentWorkoutDaysPerWeek={client.current_workout_days_per_week}
+          currentWorkoutMinutesPerSession={client.current_workout_minutes_per_session}
+          currentTrainingIntensity={client.current_training_intensity}
+          workoutSchedulePreference={client.workout_schedule_preference}
         />
       </div>
     </main>
