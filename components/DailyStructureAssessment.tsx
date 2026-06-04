@@ -19,6 +19,11 @@ type Props = {
   dinnerWindowTime?: string | null
   dailyNonNegotiables?: string[] | null
   dayStructureNotes?: string | null
+  workoutDaysAvailable?: number | null
+  currentWorkoutDaysPerWeek?: number | null
+  currentWorkoutMinutesPerSession?: number | null
+  currentTrainingIntensity?: string | null
+  workoutSchedulePreference?: string | null
 }
 
 const nonNegotiableOptions = [
@@ -71,6 +76,13 @@ export default function DailyStructureAssessment({
     lunch_window_time: lunchWindowTime || '',
     dinner_window_time: dinnerWindowTime || '',
     day_structure_notes: dayStructureNotes || '',
+    workout_days_available: workoutDaysAvailable?.toString() || '',
+    current_workout_days_per_week:
+      currentWorkoutDaysPerWeek?.toString() || '',
+    current_workout_minutes_per_session:
+      currentWorkoutMinutesPerSession?.toString() || '',
+    current_training_intensity: currentTrainingIntensity || '',
+    workout_schedule_preference: workoutSchedulePreference || '',
   })
 
   const [selectedNonNegotiables, setSelectedNonNegotiables] = useState<string[]>(
@@ -322,6 +334,140 @@ export default function DailyStructureAssessment({
         </div>
       </section>
 
+      <section style={styles.cartBoxStyle}>
+  <h2 style={styles.sectionTitleStyle}>
+    Training capacity
+  </h2>
+
+  <p style={styles.bodyStyle}>
+    This helps the dashboard decide when fitness programming should appear,
+    how intense it should be, and whether workouts should be scheduled or
+    simply suggested.
+  </p>
+
+  <div style={styles.gridTwoCol}>
+    <div style={styles.fieldWrap}>
+      <label style={styles.labelStyle}>
+        How many days per week could your life realistically hold training?
+      </label>
+
+      <select
+        value={formData.workout_days_available}
+        onChange={(e) =>
+          updateField('workout_days_available', e.target.value)
+        }
+        style={styles.inputStyle}
+      >
+        <option value="">Select one</option>
+        <option value="0">0 days right now</option>
+        <option value="1">1 day</option>
+        <option value="2">2 days</option>
+        <option value="3">3 days</option>
+        <option value="4">4 days</option>
+        <option value="5">5 days</option>
+        <option value="6">6 days</option>
+        <option value="7">7 days</option>
+      </select>
+    </div>
+
+    {Number(formData.workout_days_available) > 0 ? (
+      <div style={styles.fieldWrap}>
+        <label style={styles.labelStyle}>
+          How many days are you currently working out?
+        </label>
+
+        <select
+          value={formData.current_workout_days_per_week}
+          onChange={(e) =>
+            updateField('current_workout_days_per_week', e.target.value)
+          }
+          style={styles.inputStyle}
+        >
+          <option value="">Select one</option>
+          <option value="0">0 days</option>
+          <option value="1">1 day</option>
+          <option value="2">2 days</option>
+          <option value="3">3 days</option>
+          <option value="4">4 days</option>
+          <option value="5">5 days</option>
+          <option value="6">6 days</option>
+          <option value="7">7 days</option>
+        </select>
+      </div>
+    ) : null}
+  </div>
+
+  {Number(formData.workout_days_available) > 0 ? (
+    <div style={styles.gridTwoCol}>
+      <div style={styles.fieldWrap}>
+        <label style={styles.labelStyle}>
+          How long are your workouts usually?
+        </label>
+
+        <select
+          value={formData.current_workout_minutes_per_session}
+          onChange={(e) =>
+            updateField(
+              'current_workout_minutes_per_session',
+              e.target.value
+            )
+          }
+          style={styles.inputStyle}
+        >
+          <option value="">Select one</option>
+          <option value="15">About 15 minutes</option>
+          <option value="30">About 30 minutes</option>
+          <option value="45">About 45 minutes</option>
+          <option value="60">About 1 hour</option>
+          <option value="90">90 minutes or more</option>
+        </select>
+      </div>
+
+      <div style={styles.fieldWrap}>
+        <label style={styles.labelStyle}>
+          How intense do those workouts usually feel?
+        </label>
+
+        <select
+          value={formData.current_training_intensity}
+          onChange={(e) =>
+            updateField('current_training_intensity', e.target.value)
+          }
+          style={styles.inputStyle}
+        >
+          <option value="">Select one</option>
+          <option value="gentle">Gentle</option>
+          <option value="moderate">Moderate</option>
+          <option value="hard">Hard</option>
+          <option value="very-hard">Very hard</option>
+        </select>
+      </div>
+
+      <div style={styles.fieldWrap}>
+        <label style={styles.labelStyle}>
+          How do you want workouts to show up?
+        </label>
+
+        <select
+          value={formData.workout_schedule_preference}
+          onChange={(e) =>
+            updateField('workout_schedule_preference', e.target.value)
+          }
+          style={styles.inputStyle}
+        >
+          <option value="">Select one</option>
+          <option value="scheduled">Schedule them into my day</option>
+          <option value="reminder">Remind me when it fits</option>
+          <option value="suggested">Suggest them, but keep it flexible</option>
+          <option value="hidden-for-now">
+            Do not show workouts yet
+          </option>
+        </select>
+      </div>
+    </div>
+  ) : null}
+</section>
+      
       <section style={styles.cartBoxStyle}>
         <h2 style={styles.sectionTitleStyle}>
           Anything else the system should know?
