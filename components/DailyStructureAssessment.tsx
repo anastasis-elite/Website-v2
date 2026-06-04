@@ -56,6 +56,11 @@ export default function DailyStructureAssessment({
   dinnerWindowTime,
   dailyNonNegotiables,
   dayStructureNotes,
+  workoutDaysAvailable,
+  currentWorkoutDaysPerWeek,
+  currentWorkoutMinutesPerSession,
+  currentTrainingIntensity,
+  workoutSchedulePreference,
 }: Props) {
   const [executionStyle, setExecutionStyle] = useState(
     currentExecutionStyle || 'flow'
