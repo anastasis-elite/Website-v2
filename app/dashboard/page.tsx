@@ -4,9 +4,7 @@ import { getAdaptiveDashboard } from '@/lib/dashboard/getAdaptiveDashboard'
 import { getNextLesson } from '@/lib/education/getNextLesson'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
-import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
-import DashboardStatusDock from '@/components/DashboardStatusDock'
-import SymptomQuickLog from '@/components/SymptomQuickLog'
+import AdaptiveDashboard from '@/components/AdaptiveDashboard'
 
 export default async function DashboardPage() {
   const { supabase, client, user } = await getDashboardContext()
@@ -60,109 +58,34 @@ export default async function DashboardPage() {
 
   const cycleStatus = getCycleStatus(client)
 
-  const adaptiveDashboard = await getAdaptiveDashboard(client)
-  
+  const adaptiveDashboard = await getAdaptiveDashboard({
+    client,
+    monthlyAssessmentsDueCount,
+  })
+
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Client Dashboard</p>
 
-        <h1 style={styles.heroTitleStyle}>Your system for today.</h1>
+        <h1 style={styles.heroTitleStyle}>
+          Welcome home.
+        </h1>
 
         <p style={styles.heroTextStyle}>
-          This is your home base for today’s execution. The system shows what
-          matters now, so you do not have to hold the whole day in your head at
-          once.
+          This dashboard adapts to where you are. Hard days do not mean failure
+          here. They give the system more context so your support can become
+          softer, clearer, and more realistic.
         </p>
 
-        <section
-  style={{
-    ...styles.cartBoxStyle,
-    marginTop: '36px',
-    marginBottom: '42px',
-  }}
-  className="dashboard-section"
->
-  <p style={styles.eyebrowStyle}>Adaptive Dashboard</p>
-
-  <h2 style={styles.sectionTitleStyle}>
-    {adaptiveDashboard.phaseName}
-  </h2>
-
-  <p style={styles.bodyStyle}>
-    {adaptiveDashboard.adaptiveMessage}
-  </p>
-
-  <div style={{ marginTop: '22px' }}>
-    <p style={styles.bodyStyle}>
-      <strong>Today’s Focus</strong>
-    </p>
-
-    <div
-      style={{
-        display: 'flex',
-        gap: '10px',
-        flexWrap: 'wrap',
-        marginTop: '12px',
-      }}
-    >
-      {adaptiveDashboard.todayFocus.map((focus: string) => (
-        <span
-          key={focus}
-          style={{
-            padding: '10px 14px',
-            borderRadius: '999px',
-            background: 'rgba(181,110,67,0.12)',
-            color: '#f5f0e8',
-            fontSize: '0.86rem',
-          }}
-        >
-          {focus}
-        </span>
-      ))}
-    </div>
-  </div>
-
-  <div style={{ marginTop: '22px' }}>
-    <p style={styles.bodyStyle}>
-      <strong>Flame:</strong> {adaptiveDashboard.flameScore}/100
-    </p>
-  </div>
-</section>
-        
-        {lesson && (
-          <section
-            style={{
-              ...styles.cartBoxStyle,
-              marginBottom: '42px',
-            }}
-            className="dashboard-section"
-          >
-            <p style={styles.eyebrowStyle}>Today’s Insight</p>
-
-            <h2 style={styles.sectionTitleStyle}>{lesson.title}</h2>
-
-            <p style={styles.bodyStyle}>{lesson.body}</p>
-          </section>
-        )}
-
-        <DashboardStatusDock
+        <AdaptiveDashboard
           client={client}
-          cycleStatus={cycleStatus}
           dailyPlan={dailyPlan}
+          cycleStatus={cycleStatus}
+          adaptiveDashboard={adaptiveDashboard}
           assessmentDueCount={monthlyAssessmentsDueCount}
+          lesson={lesson}
         />
-
-        <section style={{ marginTop: '54px' }}>
-          <DashboardFlowCarousel
-            cards={dailyPlan.cards}
-            currentCardId={dailyPlan.currentCard?.id}
-          />
-        </section>
-
-        <section style={{ marginTop: '54px' }}>
-          <SymptomQuickLog clientId={client.client_id} />
-        </section>
       </div>
     </main>
   )
