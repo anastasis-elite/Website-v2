@@ -6,6 +6,11 @@ function cleanTime(value: unknown) {
   return value.trim() || null
 }
 
+function cleanNumber(value: unknown) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json()
@@ -39,6 +44,11 @@ export async function POST(req: Request) {
       dinner_window_time,
       daily_non_negotiables,
       day_structure_notes,
+      workout_days_available,
+      current_workout_days_per_week,
+      current_workout_minutes_per_session,
+      current_training_intensity,
+      workout_schedule_preference,
     } = body
 
     if (!client_id) {
@@ -108,7 +118,21 @@ export async function POST(req: Request) {
           typeof day_structure_notes === 'string'
             ? day_structure_notes.trim()
             : null,
-      })
+
+        workout_days_available: cleanNumber(workout_days_available),
+        current_workout_days_per_week: cleanNumber(current_workout_days_per_week),
+        current_workout_minutes_per_session: cleanNumber(
+          current_workout_minutes_per_session
+        ),
+        current_training_intensity:
+          typeof current_training_intensity === 'string'
+            ? current_training_intensity
+            : null,
+        workout_schedule_preference:
+          typeof workout_schedule_preference === 'string'
+            ? workout_schedule_preference
+            : null,
+       })
       .eq('client_id', client_id)
       .eq('auth_user_id', user.id)
 
