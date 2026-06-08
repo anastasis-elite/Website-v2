@@ -8,7 +8,6 @@ function getDaysSince(dateValue?: string | null) {
 
   const start = new Date(dateValue)
   const now = new Date()
-
   const diff = now.getTime() - start.getTime()
 
   return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)))
@@ -20,12 +19,18 @@ export async function getAdaptiveDashboard({
 }: AdaptiveDashboardInput) {
   const daysSinceOnboarding = getDaysSince(client?.onboarding_completed_at)
 
+  const program = String(client?.program || 'ember').toLowerCase()
+
+  const isEmber = program === 'ember'
+  const isIgnite = program === 'ignite'
+  const isPhoenix = program === 'phoenix'
+
   const flameScore = Number(client?.flame_score || 10)
   const consistencyScore = Number(client?.consistency_score || 0)
   const overwhelmScore = Number(client?.overwhelm_score || 0)
 
   let phase = 1
-  let phaseName = 'Stabilization'
+  let phaseName = 'Foundation'
 
   if (daysSinceOnboarding > 3) {
     phase = 2
@@ -44,78 +49,125 @@ export async function getAdaptiveDashboard({
 
   if (overwhelmScore >= 70) {
     phase = 1
-    phaseName = 'Stabilization'
+    phaseName = 'Foundation'
   }
 
-  const isPhoenix = client?.program === 'phoenix'
+  /**
+   * EMBER = guided self-execution
+   * - no schedule control
+   * - no full food logging logic
+   * - no micros
+   * - no symptom intelligence
+   * - no advanced adaptive recipes
+   *
+   * IGNITE = tracking + optimization
+   * PHOENIX = full adaptive restoration ecosystem
+   */
 
-  const showDailyCarousel = phase >= 2
-  const showSymptoms = phase >= 3
-  const showStatusDock = phase >= 2
-  const showAdaptiveNutrition = phase >= 4 && isPhoenix
-  const showPosture = phase >= 3
-  const showAdvancedInsights = phase >= 4
+  const showCycle = true
+  const showWorkoutProgram = true
+  const showMacroTargets = true
+  const showWaterTarget = true
+  const showRecoveryRecommendation = true
+  const showProgressPhotos = true
 
-  let todayFocus = ['Hydration', 'Nourishment', 'Gentle movement']
+  const showStatusDock = isIgnite || isPhoenix
+  const showDailyCarousel = isIgnite || isPhoenix
+  const showFoodLogging = isIgnite || isPhoenix
+  const showMicroTracking = isIgnite || isPhoenix
+  const showGeneralInsights = isIgnite || isPhoenix
+
+  const showSymptoms = isPhoenix
+  const showAdaptiveNutrition = isPhoenix
+  const showPosture = isPhoenix
+  const showAdvancedInsights = isPhoenix
+  const showPsychologicalInsights = isPhoenix
+
+  let todayFocus = [
+    'Cycle-aware training',
+    'Macro targets',
+    'Recovery timing',
+  ]
 
   let adaptiveMessage =
-    'Today is focused on stabilization. You do not need to fix everything today. We are protecting the flame first.'
+    'Your dashboard is built around your cycle, strength assessment, macro targets, water needs, and recovery timing. Ember gives you the plan — you bring the spark.'
 
-  if (phase === 2) {
-    todayFocus = ['Hydration', 'Meal rhythm', 'Movement rhythm']
+  if (isIgnite) {
+    todayFocus = [
+      'Track nutrition',
+      'Follow training',
+      'Watch recovery',
+    ]
+
     adaptiveMessage =
-      'Your dashboard is beginning to build rhythm around the life you actually live.'
+      'Ignite adds tracking and feedback so you can understand your body without obsessing over every detail.'
   }
 
-  if (phase === 3) {
-    todayFocus = ['Training', 'Recovery', 'Body awareness']
-    adaptiveMessage =
-      'Your system has enough rhythm to begin showing deeper patterns without overwhelming you.'
-  }
+  if (isPhoenix) {
+    todayFocus = [
+      'Reduce friction',
+      'Personalize deeply',
+      'Restore capacity',
+    ]
 
-  if (phase === 4) {
-    todayFocus = ['Performance', 'Recovery optimization', 'Adaptive insights']
     adaptiveMessage =
-      'Your dashboard is now ready for deeper adaptive intelligence and advanced support.'
+      'Phoenix adapts more deeply around your stress load, symptoms, nutrition, recovery, posture, and nervous system capacity.'
   }
 
   let recommendedStep = {
-    title: 'Complete your Daily Structure Assessment',
+    title: 'Complete your foundation assessment',
     description:
-      'Help the dashboard learn the rhythm your life can realistically hold.',
-    href: '/dashboard/assessment/daily-structure',
+      'This gives the system the information it needs to build your cycle-aware workout, macro, water, and recovery recommendations.',
+    href: '/dashboard/assessment/start',
   }
 
-  if (monthlyAssessmentsDueCount > 0 && phase >= 2) {
+  if (monthlyAssessmentsDueCount > 0) {
     recommendedStep = {
-      title: 'Complete your monthly check-in',
+      title: 'Complete your check-in',
       description:
-        'This helps your system adjust without assuming last month still fits this month.',
+        'This helps your system update your workout, recovery, and progress recommendations.',
       href: '/dashboard/assessment/start',
     }
   }
 
-  if (phase === 1) {
+  if (phase === 1 && daysSinceOnboarding <= 1) {
     recommendedStep = {
-      title: 'Start with one small win',
+      title: 'Begin with your foundation',
       description:
-        'Today is not about doing everything. Choose hydration, nourishment, or a few minutes of movement.',
-      href: '/dashboard/nutrition',
+        'You do not have to do everything today. Start by reviewing the plan your dashboard is building around your cycle, training, macros, water, and recovery.',
+      href: '/dashboard',
     }
   }
 
   return {
     phase,
     phaseName,
+    program,
+    isEmber,
+    isIgnite,
+    isPhoenix,
     flameScore,
     todayFocus,
     adaptiveMessage,
     recommendedStep,
-    showDailyCarousel,
-    showSymptoms,
+
+    showCycle,
+    showWorkoutProgram,
+    showMacroTargets,
+    showWaterTarget,
+    showRecoveryRecommendation,
+    showProgressPhotos,
+
     showStatusDock,
+    showDailyCarousel,
+    showFoodLogging,
+    showMicroTracking,
+    showGeneralInsights,
+
+    showSymptoms,
     showAdaptiveNutrition,
     showPosture,
     showAdvancedInsights,
+    showPsychologicalInsights,
   }
 }
