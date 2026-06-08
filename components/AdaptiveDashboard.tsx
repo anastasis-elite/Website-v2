@@ -40,7 +40,7 @@ export default function AdaptiveDashboard({
         }}
         className="dashboard-section"
       >
-        <p style={styles.eyebrowStyle}>Adaptive Dashboard</p>
+        <p style={styles.eyebrowStyle}>Today's Guidance</p>
 
         <h2 style={styles.sectionTitleStyle}>
           {adaptiveDashboard.phaseName}
@@ -136,6 +136,59 @@ export default function AdaptiveDashboard({
         </div>
       </section>
 
+      <div
+  style={{
+    display: 'grid',
+    gap: '16px',
+    marginTop: '32px',
+  }}
+>
+  {adaptiveDashboard.showCycle ? (
+    <div style={styles.innerCardStyle}>
+      <p style={styles.eyebrowStyle}>Cycle Phase</p>
+
+      <h3 style={styles.sectionTitleStyle}>
+        {cycleStatus?.phase || 'Cycle tracking preparing'}
+      </h3>
+
+      <p style={styles.bodyStyle}>
+        Your training, recovery, and recommendations are built around where
+        you are in your cycle.
+      </p>
+    </div>
+  ) : null}
+
+  {adaptiveDashboard.showMacroTargets ? (
+    <div style={styles.innerCardStyle}>
+      <p style={styles.eyebrowStyle}>Nutrition Targets</p>
+
+      <h3 style={styles.sectionTitleStyle}>
+        Macro + hydration guidance
+      </h3>
+
+      <p style={styles.bodyStyle}>
+        Your macro and hydration recommendations are personalized using your
+        assessment data, recovery needs, and training goals.
+      </p>
+    </div>
+  ) : null}
+
+  {adaptiveDashboard.showRecoveryRecommendation ? (
+    <div style={styles.innerCardStyle}>
+      <p style={styles.eyebrowStyle}>Recovery</p>
+
+      <h3 style={styles.sectionTitleStyle}>
+        Recovery timing active
+      </h3>
+
+      <p style={styles.bodyStyle}>
+        Recovery recommendations adjust around your training load, cycle
+        phase, and current capacity.
+      </p>
+    </div>
+  ) : null}
+</div>
+      
       {adaptiveDashboard.recommendedStep ? (
         <section
           style={{
@@ -165,7 +218,9 @@ export default function AdaptiveDashboard({
         </section>
       ) : null}
 
-      {lesson && adaptiveDashboard.phase >= 2 ? (
+      {lesson &&
+       adaptiveDashboard.phase >= 2 &&
+       adaptiveDashboard.showGeneralInsights ? (
         <section
           style={{
             ...styles.cartBoxStyle,
