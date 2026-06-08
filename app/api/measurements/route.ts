@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAssessmentWindow } from '@/lib/assessments/getAssessmentWindow'
 
 export async function POST(req: Request) {
   try {
@@ -35,7 +34,7 @@ export async function POST(req: Request) {
 
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('*')
+      .select('client_id, auth_user_id')
       .eq('client_id', client_id)
       .eq('auth_user_id', user.id)
       .maybeSingle()
@@ -54,9 +53,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const now = new Date()
-    const submittedAt = now.toISOString()
-    const today = submittedAt.split('T')[0]
+    const today = new Date().toISOString().split('T')[0]
 
     const cleanMeasurements =
       measurements &&
@@ -64,11 +61,6 @@ export async function POST(req: Request) {
       !Array.isArray(measurements)
         ? measurements
         : {}
-
-    const cleanNotes =
-      typeof notes === 'string' && notes.trim()
-        ? notes.trim()
-        : null
 
     const { error: upsertError } = await supabase
       .from('measurement_logs')
@@ -79,8 +71,11 @@ export async function POST(req: Request) {
           log_date: today,
           advanced_enabled: !!advanced_enabled,
           measurements: cleanMeasurements,
-          notes: cleanNotes,
-          updated_at: submittedAt,
+          notes:
+            typeof notes === 'string' && notes.trim()
+              ? notes.trim()
+              : null,
+          updated_at: new Date().toISOString(),
         },
         {
           onConflict: 'client_id,log_date',
@@ -92,88 +87,6 @@ export async function POST(req: Request) {
         { error: upsertError.message },
         { status: 500 }
       )
-    }
-
-    const window = getAssessmentWindow(client)
-
-    const { data: existingWindow, error: existingWindowError } = await supabase
-      .from('assessment_windows')
-      .select('*')
-      .eq('client_id', client.client_id)
-      .eq('window_type', window.windowType)
-      .eq('estimated_start_date', window.estimatedStartDate)
-      .maybeSingle()
-
-    if (existingWindowError) {
-      return NextResponse.json(
-        { error: existingWindowError.message },
-        { status: 500 }
-      )
-    }
-
-    const currentAssessmentData =
-      existingWindow?.assessment_data &&
-      typeof existingWindow.assessment_data === 'object'
-        ? existingWindow.assessment_data
-        : {}
-
-    const mergedAssessmentData = {
-      ...currentAssessmentData,
-      measurements: {
-        ...(currentAssessmentData as any).measurements,
-        log_date: today,
-        advanced_enabled: !!advanced_enabled,
-        measurements: cleanMeasurements,
-        notes: cleanNotes,
-        submitted_at: submittedAt,
-        updated_at: submittedAt,
-      },
-    }
-
-    if (existingWindow) {
-      const { error: windowUpdateError } = await supabase
-        .from('assessment_windows')
-        .update({
-          status: window.isOpen ? 'open' : window.status,
-          estimated_start_date: window.estimatedStartDate,
-          estimated_end_date: window.estimatedEndDate,
-          assessment_data: mergedAssessmentData,
-          completion_percent: Math.max(
-            Number(existingWindow.completion_percent || 0),
-            60
-          ),
-          updated_at: submittedAt,
-        })
-        .eq('id', existingWindow.id)
-
-      if (windowUpdateError) {
-        return NextResponse.json(
-          { error: windowUpdateError.message },
-          { status: 500 }
-        )
-      }
-    } else {
-      const { error: windowInsertError } = await supabase
-        .from('assessment_windows')
-        .insert({
-          client_id: client.client_id,
-          auth_user_id: user.id,
-          window_type: window.windowType,
-          estimated_start_date: window.estimatedStartDate,
-          estimated_end_date: window.estimatedEndDate,
-          status: window.isOpen ? 'open' : window.status,
-          assessment_data: mergedAssessmentData,
-          completion_percent: 60,
-          created_at: submittedAt,
-          updated_at: submittedAt,
-        })
-
-      if (windowInsertError) {
-        return NextResponse.json(
-          { error: windowInsertError.message },
-          { status: 500 }
-        )
-      }
     }
 
     return NextResponse.json({
