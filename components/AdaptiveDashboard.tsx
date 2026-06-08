@@ -40,7 +40,7 @@ export default function AdaptiveDashboard({
         }}
         className="dashboard-section"
       >
-        <p style={styles.eyebrowStyle}>Today's Guidance</p>
+        <p style={styles.eyebrowStyle}>Today&apos;s Guidance</p>
 
         <h2 style={styles.sectionTitleStyle}>
           {adaptiveDashboard.phaseName}
@@ -50,60 +50,62 @@ export default function AdaptiveDashboard({
           {adaptiveDashboard.adaptiveMessage}
         </p>
 
-        <div
-          style={{
-            marginTop: '24px',
-            padding: '20px',
-            borderRadius: '24px',
-            background: 'rgba(181,110,67,0.07)',
-            border: '1px solid rgba(181,110,67,0.16)',
-          }}
-        >
-          <p
-            style={{
-              ...styles.bodyStyle,
-              marginBottom: '10px',
-            }}
-          >
-            <strong>Your Flame</strong>
-          </p>
-
+        {adaptiveDashboard.showFlame ? (
           <div
             style={{
-              width: '100%',
-              height: '12px',
-              borderRadius: '999px',
-              background: 'rgba(255,255,255,0.06)',
-              overflow: 'hidden',
+              marginTop: '24px',
+              padding: '20px',
+              borderRadius: '24px',
+              background: 'rgba(181,110,67,0.07)',
+              border: '1px solid rgba(181,110,67,0.16)',
             }}
           >
+            <p
+              style={{
+                ...styles.bodyStyle,
+                marginBottom: '10px',
+              }}
+            >
+              <strong>Your Flame</strong>
+            </p>
+
             <div
               style={{
-                width: `${Math.min(
-                  100,
-                  Math.max(5, adaptiveDashboard.flameScore)
-                )}%`,
-                height: '100%',
+                width: '100%',
+                height: '12px',
                 borderRadius: '999px',
-                background:
-                  'linear-gradient(90deg, rgba(181,110,67,0.55), rgba(245,190,120,0.9))',
+                background: 'rgba(255,255,255,0.06)',
+                overflow: 'hidden',
               }}
-            />
-          </div>
+            >
+              <div
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.max(5, adaptiveDashboard.flameScore)
+                  )}%`,
+                  height: '100%',
+                  borderRadius: '999px',
+                  background:
+                    'linear-gradient(90deg, rgba(181,110,67,0.55), rgba(245,190,120,0.9))',
+                }}
+              />
+            </div>
 
-          <p
-            style={{
-              ...styles.bodyStyle,
-              marginTop: '12px',
-              fontSize: '0.9rem',
-              color: 'rgba(243,238,232,0.72)',
-            }}
-          >
-            {adaptiveDashboard.flameScore}/100 — this does not measure
-            perfection. It reflects capacity, consistency, recovery, and
-            self-trust.
-          </p>
-        </div>
+            <p
+              style={{
+                ...styles.bodyStyle,
+                marginTop: '12px',
+                fontSize: '0.9rem',
+                color: 'rgba(243,238,232,0.72)',
+              }}
+            >
+              {adaptiveDashboard.flameScore}/100 — this does not measure
+              perfection. It reflects capacity, consistency, recovery, and
+              self-trust.
+            </p>
+          </div>
+        ) : null}
 
         <div style={{ marginTop: '26px' }}>
           <p style={styles.bodyStyle}>
@@ -136,59 +138,66 @@ export default function AdaptiveDashboard({
         </div>
       </section>
 
-      <div
-  style={{
-    display: 'grid',
-    gap: '16px',
-    marginTop: '32px',
-  }}
->
-  {adaptiveDashboard.showCycle ? (
-    <div style={styles.innerCardStyle}>
-      <p style={styles.eyebrowStyle}>Cycle Phase</p>
+      <section
+        style={{
+          ...styles.cartBoxStyle,
+          marginBottom: '42px',
+        }}
+        className="dashboard-section"
+      >
+        <div
+          style={{
+            display: 'grid',
+            gap: '16px',
+          }}
+        >
+          {adaptiveDashboard.showCycle ? (
+            <div style={styles.innerCardStyle}>
+              <p style={styles.eyebrowStyle}>Cycle Phase</p>
 
-      <h3 style={styles.sectionTitleStyle}>
-        {cycleStatus?.phase || 'Cycle tracking preparing'}
-      </h3>
+              <h3 style={styles.sectionTitleStyle}>
+                {cycleStatus?.phase || 'Cycle tracking preparing'}
+              </h3>
 
-      <p style={styles.bodyStyle}>
-        Your training, recovery, and recommendations are built around where
-        you are in your cycle.
-      </p>
-    </div>
-  ) : null}
+              <p style={styles.bodyStyle}>
+                Your training, recovery, and recommendations are built around
+                where you are in your cycle.
+              </p>
+            </div>
+          ) : null}
 
-  {adaptiveDashboard.showMacroTargets ? (
-    <div style={styles.innerCardStyle}>
-      <p style={styles.eyebrowStyle}>Nutrition Targets</p>
+          {adaptiveDashboard.showMacroTargets ? (
+            <div style={styles.innerCardStyle}>
+              <p style={styles.eyebrowStyle}>Nutrition Targets</p>
 
-      <h3 style={styles.sectionTitleStyle}>
-        Macro + hydration guidance
-      </h3>
+              <h3 style={styles.sectionTitleStyle}>
+                Macro + hydration guidance
+              </h3>
 
-      <p style={styles.bodyStyle}>
-        Your macro and hydration recommendations are personalized using your
-        assessment data, recovery needs, and training goals.
-      </p>
-    </div>
-  ) : null}
+              <p style={styles.bodyStyle}>
+                Your macro and hydration recommendations are personalized using
+                your assessment data, recovery needs, and training goals.
+              </p>
+            </div>
+          ) : null}
 
-  {adaptiveDashboard.showRecoveryRecommendation ? (
-    <div style={styles.innerCardStyle}>
-      <p style={styles.eyebrowStyle}>Recovery</p>
+          {adaptiveDashboard.showRecoveryRecommendation ? (
+            <div style={styles.innerCardStyle}>
+              <p style={styles.eyebrowStyle}>Recovery</p>
 
-      <h3 style={styles.sectionTitleStyle}>
-        Recovery timing active
-      </h3>
+              <h3 style={styles.sectionTitleStyle}>
+                Recovery timing active
+              </h3>
 
-      <p style={styles.bodyStyle}>
-        Recovery recommendations adjust around your training load, cycle
-        phase, and current capacity.
-      </p>
-    </div>
-  ) : null}
-</div>
-      
+              <p style={styles.bodyStyle}>
+                Recovery recommendations adjust around your training load, cycle
+                phase, and current capacity.
+              </p>
+            </div>
+          ) : null}
+        </div>
+      </section>
+
       {adaptiveDashboard.recommendedStep ? (
         <section
           style={{
@@ -219,8 +228,8 @@ export default function AdaptiveDashboard({
       ) : null}
 
       {lesson &&
-       adaptiveDashboard.phase >= 2 &&
-       adaptiveDashboard.showGeneralInsights ? (
+      adaptiveDashboard.phase >= 2 &&
+      adaptiveDashboard.showGeneralInsights ? (
         <section
           style={{
             ...styles.cartBoxStyle,
