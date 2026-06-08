@@ -13,6 +13,18 @@ type Props = {
   lesson?: any
 }
 
+const focusLinks: Record<string, string> = {
+  'Cycle-aware training': '/dashboard/program',
+  'Macro targets': '/dashboard/nutrition',
+  'Recovery timing': '/dashboard/recovery',
+  'Track nutrition': '/dashboard/nutrition',
+  'Follow training': '/dashboard/program',
+  'Watch recovery': '/dashboard/recovery',
+  'Reduce friction': '/dashboard/nutrition',
+  'Personalize deeply': '/dashboard/assessment/start',
+  'Restore capacity': '/dashboard/recovery',
+}
+
 export default function AdaptiveDashboard({
   client,
   dailyPlan,
@@ -40,7 +52,7 @@ export default function AdaptiveDashboard({
         }}
         className="dashboard-section"
       >
-        <p style={styles.eyebrowStyle}>Today&apos;s Guidance</p>
+        <p style={styles.eyebrowStyle}>Today&apos;s Rhythm</p>
 
         <h2 style={styles.sectionTitleStyle}>
           {adaptiveDashboard.phaseName}
@@ -50,22 +62,40 @@ export default function AdaptiveDashboard({
           {adaptiveDashboard.adaptiveMessage}
         </p>
 
+        <div
+          style={{
+            display: 'flex',
+            gap: '10px',
+            flexWrap: 'wrap',
+            marginTop: '22px',
+          }}
+        >
+          <Link href="/dashboard/cycle" style={styles.secondaryButtonStyle}>
+            Cycle
+          </Link>
+
+          {adaptiveDashboard.todayFocus.map((focus: string) => (
+            <Link
+              key={focus}
+              href={focusLinks[focus] || '/dashboard'}
+              style={styles.primaryButtonStyle}
+            >
+              {focus}
+            </Link>
+          ))}
+        </div>
+
         {adaptiveDashboard.showFlame ? (
           <div
             style={{
               marginTop: '24px',
-              padding: '20px',
-              borderRadius: '24px',
+              padding: '18px',
+              borderRadius: '22px',
               background: 'rgba(181,110,67,0.07)',
               border: '1px solid rgba(181,110,67,0.16)',
             }}
           >
-            <p
-              style={{
-                ...styles.bodyStyle,
-                marginBottom: '10px',
-              }}
-            >
+            <p style={{ ...styles.bodyStyle, marginBottom: '10px' }}>
               <strong>Your Flame</strong>
             </p>
 
@@ -91,173 +121,39 @@ export default function AdaptiveDashboard({
                 }}
               />
             </div>
-
-            <p
-              style={{
-                ...styles.bodyStyle,
-                marginTop: '12px',
-                fontSize: '0.9rem',
-                color: 'rgba(243,238,232,0.72)',
-              }}
-            >
-              {adaptiveDashboard.flameScore}/100 — this does not measure
-              perfection. It reflects capacity, consistency, recovery, and
-              self-trust.
-            </p>
           </div>
         ) : null}
+      </section>
 
-        <div style={{ marginTop: '26px' }}>
+      {adaptiveDashboard.showProgressPhotos ? (
+        <section
+          style={{
+            ...styles.cartBoxStyle,
+            marginBottom: '42px',
+          }}
+          className="dashboard-section"
+        >
+          <p style={styles.eyebrowStyle}>Progress</p>
+
+          <h2 style={styles.sectionTitleStyle}>
+            Photos + measurements
+          </h2>
+
           <p style={styles.bodyStyle}>
-            <strong>Today’s Focus</strong>
+            Track visual and measurement changes privately, without relying only
+            on the scale.
           </p>
 
-          <div
-            style={{
-              display: 'flex',
-              gap: '10px',
-              flexWrap: 'wrap',
-              marginTop: '12px',
-            }}
-          >
-            {adaptiveDashboard.todayFocus.map((focus: string) => (
-              <span
-                key={focus}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: '999px',
-                  background: 'rgba(181,110,67,0.12)',
-                  color: '#f5f0e8',
-                  fontSize: '0.86rem',
-                }}
-              >
-                {focus}
-              </span>
-            ))}
+          <div style={{ marginTop: '22px' }}>
+            <Link
+              href="/dashboard/assessment/measurements"
+              style={styles.secondaryButtonStyle}
+            >
+              Update Progress
+            </Link>
           </div>
-        </div>
-      </section>
-
-      <section
-        style={{
-          ...styles.cartBoxStyle,
-          marginBottom: '42px',
-        }}
-        className="dashboard-section"
-      >
-        <div
-          style={{
-            display: 'grid',
-            gap: '16px',
-          }}
-        >
-          {adaptiveDashboard.showCycle ? (
-            <div style={styles.innerCardStyle}>
-              <p style={styles.eyebrowStyle}>Cycle Phase</p>
-
-              <h3 style={styles.sectionTitleStyle}>
-                {cycleStatus?.phase || 'Cycle tracking preparing'}
-              </h3>
-
-              <p style={styles.bodyStyle}>
-                Your training, recovery, and recommendations are built around
-                where you are in your cycle.
-              </p>
-            </div>
-          ) : null}
-
-          {adaptiveDashboard.showWorkoutProgram ? (
-  <div style={styles.innerCardStyle}>
-    <p style={styles.eyebrowStyle}>Workout Program</p>
-
-    <h3 style={styles.sectionTitleStyle}>
-      Your training plan is active
-    </h3>
-
-    <p style={styles.bodyStyle}>
-      Your workout program is built from your assessment, current capacity,
-      goals, and cycle phase.
-    </p>
-
-    <div style={{ marginTop: '16px' }}>
-      <Link href="/dashboard/program" style={styles.secondaryButtonStyle}>
-        View Program
-      </Link>
-    </div>
-  </div>
-) : null}
-          
-          {adaptiveDashboard.showMacroTargets ? (
-            <div style={styles.innerCardStyle}>
-              <p style={styles.eyebrowStyle}>Nutrition Targets</p>
-
-              <h3 style={styles.sectionTitleStyle}>
-                Macro + hydration guidance
-              </h3>
-
-              <p style={styles.bodyStyle}>
-                Your macro and hydration recommendations are personalized using
-                your assessment data, recovery needs, and training goals.
-              </p>
-            </div>
-          ) : null}
-
-          {adaptiveDashboard.showWaterTarget ? (
-  <div style={styles.innerCardStyle}>
-    <p style={styles.eyebrowStyle}>Hydration</p>
-
-    <h3 style={styles.sectionTitleStyle}>
-      Water target active
-    </h3>
-
-    <p style={styles.bodyStyle}>
-      Your recommended water intake supports training, recovery, digestion,
-      and cycle-related fluid shifts.
-    </p>
-  </div>
-) : null}
-          
-          {adaptiveDashboard.showRecoveryRecommendation ? (
-            <div style={styles.innerCardStyle}>
-              <p style={styles.eyebrowStyle}>Recovery</p>
-
-              <h3 style={styles.sectionTitleStyle}>
-                Recovery timing active
-              </h3>
-
-              <p style={styles.bodyStyle}>
-                Recovery recommendations adjust around your training load, cycle
-                phase, and current capacity.
-              </p>
-            </div>
-          ) : null}
-
-          {adaptiveDashboard.showProgressPhotos ? (
-  <div style={styles.innerCardStyle}>
-    <p style={styles.eyebrowStyle}>Progress Tracking</p>
-
-    <h3 style={styles.sectionTitleStyle}>
-      Progress photos + measurements
-    </h3>
-
-    <p style={styles.bodyStyle}>
-      Use private progress tracking to compare changes over time without
-      relying only on the scale.
-    </p>
-
-    <div style={{ marginTop: '16px' }}>
-      <Link
-        href="/dashboard/assessment/measurements"
-        style={styles.secondaryButtonStyle}
-      >
-        Update Progress
-      </Link>
-    </div>
-  </div>
-) : null}
-          
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {adaptiveDashboard.recommendedStep ? (
         <section
@@ -299,9 +195,7 @@ export default function AdaptiveDashboard({
           className="dashboard-section"
         >
           <p style={styles.eyebrowStyle}>Today’s Insight</p>
-
           <h2 style={styles.sectionTitleStyle}>{lesson.title}</h2>
-
           <p style={styles.bodyStyle}>{lesson.body}</p>
         </section>
       ) : null}
@@ -318,28 +212,6 @@ export default function AdaptiveDashboard({
       {adaptiveDashboard.showSymptoms ? (
         <section style={{ marginTop: '54px' }}>
           <SymptomQuickLog clientId={client.client_id} />
-        </section>
-      ) : null}
-
-      {adaptiveDashboard.showAdaptiveNutrition ? (
-        <section
-          style={{
-            ...styles.cartBoxStyle,
-            marginTop: '54px',
-          }}
-          className="dashboard-section"
-        >
-          <p style={styles.eyebrowStyle}>Phoenix Nutrition</p>
-
-          <h2 style={styles.sectionTitleStyle}>
-            Adaptive meal support is preparing.
-          </h2>
-
-          <p style={styles.bodyStyle}>
-            As your nutrition data builds, Phoenix will be able to recommend
-            meals around remaining macros, micros, timing, symptoms, training,
-            and recovery.
-          </p>
         </section>
       ) : null}
     </>
