@@ -166,6 +166,27 @@ export default function AdaptiveDashboard({
             </div>
           ) : null}
 
+          {adaptiveDashboard.showWorkoutProgram ? (
+  <div style={styles.innerCardStyle}>
+    <p style={styles.eyebrowStyle}>Workout Program</p>
+
+    <h3 style={styles.sectionTitleStyle}>
+      Your training plan is active
+    </h3>
+
+    <p style={styles.bodyStyle}>
+      Your workout program is built from your assessment, current capacity,
+      goals, and cycle phase.
+    </p>
+
+    <div style={{ marginTop: '16px' }}>
+      <Link href="/dashboard/program" style={styles.secondaryButtonStyle}>
+        View Program
+      </Link>
+    </div>
+  </div>
+) : null}
+          
           {adaptiveDashboard.showMacroTargets ? (
             <div style={styles.innerCardStyle}>
               <p style={styles.eyebrowStyle}>Nutrition Targets</p>
@@ -181,6 +202,21 @@ export default function AdaptiveDashboard({
             </div>
           ) : null}
 
+          {adaptiveDashboard.showWaterTarget ? (
+  <div style={styles.innerCardStyle}>
+    <p style={styles.eyebrowStyle}>Hydration</p>
+
+    <h3 style={styles.sectionTitleStyle}>
+      Water target active
+    </h3>
+
+    <p style={styles.bodyStyle}>
+      Your recommended water intake supports training, recovery, digestion,
+      and cycle-related fluid shifts.
+    </p>
+  </div>
+) : null}
+          
           {adaptiveDashboard.showRecoveryRecommendation ? (
             <div style={styles.innerCardStyle}>
               <p style={styles.eyebrowStyle}>Recovery</p>
@@ -195,6 +231,31 @@ export default function AdaptiveDashboard({
               </p>
             </div>
           ) : null}
+
+          {adaptiveDashboard.showProgressPhotos ? (
+  <div style={styles.innerCardStyle}>
+    <p style={styles.eyebrowStyle}>Progress Tracking</p>
+
+    <h3 style={styles.sectionTitleStyle}>
+      Progress photos + measurements
+    </h3>
+
+    <p style={styles.bodyStyle}>
+      Use private progress tracking to compare changes over time without
+      relying only on the scale.
+    </p>
+
+    <div style={{ marginTop: '16px' }}>
+      <Link
+        href="/dashboard/assessment/measurements"
+        style={styles.secondaryButtonStyle}
+      >
+        Update Progress
+      </Link>
+    </div>
+  </div>
+) : null}
+          
         </div>
       </section>
 
