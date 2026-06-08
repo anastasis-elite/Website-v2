@@ -76,6 +76,7 @@ export async function getAdaptiveDashboard({
   const showFoodLogging = isIgnite || isPhoenix
   const showMicroTracking = isIgnite || isPhoenix
   const showGeneralInsights = isIgnite || isPhoenix
+  const showFlame = isIgnite || isPhoenix
 
   const showSymptoms = isPhoenix
   const showAdaptiveNutrition = isPhoenix
@@ -151,6 +152,7 @@ export async function getAdaptiveDashboard({
     adaptiveMessage,
     recommendedStep,
 
+    showFlame,
     showCycle,
     showWorkoutProgram,
     showMacroTargets,
