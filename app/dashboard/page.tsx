@@ -6,26 +6,8 @@ import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import AdaptiveDashboard from '@/components/AdaptiveDashboard'
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ tier?: string }>
-}) {
-  const params = await searchParams
-
+export default async function DashboardPage() {
   const { supabase, client, user } = await getDashboardContext()
-
-  const forcedTier = params?.tier
-
-  const dashboardClient = {
-    ...client,
-    program:
-      forcedTier === 'ember' ||
-      forcedTier === 'ignite' ||
-      forcedTier === 'phoenix'
-        ? forcedTier
-        : client.program,
-  }
 
   const monthStart = new Date()
   monthStart.setDate(1)
@@ -65,19 +47,19 @@ export default async function DashboardPage({
 
   const lesson = await getNextLesson({
     supabase,
-    client: dashboardClient,
+    client,
     user,
   })
 
   const dailyPlan = await getDailyExecutionPlan({
     supabase,
-    client: dashboardClient,
+    client,
   })
 
-  const cycleStatus = getCycleStatus(dashboardClient)
+  const cycleStatus = getCycleStatus(client)
 
   const adaptiveDashboard = await getAdaptiveDashboard({
-    client: dashboardClient,
+    client,
     monthlyAssessmentsDueCount,
   })
 
@@ -95,7 +77,7 @@ export default async function DashboardPage({
         </p>
 
         <AdaptiveDashboard
-          client={dashboardClient}
+          client={client}
           dailyPlan={dailyPlan}
           cycleStatus={cycleStatus}
           adaptiveDashboard={adaptiveDashboard}
