@@ -6,8 +6,26 @@ import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import AdaptiveDashboard from '@/components/AdaptiveDashboard'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tier?: string }>
+}) {
+  const params = await searchParams
+
   const { supabase, client, user } = await getDashboardContext()
+
+  const forcedTier = params?.tier
+
+  const dashboardClient = {
+    ...client,
+    program:
+      forcedTier === 'ember' ||
+      forcedTier === 'ignite' ||
+      forcedTier === 'phoenix'
+        ? forcedTier
+        : client.program,
+  }
 
   const monthStart = new Date()
   monthStart.setDate(1)
@@ -47,19 +65,19 @@ export default async function DashboardPage() {
 
   const lesson = await getNextLesson({
     supabase,
-    client,
+    client: dashboardClient,
     user,
   })
 
   const dailyPlan = await getDailyExecutionPlan({
     supabase,
-    client,
+    client: dashboardClient,
   })
 
-  const cycleStatus = getCycleStatus(client)
+  const cycleStatus = getCycleStatus(dashboardClient)
 
   const adaptiveDashboard = await getAdaptiveDashboard({
-    client,
+    client: dashboardClient,
     monthlyAssessmentsDueCount,
   })
 
@@ -68,9 +86,7 @@ export default async function DashboardPage() {
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Client Dashboard</p>
 
-        <h1 style={styles.heroTitleStyle}>
-          Welcome home.
-        </h1>
+        <h1 style={styles.heroTitleStyle}>Welcome home.</h1>
 
         <p style={styles.heroTextStyle}>
           This dashboard adapts to where you are. Hard days do not mean failure
@@ -79,7 +95,7 @@ export default async function DashboardPage() {
         </p>
 
         <AdaptiveDashboard
-          client={client}
+          client={dashboardClient}
           dailyPlan={dailyPlan}
           cycleStatus={cycleStatus}
           adaptiveDashboard={adaptiveDashboard}
