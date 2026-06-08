@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAssessmentWindow } from '@/lib/assessments/getAssessmentWindow'
 
 export const runtime = 'nodejs'
 
@@ -34,105 +33,37 @@ export async function POST(req: Request) {
       )
     }
 
-    const submittedAt = new Date().toISOString()
+    const payload = {
+      client_id: client.client_id,
+      auth_user_id: user.id,
+      fullName: client.full_name || '',
+      email: client.email || client.login_email || '',
+      birthdate: client.birthdate || '',
+      program: client.program || '',
+      assessment_type: 'initial',
+      data: body,
+      source: 'dashboard-assessment',
+      submittedAt: new Date().toISOString(),
+    }
 
     const { error: assessmentInsertError } = await supabase
-      .from('assessments')
-      .insert({
-        client_id: client.client_id,
-        auth_user_id: user.id,
-        program: client.program || '',
-        assessment_type: 'initial',
-        data: body,
-        source: 'dashboard-assessment',
-        submitted_at: submittedAt,
-      })
+  .from('assessments')
+  .insert({
+    client_id: payload.client_id,
+    auth_user_id: payload.auth_user_id,
+    program: payload.program,
+    assessment_type: payload.assessment_type,
+    data: payload.data,
+    source: payload.source,
+    submitted_at: payload.submittedAt,
+  })
 
-    if (assessmentInsertError) {
-      return NextResponse.json(
-        { error: assessmentInsertError.message },
-        { status: 500 }
-      )
-    }
-
-    const window = getAssessmentWindow(client)
-
-    const { data: existingWindow, error: existingWindowError } = await supabase
-      .from('assessment_windows')
-      .select('*')
-      .eq('client_id', client.client_id)
-      .eq('window_type', window.windowType)
-      .eq('estimated_start_date', window.estimatedStartDate)
-      .maybeSingle()
-
-    if (existingWindowError) {
-      return NextResponse.json(
-        { error: existingWindowError.message },
-        { status: 500 }
-      )
-    }
-
-    const currentAssessmentData =
-      existingWindow?.assessment_data &&
-      typeof existingWindow.assessment_data === 'object'
-        ? existingWindow.assessment_data
-        : {}
-
-    const mergedAssessmentData = {
-      ...currentAssessmentData,
-      intake: {
-        ...(currentAssessmentData as any).intake,
-        ...body,
-        submitted_at: submittedAt,
-        updated_at: submittedAt,
-      },
-    }
-
-    if (existingWindow) {
-      const { error: windowUpdateError } = await supabase
-        .from('assessment_windows')
-        .update({
-          status: window.isOpen ? 'open' : window.status,
-          estimated_start_date: window.estimatedStartDate,
-          estimated_end_date: window.estimatedEndDate,
-          assessment_data: mergedAssessmentData,
-          completion_percent: Math.max(
-            Number(existingWindow.completion_percent || 0),
-            25
-          ),
-          updated_at: submittedAt,
-        })
-        .eq('id', existingWindow.id)
-
-      if (windowUpdateError) {
-        return NextResponse.json(
-          { error: windowUpdateError.message },
-          { status: 500 }
-        )
-      }
-    } else {
-      const { error: windowInsertError } = await supabase
-        .from('assessment_windows')
-        .insert({
-          client_id: client.client_id,
-          auth_user_id: user.id,
-          window_type: window.windowType,
-          estimated_start_date: window.estimatedStartDate,
-          estimated_end_date: window.estimatedEndDate,
-          status: window.isOpen ? 'open' : window.status,
-          assessment_data: mergedAssessmentData,
-          completion_percent: 25,
-          created_at: submittedAt,
-          updated_at: submittedAt,
-        })
-
-      if (windowInsertError) {
-        return NextResponse.json(
-          { error: windowInsertError.message },
-          { status: 500 }
-        )
-      }
-    }
+if (assessmentInsertError) {
+  return NextResponse.json(
+    { error: assessmentInsertError.message },
+    { status: 500 }
+  )
+}
 
     return NextResponse.json({
       success: true,
