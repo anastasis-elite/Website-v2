@@ -102,6 +102,13 @@ export const cartBoxStyle: CSSProperties = {
   `,
 }
 
+export const innerCardStyle = {
+  padding: '20px',
+  borderRadius: '22px',
+  background: 'rgba(255,255,255,0.035)',
+  border: '1px solid rgba(255,255,255,0.05)',
+} as const
+
 export const buttonRowStyle: CSSProperties = {
   display: 'flex',
   gap: '16px',
