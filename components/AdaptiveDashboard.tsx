@@ -13,16 +13,46 @@ type Props = {
   lesson?: any
 }
 
-const focusLinks: Record<string, string> = {
-  'Cycle-aware training': '/dashboard/program',
-  'Macro targets': '/dashboard/nutrition',
-  'Recovery timing': '/dashboard/recovery',
-  'Track nutrition': '/dashboard/nutrition',
-  'Follow training': '/dashboard/program',
-  'Watch recovery': '/dashboard/recovery',
-  'Reduce friction': '/dashboard/nutrition',
-  'Personalize deeply': '/dashboard/assessment/start',
-  'Restore capacity': '/dashboard/recovery',
+function getProgramHref(program?: string) {
+  const tier = String(program || 'ember').toLowerCase()
+
+  if (tier === 'ignite') return '/dashboard/program/ignite/plan'
+  if (tier === 'phoenix') return '/dashboard/program/phoenix/plan'
+
+  return '/dashboard/program/ember/plan'
+}
+
+function getFocusHref(focus: string, program?: string) {
+  const tier = String(program || 'ember').toLowerCase()
+
+  if (
+    focus === 'Cycle-aware training' ||
+    focus === 'Follow training'
+  ) {
+    return getProgramHref(tier)
+  }
+
+  if (
+    focus === 'Macro targets' ||
+    focus === 'Track nutrition' ||
+    focus === 'Reduce friction'
+  ) {
+    return '/dashboard/nutrition'
+  }
+
+  if (
+    focus === 'Recovery timing' ||
+    focus === 'Watch recovery' ||
+    focus === 'Restore capacity'
+  ) {
+    return '/dashboard/recovery'
+  }
+
+  if (focus === 'Personalize deeply') {
+    return '/dashboard/assessment/start'
+  }
+
+  return '/dashboard'
 }
 
 export default function AdaptiveDashboard({
@@ -77,7 +107,7 @@ export default function AdaptiveDashboard({
           {adaptiveDashboard.todayFocus.map((focus: string) => (
             <Link
               key={focus}
-              href={focusLinks[focus] || '/dashboard'}
+              href={getFocusHref(focus, adaptiveDashboard.program)}
               style={styles.primaryButtonStyle}
             >
               {focus}
