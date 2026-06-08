@@ -92,6 +92,36 @@ export default function Start2Content({ client }: { client: ClientData }) {
           Let’s measure your current capacity.
         </h1>
 
+        <div
+  style={{
+    ...styles.cartBoxStyle,
+    marginBottom: '28px',
+  }}
+>
+  <p style={styles.eyebrowStyle}>Best Timing</p>
+
+  <h2 style={styles.sectionTitleStyle}>
+    Strength testing is best during your ovulatory window when possible.
+  </h2>
+
+  <p style={styles.bodyStyle}>
+    For the cleanest workout and recovery calculations, we recommend completing
+    this strength assessment during your ovulatory window or best-estimate
+    ovulatory week.
+  </p>
+
+  <p style={styles.bodyStyle}>
+    If you do not know your ovulatory window yet, complete what you can. The
+    system will use the cycle information you have entered to make its best
+    estimate and refine that timing as more data is added.
+  </p>
+
+  <p style={styles.bodyStyle}>
+    If today is not your best window, you can still continue. This assessment can
+    be updated later as your system learns your cycle and training patterns.
+  </p>
+</div>
+        
         <form onSubmit={handleSubmit} style={styles.cartBoxStyle}>
           <input type="hidden" name="email" value={formData.email} readOnly />
           <input type="hidden" name="program" value={formData.program} readOnly />
