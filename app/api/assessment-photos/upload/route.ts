@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAssessmentWindow } from '@/lib/assessments/getAssessmentWindow'
 
 export const runtime = 'nodejs'
 
@@ -30,7 +29,7 @@ export async function POST(req: Request) {
 
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('*')
+      .select('client_id, auth_user_id')
       .eq('auth_user_id', user.id)
       .single()
 
@@ -52,8 +51,7 @@ export async function POST(req: Request) {
     }
 
     const now = new Date()
-    const submittedAt = now.toISOString()
-    const dateFolder = submittedAt.split('T')[0]
+    const dateFolder = now.toISOString().split('T')[0]
 
     for (const key of photoKeys) {
       const file = formData.get(key)
@@ -98,18 +96,6 @@ export async function POST(req: Request) {
       )
     }
 
-    const postureFlags = {
-      front_view_uploaded: Boolean(uploadedPaths.front_photo_url),
-      back_view_uploaded: Boolean(uploadedPaths.back_photo_url),
-      left_view_uploaded: Boolean(uploadedPaths.left_photo_url),
-      right_view_uploaded: Boolean(uploadedPaths.right_photo_url),
-      ready_for_posture_review:
-        Boolean(uploadedPaths.front_photo_url) &&
-        Boolean(uploadedPaths.back_photo_url) &&
-        Boolean(uploadedPaths.left_photo_url) &&
-        Boolean(uploadedPaths.right_photo_url),
-    }
-
     const { data: record, error: insertError } = await supabase
       .from('assessment_photos')
       .insert({
@@ -121,9 +107,19 @@ export async function POST(req: Request) {
         left_photo_url: uploadedPaths.left_photo_url,
         right_photo_url: uploadedPaths.right_photo_url,
         analysis_status: 'pending',
-        uploaded_at: submittedAt,
+        uploaded_at: new Date().toISOString(),
         analysis_type: 'posture_assessment',
-        posture_flags: postureFlags,
+posture_flags: {
+  front_view_uploaded: Boolean(uploadedPaths.front_photo_url),
+  back_view_uploaded: Boolean(uploadedPaths.back_photo_url),
+  left_view_uploaded: Boolean(uploadedPaths.left_photo_url),
+  right_view_uploaded: Boolean(uploadedPaths.right_photo_url),
+  ready_for_posture_review:
+    Boolean(uploadedPaths.front_photo_url) &&
+    Boolean(uploadedPaths.back_photo_url) &&
+    Boolean(uploadedPaths.left_photo_url) &&
+    Boolean(uploadedPaths.right_photo_url),
+},
       })
       .select()
       .single()
@@ -136,90 +132,6 @@ export async function POST(req: Request) {
         },
         { status: 500 }
       )
-    }
-
-    const window = getAssessmentWindow(client)
-
-    const { data: existingWindow, error: existingWindowError } = await supabase
-      .from('assessment_windows')
-      .select('*')
-      .eq('client_id', client.client_id)
-      .eq('window_type', window.windowType)
-      .eq('estimated_start_date', window.estimatedStartDate)
-      .maybeSingle()
-
-    if (existingWindowError) {
-      return NextResponse.json(
-        { error: existingWindowError.message },
-        { status: 500 }
-      )
-    }
-
-    const currentAssessmentData =
-      existingWindow?.assessment_data &&
-      typeof existingWindow.assessment_data === 'object'
-        ? existingWindow.assessment_data
-        : {}
-
-    const mergedAssessmentData = {
-      ...currentAssessmentData,
-      photos: {
-        ...(currentAssessmentData as any).photos,
-        assessment_photo_record_id: record.id,
-        front_photo_url: uploadedPaths.front_photo_url,
-        back_photo_url: uploadedPaths.back_photo_url,
-        left_photo_url: uploadedPaths.left_photo_url,
-        right_photo_url: uploadedPaths.right_photo_url,
-        posture_flags: postureFlags,
-        submitted_at: submittedAt,
-        updated_at: submittedAt,
-      },
-    }
-
-    if (existingWindow) {
-      const { error: windowUpdateError } = await supabase
-        .from('assessment_windows')
-        .update({
-          status: window.isOpen ? 'open' : window.status,
-          estimated_start_date: window.estimatedStartDate,
-          estimated_end_date: window.estimatedEndDate,
-          assessment_data: mergedAssessmentData,
-          completion_percent: Math.max(
-            Number(existingWindow.completion_percent || 0),
-            75
-          ),
-          updated_at: submittedAt,
-        })
-        .eq('id', existingWindow.id)
-
-      if (windowUpdateError) {
-        return NextResponse.json(
-          { error: windowUpdateError.message },
-          { status: 500 }
-        )
-      }
-    } else {
-      const { error: windowInsertError } = await supabase
-        .from('assessment_windows')
-        .insert({
-          client_id: client.client_id,
-          auth_user_id: user.id,
-          window_type: window.windowType,
-          estimated_start_date: window.estimatedStartDate,
-          estimated_end_date: window.estimatedEndDate,
-          status: window.isOpen ? 'open' : window.status,
-          assessment_data: mergedAssessmentData,
-          completion_percent: 75,
-          created_at: submittedAt,
-          updated_at: submittedAt,
-        })
-
-      if (windowInsertError) {
-        return NextResponse.json(
-          { error: windowInsertError.message },
-          { status: 500 }
-        )
-      }
     }
 
     return NextResponse.json({
