@@ -177,14 +177,28 @@ export default function AdaptiveDashboard({
             on the scale.
           </p>
 
-          <div style={{ marginTop: '22px' }}>
-            <Link
-              href="/dashboard/assessment/measurements"
-              style={styles.secondaryButtonStyle}
-            >
-              Update Progress
-            </Link>
-          </div>
+          <div
+  style={{
+    display: 'flex',
+    gap: '12px',
+    flexWrap: 'wrap',
+    marginTop: '22px',
+  }}
+>
+  <Link
+    href="/dashboard/assessment/measurements"
+    style={styles.secondaryButtonStyle}
+  >
+    Measurements
+  </Link>
+
+  <Link
+    href="/dashboard/assessment/photos"
+    style={styles.secondaryButtonStyle}
+  >
+    Progress Photos
+  </Link>
+</div>
         </section>
       ) : null}
 
