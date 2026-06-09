@@ -172,44 +172,74 @@ export default function AdaptiveNutritionDashboard({
         {message && <p style={styles.bodyStyle}>{message}</p>}
 
         {remaining && (
-          <section style={styles.cartBoxStyle}>
-            <h2 style={styles.h2Style}>
-              {isEmber ? 'Targets Today' : 'Remaining Today'}
-            </h2>
+  <section style={styles.cartBoxStyle}>
+    <h2 style={styles.h2Style}>
+      {isEmber ? 'Targets Today' : 'Remaining Today'}
+    </h2>
 
-            <div style={styles.cardGridStyle}>
-              <div style={styles.cardStyle}>
-                <h3 style={styles.cardTitleStyle}>Calories</h3>
-                <p style={styles.cardTextStyle}>
-                  {isEmber
-                    ? Math.round(calculatedCalories)
-                    : remaining?.calories_remaining ?? 0}
-                </p>
-              </div>
+    <div style={styles.cardGridStyle}>
+      <div style={styles.cardStyle}>
+        <h3 style={styles.cardTitleStyle}>Calories</h3>
+        <p style={styles.cardTextStyle}>
+          {isEmber
+            ? calculatedCalories
+            : remaining?.calories_remaining ?? 0}
+        </p>
+      </div>
 
-              <div style={styles.cardStyle}>
-                <h3 style={styles.cardTitleStyle}>Protein</h3>
-                <p style={styles.cardTextStyle}>
-                  {remaining.protein_remaining_g}g
-                </p>
-              </div>
+      <div style={styles.cardStyle}>
+        <h3 style={styles.cardTitleStyle}>Protein</h3>
 
-              <div style={styles.cardStyle}>
-                <h3 style={styles.cardTitleStyle}>Carbs</h3>
-                <p style={styles.cardTextStyle}>
-                  {remaining.carbs_remaining_g}g
-                </p>
-              </div>
-
-              <div style={styles.cardStyle}>
-                <h3 style={styles.cardTitleStyle}>Fat</h3>
-                <p style={styles.cardTextStyle}>
-                  {remaining.fat_remaining_g}g
-                </p>
-              </div>
-            </div>
-          </section>
+        {isEmber ? (
+          <input
+            type="number"
+            value={proteinTarget}
+            onChange={(e) => setProteinTarget(e.target.value)}
+            style={styles.inputStyle}
+          />
+        ) : (
+          <p style={styles.cardTextStyle}>
+            {remaining.protein_remaining_g}g
+          </p>
         )}
+      </div>
+
+      <div style={styles.cardStyle}>
+        <h3 style={styles.cardTitleStyle}>Carbs</h3>
+
+        {isEmber ? (
+          <input
+            type="number"
+            value={carbTarget}
+            onChange={(e) => setCarbTarget(e.target.value)}
+            style={styles.inputStyle}
+          />
+        ) : (
+          <p style={styles.cardTextStyle}>
+            {remaining.carbs_remaining_g}g
+          </p>
+        )}
+      </div>
+
+      <div style={styles.cardStyle}>
+        <h3 style={styles.cardTitleStyle}>Fat</h3>
+
+        {isEmber ? (
+          <input
+            type="number"
+            value={fatTarget}
+            onChange={(e) => setFatTarget(e.target.value)}
+            style={styles.inputStyle}
+          />
+        ) : (
+          <p style={styles.cardTextStyle}>
+            {remaining.fat_remaining_g}g
+          </p>
+        )}
+      </div>
+    </div>
+  </section>
+)}
 
         {isEmber ? (
           <section style={styles.cartBoxStyle}>
