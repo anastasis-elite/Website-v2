@@ -41,6 +41,10 @@ export default function AdaptiveNutritionDashboard({
   const [nutritionLogId, setNutritionLogId] = useState<string | null>(null)
   const [remaining, setRemaining] = useState<Remaining | null>(null)
 
+  const [proteinTarget, setProteinTarget] = useState('')
+  const [carbTarget, setCarbTarget] = useState('')
+  const [fatTarget, setFatTarget] = useState('')
+
   const [search, setSearch] = useState('')
   const [foods, setFoods] = useState<Food[]>([])
   const [selectedFoodId, setSelectedFoodId] = useState('')
@@ -101,6 +105,9 @@ export default function AdaptiveNutritionDashboard({
       .maybeSingle()
 
     setRemaining(remainingData)
+    setProteinTarget(String(remainingData?.protein_remaining_g || ''))
+    setCarbTarget(String(remainingData?.carbs_remaining_g || ''))
+    setFatTarget(String(remainingData?.fat_remaining_g || ''))
     setLoading(false)
   }
 
@@ -137,12 +144,11 @@ export default function AdaptiveNutritionDashboard({
     await loadToday()
   }
 
-  const calculatedCalories = remaining
-  ? Math.round(
-      Number(remaining.protein_remaining_g || 0) * 4 +
-        Number(remaining.carbs_remaining_g || 0) * 4 +
-        Number(remaining.fat_remaining_g || 0) * 9
-    )
+  const calculatedCalories = Math.round(
+  Number(proteinTarget || 0) * 4 +
+    Number(carbTarget || 0) * 4 +
+    Number(fatTarget || 0) * 9
+)
   : 0
 
   return (
@@ -178,7 +184,7 @@ export default function AdaptiveNutritionDashboard({
                 <p style={styles.cardTextStyle}>
                   {isEmber
                     ? Math.round(calculatedCalories)
-                    : remaining.calories_remaining}
+                    : remaining?.calories_remaining ?? 0}
                 </p>
               </div>
 
