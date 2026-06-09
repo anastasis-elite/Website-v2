@@ -67,7 +67,7 @@ export async function POST(req: Request) {
         `${client.client_id}/${dateFolder}/${key}-${Date.now()}.${fileExt}`
 
       const { error: uploadError } = await supabase.storage
-        .from('assessment-photos')
+        .from('assessment_photos')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true,
