@@ -3,6 +3,7 @@ import * as styles from '@/app/styles/globalstyles'
 import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
 import DashboardStatusDock from '@/components/DashboardStatusDock'
 import SymptomQuickLog from '@/components/SymptomQuickLog'
+import PeriodStartButton from '@/components/PeriodStartButton'
 
 type Props = {
   client: any
@@ -104,6 +105,8 @@ export default function AdaptiveDashboard({
             Cycle
           </Link>
 
+          <PeriodStartButton clientId={client.client_id} />
+          
           {adaptiveDashboard.todayFocus.map((focus: string) => (
             <Link
               key={focus}
