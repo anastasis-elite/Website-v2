@@ -138,10 +138,12 @@ export default function AdaptiveNutritionDashboard({
   }
 
   const calculatedCalories = remaining
-    ? Number(remaining.protein_remaining_g || 0) * 4 +
-      Number(remaining.carbs_remaining_g || 0) * 4 +
-      Number(remaining.fat_remaining_g || 0) * 9
-    : 0
+  ? Math.round(
+      Number(remaining.protein_remaining_g || 0) * 4 +
+        Number(remaining.carbs_remaining_g || 0) * 4 +
+        Number(remaining.fat_remaining_g || 0) * 9
+    )
+  : 0
 
   return (
     <main style={styles.pageStyle}>
