@@ -55,7 +55,6 @@ export async function POST(req: Request) {
           cycle_phase: 'menstrual',
           period_started: true,
           bleeding: 'started',
-          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
         {
