@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import * as styles from '@/app/styles/globalstyles'
 
 type Props = {
   clientId: string
@@ -86,22 +87,21 @@ export default function NutritionTracker({ clientId, todayLog }: Props) {
       ))}
 
       <button
-        type="button"
-        onClick={saveNutrition}
-        disabled={saving}
-        style={{
-          padding: '16px 24px',
-          borderRadius: 12,
-          border: 'none',
-          cursor: 'pointer',
-        }}
-      >
-        {saving
-          ? 'Saving Nutrition...'
-          : saved
-          ? 'Nutrition Saved'
-          : 'Save Nutrition'}
-      </button>
+  type="button"
+  onClick={saveNutrition}
+  disabled={saving}
+  style={{
+    ...styles.secondaryButtonStyle,
+    opacity: saving ? 0.7 : 1,
+    cursor: saving ? 'not-allowed' : 'pointer',
+  }}
+>
+  {saving
+    ? 'Saving Nutrition...'
+    : saved
+    ? 'Nutrition Saved'
+    : 'Save Nutrition'}
+</button>
     </section>
   )
 }
