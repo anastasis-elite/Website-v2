@@ -70,7 +70,7 @@ export async function POST(req: Request) {
         .from('assessment_photos')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true,
+          upsert: false,
           contentType: file.type || 'image/jpeg',
         })
 
