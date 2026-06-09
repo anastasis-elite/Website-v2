@@ -41,6 +41,7 @@ export default function AdaptiveNutritionDashboard({
   const [nutritionLogId, setNutritionLogId] = useState<string | null>(null)
   const [remaining, setRemaining] = useState<Remaining | null>(null)
 
+  const [calorieTarget, setCalorieTarget] = useState(0)
   const [proteinTarget, setProteinTarget] = useState('')
   const [carbTarget, setCarbTarget] = useState('')
   const [fatTarget, setFatTarget] = useState('')
@@ -104,10 +105,15 @@ export default function AdaptiveNutritionDashboard({
       .eq('nutrition_log_id', log.id)
       .maybeSingle()
 
+    const initialProtein = String(remainingData?.protein_remaining_g || '')
+    const initialCarbs = String(remainingData?.carbs_remaining_g || '')
+    const initialFat = String(remainingData?.fat_remaining_g || '')
+    
     setRemaining(remainingData)
     setProteinTarget(String(remainingData?.protein_remaining_g || ''))
     setCarbTarget(String(remainingData?.carbs_remaining_g || ''))
     setFatTarget(String(remainingData?.fat_remaining_g || ''))
+    setCalorieTarget(calculateCalories(initialProtein, iniitialCarbs, initialFat))
     setLoading(false)
   }
 
@@ -144,11 +150,13 @@ export default function AdaptiveNutritionDashboard({
     await loadToday()
   }
 
-  const calculatedCalories = Math.round(
-  Number(proteinTarget || 0) * 4 +
-    Number(carbTarget || 0) * 4 +
-    Number(fatTarget || 0) * 9
-)
+  function calculateCalories(protein: string, carbs: string, fat: string) {
+  return Math.round(
+    Number(protein || 0) * 4 +
+      Number(carbs || 0) * 4 +
+      Number(fat || 0) * 9
+  )
+}
 
   return (
     <main style={styles.pageStyle}>
@@ -184,7 +192,7 @@ export default function AdaptiveNutritionDashboard({
         {isEmber ? (
           <input
             type="number"
-            value={calculatedCalories}
+            value={calorieTarget}
             readOnly
             style={{
               ...styles.inputStyle,
@@ -203,11 +211,15 @@ export default function AdaptiveNutritionDashboard({
 
         {isEmber ? (
           <input
-            type="number"
-            value={proteinTarget}
-            onChange={(e) => setProteinTarget(e.target.value)}
-            style={styles.inputStyle}
-          />
+  type="number"
+  value={proteinTarget}
+  onChange={(e) => {
+    const nextProtein = e.target.value
+    setProteinTarget(nextProtein)
+    setCalorieTarget(calculateCalories(nextProtein, carbTarget, fatTarget))
+  }}
+  style={styles.inputStyle}
+/>
         ) : (
           <p style={styles.cardTextStyle}>
             {remaining.protein_remaining_g}g
@@ -220,11 +232,15 @@ export default function AdaptiveNutritionDashboard({
 
         {isEmber ? (
           <input
-            type="number"
-            value={carbTarget}
-            onChange={(e) => setCarbTarget(e.target.value)}
-            style={styles.inputStyle}
-          />
+  type="number"
+  value={carbTarget}
+  onChange={(e) => {
+    const nextCarbs = e.target.value
+    setCarbTarget(nextCarbs)
+    setCalorieTarget(calculateCalories(proteinTarget, nextCarbs, fatTarget))
+  }}
+  style={styles.inputStyle}
+/>
         ) : (
           <p style={styles.cardTextStyle}>
             {remaining.carbs_remaining_g}g
@@ -237,11 +253,15 @@ export default function AdaptiveNutritionDashboard({
 
         {isEmber ? (
           <input
-            type="number"
-            value={fatTarget}
-            onChange={(e) => setFatTarget(e.target.value)}
-            style={styles.inputStyle}
-          />
+  type="number"
+  value={fatTarget}
+  onChange={(e) => {
+    const nextFat = e.target.value
+    setFatTarget(nextFat)
+    setCalorieTarget(calculateCalories(proteinTarget, carbTarget, nextFat))
+  }}
+  style={styles.inputStyle}
+/>
         ) : (
           <p style={styles.cardTextStyle}>
             {remaining.fat_remaining_g}g
