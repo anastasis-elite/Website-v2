@@ -177,25 +177,26 @@ export default function AdaptiveNutritionDashboard({
       {isEmber ? 'Targets Today' : 'Remaining Today'}
     </h2>
 
-    <div style={styles.cardStyle}>
-  <h3 style={styles.cardTitleStyle}>Calories</h3>
+    <div style={styles.cardGridStyle}>
+      <div style={styles.cardStyle}>
+        <h3 style={styles.cardTitleStyle}>Calories</h3>
 
-  {isEmber ? (
-    <input
-      type="number"
-      value={calculatedCalories}
-      readOnly
-      style={{
-        ...styles.inputStyle,
-        opacity: 0.85,
-      }}
-    />
-  ) : (
-    <p style={styles.cardTextStyle}>
-      {remaining?.calories_remaining ?? 0}
-    </p>
-  )}
-</div>
+        {isEmber ? (
+          <input
+            type="number"
+            value={calculatedCalories}
+            readOnly
+            style={{
+              ...styles.inputStyle,
+              opacity: 0.85,
+            }}
+          />
+        ) : (
+          <p style={styles.cardTextStyle}>
+            {remaining?.calories_remaining ?? 0}
+          </p>
+        )}
+      </div>
 
       <div style={styles.cardStyle}>
         <h3 style={styles.cardTitleStyle}>Protein</h3>
@@ -267,7 +268,7 @@ export default function AdaptiveNutritionDashboard({
           </section>
         ) : null}
 
-        {!isEmber ? (
+        {(isIgnite || isPhoenix) ? (
           <section style={styles.cartBoxStyle}>
             <h2 style={styles.h2Style}>Add Food</h2>
 
