@@ -52,12 +52,14 @@ export async function POST(req: Request) {
           auth_user_id: user.id,
           log_date: today,
           cycle_day: 1,
-          event_type: 'period_start',
+          cycle_phase: 'menstrual',
+          period_started: true,
+          bleeding: 'started',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
         {
-          onConflict: 'client_id,log_date,event_type',
+          onConflict: 'client_id,log_date',
         }
       )
 
