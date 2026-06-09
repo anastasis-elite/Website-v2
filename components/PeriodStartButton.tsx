@@ -31,6 +31,7 @@ export default function PeriodStartButton({ clientId, compact = false }: Props) 
       setStatus('saved')
     } catch (error) {
   console.error('PERIOD START ERROR:', error)
+  alert(error instanceof Error ? error.message : 'Unknown error')
   setStatus('error')
 }
   }
