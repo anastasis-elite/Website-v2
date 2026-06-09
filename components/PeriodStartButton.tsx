@@ -25,13 +25,14 @@ export default function PeriodStartButton({ clientId, compact = false }: Props) 
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data?.error || 'Could not save cycle start')
-      }
+  throw new Error(data?.error || data?.details || 'Could not save cycle start')
+}
 
       setStatus('saved')
-    } catch {
-      setStatus('error')
-    }
+    } catch (error) {
+  console.error('PERIOD START ERROR:', error)
+  setStatus('error')
+}
   }
 
   return (
