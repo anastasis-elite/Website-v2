@@ -177,15 +177,25 @@ export default function AdaptiveNutritionDashboard({
       {isEmber ? 'Targets Today' : 'Remaining Today'}
     </h2>
 
-    <div style={styles.cardGridStyle}>
-      <div style={styles.cardStyle}>
-        <h3 style={styles.cardTitleStyle}>Calories</h3>
-        <p style={styles.cardTextStyle}>
-          {isEmber
-            ? calculatedCalories
-            : remaining?.calories_remaining ?? 0}
-        </p>
-      </div>
+    <div style={styles.cardStyle}>
+  <h3 style={styles.cardTitleStyle}>Calories</h3>
+
+  {isEmber ? (
+    <input
+      type="number"
+      value={calculatedCalories}
+      readOnly
+      style={{
+        ...styles.inputStyle,
+        opacity: 0.85,
+      }}
+    />
+  ) : (
+    <p style={styles.cardTextStyle}>
+      {remaining?.calories_remaining ?? 0}
+    </p>
+  )}
+</div>
 
       <div style={styles.cardStyle}>
         <h3 style={styles.cardTitleStyle}>Protein</h3>
