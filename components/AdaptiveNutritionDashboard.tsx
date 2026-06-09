@@ -149,7 +149,6 @@ export default function AdaptiveNutritionDashboard({
     Number(carbTarget || 0) * 4 +
     Number(fatTarget || 0) * 9
 )
-  : 0
 
   return (
     <main style={styles.pageStyle}>
