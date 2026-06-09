@@ -110,10 +110,10 @@ export default function AdaptiveNutritionDashboard({
     const initialFat = String(remainingData?.fat_remaining_g || '')
     
     setRemaining(remainingData)
-    setProteinTarget(String(remainingData?.protein_remaining_g || ''))
-    setCarbTarget(String(remainingData?.carbs_remaining_g || ''))
-    setFatTarget(String(remainingData?.fat_remaining_g || ''))
-    setCalorieTarget(calculateCalories(initialProtein, iniitialCarbs, initialFat))
+    setProteinTarget(initialProtein)
+    setCarbTarget(initialCarbs)
+    setFatTarget(initialFat)
+    setCalorieTarget(calculateCalories(initialProtein, initialCarbs, initialFat))
     setLoading(false)
   }
 
