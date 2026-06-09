@@ -353,9 +353,19 @@ a {
 }
 
 .dashboard-checklist label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--copper);
 }
 
 .dashboard-home-button {
