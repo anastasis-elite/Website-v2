@@ -132,6 +132,8 @@ export async function POST(req: Request) {
           typeof workout_schedule_preference === 'string'
             ? workout_schedule_preference
             : null,
+
+        daily_structure_reviewed_at: new Date().toISOString(),
        })
       .eq('client_id', client_id)
       .eq('auth_user_id', user.id)
