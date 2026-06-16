@@ -164,44 +164,59 @@ setMessage('Application submitted successfully.')
     >
       <div style={{ maxWidth: '980px', margin: '0 auto' }}>
         <section style={{ marginBottom: '72px' }}>
-          <p
-            style={{
-              letterSpacing: '6px',
-              fontSize: '12px',
-              color: '#c58b57',
-              opacity: 0.85,
-              marginBottom: '24px',
-              textTransform: 'uppercase',
-            }}
-          >
-            Apply
-          </p>
+  <p style={styles.eyebrowStyle}>
+    Apply
+  </p>
 
-          <h1
-            style={{
-              fontSize: 'clamp(2.8rem, 5vw, 5rem)',
-              lineHeight: 1.1,
-              letterSpacing: '-0.02em',
-              margin: '0 0 28px 0',
-              maxWidth: '900px',
-            }}
-          >
-            Start the process.
-          </h1>
+  <h1 style={styles.heroTitleStyle}>
+    Welcome.
+    <br />
+    Take a breath.
+  </h1>
 
-          <p
-            style={{
-              fontSize: '1.12rem',
-              lineHeight: 1.9,
-              color: '#d7c7b6',
-              maxWidth: '780px',
-              marginBottom: '0',
-            }}
-          >
-            This application is here to create clarity, fit, and alignment. It is not
-            rushed, generic, or impersonal.
-          </p>
-        </section>
+  <p style={styles.heroTextStyle}>
+    You do not need to have everything figured out before you begin.
+    This application exists to help us understand where you are today
+    so the system can meet you there.
+  </p>
+
+  <div style={styles.cartBoxStyle}>
+    <h2 style={styles.sectionTitleStyle}>
+      There are no perfect answers here.
+    </h2>
+
+    <p style={styles.bodyStyle}>
+      Simply answer honestly. The more accurately we understand your current
+      reality, the better we can build a path forward that fits your life,
+      your body, your capacity, and your goals.
+    </p>
+  </div>
+
+  <div style={styles.cardGridStyle}>
+    {[
+      {
+        title: '1. Share where you are.',
+        body:
+          'Your answers help us understand your current body, responsibilities, stress load, and goals.',
+      },
+      {
+        title: '2. We identify what needs support.',
+        body:
+          'The goal is not to judge your starting point. The goal is to understand what your system needs first.',
+      },
+      {
+        title: '3. You begin with a plan that fits.',
+        body:
+          'Anastasis is designed to meet your current capacity and build from there.',
+      },
+    ].map((item) => (
+      <div key={item.title} style={styles.cardStyle}>
+        <h3 style={styles.cardTitleStyle}>{item.title}</h3>
+        <p style={styles.cardTextStyle}>{item.body}</p>
+      </div>
+    ))}
+  </div>
+</section>
 
         <form
           onSubmit={handleSubmit}
