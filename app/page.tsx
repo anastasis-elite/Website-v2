@@ -1,7 +1,6 @@
 import Image from 'next/image'
-import AuthAwareCta from '../components/AuthAwareCta'
-import MistReveal from '../components/MistReveal'
 import Button from '../components/Button'
+import MistReveal from '../components/MistReveal'
 
 export default function Home() {
   return (
@@ -39,12 +38,7 @@ export default function Home() {
           }}
         />
 
-        <div
-          style={{
-            marginBottom: '28px',
-            animation: 'floatIn 1s ease both',
-          }}
-        >
+        <div style={{ marginBottom: '28px' }}>
           <MistReveal>
             <Image
               src="/Logo.png"
@@ -68,7 +62,6 @@ export default function Home() {
                 opacity: 0.82,
                 marginBottom: '32px',
                 textTransform: 'uppercase',
-                animation: 'floatIn 1.2s ease both',
               }}
             >
               Anastasis
@@ -94,7 +87,7 @@ export default function Home() {
           <br />
           You did not fail your body.
           <br />
-          You need a system built for you.
+          You need a system built for your life.
         </h1>
 
         <p
@@ -104,7 +97,6 @@ export default function Home() {
             fontSize: 'clamp(1rem, 2vw, 1.2rem)',
             lineHeight: 1.92,
             color: 'rgba(215,199,182,0.84)',
-            animation: 'floatIn 1.3s ease both',
           }}
         >
           The children. The work. The meals. The appointments. The invisible
@@ -118,13 +110,11 @@ export default function Home() {
             fontSize: 'clamp(1rem, 2vw, 1.12rem)',
             lineHeight: 1.92,
             color: 'rgba(215,199,182,0.78)',
-            animation: 'floatIn 1.45s ease both',
           }}
         >
-          You do not need another plan that ignores your life. You need
-          cycle-aware training, nutrition targets, recovery guidance, and
-          progress tracking that help you rebuild capacity without losing
-          yourself in the process.
+          Anastasis helps high-capacity women build strength, energy,
+          nourishment, recovery, and capacity through a system that adapts to
+          their body, cycle, stress load, and real life.
         </p>
 
         <div
@@ -136,10 +126,10 @@ export default function Home() {
             marginTop: '56px',
           }}
         >
-          <AuthAwareCta />
+          <Button href="#how-it-works">How It Works</Button>
 
-          <Button href="#seen" variant="secondary">
-            See If This Is You
+          <Button href="/program" variant="secondary">
+            Choose Your Path
           </Button>
         </div>
 
@@ -204,7 +194,7 @@ export default function Home() {
               'You take care of everyone else before yourself.',
               'You have started over more times than you can count.',
               'You want strength, energy, and confidence without living in survival mode.',
-              'You need support that adapts to your body, your cycle, your capacity, and your real life.',
+              'You need support that adapts to your body, your cycle, your capacity, and your real responsibilities.',
             ].map((item) => (
               <div
                 key={item}
@@ -230,16 +220,14 @@ export default function Home() {
             ))}
           </div>
 
-          <Button href="/apply">
-            Begin Your Assessment
-          </Button>
+          <Button href="#how-it-works">Show Me the System</Button>
         </div>
       </section>
 
       <section
-        id="vision"
+        id="what-it-is"
         style={{
-          padding: '100px 24px 140px',
+          padding: '100px 24px 120px',
           position: 'relative',
           zIndex: 2,
         }}
@@ -261,7 +249,7 @@ export default function Home() {
               textTransform: 'uppercase',
             }}
           >
-            What we are building
+            What Anastasis is
           </p>
 
           <h2
@@ -274,9 +262,8 @@ export default function Home() {
               fontWeight: 500,
             }}
           >
-            The goal is not to push harder.
-            <br />
-            The goal is to expand your capacity.
+            Fitness, nutrition, and recovery designed around the woman carrying
+            the load.
           </h2>
 
           <p
@@ -288,9 +275,8 @@ export default function Home() {
               maxWidth: '760px',
             }}
           >
-            Anastasis is designed to help you understand what your body can
-            recover from, where your energy is going, and how to move forward
-            without constantly abandoning yourself to make progress.
+            This is not another plan asking you to ignore your body, your
+            responsibilities, your cycle, your stress, or your recovery.
           </p>
 
           <p
@@ -302,27 +288,24 @@ export default function Home() {
               maxWidth: '760px',
             }}
           >
-            This is not about doing more. It is about building enough physical,
-            mental, and emotional reserve to trust yourself again.
+            Anastasis is an adaptive women’s wellness system built to help you
+            train, eat, recover, and rebuild capacity without abandoning
+            yourself to make progress.
           </p>
-
-          <Button href="/program" variant="secondary">
-            View the Program
-          </Button>
         </div>
       </section>
 
       <section
-        id="method"
+        id="how-it-works"
         style={{
-          padding: '100px 24px 180px',
+          padding: '100px 24px 140px',
           position: 'relative',
           zIndex: 2,
         }}
       >
         <div
           style={{
-            maxWidth: '980px',
+            maxWidth: '1080px',
             margin: '0 auto',
             textAlign: 'center',
           }}
@@ -350,9 +333,11 @@ export default function Home() {
               fontWeight: 500,
             }}
           >
-            Your body is not the problem.
+            Assess.
             <br />
-            It is the blueprint.
+            Adapt.
+            <br />
+            Expand.
           </h2>
 
           <p
@@ -364,40 +349,34 @@ export default function Home() {
               maxWidth: '760px',
             }}
           >
-            The system begins with your cycle, your current capacity, your
-            goals, and your real life. From there, Anastasis guides training,
-            nutrition, recovery, and progress tracking around what your body can
-            actually sustain.
+            The goal is not to push harder forever. The goal is to understand
+            where your capacity is now, support what is under-recovered, and
+            build a structure your life can actually sustain.
           </p>
 
           <div
             style={{
               display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
               gap: '26px',
-              maxWidth: '860px',
               margin: '0 auto 90px auto',
             }}
           >
             {[
               {
-                title: 'Cycle-aware training',
+                title: '1. Assess',
                 body:
-                  'Your program accounts for where you are in your cycle so training and recovery stop feeling random.',
+                  'We look at your current capacity, goals, recovery, cycle, nutrition, schedule, stress load, movement history, and what your body needs first.',
               },
               {
-                title: 'Nutrition targets without obsession',
+                title: '2. Adapt',
                 body:
-                  'You receive macro and hydration guidance designed to support your goals without turning food into another source of pressure.',
+                  'Your training, nutrition targets, recovery recommendations, and progress tracking are built around your real life instead of an ideal version of it.',
               },
               {
-                title: 'Recovery that counts',
+                title: '3. Expand',
                 body:
-                  'Recovery is treated as part of the system, not as something you earn after you have done enough.',
-              },
-              {
-                title: 'Progress you can actually see',
-                body:
-                  'Measurements and progress photos help you track change without relying only on the scale.',
+                  'As your body becomes stronger and better supported, the system helps you build more energy, resilience, confidence, and capacity over time.',
               },
             ].map((item) => (
               <div
@@ -408,6 +387,7 @@ export default function Home() {
                   padding: '40px 34px',
                   backdropFilter: 'blur(18px)',
                   boxShadow: '0 24px 80px rgba(0,0,0,0.16)',
+                  textAlign: 'left',
                 }}
               >
                 <h3
@@ -435,18 +415,40 @@ export default function Home() {
             ))}
           </div>
 
-          <p
+          <div
             style={{
-              fontSize: '1.08rem',
-              lineHeight: 1.95,
-              color: 'rgba(215,199,182,0.8)',
-              margin: '0 auto 44px auto',
-              maxWidth: '760px',
+              maxWidth: '860px',
+              margin: '0 auto 70px auto',
+              background: 'rgba(18,18,18,0.52)',
+              borderRadius: '34px',
+              padding: '42px 34px',
+              backdropFilter: 'blur(18px)',
+              boxShadow: '0 24px 80px rgba(0,0,0,0.18)',
             }}
           >
-            You do not need another plan to follow. You need a system that helps
-            you carry your life without losing yourself in it.
-          </p>
+            <h3
+              style={{
+                fontSize: '1.5rem',
+                marginBottom: '18px',
+                fontWeight: 500,
+              }}
+            >
+              What this means in real life
+            </h3>
+
+            <p
+              style={{
+                fontSize: '1.05rem',
+                lineHeight: 1.9,
+                color: 'rgba(215,199,182,0.82)',
+                margin: 0,
+              }}
+            >
+              You stop guessing. You stop starting over. You stop treating your
+              body like the problem. You begin with the right level of support,
+              then build from there.
+            </p>
+          </div>
 
           <div
             style={{
@@ -457,12 +459,10 @@ export default function Home() {
               marginTop: '32px',
             }}
           >
-            <Button href="/apply">
-              Begin Your Assessment
-            </Button>
+            <Button href="/program">Choose Your Path</Button>
 
-            <Button href="/program" variant="secondary">
-              View the Program
+            <Button href="/apply" variant="secondary">
+              Help Me Find My Path
             </Button>
           </div>
         </div>
