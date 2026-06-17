@@ -7,22 +7,69 @@ import * as styles from '@/app/styles/globalstyles'
 type Food = {
   id: string
   name: string
+  serving_unit?: string | null
+  serving_size?: number | null
+  calories?: number | null
+  protein_g?: number | null
+  carbs_g?: number | null
+  fat_g?: number | null
+}
+
+type NutritionLog = {
+  id: string
+  calories?: number | null
+  protein?: number | null
+  carbs?: number | null
+  fats?: number | null
+  fiber_target_g?: number | null
+  sodium_target_mg?: number | null
+  potassium_target_mg?: number | null
+  magnesium_target_mg?: number | null
+  calcium_target_mg?: number | null
+  iron_target_mg?: number | null
+  zinc_target_mg?: number | null
+  selenium_target_mcg?: number | null
+  choline_target_mg?: number | null
+  vitamin_a_target_mcg?: number | null
+  vitamin_c_target_mg?: number | null
+  vitamin_d_target_mcg?: number | null
+  vitamin_e_target_mg?: number | null
+  vitamin_k_target_mcg?: number | null
+  b1_target_mg?: number | null
+  b2_target_mg?: number | null
+  b3_target_mg?: number | null
+  b5_target_mg?: number | null
+  b6_target_mg?: number | null
+  b9_target_mcg?: number | null
+  b12_target_mcg?: number | null
 }
 
 type Remaining = {
-  calories_remaining: number
-  protein_remaining_g: number
-  carbs_remaining_g: number
-  fat_remaining_g: number
-  fiber_remaining_g: number
-  sodium_remaining_mg: number
-  potassium_remaining_mg: number
-  magnesium_remaining_mg: number
-  calcium_remaining_mg: number
-  iron_remaining_mg: number
-  choline_remaining_mg: number
-  vitamin_c_remaining_mg: number
-  vitamin_d_remaining_mcg: number
+  calories_remaining?: number | null
+  protein_remaining_g?: number | null
+  carbs_remaining_g?: number | null
+  fat_remaining_g?: number | null
+  fiber_remaining_g?: number | null
+  sodium_remaining_mg?: number | null
+  potassium_remaining_mg?: number | null
+  magnesium_remaining_mg?: number | null
+  calcium_remaining_mg?: number | null
+  iron_remaining_mg?: number | null
+  zinc_remaining_mg?: number | null
+  selenium_remaining_mcg?: number | null
+  choline_remaining_mg?: number | null
+  vitamin_a_remaining_mcg?: number | null
+  vitamin_c_remaining_mg?: number | null
+  vitamin_d_remaining_mcg?: number | null
+  vitamin_e_remaining_mg?: number | null
+  vitamin_k_remaining_mcg?: number | null
+  b1_remaining_mg?: number | null
+  b2_remaining_mg?: number | null
+  b3_remaining_mg?: number | null
+  b5_remaining_mg?: number | null
+  b6_remaining_mg?: number | null
+  b9_remaining_mcg?: number | null
+  b12_remaining_mcg?: number | null
 }
 
 export default function AdaptiveNutritionDashboard({
@@ -38,7 +85,7 @@ export default function AdaptiveNutritionDashboard({
   const isPhoenix = tier === 'phoenix'
 
   const [loading, setLoading] = useState(true)
-  const [nutritionLogId, setNutritionLogId] = useState<string | null>(null)
+  const [nutritionLog, setNutritionLog] = useState<NutritionLog | null>(null)
   const [remaining, setRemaining] = useState<Remaining | null>(null)
 
   const [calorieTarget, setCalorieTarget] = useState(0)
@@ -50,12 +97,21 @@ export default function AdaptiveNutritionDashboard({
   const [foods, setFoods] = useState<Food[]>([])
   const [selectedFoodId, setSelectedFoodId] = useState('')
   const [servingAmount, setServingAmount] = useState('1')
+  const [servingUnit, setServingUnit] = useState('serving')
   const [mealName, setMealName] = useState('Breakfast')
   const [message, setMessage] = useState('')
 
   useEffect(() => {
     loadToday()
   }, [])
+
+  function calculateCalories(protein: string, carbs: string, fat: string) {
+    return Math.round(
+      Number(protein || 0) * 4 +
+        Number(carbs || 0) * 4 +
+        Number(fat || 0) * 9
+    )
+  }
 
   async function loadToday() {
     setLoading(true)
@@ -86,7 +142,7 @@ export default function AdaptiveNutritionDashboard({
 
     const { data: log } = await supabase
       .from('nutrition_logs')
-      .select('id')
+      .select('*')
       .eq('client_id', client.id)
       .eq('log_date', today)
       .maybeSingle()
@@ -97,7 +153,7 @@ export default function AdaptiveNutritionDashboard({
       return
     }
 
-    setNutritionLogId(log.id)
+    setNutritionLog(log)
 
     const { data: remainingData } = await supabase
       .from('nutrition_log_remaining')
@@ -105,37 +161,46 @@ export default function AdaptiveNutritionDashboard({
       .eq('nutrition_log_id', log.id)
       .maybeSingle()
 
-    const initialProtein = String(remainingData?.protein_remaining_g || '')
-    const initialCarbs = String(remainingData?.carbs_remaining_g || '')
-    const initialFat = String(remainingData?.fat_remaining_g || '')
-    
     setRemaining(remainingData)
+
+    const initialProtein = String(log.protein || remainingData?.protein_remaining_g || '')
+    const initialCarbs = String(log.carbs || remainingData?.carbs_remaining_g || '')
+    const initialFat = String(log.fats || remainingData?.fat_remaining_g || '')
+
     setProteinTarget(initialProtein)
     setCarbTarget(initialCarbs)
     setFatTarget(initialFat)
-    setCalorieTarget(calculateCalories(initialProtein, initialCarbs, initialFat))
+    setCalorieTarget(Number(log.calories || calculateCalories(initialProtein, initialCarbs, initialFat)))
+
     setLoading(false)
   }
 
   async function searchFoods() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('foods')
-      .select('id, name')
+      .select(
+        'id, name, serving_unit, serving_size, calories, protein_g, carbs_g, fat_g'
+      )
       .ilike('normalized_name', `%${search.toLowerCase()}%`)
       .limit(12)
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
 
     setFoods(data || [])
   }
 
   async function addMealEntry() {
-    if (!nutritionLogId || !selectedFoodId) return
+    if (!nutritionLog?.id || !selectedFoodId) return
 
     const { error } = await supabase.from('meal_entries').insert({
-      nutrition_log_id: nutritionLogId,
+      nutrition_log_id: nutritionLog.id,
       food_id: selectedFoodId,
       meal_name: mealName,
       serving_amount: Number(servingAmount),
-      serving_unit: 'serving',
+      serving_unit: servingUnit,
     })
 
     if (error) {
@@ -147,16 +212,34 @@ export default function AdaptiveNutritionDashboard({
     setSearch('')
     setFoods([])
     setSelectedFoodId('')
+    setServingAmount('1')
+    setServingUnit('serving')
     await loadToday()
   }
 
-  function calculateCalories(protein: string, carbs: string, fat: string) {
-  return Math.round(
-    Number(protein || 0) * 4 +
-      Number(carbs || 0) * 4 +
-      Number(fat || 0) * 9
-  )
-}
+  const microRows = [
+    ['Fiber', nutritionLog?.fiber_target_g, remaining?.fiber_remaining_g, 'g'],
+    ['Sodium', nutritionLog?.sodium_target_mg, remaining?.sodium_remaining_mg, 'mg'],
+    ['Potassium', nutritionLog?.potassium_target_mg, remaining?.potassium_remaining_mg, 'mg'],
+    ['Magnesium', nutritionLog?.magnesium_target_mg, remaining?.magnesium_remaining_mg, 'mg'],
+    ['Calcium', nutritionLog?.calcium_target_mg, remaining?.calcium_remaining_mg, 'mg'],
+    ['Iron', nutritionLog?.iron_target_mg, remaining?.iron_remaining_mg, 'mg'],
+    ['Zinc', nutritionLog?.zinc_target_mg, remaining?.zinc_remaining_mg, 'mg'],
+    ['Selenium', nutritionLog?.selenium_target_mcg, remaining?.selenium_remaining_mcg, 'mcg'],
+    ['Choline', nutritionLog?.choline_target_mg, remaining?.choline_remaining_mg, 'mg'],
+    ['Vitamin A', nutritionLog?.vitamin_a_target_mcg, remaining?.vitamin_a_remaining_mcg, 'mcg'],
+    ['Vitamin C', nutritionLog?.vitamin_c_target_mg, remaining?.vitamin_c_remaining_mg, 'mg'],
+    ['Vitamin D', nutritionLog?.vitamin_d_target_mcg, remaining?.vitamin_d_remaining_mcg, 'mcg'],
+    ['Vitamin E', nutritionLog?.vitamin_e_target_mg, remaining?.vitamin_e_remaining_mg, 'mg'],
+    ['Vitamin K', nutritionLog?.vitamin_k_target_mcg, remaining?.vitamin_k_remaining_mcg, 'mcg'],
+    ['B1', nutritionLog?.b1_target_mg, remaining?.b1_remaining_mg, 'mg'],
+    ['B2', nutritionLog?.b2_target_mg, remaining?.b2_remaining_mg, 'mg'],
+    ['B3', nutritionLog?.b3_target_mg, remaining?.b3_remaining_mg, 'mg'],
+    ['B5', nutritionLog?.b5_target_mg, remaining?.b5_remaining_mg, 'mg'],
+    ['B6', nutritionLog?.b6_target_mg, remaining?.b6_remaining_mg, 'mg'],
+    ['B9', nutritionLog?.b9_target_mcg, remaining?.b9_remaining_mcg, 'mcg'],
+    ['B12', nutritionLog?.b12_target_mcg, remaining?.b12_remaining_mcg, 'mcg'],
+  ]
 
   return (
     <main style={styles.pageStyle}>
@@ -172,114 +255,139 @@ export default function AdaptiveNutritionDashboard({
         <p style={styles.heroTextStyle}>
           {isEmber
             ? 'Ember gives you the macro and hydration targets to support your training, cycle phase, and recovery.'
-            : 'Track intake and understand what remains for the day.'}
+            : 'Track intake against your macro and micronutrient targets.'}
         </p>
 
         {loading && <p style={styles.bodyStyle}>Loading...</p>}
-
         {message && <p style={styles.bodyStyle}>{message}</p>}
 
-        {remaining && (
-  <section style={styles.cartBoxStyle}>
-    <h2 style={styles.h2Style}>
-      {isEmber ? 'Targets Today' : 'Remaining Today'}
-    </h2>
+        {nutritionLog && (
+          <section style={styles.cartBoxStyle}>
+            <h2 style={styles.h2Style}>
+              {isEmber ? 'Targets Today' : 'Macro Targets + Remaining'}
+            </h2>
 
-    <div style={styles.cardGridStyle}>
-      <div style={styles.cardStyle}>
-        <h3 style={styles.cardTitleStyle}>Calories</h3>
+            <div style={styles.cardGridStyle}>
+              <div style={styles.cardStyle}>
+                <h3 style={styles.cardTitleStyle}>Calories</h3>
+                {isEmber ? (
+                  <input
+                    type="number"
+                    value={calorieTarget}
+                    readOnly
+                    style={{ ...styles.inputStyle, opacity: 0.85 }}
+                  />
+                ) : (
+                  <p style={styles.cardTextStyle}>
+                    Target: {nutritionLog.calories ?? 0}
+                    <br />
+                    Remaining: {remaining?.calories_remaining ?? 0}
+                  </p>
+                )}
+              </div>
 
-        {isEmber ? (
-          <input
-            type="number"
-            value={calorieTarget}
-            readOnly
-            style={{
-              ...styles.inputStyle,
-              opacity: 0.85,
-            }}
-          />
-        ) : (
-          <p style={styles.cardTextStyle}>
-            {remaining?.calories_remaining ?? 0}
-          </p>
+              <div style={styles.cardStyle}>
+                <h3 style={styles.cardTitleStyle}>Protein</h3>
+                {isEmber ? (
+                  <input
+                    type="number"
+                    value={proteinTarget}
+                    onChange={(e) => {
+                      const nextProtein = e.target.value
+                      setProteinTarget(nextProtein)
+                      setCalorieTarget(calculateCalories(nextProtein, carbTarget, fatTarget))
+                    }}
+                    style={styles.inputStyle}
+                  />
+                ) : (
+                  <p style={styles.cardTextStyle}>
+                    Target: {nutritionLog.protein ?? 0}g
+                    <br />
+                    Remaining: {remaining?.protein_remaining_g ?? 0}g
+                  </p>
+                )}
+              </div>
+
+              <div style={styles.cardStyle}>
+                <h3 style={styles.cardTitleStyle}>Carbs</h3>
+                {isEmber ? (
+                  <input
+                    type="number"
+                    value={carbTarget}
+                    onChange={(e) => {
+                      const nextCarbs = e.target.value
+                      setCarbTarget(nextCarbs)
+                      setCalorieTarget(calculateCalories(proteinTarget, nextCarbs, fatTarget))
+                    }}
+                    style={styles.inputStyle}
+                  />
+                ) : (
+                  <p style={styles.cardTextStyle}>
+                    Target: {nutritionLog.carbs ?? 0}g
+                    <br />
+                    Remaining: {remaining?.carbs_remaining_g ?? 0}g
+                  </p>
+                )}
+              </div>
+
+              <div style={styles.cardStyle}>
+                <h3 style={styles.cardTitleStyle}>Fat</h3>
+                {isEmber ? (
+                  <input
+                    type="number"
+                    value={fatTarget}
+                    onChange={(e) => {
+                      const nextFat = e.target.value
+                      setFatTarget(nextFat)
+                      setCalorieTarget(calculateCalories(proteinTarget, carbTarget, nextFat))
+                    }}
+                    style={styles.inputStyle}
+                  />
+                ) : (
+                  <p style={styles.cardTextStyle}>
+                    Target: {nutritionLog.fats ?? 0}g
+                    <br />
+                    Remaining: {remaining?.fat_remaining_g ?? 0}g
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
         )}
-      </div>
 
-      <div style={styles.cardStyle}>
-        <h3 style={styles.cardTitleStyle}>Protein</h3>
+        {(isIgnite || isPhoenix) && nutritionLog ? (
+          <details style={styles.cartBoxStyle}>
+            <summary
+              style={{
+                ...styles.sectionTitleStyle,
+                cursor: 'pointer',
+                marginBottom: 0,
+              }}
+            >
+              Micronutrient Targets + Remaining
+            </summary>
 
-        {isEmber ? (
-          <input
-  type="number"
-  value={proteinTarget}
-  onChange={(e) => {
-    const nextProtein = e.target.value
-    setProteinTarget(nextProtein)
-    setCalorieTarget(calculateCalories(nextProtein, carbTarget, fatTarget))
-  }}
-  style={styles.inputStyle}
-/>
-        ) : (
-          <p style={styles.cardTextStyle}>
-            {remaining.protein_remaining_g}g
-          </p>
-        )}
-      </div>
-
-      <div style={styles.cardStyle}>
-        <h3 style={styles.cardTitleStyle}>Carbs</h3>
-
-        {isEmber ? (
-          <input
-  type="number"
-  value={carbTarget}
-  onChange={(e) => {
-    const nextCarbs = e.target.value
-    setCarbTarget(nextCarbs)
-    setCalorieTarget(calculateCalories(proteinTarget, nextCarbs, fatTarget))
-  }}
-  style={styles.inputStyle}
-/>
-        ) : (
-          <p style={styles.cardTextStyle}>
-            {remaining.carbs_remaining_g}g
-          </p>
-        )}
-      </div>
-
-      <div style={styles.cardStyle}>
-        <h3 style={styles.cardTitleStyle}>Fat</h3>
-
-        {isEmber ? (
-          <input
-  type="number"
-  value={fatTarget}
-  onChange={(e) => {
-    const nextFat = e.target.value
-    setFatTarget(nextFat)
-    setCalorieTarget(calculateCalories(proteinTarget, carbTarget, nextFat))
-  }}
-  style={styles.inputStyle}
-/>
-        ) : (
-          <p style={styles.cardTextStyle}>
-            {remaining.fat_remaining_g}g
-          </p>
-        )}
-      </div>
-    </div>
-  </section>
-)}
+            <div style={{ ...styles.cardGridStyle, marginTop: '28px' }}>
+              {microRows.map(([label, target, remainingValue, unit]) => (
+                <div key={String(label)} style={styles.compactCardStyle}>
+                  <h3 style={styles.compactCardTitleStyle}>{label}</h3>
+                  <p style={styles.compactCardTextStyle}>
+                    Target: {target ?? 0}
+                    {unit}
+                    <br />
+                    Remaining: {remainingValue ?? 0}
+                    {unit}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </details>
+        ) : null}
 
         {isEmber ? (
           <section style={styles.cartBoxStyle}>
             <p style={styles.eyebrowStyle}>Hydration</p>
-
-            <h2 style={styles.h2Style}>
-              Water target active
-            </h2>
-
+            <h2 style={styles.h2Style}>Water target active</h2>
             <p style={styles.bodyStyle}>
               Use your water target as a daily anchor. Hydration supports
               training output, digestion, recovery, and cycle-related fluid
@@ -319,7 +427,10 @@ export default function AdaptiveNutritionDashboard({
               {foods.map((food) => (
                 <button
                   key={food.id}
-                  onClick={() => setSelectedFoodId(food.id)}
+                  onClick={() => {
+                    setSelectedFoodId(food.id)
+                    setServingUnit(food.serving_unit || 'serving')
+                  }}
                   style={{
                     ...styles.secondaryButtonStyle,
                     textAlign: 'left',
@@ -327,6 +438,10 @@ export default function AdaptiveNutritionDashboard({
                   }}
                 >
                   {food.name}
+                  {food.calories ? ` — ${food.calories} cal` : ''}
+                  {food.serving_size || food.serving_unit
+                    ? ` / ${food.serving_size || 1} ${food.serving_unit || 'serving'}`
+                    : ''}
                 </button>
               ))}
             </div>
@@ -343,6 +458,15 @@ export default function AdaptiveNutritionDashboard({
               />
             </div>
 
+            <div style={{ ...styles.fieldWrap, marginTop: '22px' }}>
+              <label style={styles.labelStyle}>Serving unit</label>
+              <input
+                style={styles.inputStyle}
+                value={servingUnit}
+                onChange={(e) => setServingUnit(e.target.value)}
+              />
+            </div>
+
             <button
               style={{ ...styles.primaryButtonStyle, marginTop: '20px' }}
               onClick={addMealEntry}
@@ -355,11 +479,9 @@ export default function AdaptiveNutritionDashboard({
         {isPhoenix ? (
           <section style={styles.cartBoxStyle}>
             <p style={styles.eyebrowStyle}>Phoenix Nutrition</p>
-
             <h2 style={styles.h2Style}>
               Adaptive meal suggestions are preparing.
             </h2>
-
             <p style={styles.bodyStyle}>
               Phoenix will use remaining macros, micros, symptoms, timing,
               cycle phase, and preferences to recommend meals and recipes.
