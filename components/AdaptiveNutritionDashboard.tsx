@@ -3,17 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import * as styles from '@/app/styles/globalstyles'
-
-type Food = {
-  id: string
-  name: string
-  serving_unit?: string | null
-  serving_size?: number | null
-  calories?: number | null
-  protein_g?: number | null
-  carbs_g?: number | null
-  fat_g?: number | null
-}
+import NutritionFoodLogger from '@/components/NutritionFoodLogger'
 
 type NutritionLog = {
   id: string
@@ -93,12 +83,6 @@ export default function AdaptiveNutritionDashboard({
   const [carbTarget, setCarbTarget] = useState('')
   const [fatTarget, setFatTarget] = useState('')
 
-  const [search, setSearch] = useState('')
-  const [foods, setFoods] = useState<Food[]>([])
-  const [selectedFoodId, setSelectedFoodId] = useState('')
-  const [servingAmount, setServingAmount] = useState('1')
-  const [servingUnit, setServingUnit] = useState('serving')
-  const [mealName, setMealName] = useState('Breakfast')
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -173,48 +157,6 @@ export default function AdaptiveNutritionDashboard({
     setCalorieTarget(Number(log.calories || calculateCalories(initialProtein, initialCarbs, initialFat)))
 
     setLoading(false)
-  }
-
-  async function searchFoods() {
-    const { data, error } = await supabase
-      .from('foods')
-      .select(
-        'id, name, serving_unit, serving_size, calories, protein_g, carbs_g, fat_g'
-      )
-      .ilike('normalized_name', `%${search.toLowerCase()}%`)
-      .limit(12)
-
-    if (error) {
-      setMessage(error.message)
-      return
-    }
-
-    setFoods(data || [])
-  }
-
-  async function addMealEntry() {
-    if (!nutritionLog?.id || !selectedFoodId) return
-
-    const { error } = await supabase.from('meal_entries').insert({
-      nutrition_log_id: nutritionLog.id,
-      food_id: selectedFoodId,
-      meal_name: mealName,
-      serving_amount: Number(servingAmount),
-      serving_unit: servingUnit,
-    })
-
-    if (error) {
-      setMessage(error.message)
-      return
-    }
-
-    setMessage('Meal added.')
-    setSearch('')
-    setFoods([])
-    setSelectedFoodId('')
-    setServingAmount('1')
-    setServingUnit('serving')
-    await loadToday()
   }
 
   const microRows = [
@@ -396,85 +338,18 @@ export default function AdaptiveNutritionDashboard({
           </section>
         ) : null}
 
-        {(isIgnite || isPhoenix) ? (
-          <section style={styles.cartBoxStyle}>
-            <h2 style={styles.h2Style}>Add Food</h2>
+        {(isIgnite || isPhoenix) && nutritionLog?.id ? (
+  <section style={styles.cartBoxStyle}>
+    <p style={styles.eyebrowStyle}>Food Logging</p>
 
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle}>Meal</label>
-              <input
-                style={styles.inputStyle}
-                value={mealName}
-                onChange={(e) => setMealName(e.target.value)}
-              />
-            </div>
+    <h2 style={styles.h2Style}>Add Food</h2>
 
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle}>Search food</label>
-              <input
-                style={styles.inputStyle}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="eggs, rice, yogurt..."
-              />
-            </div>
-
-            <button style={styles.primaryButtonStyle} onClick={searchFoods}>
-              Search Foods
-            </button>
-
-            <div style={{ marginTop: '20px', display: 'grid', gap: '10px' }}>
-              {foods.map((food) => (
-                <button
-                  key={food.id}
-                  onClick={() => {
-                    setSelectedFoodId(food.id)
-                    setServingUnit(food.serving_unit || 'serving')
-                  }}
-                  style={{
-                    ...styles.secondaryButtonStyle,
-                    textAlign: 'left',
-                    opacity: selectedFoodId === food.id ? 1 : 0.75,
-                  }}
-                >
-                  {food.name}
-                  {food.calories ? ` — ${food.calories} cal` : ''}
-                  {food.serving_size || food.serving_unit
-                    ? ` / ${food.serving_size || 1} ${food.serving_unit || 'serving'}`
-                    : ''}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ ...styles.fieldWrap, marginTop: '22px' }}>
-              <label style={styles.labelStyle}>Serving amount</label>
-              <input
-                style={styles.inputStyle}
-                value={servingAmount}
-                onChange={(e) => setServingAmount(e.target.value)}
-                type="number"
-                min="0"
-                step="0.25"
-              />
-            </div>
-
-            <div style={{ ...styles.fieldWrap, marginTop: '22px' }}>
-              <label style={styles.labelStyle}>Serving unit</label>
-              <input
-                style={styles.inputStyle}
-                value={servingUnit}
-                onChange={(e) => setServingUnit(e.target.value)}
-              />
-            </div>
-
-            <button
-              style={{ ...styles.primaryButtonStyle, marginTop: '20px' }}
-              onClick={addMealEntry}
-            >
-              Add Meal
-            </button>
-          </section>
-        ) : null}
+    <NutritionFoodLogger
+      nutritionLogId={nutritionLog.id}
+      initialRemaining={remaining}
+    />
+  </section>
+) : null}
 
         {isPhoenix ? (
           <section style={styles.cartBoxStyle}>
