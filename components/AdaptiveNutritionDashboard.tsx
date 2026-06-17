@@ -345,9 +345,27 @@ export default function AdaptiveNutritionDashboard({
     <h2 style={styles.h2Style}>Add Food</h2>
 
     <NutritionFoodLogger
-      nutritionLogId={nutritionLog.id}
-      initialRemaining={remaining}
-    />
+  nutritionLogId={nutritionLog.id}
+  initialRemaining={
+    remaining
+      ? {
+          calories_remaining: remaining.calories_remaining ?? null,
+          protein_remaining_g: remaining.protein_remaining_g ?? null,
+          carbs_remaining_g: remaining.carbs_remaining_g ?? null,
+          fat_remaining_g: remaining.fat_remaining_g ?? null,
+          fiber_remaining_g: remaining.fiber_remaining_g ?? null,
+          sodium_remaining_mg: remaining.sodium_remaining_mg ?? null,
+          potassium_remaining_mg: remaining.potassium_remaining_mg ?? null,
+          magnesium_remaining_mg: remaining.magnesium_remaining_mg ?? null,
+          calcium_remaining_mg: remaining.calcium_remaining_mg ?? null,
+          iron_remaining_mg: remaining.iron_remaining_mg ?? null,
+          choline_remaining_mg: remaining.choline_remaining_mg ?? null,
+          vitamin_c_remaining_mg: remaining.vitamin_c_remaining_mg ?? null,
+          vitamin_d_remaining_mcg: remaining.vitamin_d_remaining_mcg ?? null,
+        }
+      : null
+  }
+/>
   </section>
 ) : null}
 
