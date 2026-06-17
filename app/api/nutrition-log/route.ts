@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateAdaptiveMicronutrientTargets'
+import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
 
 function calculateAge(birthdate?: string | null) {
   if (!birthdate) return 35
