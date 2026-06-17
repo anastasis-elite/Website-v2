@@ -13,6 +13,7 @@ export type TrainingLevel =
   | 'recovery'
 
 type Input = {
+  age: number
   calories: number
   weightLbs: number
   waterOz: number
@@ -20,43 +21,152 @@ type Input = {
   trainingLevel?: TrainingLevel
 }
 
+function getFemaleBaseline(age: number) {
+  if (age < 19) {
+    return {
+      calciumMg: 1300,
+      ironMg: 15,
+      magnesiumMg: 360,
+      zincMg: 9,
+      seleniumMcg: 55,
+      cholineMg: 400,
+      vitaminAMcg: 700,
+      vitaminCMg: 65,
+      vitaminDMcg: 15,
+      vitaminEMg: 15,
+      vitaminKMcg: 75,
+      b1Mg: 1,
+      b2Mg: 1,
+      b3Mg: 14,
+      b5Mg: 5,
+      b6Mg: 1.2,
+      b9Mcg: 400,
+      b12Mcg: 2.4,
+      potassiumMg: 2300,
+    }
+  }
+
+  if (age <= 30) {
+    return {
+      calciumMg: 1000,
+      ironMg: 18,
+      magnesiumMg: 310,
+      zincMg: 8,
+      seleniumMcg: 55,
+      cholineMg: 425,
+      vitaminAMcg: 700,
+      vitaminCMg: 75,
+      vitaminDMcg: 15,
+      vitaminEMg: 15,
+      vitaminKMcg: 90,
+      b1Mg: 1.1,
+      b2Mg: 1.1,
+      b3Mg: 14,
+      b5Mg: 5,
+      b6Mg: 1.3,
+      b9Mcg: 400,
+      b12Mcg: 2.4,
+      potassiumMg: 2600,
+    }
+  }
+
+  if (age <= 50) {
+    return {
+      calciumMg: 1000,
+      ironMg: 18,
+      magnesiumMg: 320,
+      zincMg: 8,
+      seleniumMcg: 55,
+      cholineMg: 425,
+      vitaminAMcg: 700,
+      vitaminCMg: 75,
+      vitaminDMcg: 15,
+      vitaminEMg: 15,
+      vitaminKMcg: 90,
+      b1Mg: 1.1,
+      b2Mg: 1.1,
+      b3Mg: 14,
+      b5Mg: 5,
+      b6Mg: 1.3,
+      b9Mcg: 400,
+      b12Mcg: 2.4,
+      potassiumMg: 2600,
+    }
+  }
+
+  return {
+    calciumMg: 1200,
+    ironMg: 8,
+    magnesiumMg: 320,
+    zincMg: 8,
+    seleniumMcg: 55,
+    cholineMg: 425,
+    vitaminAMcg: 700,
+    vitaminCMg: 75,
+    vitaminDMcg: age >= 71 ? 20 : 15,
+    vitaminEMg: 15,
+    vitaminKMcg: 90,
+    b1Mg: 1.1,
+    b2Mg: 1.1,
+    b3Mg: 14,
+    b5Mg: 5,
+    b6Mg: age >= 51 ? 1.5 : 1.3,
+    b9Mcg: 400,
+    b12Mcg: 2.4,
+    potassiumMg: 2600,
+  }
+}
+
+function roundOne(value: number) {
+  return Number(value.toFixed(1))
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
 export function calculateMicronutrientTargets({
+  age,
   calories,
   weightLbs,
   waterOz,
   cyclePhase = 'unknown',
   trainingLevel = 'general_fitness',
 }: Input) {
+  const baseline = getFemaleBaseline(age)
+
   const calorieFactor = calories / 2000
   const weightFactor = weightLbs / 150
   const waterFactor = waterOz / 90
 
-  const fiberTargetG = Math.round((calories / 1000) * 14)
+  const softScale = clamp(Math.max(calorieFactor, weightFactor, 1), 1, 1.35)
 
-  let sodiumTargetMg = Math.round(2300 * calorieFactor)
-  let potassiumTargetMg = Math.round(4700 * Math.max(calorieFactor, 0.9))
-  let magnesiumTargetMg = Math.round(320 * Math.max(calorieFactor, weightFactor, 1))
+  const fiberTargetG = Math.round(clamp((calories / 1000) * 14, 22, 50))
 
-  let calciumTargetMg = 1000
-  let ironTargetMg = 18
-  let zincTargetMg = Math.round(8 * Math.max(calorieFactor, 1))
-  let seleniumTargetMcg = 55
+  let sodiumTargetMg = 2300
+  let potassiumTargetMg = Math.round(baseline.potassiumMg * clamp(softScale, 1, 1.25))
+  let magnesiumTargetMg = Math.round(baseline.magnesiumMg * clamp(softScale, 1, 1.25))
+
+  let calciumTargetMg = baseline.calciumMg
+  let ironTargetMg = baseline.ironMg
+  let zincTargetMg = Math.round(baseline.zincMg * clamp(softScale, 1, 1.25))
+  let seleniumTargetMcg = baseline.seleniumMcg
   let cholesterolLimitMg = 300
-  let cholineTargetMg = 425
+  let cholineTargetMg = baseline.cholineMg
 
-  let vitaminATargetMcg = 700
-  let vitaminCTargetMg = Math.round(75 * Math.max(calorieFactor, 1))
-  let vitaminDTargetMcg = 15
-  let vitaminETargetMg = 15
-  let vitaminKTargetMcg = 90
+  let vitaminATargetMcg = baseline.vitaminAMcg
+  let vitaminCTargetMg = Math.round(baseline.vitaminCMg * clamp(softScale, 1, 1.25))
+  let vitaminDTargetMcg = baseline.vitaminDMcg
+  let vitaminETargetMg = baseline.vitaminEMg
+  let vitaminKTargetMcg = baseline.vitaminKMcg
 
-  let b1TargetMg = Number((1.1 * Math.max(calorieFactor, 1)).toFixed(1))
-  let b2TargetMg = Number((1.1 * Math.max(calorieFactor, 1)).toFixed(1))
-  let b3TargetMg = Math.round(14 * Math.max(calorieFactor, 1))
-  let b5TargetMg = 5
-  let b6TargetMg = Number((1.3 * Math.max(calorieFactor, 1)).toFixed(1))
-  let b9TargetMcg = 400
-  let b12TargetMcg = 2.4
+  let b1TargetMg = roundOne(baseline.b1Mg * clamp(calorieFactor, 1, 1.35))
+  let b2TargetMg = roundOne(baseline.b2Mg * clamp(calorieFactor, 1, 1.35))
+  let b3TargetMg = Math.round(baseline.b3Mg * clamp(calorieFactor, 1, 1.35))
+  let b5TargetMg = baseline.b5Mg
+  let b6TargetMg = roundOne(baseline.b6Mg * clamp(calorieFactor, 1, 1.25))
+  let b9TargetMcg = baseline.b9Mcg
+  let b12TargetMcg = baseline.b12Mcg
 
   if (trainingLevel === 'high_sweat') {
     sodiumTargetMg += 1000
@@ -75,9 +185,9 @@ export function calculateMicronutrientTargets({
     sodiumTargetMg += 800
     potassiumTargetMg += 600
     magnesiumTargetMg += 75
-    b1TargetMg += 0.2
-    b2TargetMg += 0.2
-    b6TargetMg += 0.2
+    b1TargetMg = roundOne(b1TargetMg + 0.2)
+    b2TargetMg = roundOne(b2TargetMg + 0.2)
+    b6TargetMg = roundOne(b6TargetMg + 0.2)
   }
 
   if (trainingLevel === 'recovery') {
@@ -86,27 +196,33 @@ export function calculateMicronutrientTargets({
   }
 
   if (cyclePhase === 'menstrual') {
-    ironTargetMg += 2
+    ironTargetMg += age <= 50 ? 2 : 0
     magnesiumTargetMg += 50
   }
 
   if (cyclePhase === 'luteal') {
     magnesiumTargetMg += 50
     potassiumTargetMg += 300
-    vitaminBump()
+    b6TargetMg = roundOne(b6TargetMg + 0.2)
   }
 
   if (cyclePhase === 'ovulatory') {
     vitaminCTargetMg += 25
   }
 
-  sodiumTargetMg = Math.max(sodiumTargetMg, 2300)
-  potassiumTargetMg = Math.max(potassiumTargetMg, 3500)
-  magnesiumTargetMg = Math.max(magnesiumTargetMg, 320)
-
-  function vitaminBump() {
-    b6TargetMg = Number((b6TargetMg + 0.2).toFixed(1))
+  if (waterFactor > 1.1) {
+    sodiumTargetMg += 300
+    potassiumTargetMg += 200
   }
+
+  sodiumTargetMg = clamp(sodiumTargetMg, 1500, 4000)
+  potassiumTargetMg = clamp(potassiumTargetMg, baseline.potassiumMg, 5000)
+  magnesiumTargetMg = clamp(magnesiumTargetMg, baseline.magnesiumMg, 600)
+  calciumTargetMg = clamp(calciumTargetMg, 1000, 1300)
+  ironTargetMg = clamp(ironTargetMg, baseline.ironMg, 27)
+  zincTargetMg = clamp(zincTargetMg, baseline.zincMg, 15)
+  vitaminCTargetMg = clamp(vitaminCTargetMg, baseline.vitaminCMg, 200)
+  cholineTargetMg = clamp(cholineTargetMg, baseline.cholineMg, 550)
 
   return {
     fiber_target_g: fiberTargetG,
