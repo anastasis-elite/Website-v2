@@ -19,6 +19,7 @@ export default async function AOSClientsPage() {
     .order('created_at', { ascending: false })
 
   return (
+    <>
         <p style={styles.eyebrowStyle}>
           Anastasis Operating System
         </p>
@@ -92,5 +93,6 @@ export default async function AOSClientsPage() {
             </p>
           )}
         </section>
+      </>
   )
 }
