@@ -74,7 +74,7 @@ console.log('CLIENT ID:', clientId)
 
       router.push(
   `/login?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(
-    `/dashboard/assessment/start?program=${program}&client_id=${clientId}&birthdate=${birthdate}`
+    `/onboarding/profile?program=${program}&client_id=${clientId}`
   )}`
 )
     } catch {
