@@ -4,187 +4,183 @@ import { useState } from 'react'
 import * as styles from '../styles/globalstyles'
 import Button from '../../components/Button'
 
-function hasRelevantHealthInfo(value: string) {
-  const cleaned = value.trim().toLowerCase()
+type Program = 'ember' | 'ignite' | 'phoenix'
 
-  const negativeAnswers = [
-    '',
-    'no',
-    'none',
-    'n/a',
-    'na',
-    'nope',
-    'not at this time',
-    'nothing',
-    'no injuries',
-    'no conditions',
-    'none at this time',
-  ]
-
-  return !negativeAnswers.includes(cleaned)
+type Option = {
+  value: string
+  label: string
+  score: number
 }
 
 type FormData = {
-  email: string
   fullName: string
-  dateOfBirth: string
-  cityState: string
-  addressLine1: string
-  addressLine2: string
-  city: string
-  state: string
-  postalCode: string
-  country: string
-
+  email: string
   energyLevel: string
-  sleepQuality: string
-  stressLevel: string
   overwhelmLevel: string
-  recoveryLevel: string
-  motivationLevel: string
-
-  caregiverLoad: string
-  workLoad: string
-  decisionFatigue: string
-  currentMovementLevel: string
-  trainingConsistency: string
-  nutritionConsistency: string
-  cycleStatus: string
-  cycleSymptoms: string
-  desiredSupportLevel: string
-  primaryCapacityGap: string
-  auditNotes: string
-
-  injuries: string
-  conditions: string
-  supervision: string
-  postpartumMonths: string
-
-  primaryGoal: string
-  whyNow: string
-
+  timeAvailable: string
+  supportLevel: string
+  currentSeason: string
+  emailConsent: boolean
   agreement: boolean
-  researchConsent: boolean
-  medicalClearance: boolean
-  medicalClearanceFile: File | null
 }
 
-function scoreCapacityAudit(data: FormData) {
-  let score = 0
+const questionOptions: Record<string, Option[]> = {
+  energyLevel: [
+    { value: 'exhausted', label: 'Exhausted', score: 5 },
+    { value: 'drained', label: 'Drained', score: 4 },
+    { value: 'managing', label: 'Managing', score: 3 },
+    { value: 'good', label: 'Good', score: 2 },
+    { value: 'thriving', label: 'Thriving', score: 1 },
+  ],
+  overwhelmLevel: [
+    { value: 'constantly', label: 'Constantly', score: 5 },
+    { value: 'most_days', label: 'Most Days', score: 4 },
+    { value: 'sometimes', label: 'Sometimes', score: 3 },
+    { value: 'rarely', label: 'Rarely', score: 2 },
+    { value: 'almost_never', label: 'Almost Never', score: 1 },
+  ],
+  timeAvailable: [
+    { value: 'almost_none', label: 'Almost None', score: 5 },
+    { value: '15_minutes', label: '15 Minutes', score: 4 },
+    { value: '30_minutes', label: '30 Minutes', score: 3 },
+    { value: '1_hour', label: '1 Hour', score: 2 },
+    { value: 'more_than_1_hour', label: 'More Than 1 Hour', score: 1 },
+  ],
+  supportLevel: [
+    { value: 'alone', label: 'Completely Alone', score: 5 },
+    { value: 'limited', label: 'Limited Support', score: 4 },
+    { value: 'some', label: 'Some Support', score: 3 },
+    { value: 'good', label: 'Good Support', score: 2 },
+    { value: 'strong', label: 'Strong Support', score: 1 },
+  ],
+  currentSeason: [
+    { value: 'surviving', label: 'Surviving', score: 5 },
+    { value: 'regaining_consistency', label: 'Regaining Consistency', score: 4 },
+    { value: 'building_momentum', label: 'Building Momentum', score: 3 },
+    { value: 'optimizing', label: 'Optimizing', score: 2 },
+    { value: 'performing', label: 'Performing Higher', score: 1 },
+  ],
+}
 
-  const energy = Number(data.energyLevel || 0)
-  const sleep = Number(data.sleepQuality || 0)
-  const stress = Number(data.stressLevel || 0)
-  const overwhelm = Number(data.overwhelmLevel || 0)
-  const recovery = Number(data.recoveryLevel || 0)
-  const motivation = Number(data.motivationLevel || 0)
+function getOptionScore(field: keyof typeof questionOptions, value: string) {
+  return questionOptions[field].find((option) => option.value === value)?.score || 0
+}
 
-  score += 10 - energy
-  score += 10 - sleep
-  score += stress
-  score += overwhelm
-  score += 10 - recovery
-  score += 10 - motivation
+function scoreCapacityAudit(data: FormData): {
+  score: number
+  recommendedProgram: Program
+} {
+  const score =
+    getOptionScore('energyLevel', data.energyLevel) +
+    getOptionScore('overwhelmLevel', data.overwhelmLevel) +
+    getOptionScore('timeAvailable', data.timeAvailable) +
+    getOptionScore('supportLevel', data.supportLevel) +
+    getOptionScore('currentSeason', data.currentSeason)
 
-  if (data.caregiverLoad === 'high') score += 6
-  if (data.caregiverLoad === 'moderate') score += 3
-
-  if (data.workLoad === 'high') score += 5
-  if (data.workLoad === 'moderate') score += 3
-
-  if (data.decisionFatigue === 'high') score += 6
-  if (data.decisionFatigue === 'moderate') score += 3
-
-  if (data.trainingConsistency === 'none') score += 6
-  if (data.trainingConsistency === 'inconsistent') score += 4
-  if (data.trainingConsistency === 'consistent') score -= 2
-
-  if (data.nutritionConsistency === 'none') score += 6
-  if (data.nutritionConsistency === 'inconsistent') score += 4
-  if (data.nutritionConsistency === 'consistent') score -= 2
-
-  if (data.cycleSymptoms === 'severe') score += 5
-  if (data.cycleSymptoms === 'moderate') score += 3
-
-  if (score <= 22) return { score, recommendedProgram: 'ember' }
-  if (score <= 42) return { score, recommendedProgram: 'ignite' }
+  if (score <= 10) return { score, recommendedProgram: 'ember' }
+  if (score <= 17) return { score, recommendedProgram: 'ignite' }
 
   return { score, recommendedProgram: 'phoenix' }
 }
 
+function ScrollChoice({
+  name,
+  label,
+  value,
+  options,
+  onSelect,
+}: {
+  name: keyof FormData
+  label: string
+  value: string
+  options: Option[]
+  onSelect: (name: keyof FormData, value: string) => void
+}) {
+  return (
+    <div style={{ display: 'grid', gap: '14px' }}>
+      <label style={styles.labelStyle}>{label}</label>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: '12px',
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          paddingBottom: '10px',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        {options.map((option) => {
+          const selected = value === option.value
+
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onSelect(name, option.value)}
+              style={{
+                minWidth: '170px',
+                minHeight: '74px',
+                scrollSnapAlign: 'center',
+                borderRadius: '22px',
+                border: selected
+                  ? '1px solid rgba(197,139,87,0.72)'
+                  : '1px solid rgba(197,139,87,0.18)',
+                background: selected
+                  ? 'rgba(197,139,87,0.18)'
+                  : 'rgba(255,255,255,0.025)',
+                color: '#f5f0e8',
+                padding: '18px 20px',
+                cursor: 'pointer',
+                fontSize: '0.98rem',
+                lineHeight: 1.4,
+                boxShadow: selected
+                  ? '0 14px 40px rgba(197,139,87,0.12)'
+                  : '0 12px 34px rgba(0,0,0,0.12)',
+              }}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function ApplyPage() {
   const [formData, setFormData] = useState<FormData>({
-    email: '',
     fullName: '',
-    dateOfBirth: '',
-    cityState: '',
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: 'US',
-
+    email: '',
     energyLevel: '',
-    sleepQuality: '',
-    stressLevel: '',
     overwhelmLevel: '',
-    recoveryLevel: '',
-    motivationLevel: '',
-
-    caregiverLoad: '',
-    workLoad: '',
-    decisionFatigue: '',
-    currentMovementLevel: '',
-    trainingConsistency: '',
-    nutritionConsistency: '',
-    cycleStatus: '',
-    cycleSymptoms: '',
-    desiredSupportLevel: '',
-    primaryCapacityGap: '',
-    auditNotes: '',
-
-    injuries: '',
-    conditions: '',
-    supervision: '',
-    postpartumMonths: '',
-
-    primaryGoal: '',
-    whyNow: '',
-
+    timeAvailable: '',
+    supportLevel: '',
+    currentSeason: '',
+    emailConsent: false,
     agreement: false,
-    researchConsent: false,
-    medicalClearance: false,
-    medicalClearanceFile: null,
   })
 
-  const [status, setStatus] = useState<
-    'idle' | 'submitting' | 'success' | 'error'
-  >('idle')
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>(
+    'idle'
+  )
   const [message, setMessage] = useState('')
 
-  const needsMedicalClearanceQuestion =
-    hasRelevantHealthInfo(formData.injuries) ||
-    hasRelevantHealthInfo(formData.conditions)
-
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value, type } = e.target
-    const checked = (e.target as HTMLInputElement).checked
+    const checked = e.target.checked
 
-    setFormData((prev) => {
-      const updated = {
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value,
-      }
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
 
-      if (name === 'supervision' && value !== 'Yes - postpartum') {
-        updated.postpartumMonths = ''
-      }
-
-      return updated
-    })
+  function handleSelect(name: keyof FormData, value: string) {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -199,73 +195,50 @@ export default function ApplyPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: formData.email,
           fullName: formData.fullName,
-          dateOfBirth: formData.dateOfBirth,
-          cityState: formData.cityState,
+          email: formData.email,
 
-          address_line_1: formData.addressLine1,
-          address_line_2: formData.addressLine2,
-          city: formData.city,
-          state: formData.state,
-          postal_code: formData.postalCode,
-          country: formData.country,
-          address_verified: false,
+          energy_level: formData.energyLevel,
+          overwhelm_level: formData.overwhelmLevel,
+          time_available: formData.timeAvailable,
+          support_level: formData.supportLevel,
+          current_season: formData.currentSeason,
 
-          energy_level: Number(formData.energyLevel),
-          sleep_quality: Number(formData.sleepQuality),
-          stress_level: Number(formData.stressLevel),
-          overwhelm_level: Number(formData.overwhelmLevel),
-          recovery_level: Number(formData.recoveryLevel),
-          motivation_level: Number(formData.motivationLevel),
-
-          caregiver_load: formData.caregiverLoad,
-          work_load: formData.workLoad,
-          decision_fatigue: formData.decisionFatigue,
-          current_movement_level: formData.currentMovementLevel,
-          training_consistency: formData.trainingConsistency,
-          nutrition_consistency: formData.nutritionConsistency,
-          cycle_status: formData.cycleStatus,
-          cycle_symptoms: formData.cycleSymptoms,
-          desired_support_level: formData.desiredSupportLevel,
-          primary_capacity_gap: formData.primaryCapacityGap,
-          audit_notes: formData.auditNotes,
+          email_consent: formData.emailConsent,
+          agreement: formData.agreement,
 
           capacity_score: auditResult.score,
           recommended_program: auditResult.recommendedProgram,
-          audit_version: 'capacity_audit_v1',
+          audit_version: 'capacity_snapshot_v1',
 
-          injuries: formData.injuries,
-          conditions: formData.conditions,
-          supervision: formData.supervision,
-          postpartumMonths: formData.postpartumMonths,
-
-          primaryGoal: formData.primaryGoal,
-          whyNow: formData.whyNow,
-
-          agreement: formData.agreement,
-          researchConsent: formData.researchConsent,
-          medicalClearance: formData.medicalClearance,
-          medicalClearanceFileName: formData.medicalClearanceFile?.name || '',
-
-          timestamp: new Date().toISOString(),
           submitted: 'capacity_audit',
+          timestamp: new Date().toISOString(),
+
+          dateOfBirth: '',
+          cityState: '',
+          address_line_1: '',
+          address_line_2: '',
+          city: '',
+          state: '',
+          postal_code: '',
+          country: 'US',
+          address_verified: false,
+          injuries: '',
+          conditions: '',
+          supervision: '',
+          postpartumMonths: '',
+          primaryGoal: '',
+          whyNow: '',
+          researchConsent: false,
+          medicalClearance: false,
+          medicalClearanceFileName: '',
         }),
       })
 
       const data = await res.json().catch(() => null)
 
       if (!res.ok) {
-        throw new Error(
-          [
-            data?.error,
-            data?.details,
-            data?.code ? `Code: ${data.code}` : '',
-            data?.hint ? `Hint: ${data.hint}` : '',
-          ]
-            .filter(Boolean)
-            .join(' — ') || 'Request failed'
-        )
+        throw new Error(data?.error || data?.details || 'Request failed')
       }
 
       if (data.redirect) {
@@ -277,9 +250,7 @@ export default function ApplyPage() {
     } catch (error) {
       console.error('CAPACITY AUDIT ERROR:', error)
       setStatus('error')
-      setMessage(
-        error instanceof Error ? error.message : 'Something went wrong.'
-      )
+      setMessage(error instanceof Error ? error.message : 'Something went wrong.')
     }
   }
 
@@ -290,53 +261,27 @@ export default function ApplyPage() {
           <p style={styles.eyebrowStyle}>Capacity Audit</p>
 
           <h1 style={styles.heroTitleStyle}>
-            Let’s understand
+            Find your current
             <br />
-            where your capacity is going.
+            capacity.
           </h1>
 
           <p style={styles.heroTextStyle}>
-            You do not need to have everything figured out before you begin.
-            This audit helps Anastasis understand your current energy, stress,
-            recovery, responsibilities, body needs, and support level so the
-            system can recommend the right starting path.
+            This takes less than one minute. No long application. No perfect
+            answers. Just enough information to help Anastasis recommend the
+            starting path that fits your current season.
           </p>
 
           <div style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>
-              This is not a test you pass or fail.
+              You do not need to have everything figured out.
             </h2>
 
             <p style={styles.bodyStyle}>
-              Simply answer honestly. The goal is not to judge your starting
-              point. The goal is to identify what needs support first so your
-              plan can meet your actual life, not an ideal version of it.
+              Answer from where you are today. The goal is not to judge your
+              capacity. The goal is to understand what level of support would
+              help you move forward without adding more pressure.
             </p>
-          </div>
-
-          <div style={styles.cardGridStyle}>
-            {[
-              {
-                title: '1. We assess your current load.',
-                body:
-                  'Energy, sleep, stress, recovery, responsibilities, and consistency give us your current capacity picture.',
-              },
-              {
-                title: '2. We identify your support need.',
-                body:
-                  'Lower support need points toward Ember. Moderate support need points toward Ignite. Higher support need points toward Phoenix.',
-              },
-              {
-                title: '3. You begin from the right place.',
-                body:
-                  'The goal is to build capacity without overwhelming the woman who is already carrying too much.',
-              },
-            ].map((item) => (
-              <div key={item.title} style={styles.cardStyle}>
-                <h3 style={styles.cardTitleStyle}>{item.title}</h3>
-                <p style={styles.cardTextStyle}>{item.body}</p>
-              </div>
-            ))}
           </div>
         </section>
 
@@ -356,6 +301,21 @@ export default function ApplyPage() {
 
             <div style={styles.gridTwoCol}>
               <div style={styles.fieldWrap}>
+                <label style={styles.labelStyle} htmlFor="fullName">
+                  Name
+                </label>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  required
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  style={styles.inputStyle}
+                />
+              </div>
+
+              <div style={styles.fieldWrap}>
                 <label style={styles.labelStyle} htmlFor="email">
                   Email Address
                 </label>
@@ -369,552 +329,68 @@ export default function ApplyPage() {
                   style={styles.inputStyle}
                 />
               </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle} htmlFor="fullName">
-                  Full Name
-                </label>
-                <input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  required
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                />
-              </div>
             </div>
 
-            <div style={{ ...styles.gridTwoCol, marginTop: '18px' }}>
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle} htmlFor="dateOfBirth">
-                  Date of Birth
-                </label>
+            <div style={{ ...styles.innerCardStyle, marginTop: '20px' }}>
+              <label style={styles.checkboxRowStyle}>
                 <input
-                  id="dateOfBirth"
-                  name="dateOfBirth"
-                  type="date"
-                  required
-                  value={formData.dateOfBirth}
+                  name="emailConsent"
+                  type="checkbox"
+                  checked={formData.emailConsent}
                   onChange={handleChange}
-                  style={{
-                    ...styles.inputStyle,
-                    WebkitAppearance: 'none',
-                    appearance: 'none',
-                  }}
+                  style={styles.checkboxInputStyle}
                 />
-              </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle} htmlFor="cityState">
-                  City &amp; State
-                </label>
-                <input
-                  id="cityState"
-                  name="cityState"
-                  type="text"
-                  required
-                  value={formData.cityState}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                  placeholder="City, State"
-                />
-              </div>
+                <span>
+                  Yes, send me personalized insights, resources, and support
+                  based on my Capacity Audit results.
+                </span>
+              </label>
             </div>
           </section>
 
           <section style={styles.cartBoxStyle}>
-            <p style={styles.eyebrowStyle}>Current Capacity</p>
+            <p style={styles.eyebrowStyle}>Capacity Snapshot</p>
 
-            <div style={styles.cardGridStyle}>
-              {[
-                ['energyLevel', 'Energy today'],
-                ['sleepQuality', 'Sleep quality'],
-                ['stressLevel', 'Stress level'],
-                ['overwhelmLevel', 'Overwhelm level'],
-                ['recoveryLevel', 'Recovery level'],
-                ['motivationLevel', 'Motivation level'],
-              ].map(([name, label]) => (
-                <div key={name} style={styles.fieldWrap}>
-                  <label style={styles.labelStyle} htmlFor={name}>
-                    {label} / 10
-                  </label>
-                  <input
-                    id={name}
-                    name={name}
-                    type="number"
-                    required
-                    min="1"
-                    max="10"
-                    value={formData[name as keyof FormData] as string}
-                    onChange={handleChange}
-                    style={styles.inputStyle}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section style={styles.cartBoxStyle}>
-            <p style={styles.eyebrowStyle}>Life Load</p>
-
-            <div style={styles.gridTwoCol}>
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle}>Caregiver load</label>
-                <select
-                  name="caregiverLoad"
-                  required
-                  value={formData.caregiverLoad}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                >
-                  <option value="">Select one</option>
-                  <option value="low">Low</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle}>Work / responsibility load</label>
-                <select
-                  name="workLoad"
-                  required
-                  value={formData.workLoad}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                >
-                  <option value="">Select one</option>
-                  <option value="low">Low</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-              <label style={styles.labelStyle}>Decision fatigue</label>
-              <select
-                name="decisionFatigue"
-                required
-                value={formData.decisionFatigue}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              >
-                <option value="">Select one</option>
-                <option value="low">Low — I can usually make decisions easily</option>
-                <option value="moderate">Moderate — I feel decision fatigue sometimes</option>
-                <option value="high">High — I feel mentally overloaded often</option>
-              </select>
-            </div>
-          </section>
-
-          <section style={styles.cartBoxStyle}>
-            <p style={styles.eyebrowStyle}>Movement + Nourishment</p>
-
-            <div style={styles.gridTwoCol}>
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle}>Current movement level</label>
-                <select
-                  name="currentMovementLevel"
-                  required
-                  value={formData.currentMovementLevel}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                >
-                  <option value="">Select one</option>
-                  <option value="minimal">Minimal movement</option>
-                  <option value="some">Some daily movement</option>
-                  <option value="active">Active most days</option>
-                  <option value="training">Structured training currently</option>
-                </select>
-              </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle}>Training consistency</label>
-                <select
-                  name="trainingConsistency"
-                  required
-                  value={formData.trainingConsistency}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                >
-                  <option value="">Select one</option>
-                  <option value="none">Not currently consistent</option>
-                  <option value="inconsistent">Inconsistent</option>
-                  <option value="consistent">Consistent</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-              <label style={styles.labelStyle}>Nutrition consistency</label>
-              <select
-                name="nutritionConsistency"
-                required
-                value={formData.nutritionConsistency}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              >
-                <option value="">Select one</option>
-                <option value="none">No current structure</option>
-                <option value="inconsistent">Some structure, inconsistent execution</option>
-                <option value="consistent">Consistent structure</option>
-              </select>
-            </div>
-          </section>
-
-          <section style={styles.cartBoxStyle}>
-            <p style={styles.eyebrowStyle}>Cycle + Recovery Context</p>
-
-            <div style={styles.gridTwoCol}>
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle}>Cycle status</label>
-                <select
-                  name="cycleStatus"
-                  required
-                  value={formData.cycleStatus}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                >
-                  <option value="">Select one</option>
-                  <option value="regular">Regular cycle</option>
-                  <option value="irregular">Irregular cycle</option>
-                  <option value="postpartum">Postpartum</option>
-                  <option value="perimenopause">Perimenopause</option>
-                  <option value="menopause">Menopause</option>
-                  <option value="birth_control">Hormonal birth control</option>
-                  <option value="unknown">Unsure</option>
-                </select>
-              </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle}>Cycle symptoms</label>
-                <select
-                  name="cycleSymptoms"
-                  required
-                  value={formData.cycleSymptoms}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                >
-                  <option value="">Select one</option>
-                  <option value="low">Low / manageable</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="severe">Severe / disruptive</option>
-                  <option value="not_applicable">Not applicable</option>
-                </select>
-              </div>
-            </div>
-          </section>
-
-          <section style={styles.cartBoxStyle}>
-            <p style={styles.eyebrowStyle}>Support Path</p>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle}>Where do you feel the biggest capacity gap?</label>
-              <select
-                name="primaryCapacityGap"
-                required
-                value={formData.primaryCapacityGap}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              >
-                <option value="">Select one</option>
-                <option value="energy">Energy</option>
-                <option value="consistency">Consistency</option>
-                <option value="recovery">Recovery</option>
-                <option value="nutrition">Nutrition</option>
-                <option value="stress">Stress / nervous system</option>
-                <option value="strength">Strength</option>
-                <option value="identity">Self-trust / identity</option>
-              </select>
-            </div>
-
-            <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-              <label style={styles.labelStyle}>What level of support feels most helpful?</label>
-              <select
-                name="desiredSupportLevel"
-                required
-                value={formData.desiredSupportLevel}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              >
-                <option value="">Select one</option>
-                <option value="structure">I mostly need structure</option>
-                <option value="adaptation">I need more adaptive guidance</option>
-                <option value="high_support">I need the most support and least friction possible</option>
-                <option value="unsure">I am not sure yet</option>
-              </select>
-            </div>
-
-            <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-              <label style={styles.labelStyle} htmlFor="primaryGoal">
-                What are you hoping to change most right now?
-              </label>
-              <textarea
-                id="primaryGoal"
-                name="primaryGoal"
-                required
-                value={formData.primaryGoal}
-                onChange={handleChange}
-                style={styles.textareaStyle}
-                placeholder="Share the main change or outcome you want most right now."
+            <div style={{ display: 'grid', gap: '32px' }}>
+              <ScrollChoice
+                name="energyLevel"
+                label="How does your energy feel most days?"
+                value={formData.energyLevel}
+                options={questionOptions.energyLevel}
+                onSelect={handleSelect}
               />
-            </div>
 
-            <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-              <label style={styles.labelStyle} htmlFor="whyNow">
-                Why are you looking for support now?
-              </label>
-              <textarea
-                id="whyNow"
-                name="whyNow"
-                required
-                value={formData.whyNow}
-                onChange={handleChange}
-                style={styles.textareaStyle}
-                placeholder="What makes this the right time for you to begin?"
+              <ScrollChoice
+                name="overwhelmLevel"
+                label="How often do you feel overwhelmed?"
+                value={formData.overwhelmLevel}
+                options={questionOptions.overwhelmLevel}
+                onSelect={handleSelect}
               />
-            </div>
 
-            <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-              <label style={styles.labelStyle} htmlFor="auditNotes">
-                Anything else you want us to understand?
-              </label>
-              <textarea
-                id="auditNotes"
-                name="auditNotes"
-                value={formData.auditNotes}
-                onChange={handleChange}
-                style={styles.textareaStyle}
-                placeholder="Optional notes."
+              <ScrollChoice
+                name="timeAvailable"
+                label="How much uninterrupted time do you have for yourself most days?"
+                value={formData.timeAvailable}
+                options={questionOptions.timeAvailable}
+                onSelect={handleSelect}
               />
-            </div>
-          </section>
 
-          <section style={styles.cartBoxStyle}>
-            <p style={styles.eyebrowStyle}>Health Context</p>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle} htmlFor="injuries">
-                Do you have any current or past injuries?
-              </label>
-              <textarea
-                id="injuries"
-                name="injuries"
-                required
-                value={formData.injuries}
-                onChange={handleChange}
-                style={styles.textareaStyle}
-                placeholder="Please share anything relevant."
+              <ScrollChoice
+                name="supportLevel"
+                label="How supported do you currently feel?"
+                value={formData.supportLevel}
+                options={questionOptions.supportLevel}
+                onSelect={handleSelect}
               />
-            </div>
 
-            <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-              <label style={styles.labelStyle} htmlFor="conditions">
-                Do you have any chronic medical conditions or restrictions?
-              </label>
-              <textarea
-                id="conditions"
-                name="conditions"
-                required
-                value={formData.conditions}
-                onChange={handleChange}
-                style={styles.textareaStyle}
-                placeholder="Please share anything relevant."
+              <ScrollChoice
+                name="currentSeason"
+                label="Which statement feels most true today?"
+                value={formData.currentSeason}
+                options={questionOptions.currentSeason}
+                onSelect={handleSelect}
               />
-            </div>
-
-            {needsMedicalClearanceQuestion && (
-              <div style={{ ...styles.innerCardStyle, marginTop: '18px' }}>
-                <label style={styles.checkboxRowStyle}>
-                  <input
-                    name="medicalClearance"
-                    type="checkbox"
-                    checked={formData.medicalClearance}
-                    onChange={handleChange}
-                    style={styles.checkboxInputStyle}
-                  />
-                  <span>
-                    I have medical clearance to participate in a structured fitness and nutrition program.
-                  </span>
-                </label>
-              </div>
-            )}
-
-            {formData.medicalClearance && (
-              <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-                <label style={styles.labelStyle} htmlFor="medicalClearanceFile">
-                  Upload medical clearance documentation
-                </label>
-                <input
-                  id="medicalClearanceFile"
-                  name="medicalClearanceFile"
-                  type="file"
-                  accept="image/*,.pdf"
-                  required
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      medicalClearanceFile: e.target.files?.[0] || null,
-                    }))
-                  }
-                  style={styles.inputStyle}
-                />
-              </div>
-            )}
-
-            <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-              <label style={styles.labelStyle} htmlFor="supervision">
-                Are you currently pregnant, nursing, postpartum, or under medical supervision?
-              </label>
-              <select
-                id="supervision"
-                name="supervision"
-                required
-                value={formData.supervision}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              >
-                <option value="">Select one</option>
-                <option value="No">No</option>
-                <option value="Yes - pregnant">Yes - pregnant</option>
-                <option value="Yes - nursing">Yes - nursing</option>
-                <option value="Yes - postpartum">Yes - postpartum</option>
-                <option value="Yes - under medical supervision">Yes - under medical supervision</option>
-                <option value="Other / needs discussion">Other / needs discussion</option>
-              </select>
-            </div>
-
-            {formData.supervision === 'Yes - postpartum' && (
-              <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-                <label style={styles.labelStyle} htmlFor="postpartumMonths">
-                  How many months postpartum are you?
-                </label>
-                <input
-                  id="postpartumMonths"
-                  name="postpartumMonths"
-                  type="number"
-                  min="0"
-                  required
-                  value={formData.postpartumMonths}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                  placeholder="Enter number of months"
-                />
-              </div>
-            )}
-          </section>
-
-          <section style={styles.cartBoxStyle}>
-            <p style={styles.eyebrowStyle}>Shipping Address</p>
-
-            <p style={{ ...styles.bodyStyle, marginBottom: '22px' }}>
-              This is used for program-related shipments, Phoenix supplement fulfillment,
-              and future member gifts if applicable.
-            </p>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle} htmlFor="addressLine1">
-                Address Line 1
-              </label>
-              <input
-                id="addressLine1"
-                name="addressLine1"
-                type="text"
-                required
-                value={formData.addressLine1}
-                onChange={handleChange}
-                style={styles.inputStyle}
-                placeholder="Street address"
-                autoComplete="address-line1"
-              />
-            </div>
-
-            <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-              <label style={styles.labelStyle} htmlFor="addressLine2">
-                Address Line 2
-              </label>
-              <input
-                id="addressLine2"
-                name="addressLine2"
-                type="text"
-                value={formData.addressLine2}
-                onChange={handleChange}
-                style={styles.inputStyle}
-                placeholder="Apartment, suite, unit, etc. optional"
-                autoComplete="address-line2"
-              />
-            </div>
-
-            <div style={{ ...styles.gridTwoCol, marginTop: '18px' }}>
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle} htmlFor="city">
-                  City
-                </label>
-                <input
-                  id="city"
-                  name="city"
-                  type="text"
-                  required
-                  value={formData.city}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                  autoComplete="address-level2"
-                />
-              </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle} htmlFor="state">
-                  State
-                </label>
-                <input
-                  id="state"
-                  name="state"
-                  type="text"
-                  required
-                  value={formData.state}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                  placeholder="TX"
-                  autoComplete="address-level1"
-                />
-              </div>
-            </div>
-
-            <div style={{ ...styles.gridTwoCol, marginTop: '18px' }}>
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle} htmlFor="postalCode">
-                  ZIP / Postal Code
-                </label>
-                <input
-                  id="postalCode"
-                  name="postalCode"
-                  type="text"
-                  required
-                  value={formData.postalCode}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                  autoComplete="postal-code"
-                />
-              </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.labelStyle} htmlFor="country">
-                  Country
-                </label>
-                <input
-                  id="country"
-                  name="country"
-                  type="text"
-                  required
-                  value={formData.country}
-                  onChange={handleChange}
-                  style={styles.inputStyle}
-                  autoComplete="country-name"
-                />
-              </div>
             </div>
           </section>
 
@@ -940,25 +416,6 @@ export default function ApplyPage() {
                 </a>.
               </span>
             </label>
-
-            <div style={{ marginTop: '18px' }}>
-              <label style={styles.checkboxRowStyle}>
-                <input
-                  name="researchConsent"
-                  type="checkbox"
-                  checked={formData.researchConsent}
-                  onChange={handleChange}
-                  style={styles.checkboxInputStyle}
-                />
-                <span>
-                  I authorize the use of approved, non-public personal data for research
-                  purposes according to the{' '}
-                  <a href="/consent/research" style={styles.quietLinkStyle}>
-                    Research Consent
-                  </a>.
-                </span>
-              </label>
-            </div>
           </section>
 
           <div style={styles.buttonRowStyle}>
@@ -973,7 +430,7 @@ export default function ApplyPage() {
             >
               {status === 'submitting'
                 ? 'Submitting...'
-                : 'Complete Capacity Audit'}
+                : 'See My Recommended Path'}
             </button>
 
             <Button href="/program" variant="secondary">
