@@ -19,8 +19,6 @@ export default async function AOSAuditsPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>
           Anastasis Operating System
         </p>
@@ -92,7 +90,5 @@ export default async function AOSAuditsPage() {
             </p>
           )}
         </section>
-      </div>
-    </main>
   )
 }
