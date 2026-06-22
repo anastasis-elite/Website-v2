@@ -37,6 +37,8 @@ export default async function AuditDetailPage({
           Audit review and recommendation details.
         </p>
 
+        <AOSNavigation />
+        
         {/* SUMMARY */}
 
         <section style={styles.cartBoxStyle}>
