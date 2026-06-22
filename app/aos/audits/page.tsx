@@ -33,6 +33,8 @@ export default async function AOSAuditsPage() {
           Review audit submissions and recommended program placement.
         </p>
 
+        <AOSNavigation />
+        
         <section style={styles.cartBoxStyle}>
           {audits?.length ? (
             audits.map((audit) => (
