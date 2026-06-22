@@ -29,7 +29,7 @@ return loggedIn ? (
     Continue Your Program
   </Button>
 ) : (
-  <Button href="/apply">
+  <Button href="/audit">
     Apply Now
   </Button>
 )
