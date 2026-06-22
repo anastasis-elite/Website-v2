@@ -248,3 +248,18 @@ export const compactCardTextStyle: CSSProperties = {
   color: '#d7c7b6',
   margin: 0,
 }
+
+export const checkboxRowStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: '12px',
+  lineHeight: 1.7,
+  color: '#d7c7b6',
+  fontSize: '0.98rem',
+  cursor: 'pointer',
+}
+
+export const checkboxInputStyle: CSSProperties = {
+  marginTop: '4px',
+  accentColor: '#c58b57',
+}
