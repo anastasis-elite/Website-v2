@@ -126,7 +126,7 @@ export async function POST(req: Request) {
       process.env.NEXT_PUBLIC_APP_URL ||
       'https://anastasiselite.com'
 
-    const onboardingLink = `${appUrl}/onboarding/profile`
+    const onboardingLink = `${appUrl}/dashboard/onboarding/profile`
 
     const createLoginLink =
       `${appUrl}/create-login?client_id=${clientId}` +
