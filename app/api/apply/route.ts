@@ -84,7 +84,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json(
   {
-    error: 'We could not complete your Capacity Audit yet. Please try again.',
+    error: `Capacity Audit save failed: ${error.message}`,
     details: error.message,
     code: error.code,
     hint: error.hint,
