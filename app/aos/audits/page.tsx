@@ -1,5 +1,6 @@
 import * as styles from '@/app/styles/globalstyles'
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 
 export default async function AOSAuditsPage() {
   const supabase = await createClient()
@@ -42,9 +43,17 @@ export default async function AOSAuditsPage() {
                     '1px solid rgba(255,255,255,0.08)',
                 }}
               >
-                <h3 style={styles.cardTitleStyle}>
-                  {audit.full_name || 'Unknown'}
-                </h3>
+                <Link
+  href={`/aos/audits/${audit.id}`}
+  style={{
+    color: 'inherit',
+    textDecoration: 'none',
+  }}
+>
+  <h3 style={styles.cardTitleStyle}>
+    {audit.full_name}
+  </h3>
+</Link>
 
                 <p style={styles.bodyStyle}>
                   {audit.email}
