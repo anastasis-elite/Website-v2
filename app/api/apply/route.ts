@@ -83,14 +83,14 @@ export async function POST(req: Request) {
       console.error('APPLICATION SAVE ERROR:', error)
 
       return NextResponse.json(
-        {
-          error: 'Application save failed',
-          details: error.message,
-          code: error.code,
-          hint: error.hint,
-        },
-        { status: 500 }
-      )
+  {
+    error: 'We could not complete your Capacity Audit yet. Please try again.',
+    details: error.message,
+    code: error.code,
+    hint: error.hint,
+  },
+  { status: 500 }
+)
     }
 
     return NextResponse.json({
