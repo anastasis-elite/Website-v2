@@ -23,6 +23,7 @@ export default async function AuditDetailPage({
   const applicationData = audit.application_data || {}
 
   return (
+    <>
         <p style={styles.eyebrowStyle}>
           Capacity Audit
         </p>
@@ -151,5 +152,6 @@ export default async function AuditDetailPage({
             follow-up actions automatically.
           </p>
         </section>
+      </>
   )
 }
