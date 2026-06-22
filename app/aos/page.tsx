@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
+import AOSNavigation from '@/components/AOSNavigation'
 
 export default function AOSCommandCenterPage() {
   return (
