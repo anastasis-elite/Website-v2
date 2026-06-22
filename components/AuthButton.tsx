@@ -182,7 +182,7 @@ export default function AuthButton() {
                 Why
               </Link>
 
-              <Link href="/apply" onClick={closeMenu}>
+              <Link href="/audit" onClick={closeMenu}>
                 Apply
               </Link>
 
