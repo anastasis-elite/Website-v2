@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
 import { createClient } from '@/lib/supabase/server'
+import AOSNavigation from '@/components/AOSNavigation'
 
 export default async function AOSTasksPage() {
   const supabase = await createClient()
