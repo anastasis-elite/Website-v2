@@ -22,6 +22,8 @@ export default async function AOSTasksPage() {
           Internal priorities, system actions, client follow-ups, and future bot-generated recommendations.
         </p>
 
+        <AOSNavigation />
+        
         <section style={styles.cartBoxStyle}>
           <div style={styles.buttonRowStyle}>
             <Link href="/aos" style={styles.secondaryButtonStyle}>
