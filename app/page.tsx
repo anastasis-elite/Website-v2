@@ -461,7 +461,7 @@ export default function Home() {
           >
             <Button href="/program">Choose Your Path</Button>
 
-            <Button href="/apply" variant="secondary">
+            <Button href="/audit" variant="secondary">
               Help Me Find My Path
             </Button>
           </div>
