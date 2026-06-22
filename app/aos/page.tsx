@@ -4,8 +4,6 @@ import AOSNavigation from '@/components/AOSNavigation'
 
 export default function AOSCommandCenterPage() {
   return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Anastasis Operating System</p>
 
         <h1 style={styles.heroTitleStyle}>
@@ -206,7 +204,5 @@ export default function AOSCommandCenterPage() {
             operations to recommend the highest leverage next action.
           </p>
         </section>
-      </div>
-    </main>
   )
 }
