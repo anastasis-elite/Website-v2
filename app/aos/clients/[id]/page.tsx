@@ -21,8 +21,6 @@ export default async function AOSClientDetailPage({
   }
 
   return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>AOS Client File</p>
 
         <h1 style={styles.heroTitleStyle}>
@@ -132,7 +130,5 @@ export default async function AOSClientDetailPage({
             {JSON.stringify(client, null, 2)}
           </pre>
         </section>
-      </div>
-    </main>
   )
 }
