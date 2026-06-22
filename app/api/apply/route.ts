@@ -97,7 +97,7 @@ export async function POST(req: Request) {
       success: true,
       auditId: data.id,
       recommendedProgram: data.recommended_program || recommendedProgram,
-      redirect: `/apply/results/${data.id}`,
+      redirect: `/audit/results/${data.id}`,
     })
   } catch (error) {
     console.error('Apply API error:', error)
