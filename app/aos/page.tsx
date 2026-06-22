@@ -17,6 +17,8 @@ export default function AOSCommandCenterPage() {
           revenue, support needs, and platform health.
         </p>
 
+        <AOSNavigation />
+        
         {/* TODAY'S FOCUS */}
 
         <section style={styles.cartBoxStyle}>
