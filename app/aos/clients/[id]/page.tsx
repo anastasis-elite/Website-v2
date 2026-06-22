@@ -33,6 +33,8 @@ export default async function AOSClientDetailPage({
           Client profile, onboarding status, program placement, and system data.
         </p>
 
+        <AOSNavigation />
+        
         <section style={styles.cartBoxStyle}>
           <p style={styles.eyebrowStyle}>Client Summary</p>
 
