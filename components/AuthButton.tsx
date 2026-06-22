@@ -212,7 +212,7 @@ export default function AuthButton() {
                 Programs
               </Link>
 
-              <Link href="/apply" onClick={closeMenu}>
+              <Link href="/audit" onClick={closeMenu}>
                 Apply
               </Link>
 
