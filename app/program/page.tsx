@@ -93,7 +93,7 @@ export default function ProgramPage() {
               Explore the Paths
             </a>
 
-            <a href="/apply" style={styles.secondaryButtonStyle}>
+            <a href="/audit" style={styles.secondaryButtonStyle}>
               Help Me Find Mine
             </a>
           </div>
@@ -326,7 +326,7 @@ export default function ProgramPage() {
           </p>
 
           <div style={{ ...styles.buttonRowStyle, justifyContent: 'center' }}>
-            <a href="/apply" style={styles.primaryButtonStyle}>
+            <a href="/audit" style={styles.primaryButtonStyle}>
               Help Me Find My Path
             </a>
 
