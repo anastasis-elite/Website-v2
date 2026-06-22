@@ -39,7 +39,7 @@ export async function getDashboardContext({
       !client.address_line_1
     )
   ) {
-    redirect('/onboarding/profile')
+    redirect('/dashboard/onboarding/profile')
   }
 
   return {
