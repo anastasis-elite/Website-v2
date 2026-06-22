@@ -12,8 +12,6 @@ export default async function AOSTasksPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>AOS</p>
 
         <h1 style={styles.heroTitleStyle}>Tasks</h1>
@@ -76,7 +74,5 @@ export default async function AOSTasksPage() {
             <p style={styles.bodyStyle}>No tasks yet.</p>
           )}
         </section>
-      </div>
-    </main>
   )
 }
