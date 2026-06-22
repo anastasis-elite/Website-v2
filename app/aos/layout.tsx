@@ -1,11 +1,34 @@
+import { redirect } from 'next/navigation'
 import AOSNavigation from '@/components/AOSNavigation'
 import * as styles from '@/app/styles/globalstyles'
+import { createClient } from '@/lib/supabase/server'
 
-export default function AOSLayout({
+export default async function AOSLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user?.email) {
+    redirect('/login?redirect=/aos')
+  }
+
+  const { data: admin } = await supabase
+    .from('aos_admins')
+    .select('id, role, active')
+    .eq('email', user.email)
+    .eq('active', true)
+    .maybeSingle()
+
+  if (!admin) {
+    redirect('/dashboard')
+  }
+
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
