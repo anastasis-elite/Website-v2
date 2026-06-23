@@ -1,7 +1,7 @@
 'use client'
 
 import * as styles from '../../../styles/globalstyles'
-
+import TrackEvent from '@/components/TrackEvent'
 import type { CSSProperties } from 'react'
 
 async function startCheckout(
@@ -30,6 +30,7 @@ async function startCheckout(
 
 export default function EmberCartPage() {
   return (
+    <><TrackEvent event="ember_cart_page_viewed" properties={{ page: 'ember_cart' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Checkout</p>
@@ -70,6 +71,7 @@ export default function EmberCartPage() {
         </section>
       </div>
     </main>
+    </>
   )
 }
 
