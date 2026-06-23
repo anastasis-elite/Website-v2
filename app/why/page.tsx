@@ -4,7 +4,7 @@ import TrackEvent from '@/components/TrackEvent'
 
 export default function WhyPage() {
   return (
-     <TrackEvent event="why_page_viewed" properties={{ page: 'why' }} />
+     <><TrackEvent event="why_page_viewed" properties={{ page: 'why' }} />
     <main style={styles.pageStyle}>
       <section style={styles.h1Style}>
         <p style={styles.eyebrowStyle}>Why Anastasis Exists</p>
