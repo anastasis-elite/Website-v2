@@ -1,6 +1,7 @@
 'use client'
 
 import * as styles from '../../styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 async function startCheckout(billing: 'subscription' | 'annual') {
   const response = await fetch('/api/checkout', {
@@ -24,6 +25,7 @@ async function startCheckout(billing: 'subscription' | 'annual') {
 
 export default function PhoenixPage() {
   return (
+  <><TrackEvent event="program_viewed" properties={{ program: 'phoenix' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Phoenix</p>
@@ -133,5 +135,6 @@ export default function PhoenixPage() {
         </section>
       </div>
     </main>
+  </>
   )
 }
