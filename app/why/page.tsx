@@ -96,5 +96,6 @@ export default function WhyPage() {
         </Link>
       </section>
     </main>
+     </>
   )
 }
