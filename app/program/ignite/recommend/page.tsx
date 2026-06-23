@@ -1,7 +1,9 @@
 import * as styles from '../../../styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 export default function IgniteRecommendPage() {
   return (
+    <><TrackEvent event="ignite_recommend_page_viewed" properties={{ page: 'ignite_recommend' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Recommended Path</p>
@@ -62,5 +64,6 @@ export default function IgniteRecommendPage() {
         </div>
       </div>
     </main>
+    </>
   )
 }
