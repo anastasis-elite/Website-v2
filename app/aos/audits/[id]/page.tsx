@@ -35,8 +35,6 @@ export default async function AuditDetailPage({
         <p style={styles.heroTextStyle}>
           Audit review and recommendation details.
         </p>
-
-        <AOSNavigation />
         
         {/* SUMMARY */}
 
