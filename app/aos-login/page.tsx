@@ -7,7 +7,6 @@ import * as styles from '@/app/styles/globalstyles'
 
 export default function AOSLoginPage() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [email, setEmail] = useState('anastasis.elite@gmail.com')
   const [password, setPassword] = useState('')
@@ -19,6 +18,7 @@ export default function AOSLoginPage() {
   setLoading(true)
   setMessage('')
 
+  const supabase = createClient()
   const normalizedEmail = email.trim().toLowerCase()
 
   const { error } = await supabase.auth.signInWithPassword({
