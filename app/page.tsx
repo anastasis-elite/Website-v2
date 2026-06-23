@@ -5,7 +5,7 @@ import TrackEvent from '@/components/TrackEvent'
 
 export default function Home() {
   return (
-    <TrackEvent event="program_viewed" properties={{ program: 'phoenix' }} />
+    <TrackEvent event="landing_page_viewed" properties={{ page: 'landing' }} />
     <main
       style={{
         minHeight: '100vh',
