@@ -21,7 +21,20 @@ export default async function AOSLayout({
 
   if (!user?.email) {
     console.error('AOS BLOCKED: No user session found')
-    redirect('/aos-login')
+    return (
+  <main style={styles.pageStyle}>
+    <div style={styles.containerStyle}>
+      <p style={styles.eyebrowStyle}>AOS Debug</p>
+      <h1 style={styles.heroTitleStyle}>Access blocked</h1>
+      <p style={styles.bodyStyle}>
+        Reason: No user session or admin permission found.
+      </p>
+      <p style={styles.bodyStyle}>
+        User email: {user?.email || 'No user found'}
+      </p>
+    </div>
+  </main>
+)
   }
 
   const adminEmail = user.email.trim().toLowerCase()
