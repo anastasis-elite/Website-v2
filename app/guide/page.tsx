@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import * as styles from '../styles/globalstyles'
 import Image from 'next/image'
+import TrackEvent from '@/components/TrackEvent'
 
 export default function GuidePage() {
   return (
+    <><TrackEvent event="guide_page_viewed" properties={{ page: 'guide' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>The Anastasis Shift</p>
@@ -142,5 +144,6 @@ export default function GuidePage() {
         </div>
       </div>
     </main>
+    </>
     )
 }
