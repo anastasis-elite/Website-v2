@@ -1,9 +1,10 @@
 import * as styles from '../../../styles/globalstyles'
-  
+import TrackEvent from '@/components/TrackEvent'
 import type { CSSProperties } from 'react'
 
 export default function EmberRecommendPage() {
   return (
+    <><TrackEvent event="ember_recommend_page_viewed" properties={{ page: 'ember_recommend' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Recommended Path</p>
@@ -58,6 +59,7 @@ export default function EmberRecommendPage() {
 </div>
       </div>
     </main>
+    </>
   )
 }
 
