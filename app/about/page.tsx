@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import * as styles from '../styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 export default function AboutPage() {
   return (
+    <><TrackEvent event="about_page_viewed" properties={{ page: 'about' }} />
     <main style={styles.pageStyle}>
       <section style={styles.h1Style}>
         <p style={styles.eyebrowStyle}>About Anastasis</p>
@@ -89,5 +91,6 @@ export default function AboutPage() {
         </Link>
       </section>
     </main>
+    </>
   )
 }
