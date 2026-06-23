@@ -31,8 +31,6 @@ export default async function AOSClientsPage() {
         <p style={styles.heroTextStyle}>
           Active clients, onboarding status, and program placement.
         </p>
-
-        <AOSNavigation />
         
         <section style={styles.cartBoxStyle}>
           {clients?.length ? (
