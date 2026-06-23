@@ -3,31 +3,35 @@ import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseSecretKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SECRET_KEY
-
-const supabaseAdmin = createClient(
-  supabaseUrl as string,
-  supabaseSecretKey as string,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-)
-
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
 export async function POST(req: Request) {
   try {
-    const { email, password, client_id, program } = await req.json()
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseSecretKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SECRET_KEY
 
-    if (!email || !isValidEmail(email)) {
+    if (!supabaseUrl || !supabaseSecretKey) {
+      return NextResponse.json(
+        { error: 'Missing Supabase server environment variables.' },
+        { status: 500 }
+      )
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+
+    const { email, password, client_id, program } = await req.json()
+    const normalizedEmail = String(email || '').trim().toLowerCase()
+
+    if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
       return NextResponse.json(
         { error: 'Please enter a valid email address.' },
         { status: 400 }
@@ -50,7 +54,7 @@ export async function POST(req: Request) {
 
     const { data: userData, error: createError } =
       await supabaseAdmin.auth.admin.createUser({
-        email,
+        email: normalizedEmail,
         password,
         email_confirm: true,
         user_metadata: {
@@ -79,7 +83,7 @@ export async function POST(req: Request) {
       .from('clients')
       .update({
         auth_user_id: userId,
-        login_email: email,
+        login_email: normalizedEmail,
         updated_at: new Date().toISOString(),
       })
       .eq('client_id', client_id)
@@ -96,9 +100,9 @@ export async function POST(req: Request) {
       user_id: userId,
       redirect: `/dashboard/assessment/start?program=${encodeURIComponent(
         program || ''
-      )}&client_id=${encodeURIComponent(client_id)}&email=${encodeURIComponent(
-        email
-      )}`,
+      )}&client_id=${encodeURIComponent(
+        client_id
+      )}&email=${encodeURIComponent(normalizedEmail)}`,
     })
   } catch (error) {
     const message =
