@@ -31,8 +31,6 @@ export default async function AOSAuditsPage() {
         <p style={styles.heroTextStyle}>
           Review audit submissions and recommended program placement.
         </p>
-
-        <AOSNavigation />
         
         <section style={styles.cartBoxStyle}>
           {audits?.length ? (
