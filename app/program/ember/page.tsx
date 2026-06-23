@@ -1,7 +1,7 @@
 'use client'
 
 import * as styles from '../../styles/globalstyles'
-
+import TrackEvent from '@/components/TrackEvent'
 import type { CSSProperties } from 'react'
 
 async function startCheckout(billing: 'subscription' | 'annual') {
@@ -26,6 +26,7 @@ async function startCheckout(billing: 'subscription' | 'annual') {
 
 export default function EmberPage() {
   return (
+    <><TrackEvent event="program_viewed" properties={{ program: 'ember' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Ember</p>
@@ -129,5 +130,6 @@ This is exactly where Ember fits.
         </section>
       </div>
     </main>
+    </>
   )
 }
