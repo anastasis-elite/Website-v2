@@ -1,7 +1,9 @@
 import * as styles from '../styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 export default function TermsPage() {
   return (
+    <><TrackEvent event="terms_page_viewed" properties={{ page: 'terms' }} />
     <main style={styles.pageStyle}>
       <div style={{ ...styles.containerStyle, maxWidth: '900px' }}>
         
