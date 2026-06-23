@@ -1,9 +1,11 @@
 import Image from 'next/image'
 import Button from '../components/Button'
 import MistReveal from '../components/MistReveal'
+import TrackEvent from '@/components/TrackEvent'
 
 export default function Home() {
   return (
+    <TrackEvent event="program_viewed" properties={{ program: 'phoenix' }} />
     <main
       style={{
         minHeight: '100vh',
