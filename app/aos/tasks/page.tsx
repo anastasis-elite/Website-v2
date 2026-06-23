@@ -20,8 +20,6 @@ export default async function AOSTasksPage() {
         <p style={styles.heroTextStyle}>
           Internal priorities, system actions, client follow-ups, and future bot-generated recommendations.
         </p>
-
-        <AOSNavigation />
         
         <section style={styles.cartBoxStyle}>
           <div style={styles.buttonRowStyle}>
