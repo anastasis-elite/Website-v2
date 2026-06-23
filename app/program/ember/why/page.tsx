@@ -1,7 +1,9 @@
 import * as styles from '../../../styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 export default function EmberWhyPage() {
   return (
+    <><TrackEvent event="ember_why_page_viewed" properties={{ page: 'ember_why' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Ember • Selection</p>
@@ -103,5 +105,6 @@ export default function EmberWhyPage() {
         </div>
       </div>
     </main>
+    </>
   )
 }
