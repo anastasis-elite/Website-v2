@@ -15,8 +15,6 @@ export default function AOSCommandCenterPage() {
           A centralized view of clients, systems, operations, content,
           revenue, support needs, and platform health.
         </p>
-
-        <AOSNavigation />
         
         {/* TODAY'S FOCUS */}
 
