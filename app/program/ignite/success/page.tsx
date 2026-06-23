@@ -3,6 +3,7 @@
 import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import * as styles from '../../../styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 function IgniteSuccessContent() {
   const searchParams = useSearchParams()
@@ -13,6 +14,7 @@ function IgniteSuccessContent() {
   const email = searchParams.get('email') || ''
 
   return (
+    <><TrackEvent event="ignite_success_page_viewed" properties={{ page: 'ignite_success' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Ignite • Confirmed</p>
@@ -83,6 +85,7 @@ function IgniteSuccessContent() {
         </div>
       </div>
     </main>
+    </>
   )
 }
 
