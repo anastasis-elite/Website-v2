@@ -27,6 +27,9 @@ export default async function AOSLayout({
           <p style={styles.heroTextStyle}>
             Internal command center.
           </p>
+          <p style={{ color: '#fff' }}>
+  Logged in as: {user.email}
+</p>
           <AOSNavigation />
         </div>
 
