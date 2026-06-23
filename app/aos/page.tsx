@@ -31,6 +31,40 @@ export default function AOSCommandCenterPage() {
           </p>
         </section>
 
+      {/* FUTURE GENERAL MANAGER */}
+
+        <section style={styles.cartBoxStyle}>
+          <p style={styles.eyebrowStyle}>General Manager</p>
+
+          <h2 style={styles.h2Style}>
+            Awaiting operational data.
+          </h2>
+
+          <p style={styles.bodyStyle}>
+            Future versions of AOS will analyze audits, clients,
+            onboarding, support requests, nutrition compliance,
+            workout adherence, content performance, and business
+            operations to recommend the highest leverage next action.
+          </p>
+        </section>
+
+      {/* ANALYTICS */}
+
+<section style={styles.cartBoxStyle}>
+  <p style={styles.eyebrowStyle}>Analytics</p>
+
+  <h2 style={styles.h2Style}>
+    Awaiting visitor and funnel data.
+  </h2>
+
+  <p style={styles.bodyStyle}>
+    Future versions of AOS will track website traffic, social traffic,
+    page views, audit starts, audit completions, program interest,
+    checkout activity, onboarding completion, and client conversion
+    rates to identify where attention is flowing and where the funnel
+    is breaking.
+  </p>
+</section>
         {/* BUSINESS HEALTH */}
 
         <section style={styles.cartBoxStyle}>
@@ -187,22 +221,7 @@ export default function AOSCommandCenterPage() {
           </div>
         </section>
 
-        {/* FUTURE GENERAL MANAGER */}
-
-        <section style={styles.cartBoxStyle}>
-          <p style={styles.eyebrowStyle}>General Manager</p>
-
-          <h2 style={styles.h2Style}>
-            Awaiting operational data.
-          </h2>
-
-          <p style={styles.bodyStyle}>
-            Future versions of AOS will analyze audits, clients,
-            onboarding, support requests, nutrition compliance,
-            workout adherence, content performance, and business
-            operations to recommend the highest leverage next action.
-          </p>
-        </section>
+        
       </>
   )
 }
