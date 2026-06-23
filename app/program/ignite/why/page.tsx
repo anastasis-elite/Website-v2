@@ -1,7 +1,9 @@
 import * as styles from '../../../styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 export default function IgniteWhyPage() {
   return (
+    <><TrackEvent event="ignite_why_page_viewed" properties={{ page: 'ignite_why' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Ignite • Selection</p>
@@ -93,5 +95,6 @@ export default function IgniteWhyPage() {
         </div>
       </div>
     </main>
+    </>
   )
 }
