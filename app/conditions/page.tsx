@@ -1,7 +1,9 @@
 import * as styles from '../styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 export default function ConditionsPage() {
   return (
+    <><TrackEvent event="conditions_page_viewed" properties={{ page: 'conditions' }} />
     <main style={styles.pageStyle}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <p style={styles.eyebrowStyle}>
@@ -68,5 +70,6 @@ export default function ConditionsPage() {
         </p>
       </div>
     </main>
+    </>
   )
 }
