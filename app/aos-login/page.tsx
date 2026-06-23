@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createBrowserClient } from '@supabase/ssr'
 import * as styles from '@/app/styles/globalstyles'
 
 export default function AOSLoginPage() {
@@ -14,37 +14,46 @@ export default function AOSLoginPage() {
   const [loading, setLoading] = useState(false)
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
-  e.preventDefault()
-  setLoading(true)
-  setMessage('')
+    e.preventDefault()
+    setLoading(true)
+    setMessage('')
 
-  const supabase = createClient()
-  const normalizedEmail = email.trim().toLowerCase()
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email: normalizedEmail,
-    password,
-  })
+    if (!supabaseUrl || !supabaseAnonKey) {
+      setMessage('Missing Supabase public environment variables.')
+      setLoading(false)
+      return
+    }
 
-  if (error) {
-    setMessage(error.message)
-    setLoading(false)
-    return
+    const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
+    const normalizedEmail = email.trim().toLowerCase()
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    })
+
+    if (error) {
+      setMessage(error.message)
+      setLoading(false)
+      return
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user?.email) {
+      setMessage('Login succeeded, but no user session was found.')
+      setLoading(false)
+      return
+    }
+
+    router.replace('/aos')
+    router.refresh()
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user?.email) {
-    setMessage('Login succeeded, but no user session was found.')
-    setLoading(false)
-    return
-  }
-
-  router.replace('/aos')
-  router.refresh()
-}
 
   return (
     <main style={styles.pageStyle}>
