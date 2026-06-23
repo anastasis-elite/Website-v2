@@ -12,22 +12,33 @@ export default async function AOSLayout({
 
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser()
 
-  if (!user?.email) {
-    redirect('/login?redirect=/aos')
+  if (userError) {
+    console.error('AOS USER ERROR:', userError)
   }
 
-const adminEmail = user.email.trim().toLowerCase()
+  if (!user?.email) {
+    console.error('AOS BLOCKED: No user session found')
+    redirect('/aos-login')
+  }
 
-const { data: admin } = await supabase
-  .from('aos_admins')
-  .select('id, role, active')
-  .eq('email', adminEmail)
-  .eq('active', true)
-  .maybeSingle()
+  const adminEmail = user.email.trim().toLowerCase()
+
+  const { data: admin, error: adminError } = await supabase
+    .from('aos_admins')
+    .select('id, role, active, email')
+    .eq('email', adminEmail)
+    .eq('active', true)
+    .maybeSingle()
+
+  if (adminError) {
+    console.error('AOS ADMIN ERROR:', adminError)
+  }
 
   if (!admin) {
+    console.error('AOS BLOCKED: User not in aos_admins:', adminEmail)
     redirect('/aos-login')
   }
 
@@ -36,14 +47,11 @@ const { data: admin } = await supabase
       <div style={styles.containerStyle}>
         <div style={{ marginBottom: '56px' }}>
           <p style={styles.eyebrowStyle}>Anastasis Operating System</p>
-
           <h1 style={styles.heroTitleStyle}>AOS</h1>
-
           <p style={styles.heroTextStyle}>
             The internal command center for clients, audits, tasks, reports,
             systems, and business operations.
           </p>
-
           <AOSNavigation />
         </div>
 
