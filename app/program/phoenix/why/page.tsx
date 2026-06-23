@@ -1,7 +1,9 @@
 import * as styles from '../../../styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 export default function PhoenixWhyPage() {
   return (
+    <><TrackEvent event="phoenix_why_page_viewed" properties={{ page: 'phoenix_why' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Phoenix • Selection</p>
@@ -145,5 +147,6 @@ export default function PhoenixWhyPage() {
         </section>
       </div>
     </main>
+    </>
   )
 }
