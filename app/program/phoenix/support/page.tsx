@@ -1,7 +1,9 @@
 import * as styles from '../../../styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 export default function PhoenixSupportPage() {
   return (
+    <><TrackEvent event="phoenix_support_page_viewed" properties={{ page: 'phoenix_support' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <h1 style={styles.heroTitleStyle}>
@@ -30,5 +32,6 @@ export default function PhoenixSupportPage() {
         </div>
       </div>
     </main>
+    </>
   )
 }
