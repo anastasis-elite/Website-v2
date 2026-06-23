@@ -3,6 +3,7 @@ import Link from 'next/link'
 import './globals.css'
 import CookieBanner from '../components/CookieBanner'
 import AuthButton from '@/components/AuthButton'
+import '@/lib/posthog'
 
 export const metadata: Metadata = {
   title: 'Anastasis | Woman-Centered Performance',
