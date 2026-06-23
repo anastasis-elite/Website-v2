@@ -1,4 +1,5 @@
 import * as styles from '../styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 const paths = [
   {
@@ -59,6 +60,7 @@ const paths = [
 
 export default function ProgramPage() {
   return (
+    <><TrackEvent event="program_page_viewed" properties={{ page: 'programs' }} />
     <main style={styles.pageStyle}>
       <div style={{ ...styles.containerStyle, maxWidth: '1120px' }}>
 
@@ -338,5 +340,6 @@ export default function ProgramPage() {
 
       </div>
     </main>
+    </>
   )
 }
