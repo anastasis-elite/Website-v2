@@ -15,24 +15,36 @@ export default function AOSLoginPage() {
   const [loading, setLoading] = useState(false)
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setLoading(true)
-    setMessage('')
+  e.preventDefault()
+  setLoading(true)
+  setMessage('')
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+  const normalizedEmail = email.trim().toLowerCase()
 
-    if (error) {
-      setMessage(error.message)
-      setLoading(false)
-      return
-    }
+  const { error } = await supabase.auth.signInWithPassword({
+    email: normalizedEmail,
+    password,
+  })
 
-    router.push('/aos')
-    router.refresh()
+  if (error) {
+    setMessage(error.message)
+    setLoading(false)
+    return
   }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user?.email) {
+    setMessage('Login succeeded, but no user session was found.')
+    setLoading(false)
+    return
+  }
+
+  router.replace('/aos')
+  router.refresh()
+}
 
   return (
     <main style={styles.pageStyle}>
