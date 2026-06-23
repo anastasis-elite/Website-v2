@@ -26,7 +26,7 @@ export default async function AOSLayout({
     .maybeSingle()
 
   if (!admin) {
-    redirect('/dashboard')
+    redirect('/aos-login')
   }
 
   return (
