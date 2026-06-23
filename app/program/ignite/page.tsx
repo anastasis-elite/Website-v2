@@ -1,7 +1,7 @@
 'use client'
 
 import * as styles from '../../styles/globalstyles'
-
+import TrackEvent from '@/components/TrackEvent'
 import type { CSSProperties } from 'react'
 
 async function startCheckout(billing: 'subscription' | 'annual') {
@@ -26,6 +26,7 @@ async function startCheckout(billing: 'subscription' | 'annual') {
 
 export default function IgnitePage() {
   return (
+    <><TrackEvent event="program_viewed" properties={{ program: 'ignite' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Ignite</p>
@@ -134,5 +135,6 @@ export default function IgnitePage() {
         </section>
       </div>
     </main>
+    </>
   )
 }
