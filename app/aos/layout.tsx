@@ -18,12 +18,14 @@ export default async function AOSLayout({
     redirect('/login?redirect=/aos')
   }
 
-  const { data: admin } = await supabase
-    .from('aos_admins')
-    .select('id, role, active')
-    .eq('email', user.email)
-    .eq('active', true)
-    .maybeSingle()
+const adminEmail = user.email.trim().toLowerCase()
+
+const { data: admin } = await supabase
+  .from('aos_admins')
+  .select('id, role, active')
+  .eq('email', adminEmail)
+  .eq('active', true)
+  .maybeSingle()
 
   if (!admin) {
     redirect('/aos-login')
