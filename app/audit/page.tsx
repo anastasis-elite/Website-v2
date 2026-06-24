@@ -99,7 +99,7 @@ function ScrollChoice({
 }) {
   return (
     
-<><TrackEvent event="landing_page_viewed" properties={{ page: 'landing' }} />
+<><TrackEvent event="audit_page_viewed" properties={{ page: 'audit' }} />
 
     <div style={{ display: 'grid', gap: '14px' }}>
       <label style={styles.labelStyle}>{label}</label>
