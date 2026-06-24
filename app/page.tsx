@@ -5,20 +5,19 @@ import TrackEvent from '@/components/TrackEvent'
 import TrackedButton from '@/components/TrackedButton'
 
 export default function Home() {
+  export default function Home() {
   return (
-    <>
-      <TrackEvent
-        event="landing_page_viewed"
-        properties={{ page: 'landing' }}
-      />
-
-      <main
+    <main
       style={{
         minHeight: '100vh',
         overflow: 'hidden',
         position: 'relative',
       }}
     >
+      <TrackEvent
+        event="landing_page_viewed"
+        properties={{ page: 'landing' }}
+      />
       <section
         style={{
           width: '100%',
