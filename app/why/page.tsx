@@ -3,7 +3,7 @@ import * as styles from '../styles/globalstyles'
 import TrackEvent from '@/components/TrackEvent'
 
 const sectionBlock = {
-  marginBottom: '120px',
+  marginBottom: '110px',
   textAlign: 'center' as const,
 }
 
@@ -31,53 +31,41 @@ export default function WhyPage() {
       <main style={styles.pageStyle}>
         <div style={{ ...styles.containerStyle, maxWidth: '1060px' }}>
           <section style={{ ...sectionBlock, marginBottom: '130px' }}>
-            <p style={styles.eyebrowStyle}>Why Anastasis Exists</p>
+            <p style={styles.eyebrowStyle}>Why You Keep Starting Over</p>
 
-            <h1
-              style={{
-                ...styles.heroTitleStyle,
-                margin: '0 auto 34px auto',
-                textAlign: 'center',
-              }}
-            >
-              You were never meant to carry everything while abandoning yourself.
+            <h1 style={{ ...styles.heroTitleStyle, textAlign: 'center' }}>
+              It&apos;s probably not because you&apos;re lazy, unmotivated, or
+              lacking discipline.
             </h1>
 
             <p style={experienceText}>
-              Anastasis was built for the woman who knows she is capable, but
-              cannot keep forcing herself through systems that ignore her body,
-              her season, her cycle, her recovery, and her real life.
+              Most women don&apos;t need another plan.
+              <br />
+              They need enough capacity to actually follow one.
             </p>
           </section>
 
           <section style={sectionBlock}>
             <p style={styles.eyebrowStyle}>The Real Problem</p>
 
-            <h2
-              style={{
-                ...styles.heroTitleStyle,
-                fontSize: 'clamp(2rem, 4vw, 3.7rem)',
-                margin: '0 auto 42px auto',
-              }}
-            >
-              It was never just motivation.
+            <h2 style={{ ...styles.heroTitleStyle, fontSize: 'clamp(2rem, 4vw, 3.7rem)' }}>
+              The problem was never motivation.
             </h2>
 
-            <div style={{ ...softPanel, maxWidth: '860px', margin: '0 auto' }}>
+            <div style={{ ...softPanel, maxWidth: '860px', margin: '42px auto 0 auto' }}>
               {[
-                'You start strong.',
-                'You get momentum.',
-                'You begin to feel like yourself again.',
-                'Then life gets heavy.',
-                'The kids need more.',
-                'Work demands more.',
-                'Your sleep disappears.',
-                'Your body stops recovering.',
-                'And once again, you become the first thing sacrificed.',
+                'You&apos;ve downloaded the meal plans.',
+                'You&apos;ve bought the programs.',
+                'You&apos;ve promised yourself that this time would be different.',
+                'And for a while, it usually is.',
+                'Until life gets heavy.',
+                'The kids need something.',
+                'Work gets stressful.',
+                'Someone gets sick.',
+                'Sleep disappears.',
+                'And suddenly the things that were helping you feel like yourself become the first things sacrificed.',
               ].map((line) => (
-                <p key={line} style={experienceText}>
-                  {line}
-                </p>
+                <p key={line} style={experienceText} dangerouslySetInnerHTML={{ __html: line }} />
               ))}
             </div>
           </section>
@@ -85,52 +73,45 @@ export default function WhyPage() {
           <section style={sectionBlock}>
             <p style={styles.eyebrowStyle}>What Most Programs Miss</p>
 
-            <h2
-              style={{
-                ...styles.heroTitleStyle,
-                fontSize: 'clamp(2rem, 4vw, 3.7rem)',
-                margin: '0 auto 42px auto',
-              }}
-            >
-              Capacity changes everything.
+            <h2 style={{ ...styles.heroTitleStyle, fontSize: 'clamp(2rem, 4vw, 3.7rem)' }}>
+              Most programs ignore capacity.
             </h2>
 
             <p style={experienceText}>
-              Most programs assume you have unlimited time, unlimited energy,
-              and unlimited mental bandwidth.
+              Traditional wellness programs assume you have unlimited energy,
+              unlimited time, and unlimited mental bandwidth.
             </p>
 
+            <p style={experienceText}>Real life doesn&apos;t work like that.</p>
+
             <p style={experienceText}>
-              But real life does not work that way. Especially for women
-              carrying households, children, careers, appointments,
-              relationships, invisible labor, and everyone else’s needs.
+              Especially for women carrying careers, households, relationships,
+              children, appointments, responsibilities, and everyone else&apos;s
+              needs.
             </p>
 
             <p style={experienceText}>
               When your capacity drops, your ability to execute drops with it.
-              That is not failure. That is a signal.
             </p>
+
+            <p style={experienceText}>That isn&apos;t failure.</p>
+
+            <p style={experienceText}>That&apos;s reality.</p>
           </section>
 
           <section style={sectionBlock}>
             <p style={styles.eyebrowStyle}>The Signals</p>
 
-            <h2
-              style={{
-                ...styles.heroTitleStyle,
-                fontSize: 'clamp(2rem, 4vw, 3.7rem)',
-                margin: '0 auto 54px auto',
-              }}
-            >
+            <h2 style={{ ...styles.heroTitleStyle, fontSize: 'clamp(2rem, 4vw, 3.7rem)' }}>
               Your body has been telling the story all along.
             </h2>
 
-            <div style={styles.cardGridStyle}>
+            <div style={{ ...styles.cardGridStyle, marginTop: '54px' }}>
               {[
-                'Constant restarts',
+                'Chronic fatigue',
                 'Stress eating',
-                'Low energy',
                 'Poor recovery',
+                'Constant restarts',
                 'Hormonal symptoms',
                 'Feeling disconnected from yourself',
               ].map((item) => (
@@ -139,64 +120,62 @@ export default function WhyPage() {
                 </div>
               ))}
             </div>
+
+            <div style={{ marginTop: '36px' }}>
+              <p style={experienceText}>None of these happen in isolation.</p>
+              <p style={experienceText}>Your body adapts to the environment it lives in.</p>
+              <p style={experienceText}>
+                If the environment is chaotic, overloaded, exhausted, and
+                running on survival mode, your body eventually reflects that
+                reality.
+              </p>
+            </div>
           </section>
 
           <section style={sectionBlock}>
-            <p style={styles.eyebrowStyle}>The Anastasis Difference</p>
+            <p style={styles.eyebrowStyle}>Something Different</p>
 
-            <h2
-              style={{
-                ...styles.heroTitleStyle,
-                fontSize: 'clamp(2rem, 4vw, 3.7rem)',
-                margin: '0 auto 42px auto',
-              }}
-            >
-              This is not another plan asking you to become less human.
+            <h2 style={{ ...styles.heroTitleStyle, fontSize: 'clamp(2rem, 4vw, 3.7rem)' }}>
+              So we built something different.
             </h2>
 
+            <p style={experienceText}>Anastasis wasn&apos;t designed around punishment.</p>
+            <p style={experienceText}>It wasn&apos;t designed around perfection.</p>
             <p style={experienceText}>
-              Anastasis is an adaptive women’s wellness experience designed to
-              help you train, eat, recover, reflect, and rebuild capacity in a
-              way your actual life can sustain.
+              And it wasn&apos;t designed for the woman whose entire life
+              revolves around fitness.
             </p>
-
+            <p style={experienceText}>It was built for the woman carrying everything.</p>
+            <p style={experienceText}>The woman trying to hold her family together.</p>
             <p style={experienceText}>
-              Not through punishment. Not through perfection. Through awareness,
-              support, structure, and adaptation.
+              The woman trying to take care of herself without abandoning
+              everyone else.
             </p>
+            <p style={experienceText}>The woman who misses who she used to be.</p>
           </section>
 
           <section style={{ ...sectionBlock, marginBottom: '80px' }}>
             <div style={{ ...softPanel, maxWidth: '900px', margin: '0 auto' }}>
-              <p style={styles.eyebrowStyle}>Come Home To Yourself</p>
+              <p style={styles.eyebrowStyle}>The Real Goal</p>
 
-              <h2
-                style={{
-                  ...styles.heroTitleStyle,
-                  fontSize: 'clamp(2rem, 4vw, 3.8rem)',
-                  margin: '0 auto 34px auto',
-                }}
-              >
-                The woman you miss is still there.
+              <h2 style={{ ...styles.heroTitleStyle, fontSize: 'clamp(2rem, 4vw, 3.8rem)' }}>
+                The goal isn&apos;t weight loss.
               </h2>
 
+              <p style={experienceText}>Weight loss may happen.</p>
+              <p style={experienceText}>Strength may happen.</p>
+              <p style={experienceText}>Better energy may happen.</p>
+              <p style={experienceText}>Better recovery may happen.</p>
+              <p style={experienceText}>But the real goal is bigger than that.</p>
               <p style={experienceText}>
-                She does not need more punishment. She needs enough support to
-                hear herself again.
+                The goal is helping you build enough capacity to consistently
+                show up for the life you want.
               </p>
+              <p style={experienceText}>Because the woman you miss is still there.</p>
+              <p style={experienceText}>She doesn&apos;t need more punishment.</p>
+              <p style={experienceText}>She needs support.</p>
 
-              <p style={experienceText}>
-                Start with the Capacity Audit and discover what may actually be
-                draining your energy, motivation, recovery, and sense of self.
-              </p>
-
-              <div
-                style={{
-                  ...styles.buttonRowStyle,
-                  justifyContent: 'center',
-                  marginTop: '42px',
-                }}
-              >
+              <div style={{ ...styles.buttonRowStyle, justifyContent: 'center', marginTop: '42px' }}>
                 <Link href="/audit" style={styles.primaryButtonStyle}>
                   Take the Capacity Audit
                 </Link>
