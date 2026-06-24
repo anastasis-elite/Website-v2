@@ -137,17 +137,18 @@ export default function Home() {
         >
           <Button href="#how-it-works">How It Works</Button>
 
-          <TrackedLink
-  href="/audit"
-  event="audit_cta_clicked"
-  properties={{
-    location: 'hero',
-    page: 'landing',
+          <button
+  onClick={() => {
+    trackEvent('audit_cta_clicked', {
+      location: 'hero',
+      page: 'landing',
+    })
+
+    router.push('/audit')
   }}
-  style={styles.primaryButtonStyle}
 >
   Take the Capacity Audit
-</TrackedLink>
+</button>
         </div>
 
         <div style={{ height: '120px' }} />
@@ -478,17 +479,18 @@ export default function Home() {
           >
             <Button href="/program">Choose Your Path</Button>
 
-            <TrackedLink
-  href="/audit"
-  event="audit_cta_clicked"
-  properties={{
-    location: 'hero',
-    page: 'landing',
+            <button
+  onClick={() => {
+    trackEvent('audit_cta_clicked', {
+      location: 'hero',
+      page: 'landing',
+    })
+
+    router.push('/audit')
   }}
-  style={styles.primaryButtonStyle}
 >
   Help Me Find My Path
-</TrackedLink>
+</button>
           </div>
         </div>
       </section>
