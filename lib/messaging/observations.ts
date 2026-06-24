@@ -1,33 +1,86 @@
-// /lib/messaging/observations.ts
 
-export type CyclePhase =
-  | 'menstrual'
-  | 'follicular'
-  | 'ovulatory'
-  | 'luteal'
-  | 'unknown'
-
-export type CapacityState = 'low' | 'medium' | 'high'
-
-export type ObservationCategory =
-  | 'hydration'
-  | 'movement'
-  | 'nutrition'
-  | 'recovery'
-  | 'reflection'
-  | 'consistency'
-  | 'momentum'
-  | 'capacity'
-  | 'cycle'
-  | 'stress'
-
-export type Observation = {
-  id: string
-  category: ObservationCategory
-  text: string
-  cyclePhase?: CyclePhase[]
-  capacity?: CapacityState[]
-  minCompletions?: number
-  maxCompletions?: number
-  priority?: number
-}
+export const observationLibrary: Observation[] = [
+  {
+    id: 'hydration_streak_001',
+    category: 'hydration',
+    text: 'You completed hydration consistently enough for it to become visible evidence.',
+    minCompletions: 3,
+    priority: 2,
+  },
+  {
+    id: 'movement_stress_001',
+    category: 'movement',
+    text: 'You completed movement even while carrying more stress than usual.',
+    capacity: ['low', 'medium'],
+    minCompletions: 1,
+    priority: 3,
+  },
+  {
+    id: 'nutrition_anchor_001',
+    category: 'nutrition',
+    text: 'You gave your body nourishment instead of waiting for the perfect day to start again.',
+    minCompletions: 1,
+    priority: 2,
+  },
+  {
+    id: 'recovery_low_capacity_001',
+    category: 'recovery',
+    text: 'You chose recovery when your capacity was lower, which means you are learning to respond instead of force.',
+    capacity: ['low'],
+    minCompletions: 1,
+    priority: 4,
+  },
+  {
+    id: 'reflection_001',
+    category: 'reflection',
+    text: 'You paused long enough to notice what is actually happening inside your body and life.',
+    minCompletions: 1,
+    priority: 2,
+  },
+  {
+    id: 'consistency_001',
+    category: 'consistency',
+    text: 'You have created more consistency than your self-talk may be giving you credit for.',
+    minCompletions: 3,
+    priority: 3,
+  },
+  {
+    id: 'momentum_001',
+    category: 'momentum',
+    text: 'Momentum is starting to show up through repeated action, not perfect execution.',
+    minCompletions: 3,
+    priority: 3,
+  },
+  {
+    id: 'menstrual_capacity_001',
+    category: 'cycle',
+    text: 'Your energy may be lower in this phase, but the data shows you have not abandoned yourself.',
+    cyclePhase: ['menstrual'],
+    capacity: ['low', 'medium'],
+    priority: 4,
+  },
+  {
+    id: 'follicular_momentum_001',
+    category: 'cycle',
+    text: 'Your body is entering a phase that can support renewed momentum, and your recent actions give that momentum somewhere to land.',
+    cyclePhase: ['follicular'],
+    capacity: ['medium', 'high'],
+    priority: 3,
+  },
+  {
+    id: 'ovulatory_visibility_001',
+    category: 'cycle',
+    text: 'This phase can support confidence and expression, and your consistency is giving you evidence to stand on.',
+    cyclePhase: ['ovulatory'],
+    capacity: ['medium', 'high'],
+    priority: 3,
+  },
+  {
+    id: 'luteal_simplify_001',
+    category: 'cycle',
+    text: 'This phase may make everything feel heavier, but simplifying is not the same as quitting.',
+    cyclePhase: ['luteal'],
+    capacity: ['low', 'medium'],
+    priority: 4,
+  },
+]
