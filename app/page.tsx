@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Button from '../components/Button'
 import MistReveal from '../components/MistReveal'
 import TrackEvent from '@/components/TrackEvent'
+import TrackedLink from '@/components/TrackedLink'
 
 export default function Home() {
   return (
@@ -136,9 +137,17 @@ export default function Home() {
         >
           <Button href="#how-it-works">How It Works</Button>
 
-          <Button href="/audit" variant="secondary">
-            The Capacity Audit
-          </Button>
+          <TrackedLink
+  href="/audit"
+  event="audit_cta_clicked"
+  properties={{
+    location: 'hero',
+    page: 'landing',
+  }}
+  style={styles.primaryButtonStyle}
+>
+  Take the Capacity Audit
+</TrackedLink>
         </div>
 
         <div style={{ height: '120px' }} />
@@ -469,9 +478,17 @@ export default function Home() {
           >
             <Button href="/program">Choose Your Path</Button>
 
-            <Button href="/audit" variant="secondary">
-              Help Me Find My Path
-            </Button>
+            <TrackedLink
+  href="/audit"
+  event="audit_cta_clicked"
+  properties={{
+    location: 'hero',
+    page: 'landing',
+  }}
+  style={styles.primaryButtonStyle}
+>
+  Help Me Find My Path
+</TrackedLink>
           </div>
         </div>
       </section>
