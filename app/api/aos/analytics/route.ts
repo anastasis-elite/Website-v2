@@ -63,7 +63,7 @@ export async function GET() {
           'program_page_viewed',
           'program_viewed',
           'audit_page_viewed',
-          'audit_completed',
+          'audit_page_completed',
           'audit_results_viewed',
           'audit_cta_clicked_1',
           'audit_cta_clicked_2',
