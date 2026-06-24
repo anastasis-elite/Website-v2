@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import * as styles from '@/app/styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 export const runtime = 'nodejs'
 
@@ -101,6 +102,9 @@ export default async function CapacityAuditResultsPage({
   const content = getProgramContent(recommendedProgram)
 
   return (
+    
+<><TrackEvent event="audit_page_completed" properties={{ page: 'audit_completed' }} />
+
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <section style={{ marginBottom: '72px' }}>
@@ -205,5 +209,6 @@ export default async function CapacityAuditResultsPage({
         </section>
       </div>
     </main>
+</>
   )
 }
