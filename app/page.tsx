@@ -17,6 +17,7 @@ export default function Home() {
         event="landing_page_viewed"
         properties={{ page: 'landing' }}
       />
+      
       <section
         style={{
           width: '100%',
