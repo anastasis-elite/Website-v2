@@ -3,6 +3,7 @@ export type CyclePhase =
   | 'follicular'
   | 'ovulatory'
   | 'luteal'
+  | 'extended_cycle'
   | 'unknown'
 
 export type CapacityState =
