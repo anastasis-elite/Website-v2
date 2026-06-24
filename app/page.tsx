@@ -146,7 +146,7 @@ export default function Home() {
       page: 'landing',
     })
 
-    router.push('/audit')
+    window.location.href = '/audit'
   }}
 >
   Take the Capacity Audit
@@ -488,7 +488,7 @@ export default function Home() {
       page: 'landing',
     })
 
-    router.push('/audit')
+    window.location.href = '/audit'
   }}
 >
   Help Me Find My Path
