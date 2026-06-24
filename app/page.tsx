@@ -92,13 +92,7 @@ export default function Home() {
           <br />
           The woman you miss is still there.
           <br />
-          You don't need more discipline.
-
-          You don't need another diet.
-
-          You need enough capacity to finally hear yourself again.
-
-          Take the Capacity Audit and discover what's actually draining your energy, motivation, recovery, and sense of self.
+          
         </h1>
 
         <p
@@ -110,6 +104,13 @@ export default function Home() {
             color: 'rgba(215,199,182,0.84)',
           }}
         >
+          You don't need more discipline.
+          </br>
+          You don't need another diet.
+          </br>
+          You need enough capacity to finally hear yourself again.
+          </br>
+          Take the Capacity Audit and discover what's actually draining your energy, motivation, recovery, and sense of self.
           The children. The work. The meals. The appointments. The invisible
           checklist that never seems to end.
         </p>
