@@ -113,7 +113,7 @@ export default function NutritionFoodLogger({
 
   async function loadTodayMeals() {
     const res = await fetch(
-      `/api/nutrition/today-meals?nutritionLogId=${nutritionLogId}`
+      `/api/today-meals?nutritionLogId=${nutritionLogId}`
     )
 
     const data = await res.json()
