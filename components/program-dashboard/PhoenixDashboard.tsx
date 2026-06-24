@@ -4,7 +4,6 @@ import WorkoutTracker from '@/components/WorkoutTracker'
 
 type PhoenixDashboardProps = {
   client: any
-  output: any
   todaysWorkout: any
   adjustedExercises: any[]
   cycleAdjustment: {
@@ -20,7 +19,6 @@ function getFirstName(name?: string | null) {
 
 export default function PhoenixDashboard({
   client,
-  output,
   todaysWorkout,
   adjustedExercises,
   cycleAdjustment,
@@ -93,7 +91,7 @@ export default function PhoenixDashboard({
               <WorkoutTracker
                 clientId={client.client_id}
                 authUserId={client.auth_user_id}
-                program={output.program}
+                program={client.program}
                 dayName={todaysWorkout.day_name}
                 exercises={adjustedExercises}
               />
