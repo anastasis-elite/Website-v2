@@ -139,7 +139,7 @@ export default function Home() {
 
           <button
   onClick={() => {
-    trackEvent('audit_cta_clicked', {
+    TrackedLink('audit_cta_clicked', {
       location: 'hero',
       page: 'landing',
     })
@@ -481,7 +481,7 @@ export default function Home() {
 
             <button
   onClick={() => {
-    trackEvent('audit_cta_clicked', {
+    TrackedLink('audit_cta_clicked', {
       location: 'hero',
       page: 'landing',
     })
