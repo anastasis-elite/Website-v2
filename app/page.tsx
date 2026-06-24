@@ -6,8 +6,13 @@ import TrackedButton from '@/components/TrackedButton'
 
 export default function Home() {
   return (
-    <><TrackEvent event="landing_page_viewed" properties={{ page: 'landing' }} />
-    <main
+    <>
+      <TrackEvent
+        event="landing_page_viewed"
+        properties={{ page: 'landing' }}
+      />
+
+      <main
       style={{
         minHeight: '100vh',
         overflow: 'hidden',
@@ -477,7 +482,7 @@ export default function Home() {
 
             <TrackedButton
   href="/audit"
-  event="audit_cta_clicked_1"
+  event="audit_cta_clicked_2"
   properties={{ location: 'hero', page: 'landing' }}
 >
   Take the Capacity Audit
