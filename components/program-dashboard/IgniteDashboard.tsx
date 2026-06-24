@@ -6,9 +6,9 @@ import PeriodStartButton from '@/components/PeriodStartButton'
 
 type Props = {
   client: any
-  dailyPlan: any
-  cycleStatus: any
-  assessmentDueCount: number
+  dailyPlan?: any
+  cycleStatus?: any
+  assessmentDueCount?: number
   lesson?: any
 }
 
@@ -21,12 +21,14 @@ export default function IgniteDashboard({
 }: Props) {
   return (
     <>
-      <DashboardStatusDock
-        client={client}
-        cycleStatus={cycleStatus}
-        dailyPlan={dailyPlan}
-        assessmentDueCount={assessmentDueCount}
-      />
+      {dailyPlan && cycleStatus ? (
+  <DashboardStatusDock
+    client={client}
+    cycleStatus={cycleStatus}
+    dailyPlan={dailyPlan}
+    assessmentDueCount={assessmentDueCount ?? 0}
+  />
+) : null}
 
       <section
         style={{
@@ -104,32 +106,34 @@ export default function IgniteDashboard({
         >
           <IgniteMetricCard
             label="Workout"
-            value={dailyPlan.workoutCompleted ? 'Complete' : 'Open'}
+            value={dailyPlan?.workoutCompleted ? 'Complete' : 'Open'}
           />
 
           <IgniteMetricCard
             label="Nutrition"
-            value={dailyPlan.nutritionLogged ? 'Tracking' : 'Needs Log'}
+            value={dailyPlan?.nutritionLogged ? 'Tracking' : 'Needs Log'}
           />
 
           <IgniteMetricCard
             label="Recovery"
-            value={dailyPlan.recoveryTools?.primaryTool || 'Recommended'}
+            value={dailyPlan?.recoveryTools?.primaryTool || 'Recommended'}
           />
 
           <IgniteMetricCard
             label="Check-ins Due"
-            value={String(assessmentDueCount)}
+            value={String(assessmentDueCount ?? 0)}
           />
         </div>
       </section>
 
-      <section style={{ marginTop: '54px', marginBottom: '42px' }}>
-        <DashboardFlowCarousel
-          cards={dailyPlan.cards}
-          currentCardId={dailyPlan.currentCard?.id}
-        />
-      </section>
+      {dailyPlan?.cards?.length ? (
+  <section style={{ marginTop: '54px', marginBottom: '42px' }}>
+    <DashboardFlowCarousel
+      cards={dailyPlan.cards}
+      currentCardId={dailyPlan.currentCard?.id}
+    />
+  </section>
+) : null}
 
       <section
         style={{
