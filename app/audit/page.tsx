@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import * as styles from '../styles/globalstyles'
 import Button from '../../components/Button'
+import TrackEvent from '@/components/TrackEvent'
 
 type Program = 'ember' | 'ignite' | 'phoenix'
 
@@ -97,6 +98,9 @@ function ScrollChoice({
   onSelect: (name: keyof FormData, value: string) => void
 }) {
   return (
+    
+<><TrackEvent event="landing_page_viewed" properties={{ page: 'landing' }} />
+
     <div style={{ display: 'grid', gap: '14px' }}>
       <label style={styles.labelStyle}>{label}</label>
 
@@ -451,5 +455,6 @@ export default function ApplyPage() {
         </form>
       </div>
     </main>
+  </>
   )
 }
