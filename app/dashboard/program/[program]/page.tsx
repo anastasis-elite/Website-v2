@@ -26,8 +26,15 @@ export default async function ProgramPage({
       )}
 
       {program === 'phoenix' && (
-        <PhoenixDashboard client={client} lesson={lesson} />
-      )}
+  <PhoenixDashboard
+    client={client}
+    output={output}
+    todaysWorkout={todaysWorkout}
+    adjustedExercises={adjustedExercises}
+    cycleAdjustment={cycleAdjustment}
+    phoenixTrackLabel={phoenixTrackLabel}
+  />
+)}
 
       {!['ember', 'ignite', 'phoenix'].includes(program) && (
         <p>Program not found.</p>
