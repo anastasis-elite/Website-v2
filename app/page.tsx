@@ -113,6 +113,7 @@ export default function Home() {
           You need enough capacity to finally hear yourself again.
           <br />
           Take the Capacity Audit and discover what's actually draining your energy, motivation, recovery, and sense of self.
+          <br />
           The children. The work. The meals. The appointments. The invisible
           checklist that never seems to end.
         </p>
