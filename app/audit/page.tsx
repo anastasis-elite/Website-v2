@@ -4,8 +4,7 @@ import { useState } from 'react'
 import * as styles from '../styles/globalstyles'
 import Button from '../../components/Button'
 import TrackEvent from '@/components/TrackEvent'
-
-import {trackEvent} from '@/lib/trackEvent'
+import { trackEvent } from '@/lib/analytics'
 
 type Program = 'ember' | 'ignite' | 'phoenix'
 
@@ -241,8 +240,21 @@ export default function ApplyPage() {
       const data = await res.json().catch(() => null)
 
       if (!res.ok) {
-        throw new Error(data?.error || data?.details || 'Request failed')
-      }
+  throw new Error(data?.error || data?.details || 'Request failed')
+}
+
+trackEvent('audit_page_completed', {
+  page: 'audit',
+  recommended_program: auditResult.recommendedProgram,
+  capacity_score: auditResult.score,
+})
+
+if (data.redirect) {
+  window.location.href = data.redirect
+  return
+}
+
+window.location.href = `/program/${auditResult.recommendedProgram}`
 
       if (data.redirect) {
         window.location.href = data.redirect
@@ -426,7 +438,6 @@ export default function ApplyPage() {
             <button
               type="submit"
               disabled={status === 'submitting'}
-              trackEvent('audit_page_completed', { page: 'audit' })
               style={{
                 ...styles.primaryButtonStyle,
                 minWidth: '220px',
