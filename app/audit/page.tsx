@@ -5,6 +5,8 @@ import * as styles from '../styles/globalstyles'
 import Button from '../../components/Button'
 import TrackEvent from '@/components/TrackEvent'
 
+import {trackEvent} from '@/lib/trackEvent'
+
 type Program = 'ember' | 'ignite' | 'phoenix'
 
 type Option = {
@@ -424,6 +426,7 @@ export default function ApplyPage() {
             <button
               type="submit"
               disabled={status === 'submitting'}
+              trackEvent('audit_page_completed', { page: 'audit' })
               style={{
                 ...styles.primaryButtonStyle,
                 minWidth: '220px',
