@@ -1,7 +1,12 @@
 import { generateDailyInsight } from '@/lib/messaging/engine'
 
 export default function DailyInsightCard() {
-  const insight = generateDailyInsight()
+  const insight = generateDailyInsight({
+  cyclePhase: 'luteal',
+  capacity: 'low',
+  completions: 3,
+  belief: 'i_should_be_doing_more',
+})
 
   return (
     <div>
