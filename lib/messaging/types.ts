@@ -4,6 +4,8 @@ export type CyclePhase =
   | 'ovulatory'
   | 'luteal'
   | 'extended_cycle'
+  | 'menopause'
+  | 'perimenopause'
   | 'unknown'
 
 export type CapacityState =
