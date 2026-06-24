@@ -5,7 +5,6 @@ import TrackEvent from '@/components/TrackEvent'
 import TrackedButton from '@/components/TrackedButton'
 
 export default function Home() {
-  export default function Home() {
   return (
     <main
       style={{
