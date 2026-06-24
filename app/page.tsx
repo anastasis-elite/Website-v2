@@ -87,9 +87,15 @@ export default function Home() {
         >
           For the woman carrying everything.
           <br />
-          You did not fail your body.
+          The woman you miss is still there.
           <br />
-          You need a system built for your life.
+          You don't need more discipline.
+
+          You don't need another diet.
+
+          You need enough capacity to finally hear yourself again.
+
+          Take the Capacity Audit and discover what's actually draining your energy, motivation, recovery, and sense of self.
         </h1>
 
         <p
@@ -130,8 +136,8 @@ export default function Home() {
         >
           <Button href="#how-it-works">How It Works</Button>
 
-          <Button href="/program" variant="secondary">
-            Choose Your Path
+          <Button href="/audit" variant="secondary">
+            The Capacity Audit
           </Button>
         </div>
 
