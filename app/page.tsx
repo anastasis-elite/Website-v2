@@ -2,9 +2,7 @@ import Image from 'next/image'
 import Button from '../components/Button'
 import MistReveal from '../components/MistReveal'
 import TrackEvent from '@/components/TrackEvent'
-import TrackedLink from '@/components/TrackedLink'
-
-import { trackEvent } from '@/lib/analytics'
+import TrackedButton from '@/components/TrackedButton'
 
 export default function Home() {
   return (
@@ -140,18 +138,13 @@ export default function Home() {
         >
           <Button href="#how-it-works">How It Works</Button>
 
-          <button
-  onClick={() => {
-    trackEvent('audit_cta_clicked_1', {
-      location: 'hero',
-      page: 'landing',
-    })
-
-    window.location.href = '/audit'
-  }}
+          <TrackedButton
+  href="/audit"
+  event="audit_cta_clicked_1"
+  properties={{ location: 'hero', page: 'landing' }}
 >
-  Take the Capacity Audit
-</button>
+  The Capacity Audit
+</TrackedButton>
         </div>
 
         <div style={{ height: '120px' }} />
@@ -482,18 +475,13 @@ export default function Home() {
           >
             <Button href="/program">Choose Your Path</Button>
 
-            <button
-  onClick={() => {
-    trackEvent('audit_cta_clicked_2', {
-      location: 'hero',
-      page: 'landing',
-    })
-
-    window.location.href = '/audit'
-  }}
+            <TrackedButton
+  href="/audit"
+  event="audit_cta_clicked_1"
+  properties={{ location: 'hero', page: 'landing' }}
 >
-  Help Me Find My Path
-</button>
+  Take the Capacity Audit
+</TrackedButton>
           </div>
         </div>
       </section>
