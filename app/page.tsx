@@ -4,6 +4,8 @@ import MistReveal from '../components/MistReveal'
 import TrackEvent from '@/components/TrackEvent'
 import TrackedLink from '@/components/TrackedLink'
 
+import { trackEvent } from '@/lib/analytics'
+
 export default function Home() {
   return (
     <><TrackEvent event="landing_page_viewed" properties={{ page: 'landing' }} />
@@ -139,7 +141,7 @@ export default function Home() {
 
           <button
   onClick={() => {
-    TrackEvent('audit_cta_clicked_1', {
+    trackEvent('audit_cta_clicked_1', {
       location: 'hero',
       page: 'landing',
     })
@@ -481,7 +483,7 @@ export default function Home() {
 
             <button
   onClick={() => {
-    TrackEvent('audit_cta_clicked_2', {
+    trackEvent('audit_cta_clicked_2', {
       location: 'hero',
       page: 'landing',
     })
