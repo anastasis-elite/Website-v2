@@ -98,9 +98,6 @@ function ScrollChoice({
   onSelect: (name: keyof FormData, value: string) => void
 }) {
   return (
-    
-<><TrackEvent event="audit_page_viewed" properties={{ page: 'audit' }} />
-
     <div style={{ display: 'grid', gap: '14px' }}>
       <label style={styles.labelStyle}>{label}</label>
 
@@ -259,6 +256,7 @@ export default function ApplyPage() {
   }
 
   return (
+    <><TrackEvent event="audit_page_viewed" properties={{ page: 'audit' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <section style={{ marginBottom: '72px' }}>
