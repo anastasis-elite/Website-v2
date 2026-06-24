@@ -83,4 +83,25 @@ export const observationLibrary: Observation[] = [
     capacity: ['low', 'medium'],
     priority: 4,
   },
+
+  {
+  id: 'extended_cycle_001',
+  category: 'cycle',
+  text:
+    'Your cycle appears to be running longer than expected, which means today’s signals deserve more weight than the calendar estimate.',
+  tags: ['cycle', 'extended_cycle', 'symptoms', 'capacity'],
+  cyclePhase: ['extended_cycle'],
+  capacity: ['low', 'medium'],
+  priority: 5,
+},
+  
+{
+  id: 'extended_cycle_002',
+  category: 'cycle',
+  text:
+    'When your cycle extends beyond its expected rhythm, the goal is not to force normal output. The goal is to listen closely enough to adjust.',
+  tags: ['cycle', 'extended_cycle', 'recovery', 'self-trust'],
+  cyclePhase: ['extended_cycle'],
+  priority: 5,
+},
 ]
