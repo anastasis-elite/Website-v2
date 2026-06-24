@@ -12,6 +12,22 @@ type SourceRow = {
   total: number
 }
 
+const trackedEvents = [
+  'landing_page_viewed',
+  'about_page_viewed',
+  'why_page_viewed',
+  'program_page_viewed',
+  'program_viewed',
+  'audit_page_viewed',
+  'audit_submit_clicked',
+  'audit_page_completed',
+  'audit_results_viewed',
+  'checkout_started',
+  'checkout_completed',
+  'login_created',
+  'dashboard_viewed',
+]
+
 export async function GET() {
   try {
     const apiKey = process.env.POSTHOG_PERSONAL_API_KEY
@@ -50,28 +66,15 @@ export async function GET() {
       return data.results || []
     }
 
+    const eventList = trackedEvents.map((event) => `'${event}'`).join(',')
+
     const eventQuery = `
       SELECT
         event,
         count() AS total
       FROM events
       WHERE timestamp >= now() - INTERVAL 7 DAY
-        AND event IN (
-          'landing_page_viewed',
-          'about_page_viewed',
-          'why_page_viewed',
-          'program_page_viewed',
-          'program_viewed',
-          'audit_page_viewed',
-          'audit_page_completed',
-          'audit_results_viewed',
-          'audit_cta_clicked_1',
-          'audit_cta_clicked_2',
-          'checkout_started',
-          'checkout_completed',
-          'login_created',
-          'dashboard_viewed'
-        )
+        AND event IN (${eventList})
       GROUP BY event
       ORDER BY total DESC
     `
@@ -87,8 +90,10 @@ export async function GET() {
       ORDER BY total DESC
     `
 
-    const eventRows = await runPostHogQuery(eventQuery)
-    const sourceRows = await runPostHogQuery(sourceQuery)
+    const [eventRows, sourceRows] = await Promise.all([
+      runPostHogQuery(eventQuery),
+      runPostHogQuery(sourceQuery),
+    ])
 
     const rows: EventRow[] = eventRows.map((row: [string, number]) => ({
       event: row[0],
