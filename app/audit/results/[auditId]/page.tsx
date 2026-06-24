@@ -103,7 +103,7 @@ export default async function CapacityAuditResultsPage({
 
   return (
     
-<><TrackEvent event="audit_page_completed" properties={{ page: 'audit_completed' }} />
+<><TrackEvent event="audit_results_viewed" properties={{ page: 'audit_results' }} />
 
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
