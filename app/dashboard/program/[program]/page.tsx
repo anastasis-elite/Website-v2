@@ -11,9 +11,23 @@ export default async function ProgramPage({
 }) {
   const program = params.program
 
-  // keep whatever client/lesson logic already exists here
-  const client = null
+  const client = {
+    client_id: '',
+    auth_user_id: '',
+    full_name: '',
+    program,
+  }
+
   const lesson = null
+  const todaysWorkout = null
+  const adjustedExercises: any[] = []
+
+  const cycleAdjustment = {
+    label: 'Baseline',
+    note: 'Today is being kept simple while your system calibrates.',
+  }
+
+  const phoenixTrackLabel = 'Personalized'
 
   return (
     <main>
@@ -26,15 +40,14 @@ export default async function ProgramPage({
       )}
 
       {program === 'phoenix' && (
-  <PhoenixDashboard
-    client={client}
-    output={output}
-    todaysWorkout={todaysWorkout}
-    adjustedExercises={adjustedExercises}
-    cycleAdjustment={cycleAdjustment}
-    phoenixTrackLabel={phoenixTrackLabel}
-  />
-)}
+        <PhoenixDashboard
+          client={client}
+          todaysWorkout={todaysWorkout}
+          adjustedExercises={adjustedExercises}
+          cycleAdjustment={cycleAdjustment}
+          phoenixTrackLabel={phoenixTrackLabel}
+        />
+      )}
 
       {!['ember', 'ignite', 'phoenix'].includes(program) && (
         <p>Program not found.</p>
