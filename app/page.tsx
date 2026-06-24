@@ -107,11 +107,11 @@ export default function Home() {
           }}
         >
           You don't need more discipline.
-          </br>
+          <br />
           You don't need another diet.
-          </br>
+          <br />
           You need enough capacity to finally hear yourself again.
-          </br>
+          <br />
           Take the Capacity Audit and discover what's actually draining your energy, motivation, recovery, and sense of self.
           The children. The work. The meals. The appointments. The invisible
           checklist that never seems to end.
