@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
 
-type AnalyticsRow = {
+type EventRow = {
   event: string
+  total: number
+}
+
+type SourceRow = {
+  source: string
   total: number
 }
 
@@ -20,7 +25,32 @@ export async function GET() {
       )
     }
 
-    const query = `
+    async function runPostHogQuery(query: string) {
+      const response = await fetch(`${host}/api/projects/${projectId}/query/`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: {
+            kind: 'HogQLQuery',
+            query,
+          },
+        }),
+        cache: 'no-store',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(JSON.stringify(data))
+      }
+
+      return data.results || []
+    }
+
+    const eventQuery = `
       SELECT
         event,
         count() AS total
@@ -32,9 +62,11 @@ export async function GET() {
           'why_page_viewed',
           'program_page_viewed',
           'program_viewed',
-          'audit_started',
+          'audit_page_viewed',
           'audit_completed',
           'audit_results_viewed',
+          'audit_cta_clicked_1',
+          'audit_cta_clicked_2',
           'checkout_started',
           'checkout_completed',
           'login_created',
@@ -44,43 +76,37 @@ export async function GET() {
       ORDER BY total DESC
     `
 
-    const response = await fetch(`${host}/api/projects/${projectId}/query/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: {
-          kind: 'HogQLQuery',
-          query,
-        },
-      }),
-      cache: 'no-store',
-    })
+    const sourceQuery = `
+      SELECT
+        properties.$utm_source AS source,
+        count() AS total
+      FROM events
+      WHERE timestamp >= now() - INTERVAL 7 DAY
+        AND event = 'landing_page_viewed'
+      GROUP BY source
+      ORDER BY total DESC
+    `
 
-    const data = await response.json()
+    const eventRows = await runPostHogQuery(eventQuery)
+    const sourceRows = await runPostHogQuery(sourceQuery)
 
-    if (!response.ok) {
-      return NextResponse.json(
-        {
-          error: 'PostHog query failed.',
-          details: data,
-        },
-        { status: response.status }
-      )
-    }
+    const rows: EventRow[] = eventRows.map((row: [string, number]) => ({
+      event: row[0],
+      total: row[1],
+    }))
 
-    const rows: AnalyticsRow[] =
-      data.results?.map((row: [string, number]) => ({
-        event: row[0],
+    const sources: SourceRow[] = sourceRows.map(
+      (row: [string | null, number]) => ({
+        source: row[0] || 'direct_or_unknown',
         total: row[1],
-      })) || []
+      })
+    )
 
     return NextResponse.json({
       success: true,
       period: 'last_7_days',
       rows,
+      sources,
     })
   } catch (error) {
     return NextResponse.json(
