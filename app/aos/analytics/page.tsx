@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
+import AOSAnalyticsLive from '@/components/AOSAnalyticsLive'
 
 export default function AOSAnalyticsPage() {
   const funnelSteps = [
@@ -91,7 +92,7 @@ export default function AOSAnalyticsPage() {
           which paths convert into clients.
         </p>
       </section>
-
+<AOSAnalyticsLive />
       <section style={styles.cartBoxStyle}>
         <p style={styles.eyebrowStyle}>Business Questions</p>
 
