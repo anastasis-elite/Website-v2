@@ -46,14 +46,6 @@ export default async function DashboardPage() {
     !measurementsCompletedThisMonth,
   ].filter(Boolean).length
 
-  const insight = generateDailyInsight({
-  program: client.program,
-  cyclePhase: cycleStatus?.phase || 'none',
-  capacity: adaptiveDashboard?.capacity || 'steady',
-  completions: dailyPlan?.completedCount || 0,
-  belief: client?.current_belief || null,
-})
-
   const dailyPlan = await getDailyExecutionPlan({
     supabase,
     client,
@@ -66,6 +58,15 @@ export default async function DashboardPage() {
     monthlyAssessmentsDueCount,
   })
 
+  
+  const insight = generateDailyInsight({
+  program: client.program,
+  cyclePhase: cycleStatus?.phase || 'none',
+  capacity: adaptiveDashboard?.capacity || 'steady',
+  completions: dailyPlan?.completedCount || 0,
+  belief: client?.current_belief || null,
+})
+  
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
