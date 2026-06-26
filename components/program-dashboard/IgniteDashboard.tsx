@@ -48,7 +48,7 @@ export default function IgniteDashboard({
     }}
     className="dashboard-section"
   >
-    <DashboardInsightCard insight={insight} />
+    <DailyInsightCard insight={insight} />
   </section>
 ) : null}
         
