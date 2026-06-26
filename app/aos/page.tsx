@@ -162,6 +162,16 @@ export default function AOSCommandCenterPage() {
               </div>
             </Link>
 
+            <Link href="/aos/marketing" style={{ textDecoration: 'none' }}>
+  <div style={styles.cardStyle}>
+    <h3 style={styles.cardTitleStyle}>Marketing OS</h3>
+    <p style={styles.cardTextStyle}>
+      Generate aligned content using campaign, pillar, hook family,
+      platform, and active funnel data.
+    </p>
+  </div>
+</Link>
+            
             <Link
               href="/aos/programs"
               style={{ textDecoration: 'none' }}
