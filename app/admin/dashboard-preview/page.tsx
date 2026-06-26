@@ -149,7 +149,7 @@ export default async function AdminDashboardPreviewPage({
           cycleStatus={cycleStatus}
           adaptiveDashboard={adaptiveDashboard}
           assessmentDueCount={monthlyAssessmentsDueCount}
-          lesson={lesson}
+          insight={insight}
         />
       </div>
     </main>
