@@ -122,6 +122,19 @@ export default async function AdminDashboardPreviewPage({
     monthlyAssessmentsDueCount,
   })
 
+  const insight = {
+  title: 'Lower capacity does not mean failure.',
+  observation: 'Your system is showing a lower-capacity signal today.',
+  meaning:
+    'This is not a sign that you are behind. It is a sign that today needs precision instead of pressure.',
+  identityShift:
+    'You are not proving discipline by overriding your body. You are building trust by responding to it.',
+  beliefChallenge:
+    'Doing more is not always the highest-capacity move.',
+  nextStep:
+    'Complete the smallest effective version of today’s workout, then log one full meal.',
+}
+  
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
