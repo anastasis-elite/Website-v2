@@ -3,7 +3,7 @@ import * as styles from '@/app/styles/globalstyles'
 import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
 import DashboardStatusDock from '@/components/DashboardStatusDock'
 import PeriodStartButton from '@/components/PeriodStartButton'
-import DashboardInsightCard from '@/components/DailyInsightCard'
+import DailyInsightCard from '@/components/DailyInsightCard'
 
 type Props = {
   client: any
