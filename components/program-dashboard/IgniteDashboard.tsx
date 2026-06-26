@@ -3,6 +3,7 @@ import * as styles from '@/app/styles/globalstyles'
 import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
 import DashboardStatusDock from '@/components/DashboardStatusDock'
 import PeriodStartButton from '@/components/PeriodStartButton'
+import DashboardInsightCard from '@/components/dashboard/DashboardInsightCard'
 
 type Props = {
   client: any
@@ -10,6 +11,7 @@ type Props = {
   cycleStatus?: any
   assessmentDueCount?: number
   lesson?: any
+  insight?: any
 }
 
 export default function IgniteDashboard({
@@ -18,6 +20,7 @@ export default function IgniteDashboard({
   cycleStatus,
   assessmentDueCount,
   lesson,
+  insight,
 }: Props) {
   return (
     <>
@@ -38,6 +41,17 @@ export default function IgniteDashboard({
         }}
         className="dashboard-section"
       >
+        {insight ? (
+  <section
+    style={{
+      marginBottom: '42px',
+    }}
+    className="dashboard-section"
+  >
+    <DashboardInsightCard insight={insight} />
+  </section>
+) : null}
+        
         <p style={styles.eyebrowStyle}>Ignite Dashboard</p>
 
         <h2 style={styles.sectionTitleStyle}>
