@@ -48,7 +48,7 @@ export default async function DashboardPage() {
 
   const insight = generateDailyInsight({
   program: client.program,
-  cyclePhase: cycleStatus?.phase || 'unknown',
+  cyclePhase: cycleStatus?.phase || 'none',
   capacity: adaptiveDashboard?.capacity || 'steady',
   completions: dailyPlan?.completedCount || 0,
   belief: client?.current_belief || null,
