@@ -19,7 +19,7 @@ export default async function ProgramPage({
   }
 
   const lesson = null
-  const todaysWorkout = null
+  const l
   const adjustedExercises: any[] = []
 
   const cycleAdjustment = {
@@ -36,7 +36,13 @@ export default async function ProgramPage({
       )}
 
       {program === 'ignite' && (
-        <IgniteDashboard client={client} lesson={lesson} />
+        <IgniteDashboard 
+          client={client} 
+          dailyPlan={dailyPlan}
+          cycleStatus={cycleStatus}
+          assessmentDueCount={monthlyAssessmentDueCount}
+          insight={insight}
+        />
       )}
 
       {program === 'phoenix' && (
