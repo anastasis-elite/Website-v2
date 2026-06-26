@@ -5,6 +5,7 @@ const navItems = [
   { label: 'Command Center', href: '/aos' },
   { label: 'Analytics', href: '/aos/analytics' },
   { label: 'Marketing', href: '/aos/marketing' },
+  { label: 'Social Data', href: '/aos/social'},
   { label: 'Audits', href: '/aos/audits' },
   { label: 'Clients', href: '/aos/clients' },
   { label: 'Tasks', href: '/aos/tasks' },
