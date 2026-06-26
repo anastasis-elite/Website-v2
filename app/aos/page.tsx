@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
 import AOSNavigation from '@/components/AOSNavigation'
+import AOSAnalyticsLive from '@/components/AOSAnalyticsLive'
 
 export default function AOSCommandCenterPage() {
   return (
@@ -51,20 +52,29 @@ export default function AOSCommandCenterPage() {
       {/* ANALYTICS */}
 
 <section style={styles.cartBoxStyle}>
-  <p style={styles.eyebrowStyle}>Analytics</p>
+  <p style={styles.eyebrowStyle}>Marketing Intelligence</p>
 
   <h2 style={styles.h2Style}>
-    Awaiting visitor and funnel data.
+    Funnel and traffic signals.
   </h2>
 
   <p style={styles.bodyStyle}>
-    Future versions of AOS will track website traffic, social traffic,
-    page views, audit starts, audit completions, program interest,
-    checkout activity, onboarding completion, and client conversion
-    rates to identify where attention is flowing and where the funnel
-    is breaking.
+    These outputs help the Command Center decide what content,
+    platform, and funnel step needs attention next.
   </p>
+
+  <div style={styles.buttonRowStyle}>
+    <Link href="/aos/analytics" style={styles.primaryButtonStyle}>
+      Open Full Analytics
+    </Link>
+
+    <Link href="/aos/marketing" style={styles.secondaryButtonStyle}>
+      Open Marketing OS
+    </Link>
+  </div>
 </section>
+
+<AOSAnalyticsLive />
         {/* BUSINESS HEALTH */}
 
         <section style={styles.cartBoxStyle}>
