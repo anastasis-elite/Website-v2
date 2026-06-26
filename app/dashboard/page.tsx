@@ -1,7 +1,6 @@
 import * as styles from '../styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getAdaptiveDashboard } from '@/lib/dashboard/getAdaptiveDashboard'
-import { getNextLesson } from '@/lib/education/getNextLesson'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import AdaptiveDashboard from '@/components/AdaptiveDashboard'
@@ -62,7 +61,7 @@ export default async function DashboardPage() {
   
   const insight = generateDailyInsight({
   cyclePhase: (cycleStatus?.phase || 'none') as CyclePhase | 'none',
-  capacityState: adaptiveDashboard?.capacity || 'low',
+  capacity: 'low',
   completions: dailyPlan?.completedCount || 0,
   belief: client?.current_belief || null,
 })
