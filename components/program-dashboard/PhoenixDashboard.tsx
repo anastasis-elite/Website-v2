@@ -59,7 +59,7 @@ export default function PhoenixDashboard({
           </p>
 
           <p style={styles.bodyStyle}>
-            Body signal: <strong>{cycleAdjustment.label || 'Standard Training day'}</strong>
+            Body signal: <strong>{cycleAdjustment?.label || 'Standard Training day'}</strong>
           </p>
         </section>
 
