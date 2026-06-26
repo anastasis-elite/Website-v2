@@ -11,7 +11,7 @@ import {
 } from './types'
 
 type InsightInput = {
-  cyclePhase: CyclePhase
+  cyclePhase: CyclePhase || 'none'
   capacity: CapacityState
   completions: number
   belief?: string
