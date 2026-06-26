@@ -6,6 +6,7 @@ import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import AdaptiveDashboard from '@/components/AdaptiveDashboard'
 import { generateDailyInsight } from '@/lib/messaging/engine'
+import type { CyclePhase } from '@/lib/messaging/types'
 
 export default async function DashboardPage() {
   const { supabase, client, user } = await getDashboardContext()
@@ -60,7 +61,7 @@ export default async function DashboardPage() {
 
   
   const insight = generateDailyInsight({
-  cyclePhase: cycleStatus?.phase || 'none',
+  cyclePhase: (cycleStatus?.phase || 'none') as CyclePhase | 'none',
   capacity: adaptiveDashboard?.capacity || 'steady',
   completions: dailyPlan?.completedCount || 0,
   belief: client?.current_belief || null,
