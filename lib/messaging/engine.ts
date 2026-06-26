@@ -11,7 +11,7 @@ import {
 } from './types'
 
 type InsightInput = {
-  cyclePhase: CyclePhase; 'none'
+  cyclePhase: CyclePhase || 'none'
   capacity: CapacityState
   completions: number
   belief?: string
@@ -29,7 +29,8 @@ function matchesItem(
   input: InsightInput
 ) {
   const matchesPhase =
-    !item.cyclePhase || item.cyclePhase.includes(input.cyclePhase)
+   !item.cyclePhase ||
+    (input.cyclePhase !== 'none' && item.cyclePhase.includes(input.cyclePhase))
 
   const matchesCapacity =
     !item.capacity || item.capacity.includes(input.capacity)
