@@ -17,10 +17,7 @@ type Props = {
 function getProgramHref(program?: string) {
   const tier = String(program || 'ember').toLowerCase()
 
-  if (tier === 'ignite') return '/dashboard/program/ignite/plan'
-  if (tier === 'phoenix') return '/dashboard/program/phoenix/plan'
-
-  return '/dashboard/program/ember/plan'
+  return `/dashboard/program/${tier}`
 }
 
 function getFocusHref(focus: string, program?: string) {
