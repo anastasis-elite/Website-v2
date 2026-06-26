@@ -20,6 +20,38 @@ export default async function ProgramPage({
 
   const lesson = null
   const adjustedExercises: any[] = []
+  const dailyPlan = {
+  workoutCompleted: false,
+  nutritionLogged: false,
+  recoveryTools: {
+    primaryTool: 'Breathwork',
+  },
+  cards: [],
+  currentCard: null,
+}
+
+const cycleStatus = {
+  enabled: true,
+  cycleDay: 21,
+  phase: 'luteal',
+  label: 'Luteal Phase',
+  recoveryCaution: true,
+  recoveryNote: 'Recovery may need more support today.',
+}
+
+const monthlyAssessmentDueCount = 0
+
+const insight = {
+  observation: 'Your system is showing a lower-capacity signal today.',
+  meaning:
+    'This does not mean you are behind. It means today needs precision instead of pressure.',
+  identityShift:
+    'You are not proving discipline by overriding your body. You are building trust by responding to it.',
+  beliefChallenge:
+    'Doing less strategically is not the same as giving up.',
+  nextStep:
+    'Complete the smallest effective version of today’s workout, then log one full meal.',
+}
 
   const cycleAdjustment = {
     label: 'Baseline',
