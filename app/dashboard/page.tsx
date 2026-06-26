@@ -5,6 +5,7 @@ import { getNextLesson } from '@/lib/education/getNextLesson'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import AdaptiveDashboard from '@/components/AdaptiveDashboard'
+import { generateDailyInsight } from '@/lib/messaging/engine'
 
 export default async function DashboardPage() {
   const { supabase, client, user } = await getDashboardContext()
@@ -45,11 +46,13 @@ export default async function DashboardPage() {
     !measurementsCompletedThisMonth,
   ].filter(Boolean).length
 
-  const lesson = await getNextLesson({
-    supabase,
-    client,
-    user,
-  })
+  const insight = generateDailyInsight({
+  program: client.program,
+  cyclePhase: cycleStatus?.phase,
+  capacity: adaptiveDashboard?.capacity || 'steady',
+  completions: dailyPlan?.completedCount || 0,
+  belief: client?.current_belief || null,
+})
 
   const dailyPlan = await getDailyExecutionPlan({
     supabase,
@@ -82,7 +85,7 @@ export default async function DashboardPage() {
           cycleStatus={cycleStatus}
           adaptiveDashboard={adaptiveDashboard}
           assessmentDueCount={monthlyAssessmentsDueCount}
-          lesson={lesson}
+          insight={insight}
         />
       </div>
     </main>
