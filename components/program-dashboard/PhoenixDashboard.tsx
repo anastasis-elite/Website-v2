@@ -3,14 +3,14 @@ import * as styles from '@/app/styles/globalstyles'
 import WorkoutTracker from '@/components/WorkoutTracker'
 
 type PhoenixDashboardProps = {
-  client: any
-  todaysWorkout: any
-  adjustedExercises: any[]
-  cycleAdjustment: {
+  client?: any
+  todaysWorkout?: any
+  adjustedExercises?: any[]
+  cycleAdjustment?: {
     label: string
     note: string
   }
-  phoenixTrackLabel: string
+  phoenixTrackLabel?: string
 }
 
 function getFirstName(name?: string | null) {
@@ -44,7 +44,7 @@ export default function PhoenixDashboard({
         <p style={styles.eyebrowStyle}>Phoenix</p>
 
         <h1 style={styles.heroTitleStyle}>
-          {getFirstName(client.full_name)}, today is already simplified.
+          {getFirstName(client?.full_name)}, today is already simplified.
         </h1>
 
         <section style={styles.cartBoxStyle}>
@@ -55,11 +55,11 @@ export default function PhoenixDashboard({
           <p style={styles.bodyStyle}>{primaryAction}</p>
 
           <p style={styles.bodyStyle}>
-            Track: <strong>{phoenixTrackLabel}</strong>
+            Track: <strong>{phoenixTrackLabel || 'Phoenix'}</strong>
           </p>
 
           <p style={styles.bodyStyle}>
-            Body signal: <strong>{cycleAdjustment.label}</strong>
+            Body signal: <strong>{cycleAdjustment.label || 'Standard Training day'}</strong>
           </p>
         </section>
 
@@ -68,7 +68,9 @@ export default function PhoenixDashboard({
 
           <h2 style={styles.sectionTitleStyle}>You do not need more decisions.</h2>
 
-          <p style={styles.bodyStyle}>{cycleAdjustment.note}</p>
+          <p style={styles.bodyStyle}>
+  {cycleAdjustment?.note || 'Use the assigned plan for today and let the system keep adjusting as more data comes in.'}
+</p>
 
           <p style={styles.bodyStyle}>{coachNote}</p>
         </section>
@@ -87,11 +89,11 @@ export default function PhoenixDashboard({
               </p>
             ) : null}
 
-            {adjustedExercises.length ? (
+            {adjustedExercises?.length ? (
               <WorkoutTracker
                 clientId={client.client_id}
                 authUserId={client.auth_user_id}
-                program={client.program}
+                program={client.program || 'phoenix'}
                 dayName={todaysWorkout.day_name}
                 exercises={adjustedExercises}
               />
