@@ -4,6 +4,7 @@ import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
 import DashboardStatusDock from '@/components/DashboardStatusDock'
 import SymptomQuickLog from '@/components/SymptomQuickLog'
 import PeriodStartButton from '@/components/PeriodStartButton'
+import DailyInsightCard from '@/components/DailyInsightCard'
 
 type Props = {
   client: any
@@ -11,7 +12,7 @@ type Props = {
   cycleStatus: any
   adaptiveDashboard: any
   assessmentDueCount: number
-  lesson?: any
+  insight?: any
 }
 
 function getProgramHref(program?: string) {
@@ -59,7 +60,7 @@ export default function AdaptiveDashboard({
   cycleStatus,
   adaptiveDashboard,
   assessmentDueCount,
-  lesson,
+  insight,
 }: Props) {
   return (
     <>
@@ -155,6 +156,10 @@ export default function AdaptiveDashboard({
         ) : null}
       </section>
 
+      {insight && adaptiveDashboard.showGeneralInsights ? (
+  <DailyInsightCard insight={insight} />
+) : null}
+      
       {adaptiveDashboard.showProgressPhotos ? (
         <section
           style={{
@@ -225,22 +230,6 @@ export default function AdaptiveDashboard({
               Continue
             </Link>
           </div>
-        </section>
-      ) : null}
-
-      {lesson &&
-      adaptiveDashboard.phase >= 2 &&
-      adaptiveDashboard.showGeneralInsights ? (
-        <section
-          style={{
-            ...styles.cartBoxStyle,
-            marginBottom: '42px',
-          }}
-          className="dashboard-section"
-        >
-          <p style={styles.eyebrowStyle}>Today’s Insight</p>
-          <h2 style={styles.sectionTitleStyle}>{lesson.title}</h2>
-          <p style={styles.bodyStyle}>{lesson.body}</p>
         </section>
       ) : null}
 
