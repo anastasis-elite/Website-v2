@@ -19,7 +19,6 @@ export default async function ProgramPage({
   }
 
   const lesson = null
-  const l
   const adjustedExercises: any[] = []
 
   const cycleAdjustment = {
