@@ -1,148 +1,120 @@
 import { NextResponse } from 'next/server'
 
-import { mission } from '@/marketing/strategy/mission'
-import { philosophy } from '@/marketing/strategy/philosophy'
-import { messaging } from '@/marketing/strategy/messaging'
-import { voice } from '@/marketing/strategy/voice'
-import { vocabulary } from '@/marketing/strategy/vocabulary'
+import { capacityAuditCampaign } from '@/marketing/campaigns/capacity-audit'
+import { evergreenCampaign } from '@/marketing/campaigns/evergreen'
+import { emberCampaign } from '@/marketing/campaigns/ember'
+import { igniteCampaign } from '@/marketing/campaigns/ignite'
+import { phoenixCampaign } from '@/marketing/campaigns/phoenix'
+
+import { identityHooks } from '@/marketing/hooks/identity'
+import { emotionalHooks } from '@/marketing/hooks/emotional'
+import { authorityHooks } from '@/marketing/hooks/authority'
+import { contrarianHooks } from '@/marketing/hooks/contrarian'
+import { urgencyHooks } from '@/marketing/hooks/urgency'
+import { storyHooks } from '@/marketing/hooks/story'
 
 export const runtime = 'nodejs'
 
-type MarketingOutput = {
-  id: string
-  ost: string
-  caption: string
-  cta: string
-  platformNotes: string
+const campaigns = [
+  capacityAuditCampaign,
+  evergreenCampaign,
+  emberCampaign,
+  igniteCampaign,
+  phoenixCampaign,
+]
+
+const hooksByFamily: Record<string, any> = {
+  Identity: identityHooks,
+  Emotional: emotionalHooks,
+  Authority: authorityHooks,
+  Contrarian: contrarianHooks,
+  'Why Now': urgencyHooks,
+  Story: storyHooks,
 }
 
-function safeJsonParse(text: string): MarketingOutput[] {
-  try {
-    const parsed = JSON.parse(text)
+function getCampaign(name: string) {
+  return campaigns.find((campaign) => campaign.name === name) || evergreenCampaign
+}
 
-    if (Array.isArray(parsed.outputs)) {
-      return parsed.outputs
-    }
+function getHookOptions(hookFamily: string) {
+  const hookSet = hooksByFamily[hookFamily]
 
-    if (Array.isArray(parsed)) {
-      return parsed
-    }
+  if (!hookSet) return []
 
-    return []
-  } catch {
-    return []
+  if (hookSet.strongestHooks) {
+    return hookSet.strongestHooks
   }
+
+  if (hookSet.hooks) {
+    return hookSet.hooks.flatMap((group: any) => group.examples || [])
+  }
+
+  return []
+}
+
+function createCaption({
+  ost,
+  campaign,
+  pillar,
+  platform,
+  topic,
+}: {
+  ost: string
+  campaign: any
+  pillar: string
+  platform: string
+  topic: string
+}) {
+  return `${ost}
+
+Most women are not stuck because they need more discipline.
+
+They are stuck because their current capacity, recovery, stress, environment, and season of life are not being accounted for.
+
+${topic}
+
+This is why Anastasis does not ask women to force themselves through another rigid plan.
+
+We help women understand what their body is communicating, rebuild capacity, and create systems that adapt with them.
+
+Health should not become another demand on your life.
+
+It should give you more capacity to live it.
+
+${campaign.primaryCTA}.`
 }
 
 export async function POST(req: Request) {
-  try {
-    const formData = await req.formData()
+  const formData = await req.formData()
 
-    const campaign = String(formData.get('campaign') || '')
-    const pillar = String(formData.get('pillar') || '')
-    const hookFamily = String(formData.get('hookFamily') || '')
-    const platform = String(formData.get('platform') || '')
-    const topic = String(formData.get('topic') || '')
-    const outputCount = Number(formData.get('outputCount') || 5)
-    const video = formData.get('video') as File | null
+  const campaignName = String(formData.get('campaign') || 'Evergreen')
+  const pillar = String(formData.get('pillar') || 'Identity')
+  const hookFamily = String(formData.get('hookFamily') || 'Contrarian')
+  const platform = String(formData.get('platform') || 'TikTok')
+  const topic = String(formData.get('topic') || '')
+  const outputCount = Number(formData.get('outputCount') || 5)
 
-    const prompt = `
-You are the Anastasis Marketing OS.
+  const campaign = getCampaign(campaignName)
+  const hooks = getHookOptions(hookFamily)
 
-Generate ${outputCount} content options for one uploaded video.
+  const selectedHooks = hooks.slice(0, outputCount)
 
-VIDEO CONTEXT:
-${topic}
+  const outputs = selectedHooks.map((ost: string, index: number) => ({
+    id: String(index + 1),
+    ost,
+    caption: createCaption({
+      ost,
+      campaign,
+      pillar,
+      platform,
+      topic,
+    }),
+    cta: campaign.primaryCTA,
+    platformNotes:
+      platform === 'TikTok'
+        ? 'Use this as OST in the first 1-2 seconds. Keep the video simple and let the caption deepen the belief shift.'
+        : 'Use this as the primary hook and adapt the caption to the selected platform.',
+  }))
 
-VIDEO FILE:
-${video ? `Uploaded file name: ${video.name}` : 'No video file provided'}
-
-BRAND FOUNDATION:
-Mission: ${mission.shortStatement}
-Philosophy: ${philosophy.humanEngineering}
-Messaging: ${messaging.oneSentence}
-Voice: ${voice.oneSentence}
-Vocabulary Rule: ${vocabulary.oneRule}
-
-CONTENT PARAMETERS:
-Campaign: ${campaign}
-Pillar: ${pillar}
-Hook Family: ${hookFamily}
-Platform: ${platform}
-
-OUTPUT REQUIREMENTS:
-Return valid JSON only.
-
-Shape:
-{
-  "outputs": [
-    {
-      "id": "1",
-      "ost": "short on-screen hook text",
-      "caption": "full platform-ready caption",
-      "cta": "clear CTA",
-      "platformNotes": "how to use this on the selected platform"
-    }
-  ]
-}
-
-RULES:
-- Generate exactly ${outputCount} outputs.
-- Each output should be meaningfully different.
-- Each OST should be short enough to overlay on a video.
-- Each caption should match the selected platform.
-- Move one belief.
-- Create understanding before invitation.
-- Do not use fear, shame, hype, clickbait, or artificial urgency.
-- Do not sound like generic fitness marketing.
-- Do not use "buy now" language.
-- Keep the Anastasis voice calm, intelligent, grounded, and hopeful.
-`.trim()
-
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4.1-mini',
-        input: prompt,
-      }),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-
-      return NextResponse.json(
-        {
-          error: 'OpenAI request failed.',
-          details: errorText,
-        },
-        { status: 500 }
-      )
-    }
-
-    const result = await response.json()
-
-    const text =
-      result.output_text ||
-      result.output?.[0]?.content?.[0]?.text ||
-      ''
-
-    const outputs = safeJsonParse(text)
-
-    return NextResponse.json({
-      outputs,
-      raw: outputs.length ? undefined : text,
-    })
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error: 'Failed to generate marketing content.',
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 }
-    )
-  }
+  return NextResponse.json({ outputs })
 }
