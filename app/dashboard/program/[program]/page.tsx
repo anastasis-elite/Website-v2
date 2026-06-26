@@ -79,10 +79,6 @@ const insight = {
       {program === 'phoenix' && (
         <PhoenixDashboard
           client={client}
-          todaysWorkout={todaysWorkout}
-          adjustedExercises={adjustedExercises}
-          cycleAdjustment={cycleAdjustment}
-          phoenixTrackLabel={phoenixTrackLabel}
         />
       )}
 
