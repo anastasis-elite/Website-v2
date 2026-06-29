@@ -92,7 +92,7 @@ export default function AOSSocialPage() {
         <p style={styles.eyebrowStyle}>Next Content Moves</p>
 
         <div style={{ display: 'grid', gap: '0.75rem' }}>
-          {snapshot.nextContentMoves.map((move) => (
+          {snapshot.nextContentMoves.map((move: string) => (
             <p key={move} style={styles.bodyStyle}>
               → {move}
             </p>
