@@ -66,8 +66,8 @@ function scoreRetention(post: SocialPost): ContentSignal {
     platform: post.platform,
     signalType: 'retention',
     score,
-    reason: `Watch-through ${post.watchThroughPercent ?? 0}% and completion ${
-      post.completionPercent ?? 0
+    reason: `Watch-through ${post.watchThroughRate ?? 0}% and completion ${
+      post.completionRate ?? 0
     }%.`,
   }
 }
