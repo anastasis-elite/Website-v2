@@ -130,9 +130,15 @@ export default function AOSSocialPage() {
         </div>
       </section>
 
-      <Link href="/aos" style={styles.linkStyle}>
-        ← Back to AOS
-      </Link>
+      <Link
+  href="/aos"
+  style={{
+    color: 'inherit',
+    textDecoration: 'none',
+  }}
+>
+  ← Back to AOS
+</Link>
     </main>
   )
 }
