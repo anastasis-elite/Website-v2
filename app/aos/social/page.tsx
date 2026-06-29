@@ -2,6 +2,7 @@ import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
 import { sampleSocialPosts } from '@/lib/aos/social/sampleData'
 import { getSocialIntelligenceSnapshot } from '@/lib/aos/social/getSocialSnapshot'
+import { ContentSignal } from '@/lib/aos/social/types'
 
 export default function AOSSocialPage() {
   const snapshot = getSocialIntelligenceSnapshot(sampleSocialPosts)
@@ -68,7 +69,7 @@ export default function AOSSocialPage() {
         <p style={styles.eyebrowStyle}>Strongest Signals</p>
 
         <div style={{ display: 'grid', gap: '1rem' }}>
-          {snapshot.strongestSignals.map((signal) => (
+          {snapshot.strongestSignals.map((signal: ContentSignal) => (
             <div
               key={`${signal.postId}-${signal.signalType}`}
               style={{
