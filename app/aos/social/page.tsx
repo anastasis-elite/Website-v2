@@ -78,7 +78,7 @@ export default function AOSSocialPage() {
                 padding: '1rem',
               }}
             >
-              <h3 style={styles.h3Style}>
+              <h3 style={styles.h2Style}>
                 {signal.signalType.replace('_', ' ')} — {signal.score}/100
               </h3>
 
