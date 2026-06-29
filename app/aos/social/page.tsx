@@ -113,7 +113,7 @@ export default function AOSSocialPage() {
                 padding: '1rem',
               }}
             >
-              <h3 style={styles.h3Style}>{post.hook ?? post.id}</h3>
+              <h3 style={styles.h2Style}>{post.hook ?? post.id}</h3>
 
               <p style={styles.bodyStyle}>
                 {post.platform} · {post.pillar} · {post.format.replace('_', ' ')}
