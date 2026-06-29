@@ -17,7 +17,7 @@ export default function AOSSocialPage() {
         next-best content moves across Anastasis social platforms.
       </p>
 
-      <section style={styles.cardBoxStyle}>
+      <section style={styles.cartBoxStyle}>
         <p style={styles.eyebrowStyle}>Current Snapshot</p>
 
         <h2 style={styles.h2Style}>
@@ -30,7 +30,7 @@ export default function AOSSocialPage() {
         </p>
       </section>
 
-      <section style={styles.cardBoxStyle}>
+      <section style={styles.cartBoxStyle}>
         <p style={styles.eyebrowStyle}>Strongest Post</p>
 
         {snapshot.strongestPost ? (
@@ -64,7 +64,7 @@ export default function AOSSocialPage() {
         )}
       </section>
 
-      <section style={styles.cardBoxStyle}>
+      <section style={styles.cartBoxStyle}>
         <p style={styles.eyebrowStyle}>Strongest Signals</p>
 
         <div style={{ display: 'grid', gap: '1rem' }}>
@@ -87,7 +87,7 @@ export default function AOSSocialPage() {
         </div>
       </section>
 
-      <section style={styles.cardBoxStyle}>
+      <section style={styles.cartBoxStyle}>
         <p style={styles.eyebrowStyle}>Next Content Moves</p>
 
         <div style={{ display: 'grid', gap: '0.75rem' }}>
@@ -99,7 +99,7 @@ export default function AOSSocialPage() {
         </div>
       </section>
 
-      <section style={styles.cardBoxStyle}>
+      <section style={styles.cartBoxStyle}>
         <p style={styles.eyebrowStyle}>Raw Posts</p>
 
         <div style={{ display: 'grid', gap: '1rem' }}>
