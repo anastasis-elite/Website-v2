@@ -58,7 +58,7 @@ function scoreConversion(post: SocialPost): ContentSignal {
 
 function scoreRetention(post: SocialPost): ContentSignal {
   const score = Math.round(
-    ((post.watchThroughPercent ?? 0) + (post.completionPercent ?? 0)) / 2
+    ((post.watchThroughRate ?? 0) + (post.completionPercent ?? 0)) / 2
   )
 
   return {
