@@ -116,7 +116,7 @@ export default function AOSSocialPage() {
               <h3 style={styles.h2Style}>{post.hook ?? post.id}</h3>
 
               <p style={styles.bodyStyle}>
-                {post.platform} · {post.pillar} · {post.format.replace('_', ' ')}
+                {post.platform} · {post.pillar ?? 'uncategorized'} · {(post.format ?? 'unknown').replace('_', ' ')}
               </p>
 
               <p style={styles.bodyStyle}>
