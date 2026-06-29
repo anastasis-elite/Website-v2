@@ -61,7 +61,7 @@ export default async function DashboardPage() {
   
   const insight = generateDailyInsight({
   cyclePhase: (cycleStatus?.phase || 'none') as CyclePhase | 'none',
-  capacity: 'low',
+  capacity: adaptiveDashboard?.capacity || 'low',
   completions:
   'completedCount' in (dailyPlan ?? {})
     ? (dailyPlan as any).completedCount
