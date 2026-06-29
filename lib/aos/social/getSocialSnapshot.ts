@@ -102,7 +102,7 @@ export function getSocialSignals(posts: SocialPost[] = sampleSocialPosts) {
 
 export function getSocialIntelligenceSnapshot(
   posts: SocialPost[] = sampleSocialPosts
-): SocialIntelligenceSnapshot {
+): SocialSnapshot {
   const totalViews = posts.reduce((sum, post) => sum + post.views, 0)
 
   const totalEngagement = posts.reduce(
