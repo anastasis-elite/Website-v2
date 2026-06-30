@@ -61,3 +61,12 @@ export type ContentSignal = {
   score: number
   reason: string
 }
+
+export type SocialIntelligenceSnapshot = {
+  date: string
+  totalViews: number
+  totalEngagement: number
+  strongestPost?: SocialPost
+  strongestSignals: ContentSignal[]
+  nextContentMoves: string[]
+}
