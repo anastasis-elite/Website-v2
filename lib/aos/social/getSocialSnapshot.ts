@@ -1,6 +1,6 @@
 import {
   ContentSignal,
-  SocialSnapshot,
+  SocialIntelligenceSnapshot,
   SocialPost,
 } from './types'
 import { sampleSocialPosts } from './sampleData'
