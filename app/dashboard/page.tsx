@@ -5,10 +5,10 @@ import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import AdaptiveDashboard from '@/components/AdaptiveDashboard'
 import { generateDailyInsight } from '@/lib/messaging/engine'
-import type { CyclePhase } from '@/lib/messaging/types'
+import type { CapacityState, CyclePhase } from '@/lib/messaging/types'
 
 export default async function DashboardPage() {
-  const { supabase, client, user } = await getDashboardContext()
+  const { supabase, client } = await getDashboardContext()
 
   const monthStart = new Date()
   monthStart.setDate(1)
@@ -32,25 +32,17 @@ export default async function DashboardPage() {
     .limit(1)
     .maybeSingle()
 
-  const assessmentCompletedThisMonth = !!monthlyAssessment
-  const measurementsCompletedThisMonth = !!monthlyMeasurements
-
-  const dailyStructureReviewedThisMonth =
-    client.daily_structure_reviewed_at
-      ? new Date(client.daily_structure_reviewed_at) >= monthStart
-      : false
+  const dailyStructureReviewedThisMonth = client.daily_structure_reviewed_at
+    ? new Date(client.daily_structure_reviewed_at) >= monthStart
+    : false
 
   const monthlyAssessmentsDueCount = [
-    !assessmentCompletedThisMonth,
+    !monthlyAssessment,
     !dailyStructureReviewedThisMonth,
-    !measurementsCompletedThisMonth,
+    !monthlyMeasurements,
   ].filter(Boolean).length
 
-  const dailyPlan = await getDailyExecutionPlan({
-    supabase,
-    client,
-  })
-
+  const dailyPlan = await getDailyExecutionPlan({ supabase, client })
   const cycleStatus = getCycleStatus(client)
 
   const adaptiveDashboard = await getAdaptiveDashboard({
@@ -58,13 +50,26 @@ export default async function DashboardPage() {
     monthlyAssessmentsDueCount,
   })
 
-  
+  const rawCapacity = client?.capacity_state || client?.capacity || 'low'
+
+  const capacity: CapacityState =
+    rawCapacity === 'high' || rawCapacity === 'medium' || rawCapacity === 'low'
+      ? rawCapacity
+      : 'low'
+
+  const completions = [
+    dailyPlan?.workoutCompleted,
+    dailyPlan?.nutritionLogged,
+    dailyPlan?.macroTargetsMet,
+  ].filter(Boolean).length
+
   const insight = generateDailyInsight({
-  cyclePhase: (cycleStatus?.phase || 'none') as CyclePhase | 'none',
-  completions: 0,
-  belief: client?.current_belief || null,
-} as any)
-  
+    cyclePhase: (cycleStatus?.phase || 'none') as CyclePhase | 'none',
+    capacity,
+    completions,
+    belief: client?.current_belief || undefined,
+  })
+
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
