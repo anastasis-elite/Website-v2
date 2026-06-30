@@ -20,9 +20,9 @@ export const sampleSocialPosts: SocialPost[] = [
     follows: 3,
     profileViews: 18,
 
-    averageWatchTimeSeconds: 6.8,
-    watchThroughPercent: 42,
-    completionPercent: 31,
+    averageWatchTime: 6.8,
+    watchThrough: 42,
+    completion: 31,
 
     audienceFemalePercent: 94,
     topAgeRange: '35-44',
