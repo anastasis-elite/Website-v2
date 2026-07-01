@@ -38,7 +38,7 @@ export default function EmberDashboard({ client, lesson }: Props) {
             marginTop: '22px',
           }}
         >
-          <Link href="/dashboard/workout" style={styles.primaryButtonStyle}>
+          <Link href="/dashboard/program/ember/plan/content" style={styles.primaryButtonStyle}>
             View Workout
           </Link>
 
@@ -77,7 +77,7 @@ export default function EmberDashboard({ client, lesson }: Props) {
         </p>
 
         <div style={{ marginTop: '22px' }}>
-          <Link href="/dashboard/workout" style={styles.primaryButtonStyle}>
+          <Link href="/dashboard/program/ember/plan/content" style={styles.primaryButtonStyle}>
             View Today’s Workout
           </Link>
         </div>

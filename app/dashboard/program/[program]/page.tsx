@@ -1,8 +1,14 @@
-// app/program/[program]/page.tsx
-
+import { redirect } from 'next/navigation'
 import EmberDashboard from '@/components/program-dashboard/EmberDashboard'
 import IgniteDashboard from '@/components/program-dashboard/IgniteDashboard'
 import PhoenixDashboard from '@/components/program-dashboard/PhoenixDashboard'
+import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import { getNextLesson } from '@/lib/education/getNextLesson'
+import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
+import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
+import { generateDailyInsight } from '@/lib/messaging/engine'
+
+const supportedPrograms = ['ember', 'ignite', 'phoenix']
 
 export default async function ProgramPage({
   params,
@@ -11,54 +17,28 @@ export default async function ProgramPage({
 }) {
   const program = params.program
 
-  const client = {
-    client_id: '',
-    auth_user_id: '',
-    full_name: '',
-    program,
+  if (!supportedPrograms.includes(program)) {
+    redirect('/dashboard')
   }
 
-  const lesson = null
-  const adjustedExercises: any[] = []
-  const dailyPlan = {
-  workoutCompleted: false,
-  nutritionLogged: false,
-  recoveryTools: {
-    primaryTool: 'Breathwork',
-  },
-  cards: [],
-  currentCard: null,
-}
+  const { supabase, user, client } = await getDashboardContext()
+  const subscribedProgram = client.program || 'ignite'
 
-const cycleStatus = {
-  enabled: true,
-  cycleDay: 21,
-  phase: 'luteal',
-  label: 'Luteal Phase',
-  recoveryCaution: true,
-  recoveryNote: 'Recovery may need more support today.',
-}
-
-const monthlyAssessmentDueCount = 0
-
-const insight = {
-  observation: 'Your system is showing a lower-capacity signal today.',
-  meaning:
-    'This does not mean you are behind. It means today needs precision instead of pressure.',
-  identityShift:
-    'You are not proving discipline by overriding your body. You are building trust by responding to it.',
-  beliefChallenge:
-    'Doing less strategically is not the same as giving up.',
-  nextStep:
-    'Complete the smallest effective version of today’s workout, then log one full meal.',
-}
-
-  const cycleAdjustment = {
-    label: 'Baseline',
-    note: 'Today is being kept simple while your system calibrates.',
+  if (program !== subscribedProgram) {
+    redirect(`/dashboard/program/${subscribedProgram}`)
   }
 
-  const phoenixTrackLabel = 'Personalized'
+  const lesson = await getNextLesson({ supabase, client, user })
+  const dailyPlan = await getDailyExecutionPlan({ supabase, client })
+  const cycleStatus = getCycleStatus(client)
+
+  const monthlyAssessmentDueCount = 0
+  const insight = generateDailyInsight({
+    cyclePhase: (cycleStatus.phase as any) || 'none',
+    capacity: (client.capacity_state as any) || 'baseline',
+    completions: Number(client.completions || 0),
+    belief: client.current_belief || undefined,
+  })
 
   return (
     <main>
@@ -67,8 +47,8 @@ const insight = {
       )}
 
       {program === 'ignite' && (
-        <IgniteDashboard 
-          client={client} 
+        <IgniteDashboard
+          client={client}
           dailyPlan={dailyPlan}
           cycleStatus={cycleStatus}
           assessmentDueCount={monthlyAssessmentDueCount}
@@ -77,13 +57,7 @@ const insight = {
       )}
 
       {program === 'phoenix' && (
-        <PhoenixDashboard
-          client={client}
-        />
-      )}
-
-      {!['ember', 'ignite', 'phoenix'].includes(program) && (
-        <p>Program not found.</p>
+        <PhoenixDashboard client={client} />
       )}
     </main>
   )

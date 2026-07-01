@@ -83,7 +83,7 @@ export default async function DashboardPage() {
 
           <div style={styles.buttonRowStyle}>
             <Link
-              href="/dashboard/workout"
+              href="/dashboard/program"
               style={styles.primaryButtonStyle}
             >
               View Today’s Workout

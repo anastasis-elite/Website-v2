@@ -72,7 +72,7 @@ export default function IgniteDashboard({
             marginTop: '22px',
           }}
         >
-          <Link href="/dashboard/program/ignite/plan" style={styles.primaryButtonStyle}>
+          <Link href="/dashboard/program/ignite/plan/content" style={styles.primaryButtonStyle}>
             Training Plan
           </Link>
 
