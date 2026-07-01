@@ -114,23 +114,16 @@ export default function AuthButton() {
                 <span className="dashboard-menu-badge"> • 3</span>
               </Link>
 
-              <Link
-                href="/dashboard/assessment/daily-structure"
-                onClick={closeMenu}
-              >
-                Daily Structure
-              </Link>
-
-              <Link href="/program" onClick={closeMenu}>
-                Explore Programs
-              </Link>
-
               <Link href="/about" onClick={closeMenu}>
                 About
               </Link>
 
               <Link href="/why" onClick={closeMenu}>
                 Why
+              </Link>
+
+              <Link href="/dashboard/account" onClick={closeMenu}>
+                Account
               </Link>
 
               <button

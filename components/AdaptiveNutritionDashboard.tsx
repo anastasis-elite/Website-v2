@@ -112,7 +112,7 @@ export default function AdaptiveNutritionDashboard({
 
     const { data: client } = await supabase
       .from('clients')
-      .select('id')
+      .select('client_id, program')
       .eq('auth_user_id', user.id)
       .single()
 
@@ -124,18 +124,30 @@ export default function AdaptiveNutritionDashboard({
 
     const today = new Date().toISOString().slice(0, 10)
 
-    const { data: log } = await supabase
+    let { data: log } = await supabase
       .from('nutrition_logs')
       .select('*')
-      .eq('client_id', client.id)
+      .eq('client_id', client.client_id)
       .eq('log_date', today)
       .maybeSingle()
 
     if (!log) {
-      setMessage('No nutrition targets exist for today yet.')
-      setLoading(false)
-      return
+      const targetResponse = await fetch(`/api/nutrition?client_id=${encodeURIComponent(client.client_id)}&program=${encodeURIComponent(client.program || tier)}`)
+      const targets = await targetResponse.json()
+      const createResponse = await fetch('/api/nutrition-log', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: client.client_id, log_date: today, protein: targets.protein, carbs: targets.carbs, fats: targets.fats, calories: targets.calories, water_oz: targets.water, meals: [], completed: false }),
+      })
+      if (!createResponse.ok) {
+        setMessage('Today’s nutrition plan could not be prepared yet.')
+        setLoading(false)
+        return
+      }
+      const created = await supabase.from('nutrition_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle()
+      log = created.data
     }
+
+    if (!log) { setMessage('Today’s nutrition plan could not be prepared yet.'); setLoading(false); return }
 
     setNutritionLog(log)
 
@@ -372,16 +384,20 @@ export default function AdaptiveNutritionDashboard({
         {isPhoenix ? (
           <section style={styles.cartBoxStyle}>
             <p style={styles.eyebrowStyle}>Phoenix Nutrition</p>
-            <h2 style={styles.h2Style}>
-              Adaptive meal suggestions are preparing.
-            </h2>
-            <p style={styles.bodyStyle}>
-              Phoenix will use remaining macros, micros, symptoms, timing,
-              cycle phase, and preferences to recommend meals and recipes.
-            </p>
+            <h2 style={styles.h2Style}>Simple meals that fit today.</h2>
+            <p style={styles.bodyStyle}>Choose one only if deciding what to eat feels heavy.</p>
+            <div style={styles.cardGridStyle}>
+              <Recipe title="Steady breakfast bowl" body="Greek yogurt or dairy-free yogurt, berries, chia, and a protein-forward topping." />
+              <Recipe title="No-thinking lunch" body="Chicken, tofu, or tuna with microwave rice, greens, olive oil, and salt." />
+              <Recipe title="Recovery dinner" body="Salmon or beans, potatoes, and a colorful vegetable with an easy sauce." />
+            </div>
           </section>
         ) : null}
       </div>
     </main>
   )
+}
+
+function Recipe({ title, body }: { title: string; body: string }) {
+  return <div style={styles.cardStyle}><h3 style={styles.cardTitleStyle}>{title}</h3><p style={styles.cardTextStyle}>{body}</p></div>
 }

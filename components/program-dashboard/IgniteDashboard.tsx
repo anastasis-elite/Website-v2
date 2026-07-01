@@ -25,7 +25,7 @@ export default function IgniteDashboard(props: Props) {
       </section>
       {dailyPlan?.cards?.length ? (
         <DashboardFlowCarousel
-          cards={dailyPlan.cards}
+          cards={client.carousel_style === 'step' && dailyPlan.currentCard ? [dailyPlan.currentCard] : dailyPlan.cards}
           currentCardId={dailyPlan.currentCard?.id}
           program="ignite"
           client={client}

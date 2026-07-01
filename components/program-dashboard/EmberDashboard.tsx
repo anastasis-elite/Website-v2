@@ -8,7 +8,8 @@ type Props = {
 }
 
 export default function EmberDashboard(props: Props) {
-  const cards = (props.dailyPlan?.cards || []).map((card: any) => ({
+  const sourceCards = props.client.carousel_style === 'step' && props.dailyPlan?.currentCard ? [props.dailyPlan.currentCard] : (props.dailyPlan?.cards || [])
+  const cards = sourceCards.map((card: any) => ({
     ...card,
     items: card.id === 'morning'
       ? ['Complete the assigned workout only if today is a training day.', 'Use the cycle-adjusted weights, sets, and reps shown in your workout.']

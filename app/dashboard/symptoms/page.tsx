@@ -14,11 +14,7 @@ export default async function SymptomsPage() {
           Log what your body is communicating.
         </h1>
 
-        <p style={styles.heroTextStyle}>
-          Track symptoms by body area, severity, timing, and context so
-          Anastasis can begin identifying patterns across food, training,
-          hydration, recovery, and cycle phase.
-        </p>
+        <p style={styles.heroTextStyle}>Tap the area, choose what you feel, and slide to describe it. Nothing else is required.</p>
 
         <SymptomLogger clientId={client.client_id} />
       </div>
