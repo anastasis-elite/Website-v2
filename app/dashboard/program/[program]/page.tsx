@@ -164,11 +164,9 @@ export default async function ProgramPage({
         {program === 'phoenix' && (
          <PhoenixDashboard
            client={client}
-           dailyPlan={dailyPlan}
            insight={insight}
            todaysWorkout={todaysWorkout}
            adjustedExercises={adjustedExercises}
-           output={output}
            cycleAdjustment={cycleAdjustment}
            phoenixTrackLabel={getPhoenixTrackLabel({ client, programJson })}
          />
