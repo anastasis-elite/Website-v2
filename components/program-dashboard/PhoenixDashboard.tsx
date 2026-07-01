@@ -1,7 +1,7 @@
-import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
 import DailyInsightCard from '@/components/DailyInsightCard'
 import PhoenixExecutionFlow, { type PhoenixTask } from '@/components/program-dashboard/PhoenixExecutionFlow'
+import PhoenixDock from '@/components/program-dashboard/PhoenixDock'
 
 type DecisionSignals = {
   symptomsElevated?: boolean
@@ -59,6 +59,7 @@ export default function PhoenixDashboard({
 
   return (
     <main style={styles.pageStyle}>
+      <PhoenixDock />
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>
           Phoenix · {phoenixTrackLabel || 'Personalized'}
@@ -96,25 +97,11 @@ export default function PhoenixDashboard({
           tasks={tasks}
         />
 
-        <section style={optionalSectionStyle}>
-          <p style={styles.eyebrowStyle}>Optional Support</p>
-          <h2 style={styles.sectionTitleStyle}>Only if it would make today easier.</h2>
-          <p style={styles.bodyStyle}>These are available, but none of them are extra assignments.</p>
-
-          <div style={styles.buttonRowStyle}>
-            <Link href="/dashboard/nutrition" style={styles.secondaryButtonStyle}>Upload Food</Link>
-            <Link href="/dashboard/symptoms" style={styles.secondaryButtonStyle}>Log a Body Signal</Link>
-            {decisionSignals.photoAssessmentDue ? (
-              <Link href="/dashboard/assessment/photos" style={styles.secondaryButtonStyle}>Upload Requested Photos</Link>
-            ) : null}
-          </div>
-
-          {insight ? (
-            <div style={{ marginTop: '28px' }}>
-              <DailyInsightCard insight={insight} compact />
-            </div>
-          ) : null}
-        </section>
+        {insight ? (
+          <section style={optionalSectionStyle}>
+            <DailyInsightCard insight={insight} compact />
+          </section>
+        ) : null}
       </div>
     </main>
   )

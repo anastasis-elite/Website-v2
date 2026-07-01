@@ -326,6 +326,39 @@ a {
     inset 0 0 28px rgba(255,255,255,0.025);
 }
 
+.phoenix-dock {
+  position: fixed;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 90;
+}
+
+.phoenix-dock-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 28px;
+  background: linear-gradient(145deg, rgba(12,12,12,.82), rgba(5,5,5,.68));
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: 0 22px 70px rgba(0,0,0,.32), inset 0 0 28px rgba(255,255,255,.025);
+}
+
+.phoenix-dock-more {
+  position: absolute;
+  left: 82px;
+  bottom: 0;
+  width: 190px;
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(16,16,16,.97), rgba(7,7,7,.94));
+  box-shadow: 0 26px 80px rgba(0,0,0,.42);
+}
+
 /* Dashboard */
 
 .dashboard-section {
@@ -727,6 +760,29 @@ main > *,
     left: 50% !important;
     top: 62px !important;
     transform: translateX(-50%);
+  }
+
+  .phoenix-dock {
+    top: auto;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    z-index: 1002;
+  }
+
+  .phoenix-dock-inner {
+    flex-direction: row;
+    justify-content: space-between;
+    overflow-x: auto;
+    border-radius: 22px;
+  }
+
+  .phoenix-dock-more {
+    left: auto;
+    right: 0;
+    bottom: 64px;
+    width: min(76vw, 240px);
   }
 
   .dashboard-menu {
