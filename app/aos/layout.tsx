@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import AOSNavigation from '@/components/AOSNavigation'
 import * as styles from '@/app/styles/globalstyles'
 import { createClient } from '@/lib/supabase/server'
+import { isAOSAdmin } from '@/lib/aos/isAOSAdmin'
 
 export default async function AOSLayout({
   children,
@@ -14,7 +15,7 @@ export default async function AOSLayout({
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user?.email) {
+  if (!isAOSAdmin(user?.email)) {
     redirect('/aos-login')
   }
 
@@ -28,7 +29,7 @@ export default async function AOSLayout({
             Internal command center.
           </p>
           <p style={{ color: '#fff' }}>
-  Logged in as: {user.email}
+  Logged in as: {user?.email}
 </p>
           <AOSNavigation />
         </div>

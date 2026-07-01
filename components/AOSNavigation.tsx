@@ -4,6 +4,8 @@ import * as styles from '@/app/styles/globalstyles'
 const navItems = [
   { label: 'Command Center', href: '/aos' },
   { label: 'Analytics', href: '/aos/analytics' },
+  { label: 'Revenue', href: '/aos/revenue' },
+  { label: 'Legal Risk', href: '/aos/legal' },
   { label: 'Marketing', href: '/aos/marketing' },
   { label: 'Social Data', href: '/aos/social'},
   { label: 'Audits', href: '/aos/audits' },

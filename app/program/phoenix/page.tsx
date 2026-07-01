@@ -4,6 +4,7 @@ import * as styles from '../../styles/globalstyles'
 import TrackEvent from '@/components/TrackEvent'
 
 async function startCheckout(billing: 'subscription' | 'annual') {
+  const referralCode = new URLSearchParams(window.location.search).get('ref') || ''
   const response = await fetch('/api/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -11,6 +12,7 @@ async function startCheckout(billing: 'subscription' | 'annual') {
       program: 'phoenix',
       billing,
       email: '',
+      referralCode,
     }),
   })
 

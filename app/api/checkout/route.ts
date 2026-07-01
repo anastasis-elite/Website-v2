@@ -30,7 +30,9 @@ export async function POST(req: Request) {
   application_id,
   fullName,
   birthdate,
+  referralCode,
 } = await req.json()
+    const safeReferralCode = typeof referralCode === 'string' ? referralCode.trim().slice(0, 80) : ''
 
     const priceId =
       PRICE_MAP[program as keyof typeof PRICE_MAP]?.[
@@ -51,7 +53,7 @@ export async function POST(req: Request) {
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: email || undefined,
       success_url: `${origin}/verified?session_id={CHECKOUT_SESSION_ID}&program=${program}`,
-      cancel_url: `${origin}/program/${program}/cart`,
+      cancel_url: `${origin}/program/${program}/cart${safeReferralCode ? `?ref=${encodeURIComponent(safeReferralCode)}` : ''}`,
 
       metadata: {
   client_id: client_id || '',
@@ -61,7 +63,14 @@ export async function POST(req: Request) {
   email: email || '',
   fullName: fullName || '',
         birthdate: birthdate || '',
+        referral_code: safeReferralCode,
+        referral_source: safeReferralCode ? 'referral_link' : '',
 },
+
+      payment_intent_data:
+        billing === 'annual'
+          ? { metadata: { program, billing, referral_code: safeReferralCode, referral_source: safeReferralCode ? 'referral_link' : '' } }
+          : undefined,
 
       subscription_data:
   billing === 'subscription'
@@ -73,6 +82,8 @@ export async function POST(req: Request) {
           billing,
           email: email || '',
           fullName: fullName || '',
+          referral_code: safeReferralCode,
+          referral_source: safeReferralCode ? 'referral_link' : '',
         },
       }
     : undefined,
