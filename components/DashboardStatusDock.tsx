@@ -104,6 +104,16 @@ export default function DashboardStatusDock({
     <div ref={dockRef} className="dashboard-status-dock">
       <div className="dashboard-status-dock-inner">
         <div
+          style={flameStyle}
+          data-flame-visual-state={visualState}
+          title={`Flame state: ${visualState}`}
+        >
+          <span aria-hidden="true">🔥</span>
+          <strong>{Math.round(flameScore)}%</strong>
+          <small>{visualState.replace('_', ' ')}</small>
+        </div>
+
+        <div
           onClick={() => {
             setCycleOpen(!cycleOpen)
             setMealOpen(false)
@@ -181,14 +191,6 @@ export default function DashboardStatusDock({
           *
         </button>
 
-        <div
-          style={miniTextStyle}
-          data-flame-visual-state={visualState}
-          title={`Flame state: ${visualState}`}
-        >
-          <strong>{Math.round(flameScore)}%</strong>
-          <span>flame</span>
-        </div>
       </div>
 
       {cycleOpen && (
@@ -339,6 +341,13 @@ const miniTextStyle = {
   color: '#f5f0e8',
   fontSize: '0.76rem',
   lineHeight: 1.15,
+} as const
+
+const flameStyle = {
+  ...miniTextStyle,
+  minHeight: '66px',
+  fontSize: '0.72rem',
+  textTransform: 'capitalize',
 } as const
 
 const bodyStyle = {

@@ -2,6 +2,9 @@
 
 import { useEffect, useRef } from 'react'
 import Button from './Button'
+import Link from 'next/link'
+import WorkoutTracker from './WorkoutTracker'
+import DailyInsightCard from './DailyInsightCard'
 import * as styles from '@/app/styles/globalstyles'
 
 type FlowCard = {
@@ -32,9 +35,23 @@ function statusLabel(status: FlowCard['status']) {
 export default function DashboardFlowCarousel({
   cards,
   currentCardId,
+  program,
+  client,
+  insight,
+  todaysWorkout,
+  adjustedExercises = [],
+  output,
+  cycleAdjustment,
 }: {
   cards: FlowCard[]
   currentCardId?: string
+  program?: 'ember' | 'ignite' | 'phoenix'
+  client?: any
+  insight?: any
+  todaysWorkout?: any
+  adjustedExercises?: any[]
+  output?: any
+  cycleAdjustment?: { label: string; note: string }
 }) {
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
@@ -229,6 +246,46 @@ export default function DashboardFlowCarousel({
                   ) : null}
                 </div>
               ) : null}
+
+              {card.id === 'morning' && insight ? (
+                <div style={{ marginTop: '28px' }}>
+                  <DailyInsightCard insight={insight} />
+                </div>
+              ) : null}
+
+              {card.id === 'morning' && program && client ? (
+                <details id="todays-workout" style={detailsStyle}>
+                  <summary style={summaryStyle}>
+                    {todaysWorkout ? 'Open today’s workout' : 'View recovery day'}
+                  </summary>
+                  <div style={{ marginTop: '22px' }}>
+                    {todaysWorkout ? (
+                      <>
+                        <h4 style={workoutTitleStyle}>{todaysWorkout.day_name}</h4>
+                        {todaysWorkout.focus ? (
+                          <p style={styles.bodyStyle}><strong>Focus:</strong> {todaysWorkout.focus}</p>
+                        ) : null}
+                        {cycleAdjustment ? (
+                          <p style={styles.bodyStyle}><strong>{cycleAdjustment.label}:</strong> {cycleAdjustment.note}</p>
+                        ) : null}
+                        {adjustedExercises.length ? (
+                          <WorkoutTracker
+                            clientId={client.client_id}
+                            authUserId={client.auth_user_id}
+                            program={output?.program || program}
+                            dayName={todaysWorkout.day_name}
+                            exercises={adjustedExercises}
+                          />
+                        ) : <p style={styles.bodyStyle}>No exercises are assigned today.</p>}
+                      </>
+                    ) : (
+                      <p style={styles.bodyStyle}>Today is a recovery day. Nourish, hydrate, move gently, and let adaptation do its work.</p>
+                    )}
+                  </div>
+                </details>
+              ) : null}
+
+              {program ? <CardActions cardId={card.id} program={program} /> : null}
             </div>
 
             {card.buttonHref && card.buttonLabel ? (
@@ -248,6 +305,32 @@ export default function DashboardFlowCarousel({
     </section>
   )
 }
+
+function CardActions({ cardId, program }: { cardId: string; program: string }) {
+  const actions = cardId === 'morning'
+    ? [{ href: '#todays-workout', label: 'Workout' }, { href: '/dashboard/cycle', label: 'Cycle' }]
+    : cardId === 'midday'
+      ? [{ href: '/dashboard/nutrition', label: 'Log Food' }, { href: '/dashboard/recovery', label: 'Movement' }]
+      : [{ href: '/dashboard/recovery', label: 'Recovery' }, { href: '/dashboard/symptoms', label: 'Body Signals' }, { href: '/dashboard/assessment/start', label: 'Check-In' }]
+
+  return (
+    <div style={{ ...styles.buttonRowStyle, marginTop: '26px' }}>
+      {actions.map((action) => (
+        <Link key={action.label} href={action.href} style={styles.secondaryButtonStyle}>
+          {action.label}
+        </Link>
+      ))}
+    </div>
+  )
+}
+
+const detailsStyle = {
+  marginTop: '28px', padding: '20px', borderRadius: '24px',
+  background: 'rgba(181,110,67,0.07)', border: '1px solid rgba(181,110,67,0.2)',
+} as const
+
+const summaryStyle = { color: '#f5f0e8', cursor: 'pointer', fontWeight: 600 } as const
+const workoutTitleStyle = { color: '#f5f0e8', fontSize: '1.4rem', margin: '0 0 12px' } as const
 
 function MacroPill({
   label,

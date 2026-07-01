@@ -305,7 +305,8 @@ a {
 .dashboard-status-dock {
   position: fixed;
   left: 18px;
-  top: 34vh;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 80;
 }
 

@@ -3,16 +3,12 @@ import EmberDashboard from '@/components/program-dashboard/EmberDashboard'
 import IgniteDashboard from '@/components/program-dashboard/IgniteDashboard'
 import PhoenixDashboard from '@/components/program-dashboard/PhoenixDashboard'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
-import { getNextLesson } from '@/lib/education/getNextLesson'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import { getAdaptiveDashboard } from '@/lib/dashboard/getAdaptiveDashboard'
 import { generateDailyInsight } from '@/lib/messaging/engine'
 import type { CapacityState, CyclePhase } from '@/lib/messaging/types'
-import {
-  applyCycleTrainingAdjustment,
-  getCycleTrainingAdjustment,
-} from '@/lib/cycle/getCycleTrainingAdjustment'
+import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix'] as const
 
@@ -67,7 +63,6 @@ export default async function ProgramPage({
     redirect(`/dashboard/program/${subscribedProgram}`)
   }
 
-  const lesson = await getNextLesson({ supabase, client, user })
   const dailyPlan = await getDailyExecutionPlan({ supabase, client })
   const cycleStatus = getCycleStatus(client)
 
@@ -117,21 +112,8 @@ export default async function ProgramPage({
     .limit(1)
     .maybeSingle()
 
-  const programJson = output?.program_json || output?.output || {}
-  const days = programJson.days || []
-  const todayName = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-  })
-  const todaysWorkout = days.find((day: any) => day.day_name === todayName)
-  const cycleAdjustment = getCycleTrainingAdjustment(client)
-  const adjustedExercises = todaysWorkout?.exercises?.length
-    ? todaysWorkout.exercises.map((exercise: any) =>
-        applyCycleTrainingAdjustment({
-          exercise,
-          adjustment: cycleAdjustment,
-        })
-      )
-    : []
+  const { programJson, todaysWorkout, cycleAdjustment, adjustedExercises } =
+    getProgramWorkout({ client, output })
 
   const completions = [
     dailyPlan?.workoutCompleted,
@@ -151,7 +133,8 @@ export default async function ProgramPage({
       {program === 'ember' && (
         <EmberDashboard
           client={client}
-          lesson={lesson}
+          dailyPlan={dailyPlan}
+          insight={insight}
           todaysWorkout={todaysWorkout}
           adjustedExercises={adjustedExercises}
           output={output}
@@ -177,6 +160,8 @@ export default async function ProgramPage({
         {program === 'phoenix' && (
          <PhoenixDashboard
            client={client}
+           dailyPlan={dailyPlan}
+           insight={insight}
            todaysWorkout={todaysWorkout}
            adjustedExercises={adjustedExercises}
            output={output}
