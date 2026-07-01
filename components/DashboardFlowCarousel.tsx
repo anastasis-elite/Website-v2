@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import WorkoutTracker from './WorkoutTracker'
 import DailyInsightCard from './DailyInsightCard'
 import * as styles from '@/app/styles/globalstyles'
 
@@ -109,10 +108,6 @@ export default function DashboardFlowCarousel({
             }}
           >
             <div>
-              {card.id === 'morning' && insight ? (
-                <DailyInsightCard insight={insight} compact />
-              ) : null}
-
               <div
                 style={{
                   display: 'flex',
@@ -157,6 +152,10 @@ export default function DashboardFlowCarousel({
               >
                 {card.title}
               </h3>
+
+              {card.id === 'morning' && insight ? (
+                <DailyInsightCard insight={insight} compact />
+              ) : null}
 
               <p
                 style={{
@@ -213,38 +212,6 @@ export default function DashboardFlowCarousel({
                 </div>
               ) : null}
 
-              {card.id === 'morning' && program && client ? (
-                <details id="todays-workout" style={detailsStyle}>
-                  <summary style={summaryStyle}>
-                    {todaysWorkout ? 'Preview today’s workout' : 'View recovery day'}
-                  </summary>
-                  <div style={{ marginTop: '22px' }}>
-                    {todaysWorkout ? (
-                      <>
-                        <h4 style={workoutTitleStyle}>{todaysWorkout.day_name}</h4>
-                        {todaysWorkout.focus ? (
-                          <p style={styles.bodyStyle}><strong>Focus:</strong> {todaysWorkout.focus}</p>
-                        ) : null}
-                        {cycleAdjustment ? (
-                          <p style={styles.bodyStyle}><strong>{cycleAdjustment.label}:</strong> {cycleAdjustment.note}</p>
-                        ) : null}
-                        {adjustedExercises.length ? (
-                          <WorkoutTracker
-                            clientId={client.client_id}
-                            authUserId={client.auth_user_id}
-                            program={output?.program || program}
-                            dayName={todaysWorkout.day_name}
-                            exercises={adjustedExercises}
-                          />
-                        ) : <p style={styles.bodyStyle}>No exercises are assigned today.</p>}
-                      </>
-                    ) : (
-                      <p style={styles.bodyStyle}>Today is a recovery day. Nourish, hydrate, move gently, and let adaptation do its work.</p>
-                    )}
-                  </div>
-                </details>
-              ) : null}
-
               {program ? <CardActions cardId={card.id} program={program} /> : null}
             </div>
 
@@ -278,13 +245,6 @@ function CardActions({ cardId, program }: { cardId: string; program: string }) {
   )
 }
 
-const detailsStyle = {
-  marginTop: '28px', padding: '20px', borderRadius: '24px',
-  background: 'rgba(181,110,67,0.07)', border: '1px solid rgba(181,110,67,0.2)',
-} as const
-
-const summaryStyle = { ...styles.secondaryButtonStyle, cursor: 'pointer', listStyle: 'none' } as const
-const workoutTitleStyle = { color: '#f5f0e8', fontSize: '1.4rem', margin: '0 0 12px' } as const
 
 function MacroPill({
   label,

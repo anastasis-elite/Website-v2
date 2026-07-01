@@ -31,7 +31,7 @@ export default function DailyInsightCard({ insight, compact = false }: Props) {
         <div style={{ display: 'grid', gap: '8px' }}>
           {rows.map((row) => (
             <p key={row.label} style={{ ...styles.bodyStyle, margin: 0, fontSize: '0.92rem' }}>
-              <strong>{row.label}:</strong> {row.value}
+              {row.value}
             </p>
           ))}
         </div>
