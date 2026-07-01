@@ -1,11 +1,18 @@
 import Link from 'next/link'
-import * as styles from '../../../../../styles/globalstyles'
+import { redirect } from 'next/navigation'
+import * as styles from '@/app/styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import WorkoutTracker from '@/components/WorkoutTracker'
 import {
-  getCycleTrainingAdjustment,
   applyCycleTrainingAdjustment,
+  getCycleTrainingAdjustment,
 } from '@/lib/cycle/getCycleTrainingAdjustment'
+
+const programLabels: Record<string, string> = {
+  ember: 'Ember',
+  ignite: 'Ignite',
+  phoenix: 'Phoenix',
+}
 
 const phoenixTrackLabels: Record<string, string> = {
   phoenixStrength: 'Strength',
@@ -22,14 +29,30 @@ function getFirstName(name?: string | null) {
   return name?.split(' ')[0] || 'Your'
 }
 
-export default async function PlanContent() {
+export default async function ProgramPlanContentPage({
+  params,
+}: {
+  params: { program: string }
+}) {
   const { supabase, client } = await getDashboardContext()
+  const program = params.program
+  const subscribedProgram = client.program || 'ignite'
+
+  if (program !== subscribedProgram) {
+    redirect(`/dashboard/program/${subscribedProgram}`)
+  }
+
+  const programLabel = programLabels[program]
+
+  if (!programLabel) {
+    redirect('/dashboard/program')
+  }
 
   const { data: output, error } = await supabase
     .from('program_outputs')
     .select('*')
     .eq('client_id', client.client_id)
-    .eq('program', client.program)
+    .eq('program', program)
     .order('generated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -49,12 +72,15 @@ export default async function PlanContent() {
     return (
       <main style={styles.pageStyle}>
         <div style={styles.containerStyle}>
-          <p style={styles.eyebrowStyle}>Phoenix</p>
+          <p style={styles.eyebrowStyle}>{programLabel}</p>
           <h1 style={styles.heroTitleStyle}>Your plan is being prepared.</h1>
           <p style={styles.heroTextStyle}>
-            Your Phoenix system is being built from your assessment data. Once it
-            is ready, this page will show only what you need next.
+            Your {programLabel} system is being built from your assessment data.
+            Once it is ready, this page will show only what you need next.
           </p>
+          <Link href={`/dashboard/program/${program}`} style={styles.secondaryButtonStyle}>
+            Back to Program
+          </Link>
         </div>
       </main>
     )
@@ -62,16 +88,11 @@ export default async function PlanContent() {
 
   const programJson = output.program_json || output.output || {}
   const days = programJson.days || []
-  const phoenixTrack = programJson.phoenix_track || client.phoenix_track || ''
-  const phoenixTrackLabel = phoenixTrackLabels[phoenixTrack] || 'Personalized'
-
   const todayName = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
   })
-
   const todaysWorkout = days.find((day: any) => day.day_name === todayName)
   const cycleAdjustment = getCycleTrainingAdjustment(client)
-
   const adjustedExercises = todaysWorkout?.exercises?.length
     ? todaysWorkout.exercises.map((exercise: any) =>
         applyCycleTrainingAdjustment({
@@ -81,6 +102,12 @@ export default async function PlanContent() {
       )
     : []
 
+  const phoenixTrack = programJson.phoenix_track || client.phoenix_track || ''
+  const trackLabel =
+    program === 'phoenix'
+      ? phoenixTrackLabels[phoenixTrack] || 'Personalized'
+      : programLabel
+
   const primaryAction = todaysWorkout
     ? 'Complete today’s training.'
     : 'Recover, log symptoms, and let the system keep calibrating.'
@@ -88,7 +115,7 @@ export default async function PlanContent() {
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Phoenix</p>
+        <p style={styles.eyebrowStyle}>{programLabel}</p>
 
         <h1 style={styles.heroTitleStyle}>
           {getFirstName(client.full_name)}, here is today’s next step.
@@ -100,7 +127,7 @@ export default async function PlanContent() {
           <h2 style={styles.sectionTitleStyle}>{primaryAction}</h2>
 
           <p style={styles.bodyStyle}>
-            Track: <strong>{phoenixTrackLabel}</strong>
+            Track: <strong>{trackLabel}</strong>
           </p>
 
           <p style={styles.bodyStyle}>
@@ -124,7 +151,7 @@ export default async function PlanContent() {
               <WorkoutTracker
                 clientId={client.client_id}
                 authUserId={client.auth_user_id}
-                program={output.program}
+                program={program}
                 dayName={todaysWorkout.day_name}
                 exercises={adjustedExercises}
               />
@@ -169,6 +196,10 @@ export default async function PlanContent() {
               </p>
             </Link>
           </div>
+
+          <Link href={`/dashboard/program/${program}`} style={styles.secondaryButtonStyle}>
+            Back to Program
+          </Link>
         </section>
       </div>
     </main>
