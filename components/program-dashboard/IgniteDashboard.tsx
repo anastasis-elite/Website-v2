@@ -4,18 +4,19 @@ import DashboardStatusDock from '@/components/DashboardStatusDock'
 
 type Props = {
   client: any; dailyPlan?: any; cycleStatus?: any; assessmentDueCount?: number
+  monthlyCheckInDue?: boolean
   adaptiveDashboard?: any; insight?: any; todaysWorkout?: any
   adjustedExercises?: any[]; output?: any
   cycleAdjustment?: { label: string; note: string }
 }
 
 export default function IgniteDashboard(props: Props) {
-  const { client, dailyPlan, cycleStatus, assessmentDueCount = 0 } = props
+  const { client, dailyPlan, cycleStatus } = props
 
   return (
     <>
       {dailyPlan && cycleStatus ? (
-        <DashboardStatusDock client={client} cycleStatus={cycleStatus} dailyPlan={dailyPlan} assessmentDueCount={assessmentDueCount} />
+        <DashboardStatusDock client={client} cycleStatus={cycleStatus} dailyPlan={dailyPlan} assessmentDueCount={props.monthlyCheckInDue ? 1 : 0} monthlyCheckInDue={props.monthlyCheckInDue} />
       ) : null}
       <section style={{ marginTop: '36px', marginBottom: '42px' }} className="dashboard-section">
         <p style={styles.eyebrowStyle}>Ignite Dashboard</p>

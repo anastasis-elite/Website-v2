@@ -12,6 +12,7 @@ type Props = {
   cycleStatus: any
   dailyPlan: any
   assessmentDueCount?: number
+  monthlyCheckInDue?: boolean
 }
 
 export default function DashboardStatusDock({
@@ -19,6 +20,7 @@ export default function DashboardStatusDock({
   cycleStatus,
   dailyPlan,
   assessmentDueCount = 0,
+  monthlyCheckInDue = false,
 }: Props) {
   const [cycleOpen, setCycleOpen] = useState(false)
   const [mealOpen, setMealOpen] = useState(false)
@@ -32,13 +34,18 @@ export default function DashboardStatusDock({
   const dockRef = useRef<HTMLDivElement | null>(null)
   
   useEffect(() => {
-  if (assessmentDueCount > 0) {
+    if (!monthlyCheckInDue || !client?.client_id) return
+
+    const monthKey = new Date().toISOString().slice(0, 7)
+    const storageKey = `monthly-check-in-prompt:${client.client_id}:${monthKey}`
+    if (window.localStorage.getItem(storageKey)) return
+
+    window.localStorage.setItem(storageKey, 'shown')
     setAssessmentOpen(true)
     setCycleOpen(false)
     setMealOpen(false)
     setWaterOpen(false)
-  }
-}, [assessmentDueCount])
+  }, [client?.client_id, monthlyCheckInDue])
 
   useEffect(() => {
   function handleClickOutside(event: MouseEvent | TouchEvent) {

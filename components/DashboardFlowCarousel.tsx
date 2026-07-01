@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import Button from './Button'
 import Link from 'next/link'
 import WorkoutTracker from './WorkoutTracker'
 import DailyInsightCard from './DailyInsightCard'
@@ -75,43 +74,6 @@ export default function DashboardFlowCarousel({
     <section>
       <div
         style={{
-          marginBottom: '22px',
-        }}
-      >
-        <p
-          style={{
-            ...styles.eyebrowStyle,
-            marginBottom: '14px',
-          }}
-        >
-          Today’s Flow
-        </p>
-
-        <h2
-          style={{
-            ...styles.sectionTitleStyle,
-            fontSize: '1.9rem',
-            marginBottom: '8px',
-          }}
-        >
-          Your day, simplified.
-        </h2>
-
-        <p
-          style={{
-            ...styles.bodyStyle,
-            maxWidth: '720px',
-            margin: 0,
-            opacity: 0.82,
-          }}
-        >
-          The system places the current focus first so you do not have to hold the
-          whole day in your head at once.
-        </p>
-      </div>
-
-      <div
-        style={{
           display: 'flex',
           gap: '22px',
           overflowX: 'auto',
@@ -147,6 +109,10 @@ export default function DashboardFlowCarousel({
             }}
           >
             <div>
+              {card.id === 'morning' && insight ? (
+                <DailyInsightCard insight={insight} compact />
+              ) : null}
+
               <div
                 style={{
                   display: 'flex',
@@ -247,16 +213,10 @@ export default function DashboardFlowCarousel({
                 </div>
               ) : null}
 
-              {card.id === 'morning' && insight ? (
-                <div style={{ marginTop: '28px' }}>
-                  <DailyInsightCard insight={insight} />
-                </div>
-              ) : null}
-
               {card.id === 'morning' && program && client ? (
                 <details id="todays-workout" style={detailsStyle}>
                   <summary style={summaryStyle}>
-                    {todaysWorkout ? 'Open today’s workout' : 'View recovery day'}
+                    {todaysWorkout ? 'Preview today’s workout' : 'View recovery day'}
                   </summary>
                   <div style={{ marginTop: '22px' }}>
                     {todaysWorkout ? (
@@ -289,14 +249,8 @@ export default function DashboardFlowCarousel({
             </div>
 
             {card.buttonHref && card.buttonLabel ? (
-              <div
-                style={{
-                  marginTop: '34px',
-                }}
-              >
-                <Button href={card.buttonHref}>
-                  {card.buttonLabel}
-                </Button>
+              <div style={{ marginTop: '34px' }}>
+                <Link href={card.buttonHref} style={styles.primaryButtonStyle}>{card.buttonLabel}</Link>
               </div>
             ) : null}
           </div>
@@ -308,15 +262,15 @@ export default function DashboardFlowCarousel({
 
 function CardActions({ cardId, program }: { cardId: string; program: string }) {
   const actions = cardId === 'morning'
-    ? [{ href: '#todays-workout', label: 'Workout' }, { href: '/dashboard/cycle', label: 'Cycle' }]
+    ? [{ href: `/dashboard/program/${program}/workout`, label: 'Start Workout', primary: true }, { href: '/dashboard/cycle', label: 'Cycle', primary: false }]
     : cardId === 'midday'
-      ? [{ href: '/dashboard/nutrition', label: 'Log Food' }, { href: '/dashboard/recovery', label: 'Movement' }]
-      : [{ href: '/dashboard/recovery', label: 'Recovery' }, { href: '/dashboard/symptoms', label: 'Body Signals' }, { href: '/dashboard/assessment/start', label: 'Check-In' }]
+      ? [{ href: '/dashboard/nutrition', label: 'Log Food', primary: true }, { href: '/dashboard/recovery', label: 'Movement', primary: false }]
+      : [{ href: '/dashboard/recovery', label: 'Recovery', primary: true }, { href: '/dashboard/symptoms', label: 'Body Signals', primary: false }, { href: '/dashboard/assessment/start', label: 'Check-In', primary: false }]
 
   return (
     <div style={{ ...styles.buttonRowStyle, marginTop: '26px' }}>
       {actions.map((action) => (
-        <Link key={action.label} href={action.href} style={styles.secondaryButtonStyle}>
+        <Link key={action.label} href={action.href} style={action.primary ? styles.primaryButtonStyle : styles.secondaryButtonStyle}>
           {action.label}
         </Link>
       ))}
@@ -329,7 +283,7 @@ const detailsStyle = {
   background: 'rgba(181,110,67,0.07)', border: '1px solid rgba(181,110,67,0.2)',
 } as const
 
-const summaryStyle = { color: '#f5f0e8', cursor: 'pointer', fontWeight: 600 } as const
+const summaryStyle = { ...styles.secondaryButtonStyle, cursor: 'pointer', listStyle: 'none' } as const
 const workoutTitleStyle = { color: '#f5f0e8', fontSize: '1.4rem', margin: '0 0 12px' } as const
 
 function MacroPill({

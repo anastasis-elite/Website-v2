@@ -71,12 +71,14 @@ export default async function ProgramPage({
   monthStart.setHours(0, 0, 0, 0)
 
   const monthStartDate = monthStart.toISOString().split('T')[0]
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
   const { data: monthlyAssessment } = await supabase
     .from('assessments')
     .select('id')
     .eq('client_id', client.client_id)
-    .gte('submitted_at', monthStart.toISOString())
+    .gte('submitted_at', thirtyDaysAgo.toISOString())
     .limit(1)
     .maybeSingle()
 
@@ -97,6 +99,7 @@ export default async function ProgramPage({
     !dailyStructureReviewedThisMonth,
     !monthlyMeasurements,
   ].filter(Boolean).length
+  const monthlyCheckInDue = !monthlyAssessment
 
   const adaptiveDashboard = await getAdaptiveDashboard({
     client,
@@ -148,6 +151,7 @@ export default async function ProgramPage({
           dailyPlan={dailyPlan}
           cycleStatus={cycleStatus}
           assessmentDueCount={monthlyAssessmentsDueCount}
+          monthlyCheckInDue={monthlyCheckInDue}
           adaptiveDashboard={adaptiveDashboard}
           insight={insight}
           todaysWorkout={todaysWorkout}
