@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
 import DailyInsightCard from '@/components/DailyInsightCard'
-import WorkoutTracker from '@/components/WorkoutTracker'
+import PhoenixExecutionFlow, { type PhoenixTask } from '@/components/program-dashboard/PhoenixExecutionFlow'
 
 type DecisionSignals = {
   symptomsElevated?: boolean
@@ -21,6 +21,7 @@ type PhoenixDashboardProps = {
   phoenixTrackLabel?: string
   insight?: any
   decisionSignals?: DecisionSignals
+  dailyPlan?: any
 }
 
 type Directive = 'symptoms' | 'nutrition' | 'photos' | 'training' | 'recovery'
@@ -50,9 +51,11 @@ export default function PhoenixDashboard({
   phoenixTrackLabel,
   insight,
   decisionSignals = {},
+  dailyPlan,
 }: PhoenixDashboardProps) {
   const directive = getDirective({ todaysWorkout, signals: decisionSignals })
   const copy = getDirectiveCopy(directive, Boolean(cycleAdjustment?.cautionActive))
+  const tasks = buildTasks({ client, todaysWorkout, directive })
 
   return (
     <main style={styles.pageStyle}>
@@ -86,16 +89,12 @@ export default function PhoenixDashboard({
           ) : null}
         </section>
 
-        <section style={styles.cartBoxStyle}>
-          <p style={styles.eyebrowStyle}>Your One Action</p>
-          <h2 style={styles.sectionTitleStyle}>{copy.actionTitle}</h2>
-          <PrimaryAction
-            directive={directive}
-            client={client}
-            todaysWorkout={todaysWorkout}
-            adjustedExercises={adjustedExercises}
-          />
-        </section>
+        <PhoenixExecutionFlow
+          clientId={client.client_id}
+          executionStyle={client.execution_style || 'flow'}
+          dashboardStyle={client.carousel_style || 'step'}
+          tasks={tasks}
+        />
 
         <section style={optionalSectionStyle}>
           <p style={styles.eyebrowStyle}>Optional Support</p>
@@ -121,39 +120,38 @@ export default function PhoenixDashboard({
   )
 }
 
-function PrimaryAction({
-  directive,
-  client,
-  todaysWorkout,
-  adjustedExercises,
-}: {
-  directive: Directive
-  client: any
-  todaysWorkout?: any
-  adjustedExercises: any[]
-}) {
-  if (directive === 'training' && todaysWorkout && adjustedExercises.length) {
-    return (
-      <WorkoutTracker
-        clientId={client.client_id}
-        authUserId={client.auth_user_id}
-        program={client.program || 'phoenix'}
-        dayName={todaysWorkout.day_name}
-        exercises={adjustedExercises}
-      />
-    )
+function buildTasks({ client, todaysWorkout, directive }: { client: any; todaysWorkout?: any; directive: Directive }): PhoenixTask[] {
+  const program = client.program || 'phoenix'
+  const wake = cleanTime(client.wake_time, '07:00')
+  const workout = cleanTime(client.preferred_workout_time, '09:00')
+  const lunch = cleanTime(client.lunch_window_time, '12:00')
+  const dinner = cleanTime(client.dinner_window_time, '18:00')
+  const bed = cleanTime(client.bed_time, '22:00')
+  const tasks: PhoenixTask[] = []
+
+  if (directive === 'symptoms') tasks.push(task('body-signal', 'Log what your body is saying', 'This signal comes before the rest of the plan.', 'morning', wake, '/dashboard/symptoms', 'Log Body Signal'))
+  if (directive === 'nutrition') tasks.push(task('nourish-first', 'Nourish first', 'Upload or log one supportive meal. Nothing more is required yet.', 'morning', wake, '/dashboard/nutrition', 'Open Nutrition'))
+  if (directive === 'photos') tasks.push(task('requested-photos', 'Complete the requested photo check', 'This gives the system what it needs for the next adjustment.', 'morning', wake, '/dashboard/assessment/photos', 'Upload Photos'))
+
+  tasks.push(task('hydrate', 'Drink water', 'Start with one glass or bottle.', 'morning', wake, '/dashboard/nutrition', 'Log Water'))
+  tasks.push(task('first-meal', 'Eat your first supportive meal', 'Keep it simple and protein-forward.', 'morning', later(wake, 90), '/dashboard/nutrition', 'Log Food'))
+
+  if (todaysWorkout && directive !== 'symptoms' && directive !== 'nutrition' && directive !== 'photos') {
+    tasks.push(task('workout', 'Complete today’s adjusted workout', 'Do the assigned work, then stop.', blockFor(workout), workout, `/dashboard/program/${program}/workout`, 'Start Workout'))
   }
 
-  const action = directive === 'symptoms'
-    ? { href: '/dashboard/symptoms', label: 'Log Body Signals' }
-    : directive === 'nutrition'
-      ? { href: '/dashboard/nutrition', label: 'Upload Food' }
-      : directive === 'photos'
-        ? { href: '/dashboard/assessment/photos', label: 'Upload Photos' }
-        : { href: '/dashboard/recovery', label: 'Begin Recovery' }
+  tasks.push(task('midday-meal', 'Nourish the middle of your day', 'Log the meal and let the system handle the numbers.', 'midday', lunch, '/dashboard/nutrition', 'Log Food'))
+  tasks.push(task('evening-meal', 'Eat your recovery meal', 'Choose the easiest supportive dinner available.', 'evening', dinner, '/dashboard/nutrition', 'Log Food'))
+  tasks.push(task('recovery', todaysWorkout ? 'Close the day with recovery' : 'Recovery is the work today', 'Choose one recovery action your body can receive.', 'evening', earlier(bed, 60), '/dashboard/recovery', 'Log Recovery'))
 
-  return <Link href={action.href} style={styles.primaryButtonStyle}>{action.label}</Link>
+  return tasks
 }
+
+function task(id: string, title: string, detail: string, block: PhoenixTask['block'], time: string, href: string, actionLabel: string): PhoenixTask { return { id, title, detail, block, time, href, actionLabel } }
+function cleanTime(value: string | null | undefined, fallback: string) { return /^\d{2}:\d{2}/.test(value || '') ? String(value).slice(0, 5) : fallback }
+function later(time: string, minutes: number) { const [h, m] = time.split(':').map(Number); const total = Math.min(1439, h * 60 + m + minutes); return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}` }
+function earlier(time: string, minutes: number) { const [h, m] = time.split(':').map(Number); const total = Math.max(0, h * 60 + m - minutes); return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}` }
+function blockFor(time: string): PhoenixTask['block'] { const hour = Number(time.split(':')[0]); return hour < 10 ? 'morning' : hour < 15 ? 'midday' : 'evening' }
 
 function getDirectiveCopy(directive: Directive, cycleCaution: boolean) {
   if (directive === 'symptoms') return {
