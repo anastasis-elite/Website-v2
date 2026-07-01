@@ -10,5 +10,5 @@ export default async function WorkoutRedirectPage() {
 
   const program = client.program || 'ignite'
 
-  redirect(`/dashboard/program/${encodeURIComponent(program)}/plan/content`)
+  redirect(`/dashboard/program/${encodeURIComponent(program)}`)
 }

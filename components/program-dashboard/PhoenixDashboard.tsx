@@ -6,6 +6,7 @@ type PhoenixDashboardProps = {
   client?: any
   todaysWorkout?: any
   adjustedExercises?: any[]
+  output?: any
   cycleAdjustment?: {
     label: string
     note: string
@@ -21,6 +22,7 @@ export default function PhoenixDashboard({
   client,
   todaysWorkout,
   adjustedExercises,
+  output,
   cycleAdjustment,
   phoenixTrackLabel,
 }: PhoenixDashboardProps) {
@@ -93,7 +95,7 @@ export default function PhoenixDashboard({
               <WorkoutTracker
                 clientId={client.client_id}
                 authUserId={client.auth_user_id}
-                program={client.program || 'phoenix'}
+                program={output?.program || client.program || 'phoenix'}
                 dayName={todaysWorkout.day_name}
                 exercises={adjustedExercises}
               />

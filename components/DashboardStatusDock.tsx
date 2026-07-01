@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import DashboardAssessmentMiniCard from '@/components/DashboardAssessmentMiniCard'
 import WaterCup from '@/components/WaterCup'
 import CycleProgressOrb from '@/components/CycleProgressOrb'
+import { getFlameVisualState } from '@/lib/dashboard/getFlameVisualState'
 
 type Props = {
   client: any
@@ -63,6 +64,8 @@ export default function DashboardStatusDock({
   
   const dailyRemaining = dailyPlan?.dailyRemaining || {}
   const dailyTargets = dailyPlan?.dailyTargets || {}
+  const flameScore = Number(client?.flame_score || 10)
+  const visualState = getFlameVisualState(flameScore)
 
   const proteinRemaining = dailyRemaining.protein || 0
   const carbsRemaining = dailyRemaining.carbs || 0
@@ -177,6 +180,15 @@ export default function DashboardStatusDock({
         >
           *
         </button>
+
+        <div
+          style={miniTextStyle}
+          data-flame-visual-state={visualState}
+          title={`Flame state: ${visualState}`}
+        >
+          <strong>{Math.round(flameScore)}%</strong>
+          <span>flame</span>
+        </div>
       </div>
 
       {cycleOpen && (

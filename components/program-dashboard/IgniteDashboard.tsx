@@ -1,17 +1,24 @@
 import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
-import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
 import DashboardStatusDock from '@/components/DashboardStatusDock'
-import PeriodStartButton from '@/components/PeriodStartButton'
 import DailyInsightCard from '@/components/DailyInsightCard'
+import PeriodStartButton from '@/components/PeriodStartButton'
+import WorkoutTracker from '@/components/WorkoutTracker'
 
 type Props = {
   client: any
   dailyPlan?: any
   cycleStatus?: any
   assessmentDueCount?: number
-  lesson?: any
+  adaptiveDashboard?: any
   insight?: any
+  todaysWorkout?: any
+  adjustedExercises?: any[]
+  output?: any
+  cycleAdjustment?: {
+    label: string
+    note: string
+  }
 }
 
 export default function IgniteDashboard({
@@ -19,19 +26,22 @@ export default function IgniteDashboard({
   dailyPlan,
   cycleStatus,
   assessmentDueCount,
-  lesson,
   insight,
+  todaysWorkout,
+  adjustedExercises = [],
+  output,
+  cycleAdjustment,
 }: Props) {
   return (
     <>
       {dailyPlan && cycleStatus ? (
-  <DashboardStatusDock
-    client={client}
-    cycleStatus={cycleStatus}
-    dailyPlan={dailyPlan}
-    assessmentDueCount={assessmentDueCount ?? 0}
-  />
-) : null}
+        <DashboardStatusDock
+          client={client}
+          cycleStatus={cycleStatus}
+          dailyPlan={dailyPlan}
+          assessmentDueCount={assessmentDueCount ?? 0}
+        />
+      ) : null}
 
       <section
         style={{
@@ -41,54 +51,78 @@ export default function IgniteDashboard({
         }}
         className="dashboard-section"
       >
-        {insight ? (
-  <section
-    style={{
-      marginBottom: '42px',
-    }}
-    className="dashboard-section"
-  >
-    <DailyInsightCard insight={insight} />
-  </section>
-) : null}
-        
         <p style={styles.eyebrowStyle}>Ignite Dashboard</p>
 
         <h2 style={styles.sectionTitleStyle}>
-          Track the signals. Follow the system.
+          Follow the day in three simple layers.
         </h2>
 
         <p style={styles.bodyStyle}>
-          Ignite gives you deeper nutrition tracking, macro and micronutrient
-          awareness, daily flow support, progress tracking, and recovery timing
-          without turning your life into another full-time job.
+          Ignite keeps the system visible without making your life feel like a
+          spreadsheet. Start with the next block, log what matters, and let the
+          dashboard keep the bigger pattern.
         </p>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: '10px',
-            flexWrap: 'wrap',
-            marginTop: '22px',
-          }}
-        >
-          <Link href="/dashboard/program/ignite/plan/content" style={styles.primaryButtonStyle}>
-            Training Plan
+        <div style={styles.buttonRowStyle}>
+          <Link href="/dashboard/program/ignite" style={styles.primaryButtonStyle}>
+            Today&apos;s Program
           </Link>
 
-          <Link href="/dashboard/nutrition" style={styles.primaryButtonStyle}>
-            Track Nutrition
+          <Link href="/dashboard/nutrition" style={styles.secondaryButtonStyle}>
+            Nutrition
           </Link>
 
           <Link href="/dashboard/recovery" style={styles.secondaryButtonStyle}>
             Recovery
           </Link>
 
-          <Link href="/dashboard/cycle" style={styles.secondaryButtonStyle}>
-            Cycle
-          </Link>
-
           <PeriodStartButton clientId={client.client_id} />
+        </div>
+      </section>
+
+      {insight ? (
+        <section style={{ marginBottom: '42px' }} className="dashboard-section">
+          <DailyInsightCard insight={insight} />
+        </section>
+      ) : null}
+
+      <section
+        style={{
+          ...styles.cartBoxStyle,
+          marginBottom: '42px',
+        }}
+        className="dashboard-section"
+      >
+        <p style={styles.eyebrowStyle}>Daily Flow</p>
+
+        <h2 style={styles.sectionTitleStyle}>
+          Morning, midday, evening. That is enough.
+        </h2>
+
+        <div style={styles.cardGridStyle}>
+          <DailyFlowCard
+            title="Morning"
+            body="Hydrate, eat your first meal, notice training readiness, and open the workout only if training belongs in this part of the day."
+            href={todaysWorkout ? '/dashboard/program/ignite' : '/dashboard/nutrition'}
+            action={todaysWorkout ? 'Review Workout' : 'Start with Nutrition'}
+            status={dailyPlan?.currentCard?.id === 'morning' ? 'Current' : undefined}
+          />
+
+          <DailyFlowCard
+            title="Midday"
+            body="Log food, protect protein, check micros, move gently, and make one useful adjustment before the day gets loud."
+            href="/dashboard/nutrition"
+            action="Log Nutrition"
+            status={dailyPlan?.nutritionLogged ? 'Nutrition logged' : undefined}
+          />
+
+          <DailyFlowCard
+            title="Evening"
+            body="Downshift recovery, log symptoms if they matter, reflect without spiraling, and make tomorrow easier before you close the day."
+            href="/dashboard/recovery"
+            action="Support Recovery"
+            status={cycleStatus?.recoveryCaution ? 'Recovery caution' : undefined}
+          />
         </div>
       </section>
 
@@ -99,55 +133,52 @@ export default function IgniteDashboard({
         }}
         className="dashboard-section"
       >
-        <p style={styles.eyebrowStyle}>Today’s Execution</p>
+        <p style={styles.eyebrowStyle}>Today&apos;s Workout</p>
 
-        <h2 style={styles.sectionTitleStyle}>
-          Your next best layer.
-        </h2>
+        {todaysWorkout ? (
+          <>
+            <h2 style={styles.sectionTitleStyle}>{todaysWorkout.day_name}</h2>
 
-        <p style={styles.bodyStyle}>
-          Use this section to move through the day without carrying the whole
-          plan in your head.
-        </p>
+            {todaysWorkout.focus ? (
+              <p style={styles.bodyStyle}>
+                <strong>Focus:</strong> {todaysWorkout.focus}
+              </p>
+            ) : null}
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '14px',
-            marginTop: '24px',
-          }}
-        >
-          <IgniteMetricCard
-            label="Workout"
-            value={dailyPlan?.workoutCompleted ? 'Complete' : 'Open'}
-          />
+            {cycleAdjustment ? (
+              <p style={styles.bodyStyle}>
+                <strong>{cycleAdjustment.label}:</strong>{' '}
+                {cycleAdjustment.note}
+              </p>
+            ) : null}
 
-          <IgniteMetricCard
-            label="Nutrition"
-            value={dailyPlan?.nutritionLogged ? 'Tracking' : 'Needs Log'}
-          />
+            {adjustedExercises.length ? (
+              <WorkoutTracker
+                clientId={client.client_id}
+                authUserId={client.auth_user_id}
+                program={output?.program || client.program || 'ignite'}
+                dayName={todaysWorkout.day_name}
+                exercises={adjustedExercises}
+              />
+            ) : (
+              <p style={styles.bodyStyle}>
+                No exercises are assigned inside today&apos;s workout yet.
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <h2 style={styles.sectionTitleStyle}>
+              Recovery is the training signal today.
+            </h2>
 
-          <IgniteMetricCard
-            label="Recovery"
-            value={dailyPlan?.recoveryTools?.primaryTool || 'Recommended'}
-          />
-
-          <IgniteMetricCard
-            label="Check-ins Due"
-            value={String(assessmentDueCount ?? 0)}
-          />
-        </div>
+            <p style={styles.bodyStyle}>
+              There is no assigned workout for today. Keep the rhythm with food,
+              water, movement, and recovery instead of forcing extra output.
+            </p>
+          </>
+        )}
       </section>
-
-      {dailyPlan?.cards?.length ? (
-  <section style={{ marginTop: '54px', marginBottom: '42px' }}>
-    <DashboardFlowCarousel
-      cards={dailyPlan.cards}
-      currentCardId={dailyPlan.currentCard?.id}
-    />
-  </section>
-) : null}
 
       <section
         style={{
@@ -158,23 +189,15 @@ export default function IgniteDashboard({
       >
         <p style={styles.eyebrowStyle}>Progress</p>
 
-        <h2 style={styles.sectionTitleStyle}>
-          Measurements + photos
-        </h2>
+        <h2 style={styles.sectionTitleStyle}>Measurements + photos</h2>
 
         <p style={styles.bodyStyle}>
-          Ignite tracks progress beyond the scale so you can see what your body
-          is actually responding to.
+          Keep progress simple and evidence-based. Measurements, photos, and
+          check-ins help the system adapt without making the scale the whole
+          story.
         </p>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: '12px',
-            flexWrap: 'wrap',
-            marginTop: '22px',
-          }}
-        >
+        <div style={styles.buttonRowStyle}>
           <Link
             href="/dashboard/assessment/measurements"
             style={styles.secondaryButtonStyle}
@@ -190,73 +213,49 @@ export default function IgniteDashboard({
           </Link>
 
           <Link
-            href="/dashboard/assessment/start"
+            href="/dashboard/assessment/monthly"
             style={styles.secondaryButtonStyle}
           >
             Monthly Check-In
           </Link>
         </div>
       </section>
-
-      {lesson ? (
-        <section
-          style={{
-            ...styles.cartBoxStyle,
-            marginBottom: '42px',
-          }}
-          className="dashboard-section"
-        >
-          <p style={styles.eyebrowStyle}>Today’s Insight</p>
-
-          <h2 style={styles.sectionTitleStyle}>
-            {lesson.title}
-          </h2>
-
-          <p style={styles.bodyStyle}>
-            {lesson.body}
-          </p>
-        </section>
-      ) : null}
     </>
   )
 }
 
-function IgniteMetricCard({
-  label,
-  value,
+function DailyFlowCard({
+  title,
+  body,
+  href,
+  action,
+  status,
 }: {
-  label: string
-  value: string
+  title: string
+  body: string
+  href: string
+  action: string
+  status?: string
 }) {
   return (
-    <div
-      style={{
-        padding: '18px',
-        borderRadius: '22px',
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.07)',
-      }}
-    >
-      <p
-        style={{
-          ...styles.eyebrowStyle,
-          fontSize: '10px',
-          marginBottom: '8px',
-        }}
-      >
-        {label}
+    <div style={styles.cardStyle}>
+      <p style={{ ...styles.eyebrowStyle, marginBottom: '12px' }}>
+        {status || 'Ready'}
       </p>
 
-      <p
+      <h3 style={styles.cardTitleStyle}>{title}</h3>
+
+      <p style={styles.cardTextStyle}>{body}</p>
+
+      <Link
+        href={href}
         style={{
-          margin: 0,
-          color: '#f5f0e8',
-          fontSize: '1.2rem',
-          fontWeight: 500,
+          ...styles.quietLinkStyle,
+          marginTop: '18px',
         }}
       >
-        {value}
-      </p>
+        {action}
+      </Link>
     </div>
   )
 }

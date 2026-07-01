@@ -2,13 +2,28 @@
 import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
 import CapacityCheckIn from '@/components/CapacityCheckIn'
+import WorkoutTracker from '@/components/WorkoutTracker'
 
 type Props = {
   client: any
   lesson?: any
+  todaysWorkout?: any
+  adjustedExercises?: any[]
+  output?: any
+  cycleAdjustment?: {
+    label: string
+    note: string
+  }
 }
 
-export default function EmberDashboard({ client, lesson }: Props) {
+export default function EmberDashboard({
+  client,
+  lesson,
+  todaysWorkout,
+  adjustedExercises = [],
+  output,
+  cycleAdjustment,
+}: Props) {
   return (
     <>
       <section
@@ -38,7 +53,7 @@ export default function EmberDashboard({ client, lesson }: Props) {
             marginTop: '22px',
           }}
         >
-          <Link href="/dashboard/program/ember/plan/content" style={styles.primaryButtonStyle}>
+          <Link href="/dashboard/program/ember" style={styles.primaryButtonStyle}>
             View Workout
           </Link>
 
@@ -77,10 +92,26 @@ export default function EmberDashboard({ client, lesson }: Props) {
         </p>
 
         <div style={{ marginTop: '22px' }}>
-          <Link href="/dashboard/program/ember/plan/content" style={styles.primaryButtonStyle}>
-            View Today’s Workout
-          </Link>
+          {todaysWorkout && adjustedExercises.length ? (
+            <WorkoutTracker
+              clientId={client.client_id}
+              authUserId={client.auth_user_id}
+              program={output?.program || client.program || 'ember'}
+              dayName={todaysWorkout.day_name}
+              exercises={adjustedExercises}
+            />
+          ) : (
+            <Link href="/dashboard/recovery" style={styles.primaryButtonStyle}>
+              Use Recovery Day
+            </Link>
+          )}
         </div>
+
+        {cycleAdjustment ? (
+          <p style={styles.bodyStyle}>
+            <strong>{cycleAdjustment.label}:</strong> {cycleAdjustment.note}
+          </p>
+        ) : null}
       </section>
 
       <section
