@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { TERMS_VERSION } from '@/lib/legal/config'
 
 export const runtime = 'nodejs'
 
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
       address_verified: body.address_verified ?? false,
 
       applicant_acknowledged_terms: Boolean(body.agreement),
-      terms_version: 'v1',
+      terms_version: TERMS_VERSION,
 
       capacity_score: capacityScore,
       recommended_program: recommendedProgram,

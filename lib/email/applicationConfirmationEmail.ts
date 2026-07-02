@@ -1,6 +1,8 @@
+import { TERMS_VERSION } from '@/lib/legal/config'
+
 export function buildApplicationConfirmationEmail({
   fullName,
-  termsVersion = 'v1',
+  termsVersion = TERMS_VERSION,
 }: {
   fullName?: string
   termsVersion?: string

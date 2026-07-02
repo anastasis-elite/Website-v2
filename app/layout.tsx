@@ -5,6 +5,7 @@ import CookieBanner from '../components/CookieBanner'
 import AuthButton from '@/components/AuthButton'
 import '@/lib/posthog'
 import PwaRegistration from '@/components/PwaRegistration'
+import LegalFooter from '@/components/LegalFooter'
 
 export const metadata: Metadata = {
   title: 'Anastasis | Woman-Centered Performance',
@@ -46,6 +47,8 @@ export default function RootLayout({
         </header>
 
         {children}
+
+        <LegalFooter />
 
         <CookieBanner />
         <PwaRegistration />

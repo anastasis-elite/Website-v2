@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateProgram } from '@/lib/program/generateProgram'
+import { evaluateSafetyEscalation } from '@/lib/safety/evaluateSafetyEscalation'
 
 export const runtime = 'nodejs'
 
@@ -69,6 +70,31 @@ export async function POST(req: Request) {
       )
     }
 
+    const safetyFlags = evaluateSafetyEscalation({
+      client,
+      initialAssessment: initialAssessment?.data || initialAssessment,
+      strengthAssessment: strengthAssessment?.data || strengthAssessment,
+    })
+
+    if (safetyFlags.length) {
+      if (client.auth_user_id) {
+        await supabase.from('recommendation_audit_logs').insert({
+          user_id: client.auth_user_id,
+          recommendation_type: 'program_generation_safety_escalation',
+          input_reference: `client:${clientId}`,
+          engine_version: 'safety_v1.0',
+          recommendation_output: { blocked: true },
+          confidence_level: 'keyword_safety_rule',
+          safety_flags: safetyFlags,
+        })
+      }
+      return NextResponse.json({
+        error: 'Program generation paused for a safety signal.',
+        safetyFlags,
+        action: 'Seek appropriate medical or emergency care before continuing.',
+      }, { status: 409 })
+    }
+
     const generatedProgram = generateProgram({
       client,
       initialAssessment: initialAssessment?.data || initialAssessment,
@@ -94,6 +120,19 @@ export async function POST(req: Request) {
         },
         { status: 500 }
       )
+    }
+
+    if (client.auth_user_id) {
+      await supabase.from('recommendation_audit_logs').insert({
+        user_id: client.auth_user_id,
+        recommendation_type: 'program_generation',
+        input_reference: `assessments:${initialAssessment?.id || 'none'},${strengthAssessment.id}`,
+        input_snapshot: { client_id: clientId, program: client.program },
+        engine_version: 'program_generator_v1.0',
+        recommendation_output: generatedProgram,
+        confidence_level: 'rules_based',
+        safety_flags: [],
+      })
     }
 
     return NextResponse.json({

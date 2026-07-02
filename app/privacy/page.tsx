@@ -1,0 +1,17 @@
+import LegalDocumentLayout, { LegalSection } from '@/components/legal/LegalDocumentLayout'
+import { LEGAL_CONTACT_EMAIL, PRIVACY_VERSION } from '@/lib/legal/config'
+
+export default function PrivacyPage() {
+  return <LegalDocumentLayout title="Privacy Policy" version={PRIVACY_VERSION}>
+    <LegalSection title="Information collected"><p>We may collect account and contact information; cycle and reproductive-status inputs; symptoms; nutrition and hydration logs; workouts and recovery; assessments; measurements; progress, posture, and assessment photos; communications; technical and consent records; and wearable information if integrations are added and separately authorized.</p></LegalSection>
+    <LegalSection title="Why we collect it"><p>Data supports account access, program delivery, personalization, progress tracking, safety screening, customer support, billing, fraud prevention, service improvement, and legal compliance.</p></LegalSection>
+    <LegalSection title="How information is used"><p>We use information to provide requested features, calculate program targets, adapt recommendations, identify safety concerns, maintain records, communicate with you, and operate and secure Anastasis. We do not promise that automated analysis is clinically accurate.</p></LegalSection>
+    <LegalSection title="AI-assisted processing"><p>Selected inputs may be processed by rules-based or AI-assisted systems to generate summaries or recommendations. AI processing is limited to intended service purposes and remains subject to access controls and vendor terms.</p></LegalSection>
+    <LegalSection title="Vendors and subprocessors"><p>Service providers may include hosting, authentication/database, payment, email, analytics, error monitoring, and approved AI-processing vendors. A launch-ready subprocessor list, purposes, locations, and contractual safeguards must be completed before launch.</p></LegalSection>
+    <LegalSection title="Retention and deletion"><p>We retain data only as long as reasonably required for service delivery, safety, financial records, dispute handling, security, and legal obligations. You may request access, correction, export, or deletion. Some records may be retained where law, fraud prevention, contract enforcement, or safety requires it.</p></LegalSection>
+    <LegalSection title="Your rights and choices"><p>Rights vary by location and may include notice, access, correction, deletion, portability, restriction, consent withdrawal, and marketing opt-out. Withdrawing optional research consent does not terminate program access.</p></LegalSection>
+    <LegalSection title="Security"><p>We use access controls, encrypted transport, row-level database controls, restricted server credentials, audit records, and vendor safeguards. No system is perfectly secure. Sensitive information should not be sent through unapproved channels.</p></LegalSection>
+    <LegalSection title="Incidents and breach notification"><p>We maintain detection, containment, investigation, documentation, and notification procedures. If a reportable breach occurs, we will provide notices required by applicable law, which may include consumer and regulator notification.</p></LegalSection>
+    <LegalSection title="Version and contact"><p>Version {PRIVACY_VERSION}; initial launch draft effective July 1, 2026. Contact <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a> for privacy or deletion requests.</p></LegalSection>
+  </LegalDocumentLayout>
+}

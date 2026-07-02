@@ -1,0 +1,4 @@
+import LegalDocumentLayout, { LegalSection } from '@/components/legal/LegalDocumentLayout'
+import AIDisclaimer from '@/components/legal/AIDisclaimer'
+import { AI_DISCLAIMER_VERSION } from '@/lib/legal/config'
+export default function AIPage() { return <LegalDocumentLayout title="AI-Assisted Recommendations Disclaimer" version={AI_DISCLAIMER_VERSION}><LegalSection title="How AI may be used"><AIDisclaimer /></LegalSection><LegalSection title="Limits"><p>AI-assisted outputs can misunderstand context, omit relevant information, produce inconsistent results, or rely on incomplete user inputs. They are not medical judgments and must not replace qualified professional care.</p></LegalSection><LegalSection title="Safety"><p>Do not wait for an AI response during an emergency. Stop activity and seek appropriate medical or emergency assistance when symptoms or circumstances require it.</p></LegalSection></LegalDocumentLayout> }

@@ -23,7 +23,7 @@ export const legalRiskRegister: LegalRisk[] = [
   },
   {
     id: 'terms-version', area: 'Terms and acceptance evidence', status: 'review',
-    evidence: 'Applications store terms_version v1 and acknowledgment, while the published Terms page has no visible effective date or revision history.',
+    evidence: 'Applications and dashboard acceptance now store centralized version identifiers; qualified review must validate the published language and acceptance evidence.',
     risk: 'It may be difficult to prove which exact language a client accepted.',
     nextAction: 'Add effective dates, immutable versions, change history, and acceptance timestamp/IP/user evidence where lawful.', reviewCadence: 'Every revision',
   },

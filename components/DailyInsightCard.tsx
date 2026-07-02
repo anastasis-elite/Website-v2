@@ -1,4 +1,5 @@
 import * as styles from '@/app/styles/globalstyles'
+import AIDisclaimer from '@/components/legal/AIDisclaimer'
 
 type DailyInsight = {
   observation?: string
@@ -35,6 +36,7 @@ export default function DailyInsightCard({ insight, compact = false }: Props) {
             </p>
           ))}
         </div>
+        <AIDisclaimer compact />
       </aside>
     )
   }
@@ -64,6 +66,7 @@ export default function DailyInsightCard({ insight, compact = false }: Props) {
           </div>
         ))}
       </div>
+      <AIDisclaimer compact />
     </section>
   )
 }

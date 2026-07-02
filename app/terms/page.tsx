@@ -1,81 +1,18 @@
-import * as styles from '../styles/globalstyles'
-import TrackEvent from '@/components/TrackEvent'
+import Link from 'next/link'
+import LegalDocumentLayout, { LegalSection } from '@/components/legal/LegalDocumentLayout'
+import AIDisclaimer from '@/components/legal/AIDisclaimer'
+import { LEGAL_CONTACT_EMAIL, TERMS_VERSION } from '@/lib/legal/config'
 
 export default function TermsPage() {
-  return (
-    <><TrackEvent event="terms_page_viewed" properties={{ page: 'terms' }} />
-    <main style={styles.pageStyle}>
-      <div style={{ ...styles.containerStyle, maxWidth: '900px' }}>
-        
-        <p style={styles.eyebrowStyle}>Terms of Use</p>
-
-        <h1
-          style={{
-            ...styles.heroTitleStyle,
-            fontSize: 'clamp(2.5rem, 5vw, 4.8rem)',
-            marginBottom: '48px',
-          }}
-        >
-          Terms of Use
-        </h1>
-
-        <p style={styles.bodyStyle}>
-          This program is designed as a structured system for performance, physique
-          development, and alignment with female physiology. It is built to support
-          progress through precision, not force. By accessing or participating in this
-          program, you acknowledge and agree to the following terms.
-        </p>
-
-        <h2 style={styles.h2Style}>Program Nature</h2>
-        <p style={styles.bodyStyle}>
-          This is a coaching and systems-based program. All outputs, guidance, and
-          structure are based on the accuracy and consistency of the information you
-          provide, as well as your execution of the program as designed.
-        </p>
-
-        <h2 style={styles.h2Style}>Execution Responsibility</h2>
-        <p style={styles.bodyStyle}>
-          Results are dependent on full and accurate execution. Partial implementation,
-          modification without guidance, or inconsistent adherence to the system may
-          impact outcomes. By participating, you accept responsibility for your level
-          of execution and understand that outcomes cannot be guaranteed without full
-          participation.
-        </p>
-
-        <h2 style={styles.h2Style}>No Refund Policy</h2>
-        <p style={styles.bodyStyle}>
-          Due to the nature of this program and the immediate access to intellectual
-          property, systems, and structure, all payments are final. No refunds,
-          partial refunds, or compensation will be issued based on lack of execution,
-          perceived results, or non-compliance with the program.
-        </p>
-
-        <h2 style={styles.h2Style}>Professional Scope</h2>
-        <p style={styles.bodyStyle}>
-          This program is created and delivered by a certified personal trainer and
-          nutrition coach with specializations in weight loss, gym design, and ongoing
-          expansion into corrective exercise. This program does not provide medical
-          diagnosis, treatment, or licensed medical care, and is not a replacement for
-          guidance from a qualified healthcare provider.
-        </p>
-
-        <h2 style={styles.h2Style}>Appropriate Use</h2>
-        <p style={styles.bodyStyle}>
-          This program is intended for individuals who are able to participate in
-          physical activity and structured training. It is your responsibility to
-          ensure that your use of this program is appropriate for your personal
-          health, condition, and capability.
-        </p>
-
-        <h2 style={styles.h2Style}>Agreement</h2>
-        <p style={styles.bodyStyle}>
-          By participating in this program, you acknowledge that you understand these
-          terms and accept full responsibility for your participation, execution, and
-          outcomes.
-        </p>
-
-      </div>
-    </main>
-    </>
-  )
+  return <LegalDocumentLayout title="Terms of Service" version={TERMS_VERSION}>
+    <LegalSection title="Scope of service"><p>Anastasis provides fitness programming, nutrition education, recovery guidance, habit and progress tracking, and adaptive wellness support. Services are educational and coaching-oriented and depend on the accuracy and completeness of information you provide.</p></LegalSection>
+    <LegalSection title="Not medical or emergency care"><p>Anastasis does not diagnose, treat, cure, or prevent disease and is not a substitute for a physician, registered dietitian, mental-health professional, emergency service, or other licensed provider. Do not use the service for an emergency. Call 911 or your local emergency number when immediate help may be required.</p></LegalSection>
+    <LegalSection title="Responsibility and assumption of risk"><p>Physical activity and dietary changes involve risk. You are responsible for obtaining appropriate clearance, using accurate inputs, choosing safe environments and equipment, following technique instructions, and stopping when participation is unsafe.</p></LegalSection>
+    <LegalSection title="Contraindications and stopping exercise"><p>Stop exercise and seek appropriate care for chest pain, fainting, severe shortness of breath, acute injury, severe dizziness, severe bleeding, pregnancy complications, or other alarming symptoms. Do not continue solely because the platform generated a task.</p></LegalSection>
+    <LegalSection title="AI-assisted recommendations"><AIDisclaimer compact /></LegalSection>
+    <LegalSection title="Billing, renewal, cancellation, and refunds"><p>Subscriptions may renew automatically until canceled. Failed payments may suspend access. Cancellation prevents future renewal but does not automatically refund prior charges. Refund eligibility, timing, and exceptions are described in the <Link href="/refund-policy">Billing and Refund Policy</Link> and remain subject to applicable law and payment-network requirements.</p></LegalSection>
+    <LegalSection title="Data collection and research"><p>Our <Link href="/privacy">Privacy Policy</Link> explains collection, processing, retention, security, and deletion. Optional anonymized research use is governed separately by <Link href="/research-consent">Research Consent</Link> and is not required to purchase or use the program.</p></LegalSection>
+    <LegalSection title="Changes and revision history"><p>Current version: {TERMS_VERSION}. Initial launch draft effective July 1, 2026. Material changes require a new version and renewed acceptance before dashboard access.</p></LegalSection>
+    <LegalSection title="Contact"><p><a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a></p></LegalSection>
+  </LegalDocumentLayout>
 }

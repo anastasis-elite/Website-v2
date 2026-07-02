@@ -9,6 +9,9 @@ import { getAdaptiveDashboard } from '@/lib/dashboard/getAdaptiveDashboard'
 import { generateDailyInsight } from '@/lib/messaging/engine'
 import type { CapacityState, CyclePhase } from '@/lib/messaging/types'
 import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
+import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
+import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
+import { logRecommendationAudit } from '@/lib/legal/logRecommendationAudit'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix'] as const
 
@@ -61,6 +64,16 @@ export default async function ProgramPage({
 
   if (program !== subscribedProgram) {
     redirect(`/dashboard/program/${subscribedProgram}`)
+  }
+
+  const safetyFlags = await getRecentSafetyFlags(supabase, client.client_id)
+  if (safetyFlags.length) {
+    await logRecommendationAudit({
+      supabase, userId: user.id, recommendationType: 'dashboard_safety_escalation',
+      inputReference: `client_symptom_logs:${client.client_id}`, engineVersion: 'safety_v1.0',
+      recommendationOutput: { blocked: true }, safetyFlags,
+    })
+    return <SafetyEscalationNotice flags={safetyFlags} />
   }
 
   const dailyPlan = await getDailyExecutionPlan({ supabase, client })
@@ -130,6 +143,19 @@ export default async function ProgramPage({
     completions,
     belief: client.current_belief || undefined,
   })
+
+  await Promise.all([
+    logRecommendationAudit({
+      supabase, userId: user.id, recommendationType: 'daily_insight',
+      inputSnapshot: { program, cyclePhase: cycleStatus?.phase || 'none', capacity: getCapacityState(client), completions },
+      engineVersion: 'daily_insight_v1.0', recommendationOutput: insight, confidenceLevel: 'rules_based',
+    }),
+    logRecommendationAudit({
+      supabase, userId: user.id, recommendationType: 'adaptive_dashboard',
+      inputSnapshot: { program, monthlyAssessmentsDueCount }, engineVersion: 'adaptive_dashboard_v1.0',
+      recommendationOutput: adaptiveDashboard, confidenceLevel: 'rules_based',
+    }),
+  ])
 
   return (
     <main>

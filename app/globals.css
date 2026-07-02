@@ -72,6 +72,23 @@ a {
   text-decoration: none;
 }
 
+.legal-footer {
+  padding: 36px max(24px, env(safe-area-inset-left)) calc(36px + env(safe-area-inset-bottom));
+  color: rgba(215,199,182,.72);
+  font-size: .86rem;
+  text-align: center;
+}
+
+.legal-footer nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 16px;
+}
+
+.legal-footer a { color: inherit; }
+
 .page-shell {
   min-height: 100vh;
 }
