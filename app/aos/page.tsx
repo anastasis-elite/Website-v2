@@ -2,6 +2,9 @@ import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
 import AOSNavigation from '@/components/AOSNavigation'
 import AOSAnalyticsLive from '@/components/AOSAnalyticsLive'
+import SocialIntelligenceSection from '@/components/aos/SocialIntelligenceSection'
+
+export const dynamic = 'force-dynamic'
 
 export default function AOSCommandCenterPage() {
   return (
@@ -75,6 +78,7 @@ export default function AOSCommandCenterPage() {
 </section>
 
 <AOSAnalyticsLive />
+        <SocialIntelligenceSection />
         {/* BUSINESS HEALTH */}
 
         <section style={styles.cartBoxStyle}>

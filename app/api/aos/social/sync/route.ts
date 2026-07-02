@@ -7,6 +7,7 @@ import {
   normalizeSocialPost,
   type NormalizedSocialPost,
 } from '@/lib/aos/social/normalizeSocialPost'
+import { isAOSAdmin } from '@/lib/aos/isAOSAdmin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -64,7 +65,7 @@ export async function POST() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
+  if (!isAOSAdmin(user?.email)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

@@ -12,6 +12,9 @@ import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
 import { logRecommendationAudit } from '@/lib/legal/logRecommendationAudit'
+import { getEmberDashboardData } from '@/lib/dashboard/ember/getEmberDashboardData'
+import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
+import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashboardData'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix'] as const
 
@@ -112,8 +115,6 @@ export default async function ProgramPage({
     !dailyStructureReviewedThisMonth,
     !monthlyMeasurements,
   ].filter(Boolean).length
-  const monthlyCheckInDue = !monthlyAssessment
-
   const adaptiveDashboard = await getAdaptiveDashboard({
     client,
     monthlyAssessmentsDueCount,
@@ -128,8 +129,17 @@ export default async function ProgramPage({
     .limit(1)
     .maybeSingle()
 
-  const { programJson, todaysWorkout, cycleAdjustment, adjustedExercises } =
+  const { programJson, todaysWorkout, cycleAdjustment } =
     getProgramWorkout({ client, output })
+
+  const emberDashboardData = program === 'ember'
+    ? await getEmberDashboardData({
+        supabase,
+        client,
+        dailyPlan,
+        todaysWorkout,
+      })
+    : null
 
   const completions = [
     dailyPlan?.workoutCompleted,
@@ -143,6 +153,30 @@ export default async function ProgramPage({
     completions,
     belief: client.current_belief || undefined,
   })
+
+  const igniteDashboardData = program === 'ignite'
+    ? await getIgniteDashboardData({
+        supabase,
+        client,
+        dailyPlan,
+        todaysWorkout,
+        cycleStatus,
+        cycleAdjustment,
+        monthlyAssessmentsDueCount,
+        insight,
+      })
+    : null
+
+  const phoenixDashboardData = program === 'phoenix'
+    ? await getPhoenixDashboardData({
+        supabase,
+        user,
+        client,
+        dailyPlan,
+        todaysWorkout,
+        phoenixTrackLabel: getPhoenixTrackLabel({ client, programJson }),
+      })
+    : null
 
   await Promise.all([
     logRecommendationAudit({
@@ -160,43 +194,15 @@ export default async function ProgramPage({
   return (
     <main>
       {program === 'ember' && (
-        <EmberDashboard
-          client={client}
-          dailyPlan={dailyPlan}
-          insight={insight}
-          todaysWorkout={todaysWorkout}
-          adjustedExercises={adjustedExercises}
-          output={output}
-          cycleAdjustment={cycleAdjustment}
-        />
+        <EmberDashboard initialData={emberDashboardData!} />
       )}
 
       {program === 'ignite' && (
-        <IgniteDashboard
-          client={client}
-          dailyPlan={dailyPlan}
-          cycleStatus={cycleStatus}
-          assessmentDueCount={monthlyAssessmentsDueCount}
-          monthlyCheckInDue={monthlyCheckInDue}
-          adaptiveDashboard={adaptiveDashboard}
-          insight={insight}
-          todaysWorkout={todaysWorkout}
-          adjustedExercises={adjustedExercises}
-          output={output}
-          cycleAdjustment={cycleAdjustment}
-        />
+        <IgniteDashboard initialData={igniteDashboardData!} />
         )}
 
         {program === 'phoenix' && (
-         <PhoenixDashboard
-           client={client}
-           dailyPlan={dailyPlan}
-           insight={insight}
-           todaysWorkout={todaysWorkout}
-           adjustedExercises={adjustedExercises}
-           cycleAdjustment={cycleAdjustment}
-           phoenixTrackLabel={getPhoenixTrackLabel({ client, programJson })}
-         />
+         <PhoenixDashboard initialData={phoenixDashboardData!} />
         )}
     </main>
   )
