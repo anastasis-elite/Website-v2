@@ -2,13 +2,16 @@
 
 import { useState } from 'react'
 import * as styles from '@/app/styles/globalstyles'
+import type { AccountProfileFormData } from '@/lib/dashboard/account/types'
 
 export default function AccountProfileForm({
   client,
   user,
+  mode = 'all',
 }: {
-  client: any
-  user: any
+  client: AccountProfileFormData
+  user: { email: string | null }
+  mode?: 'all' | 'profile' | 'security'
 }) {
   const [loading, setLoading] = useState(false)
   const [passwordLoading, setPasswordLoading] = useState(false)
@@ -122,7 +125,7 @@ export default function AccountProfileForm({
 
   return (
     <div style={{ display: 'grid', gap: 28 }}>
-      <section style={styles.cartBoxStyle}>
+      {mode === 'all' ? <section style={styles.cartBoxStyle}>
         <p style={styles.eyebrowStyle}>Identity</p>
 
         <p style={styles.bodyStyle}>
@@ -136,9 +139,9 @@ export default function AccountProfileForm({
         <p style={{ ...styles.bodyStyle, opacity: 0.72 }}>
           Name and email are locked to protect your account identity.
         </p>
-      </section>
+      </section> : null}
 
-      <form onSubmit={saveProfile} style={styles.cartBoxStyle}>
+      {mode !== 'security' ? <form onSubmit={saveProfile} style={styles.cartBoxStyle}>
         <p style={styles.eyebrowStyle}>Profile</p>
 
         <div style={{ display: 'grid', gap: 16 }}>
@@ -248,9 +251,9 @@ export default function AccountProfileForm({
         </button>
 
         {message ? <p style={styles.bodyStyle}>{message}</p> : null}
-      </form>
+      </form> : null}
 
-      <form onSubmit={changePassword} style={styles.cartBoxStyle}>
+      {mode !== 'profile' ? <form onSubmit={changePassword} style={styles.cartBoxStyle}>
         <p style={styles.eyebrowStyle}>Password</p>
 
         <div style={{ display: 'grid', gap: 16 }}>
@@ -284,9 +287,9 @@ export default function AccountProfileForm({
         {passwordMessage ? (
           <p style={styles.bodyStyle}>{passwordMessage}</p>
         ) : null}
-      </form>
+      </form> : null}
 
-      <section style={styles.cartBoxStyle}>
+      {mode === 'all' ? <section style={styles.cartBoxStyle}>
         <p style={styles.eyebrowStyle}>Uploads</p>
 
         <h2 style={styles.sectionTitleStyle}>Progress uploads coming next.</h2>
@@ -295,7 +298,7 @@ export default function AccountProfileForm({
           This section will hold progress photos, assessment uploads, and other
           private client files once upload storage is connected.
         </p>
-      </section>
+      </section> : null}
     </div>
   )
 }
