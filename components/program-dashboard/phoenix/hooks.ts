@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import type { PhoenixDashboardData, PhoenixPlanBlock } from '@/lib/dashboard/phoenix/types'
+import { calculateExecutionScore } from '@/lib/dashboard/logic/calculateExecutionScore'
 
 function clamp(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)))
@@ -72,7 +73,7 @@ export function useRecoveryStatus(value: PhoenixDashboardData['recovery']) { ret
 export function useSleepStatus(value: PhoenixDashboardData['sleep']) { return value }
 
 export function usePhoenixDailyProgress({ plan, hydration, nutrition, workout, assessment, recovery, sleep }: { plan: number; hydration: number; nutrition: number; workout: boolean; assessment: boolean; recovery: boolean; sleep: boolean }) {
-  return clamp((plan + hydration + nutrition + (workout ? 100 : 0) + (assessment ? 100 : 0) + (recovery ? 100 : 0) + (sleep ? 100 : 0)) / 7)
+  return calculateExecutionScore({plan,hydration,nutrition,workout,assessment,recovery,sleep})
 }
 
 export function useFlameState(score: number) {

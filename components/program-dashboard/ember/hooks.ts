@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import type { EmberDashboardData, EmberMacro } from '@/lib/dashboard/ember/types'
+import { calculateExecutionScore } from '@/lib/dashboard/logic/calculateExecutionScore'
 
 function clamp(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)))
@@ -65,9 +66,7 @@ export function useDailyExecutionScore({
   recoveryRequired: boolean
   recoveryComplete: boolean
 }) {
-  const scores = [hydrationPercent, macroPercent, workoutComplete ? 100 : 0, assessmentComplete ? 100 : 0]
-  if (recoveryRequired) scores.push(recoveryComplete ? 100 : 0)
-  return clamp(scores.reduce((total, score) => total + score, 0) / scores.length)
+  return calculateExecutionScore({hydration:hydrationPercent,nutrition:macroPercent,workout:workoutComplete,assessment:assessmentComplete,recovery:recoveryRequired?recoveryComplete:true})
 }
 
 export function useFlameState(score: number) {
