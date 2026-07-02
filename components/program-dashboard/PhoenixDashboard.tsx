@@ -4,6 +4,9 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { PhoenixDashboardData, PhoenixPlanBlock } from '@/lib/dashboard/phoenix/types'
+import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
+import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashboardData'
+import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
 import {
   useAssessmentStatus,
   useFlameState,
@@ -64,7 +67,9 @@ function StatusCard({ icon, title, value, detail, href, action, complete }: { ic
   return <article className={`phoenix-status-card${complete ? ' is-complete' : ''}`}><p className="phoenix-label"><span aria-hidden="true">{icon}</span> {title}</p><h3>{value}</h3><p>{detail}</p><Link href={href} className="phoenix-outline-button">{complete ? '✓ Done' : action}</Link></article>
 }
 
-export default function PhoenixDashboard({ initialData }: { initialData: PhoenixDashboardData }) {
+export default function PhoenixDashboard({ logic, trackLabel }: { logic: ProgramLogicOutput; trackLabel: string }) {
+  const engine = useProgramLogicEngine(logic)
+  const initialData: PhoenixDashboardData = getPhoenixDashboardData(engine, trackLabel)
   const { data, setData } = usePhoenixDashboardData(initialData)
   const [addingWater, setAddingWater] = useState(false)
   const [waterError, setWaterError] = useState('')

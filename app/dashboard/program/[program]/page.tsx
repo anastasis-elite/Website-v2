@@ -5,28 +5,14 @@ import PhoenixDashboard from '@/components/program-dashboard/PhoenixDashboard'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
-import { getAdaptiveDashboard } from '@/lib/dashboard/getAdaptiveDashboard'
-import { generateDailyInsight } from '@/lib/messaging/engine'
-import type { CapacityState, CyclePhase } from '@/lib/messaging/types'
 import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
 import { logRecommendationAudit } from '@/lib/legal/logRecommendationAudit'
-import { getEmberDashboardData } from '@/lib/dashboard/ember/getEmberDashboardData'
-import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
-import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashboardData'
+import { getProgramLogicEngine } from '@/lib/dashboard/logic/getProgramLogicEngine'
+import type { ProgramTier } from '@/lib/dashboard/logic/types'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix'] as const
-
-function getCapacityState(client: any): CapacityState {
-  const rawCapacity = client?.capacity_state || client?.capacity || 'low'
-
-  return rawCapacity === 'high' ||
-    rawCapacity === 'medium' ||
-    rawCapacity === 'low'
-    ? rawCapacity
-    : 'low'
-}
 
 function getPhoenixTrackLabel({
   client,
@@ -115,11 +101,6 @@ export default async function ProgramPage({
     !dailyStructureReviewedThisMonth,
     !monthlyMeasurements,
   ].filter(Boolean).length
-  const adaptiveDashboard = await getAdaptiveDashboard({
-    client,
-    monthlyAssessmentsDueCount,
-  })
-
   const { data: output } = await supabase
     .from('program_outputs')
     .select('*')
@@ -129,81 +110,58 @@ export default async function ProgramPage({
     .limit(1)
     .maybeSingle()
 
-  const { programJson, todaysWorkout, cycleAdjustment } =
+  const { programJson, todaysWorkout, cycleAdjustment, adjustedExercises } =
     getProgramWorkout({ client, output })
 
-  const emberDashboardData = program === 'ember'
-    ? await getEmberDashboardData({
-        supabase,
-        client,
-        dailyPlan,
-        todaysWorkout,
-      })
-    : null
-
-  const completions = [
-    dailyPlan?.workoutCompleted,
-    dailyPlan?.nutritionLogged,
-    dailyPlan?.macroTargetsMet,
-  ].filter(Boolean).length
-
-  const insight = generateDailyInsight({
-    cyclePhase: (cycleStatus?.phase || 'none') as CyclePhase | 'none',
-    capacity: getCapacityState(client),
-    completions,
-    belief: client.current_belief || undefined,
+  const logic = await getProgramLogicEngine({
+    supabase,
+    user,
+    client,
+    program: program as ProgramTier,
+    dailyPlan,
+    cycleStatus,
+    cycleAdjustment,
+    plannedWorkout: todaysWorkout,
+    plannedExercises: adjustedExercises,
+    monthlyAssessmentsDueCount,
   })
 
-  const igniteDashboardData = program === 'ignite'
-    ? await getIgniteDashboardData({
-        supabase,
-        client,
-        dailyPlan,
-        todaysWorkout,
-        cycleStatus,
-        cycleAdjustment,
-        monthlyAssessmentsDueCount,
-        insight,
-      })
-    : null
-
-  const phoenixDashboardData = program === 'phoenix'
-    ? await getPhoenixDashboardData({
-        supabase,
-        user,
-        client,
-        dailyPlan,
-        todaysWorkout,
-        phoenixTrackLabel: getPhoenixTrackLabel({ client, programJson }),
-      })
-    : null
-
-  await Promise.all([
-    logRecommendationAudit({
-      supabase, userId: user.id, recommendationType: 'daily_insight',
-      inputSnapshot: { program, cyclePhase: cycleStatus?.phase || 'none', capacity: getCapacityState(client), completions },
-      engineVersion: 'daily_insight_v1.0', recommendationOutput: insight, confidenceLevel: 'rules_based',
-    }),
-    logRecommendationAudit({
-      supabase, userId: user.id, recommendationType: 'adaptive_dashboard',
-      inputSnapshot: { program, monthlyAssessmentsDueCount }, engineVersion: 'adaptive_dashboard_v1.0',
-      recommendationOutput: adaptiveDashboard, confidenceLevel: 'rules_based',
-    }),
-  ])
+  await logRecommendationAudit({
+    supabase,
+    userId: user.id,
+    recommendationType: 'daily_program_logic',
+    inputSnapshot: {
+      program,
+      capacity: logic.capacityStatus.status,
+      recovery: logic.recoveryStatus.status,
+      fuel: logic.fuelReadiness.status,
+      symptomSeverity: logic.symptoms.severity,
+    },
+    engineVersion: logic.engineVersion,
+    recommendationOutput: {
+      workoutDecision: logic.workoutDecision,
+      hydration: logic.hydration,
+      nutrition: logic.nutrition,
+      cycle: logic.cycle,
+      insight: logic.insight,
+      flameState: logic.flameState,
+    },
+    confidenceLevel: 'rules_based',
+  })
 
   return (
     <main>
       {program === 'ember' && (
-        <EmberDashboard initialData={emberDashboardData!} />
+        <EmberDashboard logic={logic} />
       )}
 
       {program === 'ignite' && (
-        <IgniteDashboard initialData={igniteDashboardData!} />
-        )}
+        <IgniteDashboard logic={logic} />
+      )}
 
-        {program === 'phoenix' && (
-         <PhoenixDashboard initialData={phoenixDashboardData!} />
-        )}
+      {program === 'phoenix' && (
+        <PhoenixDashboard logic={logic} trackLabel={getPhoenixTrackLabel({ client, programJson })} />
+      )}
     </main>
   )
 }

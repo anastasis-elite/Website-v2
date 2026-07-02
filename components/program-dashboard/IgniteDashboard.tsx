@@ -3,6 +3,9 @@
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import type { IgniteDashboardData, IgniteTrend } from '@/lib/dashboard/ignite/types'
+import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
+import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
+import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
 import {
   useAssessmentStatus,
   useClientDashboardData,
@@ -52,7 +55,9 @@ function Sparkline({ trend }: { trend: IgniteTrend }) {
   return <svg className="ignite-sparkline" viewBox="0 0 100 38" role="img" aria-label={`${trend.label} seven-day trend`}><polyline points={coordinates} /></svg>
 }
 
-export default function IgniteDashboard({ initialData }: { initialData: IgniteDashboardData }) {
+export default function IgniteDashboard({ logic }: { logic: ProgramLogicOutput }) {
+  const engine = useProgramLogicEngine(logic)
+  const initialData: IgniteDashboardData = getIgniteDashboardData(engine)
   const data = useClientDashboardData(initialData)
   const macros = useMacroProgress(data.macros)
   const plan = useTodayPlan(data.clientId, data.plan)

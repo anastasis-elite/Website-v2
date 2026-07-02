@@ -4,6 +4,9 @@ import Link from 'next/link'
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { EmberDashboardData } from '@/lib/dashboard/ember/types'
+import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
+import { getEmberDashboardData } from '@/lib/dashboard/ember/getEmberDashboardData'
+import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
 import {
   useAssessmentStatus,
   useClientDashboardData,
@@ -13,10 +16,6 @@ import {
   useMacroProgress,
   useTodayWorkout,
 } from '@/components/program-dashboard/ember/hooks'
-
-type Props = {
-  initialData: EmberDashboardData
-}
 
 const executionItems = {
   workout: { icon: '↟', title: 'Workout', href: '/dashboard/program/ember/workout' },
@@ -61,7 +60,9 @@ function ExecutionCard({
   )
 }
 
-export default function EmberDashboard({ initialData }: Props) {
+export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput }) {
+  const engine = useProgramLogicEngine(logic)
+  const initialData: EmberDashboardData = getEmberDashboardData(engine)
   const { data, setData } = useClientDashboardData(initialData)
   const [addingWater, setAddingWater] = useState(false)
   const [waterError, setWaterError] = useState('')

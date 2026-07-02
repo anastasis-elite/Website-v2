@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import type { IgniteDashboardData, IgnitePlanBlock } from '@/lib/dashboard/ignite/types'
+import { calculateExecutionScore } from '@/lib/dashboard/logic/calculateExecutionScore'
 
 function clamp(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)))
@@ -108,7 +109,7 @@ export function useDailyProgress({
   assessment: boolean
   recovery: boolean
 }) {
-  return clamp((hydration + nutrition + (workout ? 100 : 0) + plan + (assessment ? 100 : 0) + (recovery ? 100 : 0)) / 6)
+  return calculateExecutionScore({hydration,nutrition,workout,assessment,plan,recovery})
 }
 
 export function useFlameState(score: number) {
