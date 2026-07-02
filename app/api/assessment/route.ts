@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       email: client.email || client.login_email || '',
       birthdate: client.birthdate || '',
       program: client.program || '',
-      assessment_type: 'initial',
+      assessment_type: body.assessmentType === 'monthly' ? 'monthly' : 'initial',
       data: body,
       source: 'dashboard-assessment',
       submittedAt: new Date().toISOString(),
@@ -67,7 +67,7 @@ if (assessmentInsertError) {
 
     return NextResponse.json({
       success: true,
-      redirect: '/dashboard/assessment/start2',
+      redirect: payload.assessment_type === 'monthly' ? '/dashboard/assessment/monthly' : '/dashboard/assessment/start2',
     })
   } catch (error) {
     console.error('ASSESSMENT API ERROR:', error)

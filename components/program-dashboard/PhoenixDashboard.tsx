@@ -45,9 +45,11 @@ function BreathingReset() {
     <button type="button" className="phoenix-breathe-button" onClick={start}><span aria-hidden="true">≋</span><strong>Breathe</strong><small>2 min reset</small></button>
     {open && <div className="phoenix-breathe-overlay" role="dialog" aria-modal="true" aria-label="Two minute breathing reset">
       <button type="button" autoFocus className="phoenix-breathe-close" onClick={() => setOpen(false)} aria-label="Close breathing reset">×</button>
-      <div className={`phoenix-breathe-orb ${phase === 'Breathe in' ? 'inhale' : 'exhale'}`}><span>♥</span></div>
+      <div className={`phoenix-breathe-orb ${phase === 'Breathe in' ? 'inhale' : 'exhale'}`}><span aria-hidden="true">🔥</span></div>
       <h2>{seconds > 0 ? phase : 'You’re ready.'}</h2>
+      <p className="phoenix-breathe-instruction">{seconds > 0 ? 'Follow the flame. Let the pace stay easy.' : 'Carry the slower breath into your next step.'}</p>
       <p>{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</p>
+      <button type="button" className="phoenix-outline-button phoenix-breathe-complete" onClick={() => setOpen(false)}>{seconds > 0 ? 'Complete Early' : 'Complete Reset'}</button>
     </div>}
   </>
 }
@@ -116,9 +118,9 @@ export default function PhoenixDashboard({ logic, trackLabel }: { logic: Program
 
       <section className="phoenix-status-grid">
         <StatusCard icon="↟" title="Workout" value={data.workout.title} detail={data.workout.assigned ? 'Today’s movement' : 'Gentle movement only'} href="/dashboard/program/phoenix/workout" action="Start" complete={workoutComplete} />
-        <StatusCard icon="✓" title="Assessment" value="Daily Check-In" detail={assessment.completed ? 'Completed today' : 'One quick check-in'} href="/dashboard/assessment" action="Check In" complete={assessment.completed} />
-        <StatusCard icon="♨" title="Recovery Check" value={recovery.completed ? 'Logged' : 'How do you feel?'} detail="One simple body check" href="/dashboard/recovery" action="Log Now" complete={recovery.completed} />
-        <StatusCard icon="☾" title="Sleep" value={sleep.hours !== null ? `${sleep.hours} hours` : sleep.quality !== null ? `Quality ${sleep.quality}/10` : 'Not logged'} detail="Last night" href="/dashboard/recovery" action="Log Sleep" complete={sleep.logged} />
+        <StatusCard icon="✓" title="Assessment" value="Daily Check-In" detail={assessment.completed ? 'Completed today' : 'One quick check-in'} href="/dashboard/check-in" action="Check In" complete={assessment.completed} />
+        <StatusCard icon="♨" title="Recovery Check" value={recovery.completed ? 'Logged' : 'How do you feel?'} detail="One simple body check" href="/dashboard/check-in" action="Log Now" complete={recovery.completed} />
+        <StatusCard icon="☾" title="Sleep" value={sleep.hours !== null ? `${sleep.hours} hours` : sleep.quality !== null ? `Quality ${sleep.quality}/10` : 'Not logged'} detail="Last night" href="/dashboard/check-in" action="Log Sleep" complete={sleep.logged} />
       </section>
 
       <section className="phoenix-encouragement"><span aria-hidden="true">{flame.icon}</span><h2>You are not behind.<br /><strong>You are becoming.</strong></h2><Link href="/dashboard/assessment/measurements" className="phoenix-outline-button">See My Progress →</Link></section>

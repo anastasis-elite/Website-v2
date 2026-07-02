@@ -1,41 +1,7 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import AdaptiveNutritionDashboard from '@/components/AdaptiveNutritionDashboard'
+import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
+import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 
-export default function NutritionDashboardClient() {
-  const supabase = createClient()
-  const [program, setProgram] = useState('ember')
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    async function loadClient() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        setLoading(false)
-        return
-      }
-
-      const { data: client } = await supabase
-        .from('clients')
-        .select('program')
-        .eq('auth_user_id', user.id)
-        .single()
-
-      setProgram(client?.program || 'ember')
-      setLoading(false)
-    }
-
-    loadClient()
-  }, [supabase])
-
-  if (loading) {
-    return null
-  }
-
-  return <AdaptiveNutritionDashboard program={program} />
+export default function NutritionDashboardClient({logic,recipes}:{logic:ProgramLogicOutput;recipes:PhoenixRecipe[]}) {
+  return <AdaptiveNutritionDashboard program={logic.program} logic={logic} recipes={recipes} />
 }

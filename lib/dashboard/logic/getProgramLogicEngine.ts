@@ -71,7 +71,7 @@ export async function getProgramLogicEngine(args: {
   const recovery = inputs.todayRecovery || {}
   const sleepHours = nullableNumeric(recovery.sleep_hours ?? recovery.sleep_duration_hours)
   const sleepQuality = nullableNumeric(recovery.sleep_quality)
-  const assessmentComplete = Boolean(inputs.todayAssessment)
+  const assessmentComplete = Boolean(inputs.todayRecovery)
   const recoveryComplete = Boolean(inputs.todayRecovery || inputs.todaySymptoms.length)
   const assessmentTotal = 1 + inputs.monthlyAssessmentsDueCount
   const outputBase = { capacityStatus,recoveryStatus,fuelReadiness,hydration,symptoms,cycle,workoutDecision }

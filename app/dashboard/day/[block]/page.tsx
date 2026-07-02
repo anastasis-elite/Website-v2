@@ -110,7 +110,7 @@ export default async function DayBlockPage({
             </p>
 
             <Link
-              href={`/dashboard/program/${client.program || 'ignite'}/plan`}
+              href={`/dashboard/program/${client.program || 'ignite'}/workout`}
               style={styles.primaryButtonStyle}
             >
               Open Workout

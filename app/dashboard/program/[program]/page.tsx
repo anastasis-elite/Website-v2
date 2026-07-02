@@ -11,6 +11,7 @@ import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
 import { logRecommendationAudit } from '@/lib/legal/logRecommendationAudit'
 import { getProgramLogicEngine } from '@/lib/dashboard/logic/getProgramLogicEngine'
 import type { ProgramTier } from '@/lib/dashboard/logic/types'
+import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix'] as const
 
@@ -68,39 +69,8 @@ export default async function ProgramPage({
   const dailyPlan = await getDailyExecutionPlan({ supabase, client })
   const cycleStatus = getCycleStatus(client)
 
-  const monthStart = new Date()
-  monthStart.setDate(1)
-  monthStart.setHours(0, 0, 0, 0)
-
-  const monthStartDate = monthStart.toISOString().split('T')[0]
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
-  const { data: monthlyAssessment } = await supabase
-    .from('assessments')
-    .select('id')
-    .eq('client_id', client.client_id)
-    .gte('submitted_at', thirtyDaysAgo.toISOString())
-    .limit(1)
-    .maybeSingle()
-
-  const { data: monthlyMeasurements } = await supabase
-    .from('measurement_logs')
-    .select('id')
-    .eq('client_id', client.client_id)
-    .gte('log_date', monthStartDate)
-    .limit(1)
-    .maybeSingle()
-
-  const dailyStructureReviewedThisMonth = client.daily_structure_reviewed_at
-    ? new Date(client.daily_structure_reviewed_at) >= monthStart
-    : false
-
-  const monthlyAssessmentsDueCount = [
-    !monthlyAssessment,
-    !dailyStructureReviewedThisMonth,
-    !monthlyMeasurements,
-  ].filter(Boolean).length
+  const monthlyAssessment = await getMonthlyAssessmentStatus(supabase, client.client_id)
+  const monthlyAssessmentsDueCount = monthlyAssessment.due ? 1 : 0
   const { data: output } = await supabase
     .from('program_outputs')
     .select('*')

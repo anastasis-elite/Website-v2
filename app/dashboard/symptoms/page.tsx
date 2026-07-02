@@ -1,23 +1,5 @@
-import SymptomLogger from '@/components/SymptomLogger'
-import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
-import * as styles from '../../styles/globalstyles'
+import { redirect } from 'next/navigation'
 
 export default async function SymptomsPage() {
-  const { client } = await getDashboardContext()
-
-  return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Body Intelligence</p>
-
-        <h1 style={styles.heroTitleStyle}>
-          Log what your body is communicating.
-        </h1>
-
-        <p style={styles.heroTextStyle}>Tap the area, choose what you feel, and slide to describe it. Nothing else is required.</p>
-
-        <SymptomLogger clientId={client.client_id} />
-      </div>
-    </main>
-  )
+  redirect('/dashboard/check-in')
 }

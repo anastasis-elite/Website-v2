@@ -12,7 +12,7 @@ type ClientData = {
   program?: string
 }
 
-export default function StartContent({ client }: { client: ClientData }) {
+export default function StartContent({ client, assessmentType = 'initial' }: { client: ClientData; assessmentType?: 'initial' | 'monthly' }) {
   const [formData, setFormData] = useState({
     program: client.program || '',
     client_id: client.client_id || '',
@@ -56,6 +56,7 @@ export default function StartContent({ client }: { client: ClientData }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          assessmentType,
           timestamp: new Date().toISOString(),
           source: 'dashboard-assessment',
         }),
@@ -67,7 +68,7 @@ export default function StartContent({ client }: { client: ClientData }) {
         throw new Error(data.error || 'Assessment submission failed')
       }
 
-      window.location.href = '/dashboard/assessment/start2'
+      window.location.href = data.redirect || (assessmentType === 'monthly' ? '/dashboard/assessment/monthly' : '/dashboard/assessment/start2')
 
     } catch (error) {
       console.error('ASSESSMENT ERROR:', error)
@@ -79,7 +80,7 @@ export default function StartContent({ client }: { client: ClientData }) {
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Assessment</p>
+        <p style={styles.eyebrowStyle}>{assessmentType === 'monthly' ? 'Monthly Assessment' : 'Assessment'}</p>
 
         <h1 style={styles.heroTitleStyle}>
           Let’s build the starting point.

@@ -27,6 +27,7 @@ type Remaining = {
 type Props = {
   nutritionLogId: string
   initialRemaining?: Remaining | null
+  onUpdated?: () => void
 }
 
 type ServingOption = {
@@ -57,6 +58,7 @@ function roundValue(value: number | null | undefined) {
 export default function NutritionFoodLogger({
   nutritionLogId,
   initialRemaining = null,
+  onUpdated,
 }: Props) {
   const [search, setSearch] = useState('')
   const [foods, setFoods] = useState<Food[]>([])
@@ -196,6 +198,7 @@ export default function NutritionFoodLogger({
     setAdding(false)
 
     await loadTodayMeals()
+    onUpdated?.()
   }
 
   return (

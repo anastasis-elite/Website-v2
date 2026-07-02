@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import * as styles from '@/app/styles/globalstyles'
 import NutritionFoodLogger from '@/components/NutritionFoodLogger'
+import { useRouter } from 'next/navigation'
+import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
+import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
+import { useFuelReadinessEngine, useNutritionEngine, usePhoenixRecipes } from '@/components/nutrition/hooks'
 
 type NutritionLog = {
   id: string
@@ -64,10 +68,18 @@ type Remaining = {
 
 export default function AdaptiveNutritionDashboard({
   program,
+  logic,
+  recipes,
 }: {
   program: string
+  logic: ProgramLogicOutput
+  recipes: PhoenixRecipe[]
 }) {
+  const router=useRouter()
   const supabase = createClient()
+  const engineNutrition=useNutritionEngine(logic)
+  const fuel=useFuelReadinessEngine(logic)
+  const phoenixRecipes=usePhoenixRecipes(recipes)
 
   const tier = String(program || 'ember').toLowerCase()
   const isEmber = tier === 'ember'
@@ -84,6 +96,9 @@ export default function AdaptiveNutritionDashboard({
   const [fatTarget, setFatTarget] = useState('')
 
   const [message, setMessage] = useState('')
+  const [addingWater,setAddingWater]=useState(false)
+
+  async function addWater(){setAddingWater(true);const response=await fetch('/api/nutrition/add-water',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId:logic.client.id,ounces:8})});const payload=await response.json();setAddingWater(false);if(!response.ok){setMessage(payload.error||'Water could not be saved.');return}router.refresh()}
 
   useEffect(() => {
     loadToday()
@@ -215,6 +230,16 @@ export default function AdaptiveNutritionDashboard({
         {loading && <p style={styles.bodyStyle}>Loading...</p>}
         {message && <p style={styles.bodyStyle}>{message}</p>}
 
+        <section style={styles.cartBoxStyle}>
+          <p style={styles.eyebrowStyle}>Today&apos;s Fuel Readiness</p>
+          <h2 style={styles.h2Style}>{fuel.status.replaceAll('_',' ')}</h2>
+          <p style={styles.bodyStyle}>{fuel.reasoning}</p>
+          <p style={styles.bodyStyle}><strong>What to eat next:</strong> {engineNutrition.mealSuggestions[0]}</p>
+          <div style={styles.cardGridStyle}><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Before training</h3><p style={styles.compactCardTextStyle}>{fuel.preWorkoutAction}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Workout effect</h3><p style={styles.compactCardTextStyle}>{fuel.workoutAdjustment}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>After training</h3><p style={styles.compactCardTextStyle}>{fuel.postWorkoutPriority}</p></div></div>
+        </section>
+
+        <section style={styles.cartBoxStyle}><p style={styles.eyebrowStyle}>Hydration</p><h2 style={styles.h2Style}>{logic.hydration.consumed} / {logic.hydration.target} oz</h2><p style={styles.bodyStyle}>{logic.hydration.prompt} {logic.hydration.remaining} oz remain.</p><div style={{height:8,borderRadius:99,overflow:'hidden',background:'rgba(255,255,255,.08)'}}><span style={{display:'block',width:`${logic.hydration.percent}%`,height:'100%',background:'linear-gradient(90deg,#c6482d,#ee7d40)'}}/></div><button type="button" onClick={addWater} disabled={addingWater} style={{...styles.primaryButtonStyle,marginTop:18}}>{addingWater?'Adding…':'+ Add 8 oz'}</button></section>
+
         {nutritionLog && (
           <section style={styles.cartBoxStyle}>
             <h2 style={styles.h2Style}>
@@ -246,12 +271,8 @@ export default function AdaptiveNutritionDashboard({
                   <input
                     type="number"
                     value={proteinTarget}
-                    onChange={(e) => {
-                      const nextProtein = e.target.value
-                      setProteinTarget(nextProtein)
-                      setCalorieTarget(calculateCalories(nextProtein, carbTarget, fatTarget))
-                    }}
-                    style={styles.inputStyle}
+                    readOnly
+                    style={{ ...styles.inputStyle, opacity: 0.85 }}
                   />
                 ) : (
                   <p style={styles.cardTextStyle}>
@@ -268,12 +289,8 @@ export default function AdaptiveNutritionDashboard({
                   <input
                     type="number"
                     value={carbTarget}
-                    onChange={(e) => {
-                      const nextCarbs = e.target.value
-                      setCarbTarget(nextCarbs)
-                      setCalorieTarget(calculateCalories(proteinTarget, nextCarbs, fatTarget))
-                    }}
-                    style={styles.inputStyle}
+                    readOnly
+                    style={{ ...styles.inputStyle, opacity: 0.85 }}
                   />
                 ) : (
                   <p style={styles.cardTextStyle}>
@@ -290,12 +307,8 @@ export default function AdaptiveNutritionDashboard({
                   <input
                     type="number"
                     value={fatTarget}
-                    onChange={(e) => {
-                      const nextFat = e.target.value
-                      setFatTarget(nextFat)
-                      setCalorieTarget(calculateCalories(proteinTarget, carbTarget, nextFat))
-                    }}
-                    style={styles.inputStyle}
+                    readOnly
+                    style={{ ...styles.inputStyle, opacity: 0.85 }}
                   />
                 ) : (
                   <p style={styles.cardTextStyle}>
@@ -350,7 +363,7 @@ export default function AdaptiveNutritionDashboard({
           </section>
         ) : null}
 
-        {(isIgnite || isPhoenix) && nutritionLog?.id ? (
+        {nutritionLog?.id ? (
   <section style={styles.cartBoxStyle}>
     <p style={styles.eyebrowStyle}>Food Logging</p>
 
@@ -377,6 +390,7 @@ export default function AdaptiveNutritionDashboard({
         }
       : null
   }
+  onUpdated={()=>router.refresh()}
 />
   </section>
 ) : null}
@@ -386,11 +400,7 @@ export default function AdaptiveNutritionDashboard({
             <p style={styles.eyebrowStyle}>Phoenix Nutrition</p>
             <h2 style={styles.h2Style}>Simple meals that fit today.</h2>
             <p style={styles.bodyStyle}>Choose one only if deciding what to eat feels heavy.</p>
-            <div style={styles.cardGridStyle}>
-              <Recipe title="Steady breakfast bowl" body="Greek yogurt or dairy-free yogurt, berries, chia, and a protein-forward topping." />
-              <Recipe title="No-thinking lunch" body="Chicken, tofu, or tuna with microwave rice, greens, olive oil, and salt." />
-              <Recipe title="Recovery dinner" body="Salmon or beans, potatoes, and a colorful vegetable with an easy sauce." />
-            </div>
+            <div style={styles.cardGridStyle}>{phoenixRecipes.map((recipe)=><Recipe key={recipe.id} recipe={recipe}/>)}</div>
           </section>
         ) : null}
       </div>
@@ -398,6 +408,6 @@ export default function AdaptiveNutritionDashboard({
   )
 }
 
-function Recipe({ title, body }: { title: string; body: string }) {
-  return <div style={styles.cardStyle}><h3 style={styles.cardTitleStyle}>{title}</h3><p style={styles.cardTextStyle}>{body}</p></div>
+function Recipe({ recipe }: { recipe: PhoenixRecipe }) {
+  return <details style={styles.cardStyle}><summary style={{cursor:'pointer'}}><h3 style={styles.cardTitleStyle}>{recipe.title}</h3><p style={styles.cardTextStyle}>{recipe.reason}</p><small>{recipe.prepMinutes} min · {recipe.macros.protein}g protein · {recipe.macros.calories} cal</small></summary><h4>Ingredients</h4><ul>{recipe.ingredients.map((item)=><li key={item}>{item}</li>)}</ul><h4>Simple steps</h4><ol>{recipe.steps.map((step)=><li key={step}>{step}</li>)}</ol></details>
 }

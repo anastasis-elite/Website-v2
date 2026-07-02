@@ -7,7 +7,7 @@ function plan(engine: ProgramLogicOutput): IgnitePlanBlock[] {
     { id:'morning',title:'Morning',focus:'Hydrate + fuel',tasks:[
       {id:'morning-water',label:'Build hydration momentum',href:'/dashboard/nutrition',complete:engine.hydration.percent>=35,autoTracked:true},
       {id:'morning-breakfast',label:'Protein-focused first meal',href:'/dashboard/nutrition',complete:nutrition,autoTracked:true},
-      {id:'morning-assessment',label:'Morning assessment',href:'/dashboard/assessment',complete:engine.assessments.dailyCompleted,autoTracked:true},
+      {id:'morning-assessment',label:'Morning check-in',href:'/dashboard/check-in',complete:engine.assessments.dailyCompleted,autoTracked:true},
     ]},
     { id:'midday',title:'Midday',focus:'Stay on track',tasks:[
       {id:'midday-protein',label:'Protect your protein target',href:'/dashboard/nutrition',complete:engine.nutrition.protein.percent>=60,autoTracked:true},
@@ -17,7 +17,7 @@ function plan(engine: ProgramLogicOutput): IgnitePlanBlock[] {
     { id:'evening',title:'Evening',focus:'Recover + reflect',tasks:[
       {id:'evening-workout',label:engine.workout.assigned?'Complete workout':'Honor recovery day',href:'/dashboard/program/ignite/workout',complete:engine.execution.workoutComplete,autoTracked:true},
       {id:'evening-nutrition',label:'Post-workout nutrition',href:'/dashboard/nutrition',complete:nutrition,autoTracked:true},
-      {id:'evening-recovery',label:'Evening check-in',href:'/dashboard/recovery',complete:engine.recoveryCheck.completed,autoTracked:true},
+      {id:'evening-recovery',label:'Evening check-in',href:'/dashboard/check-in',complete:engine.recoveryCheck.completed,autoTracked:true},
     ]},
   ]
 }

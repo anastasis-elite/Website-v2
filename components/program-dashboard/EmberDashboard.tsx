@@ -19,8 +19,8 @@ import {
 
 const executionItems = {
   workout: { icon: '↟', title: 'Workout', href: '/dashboard/program/ember/workout' },
-  assessment: { icon: '✓', title: 'Assessment', href: '/dashboard/assessment' },
-  recovery: { icon: '♥', title: 'Recovery Check', href: '/dashboard/recovery' },
+  assessment: { icon: '✓', title: 'Daily Check-In', href: '/dashboard/check-in' },
+  recovery: { icon: '♥', title: 'Recovery Check', href: '/dashboard/check-in' },
 } as const
 
 function greeting() {

@@ -185,7 +185,7 @@ export default function SymptomQuickLog({ clientId }: Props) {
       )}
 
       <div style={{ marginTop: '22px' }}>
-        <Link href="/dashboard/symptoms" style={styles.secondaryButtonStyle}>
+        <Link href="/dashboard/check-in" style={styles.secondaryButtonStyle}>
           Log More Symptoms
         </Link>
       </div>

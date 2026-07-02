@@ -1,0 +1,5 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+const allowed=new Set(['Full rest','Gentle walk','Mobility','Breathwork','Meditation','Warm soak'])
+export async function POST(request:Request){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});const body=await request.json();if(!allowed.has(body.activityType))return NextResponse.json({error:'Invalid recovery activity.'},{status:400});const {data:client}=await supabase.from('clients').select('client_id').eq('client_id',body.clientId).eq('auth_user_id',user.id).maybeSingle();if(!client)return NextResponse.json({error:'Client not found.'},{status:404});const {error}=await supabase.from('recovery_activity_logs').insert({user_id:user.id,client_id:client.client_id,activity_type:body.activityType,duration_minutes:body.activityType==='Full rest'?null:Math.max(5,Math.min(90,Number(body.minutes)||20))});return error?NextResponse.json({error:error.message},{status:500}):NextResponse.json({success:true})}

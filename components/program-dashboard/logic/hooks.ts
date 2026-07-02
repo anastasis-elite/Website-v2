@@ -15,5 +15,7 @@ export function useSymptomEngine(data: ProgramLogicOutput) { return data.symptom
 export function usePostureCompensationEngine(data: ProgramLogicOutput) { return data.posture }
 export function useFlameExecutionEngine(data: ProgramLogicOutput) { return data.flameState }
 export function useAssessmentStatus(data: ProgramLogicOutput) { return data.assessments }
+export function useMonthlyAssessmentDue(data: ProgramLogicOutput) { return data.assessments.monthlyDueCount > 0 }
+export function useDailyCheckInStatus(data: ProgramLogicOutput) { return data.assessments.dailyCompleted }
 export function useRecoveryStatus(data: ProgramLogicOutput) { return data.recoveryCheck }
 export function useSleepStatus(data: ProgramLogicOutput) { return data.sleep }
