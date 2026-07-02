@@ -1,188 +1,124 @@
-import * as styles from '@/app/styles/globalstyles'
-import DailyInsightCard from '@/components/DailyInsightCard'
-import PhoenixExecutionFlow, { type PhoenixTask } from '@/components/program-dashboard/PhoenixExecutionFlow'
-import PhoenixDock from '@/components/program-dashboard/PhoenixDock'
+'use client'
 
-type DecisionSignals = {
-  symptomsElevated?: boolean
-  nutritionPriority?: boolean
-  photoAssessmentDue?: boolean
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
+import type { PhoenixDashboardData, PhoenixPlanBlock } from '@/lib/dashboard/phoenix/types'
+import {
+  useAssessmentStatus,
+  useFlameState,
+  useHydrationProgress,
+  useMacroProgress,
+  usePhoenixDailyProgress,
+  usePhoenixDashboardData,
+  useRecoveryStatus,
+  useSleepStatus,
+  useTodayPlanBlocks,
+} from '@/components/program-dashboard/phoenix/hooks'
+
+function BreathingReset() {
+  const [open, setOpen] = useState(false)
+  const [seconds, setSeconds] = useState(120)
+
+  useEffect(() => {
+    if (!open || seconds <= 0) return
+    const timer = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000)
+    return () => window.clearInterval(timer)
+  }, [open, seconds])
+
+  useEffect(() => {
+    if (!open) return
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [open])
+
+  function start() { setSeconds(120); setOpen(true) }
+  const phase = Math.floor((120 - seconds) / 4) % 2 === 0 ? 'Breathe in' : 'Breathe out'
+
+  return <>
+    <button type="button" className="phoenix-breathe-button" onClick={start}><span aria-hidden="true">≋</span><strong>Breathe</strong><small>2 min reset</small></button>
+    {open && <div className="phoenix-breathe-overlay" role="dialog" aria-modal="true" aria-label="Two minute breathing reset">
+      <button type="button" autoFocus className="phoenix-breathe-close" onClick={() => setOpen(false)} aria-label="Close breathing reset">×</button>
+      <div className={`phoenix-breathe-orb ${phase === 'Breathe in' ? 'inhale' : 'exhale'}`}><span>♥</span></div>
+      <h2>{seconds > 0 ? phase : 'You’re ready.'}</h2>
+      <p>{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</p>
+    </div>}
+  </>
 }
 
-type PhoenixDashboardProps = {
-  client: any
-  todaysWorkout?: any
-  adjustedExercises?: any[]
-  cycleAdjustment?: {
-    label: string
-    note: string
-    cautionActive?: boolean
-  }
-  phoenixTrackLabel?: string
-  insight?: any
-  decisionSignals?: DecisionSignals
-  dailyPlan?: any
+function PlanBlock({ block, saving, nextTaskId, onToggle, onComplete }: { block: PhoenixPlanBlock; saving: boolean; nextTaskId?: string; onToggle: (id: string) => void; onComplete: () => void }) {
+  const complete = block.tasks.every((task) => task.complete)
+  return <article className={`phoenix-plan-block phoenix-plan-${block.id}${complete ? ' is-complete' : ''}`}>
+    <div className="phoenix-plan-title"><span aria-hidden="true">{block.id === 'morning' ? '☀' : block.id === 'midday' ? '◆' : '☾'}</span><div><h3>{block.title}</h3><p>{block.focus}</p></div></div>
+    <div className="phoenix-task-list">{block.tasks.map((task) => <button type="button" key={task.id} disabled={saving} className={`${task.complete ? 'complete' : ''}${task.id === nextTaskId ? ' is-next' : ''}${task.secondary ? ' is-secondary' : ''}`} onClick={() => onToggle(task.id)}>
+      <span className="phoenix-check">{task.complete ? '✓' : ''}</span><span><strong>{task.label}</strong><small>{task.detail}</small></span>
+    </button>)}</div>
+    <button type="button" className="phoenix-block-button" disabled={saving || complete} onClick={onComplete}>{complete ? `${block.title} Complete ✓` : `Complete ${block.title}`}</button>
+  </article>
 }
 
-type Directive = 'symptoms' | 'nutrition' | 'photos' | 'training' | 'recovery'
-
-function getFirstName(name?: string | null) {
-  return name?.split(' ')[0] || 'Your'
+function StatusCard({ icon, title, value, detail, href, action, complete }: { icon: string; title: string; value: string; detail: string; href: string; action: string; complete: boolean }) {
+  return <article className={`phoenix-status-card${complete ? ' is-complete' : ''}`}><p className="phoenix-label"><span aria-hidden="true">{icon}</span> {title}</p><h3>{value}</h3><p>{detail}</p><Link href={href} className="phoenix-outline-button">{complete ? '✓ Done' : action}</Link></article>
 }
 
-function getDirective({
-  todaysWorkout,
-  signals,
-}: {
-  todaysWorkout?: any
-  signals: DecisionSignals
-}): Directive {
-  if (signals.symptomsElevated) return 'symptoms'
-  if (signals.nutritionPriority) return 'nutrition'
-  if (signals.photoAssessmentDue) return 'photos'
-  return todaysWorkout ? 'training' : 'recovery'
+export default function PhoenixDashboard({ initialData }: { initialData: PhoenixDashboardData }) {
+  const { data, setData } = usePhoenixDashboardData(initialData)
+  const [addingWater, setAddingWater] = useState(false)
+  const [waterError, setWaterError] = useState('')
+  const hydration = useHydrationProgress(data.water.consumed, data.water.target)
+  const macros = useMacroProgress(data.macros)
+  const plan = useTodayPlanBlocks(data.clientId, data.plan)
+  const assessment = useAssessmentStatus(data.assessment)
+  const recovery = useRecoveryStatus(data.recovery)
+  const sleep = useSleepStatus(data.sleep)
+  const workoutComplete = !data.workout.assigned || data.workout.completed
+  const score = usePhoenixDailyProgress({ plan: plan.percent, hydration: hydration.percent, nutrition: macros.percent, workout: workoutComplete, assessment: assessment.completed, recovery: recovery.completed, sleep: sleep.logged })
+  const flame = useFlameState(score)
+  const nextTask = plan.blocks.flatMap((block) => block.tasks).find((task) => !task.complete)
+
+  async function addWater() {
+    const before = data.water.consumed
+    const optimistic = before + data.water.increment
+    setAddingWater(true); setWaterError('')
+    setData((current) => ({ ...current, water: { ...current.water, consumed: optimistic } }))
+    try {
+      const response = await fetch('/api/nutrition/add-water', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: data.clientId, ounces: data.water.increment }) })
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error || 'Water could not be saved.')
+      setData((current) => ({ ...current, water: { ...current.water, consumed: Number(payload.nutritionLog?.water_consumed_oz ?? optimistic) } }))
+    } catch (error) {
+      setData((current) => ({ ...current, water: { ...current.water, consumed: before } }))
+      setWaterError(error instanceof Error ? error.message : 'Water could not be saved.')
+    } finally { setAddingWater(false) }
+  }
+
+  return <main className="phoenix-dashboard" style={{ '--phoenix-intensity': flame.intensity } as CSSProperties}>
+    <div className="phoenix-shell">
+      <header className="phoenix-header"><div className="phoenix-brand"><span aria-hidden="true">🔥</span><div><strong>PHOENIX</strong><small>Simplify. Support. Rise.</small></div></div><div className="phoenix-greeting"><h1>Good Morning, {data.clientName} <span aria-hidden="true">♥</span></h1><p>We&apos;ve got your day. One step at a time.</p></div><div className="phoenix-streak"><span aria-hidden="true">{flame.icon}</span><strong>{data.streak}</strong><small>Day streak</small></div></header>
+
+      <section className="phoenix-support"><span className="phoenix-support-heart" aria-hidden="true">♥</span><h2>You don&apos;t have to do everything.<br />Just focus on today.</h2><BreathingReset /></section>
+
+      <section id="phoenix-plan" className="phoenix-plan-panel"><div className="phoenix-section-heading"><p className="phoenix-label">▣ Today&apos;s Plan</p><span>{nextTask ? `Next: ${nextTask.label}` : flame.label} · {score}%</span></div><div className="phoenix-plan-grid">{plan.blocks.map((block) => <PlanBlock key={block.id} block={block} saving={plan.saving} nextTaskId={nextTask?.id} onToggle={plan.toggleTask} onComplete={() => plan.completeBlock(block.id)} />)}</div>{plan.error && <p className="phoenix-error" role="alert">{plan.error}</p>}</section>
+
+      <section className="phoenix-core-grid">
+        <article className="phoenix-card phoenix-water"><p className="phoenix-label">◆ Water</p><div className="phoenix-water-ring" style={{ '--phoenix-progress': `${hydration.percent * 3.6}deg` } as CSSProperties}><div><strong>{Math.round(data.water.consumed)}</strong><small>of {Math.round(data.water.target)} oz</small></div></div><p>{hydration.remaining} oz left</p><button type="button" className="phoenix-primary-button" disabled={addingWater} onClick={addWater}>+ Add {data.water.increment} oz</button>{waterError && <small className="phoenix-error" role="alert">{waterError}</small>}</article>
+        <article className="phoenix-card phoenix-nutrition"><p className="phoenix-label">Ψ Nutrition</p><small>You&apos;ve got this.</small><div className="phoenix-macros">{macros.rows.map((macro) => <div key={macro.key}><p><strong>{macro.label}</strong><span>{Math.round(macro.consumed)} / {Math.round(macro.target)}g</span><small>{macro.remaining}g left</small></p><div><span style={{ width: `${macro.percent}%` }} /></div></div>)}</div><Link href="/dashboard/nutrition" className="phoenix-outline-button">Ψ Log Food</Link></article>
+        <article className="phoenix-card phoenix-focus"><p className="phoenix-label">🔥 Today&apos;s Focus</p><h3>{data.focus.message}</h3><div><small>Today I will…</small><strong>{data.focus.intention}</strong></div><span aria-hidden="true">♡</span></article>
+      </section>
+
+      <section className="phoenix-status-grid">
+        <StatusCard icon="↟" title="Workout" value={data.workout.title} detail={data.workout.assigned ? 'Today’s movement' : 'Gentle movement only'} href="/dashboard/program/phoenix/workout" action="Start" complete={workoutComplete} />
+        <StatusCard icon="✓" title="Assessment" value="Daily Check-In" detail={assessment.completed ? 'Completed today' : 'One quick check-in'} href="/dashboard/assessment" action="Check In" complete={assessment.completed} />
+        <StatusCard icon="♨" title="Recovery Check" value={recovery.completed ? 'Logged' : 'How do you feel?'} detail="One simple body check" href="/dashboard/recovery" action="Log Now" complete={recovery.completed} />
+        <StatusCard icon="☾" title="Sleep" value={sleep.hours !== null ? `${sleep.hours} hours` : sleep.quality !== null ? `Quality ${sleep.quality}/10` : 'Not logged'} detail="Last night" href="/dashboard/recovery" action="Log Sleep" complete={sleep.logged} />
+      </section>
+
+      <section className="phoenix-encouragement"><span aria-hidden="true">{flame.icon}</span><h2>You are not behind.<br /><strong>You are becoming.</strong></h2><Link href="/dashboard/assessment/measurements" className="phoenix-outline-button">See My Progress →</Link></section>
+
+      <nav className="phoenix-bottom-nav" aria-label="Phoenix dashboard navigation"><Link href="/dashboard/program/phoenix" className="active"><span>⌂</span>Dashboard</Link><Link href="#phoenix-plan"><span>▣</span>Plan</Link><div className="phoenix-nav-flame" aria-label={`${score}% daily execution`}><span aria-hidden="true">{flame.icon}</span><small>{score}%</small></div><Link href="/dashboard/recovery"><span>▥</span>Support</Link><Link href="/dashboard/account"><span>•••</span>More</Link></nav>
+    </div>
+  </main>
 }
-
-export default function PhoenixDashboard({
-  client,
-  todaysWorkout,
-  adjustedExercises = [],
-  cycleAdjustment,
-  phoenixTrackLabel,
-  insight,
-  decisionSignals = {},
-  dailyPlan,
-}: PhoenixDashboardProps) {
-  const directive = getDirective({ todaysWorkout, signals: decisionSignals })
-  const copy = getDirectiveCopy(directive, Boolean(cycleAdjustment?.cautionActive))
-  const tasks = buildTasks({ client, todaysWorkout, directive })
-
-  return (
-    <main style={styles.pageStyle}>
-      <PhoenixDock />
-      <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>
-          Phoenix · {phoenixTrackLabel || 'Personalized'}
-        </p>
-
-        <h1 style={styles.heroTitleStyle}>
-          {getFirstName(client?.full_name)}, today is already simplified.
-        </h1>
-
-        <p style={styles.heroTextStyle}>
-          You do not need to manage the whole plan. Just follow the next step.
-        </p>
-
-        <section style={primaryCardStyle}>
-          <p style={styles.eyebrowStyle}>Today’s Directive</p>
-          <h2 style={styles.sectionTitleStyle}>{copy.directive}</h2>
-          <p style={styles.bodyStyle}>{copy.reassurance}</p>
-        </section>
-
-        <section style={styles.cartBoxStyle}>
-          <p style={styles.eyebrowStyle}>Why This Matters</p>
-          <h2 style={styles.sectionTitleStyle}>{copy.reasonTitle}</h2>
-          <p style={styles.bodyStyle}>
-            {cycleAdjustment?.note || copy.reason}
-          </p>
-          {cycleAdjustment?.label ? (
-            <p style={signalStyle}>{cycleAdjustment.label}</p>
-          ) : null}
-        </section>
-
-        <PhoenixExecutionFlow
-          clientId={client.client_id}
-          executionStyle={client.execution_style || 'flow'}
-          dashboardStyle={client.carousel_style || 'step'}
-          tasks={tasks}
-        />
-
-        {insight ? (
-          <section style={optionalSectionStyle}>
-            <DailyInsightCard insight={insight} compact />
-          </section>
-        ) : null}
-      </div>
-    </main>
-  )
-}
-
-function buildTasks({ client, todaysWorkout, directive }: { client: any; todaysWorkout?: any; directive: Directive }): PhoenixTask[] {
-  const program = client.program || 'phoenix'
-  const wake = cleanTime(client.wake_time, '07:00')
-  const workout = cleanTime(client.preferred_workout_time, '09:00')
-  const lunch = cleanTime(client.lunch_window_time, '12:00')
-  const dinner = cleanTime(client.dinner_window_time, '18:00')
-  const bed = cleanTime(client.bed_time, '22:00')
-  const tasks: PhoenixTask[] = []
-
-  if (directive === 'symptoms') tasks.push(task('body-signal', 'Log what your body is saying', 'This signal comes before the rest of the plan.', 'morning', wake, '/dashboard/symptoms', 'Log Body Signal'))
-  if (directive === 'nutrition') tasks.push(task('nourish-first', 'Nourish first', 'Upload or log one supportive meal. Nothing more is required yet.', 'morning', wake, '/dashboard/nutrition', 'Open Nutrition'))
-  if (directive === 'photos') tasks.push(task('requested-photos', 'Complete the requested photo check', 'This gives the system what it needs for the next adjustment.', 'morning', wake, '/dashboard/assessment/photos', 'Upload Photos'))
-
-  tasks.push(task('hydrate', 'Drink water', 'Start with one glass or bottle.', 'morning', wake, '/dashboard/nutrition', 'Log Water'))
-  tasks.push(task('first-meal', 'Eat your first supportive meal', 'Keep it simple and protein-forward.', 'morning', later(wake, 90), '/dashboard/nutrition', 'Log Food'))
-
-  if (todaysWorkout && directive !== 'symptoms' && directive !== 'nutrition' && directive !== 'photos') {
-    tasks.push(task('workout', 'Complete today’s adjusted workout', 'Do the assigned work, then stop.', blockFor(workout), workout, `/dashboard/program/${program}/workout`, 'Start Workout'))
-  }
-
-  tasks.push(task('midday-meal', 'Nourish the middle of your day', 'Log the meal and let the system handle the numbers.', 'midday', lunch, '/dashboard/nutrition', 'Log Food'))
-  tasks.push(task('evening-meal', 'Eat your recovery meal', 'Choose the easiest supportive dinner available.', 'evening', dinner, '/dashboard/nutrition', 'Log Food'))
-  tasks.push(task('recovery', todaysWorkout ? 'Close the day with recovery' : 'Recovery is the work today', 'Choose one recovery action your body can receive.', 'evening', earlier(bed, 60), '/dashboard/recovery', 'Log Recovery'))
-
-  return tasks
-}
-
-function task(id: string, title: string, detail: string, block: PhoenixTask['block'], time: string, href: string, actionLabel: string): PhoenixTask { return { id, title, detail, block, time, href, actionLabel } }
-function cleanTime(value: string | null | undefined, fallback: string) { return /^\d{2}:\d{2}/.test(value || '') ? String(value).slice(0, 5) : fallback }
-function later(time: string, minutes: number) { const [h, m] = time.split(':').map(Number); const total = Math.min(1439, h * 60 + m + minutes); return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}` }
-function earlier(time: string, minutes: number) { const [h, m] = time.split(':').map(Number); const total = Math.max(0, h * 60 + m - minutes); return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}` }
-function blockFor(time: string): PhoenixTask['block'] { const hour = Number(time.split(':')[0]); return hour < 10 ? 'morning' : hour < 15 ? 'midday' : 'evening' }
-
-function getDirectiveCopy(directive: Directive, cycleCaution: boolean) {
-  if (directive === 'symptoms') return {
-    directive: 'Log symptoms. Your body is asking for adjustment.',
-    reassurance: 'Training can wait until the system understands what changed.',
-    reasonTitle: 'Your signals take priority today.',
-    reason: 'Elevated symptoms are useful information, not something to push through.',
-    actionTitle: 'Tell the system what your body is saying.',
-  }
-  if (directive === 'nutrition') return {
-    directive: 'Nourish first. Training can wait.',
-    reassurance: 'One supportive meal is enough to move today forward.',
-    reasonTitle: 'Fuel is the limiting factor today.',
-    reason: 'The system is protecting progress by restoring support before asking for output.',
-    actionTitle: 'Upload the next thing you eat.',
-  }
-  if (directive === 'photos') return {
-    directive: 'Upload the requested photos. Nothing else is required.',
-    reassurance: 'This gives the system what it needs to adjust the plan for you.',
-    reasonTitle: 'A visual check will answer the next question.',
-    reason: 'Photos are only requested when they can meaningfully improve the next adjustment.',
-    actionTitle: 'Complete the requested photo check.',
-  }
-  if (directive === 'training') return {
-    directive: cycleCaution ? 'Train lighter today, then stop.' : 'Train today, then stop.',
-    reassurance: 'The work below is enough. You do not need to add anything.',
-    reasonTitle: cycleCaution ? 'The plan has already reduced today’s demand.' : 'Today supports focused training.',
-    reason: 'The assigned workout reflects the information the system has today.',
-    actionTitle: 'Complete the adjusted workout below.',
-  }
-  return {
-    directive: 'Recover today. Nothing extra is required.',
-    reassurance: 'Rest is part of the plan, not a gap in it.',
-    reasonTitle: 'Recovery is the productive choice today.',
-    reason: 'There is no assigned workout, so the system is protecting adaptation instead of creating more work.',
-    actionTitle: 'Choose the recommended recovery step.',
-  }
-}
-
-const primaryCardStyle = {
-  ...styles.cartBoxStyle,
-  background: 'linear-gradient(145deg, rgba(181,110,67,0.13), rgba(18,18,18,0.72))',
-  border: '1px solid rgba(181,110,67,0.25)',
-} as const
-
-const optionalSectionStyle = { ...styles.sectionStyle, marginBottom: '42px' } as const
-const signalStyle = { ...styles.eyebrowStyle, margin: '18px 0 0' } as const

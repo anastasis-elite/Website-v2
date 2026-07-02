@@ -1,43 +1,205 @@
-import * as styles from '@/app/styles/globalstyles'
-import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
+'use client'
+
+import Link from 'next/link'
+import { useState } from 'react'
+import type { CSSProperties } from 'react'
+import type { EmberDashboardData } from '@/lib/dashboard/ember/types'
+import {
+  useAssessmentStatus,
+  useClientDashboardData,
+  useDailyExecutionScore,
+  useFlameState,
+  useHydrationProgress,
+  useMacroProgress,
+  useTodayWorkout,
+} from '@/components/program-dashboard/ember/hooks'
 
 type Props = {
-  client: any; dailyPlan?: any; insight?: any; todaysWorkout?: any
-  adjustedExercises?: any[]; output?: any
-  cycleAdjustment?: { label: string; note: string }
+  initialData: EmberDashboardData
 }
 
-export default function EmberDashboard(props: Props) {
-  const sourceCards = props.client.carousel_style === 'step' && props.dailyPlan?.currentCard ? [props.dailyPlan.currentCard] : (props.dailyPlan?.cards || [])
-  const cards = sourceCards.map((card: any) => ({
-    ...card,
-    items: card.id === 'morning'
-      ? ['Complete the assigned workout only if today is a training day.', 'Use the cycle-adjusted weights, sets, and reps shown in your workout.']
-      : card.id === 'midday'
-        ? ['Protect your protein target.', 'Keep water visible and simple.']
-        : ['Recover enough to make tomorrow possible.'],
-  }))
+const executionItems = {
+  workout: { icon: '↟', title: 'Workout', href: '/dashboard/program/ember/workout' },
+  assessment: { icon: '✓', title: 'Assessment', href: '/dashboard/assessment' },
+  recovery: { icon: '♥', title: 'Recovery Check', href: '/dashboard/recovery' },
+} as const
+
+function greeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good Morning'
+  if (hour < 17) return 'Good Afternoon'
+  return 'Good Evening'
+}
+
+function ExecutionCard({
+  kind,
+  label,
+  detail,
+  complete,
+  cta,
+}: {
+  kind: keyof typeof executionItems
+  label: string
+  detail: string
+  complete: boolean
+  cta: string
+}) {
+  const item = executionItems[kind]
+  return (
+    <article className={`ember-execution-card${complete ? ' is-complete' : ''}`}>
+      <div className="ember-card-topline">
+        <span className={`ember-icon ember-icon-${kind}`} aria-hidden="true">{item.icon}</span>
+        <span className="ember-completion-mark" aria-label={complete ? 'Complete' : 'Incomplete'}>{complete ? '✓' : '○'}</span>
+      </div>
+      <p className="ember-card-kicker">{item.title}</p>
+      <h3>{label}</h3>
+      <p className="ember-card-detail">{detail}</p>
+      <Link href={item.href} className={complete ? 'ember-action ember-action-complete' : 'ember-action'}>
+        {complete ? 'Completed ✓' : cta}
+      </Link>
+    </article>
+  )
+}
+
+export default function EmberDashboard({ initialData }: Props) {
+  const { data, setData } = useClientDashboardData(initialData)
+  const [addingWater, setAddingWater] = useState(false)
+  const [waterError, setWaterError] = useState('')
+  const hydration = useHydrationProgress(data.water.consumed, data.water.target)
+  const macroProgress = useMacroProgress(data.macros)
+  const workout = useTodayWorkout(data.workout)
+  const assessment = useAssessmentStatus(data.assessment)
+  const score = useDailyExecutionScore({
+    hydrationPercent: hydration.percent,
+    macroPercent: macroProgress.percent,
+    workoutComplete: workout.executionComplete,
+    assessmentComplete: assessment.executionComplete,
+    recoveryRequired: data.recovery.required,
+    recoveryComplete: data.recovery.completed,
+  })
+  const flame = useFlameState(score)
+
+  async function addWater() {
+    setAddingWater(true)
+    setWaterError('')
+    const optimisticTotal = data.water.consumed + data.water.increment
+    setData((current) => ({
+      ...current,
+      water: { ...current.water, consumed: optimisticTotal },
+    }))
+
+    try {
+      const response = await fetch('/api/nutrition/add-water', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: data.clientId, ounces: data.water.increment }),
+      })
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error || 'Water could not be saved.')
+      setData((current) => ({
+        ...current,
+        water: {
+          ...current.water,
+          consumed: Number(payload.nutritionLog?.water_consumed_oz ?? optimisticTotal),
+        },
+      }))
+    } catch (error) {
+      setData((current) => ({
+        ...current,
+        water: { ...current.water, consumed: data.water.consumed },
+      }))
+      setWaterError(error instanceof Error ? error.message : 'Water could not be saved.')
+    } finally {
+      setAddingWater(false)
+    }
+  }
 
   return (
-    <>
-      <section style={{ marginTop: '36px', marginBottom: '42px' }} className="dashboard-section">
-        <p style={styles.eyebrowStyle}>Ember Dashboard</p>
-        <h1 style={styles.heroTitleStyle}>Workout, nourishment, water, recovery.</h1>
-        <p style={styles.heroTextStyle}>Only the essentials, adjusted to your program and current cycle phase.</p>
-      </section>
-      {cards.length ? (
-        <DashboardFlowCarousel
-          cards={cards}
-          currentCardId={props.dailyPlan?.currentCard?.id}
-          program="ember"
-          client={props.client}
-          insight={props.insight}
-          todaysWorkout={props.todaysWorkout}
-          adjustedExercises={props.adjustedExercises}
-          output={props.output}
-          cycleAdjustment={props.cycleAdjustment}
-        />
-      ) : null}
-    </>
+    <main className="ember-dashboard" style={{ '--ember-intensity': flame.intensity } as CSSProperties}>
+      <div className="ember-dashboard-shell">
+        <header className="ember-header">
+          <div className="ember-brand">
+            <span className="ember-brand-flame" aria-hidden="true">🔥</span>
+            <div><strong>EMBER</strong><small>Strong. Focused. Unstoppable.</small></div>
+          </div>
+          <div className="ember-greeting">
+            <h1>{greeting()}, {data.clientName} <span aria-hidden="true">{flame.icon}</span></h1>
+            <p>Let&apos;s execute today.</p>
+          </div>
+          <div className="ember-streak" data-flame-state={flame.key}>
+            <span aria-hidden="true">{flame.icon}</span><strong>{data.streak}</strong><small>Day streak</small>
+          </div>
+        </header>
+
+        <section className="ember-primary-grid" aria-label="Hydration and macros">
+          <article className="ember-panel ember-water-card">
+            <p className="ember-panel-label">Water</p>
+            <div className="ember-water-visuals">
+              <div className="ember-progress-ring" style={{ '--progress': `${hydration.percent * 3.6}deg` } as CSSProperties}>
+                <div><strong>{Math.round(data.water.consumed)}</strong><span>oz</span></div>
+              </div>
+              <div className="ember-water-glass" aria-label={`${hydration.percent}% hydration complete`}>
+                <div className="ember-water-fill" style={{ height: `${hydration.percent}%` }} />
+                <span aria-hidden="true">♨</span>
+              </div>
+            </div>
+            <p className="ember-remaining">{hydration.remaining} oz left of {Math.round(data.water.target)} oz</p>
+            <button type="button" className="ember-primary-button" onClick={addWater} disabled={addingWater}>
+              {addingWater ? 'Adding…' : `+ Add ${data.water.increment} oz`}
+            </button>
+            {waterError && <p className="ember-inline-error" role="alert">{waterError}</p>}
+          </article>
+
+          <article className="ember-panel ember-macro-card">
+            <div className="ember-panel-heading">
+              <p className="ember-panel-label">Macros</p>
+              <Link href="/dashboard/nutrition">Details ›</Link>
+            </div>
+            <div className="ember-macro-list">
+              {macroProgress.rows.map((macro) => (
+                <div className={`ember-macro-row ember-macro-${macro.key}`} key={macro.key}>
+                  <span className="ember-macro-letter">{macro.label[0]}</span>
+                  <div className="ember-macro-body">
+                    <div><strong>{macro.label}</strong><span>{Math.round(macro.consumed)} / {Math.round(macro.target)}{macro.unit}</span></div>
+                    <div className="ember-progress-track"><span style={{ width: `${macro.percent}%` }} /></div>
+                  </div>
+                  <div className="ember-macro-left"><strong>{macro.remaining}{macro.unit}</strong><span>left</span></div>
+                </div>
+              ))}
+            </div>
+            <Link href="/dashboard/nutrition" className="ember-secondary-action">Log Food</Link>
+          </article>
+        </section>
+
+        <section className="ember-execution-grid" aria-label="Today’s execution">
+          <ExecutionCard kind="workout" label={workout.name} detail={workout.assigned ? workout.type : 'Recovery is assigned today'} complete={workout.executionComplete} cta={workout.assigned ? 'Open Workout' : 'View Today'} />
+          <ExecutionCard kind="assessment" label={assessment.label} detail="Track and optimize" complete={assessment.executionComplete} cta="Start Assessment" />
+          <ExecutionCard kind="recovery" label={data.recovery.label} detail="Fast body check" complete={!data.recovery.required || data.recovery.completed} cta="Log Now" />
+        </section>
+
+        <section className="ember-panel ember-today-progress">
+          <div className="ember-panel-heading">
+            <p className="ember-panel-label">Today&apos;s Progress</p>
+            <span className="ember-flame-copy">{score}% · {flame.label} {flame.icon}</span>
+          </div>
+          <div className="ember-pillar-grid">
+            <div><span className="ember-pillar-ring pillar-water">◆</span><strong>Water</strong><small>{hydration.percent}%</small></div>
+            <div><span className="ember-pillar-ring pillar-food">Ψ</span><strong>Nutrition</strong><small>{macroProgress.percent}%</small></div>
+            <div><span className="ember-pillar-ring pillar-workout">↟</span><strong>Workout</strong><small>{workout.executionComplete ? 'Complete' : 'Open'}</small></div>
+            <div><span className="ember-pillar-ring pillar-assessment">✓</span><strong>Assessment</strong><small>{assessment.executionComplete ? 'Complete' : 'Open'}</small></div>
+          </div>
+        </section>
+
+        <nav className="ember-bottom-nav" aria-label="Ember dashboard navigation">
+          <Link href="/dashboard/program/ember" className="active"><span>⌂</span>Today</Link>
+          <Link href="/dashboard/program/ember/workout"><span>↟</span>Workout</Link>
+          <Link href="/dashboard/nutrition"><span>Ψ</span>Nutrition</Link>
+          <div className="ember-nav-flame" aria-label={`${score}% daily execution`}><span>{flame.icon}</span><small>{score}%</small></div>
+          <Link href="/dashboard/recovery"><span>♥</span>Recovery</Link>
+          <Link href="/dashboard/assessment"><span>✓</span>Assess</Link>
+          <Link href="/dashboard/account"><span>•••</span>More</Link>
+        </nav>
+      </div>
+    </main>
   )
 }
