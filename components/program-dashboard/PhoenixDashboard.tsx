@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { PhoenixDashboardData, PhoenixPlanBlock } from '@/lib/dashboard/phoenix/types'
@@ -16,7 +17,6 @@ import {
   useFlameState,
   useHydrationProgress,
   useMacroProgress,
-  usePhoenixDailyProgress,
   usePhoenixDashboardData,
   useRecoveryStatus,
   useSleepStatus,
@@ -39,6 +39,7 @@ function StatusCard({ icon, title, value, detail, href, action, complete, feedba
 }
 
 export default function PhoenixDashboard({ logic, trackLabel }: { logic: ProgramLogicOutput; trackLabel: string }) {
+  const router=useRouter()
   const engine = useProgramLogicEngine(logic)
   const initialData: PhoenixDashboardData = getPhoenixDashboardData(engine, trackLabel)
   const { data, setData } = usePhoenixDashboardData(initialData)
@@ -51,7 +52,7 @@ export default function PhoenixDashboard({ logic, trackLabel }: { logic: Program
   const recovery = useRecoveryStatus(data.recovery)
   const sleep = useSleepStatus(data.sleep)
   const workoutComplete = !data.workout.assigned || data.workout.completed
-  const score = usePhoenixDailyProgress({ plan: plan.percent, hydration: hydration.percent, nutrition: macros.percent, workout: workoutComplete, assessment: assessment.completed, recovery: recovery.completed, sleep: sleep.logged })
+  const score = engine.flameState.dailyScore
   const flame = useFlameState(score)
   const nextTask = plan.blocks.flatMap((block) => block.tasks).find((task) => !task.complete)
 
@@ -65,6 +66,7 @@ export default function PhoenixDashboard({ logic, trackLabel }: { logic: Program
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error || 'Water could not be saved.')
       setData((current) => ({ ...current, water: { ...current.water, consumed: Number(payload.nutritionLog?.water_consumed_oz ?? optimistic) } }))
+      router.refresh()
     } catch (error) {
       setData((current) => ({ ...current, water: { ...current.water, consumed: before } }))
       setWaterError(error instanceof Error ? error.message : 'Water could not be saved.')
