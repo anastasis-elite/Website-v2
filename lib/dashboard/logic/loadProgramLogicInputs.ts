@@ -26,7 +26,7 @@ export async function loadProgramLogicInputs({
     { data: todayAssessment }, { data: todayRecovery }, { data: recentSymptoms },
     { data: nutritionLogs }, { data: workoutHistory }, { data: strengthAssessments },
     { data: initialAssessment }, { data: measurementLogs }, { data: photoRecord },
-    { data: phoenixTasks }, { data: yesterdayTasks },
+    { data: phoenixTasks }, { data: yesterdayTasks }, { data: todayWorkoutFeedback },
   ] = await Promise.all([
     supabase.from('assessments').select('*').eq('client_id', client.client_id).gte('submitted_at', start).lte('submitted_at', end).limit(1).maybeSingle(),
     supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).limit(1).maybeSingle(),
@@ -39,6 +39,7 @@ export async function loadProgramLogicInputs({
     supabase.from('assessment_photos').select('*').eq('client_id', client.client_id).order('uploaded_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('phoenix_daily_task_completions').select('task_id').eq('user_id', user.id).eq('client_id', client.client_id).eq('log_date', today),
     supabase.from('phoenix_daily_task_completions').select('task_id').eq('user_id', user.id).eq('client_id', client.client_id).eq('log_date', yesterday),
+    supabase.from('workout_plan_feedback').select('*').eq('user_id', user.id).eq('client_id', client.client_id).eq('feedback_date', today).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
   ])
 
   const nutritionIds = (nutritionLogs || []).map((row: any) => row.id)
@@ -62,7 +63,7 @@ export async function loadProgramLogicInputs({
 
   return {
     date: today, userId: user.id, client, program, dailyPlan, cycleStatus, cycleAdjustment,
-    plannedWorkout, plannedExercises, todayAssessment, todayRecovery,
+    plannedWorkout, plannedExercises, todayWorkoutFeedback, todayAssessment, todayRecovery,
     todaySymptoms, recentSymptoms: recentSymptoms || [], nutritionLogs: nutritionLogs || [],
     nutritionTotals: nutritionTotals || [], mealEntries: mealEntries || [], workoutHistory: workoutHistory || [],
     strengthAssessments: strengthAssessments || [], initialAssessment, measurementLogs: measurementLogs || [],

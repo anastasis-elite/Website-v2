@@ -7,6 +7,8 @@ import type { PhoenixDashboardData, PhoenixPlanBlock } from '@/lib/dashboard/pho
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashboardData'
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
+import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
+import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
 import {
   useAssessmentStatus,
   useFlameState,
@@ -65,8 +67,8 @@ function PlanBlock({ block, saving, nextTaskId, onToggle, onComplete }: { block:
   </article>
 }
 
-function StatusCard({ icon, title, value, detail, href, action, complete }: { icon: string; title: string; value: string; detail: string; href: string; action: string; complete: boolean }) {
-  return <article className={`phoenix-status-card${complete ? ' is-complete' : ''}`}><p className="phoenix-label"><span aria-hidden="true">{icon}</span> {title}</p><h3>{value}</h3><p>{detail}</p><Link href={href} className="phoenix-outline-button">{complete ? '✓ Done' : action}</Link></article>
+function StatusCard({ icon, title, value, detail, href, action, complete, feedback }: { icon: string; title: string; value: string; detail: string; href: string; action: string; complete: boolean; feedback?:React.ReactNode }) {
+  return <article className={`phoenix-status-card${complete ? ' is-complete' : ''}`}><div className="phoenix-status-heading"><p className="phoenix-label"><span aria-hidden="true">{icon}</span> {title}</p>{feedback}</div><h3>{value}</h3><p>{detail}</p><Link href={href} className="phoenix-outline-button">{complete ? '✓ Done' : action}</Link></article>
 }
 
 export default function PhoenixDashboard({ logic, trackLabel }: { logic: ProgramLogicOutput; trackLabel: string }) {
@@ -117,7 +119,7 @@ export default function PhoenixDashboard({ logic, trackLabel }: { logic: Program
       </section>
 
       <section className="phoenix-status-grid">
-        <StatusCard icon="↟" title="Workout" value={data.workout.title} detail={data.workout.assigned ? 'Today’s movement' : 'Gentle movement only'} href="/dashboard/program/phoenix/workout" action="Start" complete={workoutComplete} />
+        <StatusCard icon="↟" title="Workout" value={data.workout.title} detail={data.workout.assigned ? 'Today’s movement' : 'Gentle movement only'} href="/dashboard/program/phoenix/workout" action="Start" complete={workoutComplete} feedback={<WorkoutFeedback clientId={data.clientId} program="phoenix" assignedWorkoutId={String(engine.workoutDecision.plannedWorkout?.id||engine.workout.title)} workoutTitle={engine.workout.title} workoutHref="/dashboard/program/phoenix/workout" />} />
         <StatusCard icon="✓" title="Assessment" value="Daily Check-In" detail={assessment.completed ? 'Completed today' : 'One quick check-in'} href="/dashboard/check-in" action="Check In" complete={assessment.completed} />
         <StatusCard icon="♨" title="Recovery Check" value={recovery.completed ? 'Logged' : 'How do you feel?'} detail="One simple body check" href="/dashboard/check-in" action="Log Now" complete={recovery.completed} />
         <StatusCard icon="☾" title="Sleep" value={sleep.hours !== null ? `${sleep.hours} hours` : sleep.quality !== null ? `Quality ${sleep.quality}/10` : 'Not logged'} detail="Last night" href="/dashboard/check-in" action="Log Sleep" complete={sleep.logged} />
@@ -125,7 +127,7 @@ export default function PhoenixDashboard({ logic, trackLabel }: { logic: Program
 
       <section className="phoenix-encouragement"><span aria-hidden="true">{flame.icon}</span><h2>You are not behind.<br /><strong>You are becoming.</strong></h2><Link href="/dashboard/assessment/measurements" className="phoenix-outline-button">See My Progress →</Link></section>
 
-      <nav className="phoenix-bottom-nav" aria-label="Phoenix dashboard navigation"><Link href="/dashboard/program/phoenix" className="active"><span>⌂</span>Dashboard</Link><Link href="#phoenix-plan"><span>▣</span>Plan</Link><div className="phoenix-nav-flame" aria-label={`${score}% daily execution`}><span aria-hidden="true">{flame.icon}</span><small>{score}%</small></div><Link href="/dashboard/recovery"><span>▥</span>Support</Link><Link href="/dashboard/account"><span>•••</span>More</Link></nav>
+      <nav className="phoenix-bottom-nav" aria-label="Phoenix dashboard navigation"><Link href="/dashboard/program/phoenix" className="active"><span>⌂</span>Dashboard</Link><Link href="#phoenix-plan"><span>▣</span>Plan</Link><div className="phoenix-nav-flame" aria-label={`${score}% daily execution`}><span aria-hidden="true">{flame.icon}</span><small>{score}%</small></div><Link href="/dashboard/recovery"><span>▥</span>Support</Link><DashboardMoreMenu program="phoenix" /></nav>
     </div>
   </main>
 }

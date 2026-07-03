@@ -17,6 +17,7 @@ export type ProgramLogicInputs = {
   cycleAdjustment: any
   plannedWorkout: any
   plannedExercises: any[]
+  todayWorkoutFeedback: any
   todayAssessment: any
   todayRecovery: any
   todaySymptoms: any[]

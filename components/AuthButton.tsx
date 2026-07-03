@@ -16,6 +16,10 @@ export default function AuthButton() {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
+    if (insideDashboard) {
+      setLoading(false)
+      return
+    }
     async function checkUser() {
       const supabase = createClient()
 
@@ -28,7 +32,7 @@ export default function AuthButton() {
     }
 
     checkUser()
-  }, [])
+  }, [insideDashboard])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -62,7 +66,7 @@ export default function AuthButton() {
     setOpen(false)
   }
 
-  if (loading) return null
+  if (insideDashboard || loading) return null
 
   return (
     <div className="dashboard-menu" ref={menuRef}>
