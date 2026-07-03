@@ -3,6 +3,9 @@ import type {
   HydrationResult, NutritionResult, PostureResult, ProgramLogicInputs,
   RecoveryResult, SymptomResult, WorkoutDecisionResult,
 } from './types'
+import { buildStructuralFilter } from '@/lib/workout-os/structuralFilter'
+import { runWorkoutOS } from '@/lib/workout-os/runWorkoutOS'
+import type { CapacityDose,GoalObjective,StructuralFilter } from '@/lib/workout-os/types'
 
 export function numeric(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -171,27 +174,34 @@ function nutritionProgressionSignals(inputs:ProgramLogicInputs){
   return {proteinConsistent:recent.length>=3&&proteinDays/recent.length>=.7,microsConsistent:recent.length>=3&&microDays/recent.length>=.7,strengthStable:completedWorkouts.length>=2,enduranceStable:completedWorkouts.length>=3}
 }
 
-function modifyExercises(exercises: any[], level: WorkoutDecisionResult['adjustmentLevel'], fuel:FuelReadinessResult, hydration:HydrationResult, recovery:RecoveryResult, allowLoadProgression:boolean, allowEnduranceProgression:boolean) {
-  return exercises.map((exercise) => {
+function goalObjective(inputs:ProgramLogicInputs):GoalObjective{const value=String(inputs.strengthAssessments[0]?.data?.goal||inputs.strengthAssessments[0]?.data?.weight_goal||inputs.client.goal||'general_capacity').toLowerCase().replaceAll(/[^a-z]+/g,'_');const aliases:Record<string,GoalObjective>={'fat_loss':'fat_loss','muscle_building':'muscle_gain','muscle_gain':'muscle_gain','strength':'strength','athletic_performance':'athletic_performance','glute_growth':'glute_growth','shoulder_development':'upper_body_development','upper_body_development':'upper_body_development','recomposition':'recomposition','endurance':'endurance','postpartum':'postpartum_rebuilding','postpartum_rebuilding':'postpartum_rebuilding'};return aliases[value]||'general_capacity'}
+function availableMinutes(inputs:ProgramLogicInputs){const value=String(inputs.todayRecovery?.time_available_minutes??inputs.client.time_available??inputs.client.workout_duration??45);const match=value.match(/\d+/);return Math.max(10,Math.min(90,Number(match?.[0]||45)))}
+
+function prioritizeForGoal(exercises:any[],goal:GoalObjective){const terms:Partial<Record<GoalObjective,string[]>>={glute_growth:['glute','hip','rdl','squat'],upper_body_development:['press','row','shoulder','pull'],strength:['squat','deadlift','press','row'],endurance:['carry','sled','circuit','walk']};const targets=terms[goal]||[];return [...exercises].sort((a,b)=>{const score=(item:any)=>targets.filter((term)=>`${item.exercise||''} ${item.name||''} ${(item.movement_tags||[]).join(' ')}`.toLowerCase().includes(term)).length;return score(b)-score(a)})}
+function modifyExercises(exercises: any[], level: WorkoutDecisionResult['adjustmentLevel'], fuel:FuelReadinessResult, hydration:HydrationResult, recovery:RecoveryResult, allowLoadProgression:boolean, allowEnduranceProgression:boolean, structural:StructuralFilter,dose:CapacityDose,clientCues:string[],goal:GoalObjective) {
+  const ordered=prioritizeForGoal(exercises,goal);const visible=dose.timeMinutes<=20?ordered.slice(0,2):ordered
+  return visible.map((exercise,index) => {
     const next = { ...exercise }
+    const tags=(next.movement_tags||next.tags||[]).map((tag:string)=>String(tag).toLowerCase());const shouldRegress=structural.avoidTags.some((tag)=>tags.includes(tag));const regression=Array.isArray(next.regression_options)?next.regression_options[0]:null;if(shouldRegress&&regression){next.exercise=regression;next.name=regression;next.display_name=regression}
     const plannedReps=Math.max(3,numeric(next.recommended_reps??next.cycle_adjusted_reps??next.reps??next.target_reps,8));let reps=plannedReps
     if(fuel.status==='under_fueled'||fuel.status==='depleted')reps=Math.max(3,plannedReps-2)
     else if(fuel.status==='slightly_under_fueled'||fuel.status==='unknown_needs_input')reps=Math.max(3,plannedReps-1)
     else if(hydration.status==='ready'&&fuel.status==='well_fueled'&&['normal_training_day','push_day'].includes(recovery.status))reps=plannedReps+1
-    next.recommended_reps=reps;next.reps=reps
+    reps=Math.max(3,Math.min(reps,dose.reps));next.recommended_reps=reps;next.reps=reps
     let load=numeric(next.recommended_weight||next.cycle_adjusted_weight||next.calculated_weight||next.baseline_weight)
     if(level==='level_1_slight_modify')load*=.9
     if(level==='level_2_moderate_modify'){next.sets=Math.max(1,numeric(next.sets,3)-1);load*=.8}
     if(level==='level_3_recovery_training'){next.sets=Math.min(2,numeric(next.sets,2));load*=.6}
     if(level==='level_0_full_plan'&&allowLoadProgression&&hydration.status==='ready'&&fuel.status==='well_fueled')load*=1.025
+    const plannedSets=Math.max(1,numeric(next.sets,dose.sets));next.sets=index===0?Math.min(plannedSets,dose.sets):Math.min(plannedSets,dose.keepAccessories?Math.max(2,dose.sets-1):2)
     if(level==='level_0_full_plan'&&allowEnduranceProgression)next.sets=Math.min(5,numeric(next.sets,3)+1)
-    next.recommended_weight=load||null
+    next.recommended_weight=(load*structural.modifier)||null;next.client_cues=clientCues;next.rest_seconds=dose.restSeconds;next.rpe_target=dose.rpe
     return next
   })
 }
 
-export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, recovery: RecoveryResult, fuel: FuelReadinessResult, hydration:HydrationResult, symptoms: SymptomResult, posture: PostureResult): WorkoutDecisionResult {
-  if (!inputs.plannedWorkout) return { plannedWorkout: null, assignedWorkout: {day_name:'Recovery movement',exercises:[]}, displayWorkout:true,canTrain:true,adjustmentLevel: 'level_3_recovery_training', modifications: ['Use walking, mobility, or gentle recovery movement.'], exerciseSubstitutions: posture.substitutions, intensityTarget: 'Easy conversational effort', reasonForModification: 'No performance workout is scheduled today.', preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression:false,allowEnduranceProgression:false }
+export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, capacity:CapacityResult,recovery: RecoveryResult, fuel: FuelReadinessResult, hydration:HydrationResult, symptoms: SymptomResult, posture: PostureResult): WorkoutDecisionResult {
+  if (!inputs.plannedWorkout) {const cues=['Move with intention.','Breathe before moving.','Finish feeling better than you started.'];const exercises=[{exercise:'Brisk walk',display_name:'Brisk Walk',sets:1,reps:10,recommended_reps:10,client_cues:cues},{exercise:'Mobility flow',display_name:'Mobility Flow',sets:2,reps:5,recommended_reps:5,client_cues:cues},{exercise:'Technique practice',display_name:'Strength Technique Practice',sets:2,reps:5,recommended_reps:5,client_cues:cues}];return { plannedWorkout: null, assignedWorkout: {day_name:'Strength Reset',exercises}, displayWorkout:true,canTrain:true,adjustmentLevel: 'level_3_recovery_training', modifications: ['Use a strength-supporting movement session today.'], exerciseSubstitutions: posture.substitutions, intensityTarget: 'Technique effort · 120s rest', reasonForModification: 'Today’s movement session preserves the strength habit.', preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression:false,allowEnduranceProgression:false }}
   let adjustmentLevel: WorkoutDecisionResult['adjustmentLevel'] = 'level_0_full_plan'
   const modifications: string[] = []
   if (recovery.status === 'full_recovery_or_red_flag' || symptoms.redFlag) { adjustmentLevel = 'level_4_rest_or_red_flag'; modifications.push('Stop training and follow the safety recommendation.') }
@@ -204,14 +214,17 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, recovery: R
   if (inputs.missedDayCount >= 3 && adjustmentLevel !== 'level_4_rest_or_red_flag') { adjustmentLevel = 'level_3_recovery_training'; modifications.unshift('Use a gentle reset session to rebuild momentum without pressure.') }
   modifications.push(...posture.correctivePriorities)
   const progression=nutritionProgressionSignals(inputs)
-  const allowLoadProgression=progression.proteinConsistent&&progression.strengthStable&&recovery.status!=='modify_workout'&&fuel.status==='well_fueled'
-  const allowEnduranceProgression=progression.microsConsistent&&progression.enduranceStable&&recovery.status!=='modify_workout'&&fuel.status==='well_fueled'
+  const structural=buildStructuralFilter(inputs.photoRecord,inputs.initialAssessment)
+  const os=runWorkoutOS({capacityStatus:capacity.status,recoveryStatus:recovery.status,fuelStatus:fuel.status,hydrationPercent:hydration.percent,soreness:nullableNumeric(inputs.todayRecovery?.soreness_level),symptomSeverity:symptoms.severity,timeAvailable:availableMinutes(inputs),goal:goalObjective(inputs),structural,redFlag:symptoms.redFlag||recovery.status==='full_recovery_or_red_flag',proteinConsistent:progression.proteinConsistent,microsConsistent:progression.microsConsistent,performanceStable:progression.strengthStable})
+  const levels:WorkoutDecisionResult['adjustmentLevel'][]=['level_0_full_plan','level_1_slight_modify','level_2_moderate_modify','level_3_recovery_training','level_4_rest_or_red_flag'];if(levels.indexOf(os.adjustmentLevel)>levels.indexOf(adjustmentLevel))adjustmentLevel=os.adjustmentLevel
+  const allowLoadProgression=os.allowLoadProgression
+  const allowEnduranceProgression=os.allowEnduranceProgression
   if(allowLoadProgression)modifications.push('Consistent protein and stable performance support conservative load progression.')
   if(allowEnduranceProgression)modifications.push('Consistent micronutrient logging and performance support a small endurance progression.')
-  const assignedExercises = modifyExercises(inputs.plannedExercises, adjustmentLevel, fuel, hydration, recovery, allowLoadProgression, allowEnduranceProgression)
+  const assignedExercises = modifyExercises(inputs.plannedExercises, adjustmentLevel, fuel, hydration, recovery, allowLoadProgression, allowEnduranceProgression,structural,os.dose,os.clientCues,os.goal)
   const assignedWorkout = { ...inputs.plannedWorkout, exercises: assignedExercises }
   const targets = { level_0_full_plan: 'Planned RPE; progression allowed', level_1_slight_modify: 'RPE 7–8; no grinders', level_2_moderate_modify: 'RPE 6–7; technique priority', level_3_recovery_training: 'RPE 3–5; restorative movement', level_4_rest_or_red_flag: 'No training until safely cleared' }
-  return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, displayWorkout:true,canTrain:adjustmentLevel!=='level_4_rest_or_red_flag',adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: targets[adjustmentLevel], reasonForModification: modifications[0] || 'The full planned workout matches current inputs.', preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression,allowEnduranceProgression }
+  return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, displayWorkout:true,canTrain:os.canTrain,adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: `${os.dose.rpe} · ${os.dose.restSeconds}s rest`, reasonForModification: modifications[0] || 'The workout matches today’s strength path.', preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression,allowEnduranceProgression }
 }
 
 export function runFlameExecutionEngine({ inputs, hydration, nutrition, workoutDecision, capacity }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult; capacity: CapacityResult }): FlameResult {
