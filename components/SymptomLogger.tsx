@@ -1,7 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import * as styles from '@/app/styles/globalstyles'
+import Image from 'next/image'
+import { AOSButton } from '@/components/aos-ui/AOSButton'
+import { AOSCard } from '@/components/aos-ui/AOSCard'
+import { AOSChip } from '@/components/aos-ui/AOSChip'
+import { AOSModal } from '@/components/aos-ui/AOSModal'
+import { AOSSectionHeader } from '@/components/aos-ui/AOSSectionHeader'
+import { AOSSlider } from '@/components/aos-ui/AOSSlider'
 
 type SymptomType = { id: string; name: string; category: string | null }
 type BodyRegion = { id: string; name: string }
@@ -89,67 +95,50 @@ export default function SymptomLogger({ clientId }: { clientId: string }) {
   }
 
   return (
-    <section style={bodyMapShellStyle}>
-      <p style={{ ...styles.bodyStyle, textAlign: 'center' }}>Tap where you feel it.</p>
-      <div style={bodyMapStyle}>
-        <img src="/woman-silhouette.png" alt="Body map" style={bodyImageStyle} />
+    <AOSCard className="aos-body-map-card">
+      <p className="aos-body-map-instruction">Tap where you feel it.</p>
+      <div className="aos-body-map">
+        <Image src="/woman-silhouette.png" alt="Woman body map with selectable regions" width={862} height={1825} sizes="(max-width: 800px) 88vw, 430px" className="aos-body-map__image" priority />
         {areas.map((item) => (
           <button key={item.key} type="button" aria-label={`Log a symptom in the ${item.label}`}
             onClick={() => { setArea(item.id); setSelectedSymptom(null) }}
-            style={{ ...hitAreaStyle, ...item.style }}>
-            <span style={hitLabelStyle}>{item.label}</span>
+            className={`aos-body-hotspot ${area === item.id ? 'is-selected' : ''}`}
+            style={item.style}>
+            <span>{item.label}</span>
           </button>
         ))}
       </div>
 
-      {area ? (
-        <div role="dialog" aria-modal="true" aria-label={`Log ${area} symptom`} style={overlayStyle} onClick={closePopup}>
-          <div style={modalStyle} onClick={(event) => event.stopPropagation()}>
-            <button type="button" onClick={closePopup} aria-label="Close" style={closeStyle}>×</button>
-            {!selectedSymptom ? (
+      <AOSModal open={Boolean(area)} title={`Log ${area || ''} symptom`} onClose={closePopup}>
+        {area ? (
+          !selectedSymptom ? (
               <>
-                <p style={styles.eyebrowStyle}>{area}</p>
-                <h2 style={styles.sectionTitleStyle}>What are you feeling?</h2>
-                <div style={symptomListStyle}>
+                <AOSSectionHeader eyebrow={area} title="What are you feeling?" copy="Choose the signal that best matches what you notice." />
+                <div className="aos-chip-list">
                   {filteredSymptoms.map((symptom) => (
-                    <button key={symptom.id} type="button" style={styles.secondaryButtonStyle} onClick={() => setSelectedSymptom(symptom)}>
+                    <AOSChip key={symptom.id} onClick={() => setSelectedSymptom(symptom)}>
                       {symptom.name}
-                    </button>
+                    </AOSChip>
                   ))}
                 </div>
               </>
             ) : (
               <>
-                <p style={styles.eyebrowStyle}>{selectedSymptom.name}</p>
-                <h2 style={styles.sectionTitleStyle}>How much is your body noticing?</h2>
-                <Slider label="Severity" value={severity} min={1} max={10} suffix="/10" onChange={setSeverity} />
-                <Slider label="Duration" value={durationMinutes} min={0} max={240} step={5} suffix=" minutes" onChange={setDurationMinutes} />
-                <Slider label="Started after eating" value={minutesAfterMeal} min={0} max={240} step={5} suffix=" minutes" onChange={setMinutesAfterMeal} />
-                <div style={styles.buttonRowStyle}>
-                  <button type="button" style={styles.secondaryButtonStyle} onClick={() => setSelectedSymptom(null)}>Back</button>
-                  <button type="button" style={styles.primaryButtonStyle} disabled={loading} onClick={logSymptom}>{loading ? 'Saving…' : 'Log Signal'}</button>
+                <AOSSectionHeader eyebrow={selectedSymptom.name} title="How much is your body noticing?" copy="Set the intensity and timing. No notes required." />
+                <div className="aos-modal-sliders">
+                  <AOSSlider label="Severity" value={severity} min={1} max={10} suffix="/10" onChange={setSeverity} />
+                  <AOSSlider label="Duration" value={durationMinutes} min={0} max={240} step={5} suffix=" minutes" onChange={setDurationMinutes} />
+                  <AOSSlider label="Started after eating" value={minutesAfterMeal} min={0} max={240} step={5} suffix=" minutes" onChange={setMinutesAfterMeal} />
                 </div>
-                {message ? <p style={styles.bodyStyle}>{message}</p> : null}
+                <div className="aos-button-row">
+                  <AOSButton type="button" variant="secondary" onClick={() => setSelectedSymptom(null)}>Back</AOSButton>
+                  <AOSButton type="button" disabled={loading} onClick={logSymptom}>{loading ? 'Saving…' : 'Log Signal'}</AOSButton>
+                </div>
+                {message ? <p className="aos-status" role="status">{message}</p> : null}
               </>
-            )}
-          </div>
-        </div>
-      ) : null}
-    </section>
+          )
+        ) : null}
+      </AOSModal>
+    </AOSCard>
   )
 }
-
-function Slider({ label, value, min, max, step = 1, suffix, onChange }: { label: string; value: number; min: number; max: number; step?: number; suffix: string; onChange: (value: number) => void }) {
-  return <label style={sliderWrapStyle}><span style={styles.labelStyle}>{label}: <strong>{value}{suffix}</strong></span><input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} style={{ width: '100%' }} /></label>
-}
-
-const bodyMapShellStyle = { ...styles.cartBoxStyle, padding: '20px', overflow: 'hidden' } as const
-const bodyMapStyle = { position: 'relative', width: 'min(100%, 430px)', margin: '0 auto' } as const
-const bodyImageStyle = { display: 'block', width: '100%', height: 'auto' } as const
-const hitAreaStyle = { position: 'absolute', border: '1px solid rgba(181,110,67,.22)', background: 'rgba(181,110,67,.035)', cursor: 'pointer', borderRadius: '40%', zIndex: 2 } as const
-const hitLabelStyle = { position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', color: 'rgba(245,240,232,.66)', fontSize: '9px', letterSpacing: '.08em', textTransform: 'uppercase', whiteSpace: 'nowrap' } as const
-const overlayStyle = { position: 'fixed', inset: 0, zIndex: 1200, display: 'grid', placeItems: 'center', padding: '20px', background: 'rgba(0,0,0,.72)', backdropFilter: 'blur(12px)' } as const
-const modalStyle = { position: 'relative', width: 'min(100%, 560px)', maxHeight: '86vh', overflowY: 'auto', padding: '34px', borderRadius: '32px', background: 'linear-gradient(145deg, rgba(20,18,16,.98), rgba(8,8,8,.98))', boxShadow: '0 30px 100px rgba(0,0,0,.55)' } as const
-const closeStyle = { position: 'absolute', right: '20px', top: '16px', border: 0, background: 'transparent', color: '#f5f0e8', fontSize: '2rem', cursor: 'pointer' } as const
-const symptomListStyle = { display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '22px' } as const
-const sliderWrapStyle = { display: 'grid', gap: '12px', margin: '24px 0' } as const

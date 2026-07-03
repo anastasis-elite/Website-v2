@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { AOSButton } from '@/components/aos-ui/AOSButton'
 
 type Props = {
   clientId: string
@@ -37,24 +38,12 @@ export default function PeriodStartButton({ clientId, compact = false }: Props) 
   }
 
   return (
-    <button
+    <AOSButton
       type="button"
+      variant={status === 'saved' ? 'secondary' : 'primary'}
       onClick={handleClick}
       disabled={status === 'saving' || status === 'saved'}
-      style={{
-        border: '1px solid rgba(181,110,67,0.32)',
-        color: '#f5f0e8',
-        padding: compact ? '9px 12px' : '13px 18px',
-        borderRadius: '999px',
-        fontWeight: 500,
-        background:
-          status === 'saved'
-            ? 'rgba(181,110,67,0.24)'
-            : 'rgba(181,110,67,0.12)',
-        fontSize: compact ? '0.78rem' : '0.92rem',
-        cursor: status === 'saved' ? 'default' : 'pointer',
-        fontFamily: 'inherit',
-      }}
+      className={compact ? 'aos-button--compact' : ''}
     >
       {status === 'saving'
         ? 'Saving...'
@@ -63,6 +52,6 @@ export default function PeriodStartButton({ clientId, compact = false }: Props) 
           : status === 'error'
             ? 'Try Again'
             : 'Period Started Today'}
-    </button>
+    </AOSButton>
   )
 }
