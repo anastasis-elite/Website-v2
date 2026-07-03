@@ -232,7 +232,7 @@ function CardActions({ cardId, program }: { cardId: string; program: string }) {
     ? [{ href: `/dashboard/program/${program}/workout`, label: 'Start Workout', primary: true }, { href: '/dashboard/cycle', label: 'Cycle', primary: false }]
     : cardId === 'midday'
       ? [{ href: '/dashboard/nutrition', label: 'Log Food', primary: true }, { href: '/dashboard/recovery', label: 'Movement', primary: false }]
-      : [{ href: '/dashboard/recovery', label: 'Recovery', primary: true }, { href: '/dashboard/symptoms', label: 'Body Signals', primary: false }, { href: '/dashboard/assessment/start', label: 'Check-In', primary: false }]
+      : [{ href: '/dashboard/recovery', label: 'Recovery', primary: true }, { href: '/dashboard/check-in', label: 'Body Signals', primary: false }, { href: '/dashboard/check-in', label: 'Check-In', primary: false }]
 
   return (
     <div style={{ ...styles.buttonRowStyle, marginTop: '26px' }}>

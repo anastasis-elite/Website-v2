@@ -3,10 +3,12 @@ import * as styles from '@/app/styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import RecoveryLogger from '@/components/RecoveryLogger'
+import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
 
 export default async function RecoveryPage() {
-  const { client } = await getDashboardContext()
+  const { client, supabase, user } = await getDashboardContext()
   const cycleStatus = getCycleStatus(client)
+  const logic = await getProgramLogicForClient({supabase,user,client})
 
   return (
     <main style={styles.pageStyle}>
@@ -39,20 +41,18 @@ export default async function RecoveryPage() {
         <section style={styles.cartBoxStyle}>
           <p style={styles.eyebrowStyle}>Today’s Recovery Guidance</p>
 
-          <h2 style={styles.sectionTitleStyle}>
-            Start with recovery that supports consistency.
-          </h2>
+          <h2 style={styles.sectionTitleStyle}>{logic.recoveryStatus.status.replaceAll('_',' ')}</h2>
 
           <p style={styles.bodyStyle}>
-            If your body feels steady, follow your programmed training and keep
-            recovery simple: hydration, nourishment, sleep, and mobility.
+            {logic.recoveryStatus.reasoning}
           </p>
 
           <p style={styles.bodyStyle}>
-            If your body feels heavy, sore, inflamed, depleted, or unusually
-            stressed, reduce intensity and prioritize walking, gentle mobility,
-            stretching, breathwork, or rest.
+            {logic.symptoms.recoveryRecommendation}
           </p>
+          <p style={styles.bodyStyle}><strong>Movement:</strong> {logic.workoutDecision.intensityTarget}</p>
+          <p style={styles.bodyStyle}><strong>Fuel:</strong> {logic.fuelReadiness.postWorkoutPriority}</p>
+          <p style={styles.bodyStyle}><strong>Hydration:</strong> {logic.hydration.recoverySupportNote}</p>
         </section>
 
         <RecoveryLogger clientId={client.client_id} />

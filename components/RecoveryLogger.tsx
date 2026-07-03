@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import * as styles from '@/app/styles/globalstyles'
 
 const options = ['Full rest', 'Gentle walk', 'Mobility', 'Breathwork', 'Meditation', 'Warm soak']
@@ -9,20 +9,15 @@ export default function RecoveryLogger({ clientId }: { clientId: string }) {
   const [selected, setSelected] = useState('')
   const [minutes, setMinutes] = useState(20)
   const [saved, setSaved] = useState(false)
-  const storageKey = `recovery-log:${clientId}:${new Date().toISOString().slice(0, 10)}`
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
-  useEffect(() => {
-    const existing = window.localStorage.getItem(storageKey)
-    if (!existing) return
-    const parsed = JSON.parse(existing)
-    setSelected(parsed.type || '')
-    setMinutes(parsed.minutes || 20)
-    setSaved(true)
-  }, [storageKey])
-
-  function save() {
+  async function save() {
     if (!selected) return
-    window.localStorage.setItem(storageKey, JSON.stringify({ type: selected, minutes, loggedAt: new Date().toISOString(), pendingSync: true }))
+    setSaving(true);setError('')
+    const response=await fetch('/api/recovery/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,activityType:selected,minutes})})
+    const payload=await response.json();setSaving(false)
+    if(!response.ok){setError(payload.error||'Recovery could not be saved.');return}
     setSaved(true)
   }
 
@@ -41,8 +36,9 @@ export default function RecoveryLogger({ clientId }: { clientId: string }) {
           <input type="range" min="5" max="90" step="5" value={minutes} onChange={(event) => { setMinutes(Number(event.target.value)); setSaved(false) }} />
         </label>
       ) : null}
-      <button type="button" disabled={!selected} onClick={save} style={{ ...styles.primaryButtonStyle, marginTop: '26px' }}>Save Recovery</button>
-      {saved ? <p style={{ ...styles.bodyStyle, marginTop: '18px' }}>Recovery saved for today. Database sync will activate when the recovery table is connected.</p> : null}
+      <button type="button" disabled={!selected||saving} onClick={save} style={{ ...styles.primaryButtonStyle, marginTop: '26px' }}>{saving?'Saving…':'Save Recovery'}</button>
+      {saved ? <p style={{ ...styles.bodyStyle, marginTop: '18px' }}>Recovery saved for today.</p> : null}
+      {error ? <p style={{ ...styles.bodyStyle, marginTop: '18px' }} role="alert">{error}</p> : null}
     </section>
   )
 }

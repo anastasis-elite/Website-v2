@@ -1,123 +1,16 @@
 import Link from 'next/link'
-import * as styles from '../../styles/globalstyles'
-import { getClientData } from '@/lib/supabase/getClient'
+import * as styles from '@/app/styles/globalstyles'
+import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
 
-export default async function AssessmentContent() {
-  const client = await getClientData()
-
-  if (!client) {
-    return null
-  }
-
-  const program = client.program || ''
-
-  const programLabel =
-    program === 'ember'
-      ? 'Ember'
-      : program === 'ignite'
-        ? 'Ignite'
-        : program === 'phoenix'
-          ? 'Phoenix'
-          : 'your program'
-
-  return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Assessment</p>
-
-        <h1 style={styles.heroTitleStyle}>
-          Before your program is built, we need to read your body correctly.
-        </h1>
-
-        <p style={styles.heroTextStyle}>
-          You’re beginning the assessment for {programLabel}. This step helps
-          gather the information needed to build your execution plan with more
-          precision.
-        </p>
-
-        <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>This is not a max-out test</h2>
-
-          <div style={styles.bodyStyle}>
-            <p>Do not attempt a true one-rep max during this assessment.</p>
-
-            <p>
-              The goal is not to prove how strong you are in one lift. The goal
-              is to collect clean, useful data that can be used to calculate
-              your starting structure safely and intelligently.
-            </p>
-          </div>
-        </section>
-
-        <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>Form matters more than weight</h2>
-
-          <div style={styles.bodyStyle}>
-            <p>
-              Every rep should be controlled, intentional, and performed with
-              proper alignment.
-            </p>
-
-            <p>
-              If your form breaks, the set is over. That number is more useful
-              than a heavier weight performed poorly.
-            </p>
-          </div>
-        </section>
-
-        <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>Breathing is part of the assessment</h2>
-
-          <div style={styles.bodyStyle}>
-            <p>
-              Breathe through each rep. Do not hold your breath aggressively or
-              force your body through the movement.
-            </p>
-
-            <p>
-              Your breathing, control, and ability to stay regulated matter just
-              as much as the weight you move.
-            </p>
-          </div>
-        </section>
-
-        <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>Stop if anything feels wrong</h2>
-
-          <div style={styles.bodyStyle}>
-            <p>
-              If you feel sharp pain, dizziness, unusual pressure, numbness, or
-              anything that feels unsafe, stop immediately.
-            </p>
-
-            <p>
-              This assessment is here to support your progression — not override
-              your body’s signals.
-            </p>
-          </div>
-        </section>
-
-        <section style={styles.cartBoxStyle}>
-          <h2 style={styles.sectionTitleStyle}>Assessment rules</h2>
-
-          <div style={styles.bodyStyle}>
-            <p>Move with control.</p>
-            <p>Prioritize form over load.</p>
-            <p>Breathe through the rep.</p>
-            <p>Do not attempt a true one-rep max.</p>
-            <p>Stop if your body gives you a clear warning signal.</p>
-          </div>
-        </section>
-
-        <div style={styles.buttonRowStyle}>
-          <Link
-            href="/dashboard/assessment/start"
-            style={styles.primaryButtonStyle}
-          >
-            I understand — begin assessment
-          </Link>
-        </div>
-      </div>
-    </main>
-  )
+export default async function AssessmentContent(){
+  const {supabase,client}=await getDashboardContext();const monthly=await getMonthlyAssessmentStatus(supabase,client.client_id)
+  const actions=[
+    {title:'Daily Check-In',body:'Log sleep, energy, stress, soreness, mood, hunger, cycle status, and symptoms.',href:'/dashboard/check-in',cta:'Check In Today',primary:true},
+    ...(monthly.due?[{title:'Monthly Assessment Due',body:'It has been 30 days or this is your first monthly assessment.',href:'/dashboard/assessment/monthly',cta:'Open Monthly Assessment',primary:true}]:[]),
+    {title:'Strength Assessment',body:'Update strength and training baselines when your program needs recalibration.',href:'/dashboard/assessment/start',cta:'Open Strength Assessment',primary:false},
+    {title:'Measurements',body:'Record consistent physical measurements.',href:'/dashboard/assessment/measurements',cta:'Open Measurements',primary:false},
+    {title:'Photos',body:'Upload private progress and assessment photos.',href:'/dashboard/assessment/photos',cta:'Open Photos',primary:false},
+  ]
+  return <main style={styles.pageStyle}><div style={styles.containerStyle}><p style={styles.eyebrowStyle}>Assessments</p><h1 style={styles.heroTitleStyle}>Use the right check-in for the right job.</h1><p style={styles.heroTextStyle}>Daily signals guide today. Monthly and strength assessments update the longer plan.</p><div style={styles.cardGridStyle}>{actions.map((action)=><section key={action.title} style={styles.cartBoxStyle}><h2 style={styles.sectionTitleStyle}>{action.title}</h2><p style={styles.bodyStyle}>{action.body}</p><Link href={action.href} style={action.primary?styles.primaryButtonStyle:styles.secondaryButtonStyle}>{action.cta}</Link></section>)}</div>{!monthly.due?<section style={styles.cartBoxStyle}><h2 style={styles.sectionTitleStyle}>Monthly assessment complete</h2><p style={styles.bodyStyle}>It will return when 30 days have passed.</p></section>:null}</div></main>
 }

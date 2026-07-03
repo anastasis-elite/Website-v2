@@ -8,7 +8,7 @@ import * as styles from '@/app/styles/globalstyles'
 const primaryActions = [
   { label: 'Today', href: '/dashboard/program/phoenix' },
   { label: 'Food', href: '/dashboard/nutrition' },
-  { label: 'Body', href: '/dashboard/symptoms' },
+  { label: 'Body', href: '/dashboard/check-in' },
   { label: 'Coach', href: 'mailto:Anastasis.elite@gmail.com?subject=Phoenix%20Coach%20Support' },
 ]
 

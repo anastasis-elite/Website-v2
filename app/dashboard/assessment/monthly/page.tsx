@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import * as styles from '@/app/styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
 
 export default async function MonthlyAssessmentsPage() {
   const { supabase, client } = await getDashboardContext()
@@ -13,13 +14,7 @@ export default async function MonthlyAssessmentsPage() {
 
   const monthStartDate = monthStart.toISOString().split('T')[0]
 
-  const { data: monthlyAssessment } = await supabase
-    .from('assessments')
-    .select('id')
-    .eq('client_id', client.client_id)
-    .gte('submitted_at', monthStart.toISOString())
-    .limit(1)
-    .maybeSingle()
+  const monthlyAssessment = await getMonthlyAssessmentStatus(supabase, client.client_id)
 
   const { data: monthlyMeasurements } = await supabase
     .from('measurement_logs')
@@ -29,7 +24,7 @@ export default async function MonthlyAssessmentsPage() {
     .limit(1)
     .maybeSingle()
 
-  const assessmentCompletedThisMonth = !!monthlyAssessment
+  const assessmentCompletedThisMonth = !monthlyAssessment.due
   const measurementsCompletedThisMonth = !!monthlyMeasurements
 
   const dailyStructureReviewedThisMonth =
@@ -44,7 +39,7 @@ export default async function MonthlyAssessmentsPage() {
       body:
         'Update your current body, strength, recovery, goals, and readiness so your program can stay aligned.',
       complete: assessmentCompletedThisMonth,
-      href: `/dashboard/assessment/start?program=${program}`,
+      href: `/dashboard/assessment/start?program=${program}&assessmentType=monthly`,
       buttonLabel: 'Start Check-In',
     },
     {

@@ -32,6 +32,14 @@ export async function POST(request: Request) {
     )
   }
 
+  const { data: ownedClient } = await supabase
+    .from('clients')
+    .select('client_id')
+    .eq('client_id', clientId)
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!ownedClient) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
+
   const { data: symptomType, error: symptomError } = await supabase
     .from('symptom_types')
     .select('id, name, category')
@@ -54,7 +62,9 @@ export async function POST(request: Request) {
     .eq('log_date', today)
     .maybeSingle()
 
-  const { data: recentMeals } = await supabase
+  const { data: nutritionLogs } = await supabase.from('nutrition_logs').select('id').eq('client_id', clientId).order('log_date', { ascending: false }).limit(14)
+  const nutritionLogIds = (nutritionLogs || []).map((log: any) => log.id)
+  const { data: recentMeals } = nutritionLogIds.length ? await supabase
     .from('meal_entries')
     .select(`
       id,
@@ -74,8 +84,8 @@ export async function POST(request: Request) {
         additive_risk
       )
     `)
-    .order('created_at', { ascending: false })
-    .limit(10)
+    .in('nutrition_log_id', nutritionLogIds)
+    .order('created_at', { ascending: false }).limit(10) : { data: [] }
 
   const recentFoodTags =
     recentMeals?.flatMap((meal: any) => {
