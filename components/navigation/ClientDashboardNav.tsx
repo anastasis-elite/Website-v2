@@ -14,8 +14,8 @@ export default function ClientDashboardNav({program}:{program:'ember'|'ignite'|'
   return <nav className="client-dashboard-nav" aria-label="Client dashboard navigation">
     <Link href={dashboard} className={active(dashboard)?'active':''}><span aria-hidden="true">⌂</span><small>Dashboard</small></Link>
     <Link href="/dashboard/nutrition" className={active('/dashboard/nutrition')?'active':''}><span aria-hidden="true">⌁</span><small>Nutrition</small></Link>
-    <Link href={dashboard} className="client-dashboard-nav__flame" aria-label="Return to today"><span aria-hidden="true">🔥</span><small>Today</small></Link>
-    <Link href="/dashboard/recovery" className={active('/dashboard/recovery')||active('/dashboard/sleep')||active('/dashboard/check-in')?'active':''}><span aria-hidden="true">♡</span><small>Recovery</small></Link>
+    <Link href={`${dashboard}/workout`} className={`client-dashboard-nav__flame ${active(`${dashboard}/workout`)?'active':''}`} aria-label="Open today’s workout"><span aria-hidden="true">🔥</span><small>Workout</small></Link>
+    <Link href="/dashboard/recovery" className={active('/dashboard/recovery')||active('/dashboard/sleep')||active('/dashboard/check-in')||active('/dashboard/meditation')?'active':''}><span aria-hidden="true">♡</span><small>Recovery</small></Link>
     <DashboardMoreMenu program={program}/>
   </nav>
 }

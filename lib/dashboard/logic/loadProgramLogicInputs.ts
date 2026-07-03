@@ -1,4 +1,5 @@
 import type { ProgramLogicInputs, ProgramTier } from './types'
+import { getSleepStatusForDashboard } from '@/lib/sleep/getSleepStatusForDashboard'
 
 function day(offset = 0) {
   const date = new Date()
@@ -24,7 +25,7 @@ export async function loadProgramLogicInputs({
   const yesterdayStart = `${yesterday}T00:00:00.000Z`, yesterdayEnd = `${yesterday}T23:59:59.999Z`
 
   const [
-    { data: todayAssessment }, { data: todayRecovery }, { data: recentSymptoms },
+    { data: todayAssessment }, { data: rawTodayRecovery }, { data: recentSymptoms },
     { data: nutritionLogs }, { data: workoutHistory }, { data: strengthAssessments },
     { data: initialAssessment }, { data: measurementLogs }, { data: photoRecord },
     { data: phoenixTasks }, { data: recentTasks }, { data: todayWorkoutFeedback },
@@ -48,6 +49,8 @@ export async function loadProgramLogicInputs({
   ])
 
   const nutritionIds = (nutritionLogs || []).map((row: any) => row.id)
+  const sleepStatus=await getSleepStatusForDashboard(supabase,client.client_id,today)
+  const todayRecovery=sleepStatus.logged?{...(rawTodayRecovery||{}),sleep_hours:sleepStatus.durationHours,sleep_quality:sleepStatus.quality,sleep_bedtime:sleepStatus.bedtime,sleep_wake_time:sleepStatus.wakeTime}:rawTodayRecovery
   const { data: nutritionTotals } = nutritionIds.length
     ? await supabase.from('nutrition_log_totals_by_block').select('*').in('nutrition_log_id', nutritionIds)
     : { data: [] }
