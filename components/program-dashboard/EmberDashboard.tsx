@@ -7,6 +7,8 @@ import type { EmberDashboardData } from '@/lib/dashboard/ember/types'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import { getEmberDashboardData } from '@/lib/dashboard/ember/getEmberDashboardData'
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
+import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
+import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
 import {
   useAssessmentStatus,
   useClientDashboardData,
@@ -36,12 +38,14 @@ function ExecutionCard({
   detail,
   complete,
   cta,
+  feedback,
 }: {
   kind: keyof typeof executionItems
   label: string
   detail: string
   complete: boolean
   cta: string
+  feedback?: React.ReactNode
 }) {
   const item = executionItems[kind]
   return (
@@ -53,6 +57,7 @@ function ExecutionCard({
       <p className="ember-card-kicker">{item.title}</p>
       <h3>{label}</h3>
       <p className="ember-card-detail">{detail}</p>
+      {feedback}
       <Link href={item.href} className={complete ? 'ember-action ember-action-complete' : 'ember-action'}>
         {complete ? 'Completed ✓' : cta}
       </Link>
@@ -173,7 +178,7 @@ export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput })
         </section>
 
         <section className="ember-execution-grid" aria-label="Today’s execution">
-          <ExecutionCard kind="workout" label={workout.name} detail={workout.assigned ? workout.type : 'Recovery is assigned today'} complete={workout.executionComplete} cta={workout.assigned ? 'Open Workout' : 'View Today'} />
+          <ExecutionCard kind="workout" label={workout.name} detail={workout.assigned ? workout.type : 'Recovery is assigned today'} complete={workout.executionComplete} cta={workout.assigned ? 'Open Workout' : 'View Today'} feedback={<WorkoutFeedback clientId={data.clientId} program="ember" assignedWorkoutId={String(engine.workoutDecision.plannedWorkout?.id||engine.workout.title)} workoutTitle={engine.workout.title} workoutHref="/dashboard/program/ember/workout" />} />
           <ExecutionCard kind="assessment" label={assessment.label} detail="Track and optimize" complete={assessment.executionComplete} cta="Start Assessment" />
           <ExecutionCard kind="recovery" label={data.recovery.label} detail="Fast body check" complete={!data.recovery.required || data.recovery.completed} cta="Log Now" />
         </section>
@@ -198,7 +203,7 @@ export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput })
           <div className="ember-nav-flame" aria-label={`${score}% daily execution`}><span>{flame.icon}</span><small>{score}%</small></div>
           <Link href="/dashboard/recovery"><span>♥</span>Recovery</Link>
           <Link href="/dashboard/assessment"><span>✓</span>Assess</Link>
-          <Link href="/dashboard/account"><span>•••</span>More</Link>
+          <DashboardMoreMenu program="ember" />
         </nav>
       </div>
     </main>

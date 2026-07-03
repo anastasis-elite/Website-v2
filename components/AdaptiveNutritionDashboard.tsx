@@ -396,7 +396,7 @@ export default function AdaptiveNutritionDashboard({
 ) : null}
 
         {isPhoenix ? (
-          <section style={styles.cartBoxStyle}>
+          <section id="phoenix-recipes" style={styles.cartBoxStyle}>
             <p style={styles.eyebrowStyle}>Phoenix Nutrition</p>
             <h2 style={styles.h2Style}>Simple meals that fit today.</h2>
             <p style={styles.bodyStyle}>Choose one only if deciding what to eat feels heavy.</p>

@@ -2,8 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import * as styles from '@/app/styles/globalstyles'
 import SymptomLogger from '@/components/SymptomLogger'
+import { AOSButton } from '@/components/aos-ui/AOSButton'
+import { AOSCard } from '@/components/aos-ui/AOSCard'
+import { AOSInput } from '@/components/aos-ui/AOSInput'
+import { AOSSectionHeader } from '@/components/aos-ui/AOSSectionHeader'
+import { AOSSlider } from '@/components/aos-ui/AOSSlider'
+import { AOSToggle } from '@/components/aos-ui/AOSToggle'
 
 type Values = { sleepHours:number; sleepQuality:number; stress:number; soreness:number; energy:number; mood:number; hunger:number; notes:string; periodStarted:boolean }
 
@@ -12,7 +17,7 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
   const [values,setValues] = useState<Values>({sleepHours:initial.sleepHours ?? 7,sleepQuality:initial.sleepQuality ?? 5,stress:initial.stress ?? 5,soreness:initial.soreness ?? 5,energy:initial.energy ?? 5,mood:initial.mood ?? 5,hunger:initial.hunger ?? 5,notes:initial.notes ?? '',periodStarted:false})
   const [saving,setSaving] = useState(false)
   const [message,setMessage] = useState('')
-  const slider = (key:keyof Values,label:string) => <label style={styles.fieldWrap}><span style={styles.labelStyle}>{label}: <strong>{String(values[key])}{key==='sleepHours'?' hours':'/10'}</strong></span><input type="range" min={key==='sleepHours'?0:1} max={key==='sleepHours'?12:10} step={key==='sleepHours'?0.5:1} value={Number(values[key])} onChange={(event)=>setValues((current)=>({...current,[key]:Number(event.target.value)}))}/></label>
+  const slider = (key:keyof Values,label:string) => <AOSSlider key={key} label={label} value={Number(values[key])} min={key==='sleepHours'?0:1} max={key==='sleepHours'?12:10} step={key==='sleepHours'?0.5:1} suffix={key==='sleepHours'?' hours':'/10'} onChange={(value)=>setValues((current)=>({...current,[key]:value}))}/>
 
   async function save(event:React.FormEvent) {
     event.preventDefault(); setSaving(true); setMessage('')
@@ -29,5 +34,15 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
     }
   }
 
-  return <div className="daily-check-in-layout"><form onSubmit={save} style={styles.cartBoxStyle}><p style={styles.eyebrowStyle}>Today&apos;s signals</p><h2 style={styles.sectionTitleStyle}>How are you, actually?</h2><div style={styles.gridTwoCol}>{slider('sleepHours','Sleep duration')}{slider('sleepQuality','Sleep quality')}{slider('energy','Energy')}{slider('stress','Stress')}{slider('soreness','Soreness')}{slider('mood','Mood')}{slider('hunger','Hunger')}</div>{cycleTrackingEnabled?<label style={{...styles.labelStyle,display:'flex',gap:12,alignItems:'center',marginTop:20}}><input type="checkbox" checked={values.periodStarted} onChange={(event)=>setValues((current)=>({...current,periodStarted:event.target.checked}))}/> My period started today</label>:null}<label style={{...styles.labelStyle,display:'grid',gap:10,marginTop:20}}>Optional notes<textarea style={styles.textareaStyle} value={values.notes} onChange={(event)=>setValues((current)=>({...current,notes:event.target.value}))}/></label><button type="submit" disabled={saving} style={{...styles.primaryButtonStyle,marginTop:22}}>{saving?'Saving…':'Save Daily Check-In'}</button>{message?<p style={styles.bodyStyle} role="status">{message}</p>:null}</form><div><p style={styles.eyebrowStyle}>Symptoms</p><h2 style={styles.sectionTitleStyle}>Add any body signal.</h2><p style={styles.bodyStyle}>Optional. Tap the body only when something needs to be logged.</p><SymptomLogger clientId={clientId}/></div></div>
+  return <div className="daily-check-in-layout">
+    <AOSCard as="form" className="aos-check-in-form" onSubmit={save}>
+      <AOSSectionHeader eyebrow="Today's signals" title="How are you, actually?" copy="Move each marker to match how your body feels right now." />
+      <div className="aos-slider-grid">{slider('sleepHours','Sleep duration')}{slider('sleepQuality','Sleep quality')}{slider('energy','Energy')}{slider('stress','Stress')}{slider('soreness','Soreness')}{slider('mood','Mood')}{slider('hunger','Hunger')}</div>
+      {cycleTrackingEnabled ? <div className="aos-period-panel"><span className="aos-period-panel__icon" aria-hidden="true">◒</span><AOSToggle label="My period started today" description="This updates your cycle day and today's recommendations." checked={values.periodStarted} onChange={(periodStarted)=>setValues((current)=>({...current,periodStarted}))}/></div> : null}
+      <AOSInput multiline label="Optional notes" placeholder="Anything else your body is telling you?" rows={4} value={values.notes} onChange={(event)=>setValues((current)=>({...current,notes:event.target.value}))}/>
+      <AOSButton type="submit" disabled={saving}>{saving?'Saving…':'Save Daily Check-In'}</AOSButton>
+      {message?<p className="aos-status" role="status">{message}</p>:null}
+    </AOSCard>
+    <div className="aos-symptom-column"><AOSSectionHeader eyebrow="Symptoms" title="Add any body signal." copy="Optional. Tap the area where you feel something."/><SymptomLogger clientId={clientId}/></div>
+  </div>
 }

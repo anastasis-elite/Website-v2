@@ -65,6 +65,7 @@ export function runCapacityEngine(inputs: ProgramLogicInputs, symptoms: SymptomR
   if (symptoms.severity === 'moderate') { score -= 15; drivers.push('symptoms') }
   if (symptoms.severity === 'severe') { score -= 35; drivers.push('severe symptoms') }
   if (!inputs.yesterday.workoutComplete && !inputs.yesterday.nutritionLogged) { score -= 8; drivers.push('yesterday was incomplete') }
+  if (['too_much_today','not_feeling_workout'].includes(inputs.todayWorkoutFeedback?.response)) { score -= 8; drivers.push('workout feedback') }
   const recentCompleted = inputs.workoutHistory.filter((row) => row.completed).length
   if (recentCompleted >= 4 && (signals.energy || 0) >= 7) score += 10
   score = clamp(score)
@@ -182,6 +183,8 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, recovery: R
   else if (fuel.status === 'under_fueled' || recovery.status === 'modify_workout' || symptoms.severity === 'moderate') { adjustmentLevel = 'level_2_moderate_modify'; modifications.push('Reduce one set per exercise.', 'Keep technique crisp and remove finishers.') }
   else if (fuel.status === 'slightly_under_fueled' || fuel.status === 'unknown_needs_input' || inputs.cycleAdjustment?.cautionActive) { adjustmentLevel = 'level_1_slight_modify'; modifications.push('Avoid max-effort sets and keep two repetitions in reserve.') }
   else if (recovery.status === 'push_day' && fuel.status === 'well_fueled') modifications.push('Progress only if form and speed remain strong.')
+  if (['too_much_today','not_feeling_workout'].includes(inputs.todayWorkoutFeedback?.response) && ['level_0_full_plan','level_1_slight_modify'].includes(adjustmentLevel)) { adjustmentLevel = 'level_2_moderate_modify'; modifications.unshift('Use the lighter version requested in today’s feedback.') }
+  if (inputs.todayWorkoutFeedback?.response === 'too_easy' && adjustmentLevel === 'level_0_full_plan') modifications.unshift('Feedback noted; progress only with clean form and no grinding.')
   modifications.push(...posture.correctivePriorities)
   const assignedExercises = modifyExercises(inputs.plannedExercises, adjustmentLevel)
   const assignedWorkout = adjustmentLevel === 'level_4_rest_or_red_flag' ? null : { ...inputs.plannedWorkout, exercises: assignedExercises }
@@ -191,7 +194,7 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, recovery: R
 
 export function runFlameExecutionEngine({ inputs, hydration, nutrition, workoutDecision }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult }): FlameResult {
   const workoutComplete = !inputs.plannedWorkout || Boolean(inputs.dailyPlan?.workoutCompleted)
-  const assessmentComplete = Boolean(inputs.todayAssessment)
+  const assessmentComplete = Boolean(inputs.todayRecovery)
   const recoveryComplete = Boolean(inputs.todayRecovery || inputs.todaySymptoms.length)
   const phoenixTaskPercent = Math.min(100, (inputs.phoenixTaskIds.length / 9) * 100)
   const score = calculateExecutionScore({
