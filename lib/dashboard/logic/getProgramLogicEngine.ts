@@ -67,12 +67,12 @@ export async function getProgramLogicEngine(args: {
   const cycle = runCycleEngine(inputs)
   const posture = runPostureCompensationEngine(inputs)
   const workoutDecision = runWorkoutDecisionEngine(inputs,recoveryStatus,fuelReadiness,symptoms,posture)
-  const flameState = runFlameExecutionEngine({ inputs,hydration,nutrition,workoutDecision })
+  const flameState = runFlameExecutionEngine({ inputs,hydration,nutrition,workoutDecision,capacity:capacityStatus })
   const recovery = inputs.todayRecovery || {}
   const sleepHours = nullableNumeric(recovery.sleep_hours ?? recovery.sleep_duration_hours)
   const sleepQuality = nullableNumeric(recovery.sleep_quality)
-  const assessmentComplete = Boolean(inputs.todayRecovery)
-  const recoveryComplete = Boolean(inputs.todayRecovery || inputs.todaySymptoms.length)
+  const assessmentComplete = Boolean(inputs.todayRecovery?.check_in_completed_at)
+  const recoveryComplete = inputs.todayRecoveryActivities.length>0
   const assessmentTotal = 1 + inputs.monthlyAssessmentsDueCount
   const outputBase = { capacityStatus,recoveryStatus,fuelReadiness,hydration,symptoms,cycle,workoutDecision }
   const output: ProgramLogicOutput = {
@@ -96,5 +96,8 @@ export async function getProgramLogicEngine(args: {
   }
   const { error } = await args.supabase.from('dashboard_daily_recommendations').upsert({ user_id:inputs.userId,client_id:inputs.client.client_id,log_date:inputs.date,program:inputs.program,engine_version:DASHBOARD_ENGINE_VERSION,input_snapshot:{capacity:capacityStatus,recovery:recoveryStatus,fuel:fuelReadiness.status,symptoms:symptoms.severity,cycle:cycle.phase},recommendation_output:persistedOutput,updated_at:new Date().toISOString() },{onConflict:'user_id,client_id,log_date'})
   if (error && !String(error.message).includes('dashboard_daily_recommendations')) console.error('Dashboard recommendation persistence failed:',error.message)
+  const requirements=flameState.requirements
+  const {error:executionError}=await args.supabase.from('daily_execution_status').upsert({user_id:inputs.userId,client_id:inputs.client.client_id,log_date:inputs.date,program:inputs.program,capacity_status:capacityStatus.status,missed_day_count:requirements.missedDayCount,required_items:requirements.requiredItems,completed_items:requirements.completedItems,completion_score:requirements.completionScore,streak_eligible:requirements.streakEligible,updated_at:new Date().toISOString()},{onConflict:'user_id,client_id,log_date'})
+  if(executionError&&!String(executionError.message).includes('daily_execution_status'))console.error('Daily execution persistence failed:',executionError.message)
   return output
 }

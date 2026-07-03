@@ -3,7 +3,6 @@ import type {
   HydrationResult, NutritionResult, PostureResult, ProgramLogicInputs,
   RecoveryResult, SymptomResult, WorkoutDecisionResult,
 } from './types'
-import { calculateExecutionScore } from './calculateExecutionScore'
 
 export function numeric(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -185,6 +184,7 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, recovery: R
   else if (recovery.status === 'push_day' && fuel.status === 'well_fueled') modifications.push('Progress only if form and speed remain strong.')
   if (['too_much_today','not_feeling_workout'].includes(inputs.todayWorkoutFeedback?.response) && ['level_0_full_plan','level_1_slight_modify'].includes(adjustmentLevel)) { adjustmentLevel = 'level_2_moderate_modify'; modifications.unshift('Use the lighter version requested in today’s feedback.') }
   if (inputs.todayWorkoutFeedback?.response === 'too_easy' && adjustmentLevel === 'level_0_full_plan') modifications.unshift('Feedback noted; progress only with clean form and no grinding.')
+  if (inputs.missedDayCount >= 3 && adjustmentLevel !== 'level_4_rest_or_red_flag') { adjustmentLevel = 'level_3_recovery_training'; modifications.unshift('Use a gentle reset session to rebuild momentum without pressure.') }
   modifications.push(...posture.correctivePriorities)
   const assignedExercises = modifyExercises(inputs.plannedExercises, adjustmentLevel)
   const assignedWorkout = adjustmentLevel === 'level_4_rest_or_red_flag' ? null : { ...inputs.plannedWorkout, exercises: assignedExercises }
@@ -192,25 +192,26 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, recovery: R
   return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: targets[adjustmentLevel], reasonForModification: modifications[0] || 'The full planned workout matches current inputs.', preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority }
 }
 
-export function runFlameExecutionEngine({ inputs, hydration, nutrition, workoutDecision }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult }): FlameResult {
+export function runFlameExecutionEngine({ inputs, hydration, nutrition, workoutDecision, capacity }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult; capacity: CapacityResult }): FlameResult {
   const workoutComplete = !inputs.plannedWorkout || Boolean(inputs.dailyPlan?.workoutCompleted)
-  const assessmentComplete = Boolean(inputs.todayRecovery)
-  const recoveryComplete = Boolean(inputs.todayRecovery || inputs.todaySymptoms.length)
+  const assessmentComplete = Boolean(inputs.todayRecovery?.check_in_completed_at)
+  const recoveryComplete = inputs.todayRecoveryActivities.length>0
   const phoenixTaskPercent = Math.min(100, (inputs.phoenixTaskIds.length / 9) * 100)
-  const score = calculateExecutionScore({
-    hydration:hydration.percent,
-    nutrition:Math.min(100,(nutrition.protein.percent+nutrition.calories.percent)/2),
-    workout:workoutComplete,
-    assessment:assessmentComplete,
-    plan:inputs.program==='phoenix'?phoenixTaskPercent:null,
-    recovery:recoveryComplete,
-    sleep:inputs.todayRecovery?.sleep_hours||inputs.todayRecovery?.sleep_quality ? true : null,
-  })
+  const sleepComplete=Boolean(inputs.todayRecovery?.sleep_hours||inputs.todayRecovery?.sleep_quality)
+  const activityComplete=inputs.todayRecoveryActivities.length>0
+  const requiredItems={nutrition:inputs.missedDayCount<1,hydration:inputs.missedDayCount<2,workoutOrMovement:true,dailyCheckIn:true,recovery:inputs.program==='phoenix'||capacity.status==='low_capacity',sleep:false,customTasks:inputs.program==='phoenix'&&inputs.missedDayCount<3}
+  const completedItems={nutrition:nutrition.dataStatus==='known',hydration:hydration.percent>=80,workoutOrMovement:workoutComplete||activityComplete,dailyCheckIn:assessmentComplete,recovery:recoveryComplete,sleep:sleepComplete,customTasks:phoenixTaskPercent>=80}
+  const required=(Object.keys(requiredItems) as Array<keyof typeof requiredItems>).filter((key)=>requiredItems[key])
+  const score=required.length?Math.round(required.filter((key)=>completedItems[key]).length/required.length*100):100
   const state = score === 0 ? 'spark' : score < 25 ? 'ember' : score < 50 ? 'small_flame' : score < 75 ? 'steady_flame' : score < 100 ? 'strong_flame' : 'roaring_flame'
   const messages = inputs.program === 'phoenix'
     ? ['Start small', 'Start small', 'You’re moving', 'Momentum is building', 'Almost complete', 'You did enough today']
     : ['Start the first action', 'The work has started', 'Keep executing', 'Momentum is visible', 'Close the remaining gaps', 'Day complete']
   const index = ['spark','ember','small_flame','steady_flame','strong_flame','roaring_flame'].indexOf(state)
-  const existingStreak = Math.max(0, Math.round(numeric(inputs.client.current_streak ?? inputs.client.execution_streak ?? inputs.client.streak)))
-  return { dailyScore: score, state, visualIntensity: Math.max(.2, score / 100), streak: existingStreak, streakEligible: score === 100, completionMessage: messages[index] }
+  const streakEligible=score===100
+  let priorStreak=0
+  for(const row of inputs.executionHistory){if(!row.streak_eligible)break;priorStreak++}
+  const existingStreak=priorStreak+(streakEligible?1:0)
+  const resetMessage=inputs.missedDayCount>=4?'You’re not behind. Let’s restart with one simple step today. If you need support, contact your coach.':inputs.missedDayCount>=1?'Today’s streak uses a smaller, right-sized plan.':null
+  return { dailyScore: score, state, visualIntensity: Math.max(.2, score / 100), streak: existingStreak, streakEligible, completionMessage: messages[index], requirements:{date:inputs.date,programTier:inputs.program,capacityStatus:capacity.status,missedDayCount:inputs.missedDayCount,requiredItems,completedItems,completionScore:score,streakEligible,resetMessage} }
 }

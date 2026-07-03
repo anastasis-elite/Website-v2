@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { PhoenixDashboardData, PhoenixPlanBlock } from '@/lib/dashboard/phoenix/types'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
@@ -9,6 +9,8 @@ import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashb
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
 import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
+import BreathingReset from '@/components/recovery/BreathingReset'
+import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
 import {
   useAssessmentStatus,
   useFlameState,
@@ -20,41 +22,6 @@ import {
   useSleepStatus,
   useTodayPlanBlocks,
 } from '@/components/program-dashboard/phoenix/hooks'
-
-function BreathingReset() {
-  const [open, setOpen] = useState(false)
-  const [seconds, setSeconds] = useState(120)
-
-  useEffect(() => {
-    if (!open || seconds <= 0) return
-    const timer = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000)
-    return () => window.clearInterval(timer)
-  }, [open, seconds])
-
-  useEffect(() => {
-    if (!open) return
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [open])
-
-  function start() { setSeconds(120); setOpen(true) }
-  const phase = Math.floor((120 - seconds) / 4) % 2 === 0 ? 'Breathe in' : 'Breathe out'
-
-  return <>
-    <button type="button" className="phoenix-breathe-button" onClick={start}><span aria-hidden="true">≋</span><strong>Breathe</strong><small>2 min reset</small></button>
-    {open && <div className="phoenix-breathe-overlay" role="dialog" aria-modal="true" aria-label="Two minute breathing reset">
-      <button type="button" autoFocus className="phoenix-breathe-close" onClick={() => setOpen(false)} aria-label="Close breathing reset">×</button>
-      <div className={`phoenix-breathe-orb ${phase === 'Breathe in' ? 'inhale' : 'exhale'}`}><span aria-hidden="true">🔥</span></div>
-      <h2>{seconds > 0 ? phase : 'You’re ready.'}</h2>
-      <p className="phoenix-breathe-instruction">{seconds > 0 ? 'Follow the flame. Let the pace stay easy.' : 'Carry the slower breath into your next step.'}</p>
-      <p>{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</p>
-      <button type="button" className="phoenix-outline-button phoenix-breathe-complete" onClick={() => setOpen(false)}>{seconds > 0 ? 'Complete Early' : 'Complete Reset'}</button>
-    </div>}
-  </>
-}
 
 function PlanBlock({ block, saving, nextTaskId, onToggle, onComplete }: { block: PhoenixPlanBlock; saving: boolean; nextTaskId?: string; onToggle: (id: string) => void; onComplete: () => void }) {
   const complete = block.tasks.every((task) => task.complete)
@@ -108,7 +75,7 @@ export default function PhoenixDashboard({ logic, trackLabel }: { logic: Program
     <div className="phoenix-shell">
       <header className="phoenix-header"><div className="phoenix-brand"><span aria-hidden="true">🔥</span><div><strong>PHOENIX</strong><small>Simplify. Support. Rise.</small></div></div><div className="phoenix-greeting"><h1>Good Morning, {data.clientName} <span aria-hidden="true">♥</span></h1><p>We&apos;ve got your day. One step at a time.</p></div><div className="phoenix-streak"><span aria-hidden="true">{flame.icon}</span><strong>{data.streak}</strong><small>Day streak</small></div></header>
 
-      <section className="phoenix-support"><span className="phoenix-support-heart" aria-hidden="true">♥</span><h2>You don&apos;t have to do everything.<br />Just focus on today.</h2><BreathingReset /></section>
+      <section className="phoenix-support"><span className="phoenix-support-heart" aria-hidden="true">♥</span><div><small>Today&apos;s insight</small><h2>{engine.insight.concise}</h2><p>{engine.flameState.requirements.resetMessage||engine.insight.reasoning}</p></div><BreathingReset clientId={data.clientId}/></section>
 
       <section id="phoenix-plan" className="phoenix-plan-panel"><div className="phoenix-section-heading"><p className="phoenix-label">▣ Today&apos;s Plan</p><span>{nextTask ? `Next: ${nextTask.label}` : flame.label} · {score}%</span></div><div className="phoenix-plan-grid">{plan.blocks.map((block) => <PlanBlock key={block.id} block={block} saving={plan.saving} nextTaskId={nextTask?.id} onToggle={plan.toggleTask} onComplete={() => plan.completeBlock(block.id)} />)}</div>{plan.error && <p className="phoenix-error" role="alert">{plan.error}</p>}</section>
 
@@ -121,10 +88,11 @@ export default function PhoenixDashboard({ logic, trackLabel }: { logic: Program
       <section className="phoenix-status-grid">
         <StatusCard icon="↟" title="Workout" value={data.workout.title} detail={data.workout.assigned ? 'Today’s movement' : 'Gentle movement only'} href="/dashboard/program/phoenix/workout" action="Start" complete={workoutComplete} feedback={<WorkoutFeedback clientId={data.clientId} program="phoenix" assignedWorkoutId={String(engine.workoutDecision.plannedWorkout?.id||engine.workout.title)} workoutTitle={engine.workout.title} workoutHref="/dashboard/program/phoenix/workout" />} />
         <StatusCard icon="✓" title="Assessment" value="Daily Check-In" detail={assessment.completed ? 'Completed today' : 'One quick check-in'} href="/dashboard/check-in" action="Check In" complete={assessment.completed} />
-        <StatusCard icon="♨" title="Recovery Check" value={recovery.completed ? 'Logged' : 'How do you feel?'} detail="One simple body check" href="/dashboard/check-in" action="Log Now" complete={recovery.completed} />
-        <StatusCard icon="☾" title="Sleep" value={sleep.hours !== null ? `${sleep.hours} hours` : sleep.quality !== null ? `Quality ${sleep.quality}/10` : 'Not logged'} detail="Last night" href="/dashboard/check-in" action="Log Sleep" complete={sleep.logged} />
+        <StatusCard icon="♨" title="Recovery Check" value={recovery.completed ? 'Ready for guidance' : 'How are you feeling?'} detail="Your recommended recovery action" href="/dashboard/recovery" action="Open Recovery" complete={recovery.completed} />
+        <StatusCard icon="☾" title="Sleep" value={sleep.hours !== null ? `${sleep.hours} hours` : sleep.quality !== null ? `Quality ${sleep.quality}/10` : 'Not logged'} detail="Last night" href="/dashboard/sleep" action="Log Sleep" complete={sleep.logged} />
       </section>
 
+      <StreakRequirementsCard flame={engine.flameState} compact/>
       <section className="phoenix-encouragement"><span aria-hidden="true">{flame.icon}</span><h2>You are not behind.<br /><strong>You are becoming.</strong></h2><Link href="/dashboard/assessment/measurements" className="phoenix-outline-button">See My Progress →</Link></section>
 
       <nav className="phoenix-bottom-nav" aria-label="Phoenix dashboard navigation"><Link href="/dashboard/program/phoenix" className="active"><span>⌂</span>Dashboard</Link><Link href="#phoenix-plan"><span>▣</span>Plan</Link><div className="phoenix-nav-flame" aria-label={`${score}% daily execution`}><span aria-hidden="true">{flame.icon}</span><small>{score}%</small></div><Link href="/dashboard/recovery"><span>▥</span>Support</Link><DashboardMoreMenu program="phoenix" /></nav>

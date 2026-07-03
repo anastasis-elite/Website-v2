@@ -7,6 +7,7 @@ import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
+import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
 import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
 import {
   useAssessmentStatus,
@@ -150,7 +151,7 @@ export default function IgniteDashboard({ logic }: { logic: ProgramLogicOutput }
         <section className="ignite-action-grid">
           <article className="ignite-panel ignite-action-card"><div className="ignite-heading"><p className="ignite-label">↟ Today&apos;s Workout</p><WorkoutFeedback clientId={data.clientId} program="ignite" assignedWorkoutId={String(engine.workoutDecision.plannedWorkout?.id||engine.workout.title)} workoutTitle={engine.workout.title} workoutHref="/dashboard/program/ignite/workout" /></div><h3>{workout.title}</h3><p>{workout.type}{workout.durationMinutes ? ` · ${workout.durationMinutes} min` : ''}</p><Link href="/dashboard/program/ignite/workout" className="ignite-button">{workout.executionComplete ? 'Workout Complete ✓' : 'View Workout'}</Link></article>
           <article className="ignite-panel ignite-action-card"><p className="ignite-label">✓ Assessments</p><h3>{!assessment.dailyCompleted ? 'Daily Check-In' : assessment.monthlyDueCount ? 'Monthly Assessment Due' : 'Completed'}</h3><p>{assessment.dailyCompleted ? 'Daily complete' : 'Daily check-in open'}{assessment.monthlyDueCount ? ' · Monthly assessment due' : ''}</p><div className="ignite-mini-ring">{assessment.completedPercent}%</div><Link href={!assessment.dailyCompleted ? '/dashboard/check-in' : assessment.monthlyDueCount ? '/dashboard/assessment/monthly' : '/dashboard/check-in'} className="ignite-button">{!assessment.dailyCompleted ? 'Check In' : assessment.monthlyDueCount ? 'Continue Monthly' : 'View Check-In'}</Link></article>
-          <article className="ignite-panel ignite-action-card"><p className="ignite-label">♥ Recovery Check</p><h3>{recovery.completed ? 'Check-in complete' : 'How are you feeling?'}</h3><p>Energy, stress, sleep, soreness and symptoms.</p><Link href="/dashboard/check-in" className="ignite-button">{recovery.completed ? 'Update Check-In' : 'Log Now'}</Link></article>
+          <article className="ignite-panel ignite-action-card"><p className="ignite-label">♥ Recovery Check</p><h3>{recovery.completed ? 'Check-in complete' : 'How are you feeling?'}</h3><p>Use today&apos;s signals to choose the right recovery action.</p><Link href="/dashboard/recovery" className="ignite-button">{recovery.completed ? 'View Recovery' : 'Open Recovery'}</Link></article>
           {cycle.enabled ? <article className="ignite-panel ignite-action-card ignite-cycle"><p className="ignite-label">Cycle Phase ⓘ</p><h3>{cycle.phase?.replace('_', ' ')}</h3><p>Day {cycle.day ?? '—'}</p><small>{cycle.recommendation}</small><Link href="/dashboard/cycle" className="ignite-button">View Cycle</Link></article> : <article className="ignite-panel ignite-action-card"><p className="ignite-label">Recovery Readiness</p><h3>{recovery.readiness !== null ? `${recovery.readiness}%` : 'Check-in open'}</h3><p>Log today&apos;s body signals to calculate readiness.</p><Link href="/dashboard/recovery" className="ignite-button">Open Recovery</Link></article>}
         </section>
 
@@ -166,6 +167,7 @@ export default function IgniteDashboard({ logic }: { logic: ProgramLogicOutput }
           </article>
         </section>
 
+        <StreakRequirementsCard flame={engine.flameState}/>
         <nav className="ignite-bottom-nav" aria-label="Ignite dashboard navigation">
           <Link href="/dashboard/program/ignite" className="active"><span>⌂</span>Dashboard</Link><Link href="/dashboard/day/morning"><span>▣</span>Plan</Link><div className="ignite-nav-flame" aria-label={`${executionScore}% daily execution`}><span aria-hidden="true">{flame.icon}</span><small>{executionScore}%</small></div><Link href="#ignite-insight"><span>▥</span>Insights</Link><DashboardMoreMenu program="ignite" />
         </nav>

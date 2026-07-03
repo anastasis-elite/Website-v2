@@ -1,11 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import * as styles from '@/app/styles/globalstyles'
+import { useRouter } from 'next/navigation'
+import { AOSButton } from '@/components/aos-ui/AOSButton'
+import { AOSCard } from '@/components/aos-ui/AOSCard'
+import { AOSChip } from '@/components/aos-ui/AOSChip'
+import { AOSSectionHeader } from '@/components/aos-ui/AOSSectionHeader'
+import { AOSSlider } from '@/components/aos-ui/AOSSlider'
 
 const options = ['Full rest', 'Gentle walk', 'Mobility', 'Breathwork', 'Meditation', 'Warm soak']
 
 export default function RecoveryLogger({ clientId }: { clientId: string }) {
+  const router=useRouter()
   const [selected, setSelected] = useState('')
   const [minutes, setMinutes] = useState(20)
   const [saved, setSaved] = useState(false)
@@ -18,27 +24,23 @@ export default function RecoveryLogger({ clientId }: { clientId: string }) {
     const response=await fetch('/api/recovery/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,activityType:selected,minutes})})
     const payload=await response.json();setSaving(false)
     if(!response.ok){setError(payload.error||'Recovery could not be saved.');return}
-    setSaved(true)
+    setSaved(true);router.refresh()
   }
 
   return (
-    <section style={styles.cartBoxStyle}>
-      <p style={styles.eyebrowStyle}>Log Recovery</p>
-      <h2 style={styles.sectionTitleStyle}>What can your body receive?</h2>
-      <div style={styles.buttonRowStyle}>
+    <AOSCard className="aos-recovery-logger">
+      <AOSSectionHeader eyebrow="Log Recovery" title="What can your body receive?" copy="Choose one action. Completing the right-sized action counts toward today." />
+      <div className="aos-chip-list">
         {options.map((option) => (
-          <button key={option} type="button" onClick={() => { setSelected(option); setSaved(false) }} style={selected === option ? styles.primaryButtonStyle : styles.secondaryButtonStyle}>{option}</button>
+          <AOSChip key={option} selected={selected === option} onClick={() => { setSelected(option); setSaved(false) }}>{option}</AOSChip>
         ))}
       </div>
       {selected && selected !== 'Full rest' ? (
-        <label style={{ display: 'grid', gap: '12px', marginTop: '26px' }}>
-          <span style={styles.labelStyle}>Duration: <strong>{minutes} minutes</strong></span>
-          <input type="range" min="5" max="90" step="5" value={minutes} onChange={(event) => { setMinutes(Number(event.target.value)); setSaved(false) }} />
-        </label>
+        <AOSSlider label="Duration" value={minutes} min={5} max={90} step={5} suffix=" minutes" onChange={(value)=>{setMinutes(value);setSaved(false)}}/>
       ) : null}
-      <button type="button" disabled={!selected||saving} onClick={save} style={{ ...styles.primaryButtonStyle, marginTop: '26px' }}>{saving?'Saving…':'Save Recovery'}</button>
-      {saved ? <p style={{ ...styles.bodyStyle, marginTop: '18px' }}>Recovery saved for today.</p> : null}
-      {error ? <p style={{ ...styles.bodyStyle, marginTop: '18px' }} role="alert">{error}</p> : null}
-    </section>
+      <AOSButton type="button" disabled={!selected||saving} onClick={save}>{saving?'Saving…':'Complete Recovery Action'}</AOSButton>
+      {saved ? <p className="aos-status">Recovery saved for today.</p> : null}
+      {error ? <p className="aos-status" role="alert">{error}</p> : null}
+    </AOSCard>
   )
 }

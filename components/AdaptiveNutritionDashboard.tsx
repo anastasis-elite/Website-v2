@@ -211,8 +211,8 @@ export default function AdaptiveNutritionDashboard({
   ]
 
   return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
+    <main className="aos-nutrition-page" style={styles.pageStyle}>
+      <div className="aos-nutrition-shell" style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>
           {isEmber ? 'Nutrition Targets' : 'Nutrition Intelligence'}
         </p>

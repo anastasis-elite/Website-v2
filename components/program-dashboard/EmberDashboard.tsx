@@ -8,6 +8,7 @@ import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import { getEmberDashboardData } from '@/lib/dashboard/ember/getEmberDashboardData'
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
+import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
 import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
 import {
   useAssessmentStatus,
@@ -22,7 +23,7 @@ import {
 const executionItems = {
   workout: { icon: '↟', title: 'Workout', href: '/dashboard/program/ember/workout' },
   assessment: { icon: '✓', title: 'Daily Check-In', href: '/dashboard/check-in' },
-  recovery: { icon: '♥', title: 'Recovery Check', href: '/dashboard/check-in' },
+  recovery: { icon: '♥', title: 'Recovery Check', href: '/dashboard/recovery' },
 } as const
 
 function greeting() {
@@ -196,6 +197,7 @@ export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput })
           </div>
         </section>
 
+        <StreakRequirementsCard flame={engine.flameState}/>
         <nav className="ember-bottom-nav" aria-label="Ember dashboard navigation">
           <Link href="/dashboard/program/ember" className="active"><span>⌂</span>Today</Link>
           <Link href="/dashboard/program/ember/workout"><span>↟</span>Workout</Link>
