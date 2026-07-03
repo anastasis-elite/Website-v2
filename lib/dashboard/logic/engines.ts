@@ -161,20 +161,37 @@ export function runPostureCompensationEngine(inputs: ProgramLogicInputs): Postur
   return { flags:[...flags,...limitations], correctivePriorities: flags.length || limitations.length ? ['Use controlled tempo and stable range of motion.', 'Prioritize the corrective warm-up assigned to the flagged area.'] : [], substitutions: pain.length || limitations.length ? [{ from: 'Pain-provoking movement', to: 'Supported pain-free variation', reason: pain.length ? 'Current pain signal' : 'Documented limitation' }] : [], avoidToday: pain.length || limitations.length ? ['Any movement that increases pain or conflicts with documented limitations'] : [] }
 }
 
-function modifyExercises(exercises: any[], level: WorkoutDecisionResult['adjustmentLevel']) {
-  if (level === 'level_0_full_plan') return exercises
-  if (level === 'level_4_rest_or_red_flag') return []
+function nutritionProgressionSignals(inputs:ProgramLogicInputs){
+  const totalsByLog=new Map<string,any>()
+  const microPairs=[['fiber_eaten_g','fiber_target_g'],['potassium_eaten_mg','potassium_target_mg'],['magnesium_eaten_mg','magnesium_target_mg'],['iron_eaten_mg','iron_target_mg']] as const
+  for(const row of inputs.nutritionTotals){const current=totalsByLog.get(row.nutrition_log_id)||{protein:0,micros:{}};current.protein+=numeric(row.protein_eaten_g);for(const [eaten] of microPairs)current.micros[eaten]=numeric(current.micros[eaten])+numeric(row[eaten]);totalsByLog.set(row.nutrition_log_id,current)}
+  const recent=inputs.nutritionLogs.slice(-7);const proteinDays=recent.filter((log:any)=>{const eaten=totalsByLog.get(log.id)?.protein||0;return numeric(log.protein)>0&&eaten>=numeric(log.protein)*.85}).length
+  const microDays=recent.filter((log:any)=>{const ratios=microPairs.map(([eaten,target])=>numeric(log[target])>0?numeric(totalsByLog.get(log.id)?.micros?.[eaten])/numeric(log[target]):null).filter((value):value is number=>value!==null);return ratios.length>=2&&ratios.reduce((sum,value)=>sum+Math.min(1,value),0)/ratios.length>=.75}).length
+  const completedWorkouts=inputs.workoutHistory.filter((row:any)=>row.completed)
+  return {proteinConsistent:recent.length>=3&&proteinDays/recent.length>=.7,microsConsistent:recent.length>=3&&microDays/recent.length>=.7,strengthStable:completedWorkouts.length>=2,enduranceStable:completedWorkouts.length>=3}
+}
+
+function modifyExercises(exercises: any[], level: WorkoutDecisionResult['adjustmentLevel'], fuel:FuelReadinessResult, hydration:HydrationResult, recovery:RecoveryResult, allowLoadProgression:boolean, allowEnduranceProgression:boolean) {
   return exercises.map((exercise) => {
     const next = { ...exercise }
-    if (level === 'level_1_slight_modify') next.recommended_weight = numeric(next.recommended_weight || next.calculated_weight) * .9 || null
-    if (level === 'level_2_moderate_modify') { next.sets = Math.max(1, numeric(next.sets, 3) - 1); next.recommended_weight = numeric(next.recommended_weight || next.calculated_weight) * .8 || null }
-    if (level === 'level_3_recovery_training') { next.sets = Math.min(2, numeric(next.sets, 2)); next.recommended_weight = numeric(next.recommended_weight || next.calculated_weight) * .55 || null; next.reps = Math.max(8, numeric(next.reps, 10)) }
+    const plannedReps=Math.max(3,numeric(next.recommended_reps??next.cycle_adjusted_reps??next.reps??next.target_reps,8));let reps=plannedReps
+    if(fuel.status==='under_fueled'||fuel.status==='depleted')reps=Math.max(3,plannedReps-2)
+    else if(fuel.status==='slightly_under_fueled'||fuel.status==='unknown_needs_input')reps=Math.max(3,plannedReps-1)
+    else if(hydration.status==='ready'&&fuel.status==='well_fueled'&&['normal_training_day','push_day'].includes(recovery.status))reps=plannedReps+1
+    next.recommended_reps=reps;next.reps=reps
+    let load=numeric(next.recommended_weight||next.cycle_adjusted_weight||next.calculated_weight||next.baseline_weight)
+    if(level==='level_1_slight_modify')load*=.9
+    if(level==='level_2_moderate_modify'){next.sets=Math.max(1,numeric(next.sets,3)-1);load*=.8}
+    if(level==='level_3_recovery_training'){next.sets=Math.min(2,numeric(next.sets,2));load*=.6}
+    if(level==='level_0_full_plan'&&allowLoadProgression&&hydration.status==='ready'&&fuel.status==='well_fueled')load*=1.025
+    if(level==='level_0_full_plan'&&allowEnduranceProgression)next.sets=Math.min(5,numeric(next.sets,3)+1)
+    next.recommended_weight=load||null
     return next
   })
 }
 
-export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, recovery: RecoveryResult, fuel: FuelReadinessResult, symptoms: SymptomResult, posture: PostureResult): WorkoutDecisionResult {
-  if (!inputs.plannedWorkout) return { plannedWorkout: null, assignedWorkout: null, adjustmentLevel: 'level_3_recovery_training', modifications: ['Use walking, mobility, or gentle recovery movement.'], exerciseSubstitutions: posture.substitutions, intensityTarget: 'Easy conversational effort', reasonForModification: 'No performance workout is scheduled today.', preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority }
+export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, recovery: RecoveryResult, fuel: FuelReadinessResult, hydration:HydrationResult, symptoms: SymptomResult, posture: PostureResult): WorkoutDecisionResult {
+  if (!inputs.plannedWorkout) return { plannedWorkout: null, assignedWorkout: {day_name:'Recovery movement',exercises:[]}, displayWorkout:true,canTrain:true,adjustmentLevel: 'level_3_recovery_training', modifications: ['Use walking, mobility, or gentle recovery movement.'], exerciseSubstitutions: posture.substitutions, intensityTarget: 'Easy conversational effort', reasonForModification: 'No performance workout is scheduled today.', preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression:false,allowEnduranceProgression:false }
   let adjustmentLevel: WorkoutDecisionResult['adjustmentLevel'] = 'level_0_full_plan'
   const modifications: string[] = []
   if (recovery.status === 'full_recovery_or_red_flag' || symptoms.redFlag) { adjustmentLevel = 'level_4_rest_or_red_flag'; modifications.push('Stop training and follow the safety recommendation.') }
@@ -186,10 +203,15 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, recovery: R
   if (inputs.todayWorkoutFeedback?.response === 'too_easy' && adjustmentLevel === 'level_0_full_plan') modifications.unshift('Feedback noted; progress only with clean form and no grinding.')
   if (inputs.missedDayCount >= 3 && adjustmentLevel !== 'level_4_rest_or_red_flag') { adjustmentLevel = 'level_3_recovery_training'; modifications.unshift('Use a gentle reset session to rebuild momentum without pressure.') }
   modifications.push(...posture.correctivePriorities)
-  const assignedExercises = modifyExercises(inputs.plannedExercises, adjustmentLevel)
-  const assignedWorkout = adjustmentLevel === 'level_4_rest_or_red_flag' ? null : { ...inputs.plannedWorkout, exercises: assignedExercises }
+  const progression=nutritionProgressionSignals(inputs)
+  const allowLoadProgression=progression.proteinConsistent&&progression.strengthStable&&recovery.status!=='modify_workout'&&fuel.status==='well_fueled'
+  const allowEnduranceProgression=progression.microsConsistent&&progression.enduranceStable&&recovery.status!=='modify_workout'&&fuel.status==='well_fueled'
+  if(allowLoadProgression)modifications.push('Consistent protein and stable performance support conservative load progression.')
+  if(allowEnduranceProgression)modifications.push('Consistent micronutrient logging and performance support a small endurance progression.')
+  const assignedExercises = modifyExercises(inputs.plannedExercises, adjustmentLevel, fuel, hydration, recovery, allowLoadProgression, allowEnduranceProgression)
+  const assignedWorkout = { ...inputs.plannedWorkout, exercises: assignedExercises }
   const targets = { level_0_full_plan: 'Planned RPE; progression allowed', level_1_slight_modify: 'RPE 7–8; no grinders', level_2_moderate_modify: 'RPE 6–7; technique priority', level_3_recovery_training: 'RPE 3–5; restorative movement', level_4_rest_or_red_flag: 'No training until safely cleared' }
-  return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: targets[adjustmentLevel], reasonForModification: modifications[0] || 'The full planned workout matches current inputs.', preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority }
+  return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, displayWorkout:true,canTrain:adjustmentLevel!=='level_4_rest_or_red_flag',adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: targets[adjustmentLevel], reasonForModification: modifications[0] || 'The full planned workout matches current inputs.', preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression,allowEnduranceProgression }
 }
 
 export function runFlameExecutionEngine({ inputs, hydration, nutrition, workoutDecision, capacity }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult; capacity: CapacityResult }): FlameResult {
@@ -199,16 +221,19 @@ export function runFlameExecutionEngine({ inputs, hydration, nutrition, workoutD
   const phoenixTaskPercent = Math.min(100, (inputs.phoenixTaskIds.length / 9) * 100)
   const sleepComplete=Boolean(inputs.todayRecovery?.sleep_hours||inputs.todayRecovery?.sleep_quality)
   const activityComplete=inputs.todayRecoveryActivities.length>0
-  const requiredItems={nutrition:inputs.missedDayCount<1,hydration:inputs.missedDayCount<2,workoutOrMovement:true,dailyCheckIn:true,recovery:inputs.program==='phoenix'||capacity.status==='low_capacity',sleep:false,customTasks:inputs.program==='phoenix'&&inputs.missedDayCount<3}
+  const lowestCapacity=capacity.status==='low_capacity'
+  const requiredItems={nutrition:!lowestCapacity&&inputs.missedDayCount<1,hydration:!lowestCapacity&&inputs.missedDayCount<2,workoutOrMovement:!lowestCapacity&&inputs.missedDayCount<3,dailyCheckIn:true,recovery:inputs.program==='phoenix'||lowestCapacity,sleep:false,customTasks:inputs.program==='phoenix'&&!lowestCapacity&&inputs.missedDayCount<3}
   const completedItems={nutrition:nutrition.dataStatus==='known',hydration:hydration.percent>=80,workoutOrMovement:workoutComplete||activityComplete,dailyCheckIn:assessmentComplete,recovery:recoveryComplete,sleep:sleepComplete,customTasks:phoenixTaskPercent>=80}
   const required=(Object.keys(requiredItems) as Array<keyof typeof requiredItems>).filter((key)=>requiredItems[key])
-  const score=required.length?Math.round(required.filter((key)=>completedItems[key]).length/required.length*100):100
+  const requiredCompleted=required.filter((key)=>completedItems[key]).length
+  const optional=(Object.keys(requiredItems) as Array<keyof typeof requiredItems>).filter((key)=>!requiredItems[key]&&completedItems[key])
+  const score=required.length?Math.min(100,Math.round(requiredCompleted/required.length*100)+(requiredCompleted<required.length?Math.min(10,optional.length*2):0)):100
   const state = score === 0 ? 'spark' : score < 25 ? 'ember' : score < 50 ? 'small_flame' : score < 75 ? 'steady_flame' : score < 100 ? 'strong_flame' : 'roaring_flame'
   const messages = inputs.program === 'phoenix'
     ? ['Start small', 'Start small', 'You’re moving', 'Momentum is building', 'Almost complete', 'You did enough today']
     : ['Start the first action', 'The work has started', 'Keep executing', 'Momentum is visible', 'Close the remaining gaps', 'Day complete']
   const index = ['spark','ember','small_flame','steady_flame','strong_flame','roaring_flame'].indexOf(state)
-  const streakEligible=score===100
+  const streakEligible=requiredCompleted===required.length
   let priorStreak=0
   for(const row of inputs.executionHistory){if(!row.streak_eligible)break;priorStreak++}
   const existingStreak=priorStreak+(streakEligible?1:0)

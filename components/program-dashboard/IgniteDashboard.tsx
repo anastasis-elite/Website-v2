@@ -13,7 +13,6 @@ import {
   useAssessmentStatus,
   useClientDashboardData,
   useCyclePhase,
-  useDailyProgress,
   useFlameState,
   useIgniteInsight,
   useMacroProgress,
@@ -71,14 +70,7 @@ export default function IgniteDashboard({ logic }: { logic: ProgramLogicOutput }
   const trends = useWeeklyTrends(data.trends)
   const progress = useProgressSnapshot(data.progress)
   const hydrationPercent = Math.min(100, Math.round((data.water.consumed / Math.max(1, data.water.target)) * 100))
-  const executionScore = useDailyProgress({
-    hydration: hydrationPercent,
-    nutrition: macros.percent,
-    workout: workout.executionComplete,
-    plan: plan.percent,
-    assessment: assessment.dailyCompleted,
-    recovery: recovery.completed,
-  })
+  const executionScore = engine.flameState.dailyScore
   const flame = useFlameState(executionScore)
   const trendWithComparison = trends.find((trend) => trend.comparisonPercent !== null)
   const insight = useIgniteInsight({

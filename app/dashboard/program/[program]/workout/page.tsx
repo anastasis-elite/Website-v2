@@ -1,6 +1,4 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import * as styles from '@/app/styles/globalstyles'
 import WorkoutTracker from '@/components/WorkoutTracker'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
@@ -10,6 +8,8 @@ import { getProgramLogicEngine } from '@/lib/dashboard/logic/getProgramLogicEngi
 import type { ProgramTier } from '@/lib/dashboard/logic/types'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
+import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
+import { AOSCard } from '@/components/aos-ui/AOSCard'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix']
 
@@ -25,7 +25,6 @@ export default async function ProgramWorkoutPage({ params }: { params: { program
     .eq('client_id', client.client_id).eq('program', program)
     .order('generated_at', { ascending: false }).limit(1).maybeSingle()
   const safetyFlags = await getRecentSafetyFlags(supabase, client.client_id)
-  if (safetyFlags.length) return <SafetyEscalationNotice flags={safetyFlags} />
 
   const dailyPlan = await getDailyExecutionPlan({ supabase, client })
   const cycleStatus = getCycleStatus(client)
@@ -39,20 +38,18 @@ export default async function ProgramWorkoutPage({ params }: { params: { program
   const assignedExercises = assignedWorkout?.exercises || []
 
   return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>{program} · Today’s Workout</p>
-        <h1 style={styles.heroTitleStyle}>{assignedWorkout ? assignedWorkout.day_name : logic.workout.title}</h1>
-        <p style={styles.heroTextStyle}>{logic.workoutDecision.intensityTarget}. {logic.workoutDecision.reasonForModification}</p>
-        <section style={styles.cartBoxStyle}>
-          {assignedWorkout && assignedExercises.length ? (
+    <main className="aos-workout-page">
+      <div className="aos-workout-shell">
+        <header className="aos-workout-header"><div><p className="aos-eyebrow">{program} · Today&apos;s Workout</p><h1>{assignedWorkout?.day_name || logic.workout.title}</h1><p>{logic.workoutDecision.intensityTarget}. {logic.workoutDecision.reasonForModification}</p></div><WorkoutFeedback clientId={client.client_id} program={program as ProgramTier} assignedWorkoutId={String(assignedWorkout?.id||logic.workout.title)} workoutTitle={assignedWorkout?.day_name||logic.workout.title} workoutHref={`/dashboard/program/${program}/workout`}/></header>
+        {safetyFlags.length?<SafetyEscalationNotice flags={safetyFlags} embedded/>:null}
+        <div className="aos-workout-guidance"><AOSCard><p className="aos-eyebrow">Fuel first</p><h2>{logic.fuelReadiness.status.replaceAll('_',' ')}</h2><p>{logic.workoutDecision.preWorkoutFuelPrompt||logic.fuelReadiness.preWorkoutAction}</p></AOSCard><AOSCard><p className="aos-eyebrow">Today&apos;s adjustment</p><h2>{logic.workoutDecision.adjustmentLevel.replaceAll('_',' ')}</h2><p>{logic.workoutDecision.modifications.join(' ')||'Use the planned workout.'}</p></AOSCard></div>
+        <section className="aos-workout-tracker-shell">
+          {logic.workoutDecision.canTrain && assignedExercises.length ? (
             <>
-              {logic.workoutDecision.preWorkoutFuelPrompt ? <p style={styles.bodyStyle}>{logic.workoutDecision.preWorkoutFuelPrompt}</p> : null}
               <WorkoutTracker clientId={client.client_id} authUserId={client.auth_user_id} program={output?.program || program} dayName={assignedWorkout.day_name} exercises={assignedExercises} />
             </>
-          ) : <p style={styles.bodyStyle}>{logic.workoutDecision.reasonForModification}</p>}
+          ) : <div className="aos-workout-preview"><p className="aos-eyebrow">Plan remains visible</p><h2>{logic.workoutDecision.canTrain?'Recovery movement':'Do not train until the safety flag is resolved'}</h2><p>{logic.workoutDecision.reasonForModification}</p>{assignedExercises.length?<div>{assignedExercises.map((exercise:any,index:number)=><article key={`${exercise.id||exercise.name||exercise.exercise}-${index}`}><span>{index+1}</span><div><strong>{exercise.display_name||exercise.name||exercise.exercise||'Exercise'}</strong><small>{exercise.sets||'—'} sets · {exercise.recommended_reps||exercise.reps||'—'} reps · {Math.round(Number(exercise.recommended_weight||exercise.calculated_weight||0))||'Bodyweight'} load</small></div></article>)}</div>:null}</div>}
         </section>
-        <Link href={`/dashboard/program/${program}`} style={styles.secondaryButtonStyle}>Back to Dashboard</Link>
       </div>
     </main>
   )

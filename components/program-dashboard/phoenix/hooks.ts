@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { PhoenixDashboardData, PhoenixPlanBlock } from '@/lib/dashboard/phoenix/types'
 import { calculateExecutionScore } from '@/lib/dashboard/logic/calculateExecutionScore'
 
@@ -25,6 +26,7 @@ export function useMacroProgress(macros: PhoenixDashboardData['macros']) {
 }
 
 export function useTodayPlanBlocks(clientId: string, initialBlocks: PhoenixPlanBlock[]) {
+  const router=useRouter()
   const [blocks, setBlocks] = useState(initialBlocks)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -47,6 +49,7 @@ export function useTodayPlanBlocks(clientId: string, initialBlocks: PhoenixPlanB
     setBlocks((current) => current.map((block) => ({ ...block, tasks: block.tasks.map((task) => taskIds.includes(task.id) ? { ...task, complete: completed } : task) })))
     try {
       await persist(taskIds, completed)
+      router.refresh()
     } catch (saveError) {
       setBlocks(previous)
       setError(saveError instanceof Error ? saveError.message : 'The task could not be saved.')

@@ -108,7 +108,7 @@ export async function POST(req: Request) {
         right_photo_url: uploadedPaths.right_photo_url,
         analysis_status: 'pending',
         uploaded_at: new Date().toISOString(),
-        analysis_type: 'posture_assessment',
+        analysis_type: assessmentType === 'posture' ? 'posture_assessment' : 'progress_tracking',
 posture_flags: {
   front_view_uploaded: Boolean(uploadedPaths.front_photo_url),
   back_view_uploaded: Boolean(uploadedPaths.back_photo_url),

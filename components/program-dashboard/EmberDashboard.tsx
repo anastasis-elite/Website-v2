@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { CSSProperties } from 'react'
 import type { EmberDashboardData } from '@/lib/dashboard/ember/types'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
@@ -13,7 +14,6 @@ import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
 import {
   useAssessmentStatus,
   useClientDashboardData,
-  useDailyExecutionScore,
   useFlameState,
   useHydrationProgress,
   useMacroProgress,
@@ -68,6 +68,7 @@ function ExecutionCard({
 
 export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput }) {
   const engine = useProgramLogicEngine(logic)
+  const router=useRouter()
   const initialData: EmberDashboardData = getEmberDashboardData(engine)
   const { data, setData } = useClientDashboardData(initialData)
   const [addingWater, setAddingWater] = useState(false)
@@ -76,14 +77,7 @@ export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput })
   const macroProgress = useMacroProgress(data.macros)
   const workout = useTodayWorkout(data.workout)
   const assessment = useAssessmentStatus(data.assessment)
-  const score = useDailyExecutionScore({
-    hydrationPercent: hydration.percent,
-    macroPercent: macroProgress.percent,
-    workoutComplete: workout.executionComplete,
-    assessmentComplete: assessment.executionComplete,
-    recoveryRequired: data.recovery.required,
-    recoveryComplete: data.recovery.completed,
-  })
+  const score = engine.flameState.dailyScore
   const flame = useFlameState(score)
 
   async function addWater() {
@@ -110,6 +104,7 @@ export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput })
           consumed: Number(payload.nutritionLog?.water_consumed_oz ?? optimisticTotal),
         },
       }))
+      router.refresh()
     } catch (error) {
       setData((current) => ({
         ...current,
