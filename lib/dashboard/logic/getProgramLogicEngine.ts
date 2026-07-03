@@ -66,7 +66,7 @@ export async function getProgramLogicEngine(args: {
   const fuelReadiness = runFuelReadinessEngine(inputs,hydration,nutrition,recoveryStatus)
   const cycle = runCycleEngine(inputs)
   const posture = runPostureCompensationEngine(inputs)
-  const workoutDecision = runWorkoutDecisionEngine(inputs,recoveryStatus,fuelReadiness,hydration,symptoms,posture)
+  const workoutDecision = runWorkoutDecisionEngine(inputs,capacityStatus,recoveryStatus,fuelReadiness,hydration,symptoms,posture)
   const flameState = runFlameExecutionEngine({ inputs,hydration,nutrition,workoutDecision,capacity:capacityStatus })
   const recovery = inputs.todayRecovery || {}
   const sleepHours = nullableNumeric(recovery.sleep_hours ?? recovery.sleep_duration_hours)

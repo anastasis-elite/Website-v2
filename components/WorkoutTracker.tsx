@@ -38,6 +38,9 @@ type Exercise = {
   cycle_adjustment_label?: string
   cycle_adjustment_note?: string
   cycle_caution_active?: boolean
+  client_cues?: string[]
+  rest_seconds?: number
+  rpe_target?: string
 }
 
 type WorkoutLog = {
@@ -65,6 +68,9 @@ type WorkoutLog = {
 
   completed: boolean
   notes: string
+  client_cues: string[]
+  rest_seconds: number | null
+  rpe_target: string
 }
 
 type Props = {
@@ -367,6 +373,9 @@ export default function WorkoutTracker({
 
         completed: false,
         notes: '',
+        client_cues: (exercise.client_cues || []).slice(0,3),
+        rest_seconds: exercise.rest_seconds || null,
+        rpe_target: exercise.rpe_target || '',
       }
     })
   )
@@ -619,6 +628,8 @@ export default function WorkoutTracker({
                 >
                   Selected: {exercise.selected_variant_name}
                 </p>
+                {exercise.client_cues.length ? <ul className="workout-os-cues">{exercise.client_cues.map((cue)=><li key={cue}>{cue}</li>)}</ul> : null}
+                {exercise.rpe_target || exercise.rest_seconds ? <p className="workout-os-dose">{exercise.rpe_target}{exercise.rpe_target&&exercise.rest_seconds?' · ':''}{exercise.rest_seconds?`${exercise.rest_seconds}s rest`:''}</p> : null}
 
                 {exercise.available_variants.length > 1 && (
                   <label>
