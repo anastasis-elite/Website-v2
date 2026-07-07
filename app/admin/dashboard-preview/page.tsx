@@ -10,10 +10,10 @@ import AdaptiveDashboard from '@/components/AdaptiveDashboard'
 export default async function AdminDashboardPreviewPage({
   searchParams,
 }: {
-  searchParams?: Promise<{
+  searchParams?: {
     adminSecret?: string
     tier?: string
-  }>
+  }
 }) {
   const params = await searchParams
 
