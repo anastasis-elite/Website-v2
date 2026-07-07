@@ -7,7 +7,7 @@ import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 export default async function DayBlockPage({
   params,
 }: {
-  params: Promise<{ block: string }>
+  params: { block: string }
 }) {
   const { block } = await params
 
