@@ -1,14 +1,10 @@
 import { redirect } from 'next/navigation'
-import { getClientData } from '@/lib/supabase/getClient'
+import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 
 export default async function WorkoutRedirectPage() {
-  const client = await getClientData()
-
-  if (!client) {
-    redirect('/login')
-  }
+  const { client } = await getDashboardContext()
 
   const program = client.program || 'ignite'
 
-  redirect(`/dashboard/program/${encodeURIComponent(program)}`)
+  redirect(`/dashboard/program/${encodeURIComponent(program)}/workout`)
 }

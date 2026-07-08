@@ -1,17 +1,15 @@
 import Link from 'next/link'
-import * as styles from '@/app/styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
+import { AOSCard } from '@/components/aos-ui/AOSCard'
 
 export default async function MonthlyAssessmentsPage() {
   const { supabase, client } = await getDashboardContext()
 
   const program = client.program || 'ignite'
-
   const monthStart = new Date()
   monthStart.setDate(1)
   monthStart.setHours(0, 0, 0, 0)
-
   const monthStartDate = monthStart.toISOString().split('T')[0]
 
   const monthlyAssessment = await getMonthlyAssessmentStatus(supabase, client.client_id)
@@ -26,18 +24,15 @@ export default async function MonthlyAssessmentsPage() {
 
   const assessmentCompletedThisMonth = !monthlyAssessment.due
   const measurementsCompletedThisMonth = !!monthlyMeasurements
-
-  const dailyStructureReviewedThisMonth =
-    client.daily_structure_reviewed_at
-      ? new Date(client.daily_structure_reviewed_at) >= monthStart
-      : false
+  const dailyStructureReviewedThisMonth = client.daily_structure_reviewed_at
+    ? new Date(client.daily_structure_reviewed_at) >= monthStart
+    : false
 
   const assessments = [
     {
       id: 'monthly-check-in',
       title: 'Monthly Check-In',
-      body:
-        'Update your current body, strength, recovery, goals, and readiness so your program can stay aligned.',
+      body: 'Update current body, strength, recovery, goals, and readiness so your program can stay aligned.',
       complete: assessmentCompletedThisMonth,
       href: `/dashboard/assessment/start?program=${program}&assessmentType=monthly`,
       buttonLabel: 'Start Check-In',
@@ -45,8 +40,7 @@ export default async function MonthlyAssessmentsPage() {
     {
       id: 'daily-structure',
       title: 'Daily Structure Review',
-      body:
-        'Review your wake time, sleep time, work rhythm, training window, and daily flow so the dashboard reflects your real life.',
+      body: 'Review wake time, sleep time, work rhythm, training windows, and daily flow.',
       complete: dailyStructureReviewedThisMonth,
       href: '/dashboard/assessment/daily-structure',
       buttonLabel: 'Review Structure',
@@ -54,8 +48,7 @@ export default async function MonthlyAssessmentsPage() {
     {
       id: 'measurements',
       title: 'Physical Measurements',
-      body:
-        'Take consistent measurements with guided placement so your progress can be tracked without guessing.',
+      body: 'Take consistent measurements so progress can be tracked without guessing.',
       complete: measurementsCompletedThisMonth,
       href: '/dashboard/assessment/measurements',
       buttonLabel: 'Start Measurements',
@@ -66,88 +59,74 @@ export default async function MonthlyAssessmentsPage() {
   const completedAssessments = assessments.filter((assessment) => assessment.complete)
 
   return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Monthly Assessments</p>
+    <main className="aos-flow-page">
+      <div className="aos-flow-shell">
+        <header className="aos-flow-hero">
+          <p className="aos-eyebrow">Monthly Assessments</p>
+          <h1>Keep your system aligned.</h1>
+          <p>
+            These check-ins refresh your program for the month. Completed items
+            stay out of the required flow until they are due again.
+          </p>
+        </header>
 
-        <h1 style={styles.heroTitleStyle}>
-          Keep your system aligned.
-        </h1>
+        <section className="aos-assessment-grid">
+          <AOSCard className="aos-assessment-summary">
+            <p className="aos-eyebrow">Due now</p>
+            <h2>{dueAssessments.length}</h2>
+            <p>
+              {dueAssessments.length
+                ? 'Complete only what is due. Daily check-ins remain separate.'
+                : 'All monthly assessment items are complete for this cycle.'}
+            </p>
+          </AOSCard>
 
-        <p style={styles.heroTextStyle}>
-          These check-ins refresh your program for the month. Once each one is
-          complete, it disappears from your monthly list until it is due again.
-        </p>
+          <AOSCard className="aos-assessment-summary">
+            <p className="aos-eyebrow">Completed</p>
+            <h2>{completedAssessments.length}</h2>
+            <p>These are already counted for the current monthly window.</p>
+          </AOSCard>
+        </section>
 
-        {dueAssessments.length ? (
-          <section style={styles.cartBoxStyle}>
-            <h2 style={styles.sectionTitleStyle}>
-              Due This Month
-            </h2>
+        <section className="aos-card aos-assessment-panel">
+          <div className="aos-section-header">
+            <div>
+              <p className="aos-eyebrow">Required this month</p>
+              <h2>{dueAssessments.length ? 'Due This Month' : 'Nothing due right now'}</h2>
+            </div>
+            <Link href="/dashboard" className="aos-secondary-link">
+              Dashboard
+            </Link>
+          </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gap: '18px',
-                marginTop: '22px',
-              }}
-            >
+          {dueAssessments.length ? (
+            <div className="aos-assessment-list">
               {dueAssessments.map((assessment) => (
-                <AssessmentRow
-                  key={assessment.id}
-                  title={assessment.title}
-                  body={assessment.body}
-                  href={assessment.href}
-                  buttonLabel={assessment.buttonLabel}
-                />
+                <AssessmentRow key={assessment.id} {...assessment} />
               ))}
             </div>
-          </section>
-        ) : (
-          <section style={styles.cartBoxStyle}>
-            <h2 style={styles.sectionTitleStyle}>
-              All monthly assessments are complete.
-            </h2>
-
-            <p style={styles.bodyStyle}>
-              Your dashboard has what it needs for this month. These will appear
-              again when a new monthly assessment window opens.
+          ) : (
+            <p className="aos-muted-copy">
+              Your dashboard has what it needs for this month.
             </p>
-          </section>
-        )}
+          )}
+        </section>
 
         {completedAssessments.length ? (
-          <section style={styles.cartBoxStyle}>
-            <h2 style={styles.sectionTitleStyle}>
-              Completed This Month
-            </h2>
-
-            <div
-              style={{
-                display: 'grid',
-                gap: '12px',
-                marginTop: '18px',
-              }}
-            >
+          <section className="aos-card aos-assessment-panel">
+            <div className="aos-section-header">
+              <div>
+                <p className="aos-eyebrow">Logged</p>
+                <h2>Completed This Month</h2>
+              </div>
+            </div>
+            <div className="aos-completed-list">
               {completedAssessments.map((assessment) => (
-                <p
-                  key={assessment.id}
-                  style={{
-                    ...styles.bodyStyle,
-                    margin: 0,
-                    opacity: 0.78,
-                  }}
-                >
-                  ✓ {assessment.title}
-                </p>
+                <p key={assessment.id}>✓ {assessment.title}</p>
               ))}
             </div>
           </section>
         ) : null}
-
-        <Link href="/dashboard" style={styles.secondaryButtonStyle}>
-          Back to Dashboard
-        </Link>
       </div>
     </main>
   )
@@ -165,37 +144,14 @@ function AssessmentRow({
   buttonLabel: string
 }) {
   return (
-    <div
-      style={{
-        background: 'rgba(255,255,255,0.03)',
-        borderRadius: '24px',
-        padding: '22px',
-        boxShadow: 'inset 0 0 24px rgba(255,255,255,0.012)',
-      }}
-    >
-      <h3
-        style={{
-          margin: '0 0 8px',
-          color: '#f5f0e8',
-          fontSize: '1.18rem',
-          fontWeight: 500,
-        }}
-      >
-        {title}
-      </h3>
-
-      <p
-        style={{
-          ...styles.bodyStyle,
-          marginBottom: '18px',
-        }}
-      >
-        {body}
-      </p>
-
-      <Link href={href} style={styles.primaryButtonStyle}>
+    <article className="aos-assessment-row">
+      <div>
+        <h3>{title}</h3>
+        <p>{body}</p>
+      </div>
+      <Link href={href} className="aos-primary-link">
         {buttonLabel}
       </Link>
-    </div>
+    </article>
   )
 }

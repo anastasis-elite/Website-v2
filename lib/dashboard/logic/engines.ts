@@ -231,7 +231,7 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, capacity:Ca
 }
 
 export function runFlameExecutionEngine({ inputs, hydration, nutrition, workoutDecision, capacity }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult; capacity: CapacityResult }): FlameResult {
-  const workoutComplete = !inputs.plannedWorkout || Boolean(inputs.dailyPlan?.workoutCompleted)
+  const workoutComplete = Boolean(inputs.dailyPlan?.workoutCompleted)
   const assessmentComplete = Boolean(inputs.todayRecovery?.check_in_completed_at)
   const recoveryComplete = inputs.todayRecoveryActivities.length>0
   const phoenixTaskPercent = Math.min(100, (inputs.phoenixTaskIds.length / 9) * 100)

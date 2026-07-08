@@ -37,6 +37,11 @@ export default async function ProgramWorkoutPage({ params }: { params: Promise<{
   })
   const assignedWorkout = logic.workoutDecision.assignedWorkout
   const assignedExercises = assignedWorkout?.exercises || []
+  const showInteractiveWorkout =
+    Boolean(assignedExercises.length) &&
+    logic.workoutDecision.displayWorkout &&
+    logic.workoutDecision.canTrain &&
+    safetyFlags.length === 0
 
   return (
     <main className="aos-workout-page">
@@ -45,11 +50,11 @@ export default async function ProgramWorkoutPage({ params }: { params: Promise<{
         {safetyFlags.length?<SafetyEscalationNotice flags={safetyFlags} embedded/>:null}
         <div className="aos-workout-guidance"><AOSCard><p className="aos-eyebrow">Fuel first</p><h2>{logic.fuelReadiness.status.replaceAll('_',' ')}</h2><p>{logic.workoutDecision.preWorkoutFuelPrompt||logic.fuelReadiness.preWorkoutAction}</p></AOSCard><AOSCard><p className="aos-eyebrow">Today&apos;s adjustment</p><h2>{logic.workoutDecision.adjustmentLevel.replaceAll('_',' ')}</h2><p>{logic.workoutDecision.modifications.join(' ')||'Use the planned workout.'}</p></AOSCard></div>
         <section className="aos-workout-tracker-shell">
-          {logic.workoutDecision.canTrain && assignedExercises.length ? (
+          {showInteractiveWorkout ? (
             <>
               <WorkoutTracker clientId={client.client_id} authUserId={client.auth_user_id} program={output?.program || program} dayName={assignedWorkout.day_name} exercises={assignedExercises} />
             </>
-          ) : <div className="aos-workout-preview"><p className="aos-eyebrow">Plan remains visible</p><h2>{logic.workoutDecision.canTrain?'Recovery movement':'Do not train until the safety flag is resolved'}</h2><p>{logic.workoutDecision.reasonForModification}</p>{assignedExercises.length?<div>{assignedExercises.map((exercise:any,index:number)=><article key={`${exercise.id||exercise.name||exercise.exercise}-${index}`}><span>{index+1}</span><div><strong>{exercise.display_name||exercise.name||exercise.exercise||'Exercise'}</strong><small>{exercise.sets||'—'} sets · {exercise.recommended_reps||exercise.reps||'—'} reps · {Math.round(Number(exercise.recommended_weight||exercise.calculated_weight||0))||'Bodyweight'} load</small></div></article>)}</div>:null}</div>}
+          ) : <div className="aos-workout-preview"><p className="aos-eyebrow">Plan remains visible</p><h2>{safetyFlags.length || !logic.workoutDecision.canTrain ? 'Safety support first' : 'Recovery movement'}</h2><p>{safetyFlags.length ? 'The assigned plan is listed below, but completion is paused until the safety message is resolved.' : logic.workoutDecision.reasonForModification}</p>{assignedExercises.length?<div>{assignedExercises.map((exercise:any,index:number)=><article key={`${exercise.id||exercise.name||exercise.exercise}-${index}`}><span>{index+1}</span><div><strong>{exercise.display_name||exercise.name||exercise.exercise||'Exercise'}</strong><small>{exercise.sets||'—'} sets · {exercise.recommended_reps||exercise.reps||'—'} reps · {Math.round(Number(exercise.recommended_weight||exercise.calculated_weight||0))||'Bodyweight'} load</small></div></article>)}</div>:null}</div>}
         </section>
       </div>
     </main>
