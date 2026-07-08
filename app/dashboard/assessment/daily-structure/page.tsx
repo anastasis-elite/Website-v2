@@ -1,4 +1,3 @@
-import * as styles from '../../../styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import DailyStructureAssessment from '@/components/DailyStructureAssessment'
 import ScheduleBlockEditor from '@/components/ScheduleBlockEditor'
@@ -8,20 +7,18 @@ export default async function DailyStructureAssessmentPage() {
   const { data: scheduleBlocks } = await supabase.from('client_schedule_blocks').select('id,block_type,label,days_of_week,start_time,end_time').eq('client_id', client.client_id).eq('user_id', user.id).eq('active', true).order('start_time')
 
   return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Daily Structure</p>
-
-        <h1 style={styles.heroTitleStyle}>
-          Build the rhythm your day can actually hold.
-        </h1>
-
-        <p style={styles.heroTextStyle}>
+    <main className="aos-flow-page">
+      <div className="aos-flow-shell">
+        <header className="aos-flow-hero">
+        <p className="aos-eyebrow">Daily Structure</p>
+        <h1>Build the rhythm your day can actually hold.</h1>
+        <p>
           This assessment helps your dashboard understand how you move through
           the day. Some women need exact times. Some need flexible blocks. Some
           need one next step at a time. This is where your system learns how to
           support you without overwhelming you.
         </p>
+        </header>
 
         <DailyStructureAssessment
           clientId={client.client_id}

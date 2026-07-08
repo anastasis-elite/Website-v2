@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import * as styles from '@/app/styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
+import { AOSCard } from '@/components/aos-ui/AOSCard'
 
 export default async function AssessmentContent(){
   const {supabase,client}=await getDashboardContext();const monthly=await getMonthlyAssessmentStatus(supabase,client.client_id)
@@ -12,5 +12,5 @@ export default async function AssessmentContent(){
     {title:'Measurements',body:'Record consistent physical measurements.',href:'/dashboard/assessment/measurements',cta:'Open Measurements',primary:false},
     {title:'Photos',body:'Upload private progress and assessment photos.',href:'/dashboard/assessment/photos',cta:'Open Photos',primary:false},
   ]
-  return <main style={styles.pageStyle}><div style={styles.containerStyle}><p style={styles.eyebrowStyle}>Assessments</p><h1 style={styles.heroTitleStyle}>Use the right check-in for the right job.</h1><p style={styles.heroTextStyle}>Daily signals guide today. Monthly and strength assessments update the longer plan.</p><div style={styles.cardGridStyle}>{actions.map((action)=><section key={action.title} style={styles.cartBoxStyle}><h2 style={styles.sectionTitleStyle}>{action.title}</h2><p style={styles.bodyStyle}>{action.body}</p><Link href={action.href} style={action.primary?styles.primaryButtonStyle:styles.secondaryButtonStyle}>{action.cta}</Link></section>)}</div>{!monthly.due?<section style={styles.cartBoxStyle}><h2 style={styles.sectionTitleStyle}>Monthly assessment complete</h2><p style={styles.bodyStyle}>It will return when 30 days have passed.</p></section>:null}</div></main>
+  return <main className="aos-flow-page"><div className="aos-flow-shell"><header className="aos-flow-hero"><p className="aos-eyebrow">Assessments</p><h1>Use the right check-in for the right job.</h1><p>Daily signals guide today. Monthly and strength assessments update the longer plan.</p></header><div className="aos-assessment-grid">{actions.map((action)=><AOSCard key={action.title}><h2 className="aos-card-title">{action.title}</h2><p className="aos-muted-copy">{action.body}</p><Link href={action.href} className={action.primary?'aos-primary-link':'aos-secondary-link'}>{action.cta}</Link></AOSCard>)}</div>{!monthly.due?<AOSCard><h2 className="aos-card-title">Monthly assessment complete</h2><p className="aos-muted-copy">It will return when 30 days have passed.</p></AOSCard>:null}</div></main>
 }

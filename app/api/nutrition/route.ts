@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
 
 export async function GET(req: Request) {
   try {
@@ -10,14 +11,28 @@ export async function GET(req: Request) {
 
     const supabase = await createClient()
 
-    const { data: strengthAssessment } = await supabase
-      .from('assessments')
-      .select('*')
-      .eq('client_id', client_id)
-      .eq('assessment_type', 'strength')
-      .order('submitted_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    const [{ data: strengthAssessment }, { data: client }, { data: cycleLog }] = await Promise.all([
+      supabase
+        .from('assessments')
+        .select('*')
+        .eq('client_id', client_id)
+        .eq('assessment_type', 'strength')
+        .order('submitted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('clients')
+        .select('birthdate')
+        .eq('client_id', client_id)
+        .maybeSingle(),
+      supabase
+        .from('cycle_logs')
+        .select('phase')
+        .eq('client_id', client_id)
+        .order('log_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ])
 
     const data = strengthAssessment?.data || {}
 
@@ -36,6 +51,24 @@ export async function GET(req: Request) {
     const fats = Math.round((calories * 0.28) / 9)
     const carbs = Math.round((calories - protein * 4 - fats * 9) / 4)
     const water = weight ? Math.round(weight * 0.6) : 100
+    const birthdate = client?.birthdate ? new Date(client.birthdate) : null
+    const now = new Date()
+    const age = birthdate && !Number.isNaN(birthdate.getTime())
+      ? now.getFullYear() - birthdate.getFullYear() - (now < new Date(now.getFullYear(), birthdate.getMonth(), birthdate.getDate()) ? 1 : 0)
+      : 35
+    const trainingLevel = program === 'phoenix'
+      ? 'recovery'
+      : program === 'ignite' || program === 'ember'
+        ? 'strength_hypertrophy'
+        : 'general_fitness'
+    const micronutrientTargets = calculateMicronutrientTargets({
+      age,
+      calories,
+      weightLbs: weight || Math.max(100, Math.round(water / 0.6)),
+      waterOz: water,
+      cyclePhase: cycleLog?.phase || 'unknown',
+      trainingLevel,
+    })
 
     return NextResponse.json({
       client_id,
@@ -46,6 +79,7 @@ export async function GET(req: Request) {
       carbs,
       fats,
       water,
+      ...micronutrientTargets,
       micros:
         'Prioritize magnesium, potassium, sodium, calcium, iron, B vitamins, vitamin D, and omega-3 rich foods.',
       recipes: [],

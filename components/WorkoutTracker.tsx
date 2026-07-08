@@ -629,7 +629,7 @@ export default function WorkoutTracker({
                   Selected: {exercise.selected_variant_name}
                 </p>
                 {exercise.client_cues.length ? <ul className="workout-os-cues">{exercise.client_cues.map((cue)=><li key={cue}>{cue}</li>)}</ul> : null}
-                {exercise.rpe_target || exercise.rest_seconds ? <p className="workout-os-dose">{exercise.rpe_target}{exercise.rpe_target&&exercise.rest_seconds?' · ':''}{exercise.rest_seconds?`${exercise.rest_seconds}s rest`:''}</p> : null}
+                {exercise.rpe_target || exercise.rest_seconds ? <p className="workout-os-dose">{exercise.rpe_target}{exercise.rpe_target?' · ':''}Rest until heart rate is below 115 bpm. If HR is unavailable, rest until breathing is controlled and you feel ready to repeat with good form.</p> : null}
 
                 {exercise.available_variants.length > 1 && (
                   <label>

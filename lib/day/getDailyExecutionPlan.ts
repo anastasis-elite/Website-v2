@@ -261,6 +261,10 @@ export async function getDailyExecutionPlan({
     .eq('client_id', client.client_id)
     .eq('log_date', today)
     .maybeSingle()
+  const completedDailyTasks = Array.isArray(todayRecoveryLog?.daily_tasks)
+    ? todayRecoveryLog.daily_tasks
+    : []
+  const isBlockComplete = (block: string) => completedDailyTasks.includes(`${block}-complete`)
 
   const workoutCompleted = !!todayWorkoutLog?.completed
   const { count: mealCount } = todayNutritionLog?.id
@@ -388,7 +392,7 @@ export async function getDailyExecutionPlan({
         nowMinutes,
         targetMinutes: morningMinutes,
         executionStyle,
-        completed: false,
+        completed: isBlockComplete('morning'),
         windowMinutes: 180,
       }),
       body:
@@ -406,6 +410,7 @@ export async function getDailyExecutionPlan({
         nowMinutes,
         targetMinutes: middayMinutes,
         executionStyle,
+        completed: isBlockComplete('midday'),
         windowMinutes: 180,
       }),
       body:
@@ -417,11 +422,11 @@ export async function getDailyExecutionPlan({
     },
     {
       id: 'evening',
-      title: dayFullyComplete ? 'Evening Complete' : 'Evening',
+      title: dayFullyComplete || isBlockComplete('evening') ? 'Evening Complete' : 'Evening',
       timing: bedTime
         ? `Before bed near ${formatTime(bedTime)}`
         : 'Evening into bedtime',
-      status: dayFullyComplete
+      status: dayFullyComplete || isBlockComplete('evening')
         ? 'complete'
         : getStatus({
             nowMinutes,
@@ -429,13 +434,13 @@ export async function getDailyExecutionPlan({
             executionStyle,
             windowMinutes: 180,
           }),
-      body: dayFullyComplete
+      body: dayFullyComplete || isBlockComplete('evening')
         ? 'Your system is complete for today. Close the day with pride, softness, and relief.'
         : 'This block is for recovery, sleep preparation, and a soft landing at the end of the day.',
       macroTarget: eveningTarget,
       items: eveningItems,
       buttonHref: '/dashboard/day/evening',
-      buttonLabel: dayFullyComplete ? 'Receive Today' : 'Open Evening Flow',
+      buttonLabel: dayFullyComplete || isBlockComplete('evening') ? 'Receive Today' : 'Open Evening Flow',
     },
   ]
 
@@ -465,5 +470,6 @@ export async function getDailyExecutionPlan({
     recoveryTools,
     dayFullyComplete,
     macroTargetsMet,
+    completedDailyTasks,
   }
 }

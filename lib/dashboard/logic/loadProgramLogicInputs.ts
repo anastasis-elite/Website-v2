@@ -74,6 +74,7 @@ export async function loadProgramLogicInputs({
   if (mealMatches(['lunch','midday'])) automaticTaskIds.add('midday-lunch')
   if (mealMatches(['dinner','supper','evening'])) automaticTaskIds.add('evening-dinner')
   if (todayRecovery?.check_in_completed_at) ['morning-checkin','midday-checkin','evening-checkin'].forEach((id) => automaticTaskIds.add(id))
+  if (Array.isArray(todayRecovery?.daily_tasks)) todayRecovery.daily_tasks.forEach((id: string) => automaticTaskIds.add(id))
   if ((recoveryActivities || []).length) automaticTaskIds.add('evening-wind-down')
   if (dailyPlan?.workoutCompleted) automaticTaskIds.add('midday-movement')
   const waterTarget = Number(dailyPlan?.dailyTargets?.water || 0)

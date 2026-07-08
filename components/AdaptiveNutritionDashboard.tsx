@@ -151,7 +151,19 @@ export default function AdaptiveNutritionDashboard({
       const targets = await targetResponse.json()
       const createResponse = await fetch('/api/nutrition-log', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: client.client_id, log_date: today, protein: targets.protein, carbs: targets.carbs, fats: targets.fats, calories: targets.calories, water_oz: targets.water, meals: [], completed: false }),
+        body: JSON.stringify({
+          client_id: client.client_id,
+          log_date: today,
+          protein: targets.protein,
+          carbs: targets.carbs,
+          fats: targets.fats,
+          calories: targets.calories,
+          water_oz: targets.water,
+          meals: [],
+          completed: false,
+          cyclePhase: targets.phase,
+          trainingLevel: tier === 'phoenix' ? 'recovery' : 'strength_hypertrophy',
+        }),
       })
       if (!createResponse.ok) {
         setMessage('Today’s nutrition plan could not be prepared yet.')
@@ -335,18 +347,26 @@ export default function AdaptiveNutritionDashboard({
             </summary>
 
             <div style={{ ...styles.cardGridStyle, marginTop: '28px' }}>
-              {microRows.map(([label, target, remainingValue, unit]) => (
-                <div key={String(label)} style={styles.compactCardStyle}>
-                  <h3 style={styles.compactCardTitleStyle}>{label}</h3>
-                  <p style={styles.compactCardTextStyle}>
-                    Target: {target ?? 0}
-                    {unit}
-                    <br />
-                    Remaining: {remainingValue ?? 0}
-                    {unit}
-                  </p>
-                </div>
-              ))}
+              {microRows.map(([label, target, remainingValue, unit]) => {
+                const targetValue = Number(target || 0)
+                const leftValue = Number(remainingValue || 0)
+                const currentValue = targetValue ? Math.max(0, Math.round((targetValue - leftValue) * 10) / 10) : 0
+                return (
+                  <div key={String(label)} style={styles.compactCardStyle}>
+                    <h3 style={styles.compactCardTitleStyle}>{label}</h3>
+                    <p style={styles.compactCardTextStyle}>
+                      Current: {currentValue}
+                      {unit}
+                      <br />
+                      Target: {targetValue}
+                      {unit}
+                      <br />
+                      Remaining: {leftValue}
+                      {unit}
+                    </p>
+                  </div>
+                )
+              })}
             </div>
           </details>
         ) : null}

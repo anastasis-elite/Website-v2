@@ -78,19 +78,21 @@ export default function StartContent({ client, assessmentType = 'initial' }: { c
   }
 
   return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>{assessmentType === 'monthly' ? 'Monthly Assessment' : 'Assessment'}</p>
+    <main className="aos-flow-page">
+      <div className="aos-flow-shell">
+        <header className="aos-flow-hero">
+        <p className="aos-eyebrow">{assessmentType === 'monthly' ? 'Monthly Assessment' : 'Assessment'}</p>
 
-        <h1 style={styles.heroTitleStyle}>
+        <h1>
           Let’s build the starting point.
         </h1>
 
-        <p style={styles.heroTextStyle}>
+        <p>
           This assessment gives the system the information it needs to begin shaping
           your execution plan around your body, schedule, recovery, environment, and
           current capacity.
         </p>
+        </header>
 
         <form onSubmit={handleSubmit} style={styles.cartBoxStyle}>
           <input type="hidden" name="client_id" value={formData.client_id} readOnly />

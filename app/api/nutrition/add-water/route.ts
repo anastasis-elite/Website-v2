@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
 
 export async function POST(request: Request) {
   try {
@@ -67,6 +68,19 @@ export async function POST(request: Request) {
       const fats = Math.round((calories * 0.28) / 9)
       const carbs = Math.round((calories - protein * 4 - fats * 9) / 4)
       const water = weight ? Math.round(weight * 0.6) : 100
+      const birthdate = client.birthdate ? new Date(client.birthdate) : null
+      const now = new Date()
+      const age = birthdate && !Number.isNaN(birthdate.getTime())
+        ? now.getFullYear() - birthdate.getFullYear() - (now < new Date(now.getFullYear(), birthdate.getMonth(), birthdate.getDate()) ? 1 : 0)
+        : 35
+      const micronutrientTargets = calculateMicronutrientTargets({
+        age,
+        calories,
+        weightLbs: weight || Math.max(100, Math.round(water / 0.6)),
+        waterOz: water,
+        cyclePhase: 'unknown',
+        trainingLevel: 'general_fitness',
+      })
 
       const { data: newLog, error: insertError } = await supabase
         .from('nutrition_logs')
@@ -80,6 +94,7 @@ export async function POST(request: Request) {
           fats,
           water_oz: water,
           water_consumed_oz: Number(ounces),
+          ...micronutrientTargets,
           updated_at: new Date().toISOString(),
         })
         .select('*')
