@@ -86,11 +86,12 @@ export default function Start2Content({ client }: { client: ClientData }) {
   }
 
   return (
-    <main style={styles.pageStyle}>
-      <div style={styles.containerStyle}>
-        <h1 style={styles.heroTitleStyle}>
-          Let’s measure your current capacity.
-        </h1>
+    <main className="aos-flow-page">
+      <div className="aos-flow-shell">
+        <header className="aos-flow-hero">
+          <p className="aos-eyebrow">Strength Assessment</p>
+          <h1>Let’s measure your current capacity.</h1>
+        </header>
 
         <div
   style={{

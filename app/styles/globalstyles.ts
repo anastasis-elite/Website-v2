@@ -1,14 +1,14 @@
 import type { CSSProperties } from 'react'
 
 export const pageStyle: CSSProperties = {
-  background: 'transparent',
+  background: 'radial-gradient(circle at 50% -10%,rgba(126,38,15,.16),transparent 35rem),#050505',
   color: '#f5f0e8',
   minHeight: '100vh',
-  padding: '120px 24px',
+  padding: '84px 18px calc(126px + env(safe-area-inset-bottom))',
 }
 
 export const containerStyle: CSSProperties = {
-  maxWidth: '980px',
+  maxWidth: '1080px',
   margin: '0 auto',
   position: 'relative',
   zIndex: 2,
@@ -24,19 +24,19 @@ export const eyebrowStyle: CSSProperties = {
 }
 
 export const heroTitleStyle: CSSProperties = {
-  fontSize: 'clamp(2.8rem, 5vw, 5rem)',
-  lineHeight: 1.1,
-  letterSpacing: '-0.02em',
-  margin: '0 0 28px 0',
-  maxWidth: '900px',
+  fontSize: 'clamp(1.25rem, 2.8vw, 1.9rem)',
+  lineHeight: 1.2,
+  letterSpacing: '0',
+  margin: '0 0 10px 0',
+  maxWidth: '760px',
 }
 
 export const heroTextStyle: CSSProperties = {
-  fontSize: '1.08rem',
-  lineHeight: 1.95,
-  color: 'rgba(215,199,182,0.82)',
-  maxWidth: '760px',
-  marginBottom: '72px',
+  fontSize: '.9rem',
+  lineHeight: 1.55,
+  color: '#a58a7d',
+  maxWidth: '720px',
+  marginBottom: '28px',
 }
 
 export const sectionStyle: CSSProperties = {
@@ -44,17 +44,17 @@ export const sectionStyle: CSSProperties = {
 }
 
 export const sectionTitleStyle: CSSProperties = {
-  fontSize: '1.55rem',
+  fontSize: 'clamp(1.25rem, 2.8vw, 1.65rem)',
   marginBottom: '16px',
   fontWeight: 500,
   letterSpacing: '-0.02em',
 }
 
 export const bodyStyle: CSSProperties = {
-  color: '#d7c7b6',
-  lineHeight: 1.9,
-  fontSize: '1.05rem',
-  maxWidth: '820px',
+  color: '#a58a7d',
+  lineHeight: 1.55,
+  fontSize: '.9rem',
+  maxWidth: '720px',
 }
 
 export const cardGridStyle: CSSProperties = {
@@ -88,17 +88,15 @@ export const cardTextStyle: CSSProperties = {
 }
 
 export const cartBoxStyle: CSSProperties = {
-  background: 'rgba(18,18,18,0.52)',
-  border: 'none',
-  borderRadius: '34px',
-  padding: '38px',
-  marginBottom: '36px',
-
+  background: 'linear-gradient(145deg,rgba(31,21,17,.68),rgba(8,8,8,.92))',
+  border: '1px solid rgba(217,91,48,.2)',
+  borderRadius: '22px',
+  padding: 'clamp(18px,2.6vw,24px)',
+  marginBottom: '22px',
   backdropFilter: 'blur(18px)',
-
   boxShadow: `
-    0 24px 80px rgba(0,0,0,0.18),
-    inset 0 0 30px rgba(255,255,255,0.015)
+    0 20px 50px rgba(0,0,0,.33),
+    inset 0 1px rgba(255,255,255,.025)
   `,
 }
 
