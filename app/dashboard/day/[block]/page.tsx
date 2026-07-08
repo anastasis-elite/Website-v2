@@ -114,7 +114,7 @@ export default async function DayBlockPage({
               style={styles.primaryButtonStyle}
             >
               Open Workout
-            </Link>
+            <git Link>
           </section>
         ) : null}
 
