@@ -48,4 +48,11 @@ export type AccountProfileFormData = {
   reproductive_status: string | null
   last_period_start: string | null
   average_cycle_length: number | null
+  injuries: string[]
+  limitations: string[]
+  equipment_access: string[]
+  current_weight: number | null
+  primary_goal: string | null
+  workout_days_available: number | null
+  current_workout_minutes_per_session: number | null
 }

@@ -55,6 +55,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  if (request.nextUrl.pathname.startsWith('/dashboard') && user) {
+    const { data: client } = await supabase.from('clients').select('program,onboarding_completed,birthdate,address_line_1,city,state,postal_code,verified_purchase,access,active').eq('auth_user_id', user.id).maybeSingle()
+    const onboardingRoute = request.nextUrl.pathname.startsWith('/dashboard/onboarding')
+    const paymentIssueRoute = request.nextUrl.pathname.startsWith('/dashboard/payment-issue')
+    const complete = Boolean(client?.onboarding_completed && client.birthdate && client.address_line_1 && client.city && client.state && client.postal_code)
+    if (client && !complete && !onboardingRoute) {
+      const url = request.nextUrl.clone(); url.pathname = '/dashboard/onboarding/profile'; url.search = ''
+      return NextResponse.redirect(url)
+    }
+    if (client?.verified_purchase === true && (client.access === false || client.active === false) && !paymentIssueRoute && !onboardingRoute) {
+      const url = request.nextUrl.clone(); url.pathname = '/dashboard/payment-issue'; url.search = ''
+      return NextResponse.redirect(url)
+    }
+  }
+
   return response
 }
 

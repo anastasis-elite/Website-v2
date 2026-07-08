@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation'
 export default async function ProgramPlanContentRedirect({
   params,
 }: {
-  params: { program: string }
+  params: Promise<{ program: string }>
 }) {
-  redirect(`/dashboard/program/${params.program}`)
+  const { program } = await params
+  redirect(`/dashboard/program/${program}`)
 }

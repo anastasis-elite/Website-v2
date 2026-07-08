@@ -19,6 +19,13 @@ export default async function AccountPage() {
     reproductive_status: client.reproductive_status || null,
     last_period_start: client.last_period_start || null,
     average_cycle_length: client.average_cycle_length || null,
+    injuries: client.injuries || [],
+    limitations: client.limitations || [],
+    equipment_access: client.equipment_access || [],
+    current_weight: client.current_weight || null,
+    primary_goal: client.primary_goal || null,
+    workout_days_available: client.workout_days_available || null,
+    current_workout_minutes_per_session: client.current_workout_minutes_per_session || null,
   }
   return <AccountDashboard initialData={data} client={profileFormData} user={{ email: user.email || null }} />
 }

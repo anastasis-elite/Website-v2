@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     servingOptionId,
     symptoms = [],
     symptomNotes,
+    dayBlock,
   } = body
 
   if (!nutritionLogId || !foodId) {
@@ -60,6 +61,9 @@ export async function POST(request: Request) {
 
   let grams: number | null = null
   let resolvedServingUnit = servingUnit || 'serving'
+  const normalizedMealName = String(mealName || 'Meal')
+  const inferredDayBlock = String(dayBlock || '').toLowerCase() || (/breakfast|pre workout/i.test(normalizedMealName) ? 'morning' : /lunch|snack/i.test(normalizedMealName) ? 'midday' : /dinner|supper|post workout/i.test(normalizedMealName) ? 'evening' : 'other')
+  if (!['morning','midday','evening','other'].includes(inferredDayBlock)) return NextResponse.json({ error: 'Invalid meal time block.' }, { status: 400 })
 
   if (servingOptionId) {
     const { data: servingOption, error: servingOptionError } = await supabase
@@ -91,11 +95,12 @@ export async function POST(request: Request) {
     .insert({
       nutrition_log_id: nutritionLogId,
       food_id: foodId,
-      meal_name: mealName || 'Meal',
+      meal_name: normalizedMealName,
       serving_amount: amount,
       serving_unit: resolvedServingUnit,
       serving_option_id: servingOptionId || null,
       grams,
+      day_block: inferredDayBlock,
       symptoms_after: symptomNotes || null,
       notes: symptomNotes || null,
     })
@@ -129,6 +134,8 @@ export async function POST(request: Request) {
     }
   }
 
+  await supabase.from('nutrition_logs').update({ completed: true, updated_at: new Date().toISOString() }).eq('id', nutritionLogId).eq('auth_user_id', user.id)
+
   const { data: remaining, error: remainingError } = await supabase
     .from('nutrition_log_remaining')
     .select('*')
@@ -145,6 +152,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     success: true,
     mealEntryId: mealEntry.id,
+    dayBlock: inferredDayBlock,
     remaining,
   })
 }

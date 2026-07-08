@@ -1,5 +1,6 @@
 import * as styles from '../styles/globalstyles'
 import TrackEvent from '@/components/TrackEvent'
+import Link from 'next/link'
 
 const paths = [
   {
@@ -328,13 +329,13 @@ export default function ProgramPage() {
           </p>
 
           <div style={{ ...styles.buttonRowStyle, justifyContent: 'center' }}>
-            <a href="/audit" style={styles.primaryButtonStyle}>
+            <Link href="/audit" style={styles.primaryButtonStyle}>
               Help Me Find My Path
-            </a>
+            </Link>
 
-            <a href="/" style={styles.secondaryButtonStyle}>
+            <Link href="/" style={styles.secondaryButtonStyle}>
               Return Home
-            </a>
+            </Link>
           </div>
         </section>
 

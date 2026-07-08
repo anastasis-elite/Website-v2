@@ -3,6 +3,7 @@ import {
   getNutritionBlockTargets,
   type NutritionBlockKey,
 } from '@/lib/nutrition/getNutritionBlockTargets'
+import { getAvailableWindows } from '@/lib/schedule/getAvailableWindows'
 
 type DailyCard = {
   id: string
@@ -105,11 +106,17 @@ export async function getDailyExecutionPlan({
 
   const wakeTime = client.wake_time || null
   const bedTime = client.bed_time || null
-  const workoutTime = client.preferred_workout_time || null
+  let workoutTime = client.preferred_workout_time || null
   const workStartTime = client.work_start_time || null
 
   const wakeMinutes = parseTimeToMinutes(wakeTime)
   const bedMinutes = parseTimeToMinutes(bedTime)
+  if (!workoutTime) {
+    const { data: scheduleBlocks } = await supabase.from('client_schedule_blocks').select('days_of_week,start_time,end_time,active').eq('client_id', client.client_id).eq('active', true)
+    const requiredMinutes = Math.max(10, Number(client.current_workout_minutes_per_session || 20))
+    const nextWindow = getAvailableWindows(scheduleBlocks || [], now.getDay(), requiredMinutes).find((window) => parseTimeToMinutes(window.start) !== null && Number(parseTimeToMinutes(window.start)) >= nowMinutes)
+    workoutTime = nextWindow?.start || null
+  }
   const workoutMinutes = parseTimeToMinutes(workoutTime)
   const workStartMinutes = parseTimeToMinutes(workStartTime)
 
@@ -256,7 +263,10 @@ export async function getDailyExecutionPlan({
     .maybeSingle()
 
   const workoutCompleted = !!todayWorkoutLog?.completed
-  const nutritionLogged = !!todayNutritionLog
+  const { count: mealCount } = todayNutritionLog?.id
+    ? await supabase.from('meal_entries').select('id', { count: 'exact', head: true }).eq('nutrition_log_id', todayNutritionLog.id)
+    : { count: 0 }
+  const nutritionLogged = Number(mealCount || 0) > 0
 
   const recoveryTools = getRecoveryTools({
     client,

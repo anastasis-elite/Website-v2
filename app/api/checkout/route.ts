@@ -3,8 +3,6 @@ import Stripe from 'stripe'
 
 export const runtime = 'nodejs'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
-
 const PRICE_MAP = {
   ember: {
     subscription: process.env.EMBER_SUB_PRICE,
@@ -22,6 +20,9 @@ const PRICE_MAP = {
 
 export async function POST(req: Request) {
   try {
+    const stripeSecretKey=process.env.STRIPE_SECRET_KEY
+    if(!stripeSecretKey)return NextResponse.json({error:'Checkout is not configured.'},{status:503})
+    const stripe=new Stripe(stripeSecretKey)
     const {
   program,
   billing,
@@ -46,13 +47,15 @@ export async function POST(req: Request) {
       )
     }
 
-    const origin = req.headers.get('origin') || 'https://www.anastasiselite.com'
+    const origin = (process.env.NEXT_PUBLIC_APP_URL||new URL(req.url).origin||'https://www.anastasiselite.com').replace(/\/$/,'')
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
 
     const session = await stripe.checkout.sessions.create({
       mode: billing === 'subscription' ? 'subscription' : 'payment',
       line_items: [{ price: priceId, quantity: 1 }],
-      customer_email: email || undefined,
-      success_url: `${origin}/verified?session_id={CHECKOUT_SESSION_ID}&program=${program}`,
+      customer_email: normalizedEmail || undefined,
+      client_reference_id: client_id || undefined,
+      success_url: `${origin}/verified?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/program/${program}/cart${safeReferralCode ? `?ref=${encodeURIComponent(safeReferralCode)}` : ''}`,
 
       metadata: {
@@ -60,7 +63,7 @@ export async function POST(req: Request) {
   application_id: application_id || '',
   program,
   billing,
-  email: email || '',
+  email: normalizedEmail,
   fullName: fullName || '',
         birthdate: birthdate || '',
         referral_code: safeReferralCode,
@@ -80,7 +83,7 @@ export async function POST(req: Request) {
           application_id: application_id || '',
           program,
           billing,
-          email: email || '',
+          email: normalizedEmail,
           fullName: fullName || '',
           referral_code: safeReferralCode,
           referral_source: safeReferralCode ? 'referral_link' : '',

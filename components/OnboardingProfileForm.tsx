@@ -64,7 +64,7 @@ export default function OnboardingProfileForm({ client }: { client: any }) {
         throw new Error(data?.error || 'Profile update failed')
       }
 
-      router.push('/dashboard')
+      router.push(data.redirect||'/dashboard')
       router.refresh()
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Something went wrong.')

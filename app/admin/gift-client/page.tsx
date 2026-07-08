@@ -7,13 +7,11 @@ export default function GiftClientPage() {
   const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({
-    adminSecret: '',
     fullName: '',
     email: '',
     phone: '',
     program: 'ignite',
     durationMonths: '12',
-    temporaryPassword: '',
   })
 
   const [responseMessage, setResponseMessage] = useState('')
@@ -46,6 +44,10 @@ export default function GiftClientPage() {
 
       const data = await res.json()
 
+      if (data?.createLoginLink) {
+        setCreateLoginLink(data.createLoginLink)
+      }
+
       if (!res.ok) {
         throw new Error(
   [
@@ -60,10 +62,6 @@ export default function GiftClientPage() {
       }
 
       setResponseMessage('Gifted client created successfully.')
-
-      if (data?.createLoginLink) {
-        setCreateLoginLink(data.createLoginLink)
-      }
     } catch (error) {
       setResponseMessage(
         error instanceof Error
@@ -100,23 +98,6 @@ export default function GiftClientPage() {
   }}
 >
             <input
-              type="password"
-              name="adminSecret"
-              placeholder="Admin Secret"
-              value={formData.adminSecret}
-              onChange={handleChange}
-              required
-              style={{
-  width: '100%',
-  padding: '14px 16px',
-  borderRadius: 12,
-  border: '1px solid rgba(255,255,255,0.1)',
-  background: 'rgba(255,255,255,0.04)',
-  color: 'white',
-}}
-            />
-
-            <input
               type="text"
               name="fullName"
               placeholder="Full Name"
@@ -150,22 +131,6 @@ export default function GiftClientPage() {
 }}
             />
 
-            <input
-  type="text"
-  name="temporaryPassword"
-  placeholder="Temporary Password"
-  value={formData.temporaryPassword}
-  onChange={handleChange}
-  required
-  style={{
-    width: '100%',
-    padding: '14px 16px',
-    borderRadius: 12,
-    border: '1px solid rgba(255,255,255,0.1)',
-    background: 'rgba(255,255,255,0.04)',
-    color: 'white',
-  }}
-/>
             <input
               type="text"
               name="phone"

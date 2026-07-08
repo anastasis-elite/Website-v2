@@ -74,7 +74,6 @@ export default function AccountDashboard({ initialData, client, user }: { initia
           <details className="account-panel account-detail-panel" id="billing"><summary>Billing & Subscriptions <span>Open ›</span></summary><div className="account-detail-copy"><p>Current status: <strong>{profile.subscriptionStatus || 'Contact support to confirm'}</strong></p><div className="account-inline-actions"><Link href="/refund-policy">Billing policy</Link><a href="mailto:Anastasis.elite@gmail.com?subject=Billing%20Support">Contact billing support</a></div></div></details>
         </section>
 
-        <nav className="account-bottom-nav" aria-label="Account navigation"><Link href={dashboardHref}><span>⌂</span>Dashboard</Link><Link href={workoutHref}><span>▣</span>Plan</Link><div className="account-nav-flame" aria-label={`${flame.score}% weekly execution`}><span aria-hidden="true">🔥</span><small>{flame.score}%</small></div><Link href="/dashboard/assessment/measurements"><span>▥</span>Progress</Link><Link href="/dashboard/account" className="active"><span>♙</span>Account</Link></nav>
       </div>
     </main>
   )

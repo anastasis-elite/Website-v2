@@ -1,11 +1,14 @@
 import * as styles from '@/app/styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import OnboardingProfileForm from '@/components/OnboardingProfileForm'
+import { redirect } from 'next/navigation'
+import { isClientOnboardingComplete } from '@/lib/dashboard/isClientOnboardingComplete'
 
 export default async function OnboardingProfilePage() {
   const { client } = await getDashboardContext({
     allowIncompleteOnboarding: true,
   })
+  if(isClientOnboardingComplete(client))redirect(`/dashboard/program/${client.program||'ignite'}`)
 
   return (
     <main style={styles.pageStyle}>

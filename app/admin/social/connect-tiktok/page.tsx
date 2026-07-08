@@ -10,8 +10,9 @@ export const dynamic = 'force-dynamic'
 export default async function ConnectTikTokPage({
   searchParams,
 }: {
-  searchParams?: { connected?: string; error?: string }
+  searchParams?: Promise<{ connected?: string; error?: string }>
 }) {
+  const query = await searchParams
   if (!(await getAOSAdminUser())) redirect('/aos-login')
 
   let account = null
@@ -42,8 +43,8 @@ export default async function ConnectTikTokPage({
               : 'Authorize profile, account statistics, and public video access for the internal Social Intelligence system.'}
           </p>
 
-          {searchParams?.connected === 'true' && <p style={styles.bodyStyle}>Connection saved.</p>}
-          {searchParams?.error && <p style={{ ...styles.bodyStyle, color: '#e9a98f' }}>Connection failed: {searchParams.error.replaceAll('_', ' ')}</p>}
+          {query?.connected === 'true' && <p style={styles.bodyStyle}>Connection saved.</p>}
+          {query?.error && <p style={{ ...styles.bodyStyle, color: '#e9a98f' }}>Connection failed: {query.error.replaceAll('_', ' ')}</p>}
           {!databaseReady && <p style={{ ...styles.bodyStyle, color: '#e9a98f' }}>Apply the social intelligence Supabase migration before connecting.</p>}
 
           <div style={{ ...styles.buttonRowStyle, marginTop: '24px' }}>

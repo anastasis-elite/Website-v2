@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import * as styles from '@/app/styles/globalstyles'
 
 type Food = {
@@ -66,6 +66,7 @@ export default function NutritionFoodLogger({
   const [servingAmount, setServingAmount] = useState('1')
   const [mealName, setMealName] = useState('Breakfast')
   const [message, setMessage] = useState('')
+  const [saved, setSaved] = useState(false)
   const [remaining, setRemaining] = useState<Remaining | null>(initialRemaining)
 
   const [searching, setSearching] = useState(false)
@@ -77,9 +78,21 @@ export default function NutritionFoodLogger({
 
   const [todayMeals, setTodayMeals] = useState<MealEntry[]>([])
 
-  useEffect(() => {
-    loadTodayMeals()
+  const loadTodayMeals = useCallback(async () => {
+    const res = await fetch(
+      `/api/today-meals?nutritionLogId=${nutritionLogId}`
+    )
+
+    const data = await res.json()
+
+    if (res.ok) {
+      setTodayMeals(data.meals || [])
+    }
   }, [nutritionLogId])
+
+  useEffect(() => {
+    void loadTodayMeals()
+  }, [loadTodayMeals])
 
   async function selectFood(food: Food) {
     setSelectedFood(food)
@@ -111,18 +124,6 @@ export default function NutritionFoodLogger({
     }
 
     setLoadingServingOptions(false)
-  }
-
-  async function loadTodayMeals() {
-    const res = await fetch(
-      `/api/today-meals?nutritionLogId=${nutritionLogId}`
-    )
-
-    const data = await res.json()
-
-    if (res.ok) {
-      setTodayMeals(data.meals || [])
-    }
   }
 
   async function searchFoods() {
@@ -158,6 +159,7 @@ export default function NutritionFoodLogger({
 
     setAdding(true)
     setMessage('')
+    setSaved(false)
 
     const selectedServingOption = servingOptions.find(
       (option) => option.id === selectedServingOptionId
@@ -188,7 +190,8 @@ export default function NutritionFoodLogger({
       setRemaining(data.remaining)
     }
 
-    setMessage('Meal added.')
+    setMessage('Food logged — today’s progress and remaining macros are updated.')
+    setSaved(true)
     setSearch('')
     setFoods([])
     setSelectedFood(null)
@@ -308,8 +311,8 @@ export default function NutritionFoodLogger({
       </button>
 
       {message && (
-        <p style={{ ...styles.bodyStyle, marginTop: '18px' }}>
-          {message}
+        <p role="status" aria-live="polite" style={{ ...styles.bodyStyle, marginTop: '18px', padding: '14px 16px', borderRadius: 14, border: saved ? '1px solid rgba(224,122,66,.7)' : '1px solid rgba(255,255,255,.12)', background: saved ? 'linear-gradient(135deg,rgba(181,78,35,.25),rgba(224,122,66,.08))' : 'rgba(255,255,255,.03)' }}>
+          {saved ? '✓ ' : ''}{message}
         </p>
       )}
 

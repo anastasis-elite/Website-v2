@@ -31,6 +31,14 @@ export default function AccountProfileForm({
     reproductiveStatus: client.reproductive_status || 'cycling',
     lastPeriodStart: client.last_period_start || '',
     averageCycleLength: String(client.average_cycle_length || 28),
+    injuries: client.injuries.join(', '),
+    limitations: client.limitations.join(', '),
+    equipmentAccess: client.equipment_access.join(', '),
+    currentWeight: client.current_weight ? String(client.current_weight) : '',
+    primaryGoal: client.primary_goal || '',
+    workoutDaysAvailable: client.workout_days_available ? String(client.workout_days_available) : '',
+    workoutMinutesAvailable: client.current_workout_minutes_per_session ? String(client.current_workout_minutes_per_session) : '',
+    confirmGoalChange: false,
   })
 
   const [passwordData, setPasswordData] = useState({
@@ -45,6 +53,10 @@ export default function AccountProfileForm({
       ...prev,
       [e.target.name]: e.target.value,
     }))
+  }
+
+  function handleProfileCheckbox(e: React.ChangeEvent<HTMLInputElement>) {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.checked }))
   }
 
   function handlePasswordChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -240,6 +252,31 @@ export default function AccountProfileForm({
             onChange={handleChange}
             style={styles.inputStyle}
           />
+
+          <label style={styles.labelStyle}>Current injuries or pain limitations
+            <input name="injuries" value={formData.injuries} onChange={handleChange} placeholder="Separate multiple items with commas" style={styles.inputStyle} />
+          </label>
+          <label style={styles.labelStyle}>Other movement limitations
+            <input name="limitations" value={formData.limitations} onChange={handleChange} placeholder="Separate multiple items with commas" style={styles.inputStyle} />
+          </label>
+          <label style={styles.labelStyle}>Equipment currently available
+            <input name="equipmentAccess" value={formData.equipmentAccess} onChange={handleChange} placeholder="Dumbbells, bands, full gym…" style={styles.inputStyle} />
+          </label>
+          <label style={styles.labelStyle}>Current weight
+            <input name="currentWeight" type="number" min="50" max="700" step="0.1" value={formData.currentWeight} onChange={handleChange} style={styles.inputStyle} />
+          </label>
+          <label style={styles.labelStyle}>Current primary goal
+            <select name="primaryGoal" value={formData.primaryGoal} onChange={handleChange} style={styles.inputStyle}>
+              <option value="">Select a goal</option><option value="fat_loss">Fat loss</option><option value="muscle_gain">Muscle gain</option><option value="strength">Strength</option><option value="recomposition">Recomposition</option><option value="endurance">Endurance</option><option value="general_capacity">General capacity</option>
+            </select>
+          </label>
+          {formData.primaryGoal !== (client.primary_goal || '') ? <label style={{ ...styles.bodyStyle, display: 'flex', gap: 10 }}><input type="checkbox" name="confirmGoalChange" checked={formData.confirmGoalChange} onChange={handleProfileCheckbox} /> I understand this changes future recommendations and want to update my primary goal.</label> : null}
+          <label style={styles.labelStyle}>Workout days available per week
+            <input name="workoutDaysAvailable" type="number" min="0" max="7" value={formData.workoutDaysAvailable} onChange={handleChange} style={styles.inputStyle} />
+          </label>
+          <label style={styles.labelStyle}>Minutes available per workout
+            <input name="workoutMinutesAvailable" type="number" min="5" max="300" value={formData.workoutMinutesAvailable} onChange={handleChange} style={styles.inputStyle} />
+          </label>
         </div>
 
         <button

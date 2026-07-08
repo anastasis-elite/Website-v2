@@ -13,12 +13,13 @@ import { AOSCard } from '@/components/aos-ui/AOSCard'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix']
 
-export default async function ProgramWorkoutPage({ params }: { params: { program: string } }) {
-  if (!supportedPrograms.includes(params.program)) redirect('/dashboard')
+export default async function ProgramWorkoutPage({ params }: { params: Promise<{ program: string }> }) {
+  const { program: routeProgram } = await params
+  if (!supportedPrograms.includes(routeProgram)) redirect('/dashboard')
 
   const { supabase, client, user } = await getDashboardContext()
   const program = client.program || 'ignite'
-  if (program !== params.program) redirect(`/dashboard/program/${program}/workout`)
+  if (program !== routeProgram) redirect(`/dashboard/program/${program}/workout`)
 
   const { data: output } = await supabase
     .from('program_outputs').select('*')

@@ -1,53 +1,43 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getAOSAdminUser } from '@/lib/aos/getAOSAdminUser'
+import { createClientInvitation } from '@/lib/auth/clientInvitations'
+import { enforceRateLimit } from '@/lib/auth/rateLimit'
 
 export const runtime = 'nodejs'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const validPrograms=new Set(['ember','ignite','phoenix'])
+const escapeHtml=(value:string)=>value.replace(/[&<>'"]/g,(character)=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]||character))
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
 
     const {
-      adminSecret,
       fullName,
       email,
       phone,
       program,
       durationMonths,
-      temporaryPassword,
     } = body
 
-    if (adminSecret !== process.env.ADMIN_GIFT_SECRET) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const admin = await getAOSAdminUser()
+    if (!admin) return NextResponse.json({ error: 'Admin authentication required.' }, { status: 401 })
 
-    if (!email || !fullName || !program || !temporaryPassword) {
+    const normalizedEmail = String(email || '').trim().toLowerCase()
+    const normalizedFullName = String(fullName || '').trim()
+    const normalizedPhone = String(phone || '').trim() || null
+
+    if (
+      !normalizedEmail ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) ||
+      !normalizedFullName ||
+      !validPrograms.has(program)
+    ) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
-      )
-    }
-
-    if (temporaryPassword.length < 8) {
-      return NextResponse.json(
-        { error: 'Temporary password must be at least 8 characters.' },
-        { status: 400 }
-      )
-    }
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-
-    const supabaseKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.SUPABASE_SECRET_KEY
-
-    if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json(
-        { error: 'Missing Supabase env vars' },
-        { status: 500 }
       )
     }
 
@@ -57,51 +47,25 @@ export async function POST(req: Request) {
         { status: 500 }
       )
     }
+    const resend=new Resend(process.env.RESEND_API_KEY)
 
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = createAdminClient()
+    const allowed = await enforceRateLimit({ supabase, scope: 'admin_gift_client', key: admin.id, limit: 10, windowMinutes: 15 })
+    if (!allowed) return NextResponse.json({ error: 'Too many gift attempts. Try again later.' }, { status: 429 })
 
-    const normalizedEmail = email.toLowerCase().trim()
-    const clientId = `AN-${Date.now()}`
+    const clientId = `AN-${crypto.randomUUID()}`
 
-    const months = Number(durationMonths || 12)
+    const months = Math.max(1,Math.min(24,Number(durationMonths)||12))
     const endsAt = new Date()
     endsAt.setMonth(endsAt.getMonth() + months)
 
-    const { data: authData, error: authError } =
-      await supabase.auth.admin.createUser({
-        email: normalizedEmail,
-        password: temporaryPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: fullName,
-          program,
-          access_type: 'gifted',
-        },
-      })
-
-    if (authError || !authData.user) {
-      console.error('GIFT AUTH ERROR:', authError)
-
-      return NextResponse.json(
-        {
-          error: 'Auth user creation failed',
-          details: authError?.message,
-          code: authError?.code,
-          status: authError?.status,
-        },
-        { status: 500 }
-      )
-    }
-
-    const authUserId = authData.user.id
-
     const payload = {
       client_id: clientId,
-      full_name: fullName,
+      full_name: normalizedFullName,
       email: normalizedEmail,
-      login_email: normalizedEmail,
-      auth_user_id: authUserId,
-      phone,
+      login_email: null,
+      auth_user_id: null,
+      phone: normalizedPhone,
       program,
       subscription_status: 'gifted',
       verified_purchase: true,
@@ -122,20 +86,28 @@ export async function POST(req: Request) {
       )
     }
 
+    let invitation
+    try {
+      invitation = await createClientInvitation({ supabase, clientId, email: normalizedEmail })
+    } catch (error) {
+      await supabase.from('clients').delete().eq('client_id', clientId).is('auth_user_id', null)
+      throw error
+    }
+
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
       'https://anastasiselite.com'
 
-    const onboardingLink = `${appUrl}/dashboard/onboarding/profile`
-
     const createLoginLink =
       `${appUrl}/create-login?client_id=${clientId}` +
       `&email=${encodeURIComponent(normalizedEmail)}` +
-      `&program=${encodeURIComponent(program)}`
+      `&program=${encodeURIComponent(program)}` +
+      `&token=${encodeURIComponent(invitation.token)}`
 
     const termsLinks = {
       terms: `${appUrl}/terms`,
-      disclaimer: `${appUrl}/disclaimer`,
+      healthDisclaimer: `${appUrl}/health-disclaimer`,
+      aiDisclaimer: `${appUrl}/ai-disclaimer`,
       conditions: `${appUrl}/conditions`,
       research: `${appUrl}/consent/research`,
     }
@@ -147,19 +119,17 @@ export async function POST(req: Request) {
       html: `
         <h1>Welcome to Anastasis Elite</h1>
 
-        <p>Hi ${fullName},</p>
+        <p>Hi ${escapeHtml(normalizedFullName)},</p>
 
         <p>Your gifted Anastasis access has been activated.</p>
 
-        <p><strong>Program:</strong> ${program}</p>
-
-        <p><strong>Temporary Password:</strong> ${temporaryPassword}</p>
+        <p><strong>Program:</strong> ${escapeHtml(program)}</p>
 
         <p>
-          After creating your login, begin onboarding here:
+          Create your private login and choose your own password:
           <br />
-          <a href="${onboardingLink}">
-            Begin Your Onboarding
+          <a href="${createLoginLink}">
+            Create Your Login
           </a>
         </p>
 
@@ -169,7 +139,8 @@ export async function POST(req: Request) {
 
         <ul>
           <li><a href="${termsLinks.terms}">Terms of Use</a></li>
-          <li><a href="${termsLinks.disclaimer}">Disclaimer</a></li>
+          <li><a href="${termsLinks.healthDisclaimer}">Health Disclaimer</a></li>
+          <li><a href="${termsLinks.aiDisclaimer}">AI Disclaimer</a></li>
           <li><a href="${termsLinks.conditions}">Conditions</a></li>
           <li><a href="${termsLinks.research}">Research Consent</a></li>
         </ul>
@@ -187,8 +158,11 @@ export async function POST(req: Request) {
         {
           error: 'Client was created, but email failed to send.',
           details: emailResult.error.message,
+          clientId,
+          createLoginLink,
+          emailSent:false,
         },
-        { status: 500 }
+        { status: 502 }
       )
     }
 

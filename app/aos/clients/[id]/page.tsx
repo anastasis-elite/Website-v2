@@ -6,14 +6,15 @@ import AOSNavigation from '@/components/AOSNavigation'
 export default async function AOSClientDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const supabase = await createClient()
 
   const { data: client } = await supabase
     .from('clients')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!client) {

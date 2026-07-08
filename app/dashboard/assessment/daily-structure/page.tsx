@@ -1,9 +1,11 @@
 import * as styles from '../../../styles/globalstyles'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import DailyStructureAssessment from '@/components/DailyStructureAssessment'
+import ScheduleBlockEditor from '@/components/ScheduleBlockEditor'
 
 export default async function DailyStructureAssessmentPage() {
-  const { client } = await getDashboardContext()
+  const { client, supabase, user } = await getDashboardContext()
+  const { data: scheduleBlocks } = await supabase.from('client_schedule_blocks').select('id,block_type,label,days_of_week,start_time,end_time').eq('client_id', client.client_id).eq('user_id', user.id).eq('active', true).order('start_time')
 
   return (
     <main style={styles.pageStyle}>
@@ -42,6 +44,7 @@ export default async function DailyStructureAssessmentPage() {
           currentTrainingIntensity={client.current_training_intensity}
           workoutSchedulePreference={client.workout_schedule_preference}
         />
+        <ScheduleBlockEditor clientId={client.client_id} initialBlocks={scheduleBlocks || []} />
       </div>
     </main>
   )

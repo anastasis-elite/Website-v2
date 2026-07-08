@@ -17,10 +17,9 @@ function CreateLoginContent() {
   searchParams.get('clientId') ||
   searchParams.get('client_id') ||
   ''
-  console.log('CREATE LOGIN PARAMS:', Object.fromEntries(searchParams.entries()))
-console.log('CLIENT ID:', clientId)
   const birthdate = searchParams.get('birthdate') || ''
   const applicationEmail = searchParams.get('email') || ''
+  const invitationToken = searchParams.get('token') || ''
 
   const [email, setEmail] = useState(applicationEmail)
   const [password, setPassword] = useState('')
@@ -60,6 +59,7 @@ console.log('CLIENT ID:', clientId)
           password,
           program,
           client_id: clientId,
+          token: invitationToken,
           birthdate,
         }),
       })
@@ -72,11 +72,7 @@ console.log('CLIENT ID:', clientId)
         return
       }
 
-      router.push(
-  `/login?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(
-    `/dashboard/onboarding/profile?program=${program}&client_id=${clientId}`
-  )}`
-)
+      router.push(`/login?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(data.redirect||'/dashboard/onboarding/profile')}`)
     } catch {
       setMessage('Something went wrong. Please try again.')
       setLoading(false)
@@ -95,7 +91,13 @@ console.log('CLIENT ID:', clientId)
           progress updates.
         </p>
 
-        <section style={styles.cartBoxStyle}>
+        {!invitationToken ? (
+          <section style={styles.cartBoxStyle}>
+            <p style={styles.bodyStyle}>This login invitation is incomplete or expired. Request a new secure invitation from Anastasis support.</p>
+          </section>
+        ) : null}
+
+        {invitationToken ? <section style={styles.cartBoxStyle}>
           <form onSubmit={handleCreateLogin}>
             <label style={styles.bodyStyle}>Email Address</label>
             <input
@@ -143,7 +145,7 @@ console.log('CLIENT ID:', clientId)
 
             {message && <p style={styles.bodyStyle}>{message}</p>}
           </form>
-        </section>
+        </section> : null}
       </div>
     </main>
   )

@@ -14,8 +14,9 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    if(!body.birthdate||!body.addressLine1||!body.city||!body.state||!body.postalCode){return NextResponse.json({error:'Birthdate and complete address are required before opening the dashboard.'},{status:400})}
 
-    const { error } = await supabase
+    const { data:updatedClient,error } = await supabase
       .from('clients')
       .update({
   birthdate: body.birthdate || null,
@@ -58,6 +59,8 @@ export async function POST(req: Request) {
     : null,
 })
       .eq('auth_user_id', user.id)
+      .select('*')
+      .maybeSingle()
 
     if (error) {
       return NextResponse.json(
@@ -65,8 +68,29 @@ export async function POST(req: Request) {
         { status: 500 }
       )
     }
+    if(!updatedClient)return NextResponse.json({error:'Client profile was not found.'},{status:404})
+    const { error: snapshotError } = await supabase.from('client_onboarding_snapshots').insert({
+      user_id: user.id,
+      client_id: updatedClient.client_id,
+      onboarding_version: 'v1',
+      snapshot: {
+        submitted: body,
+        client: {
+          birthdate: updatedClient.birthdate,
+          address_line_1: updatedClient.address_line_1,
+          address_line_2: updatedClient.address_line_2,
+          city: updatedClient.city,
+          state: updatedClient.state,
+          postal_code: updatedClient.postal_code,
+          reproductive_status: updatedClient.reproductive_status,
+          last_period_start: updatedClient.last_period_start,
+          average_cycle_length: updatedClient.average_cycle_length,
+        },
+      },
+    })
+    if (snapshotError && snapshotError.code !== '23505') return NextResponse.json({ error: snapshotError.message }, { status: 500 })
     
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true,redirect:`/dashboard/program/${updatedClient.program||'ignite'}` })
   } catch (error) {
     return NextResponse.json(
       {

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
+import { isAOSAdmin } from '@/lib/aos/isAOSAdmin'
 
 export const runtime = 'nodejs'
 
@@ -44,6 +46,14 @@ export async function POST(req: Request) {
       data: body,
       source: 'dashboard-assessment',
       submittedAt: new Date().toISOString(),
+    }
+
+    if (payload.assessment_type === 'monthly') {
+      const status = await getMonthlyAssessmentStatus(supabase, client.client_id)
+      const adminOverride = body.adminOverride === true && isAOSAdmin(user.email)
+      if (!status.due && !adminOverride) {
+        return NextResponse.json({ error: 'Your monthly assessment is already complete. It will reopen 30 days after the last submission.', nextDueAt: status.lastCompletedAt ? new Date(new Date(status.lastCompletedAt).getTime() + 30 * 86400000).toISOString() : null }, { status: 409 })
+      }
     }
 
     const { error: assessmentInsertError } = await supabase

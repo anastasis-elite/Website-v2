@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
-  const { data: client } = await supabase.from('clients').select('birthdate_updated_once,birthdate').eq('auth_user_id', user.id).maybeSingle()
+  const { data: client } = await supabase.from('clients').select('client_id,birthdate_updated_once,birthdate').eq('auth_user_id', user.id).maybeSingle()
   if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
 
   const update: Record<string, unknown> = {
@@ -24,6 +24,32 @@ export async function POST(request: Request) {
     update.birthdate = body.birthdate
     update.birthdate_updated_once = true
   }
+  const list = (value: unknown) => String(value || '').split(',').map((item) => item.trim()).filter(Boolean).slice(0, 30)
+  const { data: existingProfile } = await supabase.from('client_current_profiles').select('*').eq('user_id', user.id).eq('client_id', client.client_id).maybeSingle()
+  const primaryGoal = String(body.primaryGoal || '').trim() || null
+  if (primaryGoal !== (existingProfile?.primary_goal || null) && !body.confirmGoalChange) {
+    return NextResponse.json({ error: 'Confirm the primary goal change before saving.' }, { status: 400 })
+  }
+  const profileValues = {
+    user_id: user.id,
+    client_id: client.client_id,
+    injuries: list(body.injuries),
+    limitations: list(body.limitations),
+    equipment_access: list(body.equipmentAccess),
+    current_weight: body.currentWeight ? Math.max(50, Math.min(700, Number(body.currentWeight))) : null,
+    primary_goal: primaryGoal,
+    workout_days_available: body.workoutDaysAvailable === '' ? null : Math.max(0, Math.min(7, Number(body.workoutDaysAvailable))),
+    workout_minutes_available: body.workoutMinutesAvailable === '' ? null : Math.max(5, Math.min(300, Number(body.workoutMinutesAvailable))),
+    updated_at: new Date().toISOString(),
+  }
+  const historyRows = Object.entries(profileValues).filter(([field, value]) => !['user_id','client_id','updated_at'].includes(field) && JSON.stringify(existingProfile?.[field] ?? null) !== JSON.stringify(value)).map(([field_name, new_value]) => ({ user_id: user.id, client_id: client.client_id, field_name, previous_value: existingProfile?.[field_name] ?? null, new_value, source: 'account_profile' }))
   const { error } = await supabase.from('clients').update(update).eq('auth_user_id', user.id)
-  return error ? NextResponse.json({ error: error.message }, { status: 500 }) : NextResponse.json({ success: true })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const { error: profileError } = await supabase.from('client_current_profiles').upsert(profileValues, { onConflict: 'client_id' })
+  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 })
+  if (historyRows.length) {
+    const { error: historyError } = await supabase.from('client_profile_change_history').insert(historyRows)
+    if (historyError) return NextResponse.json({ error: historyError.message }, { status: 500 })
+  }
+  return NextResponse.json({ success: true })
 }

@@ -66,8 +66,9 @@ function formatAnswer(value: string | null) {
 export default async function CapacityAuditResultsPage({
   params,
 }: {
-  params: { auditId: string }
+  params: Promise<{ auditId: string }>
 }) {
+  const { auditId } = await params
   if (!supabaseUrl || !supabaseServiceKey) {
     throw new Error('Missing Supabase server environment variables.')
   }
@@ -90,7 +91,7 @@ export default async function CapacityAuditResultsPage({
       current_season
     `
     )
-    .eq('id', params.auditId)
+      .eq('id', auditId)
     .maybeSingle()
 
   if (error || !data) {

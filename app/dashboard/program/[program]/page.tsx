@@ -41,9 +41,9 @@ function getPhoenixTrackLabel({
 export default async function ProgramPage({
   params,
 }: {
-  params: { program: string }
+  params: Promise<{ program: string }>
 }) {
-  const program = params.program
+  const { program } = await params
 
   if (!supportedPrograms.includes(program as any)) {
     redirect('/dashboard')

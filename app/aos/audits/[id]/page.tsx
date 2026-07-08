@@ -6,14 +6,15 @@ import AOSNavigation from '@/components/AOSNavigation'
 export default async function AuditDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const supabase = await createClient()
 
   const { data: audit } = await supabase
     .from('applications')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!audit) {
