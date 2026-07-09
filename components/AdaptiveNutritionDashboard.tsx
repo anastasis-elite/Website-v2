@@ -244,7 +244,7 @@ export default function AdaptiveNutritionDashboard({
 
         <section style={styles.cartBoxStyle}>
           <p style={styles.eyebrowStyle}>Today&apos;s Fuel Readiness</p>
-          <h2 style={styles.h2Style}>{fuel.status.replaceAll('_',' ')}</h2>
+          <h2 style={styles.h2Style}>{fuel.displayStatus}</h2>
           <p style={styles.bodyStyle}>{fuel.reasoning}</p>
           <p style={styles.bodyStyle}><strong>What to eat next:</strong> {engineNutrition.mealSuggestions[0]}</p>
           <div style={styles.cardGridStyle}><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Before training</h3><p style={styles.compactCardTextStyle}>{fuel.preWorkoutAction}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Workout effect</h3><p style={styles.compactCardTextStyle}>{fuel.workoutAdjustment}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>After training</h3><p style={styles.compactCardTextStyle}>{fuel.postWorkoutPriority}</p></div></div>

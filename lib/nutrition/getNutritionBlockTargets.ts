@@ -36,9 +36,9 @@ export type NutritionBlockTargets = {
 
 const blockRatios: Record<NutritionBlockKey, number> = {
   morning: 0.3,
-  midday: 0.35,
-  evening: 0.25,
-  other: 0.1,
+  midday: 0.4,
+  evening: 0.3,
+  other: 0,
 }
 
 const blockLabels: Record<NutritionBlockKey, string> = {

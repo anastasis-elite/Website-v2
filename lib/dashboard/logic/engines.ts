@@ -1,11 +1,12 @@
 import type {
-  CapacityResult, CycleResult, FlameResult, FuelReadinessResult,
-  HydrationResult, NutritionResult, PostureResult, ProgramLogicInputs,
+  CapacityResult, CycleResult, DayBlock, FlameResult, FuelReadinessDisplayStatus, FuelReadinessResult,
+  HydrationResult, MacroSnapshot, NutritionResult, PostureResult, ProgramLogicInputs,
   RecoveryResult, SymptomResult, WorkoutDecisionResult,
 } from './types'
 import { buildStructuralFilter } from '@/lib/workout-os/structuralFilter'
 import { runWorkoutOS } from '@/lib/workout-os/runWorkoutOS'
 import type { CapacityDose,GoalObjective,StructuralFilter } from '@/lib/workout-os/types'
+import { getClientTimeZone } from '@/lib/timezone'
 
 export function numeric(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -19,6 +20,71 @@ export function nullableNumeric(value: unknown) {
 }
 
 export function clamp(value: number) { return Math.max(0, Math.min(100, Math.round(value))) }
+
+const DAY_BLOCK_ORDER: DayBlock[] = ['morning', 'midday', 'evening']
+const BLOCK_RATIOS: Record<DayBlock, number> = { morning: 0.3, midday: 0.4, evening: 0.3 }
+const BLOCK_WINDOWS: Record<DayBlock, { start: number; end: number }> = {
+  morning: { start: 3 * 60, end: 10 * 60 },
+  midday: { start: 10 * 60, end: 15 * 60 },
+  evening: { start: 15 * 60, end: 22 * 60 },
+}
+
+function zeroMacros(): MacroSnapshot { return { calories: 0, protein: 0, carbs: 0, fats: 0 } }
+function addMacros(a: MacroSnapshot, b: MacroSnapshot): MacroSnapshot { return { calories: a.calories + b.calories, protein: a.protein + b.protein, carbs: a.carbs + b.carbs, fats: a.fats + b.fats } }
+function scaleMacros(a: MacroSnapshot, ratio: number): MacroSnapshot { return { calories: a.calories * ratio, protein: a.protein * ratio, carbs: a.carbs * ratio, fats: a.fats * ratio } }
+function roundMacros(a: MacroSnapshot): MacroSnapshot { return { calories: Math.round(a.calories), protein: Math.round(a.protein), carbs: Math.round(a.carbs), fats: Math.round(a.fats) } }
+function macroCompletion(consumed: MacroSnapshot, target: MacroSnapshot) {
+  const keys: Array<keyof MacroSnapshot> = ['calories', 'protein', 'carbs', 'fats']
+  const ratios = keys.map((key) => target[key] > 0 ? consumed[key] / target[key] : 1)
+  return Math.max(0, Math.min(1.25, ratios.reduce((sum, value) => sum + Math.min(value, 1), 0) / ratios.length))
+}
+
+export function getCurrentDayBlock(localTime: Date): DayBlock {
+  const minutes = localTime.getHours() * 60 + localTime.getMinutes()
+  if (minutes >= BLOCK_WINDOWS.midday.start && minutes < BLOCK_WINDOWS.midday.end) return 'midday'
+  if (minutes >= BLOCK_WINDOWS.evening.start || minutes < BLOCK_WINDOWS.morning.start) return 'evening'
+  return 'morning'
+}
+
+function getClientLocalTime(client: any) {
+  const timeZone = getClientTimeZone(client)
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone, hour12: false, hour: '2-digit', minute: '2-digit' })
+    .formatToParts(new Date())
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value || 0) % 24
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value || 0)
+  const local = new Date()
+  local.setHours(hour, minute, 0, 0)
+  return { timeZone, local }
+}
+
+export function getExpectedMacroTargetsByBlock(dailyTargets: MacroSnapshot): Record<DayBlock, MacroSnapshot> {
+  return {
+    morning: roundMacros(scaleMacros(dailyTargets, BLOCK_RATIOS.morning)),
+    midday: roundMacros(scaleMacros(dailyTargets, BLOCK_RATIOS.midday)),
+    evening: roundMacros(scaleMacros(dailyTargets, BLOCK_RATIOS.evening)),
+  }
+}
+
+export function getExpectedTargetsThroughCurrentBlock(dailyTargets: MacroSnapshot, currentBlock: DayBlock, localTime: Date): MacroSnapshot {
+  const targetsByBlock = getExpectedMacroTargetsByBlock(dailyTargets)
+  const currentIndex = DAY_BLOCK_ORDER.indexOf(currentBlock)
+  const previous = DAY_BLOCK_ORDER.slice(0, currentIndex).reduce((sum, block) => addMacros(sum, targetsByBlock[block]), zeroMacros())
+  const window = BLOCK_WINDOWS[currentBlock]
+  const minutes = localTime.getHours() * 60 + localTime.getMinutes()
+  const adjustedMinutes = currentBlock === 'evening' && minutes < window.start ? window.end : minutes
+  const elapsed = Math.max(0, Math.min(1, (adjustedMinutes - window.start) / Math.max(1, window.end - window.start)))
+  const activeRatio = currentBlock === 'evening' && minutes >= window.end ? 1 : Math.max(0.25, elapsed)
+  return roundMacros(addMacros(previous, scaleMacros(targetsByBlock[currentBlock], activeRatio)))
+}
+
+export function getPreviousBlockCompletionStatus(loggedNutrition: Record<DayBlock, MacroSnapshot>, targetsByBlock: Record<DayBlock, MacroSnapshot>, currentBlock: DayBlock) {
+  const previousBlocks = DAY_BLOCK_ORDER.slice(0, DAY_BLOCK_ORDER.indexOf(currentBlock))
+  if (!previousBlocks.length) return { complete: true, percent: 100 }
+  const target = previousBlocks.reduce((sum, block) => addMacros(sum, targetsByBlock[block]), zeroMacros())
+  const consumed = previousBlocks.reduce((sum, block) => addMacros(sum, loggedNutrition[block] || zeroMacros()), zeroMacros())
+  const percent = Math.round(macroCompletion(consumed, target) * 100)
+  return { complete: percent >= 75, percent }
+}
 
 function recoverySignals(inputs: ProgramLogicInputs) {
   const log = inputs.todayRecovery || {}
@@ -115,27 +181,60 @@ export function runNutritionEngine(inputs: ProgramLogicInputs): NutritionResult 
     return { target, consumed, remaining: Math.max(0, Math.round(target - consumed)), percent: target ? clamp((consumed / target) * 100) : 0 }
   }
   const protein = macro('protein'), carbs = macro('carbs'), fats = macro('fats'), calories = macro('calories')
+  const dailyMacroTargets = { calories: calories.target, protein: protein.target, carbs: carbs.target, fats: fats.target }
+  const blockTargets = getExpectedMacroTargetsByBlock(dailyMacroTargets)
+  const blockConsumed: Record<DayBlock, MacroSnapshot> = { morning: zeroMacros(), midday: zeroMacros(), evening: zeroMacros() }
+  if (currentLog?.id) {
+    for (const row of inputs.nutritionTotals) {
+      if (row.nutrition_log_id !== currentLog.id) continue
+      const block = String(row.day_block || '').toLowerCase() as DayBlock
+      if (!DAY_BLOCK_ORDER.includes(block)) continue
+      blockConsumed[block] = addMacros(blockConsumed[block], {
+        calories: numeric(row.calories_eaten),
+        protein: numeric(row.protein_eaten_g),
+        carbs: numeric(row.carbs_eaten_g),
+        fats: numeric(row.fat_eaten_g),
+      })
+    }
+  }
+  if (currentLog && !DAY_BLOCK_ORDER.some((block) => macroCompletion(blockConsumed[block], blockTargets[block]) > 0)) {
+    blockConsumed.morning = { calories: calories.consumed, protein: protein.consumed, carbs: carbs.consumed, fats: fats.consumed }
+  }
   const dataStatus = currentLog && inputs.mealEntries.length ? 'known' : 'needs_input'
   const suggestions = dataStatus === 'needs_input' ? ['Log the next meal to calculate what remains.'] : protein.percent < 50 ? ['Choose the easiest protein-forward meal available.'] : carbs.percent < 40 && inputs.plannedWorkout ? ['Add an easy carbohydrate source before training.'] : ['Build the next meal around what remains.']
-  return { dataStatus, calories, protein, carbs, fats, mealSuggestions: suggestions, preWorkoutFuelPrompt: dataStatus === 'needs_input' ? 'Log or eat a small balanced meal before demanding training.' : protein.percent < 35 || carbs.percent < 25 ? 'Eat protein and an easy carbohydrate before training.' : 'Use normal pre-workout timing.', postWorkoutPriority: 'Prioritize protein, fluids, and enough total energy after training.' }
+  return { dataStatus, calories, protein, carbs, fats, mealSuggestions: suggestions, preWorkoutFuelPrompt: dataStatus === 'needs_input' ? 'Log or eat a small balanced meal before demanding training.' : protein.percent < 35 || carbs.percent < 25 ? 'Eat protein and an easy carbohydrate before training.' : 'Use normal pre-workout timing.', postWorkoutPriority: 'Prioritize protein, fluids, and enough total energy after training.', blockTargets, blockConsumed }
 }
 
 export function runFuelReadinessEngine(inputs: ProgramLogicInputs, hydration: HydrationResult, nutrition: NutritionResult, recovery: RecoveryResult): FuelReadinessResult {
-  if (nutrition.dataStatus === 'needs_input') return { status: 'unknown_needs_input', confidence: 'low', preWorkoutAction: 'Log or eat a simple meal and drink water before deciding on intensity.', workoutAdjustment: 'Preserve movement; avoid max-effort work until fueling is known.', postWorkoutPriority: nutrition.postWorkoutPriority, reasoning: 'Food intake is not sufficiently logged to verify readiness.' }
+  const { timeZone, local } = getClientLocalTime(inputs.client)
+  const currentBlock = getCurrentDayBlock(local)
+  const expectedThroughCurrentBlock = getExpectedTargetsThroughCurrentBlock({ calories: nutrition.calories.target, protein: nutrition.protein.target, carbs: nutrition.carbs.target, fats: nutrition.fats.target }, currentBlock, local)
+  const consumedThroughCurrentBlock = roundMacros(DAY_BLOCK_ORDER.slice(0, DAY_BLOCK_ORDER.indexOf(currentBlock) + 1).reduce((sum, block) => addMacros(sum, nutrition.blockConsumed[block] || zeroMacros()), zeroMacros()))
+  const previous = getPreviousBlockCompletionStatus(nutrition.blockConsumed, nutrition.blockTargets, currentBlock)
+  const blockCompletionPercent = Math.round(macroCompletion(consumedThroughCurrentBlock, expectedThroughCurrentBlock) * 100)
+  const currentBlockOnTrack = blockCompletionPercent >= 70
+  if (nutrition.dataStatus === 'needs_input') return { status: 'unknown_needs_input', displayStatus: 'Needs Fuel', confidence: 'low', preWorkoutAction: 'Log or eat a simple meal and drink water before deciding on intensity.', workoutAdjustment: 'Preserve movement; avoid max-effort work until fueling is known.', postWorkoutPriority: nutrition.postWorkoutPriority, reasoning: `Fuel readiness is based on ${currentBlock} intake expectations, but food intake is not sufficiently logged yet.`, currentBlock, timeZone, expectedThroughCurrentBlock, consumedThroughCurrentBlock, previousBlocksComplete: previous.complete, currentBlockOnTrack, blockCompletionPercent }
   const mealAgeHours = inputs.mealEntries[0]?.created_at ? (Date.now() - new Date(inputs.mealEntries[0].created_at).getTime()) / 3600000 : null
   const demand = inputs.plannedWorkout ? numeric(inputs.plannedWorkout.duration_minutes ?? inputs.plannedWorkout.estimated_duration, 45) : 0
-  let points = (nutrition.calories.percent * .4) + (nutrition.protein.percent * .2) + (nutrition.carbs.percent * .25) + (hydration.percent * .15)
+  let points = (blockCompletionPercent * .7) + (hydration.percent * .2) + (previous.complete ? 10 : 0)
   if (mealAgeHours !== null && mealAgeHours > 6) points -= 15
   if (recovery.status === 'active_recovery') points -= 10
-  const now = new Date()
-  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  const nowMinutes = local.getHours() * 60 + local.getMinutes()
   const workoutTime = /^\d{2}:\d{2}/.test(String(inputs.client.preferred_workout_time || ''))
     ? String(inputs.client.preferred_workout_time).slice(0,5).split(':').map(Number)
     : null
   const workoutMinutes = workoutTime ? workoutTime[0] * 60 + workoutTime[1] : null
   const hasTimeToFuel = workoutMinutes !== null && workoutMinutes - nowMinutes > 120
   let status: 'well_fueled' | 'slightly_under_fueled' | 'under_fueled' | 'depleted' = points >= 70 ? 'well_fueled' : points >= 50 ? 'slightly_under_fueled' : points >= 28 ? 'under_fueled' : 'depleted'
+  if (!previous.complete && previous.percent < 45) status = 'depleted'
+  else if (!previous.complete && status === 'well_fueled') status = 'slightly_under_fueled'
+  else if (currentBlockOnTrack && status === 'depleted') status = 'under_fueled'
   if (hasTimeToFuel && (status === 'under_fueled' || status === 'depleted')) status = 'slightly_under_fueled'
+  const displayStatus: FuelReadinessDisplayStatus =
+    nutrition.calories.percent >= 95 && nutrition.protein.percent >= 90 && currentBlock === 'evening' ? 'Complete' :
+    status === 'depleted' ? 'Depleted' :
+    status === 'under_fueled' ? 'Needs Fuel' :
+    'On Track'
   const output = {
     well_fueled: ['Follow the planned workout.', 'Keep the full plan and allow progression if form is strong.'],
     slightly_under_fueled: ['Use quick fuel and fluids before training.', 'Keep the workout but avoid max-effort sets.'],
@@ -143,7 +242,7 @@ export function runFuelReadinessEngine(inputs: ProgramLogicInputs, hydration: Hy
     depleted: ['Eat, hydrate, and choose restorative movement.', 'Replace performance work with walking, mobility, light circuits, or pump work.'],
   } as const
   const [preWorkoutAction, workoutAdjustment] = output[status]
-  return { status, confidence: demand ? 'high' : 'medium', preWorkoutAction, workoutAdjustment, postWorkoutPriority: nutrition.postWorkoutPriority, reasoning: `Fuel readiness combines logged intake, hydration, meal timing, and planned session demand.` }
+  return { status, displayStatus, confidence: demand ? 'high' : 'medium', preWorkoutAction, workoutAdjustment, postWorkoutPriority: nutrition.postWorkoutPriority, reasoning: `Fuel readiness is comparing logged intake against ${currentBlock} expectations in ${timeZone}, not the full-day target unless the day is complete.`, currentBlock, timeZone, expectedThroughCurrentBlock, consumedThroughCurrentBlock, previousBlocksComplete: previous.complete, currentBlockOnTrack, blockCompletionPercent }
 }
 
 export function runCycleEngine(inputs: ProgramLogicInputs): CycleResult {
