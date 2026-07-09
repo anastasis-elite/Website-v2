@@ -168,6 +168,10 @@ function getLoadLabel(loadType: string) {
   }
 }
 
+function getWorkoutSessionDate() {
+  return new Date().toISOString().slice(0, 10)
+}
+
 function buildNumberOptions({
   min,
   max,
@@ -317,6 +321,7 @@ export default function WorkoutTracker({
 }: Props) {
   const router = useRouter()
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
+  const storageKey = `aos-workout-variants:${clientId}:${program}:${dayName}:${getWorkoutSessionDate()}`
 
   function setCardRef(index: number) {
     return (element: HTMLDivElement | null): void => {
@@ -326,22 +331,39 @@ export default function WorkoutTracker({
 
   const [activeIndex, setActiveIndex] = useState(0)
 
-  const [logs, setLogs] = useState<WorkoutLog[]>(
-    exercises.map((exercise) => {
+  const [logs, setLogs] = useState<WorkoutLog[]>(() => {
+    let savedSelections: Record<string, string> = {}
+    if (typeof window !== 'undefined') {
+      try {
+        savedSelections = JSON.parse(window.localStorage.getItem(storageKey) || '{}')
+      } catch {
+        savedSelections = {}
+      }
+    }
+
+    return exercises.map((exercise, index) => {
       const recommendedWeight = getRecommendedWeight(exercise)
       const recommendedReps = getRecommendedReps(exercise)
       const baselineWeight = getBaselineWeight(exercise)
       const baselineReps = getBaselineReps(exercise)
 
       const availableVariants = exercise.available_variants || []
+      const exerciseKey = `${getExerciseName(exercise)}:${index}`
+      const savedVariantId = savedSelections[exerciseKey]
       const selectedVariant =
+        availableVariants.find(
+          (variant) => variant.id === savedVariantId
+        ) ||
         availableVariants.find(
           (variant) => variant.id === exercise.selected_variant_id
         ) || availableVariants[0]
+      const selectedWeight = selectedVariant
+        ? getVariantAdjustedWeight({ baselineWeight, variant: selectedVariant })
+        : recommendedWeight
 
       return {
         exercise: getExerciseName(exercise),
-        display_name: getDisplayName(exercise),
+        display_name: selectedVariant?.name || getDisplayName(exercise),
 
         selected_variant_id:
           selectedVariant?.id || exercise.selected_variant_id || null,
@@ -358,12 +380,12 @@ export default function WorkoutTracker({
 
         planned_sets: Number(exercise.sets || 0),
         planned_reps: recommendedReps,
-        planned_weight: recommendedWeight,
+        planned_weight: selectedWeight,
 
         baseline_reps: baselineReps,
         baseline_weight: baselineWeight,
 
-        actual_weight: recommendedWeight,
+        actual_weight: selectedWeight,
         actual_reps: recommendedReps,
 
         cycle_adjustment_label:
@@ -378,7 +400,7 @@ export default function WorkoutTracker({
         rpe_target: exercise.rpe_target || '',
       }
     })
-  )
+  })
 
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -391,9 +413,18 @@ export default function WorkoutTracker({
     )
   }
 
+  function persistVariantSelections(nextLogs: WorkoutLog[]) {
+    if (typeof window === 'undefined') return
+    const selections = nextLogs.reduce<Record<string, string>>((map, log, index) => {
+      if (log.selected_variant_id) map[`${log.exercise}:${index}`] = log.selected_variant_id
+      return map
+    }, {})
+    window.localStorage.setItem(storageKey, JSON.stringify(selections))
+  }
+
   function changeVariant(index: number, variantId: string) {
-    setLogs((prev) =>
-      prev.map((log, i) => {
+    setLogs((prev) => {
+      const nextLogs = prev.map((log, i) => {
         if (i !== index) return log
 
         const selectedVariant = log.available_variants.find(
@@ -412,13 +443,16 @@ export default function WorkoutTracker({
           selected_variant_id: selectedVariant.id,
           selected_variant_name: selectedVariant.name,
           selected_equipment: selectedVariant.equipment,
+          display_name: selectedVariant.name,
           load_type: selectedVariant.load_type,
           planned_weight: adjustedWeight,
           actual_weight: adjustedWeight,
           notes: log.notes,
         }
       })
-    )
+      persistVariantSelections(nextLogs)
+      return nextLogs
+    })
   }
 
   function scrollToExercise(index: number) {
@@ -627,6 +661,7 @@ export default function WorkoutTracker({
                   }}
                 >
                   Selected: {exercise.selected_variant_name}
+                  {exercise.selected_equipment ? ` · Equipment: ${exercise.selected_equipment}` : ''}
                 </p>
                 {exercise.client_cues.length ? <ul className="workout-os-cues">{exercise.client_cues.map((cue)=><li key={cue}>{cue}</li>)}</ul> : null}
                 {exercise.rpe_target || exercise.rest_seconds ? <p className="workout-os-dose">{exercise.rpe_target}{exercise.rpe_target?' · ':''}Rest until HR &lt;115 bpm. If HR unavailable: Rest until breathing is controlled and form feels steady.</p> : null}
@@ -663,11 +698,23 @@ export default function WorkoutTracker({
                     >
                       {exercise.available_variants.map((variant) => (
                         <option key={variant.id} value={variant.id}>
-                          {variant.name}
+                          {variant.name} · {variant.equipment}
                         </option>
                       ))}
                     </select>
                   </label>
+                )}
+                {exercise.available_variants.length <= 1 && (
+                  <p
+                    style={{
+                      margin: '0 0 18px',
+                      color: 'rgba(215,199,182,0.62)',
+                      fontSize: '0.86rem',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    No available alternatives for your current equipment.
+                  </p>
                 )}
 
                 <p

@@ -96,6 +96,52 @@ function getDefaultVariant(group: any) {
   )
 }
 
+function normalizeEquipment(value: unknown) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/dumbbells/g, 'dumbbell')
+    .replace(/kettlebells/g, 'kettlebell')
+    .replace(/resistance bands|bands/g, 'band')
+    .replace(/cables/g, 'cable')
+    .replace(/machines/g, 'machine')
+    .replace(/\s+/g, ' ')
+}
+
+function getClientEquipment(client: any, initialAssessment: any) {
+  const raw = Array.isArray(client?.equipment_access)
+    ? client.equipment_access
+    : String(client?.equipment_access || initialAssessment?.data?.equipmentAccess || initialAssessment?.data?.equipment_access || '')
+      .split(',')
+  const normalized = raw.map(normalizeEquipment).filter(Boolean) as string[]
+  if (normalized.some((item) => ['gym', 'full gym', 'commercial gym', 'all equipment'].includes(item))) return ['*']
+  return normalized
+}
+
+function equipmentMatches(variant: any, equipment: string[]) {
+  if (!equipment.length || equipment.includes('*')) return true
+  const variantEquipment = normalizeEquipment(variant?.equipment)
+  return equipment.some((item) => variantEquipment.includes(item) || item.includes(variantEquipment))
+}
+
+function getEquipmentCompatibleVariants(group: any, equipment: string[]) {
+  if (!group?.variants?.length) return []
+  const compatible = group.variants.filter((variant: any) => equipmentMatches(variant, equipment))
+  if (compatible.length) return compatible
+  if (!equipment.length || equipment.includes('*')) return group.variants
+  const bodyweight = group.variants.filter((variant: any) => normalizeEquipment(variant.equipment) === 'bodyweight')
+  if (bodyweight.length) return bodyweight
+  const fallback = getDefaultVariant(group)
+  return fallback ? [fallback] : []
+}
+
+function getDefaultVariantForEquipment(group: any, equipment: string[]) {
+  if (!group) return null
+  const compatible = getEquipmentCompatibleVariants(group, equipment)
+  const preferred = compatible.find((variant: any) => variant.id === group.default_variant)
+  return preferred || compatible[0] || getDefaultVariant(group)
+}
+
 function getAssessmentLift(key: string, data: any) {
   const map: Record<string, { weight: string; reps: string }> = {
     Bench: {
@@ -178,11 +224,13 @@ export function generateProgram({
 }: any) {
   const template = getTemplate(client.program)
   const ifKey = getIfKey(client.program)
+  const clientEquipment = getClientEquipment(client, initialAssessment)
 
   const generatedDays = template.days.map((day: any) => {
     const exercises = day.exercises.map((exercise: any) => {
       const variantGroup = getVariantGroup(exercise.exercise)
-      const defaultVariant = getDefaultVariant(variantGroup)
+      const defaultVariant = getDefaultVariantForEquipment(variantGroup, clientEquipment)
+      const availableVariants = getEquipmentCompatibleVariants(variantGroup, clientEquipment)
 
       const keyRow = (masterKey as any[]).find((row) => {
         if (variantGroup?.assessment_key) {
@@ -198,8 +246,9 @@ export function generateProgram({
           display_name: variantGroup?.display_name || exercise.exercise,
           movement_pattern: variantGroup?.pattern || null,
           selected_variant_id: defaultVariant?.id || null,
+          selected_variant_name: defaultVariant?.name || exercise.exercise,
           selected_equipment: defaultVariant?.equipment || null,
-          available_variants: variantGroup?.variants || [],
+          available_variants: availableVariants,
           calculated_weight: null,
           calculation_note: 'No master key match',
         }
@@ -219,8 +268,9 @@ export function generateProgram({
           display_name: variantGroup?.display_name || exercise.exercise,
           movement_pattern: variantGroup?.pattern || null,
           selected_variant_id: defaultVariant?.id || null,
+          selected_variant_name: defaultVariant?.name || exercise.exercise,
           selected_equipment: defaultVariant?.equipment || null,
-          available_variants: variantGroup?.variants || [],
+          available_variants: availableVariants,
           calculated_weight: null,
           calculation_note: 'No assessment key match',
         }
@@ -255,7 +305,7 @@ export function generateProgram({
         selected_variant_name: defaultVariant?.name || exercise.exercise,
         selected_equipment: defaultVariant?.equipment || null,
         load_type: defaultVariant?.load_type || 'total_load',
-        available_variants: variantGroup?.variants || [],
+        available_variants: availableVariants,
 
         assessment_key: assessmentKey,
         estimated_1rm: Math.round(estimated1RM),
