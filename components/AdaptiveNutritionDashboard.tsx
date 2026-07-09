@@ -97,8 +97,15 @@ export default function AdaptiveNutritionDashboard({
 
   const [message, setMessage] = useState('')
   const [addingWater,setAddingWater]=useState(false)
+  const [foodLoggerOpen, setFoodLoggerOpen] = useState(isIgnite)
 
   async function addWater(){setAddingWater(true);const response=await fetch('/api/nutrition/add-water',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId:logic.client.id,ounces:8})});const payload=await response.json();setAddingWater(false);if(!response.ok){setMessage(payload.error||'Water could not be saved.');return}router.refresh()}
+
+  async function handleFoodUpdated() {
+    await loadToday()
+    setMessage('Food logged — today’s calories and macros are updated.')
+    router.refresh()
+  }
 
   useEffect(() => {
     loadToday()
@@ -247,6 +254,18 @@ export default function AdaptiveNutritionDashboard({
           <h2 style={styles.h2Style}>{fuel.displayStatus}</h2>
           <p style={styles.bodyStyle}>{fuel.reasoning}</p>
           <p style={styles.bodyStyle}><strong>What to eat next:</strong> {engineNutrition.mealSuggestions[0]}</p>
+          {nutritionLog?.id ? (
+            <button
+              type="button"
+              onClick={() => {
+                setFoodLoggerOpen(true)
+                requestAnimationFrame(() => document.getElementById('aos-food-logger')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+              }}
+              style={{ ...styles.primaryButtonStyle, margin: '16px 0 0' }}
+            >
+              Log Food
+            </button>
+          ) : null}
           <div style={styles.cardGridStyle}><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Before training</h3><p style={styles.compactCardTextStyle}>{fuel.preWorkoutAction}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Workout effect</h3><p style={styles.compactCardTextStyle}>{fuel.workoutAdjustment}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>After training</h3><p style={styles.compactCardTextStyle}>{fuel.postWorkoutPriority}</p></div></div>
         </section>
 
@@ -334,6 +353,47 @@ export default function AdaptiveNutritionDashboard({
           </section>
         )}
 
+        {nutritionLog?.id ? (
+  <section id="aos-food-logger" style={styles.cartBoxStyle}>
+    <p style={styles.eyebrowStyle}>Food Logging</p>
+
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+      <h2 style={{ ...styles.h2Style, marginBottom: 0 }}>Log Food</h2>
+      <button type="button" onClick={() => setFoodLoggerOpen((open) => !open)} style={styles.secondaryButtonStyle}>
+        {foodLoggerOpen ? 'Hide Logger' : 'Open Logger'}
+      </button>
+    </div>
+
+    {foodLoggerOpen ? (
+      <NutritionFoodLogger
+  nutritionLogId={nutritionLog.id}
+  initialRemaining={
+    remaining
+      ? {
+          calories_remaining: remaining.calories_remaining ?? null,
+          protein_remaining_g: remaining.protein_remaining_g ?? null,
+          carbs_remaining_g: remaining.carbs_remaining_g ?? null,
+          fat_remaining_g: remaining.fat_remaining_g ?? null,
+          fiber_remaining_g: remaining.fiber_remaining_g ?? null,
+          sodium_remaining_mg: remaining.sodium_remaining_mg ?? null,
+          potassium_remaining_mg: remaining.potassium_remaining_mg ?? null,
+          magnesium_remaining_mg: remaining.magnesium_remaining_mg ?? null,
+          calcium_remaining_mg: remaining.calcium_remaining_mg ?? null,
+          iron_remaining_mg: remaining.iron_remaining_mg ?? null,
+          choline_remaining_mg: remaining.choline_remaining_mg ?? null,
+          vitamin_c_remaining_mg: remaining.vitamin_c_remaining_mg ?? null,
+          vitamin_d_remaining_mcg: remaining.vitamin_d_remaining_mcg ?? null,
+        }
+      : null
+  }
+  onUpdated={handleFoodUpdated}
+/>
+    ) : (
+      <p style={{ ...styles.bodyStyle, marginTop: 16 }}>Open the logger to search foods, choose a serving size, and update today’s macros.</p>
+    )}
+  </section>
+) : null}
+
         {(isIgnite || isPhoenix) && nutritionLog ? (
           <details style={styles.cartBoxStyle}>
             <summary
@@ -382,38 +442,6 @@ export default function AdaptiveNutritionDashboard({
             </p>
           </section>
         ) : null}
-
-        {nutritionLog?.id ? (
-  <section style={styles.cartBoxStyle}>
-    <p style={styles.eyebrowStyle}>Food Logging</p>
-
-    <h2 style={styles.h2Style}>Add Food</h2>
-
-    <NutritionFoodLogger
-  nutritionLogId={nutritionLog.id}
-  initialRemaining={
-    remaining
-      ? {
-          calories_remaining: remaining.calories_remaining ?? null,
-          protein_remaining_g: remaining.protein_remaining_g ?? null,
-          carbs_remaining_g: remaining.carbs_remaining_g ?? null,
-          fat_remaining_g: remaining.fat_remaining_g ?? null,
-          fiber_remaining_g: remaining.fiber_remaining_g ?? null,
-          sodium_remaining_mg: remaining.sodium_remaining_mg ?? null,
-          potassium_remaining_mg: remaining.potassium_remaining_mg ?? null,
-          magnesium_remaining_mg: remaining.magnesium_remaining_mg ?? null,
-          calcium_remaining_mg: remaining.calcium_remaining_mg ?? null,
-          iron_remaining_mg: remaining.iron_remaining_mg ?? null,
-          choline_remaining_mg: remaining.choline_remaining_mg ?? null,
-          vitamin_c_remaining_mg: remaining.vitamin_c_remaining_mg ?? null,
-          vitamin_d_remaining_mcg: remaining.vitamin_d_remaining_mcg ?? null,
-        }
-      : null
-  }
-  onUpdated={()=>router.refresh()}
-/>
-  </section>
-) : null}
 
         {isPhoenix ? (
           <section id="phoenix-recipes" style={styles.cartBoxStyle}>
