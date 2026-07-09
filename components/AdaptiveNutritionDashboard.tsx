@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import { useFuelReadinessEngine, useNutritionEngine, usePhoenixRecipes } from '@/components/nutrition/hooks'
+import { canLogFood, normalizeProgramTier } from '@/lib/nutrition/canLogFood'
 
 type NutritionLog = {
   id: string
@@ -81,10 +82,11 @@ export default function AdaptiveNutritionDashboard({
   const fuel=useFuelReadinessEngine(logic)
   const phoenixRecipes=usePhoenixRecipes(recipes)
 
-  const tier = String(program || 'ember').toLowerCase()
+  const tier = normalizeProgramTier(program || logic.program || logic.client.program)
   const isEmber = tier === 'ember'
   const isIgnite = tier === 'ignite'
   const isPhoenix = tier === 'phoenix'
+  const foodLoggingEnabled = canLogFood(tier)
 
   const [loading, setLoading] = useState(true)
   const [nutritionLog, setNutritionLog] = useState<NutritionLog | null>(null)
@@ -111,6 +113,18 @@ export default function AdaptiveNutritionDashboard({
     loadToday()
   }, [])
 
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.info('[AOS Nutrition] resolved food logging tier', {
+        tier,
+        propProgram: program,
+        logicProgram: logic.program,
+        clientProgram: logic.client.program,
+        canLogFood: foodLoggingEnabled,
+      })
+    }
+  }, [tier, program, logic.program, logic.client.program, foodLoggingEnabled])
+
   function calculateCalories(protein: string, carbs: string, fat: string) {
     return Math.round(
       Number(protein || 0) * 4 +
@@ -132,13 +146,9 @@ export default function AdaptiveNutritionDashboard({
       return
     }
 
-    const { data: client } = await supabase
-      .from('clients')
-      .select('client_id, program')
-      .eq('auth_user_id', user.id)
-      .single()
+    const clientId = logic.client.id
 
-    if (!client) {
+    if (!clientId) {
       setMessage('No client profile found yet.')
       setLoading(false)
       return
@@ -149,17 +159,17 @@ export default function AdaptiveNutritionDashboard({
     let { data: log } = await supabase
       .from('nutrition_logs')
       .select('*')
-      .eq('client_id', client.client_id)
+      .eq('client_id', clientId)
       .eq('log_date', today)
       .maybeSingle()
 
     if (!log) {
-      const targetResponse = await fetch(`/api/nutrition?client_id=${encodeURIComponent(client.client_id)}&program=${encodeURIComponent(client.program || tier)}`)
+      const targetResponse = await fetch(`/api/nutrition?client_id=${encodeURIComponent(clientId)}&program=${encodeURIComponent(tier)}`)
       const targets = await targetResponse.json()
       const createResponse = await fetch('/api/nutrition-log', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_id: client.client_id,
+          client_id: clientId,
           log_date: today,
           protein: targets.protein,
           carbs: targets.carbs,
@@ -177,7 +187,7 @@ export default function AdaptiveNutritionDashboard({
         setLoading(false)
         return
       }
-      const created = await supabase.from('nutrition_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle()
+      const created = await supabase.from('nutrition_logs').select('*').eq('client_id', clientId).eq('log_date', today).maybeSingle()
       log = created.data
     }
 
@@ -254,7 +264,7 @@ export default function AdaptiveNutritionDashboard({
           <h2 style={styles.h2Style}>{fuel.displayStatus}</h2>
           <p style={styles.bodyStyle}>{fuel.reasoning}</p>
           <p style={styles.bodyStyle}><strong>What to eat next:</strong> {engineNutrition.mealSuggestions[0]}</p>
-          {nutritionLog?.id ? (
+          {foodLoggingEnabled && nutritionLog?.id ? (
             <button
               type="button"
               onClick={() => {
@@ -353,18 +363,20 @@ export default function AdaptiveNutritionDashboard({
           </section>
         )}
 
-        {nutritionLog?.id ? (
-  <section id="aos-food-logger" style={styles.cartBoxStyle}>
+        {foodLoggingEnabled ? (
+  <section id="aos-food-logger" data-tier={tier} style={styles.cartBoxStyle}>
     <p style={styles.eyebrowStyle}>Food Logging</p>
 
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
       <h2 style={{ ...styles.h2Style, marginBottom: 0 }}>Log Food</h2>
-      <button type="button" onClick={() => setFoodLoggerOpen((open) => !open)} style={styles.secondaryButtonStyle}>
-        {foodLoggerOpen ? 'Hide Logger' : 'Open Logger'}
-      </button>
+      {nutritionLog?.id ? (
+        <button type="button" onClick={() => setFoodLoggerOpen((open) => !open)} style={styles.secondaryButtonStyle}>
+          {foodLoggerOpen ? 'Hide Logger' : 'Open Logger'}
+        </button>
+      ) : null}
     </div>
 
-    {foodLoggerOpen ? (
+    {nutritionLog?.id ? foodLoggerOpen ? (
       <NutritionFoodLogger
   nutritionLogId={nutritionLog.id}
   initialRemaining={
@@ -390,6 +402,10 @@ export default function AdaptiveNutritionDashboard({
 />
     ) : (
       <p style={{ ...styles.bodyStyle, marginTop: 16 }}>Open the logger to search foods, choose a serving size, and update today’s macros.</p>
+    ) : (
+      <p style={{ ...styles.bodyStyle, marginTop: 16 }}>
+        {loading ? 'Preparing food logging…' : message || 'Food logging could not be prepared yet.'}
+      </p>
     )}
   </section>
 ) : null}
