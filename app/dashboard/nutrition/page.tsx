@@ -10,6 +10,13 @@ export default async function NutritionPage() {
   const safetyFlags = await getRecentSafetyFlags(supabase, client.client_id)
   if (safetyFlags.length) return <SafetyEscalationNotice flags={safetyFlags} />
   const logic=await getProgramLogicForClient({supabase,user,client})
+  if (process.env.NODE_ENV === 'development') {
+    console.info('[AOS Nutrition route] resolved tier', {
+      clientId: client.client_id,
+      clientProgram: client.program,
+      logicProgram: logic.program,
+    })
+  }
   const recipes=logic.program==='phoenix'?getPhoenixRecipeRecommendations({logic,client}):[]
   return <NutritionDashboardClient logic={logic} recipes={recipes} />
 }
