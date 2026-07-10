@@ -369,14 +369,14 @@ export default function AdaptiveNutritionDashboard({
 
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
       <h2 style={{ ...styles.h2Style, marginBottom: 0 }}>Log Food</h2>
-      {nutritionLog?.id ? (
+      {nutritionLog?.id && !isIgnite ? (
         <button type="button" onClick={() => setFoodLoggerOpen((open) => !open)} style={styles.secondaryButtonStyle}>
           {foodLoggerOpen ? 'Hide Logger' : 'Open Logger'}
         </button>
       ) : null}
     </div>
 
-    {nutritionLog?.id ? foodLoggerOpen ? (
+    {nutritionLog?.id ? (isIgnite || foodLoggerOpen) ? (
       <NutritionFoodLogger
   nutritionLogId={nutritionLog.id}
   initialRemaining={

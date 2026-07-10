@@ -71,6 +71,7 @@ export default function NutritionFoodLogger({
 
   const [searching, setSearching] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [deletingMealId, setDeletingMealId] = useState('')
   const [loadingServingOptions, setLoadingServingOptions] = useState(false)
 
   const [servingOptions, setServingOptions] = useState<ServingOption[]>([])
@@ -204,6 +205,40 @@ export default function NutritionFoodLogger({
     onUpdated?.()
   }
 
+  async function deleteMeal(mealEntryId: string) {
+    setDeletingMealId(mealEntryId)
+    setMessage('')
+    setSaved(false)
+
+    const res = await fetch('/api/nutrition/delete-meal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mealEntryId,
+        nutritionLogId,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setMessage(data.error || 'Unable to remove meal.')
+      setDeletingMealId('')
+      return
+    }
+
+    if (data.remaining) {
+      setRemaining(data.remaining)
+    }
+
+    await loadTodayMeals()
+    onUpdated?.()
+
+    setMessage('Food removed — today’s progress and remaining macros are updated.')
+    setSaved(true)
+    setDeletingMealId('')
+  }
+
   return (
     <div>
       <div style={styles.fieldWrap}>
@@ -326,19 +361,38 @@ export default function NutritionFoodLogger({
                 key={meal.id}
                 style={{
                   ...styles.compactCardStyle,
-                  display: 'grid',
-                  gap: '4px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: '16px',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
                 }}
               >
-                <h4 style={styles.compactCardTitleStyle}>
-                  {meal.foods?.name || 'Food'}
-                </h4>
+                <div>
+                  <h4 style={styles.compactCardTitleStyle}>
+                    {meal.foods?.name || 'Food'}
+                  </h4>
 
-                <p style={styles.compactCardTextStyle}>
-                  {meal.meal_name} · {meal.serving_amount}{' '}
-                  {meal.serving_unit || 'serving'}
-                  {meal.grams ? ` · ${meal.grams}g` : ''}
-                </p>
+                  <p style={styles.compactCardTextStyle}>
+                    {meal.meal_name} · {meal.serving_amount}{' '}
+                    {meal.serving_unit || 'serving'}
+                    {meal.grams ? ` · ${Math.round(meal.grams)}g` : ''}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => deleteMeal(meal.id)}
+                  disabled={Boolean(deletingMealId)}
+                  style={{
+                    ...styles.secondaryButtonStyle,
+                    padding: '8px 14px',
+                    fontSize: '0.82rem',
+                    width: 'auto',
+                  }}
+                >
+                  {deletingMealId === meal.id ? 'Removing…' : 'Remove'}
+                </button>
               </div>
             ))}
           </div>
