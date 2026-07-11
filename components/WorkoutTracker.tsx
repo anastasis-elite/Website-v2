@@ -41,6 +41,7 @@ type Exercise = {
   client_cues?: string[]
   rest_seconds?: number
   rpe_target?: string
+  duration_label?: string
 }
 
 type WorkoutLog = {
@@ -71,6 +72,7 @@ type WorkoutLog = {
   client_cues: string[]
   rest_seconds: number | null
   rpe_target: string
+  duration_label: string
 }
 
 type Props = {
@@ -398,6 +400,7 @@ export default function WorkoutTracker({
         client_cues: (exercise.client_cues || []).slice(0,3),
         rest_seconds: exercise.rest_seconds || null,
         rpe_target: exercise.rpe_target || '',
+        duration_label: exercise.duration_label || '',
       }
     })
   })
@@ -664,7 +667,7 @@ export default function WorkoutTracker({
                   {exercise.selected_equipment ? ` · Equipment: ${exercise.selected_equipment}` : ''}
                 </p>
                 {exercise.client_cues.length ? <ul className="workout-os-cues">{exercise.client_cues.map((cue)=><li key={cue}>{cue}</li>)}</ul> : null}
-                {exercise.rpe_target || exercise.rest_seconds ? <p className="workout-os-dose">{exercise.rpe_target}{exercise.rpe_target?' · ':''}Rest until HR &lt;115 bpm. If HR unavailable: Rest until breathing is controlled and form feels steady.</p> : null}
+                {exercise.rpe_target || exercise.rest_seconds ? <p className="workout-os-dose">{exercise.rpe_target}{exercise.rpe_target?' · ':''}Rest until HR is below 115 bpm. If HR is unavailable: Rest until breathing is controlled and form feels steady.</p> : null}
 
                 {exercise.available_variants.length > 1 && (
                   <label>
@@ -752,15 +755,18 @@ export default function WorkoutTracker({
                 >
                   <p style={{ margin: 0 }}>
                     <strong>Recommended today:</strong>{' '}
-                    {exercise.planned_sets} sets · {exercise.planned_reps} reps ·{' '}
-                    {exercise.planned_weight} lbs {loadLabel}
+                    {exercise.duration_label
+                      ? exercise.duration_label
+                      : `${exercise.planned_sets} sets · ${exercise.planned_reps} reps · ${exercise.planned_weight} lbs ${loadLabel}`}
                   </p>
 
-                  <p style={{ margin: 0, opacity: 0.72 }}>
-                    <strong>Program baseline:</strong>{' '}
-                    {exercise.planned_sets} sets · {exercise.baseline_reps} reps ·{' '}
-                    {exercise.baseline_weight} lbs before equipment conversion
-                  </p>
+                  {!exercise.duration_label ? (
+                    <p style={{ margin: 0, opacity: 0.72 }}>
+                      <strong>Program baseline:</strong>{' '}
+                      {exercise.planned_sets} sets · {exercise.baseline_reps} reps ·{' '}
+                      {exercise.baseline_weight} lbs before equipment conversion
+                    </p>
+                  ) : null}
 
                   {exercise.load_type === 'per_hand' && (
                     <p style={{ margin: 0, opacity: 0.72 }}>

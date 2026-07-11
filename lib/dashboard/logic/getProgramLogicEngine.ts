@@ -86,7 +86,7 @@ export async function getProgramLogicEngine(args: {
     cycle,symptoms,posture,todayPlan:{phoenixTaskIds:inputs.phoenixTaskIds},
     insight:{concise:conciseInsight(outputBase),reasoning:workoutDecision.reasonForModification},
     progress:progress(inputs),trends:buildTrends(inputs),
-    execution:{workoutComplete:!inputs.plannedWorkout||Boolean(inputs.dailyPlan?.workoutCompleted),nutritionLogged:nutrition.dataStatus==='known',assessmentComplete,recoveryComplete,phoenixTaskPercent:Math.min(100,Math.round((inputs.phoenixTaskIds.length/9)*100))},
+    execution:{workoutComplete:Boolean(inputs.dailyPlan?.workoutCompleted),nutritionLogged:nutrition.dataStatus==='known',assessmentComplete,recoveryComplete,phoenixTaskPercent:Math.min(100,Math.round((inputs.phoenixTaskIds.length/9)*100))},
     presentation:{tier:inputs.program,complexity:inputs.program==='phoenix'?'minimal':inputs.program==='ignite'?'guided':'direct',maxTasksPerBlock:inputs.program==='phoenix'&&capacityStatus.status==='low_capacity'?2:3,showTrends:inputs.program==='ignite',showInsight:inputs.program!=='ember'},
   }
 

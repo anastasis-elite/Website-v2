@@ -7,6 +7,7 @@ import { buildStructuralFilter } from '@/lib/workout-os/structuralFilter'
 import { runWorkoutOS } from '@/lib/workout-os/runWorkoutOS'
 import type { CapacityDose,GoalObjective,StructuralFilter } from '@/lib/workout-os/types'
 import { getClientTimeZone } from '@/lib/timezone'
+import { getWorkoutForToday, workoutFallbackAdjustmentLevel } from '@/lib/workout/getWorkoutForToday'
 
 export function numeric(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -306,7 +307,6 @@ function modifyExercises(exercises: any[], level: WorkoutDecisionResult['adjustm
 }
 
 export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, capacity:CapacityResult,recovery: RecoveryResult, fuel: FuelReadinessResult, hydration:HydrationResult, symptoms: SymptomResult, posture: PostureResult): WorkoutDecisionResult {
-  if (!inputs.plannedWorkout) {const cues=['Move with intention.','Breathe before moving.','Finish feeling better than you started.'];const exercises=[{exercise:'March in place',display_name:'March in Place',sets:1,reps:60,recommended_reps:60,load_type:'bodyweight',client_cues:cues,rest_seconds:0,rpe_target:'Easy effort'},{exercise:'Cat/cow',display_name:'Cat/Cow',sets:1,reps:8,recommended_reps:8,load_type:'bodyweight',client_cues:cues,rest_seconds:0,rpe_target:'Easy effort'},{exercise:'Child’s pose breathing',display_name:'Child’s Pose Breathing',sets:1,reps:60,recommended_reps:60,load_type:'bodyweight',client_cues:cues,rest_seconds:0,rpe_target:'Easy effort'},{exercise:'Hip flexor stretch',display_name:'Hip Flexor Stretch',sets:1,reps:30,recommended_reps:30,load_type:'bodyweight',client_cues:cues,rest_seconds:0,rpe_target:'Each side'},{exercise:'Wall slides',display_name:'Wall Slides',sets:1,reps:8,recommended_reps:8,load_type:'bodyweight',client_cues:cues,rest_seconds:0,rpe_target:'Smooth reps'},{exercise:'Standing hamstring stretch',display_name:'Standing Hamstring Stretch',sets:1,reps:30,recommended_reps:30,load_type:'bodyweight',client_cues:cues,rest_seconds:0,rpe_target:'Each side'}];return { plannedWorkout: null, assignedWorkout: {day_name:'Minimum Starter Workout',exercises}, displayWorkout:true,canTrain:true,adjustmentLevel: 'level_3_recovery_training', modifications: ['Use the minimum starter workout today.'], exerciseSubstitutions: posture.substitutions, intensityTarget: 'Easy effort · Rest until HR <115 bpm.', reasonForModification: 'A starter workout keeps the strength habit actionable while consistency history builds.', preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression:false,allowEnduranceProgression:false }}
   let adjustmentLevel: WorkoutDecisionResult['adjustmentLevel'] = 'level_0_full_plan'
   const modifications: string[] = []
   if (recovery.status === 'full_recovery_or_red_flag' || symptoms.redFlag) { adjustmentLevel = 'level_4_rest_or_red_flag'; modifications.push('Stop training and follow the safety recommendation.') }
@@ -328,9 +328,20 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, capacity:Ca
   if(allowEnduranceProgression)modifications.push('Consistent micronutrient logging and performance support a small endurance progression.')
   const availableEquipment=(Array.isArray(inputs.client.equipment_access)?inputs.client.equipment_access:String(inputs.client.equipment_access||'').split(',')).map(normalizeEquipmentName).filter(Boolean).flatMap((item:string)=>['gym','full gym','commercial gym','all equipment'].includes(item)?['*']:[item])
   const assignedExercises = modifyExercises(inputs.plannedExercises, adjustmentLevel, fuel, hydration, recovery, allowLoadProgression, allowEnduranceProgression,structural,os.dose,os.clientCues,os.goal,availableEquipment)
-  const assignedWorkout = { ...inputs.plannedWorkout, exercises: assignedExercises }
-  const targets = { level_0_full_plan: 'Planned RPE; progression allowed', level_1_slight_modify: 'RPE 7–8; no grinders', level_2_moderate_modify: 'RPE 6–7; technique priority', level_3_recovery_training: 'RPE 3–5; restorative movement', level_4_rest_or_red_flag: 'No training until safely cleared' }
-  return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, displayWorkout:true,canTrain:os.canTrain,adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: `${os.dose.rpe} · Rest until HR <115 bpm.`, reasonForModification: modifications[0] || 'The workout matches today’s strength path.', preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression,allowEnduranceProgression }
+  const workoutForToday = getWorkoutForToday({
+    inputs,
+    recoveryStatus: recovery.status,
+    fuelReadiness: fuel,
+    capacityStatus: capacity.status,
+    plannedWorkout: inputs.plannedWorkout,
+    assignedExercises,
+  })
+  if (workoutForToday.type !== 'planned') {
+    adjustmentLevel = workoutFallbackAdjustmentLevel(workoutForToday.type)
+    modifications.unshift(workoutForToday.reason)
+  }
+  const assignedWorkout = { ...(inputs.plannedWorkout || {}), day_name: workoutForToday.title, workout_state: workoutForToday.type, exercises: workoutForToday.exercises }
+  return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, displayWorkout:true,canTrain:workoutForToday.completionEligible&&(workoutForToday.type!=='planned'||os.canTrain),adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: `${workoutForToday.type === 'planned' ? os.dose.rpe : 'Easy effort'} · Rest until HR is below 115 bpm.`, reasonForModification: modifications[0] || workoutForToday.reason, preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression,allowEnduranceProgression }
 }
 
 export function runFlameExecutionEngine({ inputs, hydration, nutrition, workoutDecision, capacity }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult; capacity: CapacityResult }): FlameResult {
