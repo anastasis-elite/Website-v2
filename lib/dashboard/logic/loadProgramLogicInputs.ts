@@ -1,12 +1,6 @@
 import type { ProgramLogicInputs, ProgramTier } from './types'
 import { getSleepStatusForDashboard } from '@/lib/sleep/getSleepStatusForDashboard'
-
-function day(offset = 0) {
-  const date = new Date()
-  date.setUTCHours(0, 0, 0, 0)
-  date.setUTCDate(date.getUTCDate() + offset)
-  return date.toISOString().slice(0, 10)
-}
+import { getClientLocalDateOffset } from '@/lib/timezone'
 
 export async function loadProgramLogicInputs({
   supabase, user, client, program, dailyPlan, cycleStatus, cycleAdjustment,
@@ -16,11 +10,11 @@ export async function loadProgramLogicInputs({
   cycleStatus: any; cycleAdjustment: any; plannedWorkout: any
   plannedExercises: any[]; monthlyAssessmentsDueCount: number
 }): Promise<ProgramLogicInputs> {
-  const today = day()
-  const yesterday = day(-1)
-  const fourteenDaysAgo = day(-13)
-  const fourDaysAgo = day(-4)
-  const ninetyDaysAgo = day(-90)
+  const today = getClientLocalDateOffset(client)
+  const yesterday = getClientLocalDateOffset(client, -1)
+  const fourteenDaysAgo = getClientLocalDateOffset(client, -13)
+  const fourDaysAgo = getClientLocalDateOffset(client, -4)
+  const ninetyDaysAgo = getClientLocalDateOffset(client, -90)
   const start = `${today}T00:00:00.000Z`, end = `${today}T23:59:59.999Z`
   const yesterdayStart = `${yesterday}T00:00:00.000Z`, yesterdayEnd = `${yesterday}T23:59:59.999Z`
 
@@ -87,8 +81,22 @@ export async function loadProgramLogicInputs({
   for (const row of nutritionLogs || []) if (String(row.log_date) < today) activityByDate.set(String(row.log_date), (activityByDate.get(String(row.log_date)) || 0) + 1)
   for (const row of workoutHistory || []) { const logDate=String(row.workout_date).slice(0,10); if(row.completed&&logDate<today) activityByDate.set(logDate,(activityByDate.get(logDate)||0)+1) }
   let missedDayCount=0
-  for(let offset=1;offset<=4;offset++){const date=day(-offset);const recorded=(executionHistory||[]).find((row:any)=>String(row.log_date)===date);if(recorded?.streak_eligible||(!recorded&&(activityByDate.get(date)||0)>0))break;missedDayCount++}
+  for (let offset = 1; offset <= 4; offset++) {
+  const date = getClientLocalDateOffset(client, -offset)
 
+  const recorded = (executionHistory || []).find(
+    (row: any) => String(row.log_date) === date
+  )
+
+  if (
+    recorded?.streak_eligible ||
+    (!recorded && (activityByDate.get(date) || 0) > 0)
+  ) {
+    break
+  }
+
+  missedDayCount++
+}
   return {
     date: today, userId: user.id, client, program, dailyPlan, cycleStatus, cycleAdjustment,
     plannedWorkout, plannedExercises, todayWorkoutFeedback, todayAssessment, todayRecovery,
