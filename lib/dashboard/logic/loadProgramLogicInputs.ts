@@ -219,7 +219,13 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
     workoutHistory: workoutHistory || [],
     strengthAssessments: strengthAssessments || [], initialAssessment, measurementLogs: measurementLogs || [],
     photoRecord, photoUrls, phoenixTaskIds: Array.from(automaticTaskIds), todayRecoveryActivities: recoveryActivities || [], missedDayCount, executionHistory: executionHistory || [],
-    yesterday: { workoutComplete: Boolean(yesterdayWorkout?.completed), nutritionLogged: Boolean(yesterdayNutrition), taskCount: activityByDate.get(yesterday) || 0 },
+    yesterday: {
+  workoutComplete: Boolean(yesterdayWorkout?.completed),
+  nutritionLogged:
+    recentFuelingHistory.find((day) => day.date === yesterday)
+      ?.adequatelyFueled || false,
+  taskCount: activityByDate.get(yesterday) || 0,
+},
     monthlyAssessmentsDueCount,
   }
 }
