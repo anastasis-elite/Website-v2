@@ -186,61 +186,107 @@ export default function ApplyPage() {
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setStatus('submitting')
-    setMessage('')
+  e.preventDefault()
 
-    try {
-      const auditResult = scoreCapacityAudit(formData)
+  if (status === 'submitting') {
+    return
+  }
 
-      const res = await fetch('/api/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName: formData.fullName,
-          email: formData.email,
+  const requiredAnswers = [
+    formData.energyLevel,
+    formData.overwhelmLevel,
+    formData.timeAvailable,
+    formData.supportLevel,
+    formData.currentSeason,
+  ]
 
-          energy_level: formData.energyLevel,
-          overwhelm_level: formData.overwhelmLevel,
-          time_available: formData.timeAvailable,
-          support_level: formData.supportLevel,
-          current_season: formData.currentSeason,
+  if (requiredAnswers.some((answer) => !answer)) {
+    setStatus('error')
+    setMessage('Please answer every Capacity Audit question before continuing.')
+    return
+  }
 
-          email_consent: formData.emailConsent,
-          agreement: formData.agreement,
+  if (!formData.fullName.trim() || !formData.email.trim()) {
+    setStatus('error')
+    setMessage('Please enter your name and email address.')
+    return
+  }
 
-          capacity_score: auditResult.score,
-          recommended_program: auditResult.recommendedProgram,
-          audit_version: 'capacity_snapshot_v1',
+  if (!formData.agreement) {
+    setStatus('error')
+    setMessage('Please agree to the Terms of Use and Health Disclaimer.')
+    return
+  }
 
-          submitted: 'capacity_audit',
-          timestamp: new Date().toISOString(),
+  setStatus('submitting')
+  setMessage('')
 
-          dateOfBirth: '',
-          cityState: '',
-          address_line_1: '',
-          address_line_2: '',
-          city: '',
-          state: '',
-          postal_code: '',
-          country: 'US',
-          address_verified: false,
-          injuries: '',
-          conditions: '',
-          supervision: '',
-          postpartumMonths: '',
-          primaryGoal: '',
-          whyNow: '',
-          researchConsent: false,
-          medicalClearance: false,
-          medicalClearanceFileName: '',
-        }),
-      })
+  try {
+    const auditResult = scoreCapacityAudit(formData)
 
-      const data = await res.json().catch(() => null)
+    const response = await fetch('/api/apply', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim().toLowerCase(),
 
-      if (!res.ok) {
-  throw new Error(data?.error || data?.details || 'Request failed')
+        energy_level: formData.energyLevel,
+        overwhelm_level: formData.overwhelmLevel,
+        time_available: formData.timeAvailable,
+        support_level: formData.supportLevel,
+        current_season: formData.currentSeason,
+
+        email_consent: formData.emailConsent,
+        agreement: formData.agreement,
+
+        capacity_score: auditResult.score,
+        recommended_program: auditResult.recommendedProgram,
+        audit_version: 'capacity_snapshot_v1',
+
+        submitted: 'capacity_audit',
+        timestamp: new Date().toISOString(),
+      }),
+    })
+
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error ||
+          data?.details ||
+          'Your Capacity Audit could not be submitted. Please try again.'
+      )
+    }
+
+    if (!data?.auditId) {
+      throw new Error(
+        'Your audit was saved, but the results page could not be prepared.'
+      )
+    }
+
+    trackEvent('audit_page_completed', {
+      page: 'audit',
+      recommended_program: auditResult.recommendedProgram,
+      capacity_score: auditResult.score,
+      audit_id: data.auditId,
+    })
+
+    window.location.assign(
+      data.redirect || `/audit/results/${data.auditId}`
+    )
+  } catch (error) {
+    console.error('CAPACITY AUDIT ERROR:', error)
+
+    setStatus('error')
+    setMessage(
+      error instanceof Error
+        ? error.message
+        : 'Something went wrong while submitting your audit.'
+    )
+  }
 }
 
 trackEvent('audit_page_completed', {
