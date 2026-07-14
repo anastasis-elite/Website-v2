@@ -232,20 +232,16 @@ export default function ApplyPage() {
       body: JSON.stringify({
         fullName: formData.fullName.trim(),
         email: formData.email.trim().toLowerCase(),
-
         energy_level: formData.energyLevel,
         overwhelm_level: formData.overwhelmLevel,
         time_available: formData.timeAvailable,
         support_level: formData.supportLevel,
         current_season: formData.currentSeason,
-
         email_consent: formData.emailConsent,
         agreement: formData.agreement,
-
         capacity_score: auditResult.score,
         recommended_program: auditResult.recommendedProgram,
         audit_version: 'capacity_snapshot_v1',
-
         submitted: 'capacity_audit',
         timestamp: new Date().toISOString(),
       }),
@@ -287,32 +283,7 @@ export default function ApplyPage() {
         : 'Something went wrong while submitting your audit.'
     )
   }
-
-trackEvent('audit_page_completed', {
-  page: 'audit',
-  recommended_program: auditResult.recommendedProgram,
-  capacity_score: auditResult.score,
-})
-
-if (data.redirect) {
-  window.location.href = data.redirect
-  return
 }
-
-window.location.href = `/program/${auditResult.recommendedProgram}`
-
-      if (data.redirect) {
-        window.location.href = data.redirect
-        return
-      }
-
-      window.location.href = `/program/${auditResult.recommendedProgram}`
-    } catch (error) {
-      console.error('CAPACITY AUDIT ERROR:', error)
-      setStatus('error')
-      setMessage(error instanceof Error ? error.message : 'Something went wrong.')
-    }
-  }
 
   return (
     <><TrackEvent event="audit_page_viewed" properties={{ page: 'audit' }} />
