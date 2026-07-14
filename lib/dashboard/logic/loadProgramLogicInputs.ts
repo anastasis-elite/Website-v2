@@ -48,10 +48,122 @@ export async function loadProgramLogicInputs({
   const { data: nutritionTotals } = nutritionIds.length
     ? await supabase.from('nutrition_log_totals_by_block').select('*').in('nutrition_log_id', nutritionIds)
     : { data: [] }
-  const todayNutrition = (nutritionLogs || []).find((row: any) => row.log_date === today)
-  const { data: mealEntries } = todayNutrition?.id
-    ? await supabase.from('meal_entries').select('id,meal_name,day_block,created_at,food_id').eq('nutrition_log_id', todayNutrition.id).order('created_at', { ascending: false })
-    : { data: [] }
+  const todayNutrition = (nutritionLogs || []).find(
+  (row: any) => String(row.log_date) === today
+)
+
+const { data: allMealEntries } = nutritionIds.length
+  ? await supabase
+      .from('meal_entries')
+      .select(
+        'id,nutrition_log_id,meal_name,day_block,created_at,food_id'
+      )
+      .in('nutrition_log_id', nutritionIds)
+      .order('created_at', { ascending: false })
+  : { data: [] }
+
+const mealEntries = todayNutrition?.id
+  ? (allMealEntries || []).filter(
+      (entry: any) => entry.nutrition_log_id === todayNutrition.id
+    )
+  : []
+
+const recentFuelingHistory = [-1, -2, -3].map((offset) => {
+  const date = getClientLocalDateOffset(client, offset)
+
+  const nutritionLog = (nutritionLogs || []).find(
+    (row: any) => String(row.log_date) === date
+  )
+
+  if (!nutritionLog) {
+    return {
+      date,
+      nutritionLogId: null,
+      mealCount: 0,
+      targetCalories: 0,
+      consumedCalories: 0,
+      targetProtein: 0,
+      consumedProtein: 0,
+      targetCarbs: 0,
+      consumedCarbs: 0,
+      targetFats: 0,
+      consumedFats: 0,
+      completionPercent: 0,
+      adequatelyFueled: false,
+    }
+  }
+
+  const totalsForDay = (nutritionTotals || []).filter(
+    (row: any) => row.nutrition_log_id === nutritionLog.id
+  )
+
+  const consumed = totalsForDay.reduce(
+    (total: any, row: any) => ({
+      calories:
+        total.calories + Number(row.calories_eaten || 0),
+      protein:
+        total.protein + Number(row.protein_eaten_g || 0),
+      carbs:
+        total.carbs + Number(row.carbs_eaten_g || 0),
+      fats:
+        total.fats + Number(row.fat_eaten_g || 0),
+    }),
+    {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0,
+    }
+  )
+
+  const targetCalories = Number(nutritionLog.calories || 0)
+  const targetProtein = Number(nutritionLog.protein || 0)
+  const targetCarbs = Number(nutritionLog.carbs || 0)
+  const targetFats = Number(nutritionLog.fats || 0)
+
+  const percentages = [
+    targetCalories > 0
+      ? Math.min(100, (consumed.calories / targetCalories) * 100)
+      : null,
+    targetProtein > 0
+      ? Math.min(100, (consumed.protein / targetProtein) * 100)
+      : null,
+    targetCarbs > 0
+      ? Math.min(100, (consumed.carbs / targetCarbs) * 100)
+      : null,
+    targetFats > 0
+      ? Math.min(100, (consumed.fats / targetFats) * 100)
+      : null,
+  ].filter((value): value is number => value !== null)
+
+  const completionPercent = percentages.length
+    ? Math.round(
+        percentages.reduce((sum, value) => sum + value, 0) /
+          percentages.length
+      )
+    : 0
+
+  const mealCount = (allMealEntries || []).filter(
+    (entry: any) => entry.nutrition_log_id === nutritionLog.id
+  ).length
+
+  return {
+    date,
+    nutritionLogId: nutritionLog.id,
+    mealCount,
+    targetCalories,
+    consumedCalories: Math.round(consumed.calories),
+    targetProtein,
+    consumedProtein: Math.round(consumed.protein),
+    targetCarbs,
+    consumedCarbs: Math.round(consumed.carbs),
+    targetFats,
+    consumedFats: Math.round(consumed.fats),
+    completionPercent,
+    adequatelyFueled:
+      mealCount > 0 && completionPercent >= 70,
+  }
+})
 
   const paths = ['front_photo_url','back_photo_url','left_photo_url','right_photo_url'].map((key) => photoRecord?.[key]).filter(Boolean)
   const photoUrls = (await Promise.all(paths.slice(0, 3).map(async (path: string) => {
@@ -101,7 +213,10 @@ export async function loadProgramLogicInputs({
     date: today, userId: user.id, client, program, dailyPlan, cycleStatus, cycleAdjustment,
     plannedWorkout, plannedExercises, todayWorkoutFeedback, todayAssessment, todayRecovery,
     todaySymptoms, recentSymptoms: recentSymptoms || [], nutritionLogs: nutritionLogs || [],
-    nutritionTotals: nutritionTotals || [], mealEntries: mealEntries || [], workoutHistory: workoutHistory || [],
+    nutritionTotals: nutritionTotals || [],
+    mealEntries,
+    recentFuelingHistory,
+    workoutHistory: workoutHistory || [],
     strengthAssessments: strengthAssessments || [], initialAssessment, measurementLogs: measurementLogs || [],
     photoRecord, photoUrls, phoenixTaskIds: Array.from(automaticTaskIds), todayRecoveryActivities: recoveryActivities || [], missedDayCount, executionHistory: executionHistory || [],
     yesterday: { workoutComplete: Boolean(yesterdayWorkout?.completed), nutritionLogged: Boolean(yesterdayNutrition), taskCount: activityByDate.get(yesterday) || 0 },
