@@ -9,6 +9,21 @@ export type DailyMacro = { target: number; consumed: number; remaining: number; 
 export type DayBlock = 'morning' | 'midday' | 'evening'
 export type FuelReadinessDisplayStatus = 'On Track' | 'Needs Fuel' | 'Depleted' | 'Complete'
 export type MacroSnapshot = { calories: number; protein: number; carbs: number; fats: number }
+export type FuelingHistoryDay = {
+  date: string
+  nutritionLogId: string | null
+  mealCount: number
+  targetCalories: number
+  consumedCalories: number
+  targetProtein: number
+  consumedProtein: number
+  targetCarbs: number
+  consumedCarbs: number
+  targetFats: number
+  consumedFats: number
+  completionPercent: number
+  adequatelyFueled: boolean
+}
 
 export type ProgramLogicInputs = {
   date: string
@@ -28,6 +43,7 @@ export type ProgramLogicInputs = {
   nutritionLogs: any[]
   nutritionTotals: any[]
   mealEntries: any[]
+  recentFuelingHistory: FuelingHistoryDay[]
   workoutHistory: any[]
   strengthAssessments: any[]
   initialAssessment: any
