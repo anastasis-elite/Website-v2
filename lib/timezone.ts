@@ -75,3 +75,20 @@ export function getClientLocalDate(client: any) {
     day: '2-digit',
   }).format(new Date())
 }
+export function getClientLocalDateOffset(client: any, offsetDays = 0) {
+  const timeZone = getClientTimeZone(client)
+
+  const localDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
+
+  const [year, month, day] = localDate.split('-').map(Number)
+
+  const adjustedDate = new Date(Date.UTC(year, month - 1, day))
+  adjustedDate.setUTCDate(adjustedDate.getUTCDate() + offsetDays)
+
+  return adjustedDate.toISOString().slice(0, 10)
+}
