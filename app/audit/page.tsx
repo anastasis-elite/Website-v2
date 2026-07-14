@@ -287,7 +287,6 @@ export default function ApplyPage() {
         : 'Something went wrong while submitting your audit.'
     )
   }
-}
 
 trackEvent('audit_page_completed', {
   page: 'audit',
