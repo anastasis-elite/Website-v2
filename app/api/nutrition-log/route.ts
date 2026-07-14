@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
+import { getClientLocalDate } from '@/lib/timezone'
 
 function calculateAge(birthdate?: string | null) {
   if (!birthdate) return 35
@@ -37,7 +38,6 @@ export async function POST(req: Request) {
 
     const {
       client_id,
-      log_date,
       protein,
       carbs,
       fats,
@@ -49,16 +49,28 @@ export async function POST(req: Request) {
       trainingLevel,
     } = body
 
+    if (!client_id) {
+      return NextResponse.json(
+        { error: 'Client ID is required.' },
+        { status: 400 }
+      )
+    }
+
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('client_id, auth_user_id, birthdate')
+      .select(
+        'client_id, auth_user_id, birthdate, timezone, state, onboarding_data'
+      )
       .eq('client_id', client_id)
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
     if (clientError) {
       return NextResponse.json(
-        { error: clientError.message },
+        {
+          error: 'Unable to load client profile.',
+          details: clientError.message,
+        },
         { status: 500 }
       )
     }
@@ -70,7 +82,9 @@ export async function POST(req: Request) {
       )
     }
 
+    const logDate = getClientLocalDate(client)
     const age = calculateAge(client.birthdate)
+
     const safeCalories = Number(calories || 2000)
     const safeProtein = Number(protein || 0)
     const safeCarbs = Number(carbs || 0)
@@ -91,19 +105,19 @@ export async function POST(req: Request) {
       trainingLevel: trainingLevel || 'general_fitness',
     })
 
-    const { error } = await supabase
+    const { data: nutritionLog, error: nutritionLogError } = await supabase
       .from('nutrition_logs')
       .upsert(
         {
-          client_id,
+          client_id: client.client_id,
           auth_user_id: user.id,
-          log_date,
+          log_date: logDate,
           protein: safeProtein,
           carbs: safeCarbs,
           fats: safeFats,
           calories: safeCalories,
           water_oz: safeWaterOz,
-          meals: meals || [],
+          meals: Array.isArray(meals) ? meals : [],
           completed: completed ?? false,
           ...micronutrientTargets,
           updated_at: new Date().toISOString(),
@@ -112,13 +126,28 @@ export async function POST(req: Request) {
           onConflict: 'client_id,log_date',
         }
       )
+      .select('*')
+      .single()
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (nutritionLogError) {
+      console.error('NUTRITION LOG UPSERT ERROR:', nutritionLogError)
+
+      return NextResponse.json(
+        {
+          error: 'Unable to prepare today’s nutrition log.',
+          details: nutritionLogError.message,
+        },
+        { status: 500 }
+      )
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      success: true,
+      nutritionLog,
+    })
   } catch (error) {
+    console.error('NUTRITION LOG ERROR:', error)
+
     return NextResponse.json(
       {
         error:
