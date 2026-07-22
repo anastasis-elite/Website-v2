@@ -136,6 +136,7 @@ export default function AdaptiveNutritionDashboard({
 
   async function loadToday() {
     setLoading(true)
+    setMessage('')
 
     const {
       data: { user },
