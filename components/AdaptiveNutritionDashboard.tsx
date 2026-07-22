@@ -290,6 +290,13 @@ export default function AdaptiveNutritionDashboard({
   log = created.data
 }
 
+    if (!log) {
+  setMessage('Today’s nutrition plan could not be prepared yet.')
+  setLoading(false)
+  return
+}
+
+setNutritionLog(log)
     const { data: remainingData } = await supabase
       .from('nutrition_log_remaining')
       .select('*')
