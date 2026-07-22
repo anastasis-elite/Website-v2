@@ -9,6 +9,7 @@ import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import { useFuelReadinessEngine, useNutritionEngine, usePhoenixRecipes } from '@/components/nutrition/hooks'
 import { canLogFood, normalizeProgramTier } from '@/lib/nutrition/canLogFood'
+import { getClientLocalDateOffset } from '@/lib/timezone'
 
 type NutritionLog = {
   id: string
@@ -154,7 +155,7 @@ export default function AdaptiveNutritionDashboard({
       return
     }
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = getClientLocalDateOffset(logic.client)
 
     let { data: log } = await supabase
       .from('nutrition_logs')
