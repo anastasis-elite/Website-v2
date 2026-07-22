@@ -164,37 +164,131 @@ export default function AdaptiveNutritionDashboard({
       .eq('log_date', today)
       .maybeSingle()
 
-    if (!log) {
-      const targetResponse = await fetch(`/api/nutrition?client_id=${encodeURIComponent(clientId)}&program=${encodeURIComponent(tier)}`)
-      const targets = await targetResponse.json()
-      const createResponse = await fetch('/api/nutrition-log', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: clientId,
-          log_date: today,
-          protein: targets.protein,
-          carbs: targets.carbs,
-          fats: targets.fats,
-          calories: targets.calories,
-          water_oz: targets.water,
-          meals: [],
-          completed: false,
-          cyclePhase: targets.phase,
-          trainingLevel: tier === 'phoenix' ? 'recovery' : 'strength_hypertrophy',
-        }),
+   if (!log) {
+  const targetResponse = await fetch(
+    `/api/nutrition?client_id=${encodeURIComponent(
+      clientId
+    )}&program=${encodeURIComponent(tier)}`
+  )
+
+  const targets = await targetResponse.json().catch(() => null)
+
+  if (!targetResponse.ok) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[AOS Nutrition] target preparation failed', {
+        status: targetResponse.status,
+        stage: 'nutrition-targets',
+        error: targets?.error,
+        clientId,
+        logDate: today,
+        programTier: tier,
       })
-      if (!createResponse.ok) {
-        setMessage('Today’s nutrition plan could not be prepared yet.')
-        setLoading(false)
-        return
-      }
-      const created = await supabase.from('nutrition_logs').select('*').eq('client_id', clientId).eq('log_date', today).maybeSingle()
-      log = created.data
     }
 
-    if (!log) { setMessage('Today’s nutrition plan could not be prepared yet.'); setLoading(false); return }
+    setMessage(
+      targets?.error || 'Today’s nutrition targets could not be prepared.'
+    )
+    setLoading(false)
+    return
+  }
 
-    setNutritionLog(log)
+  const protein = Number(targets?.protein)
+  const carbs = Number(targets?.carbs)
+  const fats = Number(targets?.fats)
+  const calories = Number(targets?.calories)
+
+  const targetsAreValid =
+    Number.isFinite(protein) &&
+    protein >= 0 &&
+    Number.isFinite(carbs) &&
+    carbs >= 0 &&
+    Number.isFinite(fats) &&
+    fats >= 0 &&
+    Number.isFinite(calories) &&
+    calories > 0
+
+  if (!targetsAreValid) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[AOS Nutrition] invalid targets returned', {
+        stage: 'nutrition-target-validation',
+        clientId,
+        logDate: today,
+        programTier: tier,
+        targets,
+      })
+    }
+
+    setMessage('Today’s nutrition targets could not be prepared.')
+    setLoading(false)
+    return
+  }
+
+  const createResponse = await fetch('/api/nutrition-log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: clientId,
+      log_date: today,
+      protein,
+      carbs,
+      fats,
+      calories,
+      water_oz: Number(targets?.water || 0),
+      meals: [],
+      completed: false,
+      cyclePhase: targets?.phase,
+      trainingLevel:
+        tier === 'phoenix' ? 'recovery' : 'strength_hypertrophy',
+    }),
+  })
+
+  const createPayload = await createResponse.json().catch(() => null)
+
+  if (!createResponse.ok) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[AOS Nutrition] nutrition log creation failed', {
+        status: createResponse.status,
+        stage: 'nutrition-log-creation',
+        error: createPayload?.error,
+        clientId,
+        logDate: today,
+        programTier: tier,
+      })
+    }
+
+    setMessage(
+      createPayload?.error ||
+        'Today’s nutrition plan could not be prepared yet.'
+    )
+    setLoading(false)
+    return
+  }
+
+  const created = await supabase
+    .from('nutrition_logs')
+    .select('*')
+    .eq('client_id', clientId)
+    .eq('log_date', today)
+    .maybeSingle()
+
+  if (created.error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[AOS Nutrition] created log could not be reloaded', {
+        stage: 'nutrition-log-reload',
+        error: created.error.message,
+        clientId,
+        logDate: today,
+        programTier: tier,
+      })
+    }
+
+    setMessage('Today’s nutrition plan was created but could not be loaded.')
+    setLoading(false)
+    return
+  }
+
+  log = created.data
+}
 
     const { data: remainingData } = await supabase
       .from('nutrition_log_remaining')
