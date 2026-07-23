@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Anastasis",
+    "slug": "anastasis-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "anastasis",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anastasiselite.mobile"
+    },
+    "android": {
+      "package": "com.anastasiselite.mobile"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
