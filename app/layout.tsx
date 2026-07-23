@@ -8,9 +8,9 @@ import PwaRegistration from '@/components/PwaRegistration'
 import LegalFooter from '@/components/LegalFooter'
 
 export const metadata: Metadata = {
-  title: 'Anastasis | Woman-Centered Performance',
+  title: 'Anastasis | Adaptive Coaching That Knows You',
   description:
-    'A luxury, woman-centered training experience built around female physiology, nervous system safety, and sustainable performance.',
+    'Personalized training, nutrition, recovery, and daily guidance that adapts as your body and life change.',
   applicationName: 'Anastasis',
   manifest: '/manifest.webmanifest',
   icons: {
