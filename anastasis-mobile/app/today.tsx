@@ -17,26 +17,31 @@ type TodayAction = {
   route?: string
 }
 
-const actions: TodayAction[] = [
+const actions = [
   {
     title: 'Workout',
     description: 'Open today’s training session.',
+    route: '/workout',
   },
   {
     title: 'Nutrition',
     description: 'Log meals, food, and water.',
+    route: '/nutrition',
   },
   {
     title: 'Recovery',
     description: 'Enter sleep, stress, soreness, and energy.',
+    route: '/recovery',
   },
   {
     title: 'Cycle',
     description: 'Log your cycle status and symptoms.',
+    route: '/cycle',
   },
   {
     title: 'Assessments',
     description: 'Complete anything currently due.',
+    route: '/assessments',
   },
 ]
 
