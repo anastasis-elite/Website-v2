@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native'
 
-import { supabase } from '@/lib/supabase'
+import { supabase } from '../lib/supabase'
 import { router } from 'expo-router'
 
 export default function LoginScreen() {
