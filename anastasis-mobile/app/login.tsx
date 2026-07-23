@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 
 import { supabase } from '@/lib/supabase'
+import { router } from 'expo-router'
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('')
@@ -38,7 +39,7 @@ export default function LoginScreen() {
         return
       }
 
-      Alert.alert('Connected', 'The mobile app signed into Supabase.')
+     router.replace('/today')
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'An unexpected error occurred.'
