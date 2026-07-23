@@ -103,7 +103,7 @@ export default function TodayScreen() {
           {actions.map((action) => (
             <Pressable
               key={action.title}
-              onPress={() => undefined}
+              onPress={() => router.push(action.route as never)}
               style={({ pressed }) => [
                 styles.card,
                 pressed && styles.cardPressed,
