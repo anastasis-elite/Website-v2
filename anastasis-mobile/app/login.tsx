@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,26 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+  let mounted = true
+
+  async function checkExistingSession() {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (mounted && session) {
+      router.replace('/today')
+    }
+  }
+
+  checkExistingSession()
+
+  return () => {
+    mounted = false
+  }
+}, [])
+  
   async function handleLogin() {
     const normalizedEmail = email.trim().toLowerCase()
 
