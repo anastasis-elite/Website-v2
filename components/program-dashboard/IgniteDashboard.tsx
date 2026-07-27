@@ -180,22 +180,26 @@ function HydrationRing({
           role="dialog"
           aria-label="Add water"
           style={{
-            position: 'absolute',
-            zIndex: 30,
-            top: 'calc(100% + 12px)',
-            left: '70%',
-            transform: 'translateX(-35%)',
-            width: 'min(290px, 82vw)',
-            padding: '18px',
-            borderRadius: '20px',
-            backgroundColor: '#1b1210',
+  position: 'absolute',
+  zIndex: 30,
+  top: 'calc(100% + 12px)',
+  left: '70%',
+  transform: 'translateX(-35%)',
+  width: 'min(290px, 82vw)',
+  padding: '18px',
+  borderRadius: '20px',
 
-border: '1px solid rgba(168,88,50,.35)',
+  backgroundColor: '#1b1210',
 
-boxShadow:
-  '0 20px 50px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.03)',
-            textAlign: 'left',
-          }}
+  border: '1px solid rgba(168, 88, 50, 0.6)',
+
+  boxShadow:
+    '0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+
+  textAlign: 'left',
+  opacity: 1,
+  isolation: 'isolate',
+}}
         >
           <div
             style={{
