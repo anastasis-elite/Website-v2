@@ -188,8 +188,7 @@ function HydrationRing({
             width: 'min(290px, 82vw)',
             padding: '18px',
             borderRadius: '20px',
-            background:
-  'linear-gradient(180deg, rgba(34,22,18,.98) 0%, rgba(22,16,14,.98) 100%)',
+            background: '#1b1412',
 
 border: '1px solid rgba(168,88,50,.35)',
 
