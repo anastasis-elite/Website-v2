@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import type { CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useRouter } from 'next/navigation'
 import type { IgniteDashboardData, IgniteTrend } from '@/lib/dashboard/ignite/types'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
@@ -42,6 +43,230 @@ function Ring({ value, icon, label, detail }: { value: number; icon: string; lab
         <span aria-hidden="true">{icon}</span>
       </div>
       <strong>{label}</strong><small>{detail}</small>
+    </div>
+  )
+}
+
+function HydrationRing({
+  value,
+  consumed,
+  target,
+  clientId,
+}: {
+  value: number
+  consumed: number
+  target: number
+  clientId: string
+}) {
+  const router = useRouter()
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  const [open, setOpen] = useState(false)
+  const [waterOunces, setWaterOunces] = useState(8)
+  const [addingWater, setAddingWater] = useState(false)
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    if (!open) return
+
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('touchstart', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('touchstart', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open])
+
+  async function addWater() {
+    setAddingWater(true)
+    setMessage('')
+
+    try {
+      const response = await fetch('/api/nutrition/add-water', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clientId,
+          ounces: waterOunces,
+        }),
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        setMessage(payload?.error || 'Water could not be saved.')
+        return
+      }
+
+      setWaterOunces(8)
+      setOpen(false)
+      router.refresh()
+    } catch {
+      setMessage('Water could not be saved.')
+    } finally {
+      setAddingWater(false)
+    }
+  }
+
+  const safeValue = Math.max(0, Math.min(100, value))
+
+  return (
+    <div
+      ref={containerRef}
+      className="ignite-ring-item"
+      style={{ position: 'relative' }}
+    >
+      <button
+        type="button"
+        onClick={() => {
+          setMessage('')
+          setOpen((current) => !current)
+        }}
+        aria-label={`Water: ${Math.round(consumed)} of ${Math.round(
+          target
+        )} ounces. Add water.`}
+        aria-expanded={open}
+        style={{
+          appearance: 'none',
+          background: 'transparent',
+          border: 0,
+          color: 'inherit',
+          padding: 0,
+          margin: 0,
+          font: 'inherit',
+          cursor: 'pointer',
+        }}
+      >
+        <div
+          className="ignite-ring"
+          style={
+            {
+              '--ring-progress': `${safeValue * 3.6}deg`,
+            } as CSSProperties
+          }
+        >
+          <span aria-hidden="true">◈</span>
+        </div>
+
+        <strong>Water</strong>
+
+        <small>
+          {Math.round(consumed)} / {Math.round(target)} oz
+        </small>
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Add water"
+          style={{
+            position: 'absolute',
+            zIndex: 30,
+            top: 'calc(100% + 12px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'min(290px, 82vw)',
+            padding: '18px',
+            borderRadius: '20px',
+            border: '1px solid rgba(168, 88, 50, 0.55)',
+            background: 'rgba(19, 15, 14, 0.98)',
+            boxShadow: '0 18px 45px rgba(0, 0, 0, 0.55)',
+            textAlign: 'left',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              marginBottom: '14px',
+            }}
+          >
+            <strong>Add Water</strong>
+            <span>{waterOunces} oz</span>
+          </div>
+
+          <input
+            type="range"
+            min="4"
+            max="64"
+            step="4"
+            value={waterOunces}
+            onChange={(event) =>
+              setWaterOunces(Number(event.target.value))
+            }
+            disabled={addingWater}
+            aria-label="Ounces of water to add"
+            style={{
+              width: '100%',
+              cursor: addingWater ? 'not-allowed' : 'pointer',
+              accentColor: '#a85832',
+              opacity: addingWater ? 0.6 : 1,
+            }}
+          />
+
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginTop: '6px',
+              marginBottom: '14px',
+              fontSize: '0.8rem',
+              opacity: 0.75,
+            }}
+          >
+            <span>4 oz</span>
+            <span>64 oz</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={addWater}
+            disabled={addingWater}
+            className="ignite-button"
+            style={{
+              width: '100%',
+              cursor: addingWater ? 'not-allowed' : 'pointer',
+              opacity: addingWater ? 0.65 : 1,
+            }}
+          >
+            {addingWater ? 'Adding…' : `Add ${waterOunces} oz`}
+          </button>
+
+          {message && (
+            <p
+              role="status"
+              style={{
+                margin: '12px 0 0',
+                fontSize: '0.85rem',
+              }}
+            >
+              {message}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -98,7 +323,12 @@ export default function IgniteDashboard({ logic }: { logic: ProgramLogicOutput }
           <article className="ignite-panel ignite-daily-progress">
             <p className="ignite-label">Daily Progress ⓘ</p>
             <div className="ignite-rings">
-              <Ring value={hydrationPercent} icon="◈" label="Water" detail={`${Math.round(data.water.consumed)} / ${Math.round(data.water.target)} oz`} />
+              <HydrationRing
+  value={hydrationPercent}
+  consumed={data.water.consumed}
+  target={data.water.target}
+  clientId={data.clientId}
+/>
               <Ring value={macros.percent} icon="Ψ" label="Nutrition" detail={`${macros.percent}%`} />
               <Ring value={workout.executionComplete ? 100 : 0} icon="↟" label="Workout" detail={workout.executionComplete ? 'Complete' : 'Open'} />
               <Ring value={assessment.completedPercent} icon="✓" label="Assessments" detail={`${assessment.completedPercent}%`} />
