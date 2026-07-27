@@ -413,13 +413,35 @@ setNutritionLog(log)
           <div style={styles.cardGridStyle}><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Before training</h3><p style={styles.compactCardTextStyle}>{fuel.preWorkoutAction}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Workout effect</h3><p style={styles.compactCardTextStyle}>{fuel.workoutAdjustment}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>After training</h3><p style={styles.compactCardTextStyle}>{fuel.postWorkoutPriority}</p></div></div>
         </section>
 
-        <div className="space-y-3">
-  <div className="flex items-center justify-between">
-    <label htmlFor="water-ounces" className="text-sm font-medium">
-      Add water
-    </label>
+        <section style={styles.cartBoxStyle}>
+  <p style={styles.eyebrowStyle}>Hydration</p>
 
-    <span className="text-sm font-semibold">
+  <div
+    style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: '16px',
+      marginBottom: '18px',
+    }}
+  >
+    <h2
+      style={{
+        ...styles.h2Style,
+        marginBottom: 0,
+      }}
+    >
+      Add Water
+    </h2>
+
+    <span
+      style={{
+        ...styles.cardTextStyle,
+        margin: 0,
+        fontWeight: 600,
+        whiteSpace: 'nowrap',
+      }}
+    >
       {waterOunces} oz
     </span>
   </div>
@@ -431,24 +453,51 @@ setNutritionLog(log)
     max="64"
     step="4"
     value={waterOunces}
-    onChange={(event) => setWaterOunces(Number(event.target.value))}
+    onChange={(event) =>
+      setWaterOunces(Number(event.target.value))
+    }
     disabled={addingWater}
-    className="w-full"
+    aria-label="Water amount to add"
+    style={{
+      width: '100%',
+      cursor: addingWater ? 'not-allowed' : 'pointer',
+      accentColor: '#a85832',
+      opacity: addingWater ? 0.6 : 1,
+    }}
   />
 
-  <div className="flex justify-between text-xs text-muted-foreground">
-    <span>4 oz</span>
-    <span>64 oz</span>
+  <div
+    style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: '8px',
+      marginBottom: '20px',
+    }}
+  >
+    <span style={{ ...styles.cardTextStyle, margin: 0 }}>
+      4 oz
+    </span>
+
+    <span style={{ ...styles.cardTextStyle, margin: 0 }}>
+      64 oz
+    </span>
   </div>
 
   <button
     type="button"
     onClick={addWater}
     disabled={addingWater}
+    style={{
+      ...styles.primaryButtonStyle,
+      opacity: addingWater ? 0.65 : 1,
+      cursor: addingWater ? 'not-allowed' : 'pointer',
+    }}
   >
-    {addingWater ? 'Adding…' : `Add ${waterOunces} oz`}
+    {addingWater ? 'Adding Water…' : `Add ${waterOunces} oz`}
   </button>
-</div>
+</section>
+        
         {nutritionLog && (
           <section style={styles.cartBoxStyle}>
             <h2 style={styles.h2Style}>
