@@ -236,7 +236,7 @@ boxShadow:
               marginTop: '6px',
               marginBottom: '14px',
               fontSize: '0.8rem',
-              opacity: 0.75,
+              opacity: 1,
             }}
           >
             <span>4 oz</span>
