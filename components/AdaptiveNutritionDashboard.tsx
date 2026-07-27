@@ -99,7 +99,6 @@ export default function AdaptiveNutritionDashboard({
   const [fatTarget, setFatTarget] = useState('')
 
   const [message, setMessage] = useState('')
-  const [addingWater,setAddingWater]=useState(false)
   const [foodLoggerOpen, setFoodLoggerOpen] = useState(isIgnite)
 
   const [waterOunces, setWaterOunces] = useState(8);
