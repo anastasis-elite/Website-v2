@@ -148,7 +148,7 @@ function HydrationRing({
         aria-expanded={open}
         style={{
           appearance: 'none',
-          background: '',
+          background: 'transparent',
           border: 0,
           color: 'inherit',
           padding: 0,
