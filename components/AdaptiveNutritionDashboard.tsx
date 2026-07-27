@@ -102,8 +102,40 @@ export default function AdaptiveNutritionDashboard({
   const [addingWater,setAddingWater]=useState(false)
   const [foodLoggerOpen, setFoodLoggerOpen] = useState(isIgnite)
 
-  async function addWater(){setAddingWater(true);const response=await fetch('/api/nutrition/add-water',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId:logic.client.id,ounces:8})});const payload=await response.json();setAddingWater(false);if(!response.ok){setMessage(payload.error||'Water could not be saved.');return}router.refresh()}
+  const [waterOunces, setWaterOunces] = useState(8);
+  const [addingWater, setAddingWater] = useState(false);
+  
+  async function addWater() {
+  setAddingWater(true);
+  setMessage('');
 
+  try {
+    const response = await fetch('/api/nutrition/add-water', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        clientId: logic.client.id,
+        ounces: waterOunces,
+      }),
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setMessage(payload.error || 'Water could not be saved.');
+      return;
+    }
+
+    router.refresh();
+  } catch {
+    setMessage('Water could not be saved.');
+  } finally {
+    setAddingWater(false);
+  }
+}
+  
   async function handleFoodUpdated() {
     await loadToday()
     setMessage('Food logged — today’s calories and macros are updated.')
@@ -382,8 +414,42 @@ setNutritionLog(log)
           <div style={styles.cardGridStyle}><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Before training</h3><p style={styles.compactCardTextStyle}>{fuel.preWorkoutAction}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Workout effect</h3><p style={styles.compactCardTextStyle}>{fuel.workoutAdjustment}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>After training</h3><p style={styles.compactCardTextStyle}>{fuel.postWorkoutPriority}</p></div></div>
         </section>
 
-        <section style={styles.cartBoxStyle}><p style={styles.eyebrowStyle}>Hydration</p><h2 style={styles.h2Style}>{logic.hydration.consumed} / {logic.hydration.target} oz</h2><p style={styles.bodyStyle}>{logic.hydration.prompt} {logic.hydration.remaining} oz remain.</p><div style={{height:8,borderRadius:99,overflow:'hidden',background:'rgba(255,255,255,.08)'}}><span style={{display:'block',width:`${logic.hydration.percent}%`,height:'100%',background:'linear-gradient(90deg,#c6482d,#ee7d40)'}}/></div><button type="button" onClick={addWater} disabled={addingWater} style={{...styles.primaryButtonStyle,marginTop:18}}>{addingWater?'Adding…':'+ Add 8 oz'}</button></section>
+        <div className="space-y-3">
+  <div className="flex items-center justify-between">
+    <label htmlFor="water-ounces" className="text-sm font-medium">
+      Add water
+    </label>
 
+    <span className="text-sm font-semibold">
+      {waterOunces} oz
+    </span>
+  </div>
+
+  <input
+    id="water-ounces"
+    type="range"
+    min="4"
+    max="64"
+    step="4"
+    value={waterOunces}
+    onChange={(event) => setWaterOunces(Number(event.target.value))}
+    disabled={addingWater}
+    className="w-full"
+  />
+
+  <div className="flex justify-between text-xs text-muted-foreground">
+    <span>4 oz</span>
+    <span>64 oz</span>
+  </div>
+
+  <button
+    type="button"
+    onClick={addWater}
+    disabled={addingWater}
+  >
+    {addingWater ? 'Adding…' : `Add ${waterOunces} oz`}
+  </button>
+</div>
         {nutritionLog && (
           <section style={styles.cartBoxStyle}>
             <h2 style={styles.h2Style}>
