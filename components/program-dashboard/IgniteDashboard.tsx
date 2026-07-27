@@ -188,7 +188,7 @@ function HydrationRing({
             width: 'min(290px, 82vw)',
             padding: '18px',
             borderRadius: '20px',
-            background: 'opaque',
+            backgroundColor: '#1b1210',
 
 border: '1px solid rgba(168,88,50,.35)',
 
