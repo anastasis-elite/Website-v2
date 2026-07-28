@@ -132,151 +132,156 @@ function HydrationRing({
 
   return (
     <div
-      ref={containerRef}
-      className="ignite-ring-item"
-      style={{ position: 'relative' }}
+  ref={containerRef}
+  className="ignite-ring-item"
+  style={{
+    position: 'relative',
+    zIndex: open ? 100 : 1,
+    overflow: 'visible',
+  }}
+>
+  <button
+    type="button"
+    onClick={() => {
+      setMessage('')
+      setOpen((current) => !current)
+    }}
+    aria-label={`Water: ${Math.round(consumed)} of ${Math.round(
+      target
+    )} ounces. Add water.`}
+    aria-expanded={open}
+    style={{
+      appearance: 'none',
+      background: 'transparent',
+      border: 0,
+      color: 'inherit',
+      padding: 0,
+      margin: 0,
+      font: 'inherit',
+      cursor: 'pointer',
+    }}
+  >
+    <div
+      className="ignite-ring"
+      style={
+        {
+          '--ring-progress': `${safeValue * 3.6}deg`,
+        } as CSSProperties
+      }
     >
-      <button
-        type="button"
-        onClick={() => {
-          setMessage('')
-          setOpen((current) => !current)
-        }}
-        aria-label={`Water: ${Math.round(consumed)} of ${Math.round(
-          target
-        )} ounces. Add water.`}
-        aria-expanded={open}
+      <span aria-hidden="true">◈</span>
+    </div>
+
+    <strong>Water</strong>
+
+    <small>
+      {Math.round(consumed)} / {Math.round(target)} oz
+    </small>
+  </button>
+
+  {open && (
+    <div
+      role="dialog"
+      aria-label="Add water"
+      style={{
+        position: 'absolute',
+        zIndex: 9999,
+        top: 'calc(100% + 12px)',
+        left: '70%',
+        transform: 'translateX(-35%)',
+
+        width: 'min(290px, 82vw)',
+        padding: '18px',
+        borderRadius: '20px',
+
+        background: '#1b1210',
+        backgroundColor: '#1b1210',
+        backgroundImage: 'none',
+
+        border: '1px solid rgba(168, 88, 50, 0.6)',
+        boxShadow:
+          '0 20px 50px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+
+        color: '#f4eee9',
+        textAlign: 'left',
+        opacity: 1,
+        isolation: 'isolate',
+        overflow: 'hidden',
+      }}
+    >
+      <div
         style={{
-          appearance: 'none',
-          background: 'transparent',
-          border: 0,
-          color: 'inherit',
-          padding: 0,
-          margin: 0,
-          font: 'inherit',
-          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          marginBottom: '14px',
         }}
       >
-        <div
-          className="ignite-ring-item"
-          style={
-            {
-              '--ring-progress': `${safeValue * 3.6}deg`,
-            } as CSSProperties
-          }
-        >
-          <span aria-hidden="true">◈</span>
-        </div>
+        <strong>Add Water</strong>
+        <span>{waterOunces} oz</span>
+      </div>
 
-        <strong>Water</strong>
+      <input
+        type="range"
+        min="4"
+        max="64"
+        step="4"
+        value={waterOunces}
+        onChange={(event) =>
+          setWaterOunces(Number(event.target.value))
+        }
+        disabled={addingWater}
+        aria-label="Ounces of water to add"
+        style={{
+          width: '100%',
+          cursor: addingWater ? 'not-allowed' : 'pointer',
+          accentColor: '#a85832',
+          opacity: addingWater ? 0.6 : 1,
+        }}
+      />
 
-        <small>
-          {Math.round(consumed)} / {Math.round(target)} oz
-        </small>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginTop: '6px',
+          marginBottom: '14px',
+          fontSize: '0.8rem',
+        }}
+      >
+        <span>4 oz</span>
+        <span>64 oz</span>
+      </div>
+
+      <button
+        type="button"
+        onClick={addWater}
+        disabled={addingWater}
+        className="ignite-button"
+        style={{
+          width: '100%',
+          cursor: addingWater ? 'not-allowed' : 'pointer',
+          opacity: addingWater ? 0.65 : 1,
+        }}
+      >
+        {addingWater ? 'Adding…' : `Add ${waterOunces} oz`}
       </button>
 
-      {open && (
-        <div
-          role="dialog"
-          aria-label="Add water"
+      {message && (
+        <p
+          role="status"
           style={{
-  position: 'absolute',
-  zIndex: 30,
-  top: 'calc(100% + 12px)',
-  left: '70%',
-  transform: 'translateX(-35%)',
-  width: 'min(290px, 82vw)',
-  padding: '18px',
-  borderRadius: '20px',
-
-  backgroundColor: '#1b1210',
-
-  border: '1px solid rgba(168, 88, 50, 0.6)',
-
-  boxShadow:
-    '0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
-
-  textAlign: 'left',
-  opacity: 1,
-  isolation: 'isolate',
-}}
+            margin: '12px 0 0',
+            fontSize: '0.85rem',
+          }}
         >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-              marginBottom: '14px',
-            }}
-          >
-            <strong>Add Water</strong>
-            <span>{waterOunces} oz</span>
-          </div>
-
-          <input
-            type="range"
-            min="4"
-            max="64"
-            step="4"
-            value={waterOunces}
-            onChange={(event) =>
-              setWaterOunces(Number(event.target.value))
-            }
-            disabled={addingWater}
-            aria-label="Ounces of water to add"
-            style={{
-              backgroundColor: '#1b1210',
-              width: '100%',
-              cursor: addingWater ? 'not-allowed' : 'pointer',
-              accentColor: '#a85832',
-              opacity: addingWater ? 0.6 : 1,
-            }}
-          />
-
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginTop: '6px',
-              marginBottom: '14px',
-              fontSize: '0.8rem',
-              opacity: 1,
-              backgroundColor: '#1b1210',
-            }}
-          >
-            <span>4 oz</span>
-            <span>64 oz</span>
-          </div>
-
-          <button
-            type="button"
-            onClick={addWater}
-            disabled={addingWater}
-            className="ignite-button"
-            style={{
-              width: '100%',
-              cursor: addingWater ? 'not-allowed' : 'pointer',
-              opacity: addingWater ? 0.65 : 1,
-            }}
-          >
-            {addingWater ? 'Adding…' : `Add ${waterOunces} oz`}
-          </button>
-
-          {message && (
-            <p
-              role="status"
-              style={{
-                margin: '12px 0 0',
-                fontSize: '0.85rem',
-              }}
-            >
-              {message}
-            </p>
-          )}
-        </div>
+          {message}
+        </p>
       )}
     </div>
+  )}
+</div>
   )
 }
 
