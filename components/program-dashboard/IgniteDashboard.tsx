@@ -23,6 +23,7 @@ import {
   useTodayWorkout,
   useWeeklyTrends,
 } from '@/components/program-dashboard/ignite/hooks'
+import { createPortal } from 'react-dom'
 
 function greeting() {
   return 'Good Morning'
@@ -58,9 +59,40 @@ function HydrationRing({
   target: number
   clientId: string
 }) {
+  
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const [popupPosition, setPopupPosition] = useState({
+  top: 0,
+  left: 0,
+})
 
+  useEffect(() => {
+  if (!open || !triggerRef.current) return
+
+  function updatePopupPosition() {
+    const rect = triggerRef.current?.getBoundingClientRect()
+
+    if (!rect) return
+
+    setPopupPosition({
+      top: rect.bottom + 12,
+      left: rect.left + rect.width * 0.7,
+    })
+  }
+
+  updatePopupPosition()
+
+  window.addEventListener('resize', updatePopupPosition)
+  window.addEventListener('scroll', updatePopupPosition, true)
+
+  return () => {
+    window.removeEventListener('resize', updatePopupPosition)
+    window.removeEventListener('scroll', updatePopupPosition, true)
+  }
+}, [open])
+  
   const [open, setOpen] = useState(false)
   const [waterOunces, setWaterOunces] = useState(8)
   const [addingWater, setAddingWater] = useState(false)
@@ -141,6 +173,7 @@ function HydrationRing({
   }}
 >
   <button
+    ref={triggerRef}
     type="button"
     onClick={() => {
       setMessage('')
@@ -179,35 +212,44 @@ function HydrationRing({
     </small>
   </button>
 
-  {open && (
+  {open &&
+  typeof document !== 'undefined' &&
+  createPortal(
     <div
       role="dialog"
       aria-label="Add water"
       style={{
-        position: 'absolute',
-        zIndex: 9999,
-        top: 'calc(100% + 12px)',
-        left: '70%',
+        position: 'fixed',
+        zIndex: 2147483647,
+
+        top: `${popupPosition.top}px`,
+        left: `${popupPosition.left}px`,
         transform: 'translateX(-35%)',
 
-        width: 'min(290px, 82vw)',
+        width: 'min(290px, calc(100vw - 32px))',
         padding: '18px',
         borderRadius: '20px',
 
-        background: '#1b1210',
         backgroundColor: '#1b1210',
         backgroundImage: 'none',
 
-        border: '1px solid rgba(168, 88, 50, 0.6)',
+        border: '1px solid rgba(168, 88, 50, 0.7)',
+
         boxShadow:
-          '0 20px 50px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+          '0 20px 50px rgba(0, 0, 0, 0.9)',
 
         color: '#f4eee9',
         textAlign: 'left',
+
         opacity: 1,
+        filter: 'none',
+        backdropFilter: 'none',
+        mixBlendMode: 'normal',
+
         isolation: 'isolate',
-        overflow: 'hidden',
       }}
+      onMouseDown={(event) => event.stopPropagation()}
+      onTouchStart={(event) => event.stopPropagation()}
     >
       <div
         style={{
@@ -279,7 +321,8 @@ function HydrationRing({
           {message}
         </p>
       )}
-    </div>
+    </div>,
+    document.body
   )}
 </div>
   )
