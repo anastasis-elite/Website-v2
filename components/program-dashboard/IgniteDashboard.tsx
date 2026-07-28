@@ -158,7 +158,6 @@ function HydrationRing({
         }}
       >
         <div
-          ref={containerRef}
           className="ignite-ring-item"
           style={
             {
