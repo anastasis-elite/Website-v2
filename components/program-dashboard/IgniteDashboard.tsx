@@ -159,6 +159,7 @@ function HydrationRing({
       >
         <div
           ref={containerRef}
+          className="ignite-ring-item"
           style={
             {
               '--ring-progress': `${safeValue * 3.6}deg`,
@@ -241,6 +242,7 @@ function HydrationRing({
               marginBottom: '14px',
               fontSize: '0.8rem',
               opacity: 1,
+              backgroundColor: '#1b1210',
             }}
           >
             <span>4 oz</span>
