@@ -158,7 +158,7 @@ function HydrationRing({
         }}
       >
         <div
-          className="ignite-ring"
+          ref={containerRef}
           style={
             {
               '--ring-progress': `${safeValue * 3.6}deg`,
