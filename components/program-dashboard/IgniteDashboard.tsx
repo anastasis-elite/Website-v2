@@ -1,14 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-} from 'react'
-import { createPortal } from 'react-dom'
-import { useRouter } from 'next/navigation'
+import type { CSSProperties } from 'react'
 
 import type {
   IgniteDashboardData,
@@ -18,9 +11,11 @@ import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 
 import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
+
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
 import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
 import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
+import HydrationQuickAdd from '@/components/hydration/HydrationQuickAdd'
 
 import {
   useAssessmentStatus,
@@ -71,7 +66,10 @@ function Ring({
   label: string
   detail: string
 }) {
-  const safeValue = Math.max(0, Math.min(100, value))
+  const safeValue = Math.max(
+    0,
+    Math.min(100, value)
+  )
 
   return (
     <div className="ignite-ring-item">
@@ -79,22 +77,21 @@ function Ring({
         className="ignite-ring"
         style={
           {
-            '--ring-progress': `${safeValue * 3.6}deg`,
+            '--ring-progress': `${
+              safeValue * 3.6
+            }deg`,
           } as CSSProperties
         }
       >
-        <span aria-hidden="true">{icon}</span>
+        <span aria-hidden="true">
+          {icon}
+        </span>
       </div>
 
       <strong>{label}</strong>
       <small>{detail}</small>
     </div>
   )
-}
-
-type PopupPosition = {
-  top: number
-  left: number
 }
 
 function HydrationRing({
@@ -108,373 +105,98 @@ function HydrationRing({
   target: number
   clientId: string
 }) {
-  const router = useRouter()
-
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const triggerRef = useRef<HTMLButtonElement | null>(null)
-  const popupRef = useRef<HTMLDivElement | null>(null)
-
-  const [open, setOpen] = useState(false)
-  const [waterOunces, setWaterOunces] = useState(8)
-  const [addingWater, setAddingWater] = useState(false)
-  const [message, setMessage] = useState('')
-  const [popupPosition, setPopupPosition] =
-    useState<PopupPosition | null>(null)
-
-  const safeValue = Math.max(0, Math.min(100, value))
-
-  useEffect(() => {
-    if (!open || !triggerRef.current) {
-      setPopupPosition(null)
-      return
-    }
-
-    function updatePopupPosition() {
-      const trigger = triggerRef.current
-
-      if (!trigger) {
-        return
-      }
-
-      const rect = trigger.getBoundingClientRect()
-      const estimatedPopupWidth = Math.min(
-        290,
-        window.innerWidth - 32
-      )
-
-      const desiredLeft = rect.left + rect.width * 0.7
-
-      const minimumLeft = 16 + estimatedPopupWidth * 0.35
-      const maximumLeft =
-        window.innerWidth -
-        16 -
-        estimatedPopupWidth * 0.65
-
-      const clampedLeft = Math.max(
-        minimumLeft,
-        Math.min(desiredLeft, maximumLeft)
-      )
-
-      setPopupPosition({
-        top: rect.bottom + 12,
-        left: clampedLeft,
-      })
-    }
-
-    updatePopupPosition()
-
-    window.addEventListener('resize', updatePopupPosition)
-    window.addEventListener('scroll', updatePopupPosition, true)
-
-    return () => {
-      window.removeEventListener('resize', updatePopupPosition)
-      window.removeEventListener('scroll', updatePopupPosition, true)
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    function handlePointerDown(event: PointerEvent) {
-      const targetNode = event.target as Node
-
-      const clickedTrigger =
-        containerRef.current?.contains(targetNode) ?? false
-
-      const clickedPopup =
-        popupRef.current?.contains(targetNode) ?? false
-
-      if (!clickedTrigger && !clickedPopup) {
-        setOpen(false)
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setOpen(false)
-      }
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener(
-        'pointerdown',
-        handlePointerDown
-      )
-
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [open])
-
-  async function addWater() {
-    if (addingWater) {
-      return
-    }
-
-    setAddingWater(true)
-    setMessage('')
-
-    try {
-      const response = await fetch('/api/nutrition/add-water', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          clientId,
-          ounces: waterOunces,
-        }),
-      })
-
-      const payload = await response.json().catch(() => null)
-
-      if (!response.ok) {
-        setMessage(
-          payload?.error || 'Water could not be saved.'
-        )
-        return
-      }
-
-      setWaterOunces(8)
-      setOpen(false)
-      router.refresh()
-    } catch {
-      setMessage('Water could not be saved.')
-    } finally {
-      setAddingWater(false)
-    }
-  }
-
-  const popup =
-    open &&
-    popupPosition &&
-    typeof document !== 'undefined'
-      ? createPortal(
-          <div
-            ref={popupRef}
-            role="dialog"
-            aria-modal="false"
-            aria-label="Add water"
-            style={{
-              position: 'fixed',
-              zIndex: 2147483647,
-
-              top: `${popupPosition.top}px`,
-              left: `${popupPosition.left}px`,
-              transform: 'translateX(-35%)',
-
-              width: 'min(290px, calc(100vw - 32px))',
-              boxSizing: 'border-box',
-
-              padding: '18px',
-              borderRadius: '20px',
-
-              border:
-                '1px solid rgba(168, 88, 50, 0.7)',
-
-              boxShadow:
-                '0 24px 60px rgba(0, 0, 0, 0.95)',
-
-              color: '#f4eee9',
-              textAlign: 'left',
-
-              opacity: 1,
-              filter: 'none',
-              backdropFilter: 'none',
-              WebkitBackdropFilter: 'none',
-              mixBlendMode: 'normal',
-
-              isolation: 'isolate',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Dedicated opaque background layer */}
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                zIndex: 0,
-
-                background: '#1b1210',
-                backgroundColor: '#1b1210',
-                backgroundImage: 'none',
-
-                opacity: 1,
-                pointerEvents: 'none',
-              }}
-            />
-
-            {/* Popup content */}
-            <div
-              style={{
-                position: 'relative',
-                zIndex: 1,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px',
-                  marginBottom: '14px',
-                }}
-              >
-                <strong>Add Water</strong>
-                <span>{waterOunces} oz</span>
-              </div>
-
-              <input
-                type="range"
-                min={4}
-                max={64}
-                step={4}
-                value={waterOunces}
-                onChange={(event) => {
-                  setWaterOunces(
-                    Number(event.target.value)
-                  )
-                }}
-                disabled={addingWater}
-                aria-label="Ounces of water to add"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  margin: 0,
-
-                  cursor: addingWater
-                    ? 'not-allowed'
-                    : 'pointer',
-
-                  accentColor: '#a85832',
-
-                  opacity: addingWater ? 0.6 : 1,
-                }}
-              />
-
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-
-                  marginTop: '6px',
-                  marginBottom: '14px',
-
-                  fontSize: '0.8rem',
-                }}
-              >
-                <span>4 oz</span>
-                <span>64 oz</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={addWater}
-                disabled={addingWater}
-                className="ignite-button"
-                style={{
-                  width: '100%',
-
-                  cursor: addingWater
-                    ? 'not-allowed'
-                    : 'pointer',
-
-                  opacity: addingWater ? 0.65 : 1,
-                }}
-              >
-                {addingWater
-                  ? 'Adding…'
-                  : `Add ${waterOunces} oz`}
-              </button>
-
-              {message && (
-                <p
-                  role="status"
-                  style={{
-                    margin: '12px 0 0',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  {message}
-                </p>
-              )}
-            </div>
-          </div>,
-          document.body
-        )
-      : null
+  const safeValue = Math.max(
+    0,
+    Math.min(100, value)
+  )
 
   return (
-    <>
-      <div
-        ref={containerRef}
-        className="ignite-ring-item"
-        style={{
-          position: 'relative',
-        }}
-      >
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={() => {
-            setMessage('')
-            setOpen((current) => !current)
-          }}
-          aria-label={`Water: ${Math.round(
-            consumed
-          )} of ${Math.round(
-            target
-          )} ounces. Add water.`}
-          aria-expanded={open}
-          style={{
-            appearance: 'none',
-            WebkitAppearance: 'none',
+    <div className="ignite-ring-item">
+      <HydrationQuickAdd
+        clientId={clientId}
+        consumed={consumed}
+        target={target}
+        defaultOunces={8}
+        minimumOunces={4}
+        maximumOunces={64}
+        stepOunces={4}
+        renderTrigger={({
+          open,
+          addingWater,
+          triggerRef,
+          toggle,
+        }) => (
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={toggle}
+            disabled={addingWater}
+            aria-label={`Water: ${Math.round(
+              consumed
+            )} of ${Math.round(
+              target
+            )} ounces. Add water.`}
+            aria-expanded={open}
+            aria-haspopup="dialog"
+            style={{
+              appearance: 'none',
+              WebkitAppearance: 'none',
 
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
 
-            background: 'transparent',
-            border: 0,
-            color: 'inherit',
+              background: 'transparent',
+              border: 0,
+              color: 'inherit',
 
-            padding: 0,
-            margin: 0,
+              padding: 0,
+              margin: 0,
 
-            font: 'inherit',
-            cursor: 'pointer',
-          }}
-        >
-          <div
-            className="ignite-ring"
-            style={
-              {
-                '--ring-progress': `${safeValue * 3.6}deg`,
-              } as CSSProperties
-            }
+              font: 'inherit',
+
+              cursor: addingWater
+                ? 'not-allowed'
+                : 'pointer',
+
+              opacity: addingWater
+                ? 0.65
+                : 1,
+            }}
           >
-            <span aria-hidden="true">◈</span>
-          </div>
+            <div
+              className="ignite-ring"
+              style={
+                {
+                  '--ring-progress': `${
+                    safeValue * 3.6
+                  }deg`,
+                } as CSSProperties
+              }
+            >
+              <span aria-hidden="true">
+                ◈
+              </span>
+            </div>
 
-          <strong>Water</strong>
+            <strong>Water</strong>
 
-          <small>
-            {Math.round(consumed)} / {Math.round(target)} oz
-          </small>
-        </button>
-      </div>
-
-      {popup}
-    </>
+            <small>
+              {Math.round(consumed)} /{' '}
+              {Math.round(target)} oz
+            </small>
+          </button>
+        )}
+      />
+    </div>
   )
 }
 
-function Sparkline({ trend }: { trend: IgniteTrend }) {
+function Sparkline({
+  trend,
+}: {
+  trend: IgniteTrend
+}) {
   const points = trend.values
     .map((value, index) => ({
       value,
@@ -497,7 +219,10 @@ function Sparkline({ trend }: { trend: IgniteTrend }) {
     )
   }
 
-  const values = points.map((point) => point.value)
+  const values = points.map(
+    (point) => point.value
+  )
+
   const min = Math.min(...values)
   const max = Math.max(...values)
   const range = max - min || 1
@@ -506,7 +231,9 @@ function Sparkline({ trend }: { trend: IgniteTrend }) {
     .map(
       (point) =>
         `${(point.index / 6) * 100},${
-          34 - ((point.value - min) / range) * 28
+          34 -
+          ((point.value - min) / range) *
+            28
         }`
     )
     .join(' ')
@@ -528,90 +255,157 @@ export default function IgniteDashboard({
 }: {
   logic: ProgramLogicOutput
 }) {
-  const engine = useProgramLogicEngine(logic)
+  const engine =
+    useProgramLogicEngine(logic)
 
   const initialData: IgniteDashboardData =
     getIgniteDashboardData(engine)
 
-  const data = useClientDashboardData(initialData)
-  const macros = useMacroProgress(data.macros)
-  const plan = useTodayPlan(data.clientId, data.plan)
-  const workout = useTodayWorkout(data.workout)
-  const assessment = useAssessmentStatus(data.assessment)
-  const recovery = useRecoveryCheck(data.recovery)
-  const cycle = useCyclePhase(data.cycle)
-  const trends = useWeeklyTrends(data.trends)
-  const progress = useProgressSnapshot(data.progress)
+  const data =
+    useClientDashboardData(initialData)
+
+  const macros =
+    useMacroProgress(data.macros)
+
+  const plan =
+    useTodayPlan(
+      data.clientId,
+      data.plan
+    )
+
+  const workout =
+    useTodayWorkout(data.workout)
+
+  const assessment =
+    useAssessmentStatus(
+      data.assessment
+    )
+
+  const recovery =
+    useRecoveryCheck(data.recovery)
+
+  const cycle =
+    useCyclePhase(data.cycle)
+
+  const trends =
+    useWeeklyTrends(data.trends)
+
+  const progress =
+    useProgressSnapshot(
+      data.progress
+    )
 
   const hydrationPercent = Math.min(
     100,
     Math.round(
       (data.water.consumed /
-        Math.max(1, data.water.target)) *
+        Math.max(
+          1,
+          data.water.target
+        )) *
         100
     )
   )
 
-  const executionScore = engine.flameState.dailyScore
-  const flame = useFlameState(executionScore)
+  const executionScore =
+    engine.flameState.dailyScore
 
-  const trendWithComparison = trends.find(
-    (trend) => trend.comparisonPercent !== null
-  )
+  const flame =
+    useFlameState(executionScore)
 
-  const insight = useIgniteInsight({
-    baseInsight: data.baseInsight,
-    hydration: hydrationPercent,
-    nutrition: macros.percent,
-    workoutComplete: workout.executionComplete,
-    recoveryComplete: recovery.completed,
-    cyclePhase: cycle.phase,
+  const trendWithComparison =
+    trends.find(
+      (trend) =>
+        trend.comparisonPercent !== null
+    )
 
-    weeklyTrend: trendWithComparison
-      ? {
-          label: trendWithComparison.label,
-          comparisonPercent:
-            trendWithComparison.comparisonPercent!,
-        }
-      : null,
-  })
+  const insight =
+    useIgniteInsight({
+      baseInsight:
+        data.baseInsight,
+
+      hydration:
+        hydrationPercent,
+
+      nutrition:
+        macros.percent,
+
+      workoutComplete:
+        workout.executionComplete,
+
+      recoveryComplete:
+        recovery.completed,
+
+      cyclePhase:
+        cycle.phase,
+
+      weeklyTrend:
+        trendWithComparison
+          ? {
+              label:
+                trendWithComparison.label,
+
+              comparisonPercent:
+                trendWithComparison
+                  .comparisonPercent!,
+            }
+          : null,
+    })
 
   return (
     <main
       className="ignite-dashboard"
       style={
         {
-          '--ignite-intensity': flame.intensity,
+          '--ignite-intensity':
+            flame.intensity,
         } as CSSProperties
       }
     >
       <div className="ignite-shell">
         <header className="ignite-header">
           <div className="ignite-brand">
-            <span aria-hidden="true">🔥</span>
+            <span aria-hidden="true">
+              🔥
+            </span>
 
             <div>
-              <strong>IGNITE</strong>
+              <strong>
+                IGNITE
+              </strong>
+
               <small>
-                Focused. Intentional. Progressing.
+                Focused. Intentional.
+                Progressing.
               </small>
             </div>
           </div>
 
           <div className="ignite-greeting">
             <h1>
-              {greeting()}, {data.clientName} {flame.icon}
+              {greeting()},{' '}
+              {data.clientName}{' '}
+              {flame.icon}
             </h1>
 
             <p>
-              You&apos;ve got this. One choice at a time.
+              You&apos;ve got this. One
+              choice at a time.
             </p>
           </div>
 
           <div className="ignite-streak">
-            <span>{flame.icon}</span>
-            <strong>{data.streak}</strong>
-            <small>Day streak</small>
+            <span>
+              {flame.icon}
+            </span>
+
+            <strong>
+              {data.streak}
+            </strong>
+
+            <small>
+              Day streak
+            </small>
           </div>
         </header>
 
@@ -623,14 +417,24 @@ export default function IgniteDashboard({
 
             <div className="ignite-rings">
               <HydrationRing
-                value={hydrationPercent}
-                consumed={data.water.consumed}
-                target={data.water.target}
-                clientId={data.clientId}
+                value={
+                  hydrationPercent
+                }
+                consumed={
+                  data.water.consumed
+                }
+                target={
+                  data.water.target
+                }
+                clientId={
+                  data.clientId
+                }
               />
 
               <Ring
-                value={macros.percent}
+                value={
+                  macros.percent
+                }
                 icon="Ψ"
                 label="Nutrition"
                 detail={`${macros.percent}%`}
@@ -638,7 +442,9 @@ export default function IgniteDashboard({
 
               <Ring
                 value={
-                  workout.executionComplete ? 100 : 0
+                  workout.executionComplete
+                    ? 100
+                    : 0
                 }
                 icon="↟"
                 label="Workout"
@@ -650,7 +456,9 @@ export default function IgniteDashboard({
               />
 
               <Ring
-                value={assessment.completedPercent}
+                value={
+                  assessment.completedPercent
+                }
                 icon="✓"
                 label="Assessments"
                 detail={`${assessment.completedPercent}%`}
@@ -664,11 +472,14 @@ export default function IgniteDashboard({
 
               <div>
                 <strong>
-                  {momentum(executionScore)}
+                  {momentum(
+                    executionScore
+                  )}
                 </strong>
 
                 <p>
-                  {executionScore}% of today&apos;s execution
+                  {executionScore}% of
+                  today&apos;s execution
                   complete.
                 </p>
               </div>
@@ -687,47 +498,70 @@ export default function IgniteDashboard({
             </div>
 
             <div className="ignite-macro-list">
-              {macros.rows.map((macro) => (
-                <div
-                  className={`ignite-macro ignite-${macro.key}`}
-                  key={macro.key}
-                >
-                  <span className="ignite-macro-badge">
-                    {macro.key === 'calories'
-                      ? 'K'
-                      : macro.label[0]}
-                  </span>
+              {macros.rows.map(
+                (macro) => (
+                  <div
+                    className={`ignite-macro ignite-${macro.key}`}
+                    key={
+                      macro.key
+                    }
+                  >
+                    <span className="ignite-macro-badge">
+                      {macro.key ===
+                      'calories'
+                        ? 'K'
+                        : macro
+                            .label[0]}
+                    </span>
 
-                  <div>
-                    <p>
-                      <strong>{macro.label}</strong>
+                    <div>
+                      <p>
+                        <strong>
+                          {
+                            macro.label
+                          }
+                        </strong>
+
+                        <small>
+                          {Math.round(
+                            macro.consumed
+                          )}{' '}
+                          /{' '}
+                          {Math.round(
+                            macro.target
+                          )}
+                          {
+                            macro.unit
+                          }
+                        </small>
+                      </p>
+
+                      <div className="ignite-track">
+                        <span
+                          style={{
+                            width: `${macro.percent}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <p className="ignite-left">
+                      <strong>
+                        {
+                          macro.remaining
+                        }
+                        {
+                          macro.unit
+                        }
+                      </strong>
 
                       <small>
-                        {Math.round(macro.consumed)} /{' '}
-                        {Math.round(macro.target)}
-                        {macro.unit}
+                        left
                       </small>
                     </p>
-
-                    <div className="ignite-track">
-                      <span
-                        style={{
-                          width: `${macro.percent}%`,
-                        }}
-                      />
-                    </div>
                   </div>
-
-                  <p className="ignite-left">
-                    <strong>
-                      {macro.remaining}
-                      {macro.unit}
-                    </strong>
-
-                    <small>left</small>
-                  </p>
-                </div>
-              ))}
+                )
+              )}
             </div>
 
             <Link
@@ -752,67 +586,103 @@ export default function IgniteDashboard({
             </div>
 
             <div className="ignite-plan-blocks">
-              {plan.blocks.map((block) => (
-                <div
-                  className={`ignite-plan-block ignite-plan-${block.id}`}
-                  key={block.id}
-                >
-                  <h3>
-                    {block.id === 'morning'
-                      ? '☀'
-                      : block.id === 'midday'
-                        ? '◆'
-                        : '◒'}{' '}
-                    {block.title}
-                  </h3>
-
-                  <p>{block.focus}</p>
-
-                  <div className="ignite-task-list">
-                    {block.tasks.map((task) =>
-                      task.autoTracked ? (
-                        <Link
-                          href={task.href}
-                          key={task.id}
-                          className={
-                            task.complete ? 'complete' : ''
-                          }
-                        >
-                          <span>
-                            {task.complete ? '✓' : '○'}
-                          </span>
-
-                          {task.label}
-                        </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          key={task.id}
-                          className={
-                            task.complete ? 'complete' : ''
-                          }
-                          onClick={() =>
-                            plan.toggleTask(task.id)
-                          }
-                        >
-                          <span>
-                            {task.complete ? '✓' : '○'}
-                          </span>
-
-                          {task.label}
-                        </button>
-                      )
-                    )}
-                  </div>
-
-                  <Link
-                    href={`/dashboard/day/${block.id}`}
-                    className="ignite-block-action"
+              {plan.blocks.map(
+                (block) => (
+                  <div
+                    className={`ignite-plan-block ignite-plan-${block.id}`}
+                    key={
+                      block.id
+                    }
                   >
-                    Open {block.title}
-                  </Link>
-                </div>
-              ))}
+                    <h3>
+                      {block.id ===
+                      'morning'
+                        ? '☀'
+                        : block.id ===
+                            'midday'
+                          ? '◆'
+                          : '◒'}{' '}
+                      {
+                        block.title
+                      }
+                    </h3>
+
+                    <p>
+                      {
+                        block.focus
+                      }
+                    </p>
+
+                    <div className="ignite-task-list">
+                      {block.tasks.map(
+                        (task) =>
+                          task.autoTracked ? (
+                            <Link
+                              href={
+                                task.href
+                              }
+                              key={
+                                task.id
+                              }
+                              className={
+                                task.complete
+                                  ? 'complete'
+                                  : ''
+                              }
+                            >
+                              <span>
+                                {task.complete
+                                  ? '✓'
+                                  : '○'}
+                              </span>
+
+                              {
+                                task.label
+                              }
+                            </Link>
+                          ) : (
+                            <button
+                              type="button"
+                              key={
+                                task.id
+                              }
+                              className={
+                                task.complete
+                                  ? 'complete'
+                                  : ''
+                              }
+                              onClick={() =>
+                                plan.toggleTask(
+                                  task.id
+                                )
+                              }
+                            >
+                              <span>
+                                {task.complete
+                                  ? '✓'
+                                  : '○'}
+                              </span>
+
+                              {
+                                task.label
+                              }
+                            </button>
+                          )
+                      )}
+                    </div>
+
+                    <Link
+                      href={`/dashboard/day/${block.id}`}
+                      className="ignite-block-action"
+                    >
+                      Open{' '}
+                      {
+                        block.title
+                      }
+                    </Link>
+                  </div>
+                )
+              )}
             </div>
           </article>
 
@@ -825,14 +695,19 @@ export default function IgniteDashboard({
                 Today&apos;s Insight
               </p>
 
-              <span>{flame.icon}</span>
+              <span>
+                {flame.icon}
+              </span>
             </div>
 
             <div className="ignite-insight-body">
-              <strong>{insight}</strong>
+              <strong>
+                {insight}
+              </strong>
 
               <p>
-                {recovery.readiness !== null
+                {recovery.readiness !==
+                null
                   ? `Readiness: ${recovery.readiness}%.`
                   : 'Complete your recovery check to add readiness context.'}
               </p>
@@ -848,21 +723,33 @@ export default function IgniteDashboard({
               </p>
 
               <WorkoutFeedback
-                clientId={data.clientId}
+                clientId={
+                  data.clientId
+                }
                 program="ignite"
                 assignedWorkoutId={String(
-                  engine.workoutDecision.plannedWorkout
-                    ?.id || engine.workout.title
+                  engine
+                    .workoutDecision
+                    .plannedWorkout
+                    ?.id ||
+                    engine.workout
+                      .title
                 )}
-                workoutTitle={engine.workout.title}
+                workoutTitle={
+                  engine.workout
+                    .title
+                }
                 workoutHref="/dashboard/program/ignite/workout"
               />
             </div>
 
-            <h3>{workout.title}</h3>
+            <h3>
+              {workout.title}
+            </h3>
 
             <p>
               {workout.type}
+
               {workout.durationMinutes
                 ? ` · ${workout.durationMinutes} min`
                 : ''}
@@ -902,7 +789,10 @@ export default function IgniteDashboard({
             </p>
 
             <div className="ignite-mini-ring">
-              {assessment.completedPercent}%
+              {
+                assessment.completedPercent
+              }
+              %
             </div>
 
             <Link
@@ -935,7 +825,8 @@ export default function IgniteDashboard({
             </h3>
 
             <p>
-              Use today&apos;s signals to choose the right
+              Use today&apos;s signals
+              to choose the right
               recovery action.
             </p>
 
@@ -956,11 +847,23 @@ export default function IgniteDashboard({
               </p>
 
               <h3>
-                {cycle.phase?.replace('_', ' ')}
+                {cycle.phase?.replace(
+                  '_',
+                  ' '
+                )}
               </h3>
 
-              <p>Day {cycle.day ?? '—'}</p>
-              <small>{cycle.recommendation}</small>
+              <p>
+                Day{' '}
+                {cycle.day ??
+                  '—'}
+              </p>
+
+              <small>
+                {
+                  cycle.recommendation
+                }
+              </small>
 
               <Link
                 href="/dashboard/cycle"
@@ -976,13 +879,15 @@ export default function IgniteDashboard({
               </p>
 
               <h3>
-                {recovery.readiness !== null
+                {recovery.readiness !==
+                null
                   ? `${recovery.readiness}%`
                   : 'Check-in open'}
               </h3>
 
               <p>
-                Log today&apos;s body signals to calculate
+                Log today&apos;s body
+                signals to calculate
                 readiness.
               </p>
 
@@ -1003,46 +908,65 @@ export default function IgniteDashboard({
                 Weekly Trend ⓘ
               </p>
 
-              <span>This week</span>
+              <span>
+                This week
+              </span>
             </div>
 
-            {trends.map((trend) => (
-              <div
-                className="ignite-trend-row"
-                key={trend.key}
-              >
-                <div>
-                  <strong>{trend.label}</strong>
-
-                  <small>
-                    {trend.currentAverage === null
-                      ? 'No data'
-                      : `${Math.round(
-                          trend.currentAverage
-                        )} ${trend.unit}`}
-                  </small>
-                </div>
-
-                <Sparkline trend={trend} />
-
-                <span
-                  className={
-                    trend.comparisonPercent !== null &&
-                    trend.comparisonPercent < 0
-                      ? 'down'
-                      : ''
+            {trends.map(
+              (trend) => (
+                <div
+                  className="ignite-trend-row"
+                  key={
+                    trend.key
                   }
                 >
-                  {trend.comparisonPercent === null
-                    ? '—'
-                    : `${
-                        trend.comparisonPercent > 0
-                          ? '+'
-                          : ''
-                      }${trend.comparisonPercent}%`}
-                </span>
-              </div>
-            ))}
+                  <div>
+                    <strong>
+                      {
+                        trend.label
+                      }
+                    </strong>
+
+                    <small>
+                      {trend.currentAverage ===
+                      null
+                        ? 'No data'
+                        : `${Math.round(
+                            trend.currentAverage
+                          )} ${trend.unit}`}
+                    </small>
+                  </div>
+
+                  <Sparkline
+                    trend={
+                      trend
+                    }
+                  />
+
+                  <span
+                    className={
+                      trend.comparisonPercent !==
+                        null &&
+                      trend.comparisonPercent <
+                        0
+                        ? 'down'
+                        : ''
+                    }
+                  >
+                    {trend.comparisonPercent ===
+                    null
+                      ? '—'
+                      : `${
+                          trend.comparisonPercent >
+                          0
+                            ? '+'
+                            : ''
+                        }${trend.comparisonPercent}%`}
+                  </span>
+                </div>
+              )
+            )}
           </article>
 
           <article className="ignite-panel ignite-snapshot">
@@ -1052,47 +976,63 @@ export default function IgniteDashboard({
 
             <div className="ignite-snapshot-row">
               <div>
-                <strong>Weight</strong>
+                <strong>
+                  Weight
+                </strong>
 
                 <span>
-                  {progress.weight === null
+                  {progress.weight ===
+                  null
                     ? 'Not logged'
                     : `${progress.weight} lbs`}
                 </span>
               </div>
 
               <small>
-                {progress.weightChange === null
+                {progress.weightChange ===
+                null
                   ? 'No comparison'
                   : `${
-                      progress.weightChange > 0 ? '+' : ''
+                      progress.weightChange >
+                      0
+                        ? '+'
+                        : ''
                     }${progress.weightChange} lbs`}
               </small>
             </div>
 
             <div className="ignite-snapshot-row">
               <div>
-                <strong>Body fat</strong>
+                <strong>
+                  Body fat
+                </strong>
 
                 <span>
-                  {progress.bodyFat === null
+                  {progress.bodyFat ===
+                  null
                     ? 'Not logged'
                     : `${progress.bodyFat}%`}
                 </span>
               </div>
 
               <small>
-                {progress.bodyFatChange === null
+                {progress.bodyFatChange ===
+                null
                   ? 'No comparison'
                   : `${
-                      progress.bodyFatChange > 0 ? '+' : ''
+                      progress.bodyFatChange >
+                      0
+                        ? '+'
+                        : ''
                     }${progress.bodyFatChange}%`}
               </small>
             </div>
 
             <div className="ignite-photo-row">
               <div>
-                <strong>Photos</strong>
+                <strong>
+                  Photos
+                </strong>
 
                 <span>
                   {progress.photosDue
@@ -1102,17 +1042,29 @@ export default function IgniteDashboard({
               </div>
 
               <div className="ignite-thumbnails">
-                {progress.photoUrls.map((url, index) => (
-                  <img
-                    key={url}
-                    src={url}
-                    alt={`Progress view ${index + 1}`}
-                    loading="lazy"
-                  />
-                ))}
+                {progress.photoUrls.map(
+                  (
+                    url,
+                    index
+                  ) => (
+                    <img
+                      key={url}
+                      src={url}
+                      alt={`Progress view ${
+                        index +
+                        1
+                      }`}
+                      loading="lazy"
+                    />
+                  )
+                )}
 
-                {!progress.photoUrls.length && (
-                  <span>No photos yet</span>
+                {!progress
+                  .photoUrls
+                  .length && (
+                  <span>
+                    No photos yet
+                  </span>
                 )}
               </div>
             </div>
@@ -1129,7 +1081,9 @@ export default function IgniteDashboard({
         </section>
 
         <StreakRequirementsCard
-          flame={engine.flameState}
+          flame={
+            engine.flameState
+          }
         />
 
         <nav
@@ -1140,12 +1094,18 @@ export default function IgniteDashboard({
             href="/dashboard/program/ignite"
             className="active"
           >
-            <span>⌂</span>
+            <span>
+              ⌂
+            </span>
+
             Dashboard
           </Link>
 
           <Link href="/dashboard/day/morning">
-            <span>▣</span>
+            <span>
+              ▣
+            </span>
+
             Plan
           </Link>
 
@@ -1153,16 +1113,26 @@ export default function IgniteDashboard({
             className="ignite-nav-flame"
             aria-label={`${executionScore}% daily execution`}
           >
-            <span aria-hidden="true">{flame.icon}</span>
-            <small>{executionScore}%</small>
+            <span aria-hidden="true">
+              {flame.icon}
+            </span>
+
+            <small>
+              {executionScore}%
+            </small>
           </div>
 
           <Link href="#ignite-insight">
-            <span>▥</span>
+            <span>
+              ▥
+            </span>
+
             Insights
           </Link>
 
-          <DashboardMoreMenu program="ignite" />
+          <DashboardMoreMenu
+            program="ignite"
+          />
         </nav>
       </div>
     </main>
