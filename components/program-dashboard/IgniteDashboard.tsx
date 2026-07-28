@@ -226,6 +226,7 @@ function HydrationRing({
             disabled={addingWater}
             aria-label="Ounces of water to add"
             style={{
+              backgroundColor: '#1b1210',
               width: '100%',
               cursor: addingWater ? 'not-allowed' : 'pointer',
               accentColor: '#a85832',
