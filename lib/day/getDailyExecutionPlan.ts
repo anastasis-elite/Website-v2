@@ -4,6 +4,7 @@ import {
   type NutritionBlockKey,
 } from '@/lib/nutrition/getNutritionBlockTargets'
 import { getAvailableWindows } from '@/lib/schedule/getAvailableWindows'
+import { getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
 
 type DailyCard = {
   id: string
@@ -99,8 +100,17 @@ export async function getDailyExecutionPlan({
   client: any
 }) {
   const now = new Date()
-  const today = now.toISOString().split('T')[0]
-  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  const timeZone = getClientTimeZone(client)
+  const today = getClientLocalDate(client)
+  const localParts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  }).formatToParts(now)
+  const nowHour = Number(localParts.find((part) => part.type === 'hour')?.value || 0)
+  const nowMinute = Number(localParts.find((part) => part.type === 'minute')?.value || 0)
+  const nowMinutes = nowHour * 60 + nowMinute
 
   const executionStyle = client.execution_style || 'flow'
 

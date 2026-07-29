@@ -6,6 +6,8 @@ import {
   runWorkoutDecisionEngine,
 } from './engines'
 import type { DashboardTrend, ProgramLogicOutput, ProgramTier } from './types'
+import { buildRecoveryActions } from '@/lib/workout-os/buildRecoveryActions'
+import { evaluateCapacityHistory } from '@/lib/workout-os/evaluateCapacityHistory'
 
 export const DASHBOARD_ENGINE_VERSION = 'aos_daily_logic_v1.0.0'
 
@@ -66,6 +68,10 @@ export async function getProgramLogicEngine(args: {
   const fuelReadiness = runFuelReadinessEngine(inputs,hydration,nutrition,recoveryStatus)
   const cycle = runCycleEngine(inputs)
   const posture = runPostureCompensationEngine(inputs)
+  const capacityHistory = evaluateCapacityHistory(inputs.recentRecovery)
+  const recoveryActions = buildRecoveryActions(capacityHistory)
+  // TODO: The later adaptive workout builder should enforce exerciseTarget
+  // against the selected exercise list. This pass only exposes the target.
   const workoutDecision = runWorkoutDecisionEngine(inputs,capacityStatus,recoveryStatus,fuelReadiness,hydration,symptoms,posture)
   const flameState = runFlameExecutionEngine({ inputs,hydration,nutrition,workoutDecision,capacity:capacityStatus })
   const recovery = inputs.todayRecovery || {}
@@ -78,7 +84,12 @@ export async function getProgramLogicEngine(args: {
   const output: ProgramLogicOutput = {
     engineVersion:DASHBOARD_ENGINE_VERSION, generatedAt:new Date().toISOString(),
     client:{ id:String(inputs.client.client_id),name:String(inputs.client.full_name||inputs.client.first_name||'there').split(' ')[0],age:age(inputs.client.birthdate),program:inputs.program,goal:inputs.client.primary_goal||inputs.strengthAssessments[0]?.data?.weight_goal||inputs.client.goal||null,baselineCapacity:inputs.client.capacity_state||inputs.client.capacity||null },
-    program:inputs.program, capacityStatus,recoveryStatus,fuelReadiness,workoutDecision,flameState,hydration,nutrition,
+    program:inputs.program, capacityStatus,recoveryStatus,fuelReadiness,workoutDecision,
+    capacityHistory,
+    exerciseTarget: capacityHistory.exerciseTarget,
+    recoveryTarget: capacityHistory.recoveryTarget,
+    recoveryActions,
+    flameState,hydration,nutrition,
     workout:{ assigned:Boolean(inputs.plannedWorkout),completed:Boolean(inputs.dailyPlan?.workoutCompleted),title:workoutDecision.assignedWorkout?.day_name||inputs.plannedWorkout?.day_name||(workoutDecision.adjustmentLevel==='level_3_recovery_training'?'Recovery movement':'Recovery day'),type:workoutDecision.adjustmentLevel==='level_0_full_plan'?(inputs.plannedWorkout?.workout_type||inputs.plannedWorkout?.focus||'Training'):workoutDecision.intensityTarget,durationMinutes:nullableNumeric(inputs.plannedWorkout?.duration_minutes??inputs.plannedWorkout?.estimated_duration) },
     assessments:{ dailyCompleted:assessmentComplete,monthlyDueCount:inputs.monthlyAssessmentsDueCount,completionPercent:Math.round(((assessmentComplete?1:0)/assessmentTotal)*100) },
     recoveryCheck:{ completed:recoveryComplete,energy:nullableNumeric(recovery.energy_level),stress:nullableNumeric(recovery.stress_level),soreness:nullableNumeric(recovery.soreness_level),sleepQuality },

@@ -1,6 +1,40 @@
 import type { ProgramLogicInputs, ProgramTier } from './types'
 import { getSleepStatusForDashboard } from '@/lib/sleep/getSleepStatusForDashboard'
+import { isSorenessRegionKey } from '@/lib/recovery/sorenessRegions'
+import type { HistoricalRecoverySignal } from '@/lib/workout-os/types'
 import { getClientLocalDateOffset } from '@/lib/timezone'
+
+function nullableNumber(value: unknown) {
+  if (value === null || value === undefined || value === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function normalizeRecentRecovery(
+  rows: any[] | null,
+  dates: string[]
+): HistoricalRecoverySignal[] {
+  const rowsByDate = new Map<string, any>(
+    (rows || []).map((row) => [String(row.log_date), row])
+  )
+
+  return dates.map((date) => {
+    const row = rowsByDate.get(date)
+    const sorenessRegions = Array.isArray(row?.soreness_regions)
+      ? row.soreness_regions.filter(isSorenessRegionKey)
+      : []
+
+    return {
+      date,
+      checkInCompleted: Boolean(row?.check_in_completed_at),
+      sleepHours: nullableNumber(row?.sleep_hours),
+      stress: nullableNumber(row?.stress_level),
+      energy: nullableNumber(row?.energy_level),
+      soreness: nullableNumber(row?.soreness_level),
+      sorenessRegions,
+    }
+  })
+}
 
 export async function loadProgramLogicInputs({
   supabase, user, client, program, dailyPlan, cycleStatus, cycleAdjustment,
@@ -14,16 +48,19 @@ export async function loadProgramLogicInputs({
   const yesterday = getClientLocalDateOffset(client, -1)
   const fourteenDaysAgo = getClientLocalDateOffset(client, -13)
   const fourDaysAgo = getClientLocalDateOffset(client, -4)
+  const sevenDaysAgo = getClientLocalDateOffset(client, -7)
+  const recentRecoveryDates = Array.from({ length: 7 }, (_, index) =>
+    getClientLocalDateOffset(client, -(index + 1))
+  )
   const ninetyDaysAgo = getClientLocalDateOffset(client, -90)
   const start = `${today}T00:00:00.000Z`, end = `${today}T23:59:59.999Z`
-  const yesterdayStart = `${yesterday}T00:00:00.000Z`, yesterdayEnd = `${yesterday}T23:59:59.999Z`
 
   const [
     { data: todayAssessment }, { data: rawTodayRecovery }, { data: recentSymptoms },
     { data: nutritionLogs }, { data: workoutHistory }, { data: strengthAssessments },
     { data: initialAssessment }, { data: measurementLogs }, { data: photoRecord },
     { data: phoenixTasks }, { data: recentTasks }, { data: todayWorkoutFeedback },
-    { data: recoveryActivities }, { data: recentRecovery }, { data: executionHistory },
+    { data: recoveryActivities }, { data: rawRecentRecovery }, { data: executionHistory },
   ] = await Promise.all([
     supabase.from('assessments').select('*').eq('client_id', client.client_id).gte('submitted_at', start).lte('submitted_at', end).limit(1).maybeSingle(),
     supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).limit(1).maybeSingle(),
@@ -38,7 +75,12 @@ export async function loadProgramLogicInputs({
     supabase.from('phoenix_daily_task_completions').select('task_id,log_date').eq('user_id', user.id).eq('client_id', client.client_id).gte('log_date', fourDaysAgo).lt('log_date', today),
     supabase.from('workout_plan_feedback').select('*').eq('user_id', user.id).eq('client_id', client.client_id).eq('feedback_date', today).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('recovery_activity_logs').select('*').eq('user_id', user.id).eq('client_id', client.client_id).eq('log_date', today),
-    supabase.from('recovery_logs').select('log_date,check_in_completed_at,sleep_hours,sleep_quality').eq('client_id', client.client_id).gte('log_date', fourDaysAgo).lt('log_date', today),
+    supabase
+      .from('recovery_logs')
+      .select('log_date,check_in_completed_at,sleep_hours,sleep_quality,stress_level,soreness_level,soreness_regions,energy_level')
+      .eq('client_id', client.client_id)
+      .gte('log_date', sevenDaysAgo)
+      .lt('log_date', today),
     supabase.from('daily_execution_status').select('log_date,streak_eligible').eq('user_id',user.id).eq('client_id',client.client_id).lt('log_date',today).order('log_date',{ascending:false}).limit(30),
   ])
 
@@ -189,7 +231,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
 
   const activityByDate = new Map<string, number>()
   for (const row of recentTasks || []) activityByDate.set(String(row.log_date), (activityByDate.get(String(row.log_date)) || 0) + 1)
-  for (const row of recentRecovery || []) if (row.check_in_completed_at || row.sleep_hours || row.sleep_quality) activityByDate.set(String(row.log_date), (activityByDate.get(String(row.log_date)) || 0) + 1)
+  for (const row of rawRecentRecovery || []) if (row.check_in_completed_at || row.sleep_hours || row.sleep_quality) activityByDate.set(String(row.log_date), (activityByDate.get(String(row.log_date)) || 0) + 1)
   for (const row of nutritionLogs || []) if (String(row.log_date) < today) activityByDate.set(String(row.log_date), (activityByDate.get(String(row.log_date)) || 0) + 1)
   for (const row of workoutHistory || []) { const logDate=String(row.workout_date).slice(0,10); if(row.completed&&logDate<today) activityByDate.set(logDate,(activityByDate.get(logDate)||0)+1) }
   let missedDayCount=0
@@ -209,9 +251,12 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
 
   missedDayCount++
 }
+  const recentRecovery = normalizeRecentRecovery(rawRecentRecovery || [], recentRecoveryDates)
+
   return {
     date: today, userId: user.id, client, program, dailyPlan, cycleStatus, cycleAdjustment,
     plannedWorkout, plannedExercises, todayWorkoutFeedback, todayAssessment, todayRecovery,
+    recentRecovery,
     todaySymptoms, recentSymptoms: recentSymptoms || [], nutritionLogs: nutritionLogs || [],
     nutritionTotals: nutritionTotals || [],
     mealEntries,

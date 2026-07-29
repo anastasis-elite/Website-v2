@@ -1,3 +1,9 @@
+import type {
+  CapacityHistoryResult,
+  HistoricalRecoverySignal,
+  RecoveryAction,
+} from '@/lib/workout-os/types'
+
 export type ProgramTier = 'ember' | 'ignite' | 'phoenix'
 export type CapacityStatus = 'low_capacity' | 'moderate_capacity' | 'high_capacity'
 export type RecoveryStatus = 'push_day' | 'normal_training_day' | 'modify_workout' | 'active_recovery' | 'full_recovery_or_red_flag'
@@ -38,6 +44,7 @@ export type ProgramLogicInputs = {
   todayWorkoutFeedback: any
   todayAssessment: any
   todayRecovery: any
+  recentRecovery: HistoricalRecoverySignal[]
   todaySymptoms: any[]
   recentSymptoms: any[]
   nutritionLogs: any[]
@@ -82,6 +89,10 @@ export type ProgramLogicOutput = {
   recoveryStatus: RecoveryResult
   fuelReadiness: FuelReadinessResult
   workoutDecision: WorkoutDecisionResult
+  capacityHistory: CapacityHistoryResult
+  exerciseTarget: 12 | 3
+  recoveryTarget: 1 | 3
+  recoveryActions: RecoveryAction[]
   flameState: FlameResult
   hydration: HydrationResult
   nutrition: NutritionResult

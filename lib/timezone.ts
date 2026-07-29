@@ -66,15 +66,9 @@ export function getClientTimeZone(client: any) {
 }
 
 export function getClientLocalDate(client: any) {
-  const timeZone = getClientTimeZone(client)
-
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date())
+  return getClientLocalDateOffset(client, 0)
 }
+
 export function getClientLocalDateOffset(client: any, offsetDays = 0) {
   const timeZone = getClientTimeZone(client)
 
