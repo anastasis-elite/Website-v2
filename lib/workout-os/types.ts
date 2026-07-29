@@ -225,6 +225,7 @@ export type WorkoutExercise = {
 
 export type WorkoutModeDecisionInput = {
   capacityHistory: CapacityHistoryResult
+  capacityStatus: CapacityStatus
   recoveryStatus: RecoveryStatus
   fuelStatus: FuelStatus
   redFlag: boolean
