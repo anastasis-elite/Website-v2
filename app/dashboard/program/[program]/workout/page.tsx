@@ -22,16 +22,44 @@ type ProgramWorkoutPageProps = {
 }
 
 type AssignedExercise = {
-  id?: string | number | null
-  name?: string | null
-  exercise?: string | null
-  display_name?: string | null
-  duration_label?: string | null
-  sets?: number | string | null
-  reps?: number | string | null
-  recommended_reps?: number | string | null
-  recommended_weight?: number | string | null
-  calculated_weight?: number | string | null
+  id?: string | number
+  exercise?: string
+  name?: string
+  display_name?: string
+
+  sets?: number | string
+
+  reps?: number | string
+  target_reps?: number
+  recommended_reps?: number
+  cycle_adjusted_reps?: number
+  baseline_reps?: number
+
+  calculated_weight?: number
+  recommended_weight?: number
+  cycle_adjusted_weight?: number
+  baseline_weight?: number
+
+  selected_variant_id?: string
+  selected_variant_name?: string
+  selected_equipment?: string
+  load_type?: string
+
+  available_variants?: Array<{
+    id: string
+    name: string
+    equipment: string
+    load_type: string
+    equipment_modifier: number
+  }>
+
+  cycle_adjustment_label?: string
+  cycle_adjustment_note?: string
+  cycle_caution_active?: boolean
+  client_cues?: string[]
+  rest_seconds?: number
+  rpe_target?: string
+  duration_label?: string
 }
 
 function isSupportedProgram(program: string): program is ProgramTier {
