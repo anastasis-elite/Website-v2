@@ -1,8 +1,7 @@
+import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import {
-  ActivityIndicator,
   Alert,
-  Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -10,8 +9,10 @@ import {
   View,
 } from 'react-native'
 
+import AOSButton from '../components/AOSButton'
+import AOSCard from '../components/AOSCard'
+import { colors } from '../lib/theme'
 import { supabase } from '../lib/supabase'
-import { router } from 'expo-router'
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('')
@@ -19,25 +20,25 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-  let mounted = true
+    let mounted = true
 
-  async function checkExistingSession() {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
+    async function checkExistingSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
-    if (mounted && session) {
-      router.replace('/today')
+      if (mounted && session) {
+        router.replace('/today')
+      }
     }
-  }
 
-  checkExistingSession()
+    checkExistingSession()
 
-  return () => {
-    mounted = false
-  }
-}, [])
-  
+    return () => {
+      mounted = false
+    }
+  }, [])
+
   async function handleLogin() {
     const normalizedEmail = email.trim().toLowerCase()
 
@@ -59,7 +60,7 @@ export default function LoginScreen() {
         return
       }
 
-     router.replace('/today')
+      router.replace('/today')
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'An unexpected error occurred.'
@@ -73,50 +74,47 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.container}>
-        <Text style={styles.brand}>ANASTASIS</Text>
+        <View style={styles.brand}>
+          <Text style={styles.flame}>🔥</Text>
+          <View>
+            <Text style={styles.brandText}>ANASTASIS</Text>
+            <Text style={styles.brandSub}>Client Platform</Text>
+          </View>
+        </View>
 
-        <Text style={styles.heading}>Welcome back</Text>
+        <AOSCard>
+          <Text style={styles.heading}>Welcome back</Text>
+          <Text style={styles.subheading}>
+            Sign in to continue your daily plan.
+          </Text>
 
-        <Text style={styles.subheading}>
-          Sign in to continue your daily plan.
-        </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
+            onChangeText={setEmail}
+            placeholder="Email"
+            placeholderTextColor={colors.subtle}
+            style={styles.input}
+            value={email}
+          />
 
-        <TextInput
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          onChangeText={setEmail}
-          placeholder="Email"
-          style={styles.input}
-          value={email}
-        />
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="password"
+            onChangeText={setPassword}
+            onSubmitEditing={handleLogin}
+            placeholder="Password"
+            placeholderTextColor={colors.subtle}
+            secureTextEntry
+            style={styles.input}
+            value={password}
+          />
 
-        <TextInput
-          autoCapitalize="none"
-          autoComplete="password"
-          onChangeText={setPassword}
-          onSubmitEditing={handleLogin}
-          placeholder="Password"
-          secureTextEntry
-          style={styles.input}
-          value={password}
-        />
-
-        <Pressable
-          disabled={loading}
-          onPress={handleLogin}
-          style={({ pressed }) => [
-            styles.button,
-            pressed && styles.buttonPressed,
-            loading && styles.buttonDisabled,
-          ]}
-        >
-          {loading ? (
-            <ActivityIndicator />
-          ) : (
-            <Text style={styles.buttonText}>Sign in</Text>
-          )}
-        </Pressable>
+          <AOSButton disabled={loading} onPress={handleLogin}>
+            {loading ? 'Signing in' : 'Sign in'}
+          </AOSButton>
+        </AOSCard>
       </View>
     </SafeAreaView>
   )
@@ -125,55 +123,57 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f7f4ef',
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 18,
   },
   brand: {
-    marginBottom: 32,
-    fontSize: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 24,
+  },
+  flame: {
+    fontSize: 40,
+  },
+  brandText: {
+    color: colors.text,
+    fontSize: 25,
     fontWeight: '700',
-    letterSpacing: 3,
+    letterSpacing: 2,
+  },
+  brandSub: {
+    marginTop: 5,
+    color: '#BA7258',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   heading: {
-    marginBottom: 8,
-    fontSize: 34,
-    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Georgia',
+    fontSize: 32,
   },
   subheading: {
-    marginBottom: 32,
-    fontSize: 16,
-    lineHeight: 24,
+    marginTop: 10,
+    marginBottom: 24,
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 22,
   },
   input: {
-    height: 54,
+    minHeight: 54,
     marginBottom: 14,
     borderWidth: 1,
-    borderRadius: 12,
+    borderColor: colors.borderSoft,
+    borderRadius: 14,
+    backgroundColor: colors.input,
+    color: colors.text,
     paddingHorizontal: 16,
     fontSize: 16,
-    backgroundColor: '#ffffff',
-  },
-  button: {
-    minHeight: 54,
-    marginTop: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: '#151515',
-  },
-  buttonPressed: {
-    opacity: 0.85,
-  },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#ffffff',
   },
 })
