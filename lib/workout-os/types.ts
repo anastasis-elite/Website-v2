@@ -1,4 +1,5 @@
 import type { SorenessRegionKey } from '@/lib/recovery/sorenessRegions'
+export type { SorenessRegionKey } from '@/lib/recovery/sorenessRegions'
 import type {
   CapacityStatus,
   FuelStatus,
