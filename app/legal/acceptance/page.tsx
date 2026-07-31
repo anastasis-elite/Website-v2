@@ -3,7 +3,7 @@ import * as styles from '@/app/styles/globalstyles'
 import { createClient } from '@/lib/supabase/server'
 import { hasCurrentLegalAcceptance } from '@/lib/legal/hasCurrentLegalAcceptance'
 import LegalAcceptanceForm from '@/components/legal/LegalAcceptanceForm'
-import { EFFECTIVE_DATE, LEGAL_DRAFT_NOTICE } from '@/lib/legal/config'
+import { EFFECTIVE_DATE } from '@/lib/legal/config'
 
 export default async function LegalAcceptancePage() {
   const supabase = await createClient()
@@ -15,7 +15,6 @@ export default async function LegalAcceptancePage() {
     <p style={styles.eyebrowStyle}>Required Before Dashboard Access</p>
     <h1 style={styles.heroTitleStyle}>Review how Anastasis works.</h1>
     <p style={styles.heroTextStyle}>Required acknowledgments protect informed participation. Optional research consent remains separate.</p>
-    <p style={styles.bodyStyle}>{LEGAL_DRAFT_NOTICE} Effective date placeholder: {EFFECTIVE_DATE}.</p>
     <LegalAcceptanceForm />
   </div></main>
 }
