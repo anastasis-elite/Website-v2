@@ -5,7 +5,7 @@ import type {
 } from '../types'
 
 import { normalizeWorkout } from '../shared/exerciseUtils'
-import { buildRecoveryActions } from '../shared/buildRecoveryActions'
+import { buildRecoveryActions } from '../buildRecoveryActions'
 
 export function buildStandardWorkout(
   input: WorkoutEngineInput,
