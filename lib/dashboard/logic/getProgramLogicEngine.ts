@@ -22,7 +22,7 @@ import type {
 } from './types'
 
 import { evaluateCapacityHistory } from '@/lib/workout-os/evaluateCapacityHistory'
-import { buildRecoveryActions } from '@/lib/workout-os/shared/buildRecoveryActions'
+import { buildRecoveryActions } from '@/lib/workout-os/buildRecoveryActions'
 
 export const DASHBOARD_ENGINE_VERSION =
   'aos_daily_logic_v1.0.0'
