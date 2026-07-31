@@ -6,7 +6,6 @@ export const RESEARCH_CONSENT_VERSION = 'v1.0'
 export const FEATURE_CONSENT_VERSION = 'v1.0'
 export const EFFECTIVE_DATE = 'July 1, 2026'
 export const LEGAL_CONTACT_EMAIL = 'Anastasis.elite@gmail.com'
-export const LEGAL_DRAFT_NOTICE = 'Draft language only. Requires qualified legal review before launch.'
 
 export const REQUIRED_LEGAL_VERSIONS = {
   terms: TERMS_VERSION,
