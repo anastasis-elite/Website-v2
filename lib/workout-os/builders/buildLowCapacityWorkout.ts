@@ -5,7 +5,7 @@ import type {
   WorkoutExercise,
 } from '../types'
 
-import { buildRecoveryActions } from '../shared/buildRecoveryActions'
+import { buildRecoveryActions } from '../buildRecoveryActions'
 import {
   addCue,
   firstExercises,
