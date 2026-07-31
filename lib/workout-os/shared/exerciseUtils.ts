@@ -123,14 +123,14 @@ export function exerciseTargetsMuscle(
   muscle: CanonicalMuscle,
 ): boolean {
   return (
-    exercise.primary_muscles?.includes(
+    (exercise.primary_muscles?.includes(
       muscle,
     ) ??
-    false ||
-    exercise.secondary_muscles?.includes(
+    false) ||
+    (exercise.secondary_muscles?.includes(
       muscle,
     ) ??
-    false
+    false)
   )
 }
 
