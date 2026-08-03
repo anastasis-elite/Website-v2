@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+
 import * as styles from '@/app/styles/globalstyles'
 
 type CycleStatus = {
@@ -23,7 +24,6 @@ type TodayCycleLog = {
 
 type CycleHistoryItem = {
   period_start_date: string
-  cycle_length: string
   bleeding_length: string
 }
 
@@ -36,14 +36,52 @@ type Props = {
   todayLog?: TodayCycleLog
 }
 
-const emptyCycleHistory: CycleHistoryItem[] = [
-  { period_start_date: '', cycle_length: '', bleeding_length: '' },
-  { period_start_date: '', cycle_length: '', bleeding_length: '' },
-  { period_start_date: '', cycle_length: '', bleeding_length: '' },
-  { period_start_date: '', cycle_length: '', bleeding_length: '' },
-  { period_start_date: '', cycle_length: '', bleeding_length: '' },
-  { period_start_date: '', cycle_length: '', bleeding_length: '' },
-]
+type CycleSaveResponse = {
+  success?: boolean
+  error?: string
+  last_period_start?: string | null
+  average_cycle_length?: number | null
+  estimated_next_period_start?: string | null
+  days_until_expected_period?: number | null
+  cycle_history_confidence?: 'low' | 'moderate' | 'higher' | null
+  valid_cycle_intervals?: number[]
+  has_enough_history?: boolean
+  prediction_note?: string | null
+}
+
+const HISTORY_ENTRY_COUNT = 6
+
+function createEmptyCycleHistory(): CycleHistoryItem[] {
+  return Array.from(
+    { length: HISTORY_ENTRY_COUNT },
+    () => ({
+      period_start_date: '',
+      bleeding_length: '',
+    }),
+  )
+}
+
+function normalizeDateValue(value?: string | null): string {
+  if (!value) {
+    return ''
+  }
+
+  return value.split('T')[0]
+}
+
+function getLatestDate(
+  values: string[],
+): string | null {
+  const validDates = values
+    .filter(Boolean)
+    .sort(
+      (first, second) =>
+        new Date(`${first}T00:00:00`).getTime() -
+        new Date(`${second}T00:00:00`).getTime(),
+    )
+
+  return validDates[validDates.length - 1] ?? null
+}
 
 export default function CycleTracker({
   clientId,
@@ -53,44 +91,105 @@ export default function CycleTracker({
   cycleTrackingEnabled,
   todayLog,
 }: Props) {
-  const [enabled, setEnabled] = useState(!!cycleTrackingEnabled)
-  const [periodStart, setPeriodStart] = useState(lastPeriodStart || '')
+  const [enabled, setEnabled] = useState(
+    Boolean(cycleTrackingEnabled),
+  )
+
+  const [periodStart, setPeriodStart] = useState(
+    normalizeDateValue(lastPeriodStart),
+  )
+
   const [cycleLength, setCycleLength] = useState(
-    averageCycleLength || 28
+    averageCycleLength || 28,
   )
 
-  const [knowsCycleHistory, setKnowsCycleHistory] = useState(false)
-  const [cycleHistory, setCycleHistory] =
-    useState<CycleHistoryItem[]>(emptyCycleHistory)
+  const [knowsCycleHistory, setKnowsCycleHistory] =
+    useState(false)
 
-  const [bleeding, setBleeding] = useState(!!todayLog?.bleeding)
-  const [cramps, setCramps] = useState(!!todayLog?.cramps)
-  const [headache, setHeadache] = useState(!!todayLog?.headache)
-  const [fatigue, setFatigue] = useState(!!todayLog?.fatigue)
-  const [moodSensitivity, setMoodSensitivity] = useState(
-    !!todayLog?.mood_sensitivity
+  const [cycleHistory, setCycleHistory] = useState<
+    CycleHistoryItem[]
+  >(createEmptyCycleHistory)
+
+  const [bleeding, setBleeding] = useState(
+    Boolean(todayLog?.bleeding),
   )
-  const [notes, setNotes] = useState(todayLog?.notes || '')
+
+  const [cramps, setCramps] = useState(
+    Boolean(todayLog?.cramps),
+  )
+
+  const [headache, setHeadache] = useState(
+    Boolean(todayLog?.headache),
+  )
+
+  const [fatigue, setFatigue] = useState(
+    Boolean(todayLog?.fatigue),
+  )
+
+  const [moodSensitivity, setMoodSensitivity] =
+    useState(
+      Boolean(todayLog?.mood_sensitivity),
+    )
+
+  const [notes, setNotes] = useState(
+    todayLog?.notes || '',
+  )
 
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
 
+  const [predictionNote, setPredictionNote] =
+    useState<string | null>(null)
+
+  const [predictionConfidence, setPredictionConfidence] =
+    useState<
+      'low' | 'moderate' | 'higher' | null
+    >(null)
+
+  const [validCycleIntervals, setValidCycleIntervals] =
+    useState<number[]>([])
+
+  const [estimatedNextPeriodStart, setEstimatedNextPeriodStart] =
+    useState<string | null>(null)
+
+  const completedHistoryCount = useMemo(
+    () =>
+      cycleHistory.filter(
+        (cycle) => cycle.period_start_date,
+      ).length,
+    [cycleHistory],
+  )
+
   function updateCycleHistory(
     index: number,
     field: keyof CycleHistoryItem,
-    value: string
+    value: string,
   ) {
-    setCycleHistory((prev) =>
-      prev.map((cycle, i) =>
-        i === index
+    setCycleHistory((previous) => {
+      const updated = previous.map((cycle, currentIndex) =>
+        currentIndex === index
           ? {
               ...cycle,
               [field]: value,
             }
-          : cycle
+          : cycle,
       )
-    )
+
+      if (field === 'period_start_date') {
+        const latestHistoryDate = getLatestDate(
+          updated.map(
+            (cycle) => cycle.period_start_date,
+          ),
+        )
+
+        if (latestHistoryDate) {
+          setPeriodStart(latestHistoryDate)
+        }
+      }
+
+      return updated
+    })
 
     setSaved(false)
   }
@@ -103,53 +202,116 @@ export default function CycleTracker({
 
       const cleanedCycleHistory = knowsCycleHistory
         ? cycleHistory
-            .filter((cycle) => cycle.period_start_date)
+            .filter(
+              (cycle) =>
+                cycle.period_start_date,
+            )
             .map((cycle) => ({
-              period_start_date: cycle.period_start_date,
-              cycle_length: cycle.cycle_length
-                ? Number(cycle.cycle_length)
-                : null,
-              bleeding_length: cycle.bleeding_length
-                ? Number(cycle.bleeding_length)
-                : null,
+              period_start_date:
+                cycle.period_start_date,
+
+              bleeding_length:
+                cycle.bleeding_length
+                  ? Number(
+                      cycle.bleeding_length,
+                    )
+                  : null,
             }))
         : []
 
       const response = await fetch('/api/cycle', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type':
+            'application/json',
         },
         body: JSON.stringify({
           client_id: clientId,
-          cycle_tracking_enabled: enabled,
-          last_period_start: periodStart || null,
-          average_cycle_length: Number(cycleLength || 28),
+          cycle_tracking_enabled:
+            enabled,
 
-          knows_cycle_history: knowsCycleHistory,
-          cycle_history: cleanedCycleHistory,
+          last_period_start:
+            periodStart || null,
+
+          /*
+           * This is only a fallback until enough real
+           * period-start history exists.
+           */
+          average_cycle_length:
+            Number(cycleLength || 28),
+
+          knows_cycle_history:
+            knowsCycleHistory,
+
+          cycle_history:
+            cleanedCycleHistory,
 
           bleeding,
           cramps,
           headache,
           fatigue,
-          mood_sensitivity: moodSensitivity,
+          mood_sensitivity:
+            moodSensitivity,
           notes,
         }),
       })
 
-      const data = await response.json().catch(() => null)
+      const data =
+        (await response
+          .json()
+          .catch(
+            () => null,
+          )) as CycleSaveResponse | null
 
       if (!response.ok) {
-        throw new Error(data?.error || 'Cycle update failed')
+        throw new Error(
+          data?.error ||
+            'Cycle update failed',
+        )
       }
 
+      if (
+        typeof data?.average_cycle_length ===
+        'number'
+      ) {
+        setCycleLength(
+          data.average_cycle_length,
+        )
+      }
+
+      if (data?.last_period_start) {
+        setPeriodStart(
+          normalizeDateValue(
+            data.last_period_start,
+          ),
+        )
+      }
+
+      setPredictionNote(
+        data?.prediction_note ?? null,
+      )
+
+      setPredictionConfidence(
+        data?.cycle_history_confidence ??
+          null,
+      )
+
+      setValidCycleIntervals(
+        data?.valid_cycle_intervals ??
+          [],
+      )
+
+      setEstimatedNextPeriodStart(
+        data?.estimated_next_period_start ??
+          null,
+      )
+
       setSaved(true)
-    } catch (err) {
+    } catch (caughtError) {
       setError(
-        err instanceof Error
-          ? err.message
-          : 'Cycle update failed'
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Cycle update failed',
       )
     } finally {
       setSaving(false)
@@ -157,16 +319,23 @@ export default function CycleTracker({
   }
 
   return (
-    <div style={{ display: 'grid', gap: '28px' }}>
+    <div
+      style={{
+        display: 'grid',
+        gap: '28px',
+      }}
+    >
       <section style={styles.cartBoxStyle}>
         <h2 style={styles.sectionTitleStyle}>
           Cycle Setup
         </h2>
 
         <p style={styles.bodyStyle}>
-          This is used for awareness only. It helps the system understand where
-          you may be in your cycle so recovery suggestions can stay more
-          supportive.
+          Cycle awareness helps Anastasis interpret
+          your current signals, estimate phase timing,
+          and adjust recovery and training support.
+          Logged period-start dates are used to refine
+          your personal cycle average over time.
         </p>
 
         <label
@@ -181,12 +350,17 @@ export default function CycleTracker({
           <input
             type="checkbox"
             checked={enabled}
-            onChange={(e) => {
-              setEnabled(e.target.checked)
+            onChange={(event) => {
+              setEnabled(
+                event.target.checked,
+              )
               setSaved(false)
             }}
-            style={{ accentColor: '#b56e43' }}
+            style={{
+              accentColor: '#b56e43',
+            }}
           />
+
           Enable cycle awareness
         </label>
 
@@ -200,14 +374,16 @@ export default function CycleTracker({
           >
             <div style={styles.fieldWrap}>
               <label style={styles.labelStyle}>
-                Last period start date
+                Most recent period start date
               </label>
 
               <input
                 type="date"
                 value={periodStart}
-                onChange={(e) => {
-                  setPeriodStart(e.target.value)
+                onChange={(event) => {
+                  setPeriodStart(
+                    event.target.value,
+                  )
                   setSaved(false)
                 }}
                 style={{
@@ -216,29 +392,57 @@ export default function CycleTracker({
                   appearance: 'none',
                 }}
               />
+
+              <p
+                style={{
+                  ...styles.bodyStyle,
+                  marginTop: '8px',
+                  fontSize: '0.9rem',
+                }}
+              >
+                This should be the first day of
+                your most recent period.
+              </p>
             </div>
 
             <div style={styles.fieldWrap}>
               <label style={styles.labelStyle}>
-                Average cycle length
+                Typical cycle length, if known
               </label>
 
               <input
                 type="number"
-                min={21}
+                min={18}
                 max={60}
                 value={cycleLength}
-                onChange={(e) => {
-                  setCycleLength(Number(e.target.value))
+                onChange={(event) => {
+                  setCycleLength(
+                    Number(
+                      event.target.value,
+                    ),
+                  )
                   setSaved(false)
                 }}
                 style={styles.inputStyle}
               />
+
+              <p
+                style={{
+                  ...styles.bodyStyle,
+                  marginTop: '8px',
+                  fontSize: '0.9rem',
+                }}
+              >
+                This is used only as a fallback until
+                enough period starts have been logged
+                to calculate your personal average.
+              </p>
             </div>
 
             <div
               style={{
-                borderTop: '1px solid rgba(181,110,67,0.14)',
+                borderTop:
+                  '1px solid rgba(181,110,67,0.14)',
                 paddingTop: '22px',
                 marginTop: '4px',
               }}
@@ -255,10 +459,11 @@ export default function CycleTracker({
               </h3>
 
               <p style={styles.bodyStyle}>
-                If you know your recent cycle history, you can add it here so
-                the system can estimate your cycle more accurately sooner. If
-                you do not know it, leave this off and the system will learn as
-                you log.
+                Add any previous period-start dates you
+                know. Anastasis calculates the number
+                of days between each valid start date
+                automatically and uses all valid logged
+                intervals to build your average.
               </p>
 
               <label
@@ -274,8 +479,10 @@ export default function CycleTracker({
                 <input
                   type="checkbox"
                   checked={knowsCycleHistory}
-                  onChange={(e) => {
-                    setKnowsCycleHistory(e.target.checked)
+                  onChange={(event) => {
+                    setKnowsCycleHistory(
+                      event.target.checked,
+                    )
                     setSaved(false)
                   }}
                   style={{
@@ -285,7 +492,7 @@ export default function CycleTracker({
                 />
 
                 <span>
-                  I know my last 6 months of cycles.
+                  I know previous period-start dates.
                 </span>
               </label>
 
@@ -297,97 +504,174 @@ export default function CycleTracker({
                     marginTop: '24px',
                   }}
                 >
-                  {cycleHistory.map((cycle, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        borderRadius: '22px',
-                        padding: '18px',
-                        background: 'rgba(255,255,255,0.018)',
-                        boxShadow:
-                          'inset 0 0 24px rgba(255,255,255,0.01)',
-                      }}
-                    >
-                      <p
+                  {cycleHistory.map(
+                    (cycle, index) => (
+                      <div
+                        key={index}
                         style={{
-                          ...styles.eyebrowStyle,
-                          marginBottom: '14px',
-                          letterSpacing: '3px',
-                          fontSize: '10px',
+                          borderRadius: '22px',
+                          padding: '18px',
+                          background:
+                            'rgba(255,255,255,0.018)',
+                          boxShadow:
+                            'inset 0 0 24px rgba(255,255,255,0.01)',
                         }}
                       >
-                        Cycle {index + 1}
-                      </p>
+                        <p
+                          style={{
+                            ...styles.eyebrowStyle,
+                            marginBottom: '14px',
+                            letterSpacing: '3px',
+                            fontSize: '10px',
+                          }}
+                        >
+                          Period {index + 1}
+                        </p>
 
-                      <div style={styles.gridTwoCol}>
-                        <div style={styles.fieldWrap}>
-                          <label style={styles.labelStyle}>
-                            Period start date
-                          </label>
+                        <div style={styles.gridTwoCol}>
+                          <div style={styles.fieldWrap}>
+                            <label
+                              style={
+                                styles.labelStyle
+                              }
+                            >
+                              Period start date
+                            </label>
 
-                          <input
-                            type="date"
-                            value={cycle.period_start_date}
-                            onChange={(e) =>
-                              updateCycleHistory(
-                                index,
-                                'period_start_date',
-                                e.target.value
-                              )
-                            }
-                            style={{
-                              ...styles.inputStyle,
-                              WebkitAppearance: 'none',
-                              appearance: 'none',
-                            }}
-                          />
-                        </div>
+                            <input
+                              type="date"
+                              value={
+                                cycle.period_start_date
+                              }
+                              onChange={(
+                                event,
+                              ) =>
+                                updateCycleHistory(
+                                  index,
+                                  'period_start_date',
+                                  event.target.value,
+                                )
+                              }
+                              style={{
+                                ...styles.inputStyle,
+                                WebkitAppearance:
+                                  'none',
+                                appearance: 'none',
+                              }}
+                            />
+                          </div>
 
-                        <div style={styles.fieldWrap}>
-                          <label style={styles.labelStyle}>
-                            Days between cycles
-                          </label>
+                          <div style={styles.fieldWrap}>
+                            <label
+                              style={
+                                styles.labelStyle
+                              }
+                            >
+                              Bleeding lasted how many
+                              days?
+                            </label>
 
-                          <input
-                            type="number"
-                            min={1}
-                            value={cycle.cycle_length}
-                            onChange={(e) =>
-                              updateCycleHistory(
-                                index,
-                                'cycle_length',
-                                e.target.value
-                              )
-                            }
-                            style={styles.inputStyle}
-                            placeholder="Example: 28"
-                          />
-                        </div>
-
-                        <div style={styles.fieldWrap}>
-                          <label style={styles.labelStyle}>
-                            Bleeding lasted how many days?
-                          </label>
-
-                          <input
-                            type="number"
-                            min={1}
-                            value={cycle.bleeding_length}
-                            onChange={(e) =>
-                              updateCycleHistory(
-                                index,
-                                'bleeding_length',
-                                e.target.value
-                              )
-                            }
-                            style={styles.inputStyle}
-                            placeholder="Example: 5"
-                          />
+                            <input
+                              type="number"
+                              min={1}
+                              max={14}
+                              value={
+                                cycle.bleeding_length
+                              }
+                              onChange={(
+                                event,
+                              ) =>
+                                updateCycleHistory(
+                                  index,
+                                  'bleeding_length',
+                                  event.target.value,
+                                )
+                              }
+                              style={
+                                styles.inputStyle
+                              }
+                              placeholder="Optional"
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ),
+                  )}
+
+                  <p style={styles.bodyStyle}>
+                    {completedHistoryCount === 0
+                      ? 'No historical period starts entered yet.'
+                      : `${completedHistoryCount} historical period start${
+                          completedHistoryCount === 1
+                            ? ''
+                            : 's'
+                        } ready to save.`}
+                  </p>
                 </div>
+              ) : null}
+            </div>
+
+            <div
+              style={{
+                borderTop:
+                  '1px solid rgba(181,110,67,0.14)',
+                paddingTop: '22px',
+                marginTop: '4px',
+              }}
+            >
+              <p style={styles.eyebrowStyle}>
+                Current calculated average
+              </p>
+
+              <h3
+                style={{
+                  margin: '8px 0 10px',
+                  fontSize: '1.6rem',
+                  fontWeight: 500,
+                  color: '#f5f0e8',
+                }}
+              >
+                {cycleLength} days
+              </h3>
+
+              {predictionConfidence ? (
+                <p style={styles.bodyStyle}>
+                  Confidence:{' '}
+                  <strong>
+                    {predictionConfidence}
+                  </strong>
+                </p>
+              ) : null}
+
+              {validCycleIntervals.length > 0 ? (
+                <p style={styles.bodyStyle}>
+                  Valid logged intervals:{' '}
+                  {validCycleIntervals.join(', ')} days
+                </p>
+              ) : null}
+
+              {predictionNote ? (
+                <p style={styles.bodyStyle}>
+                  {predictionNote}
+                </p>
+              ) : null}
+
+              {estimatedNextPeriodStart ? (
+                <p style={styles.bodyStyle}>
+                  Estimated next period start:{' '}
+                  <strong>
+                    {new Date(
+                      `${estimatedNextPeriodStart}T12:00:00`,
+                    ).toLocaleDateString(
+                      'en-US',
+                      {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      },
+                    )}
+                  </strong>
+                </p>
               ) : null}
             </div>
           </div>
@@ -420,8 +704,9 @@ export default function CycleTracker({
         </h2>
 
         <p style={styles.bodyStyle}>
-          These inputs help the system prioritize your actual signals over an
-          estimated phase.
+          These inputs help the system prioritize
+          your actual signals over an estimated
+          phase.
         </p>
 
         <div
@@ -458,7 +743,9 @@ export default function CycleTracker({
           <CycleCheckbox
             label="Mood sensitivity"
             checked={moodSensitivity}
-            onChange={setMoodSensitivity}
+            onChange={
+              setMoodSensitivity
+            }
           />
         </div>
 
@@ -474,8 +761,8 @@ export default function CycleTracker({
 
           <textarea
             value={notes}
-            onChange={(e) => {
-              setNotes(e.target.value)
+            onChange={(event) => {
+              setNotes(event.target.value)
               setSaved(false)
             }}
             style={styles.textareaStyle}
@@ -493,7 +780,11 @@ export default function CycleTracker({
             opacity: saving ? 0.65 : 1,
           }}
         >
-          {saving ? 'Saving...' : saved ? 'Cycle Saved' : 'Save Cycle Note'}
+          {saving
+            ? 'Saving...'
+            : saved
+              ? 'Cycle Saved'
+              : 'Save Cycle Note'}
         </button>
 
         {error ? (
@@ -534,7 +825,11 @@ function CycleCheckbox({
       <input
         type="checkbox"
         checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
+        onChange={(event) =>
+          onChange(
+            event.target.checked,
+          )
+        }
         style={{
           accentColor: '#b56e43',
         }}
