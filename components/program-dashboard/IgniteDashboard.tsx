@@ -321,9 +321,10 @@ export default function IgniteDashboard({
   logic: ProgramLogicOutput
 }) {
     const [foodOpen, setFoodOpen] = useState(false)
-const [foodSuggestions, setFoodSuggestions] = useState<any[]>([])
-const [foodLoading, setFoodLoading] = useState(false)
-const [foodError, setFoodError] = useState('')
+  const [foodSuggestions, setFoodSuggestions] = useState<any[]>([])
+  const [foodLoading, setFoodLoading] = useState(false)
+  const [foodError, setFoodError] = useState('')
+
   const engine =
     useProgramLogicEngine(logic)
 
@@ -420,46 +421,45 @@ const [foodError, setFoodError] = useState('')
             }
           : null,
     })
-async function loadFoodSuggestions() {
-  try {
-    setFoodLoading(true)
+
+  async function loadFoodSuggestions() {
+    try {
+      setFoodLoading(true)
+      setFoodError('')
+
+      const response = await fetch('/api/quick-add-suggestions')
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(
+          payload?.error ||
+            'Quick food suggestions could not be loaded.'
+        )
+      }
+
+      setFoodSuggestions(payload?.suggestions || [])
+    } catch (error) {
+      setFoodError(
+        error instanceof Error
+          ? error.message
+          : 'Quick food suggestions could not be loaded.'
+      )
+    } finally {
+      setFoodLoading(false)
+    }
+  }
+
+  async function toggleFoodPopup() {
+    const nextOpen = !foodOpen
+
+    setFoodOpen(nextOpen)
     setFoodError('')
 
-    const response = await fetch('/api/quick-add-suggestions')
-    const data = await response.json().catch(() => null)
-
-    if (!response.ok) {
-      throw new Error(
-        data?.error ||
-          'Quick food suggestions could not be loaded.'
-      )
+    if (nextOpen && foodSuggestions.length === 0) {
+      await loadFoodSuggestions()
     }
-
-    setFoodSuggestions(data?.suggestions || [])
-  } catch (error) {
-    setFoodError(
-      error instanceof Error
-        ? error.message
-        : 'Quick food suggestions could not be loaded.'
-    )
-  } finally {
-    setFoodLoading(false)
   }
-}
 
-async function toggleFoodPopup() {
-  const nextOpen = !foodOpen
-
-  setFoodOpen(nextOpen)
-  setFoodError('')
-
-  if (
-    nextOpen &&
-    foodSuggestions.length === 0
-  ) {
-    await loadFoodSuggestions()
-  }
-}
   return (
     <main
       className="ignite-dashboard"
@@ -540,258 +540,229 @@ async function toggleFoodPopup() {
               />
 
               <Ring
-  value={macros.percent}
-  icon="Ψ"
-  label="Nutrition"
-  detail={`${macros.percent}%`}
-  onClick={toggleFoodPopup}
-  expanded={foodOpen}
-  controls="ignite-food-popup"
-  ariaLabel="Open quick food log"
-/>
+                value={macros.percent}
+                icon="Ψ"
+                label="Nutrition"
+                detail={`${macros.percent}%`}
+                onClick={toggleFoodPopup}
+                expanded={foodOpen}
+                controls="ignite-food-popup"
+                ariaLabel="Open quick food log"
+              />
 
-<Ring
-  value={
-    workout.executionComplete
-      ? 100
-      : 0
-  }
-  icon="↟"
-  label="Workout"
-  detail={
-    workout.executionComplete
-      ? 'Complete'
-      : 'Open'
-  }
-  href="/dashboard/program/ignite/workout"
-  ariaLabel="Open today’s workout"
-/>
+              <Ring
+                value={
+                  workout.executionComplete
+                    ? 100
+                    : 0
+                }
+                icon="↟"
+                label="Workout"
+                detail={
+                  workout.executionComplete
+                    ? 'Complete'
+                    : 'Open'
+                }
+                href="/dashboard/program/ignite/workout"
+                ariaLabel="Open today’s workout"
+              />
 
-<Ring
-  value={assessment.completedPercent}
-  icon="✓"
-  label="Check-In"
-  detail={
-    assessment.dailyCompleted
-      ? 'Complete'
-      : 'Open'
-  }
-  href="/dashboard/check-in"
-  ariaLabel="Open daily check-in"
-/>
+              <Ring
+                value={assessment.completedPercent}
+                icon="✓"
+                label="Check-In"
+                detail={
+                  assessment.dailyCompleted
+                    ? 'Complete'
+                    : 'Open'
+                }
+                href="/dashboard/check-in"
+                ariaLabel="Open daily check-in"
+              />
             </div>
-{foodOpen ? (
-  <div
-    id="ignite-food-popup"
-    role="dialog"
-    aria-label="Quick food log"
-    style={{
-      position: 'relative',
-      marginTop: '18px',
-      padding: '20px',
-      borderRadius: '24px',
-      border:
-        '1px solid rgba(181,110,67,0.24)',
-      background:
-        'linear-gradient(145deg, rgba(12,12,12,0.96), rgba(5,5,5,0.92))',
-      boxShadow:
-        '0 24px 70px rgba(0,0,0,0.34)',
-      zIndex: 20,
-    }}
-  >
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: '14px',
-        marginBottom: '14px',
-      }}
-    >
-      <div>
-        <p
-          className="ignite-label"
-          style={{
-            marginBottom: '6px',
-          }}
-        >
-          Quick Food Log
-        </p>
 
-        <p
-          style={{
-            margin: 0,
-            color:
-              'rgba(215,199,182,0.7)',
-            fontSize: '0.86rem',
-            lineHeight: 1.5,
-          }}
-        >
-          Foods you frequently log during
-          this time of day.
-        </p>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setFoodOpen(false)}
-        aria-label="Close quick food log"
-        style={{
-          width: '32px',
-          height: '32px',
-          flex: '0 0 32px',
-          borderRadius: '999px',
-          border:
-            '1px solid rgba(181,110,67,0.22)',
-          background:
-            'rgba(181,110,67,0.06)',
-          color: '#f5f0e8',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-        }}
-      >
-        ×
-      </button>
-    </div>
-
-    {foodLoading ? (
-      <p
-        style={{
-          color:
-            'rgba(215,199,182,0.76)',
-          margin: 0,
-        }}
-      >
-        Loading suggestions...
-      </p>
-    ) : foodError ? (
-      <div>
-        <p
-          style={{
-            color: '#ffb4b4',
-            margin: '0 0 12px',
-          }}
-        >
-          {foodError}
-        </p>
-
-        <button
-          type="button"
-          onClick={loadFoodSuggestions}
-          className="ignite-button"
-        >
-          Try Again
-        </button>
-      </div>
-    ) : foodSuggestions.length > 0 ? (
-      <div
-        style={{
-          display: 'grid',
-          gap: '10px',
-        }}
-      >
-        {foodSuggestions.map(
-          (suggestion, index) => (
-            <Link
-              key={`${suggestion.foodName}-${suggestion.servingLabel}-${index}`}
-              href={`/dashboard/nutrition?food=${encodeURIComponent(
-                suggestion.foodName
-              )}&serving=${encodeURIComponent(
-                suggestion.servingLabel
-              )}`}
-              onClick={() =>
-                setFoodOpen(false)
-              }
-              style={{
-                display: 'block',
-                padding: '13px 14px',
-                borderRadius: '18px',
-                border:
-                  '1px solid rgba(181,110,67,0.2)',
-                background:
-                  'rgba(181,110,67,0.05)',
-                color: '#f5f0e8',
-                textDecoration: 'none',
-              }}
-            >
-              <strong
+            {foodOpen ? (
+              <div
+                id="ignite-food-popup"
+                role="dialog"
+                aria-label="Quick food log"
                 style={{
-                  display: 'block',
+                  position: 'relative',
+                  marginTop: '18px',
+                  padding: '20px',
+                  borderRadius: '24px',
+                  border:
+                    '1px solid rgba(181,110,67,0.24)',
+                  background:
+                    'linear-gradient(145deg, rgba(12,12,12,0.96), rgba(5,5,5,0.92))',
+                  boxShadow:
+                    '0 24px 70px rgba(0,0,0,0.34)',
+                  zIndex: 20,
                 }}
               >
-                {suggestion.foodName}
-              </strong>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: '14px',
+                    marginBottom: '14px',
+                  }}
+                >
+                  <div>
+                    <p
+                      className="ignite-label"
+                      style={{ marginBottom: '6px' }}
+                    >
+                      Quick Food Log
+                    </p>
 
-              <small
-                style={{
-                  display: 'block',
-                  marginTop: '4px',
-                  color:
-                    'rgba(215,199,182,0.68)',
-                }}
-              >
-                {suggestion.servingLabel}
-              </small>
+                    <p
+                      style={{
+                        margin: 0,
+                        color: 'rgba(215,199,182,0.7)',
+                        fontSize: '0.86rem',
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      Foods you frequently log during this time of day.
+                    </p>
+                  </div>
 
-              <small
-                style={{
-                  display: 'block',
-                  marginTop: '5px',
-                  color:
-                    'rgba(197,139,87,0.92)',
-                }}
-              >
-                {Math.round(
-                  suggestion.calories || 0
-                )}{' '}
-                cal ·{' '}
-                {Math.round(
-                  suggestion.protein || 0
-                )}
-                g protein ·{' '}
-                {Math.round(
-                  suggestion.carbs || 0
-                )}
-                g carbs ·{' '}
-                {Math.round(
-                  suggestion.fats || 0
-                )}
-                g fat
-              </small>
-            </Link>
-          )
-        )}
-      </div>
-    ) : (
-      <p
-        style={{
-          margin: 0,
-          color:
-            'rgba(215,199,182,0.72)',
-          lineHeight: 1.6,
-        }}
-      >
-        No repeated foods qualify for quick
-        suggestions yet. Suggestions appear
-        after the same foods are logged
-        consistently.
-      </p>
-    )}
+                  <button
+                    type="button"
+                    onClick={() => setFoodOpen(false)}
+                    aria-label="Close quick food log"
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      flex: '0 0 32px',
+                      borderRadius: '999px',
+                      border:
+                        '1px solid rgba(181,110,67,0.22)',
+                      background: 'rgba(181,110,67,0.06)',
+                      color: '#f5f0e8',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
 
-    <Link
-      href="/dashboard/nutrition"
-      className="ignite-button"
-      onClick={() => setFoodOpen(false)}
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        marginTop: '14px',
-      }}
-    >
-      Open Full Food Log
-    </Link>
-  </div>
-) : null}
+                {foodLoading ? (
+                  <p
+                    style={{
+                      color: 'rgba(215,199,182,0.76)',
+                      margin: 0,
+                    }}
+                  >
+                    Loading suggestions...
+                  </p>
+                ) : foodError ? (
+                  <div>
+                    <p
+                      style={{
+                        color: '#ffb4b4',
+                        margin: '0 0 12px',
+                      }}
+                    >
+                      {foodError}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={loadFoodSuggestions}
+                      className="ignite-button"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                ) : foodSuggestions.length > 0 ? (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gap: '10px',
+                    }}
+                  >
+                    {foodSuggestions.map((suggestion, index) => (
+                      <Link
+                        key={`${suggestion.foodName}-${suggestion.servingLabel}-${index}`}
+                        href={`/dashboard/nutrition?food=${encodeURIComponent(
+                          suggestion.foodName
+                        )}&serving=${encodeURIComponent(
+                          suggestion.servingLabel
+                        )}`}
+                        onClick={() => setFoodOpen(false)}
+                        style={{
+                          display: 'block',
+                          padding: '13px 14px',
+                          borderRadius: '18px',
+                          border:
+                            '1px solid rgba(181,110,67,0.2)',
+                          background: 'rgba(181,110,67,0.05)',
+                          color: '#f5f0e8',
+                          textDecoration: 'none',
+                        }}
+                      >
+                        <strong style={{ display: 'block' }}>
+                          {suggestion.foodName}
+                        </strong>
+
+                        <small
+                          style={{
+                            display: 'block',
+                            marginTop: '4px',
+                            color: 'rgba(215,199,182,0.68)',
+                          }}
+                        >
+                          {suggestion.servingLabel}
+                        </small>
+
+                        <small
+                          style={{
+                            display: 'block',
+                            marginTop: '5px',
+                            color: 'rgba(197,139,87,0.92)',
+                          }}
+                        >
+                          {Math.round(suggestion.calories || 0)} cal ·{' '}
+                          {Math.round(suggestion.protein || 0)}g protein ·{' '}
+                          {Math.round(suggestion.carbs || 0)}g carbs ·{' '}
+                          {Math.round(suggestion.fats || 0)}g fat
+                        </small>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p
+                    style={{
+                      margin: 0,
+                      color: 'rgba(215,199,182,0.72)',
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    No repeated foods qualify for quick suggestions yet.
+                    Suggestions appear after the same foods are logged
+                    consistently.
+                  </p>
+                )}
+
+                <Link
+                  href="/dashboard/nutrition"
+                  className="ignite-button"
+                  onClick={() => setFoodOpen(false)}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    marginTop: '14px',
+                  }}
+                >
+                  Open Full Food Log
+                </Link>
+              </div>
+            ) : null}
+
             <div className="ignite-momentum">
               <span className="ignite-momentum-flame">
                 {flame.icon}
