@@ -12,9 +12,21 @@ type ExerciseVariant = {
 }
 
 type Exercise = {
+  id?: string | number
+
   exercise?: string
   name?: string
   display_name?: string
+
+  exercise_category?: string
+  movement_type?: string
+  category?: string
+  type?: string
+
+  primary_muscles?: string[]
+  secondary_muscles?: string[]
+  intended_muscles?: string[]
+  compensatory_muscles?: string[]
 
   sets?: number | string
 
@@ -38,6 +50,7 @@ type Exercise = {
   cycle_adjustment_label?: string
   cycle_adjustment_note?: string
   cycle_caution_active?: boolean
+
   client_cues?: string[]
   rest_seconds?: number
   rpe_target?: string
@@ -47,6 +60,14 @@ type Exercise = {
 type WorkoutLog = {
   exercise: string
   display_name: string
+
+  exercise_category: string
+  movement_type: string
+
+  primary_muscles: string[]
+  secondary_muscles: string[]
+  intended_muscles: string[]
+  compensatory_muscles: string[]
 
   selected_variant_id: string | null
   selected_variant_name: string
@@ -58,8 +79,10 @@ type WorkoutLog = {
   planned_sets: number
   planned_reps: number
   planned_weight: number
+
   baseline_reps: number
   baseline_weight: number
+
   actual_weight: number
   actual_reps: number
 
@@ -69,6 +92,7 @@ type WorkoutLog = {
 
   completed: boolean
   notes: string
+
   client_cues: string[]
   rest_seconds: number | null
   rpe_target: string
@@ -83,61 +107,147 @@ type Props = {
   exercises: Exercise[]
 }
 
-function getExerciseName(exercise: Exercise) {
-  return exercise.exercise || exercise.name || 'Exercise'
+const LOWER_BODY_MUSCLES = new Set([
+  'glutes',
+  'glute_max',
+  'glute_medius',
+  'glute_minimus',
+  'quads',
+  'quadriceps',
+  'hamstrings',
+  'adductors',
+  'abductors',
+  'hip_flexors',
+  'calves',
+  'gastrocnemius',
+  'soleus',
+  'feet_ankles',
+])
+
+const LOWER_BODY_TERMS = [
+  'squat',
+  'deadlift',
+  'rdl',
+  'romanian deadlift',
+  'hinge',
+  'hip thrust',
+  'glute bridge',
+  'leg press',
+  'leg extension',
+  'leg curl',
+  'hamstring curl',
+  'lunge',
+  'split squat',
+  'step up',
+  'step-up',
+  'calf raise',
+  'kickback',
+  'abduction',
+  'adduction',
+  'good morning',
+  'reverse hyper',
+  'back extension',
+  'sled',
+  'lower body',
+  'glute',
+  'quad',
+  'hamstring',
+]
+
+function normalizeText(value?: string | null): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replaceAll('-', '_')
+    .replaceAll(' ', '_')
 }
 
-function getDisplayName(exercise: Exercise) {
-  return exercise.display_name || getExerciseName(exercise)
-}
-
-function getRecommendedWeight(exercise: Exercise) {
-  return Number(
-    exercise.recommended_weight ||
-      exercise.cycle_adjusted_weight ||
-      exercise.calculated_weight ||
-      exercise.baseline_weight ||
-      0
+function getExerciseName(exercise: Exercise): string {
+  return (
+    exercise.exercise ||
+    exercise.name ||
+    'Exercise'
   )
 }
 
-function getRecommendedReps(exercise: Exercise) {
-  return Number(
-    exercise.recommended_reps ||
-      exercise.cycle_adjusted_reps ||
-      exercise.reps ||
-      exercise.target_reps ||
-      exercise.baseline_reps ||
-      0
+function getDisplayName(exercise: Exercise): string {
+  return (
+    exercise.display_name ||
+    getExerciseName(exercise)
   )
 }
 
-function getBaselineWeight(exercise: Exercise) {
+function getRecommendedWeight(
+  exercise: Exercise,
+): number {
   return Number(
-    exercise.baseline_weight ||
-      exercise.calculated_weight ||
-      exercise.recommended_weight ||
-      0
+    exercise.recommended_weight ??
+      exercise.cycle_adjusted_weight ??
+      exercise.calculated_weight ??
+      exercise.baseline_weight ??
+      0,
   )
 }
 
-function getBaselineReps(exercise: Exercise) {
+function getRecommendedReps(
+  exercise: Exercise,
+): number {
   return Number(
-    exercise.baseline_reps ||
-      exercise.reps ||
-      exercise.target_reps ||
-      exercise.recommended_reps ||
-      0
+    exercise.recommended_reps ??
+      exercise.cycle_adjusted_reps ??
+      exercise.reps ??
+      exercise.target_reps ??
+      exercise.baseline_reps ??
+      0,
   )
 }
 
-function roundTrainingWeight(weight: number) {
-  if (!weight || Number.isNaN(weight)) return 0
+function getBaselineWeight(
+  exercise: Exercise,
+): number {
+  return Number(
+    exercise.baseline_weight ??
+      exercise.calculated_weight ??
+      exercise.recommended_weight ??
+      0,
+  )
+}
 
-  if (weight < 5) return Math.round(weight * 2) / 2
-  if (weight < 20) return Math.round(weight)
+function getBaselineReps(
+  exercise: Exercise,
+): number {
+  return Number(
+    exercise.baseline_reps ??
+      exercise.reps ??
+      exercise.target_reps ??
+      exercise.recommended_reps ??
+      0,
+  )
+}
 
-  return Math.round(weight / 5) * 5
+function roundTrainingWeight(
+  weight: number,
+): number {
+  if (
+    !weight ||
+    Number.isNaN(weight)
+  ) {
+    return 0
+  }
+
+  if (weight < 5) {
+    return (
+      Math.round(weight * 2) / 2
+    )
+  }
+
+  if (weight < 20) {
+    return Math.round(weight)
+  }
+
+  return (
+    Math.round(weight / 5) * 5
+  )
 }
 
 function getVariantAdjustedWeight({
@@ -146,32 +256,48 @@ function getVariantAdjustedWeight({
 }: {
   baselineWeight: number
   variant?: ExerciseVariant | null
-}) {
-  if (!variant) return roundTrainingWeight(baselineWeight)
+}): number {
+  if (!variant) {
+    return roundTrainingWeight(
+      baselineWeight,
+    )
+  }
 
   return roundTrainingWeight(
-    baselineWeight * Number(variant.equipment_modifier || 1)
+    baselineWeight *
+      Number(
+        variant.equipment_modifier ||
+          1,
+      ),
   )
 }
 
-function getLoadLabel(loadType: string) {
+function getLoadLabel(
+  loadType: string,
+): string {
   switch (loadType) {
     case 'per_hand':
       return 'per hand'
+
     case 'single_side':
       return 'single side'
+
     case 'machine_total':
       return 'machine total'
+
     case 'band_tension':
       return 'band tension'
+
     case 'total_load':
     default:
       return 'total'
   }
 }
 
-function getWorkoutSessionDate() {
-  return new Date().toISOString().slice(0, 10)
+function getWorkoutSessionDate(): string {
+  return new Date()
+    .toISOString()
+    .slice(0, 10)
 }
 
 function buildNumberOptions({
@@ -184,21 +310,139 @@ function buildNumberOptions({
   max: number
   step: number
   includeValue?: number
-}) {
+}): number[] {
   const options: number[] = []
 
-  for (let i = min; i <= max; i += step) {
-    options.push(Number(i.toFixed(1)))
+  for (
+    let value = min;
+    value <= max;
+    value += step
+  ) {
+    options.push(
+      Number(value.toFixed(1)),
+    )
   }
 
   if (
-    typeof includeValue === 'number' &&
+    typeof includeValue ===
+      'number' &&
+    Number.isFinite(includeValue) &&
     !options.includes(includeValue)
   ) {
     options.push(includeValue)
   }
 
-  return options.sort((a, b) => a - b)
+  return Array.from(
+    new Set(options),
+  ).sort(
+    (first, second) =>
+      first - second,
+  )
+}
+
+function getExerciseMuscles(
+  exercise: WorkoutLog,
+): string[] {
+  return [
+    ...exercise.primary_muscles,
+    ...exercise.secondary_muscles,
+    ...exercise.intended_muscles,
+  ].map(normalizeText)
+}
+
+function isLowerBodyExercise(
+  exercise: WorkoutLog,
+): boolean {
+  const category = normalizeText(
+    exercise.exercise_category,
+  )
+
+  const movementType =
+    normalizeText(
+      exercise.movement_type,
+    )
+
+  if (
+    category.includes(
+      'lower',
+    ) ||
+    category.includes('leg') ||
+    category.includes(
+      'glute',
+    ) ||
+    movementType.includes(
+      'lower',
+    ) ||
+    movementType.includes(
+      'squat',
+    ) ||
+    movementType.includes(
+      'hinge',
+    )
+  ) {
+    return true
+  }
+
+  const muscles =
+    getExerciseMuscles(exercise)
+
+  if (
+    muscles.some((muscle) =>
+      LOWER_BODY_MUSCLES.has(
+        muscle,
+      ),
+    )
+  ) {
+    return true
+  }
+
+  const exerciseName =
+    `${exercise.exercise} ${exercise.display_name}`
+      .trim()
+      .toLowerCase()
+
+  return LOWER_BODY_TERMS.some(
+    (term) =>
+      exerciseName.includes(term),
+  )
+}
+
+function buildWeightOptions(
+  exercise: WorkoutLog,
+): number[] {
+  const maximumWeight =
+    isLowerBodyExercise(exercise)
+      ? 250
+      : 100
+
+  const wholePoundOptions =
+    buildNumberOptions({
+      min: 1,
+      max: maximumWeight,
+      step: 1,
+    })
+
+  const additionalValues = [
+    2.5,
+    exercise.planned_weight,
+    exercise.actual_weight,
+    exercise.baseline_weight,
+  ].filter(
+    (value) =>
+      Number.isFinite(value) &&
+      value >= 1 &&
+      value <= maximumWeight,
+  )
+
+  return Array.from(
+    new Set([
+      ...wholePoundOptions,
+      ...additionalValues,
+    ]),
+  ).sort(
+    (first, second) =>
+      first - second,
+  )
 }
 
 function ScrollPicker({
@@ -214,17 +458,30 @@ function ScrollPicker({
   onChange: (value: number) => void
   suffix?: string
 }) {
-  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const itemRefs = useRef<
+    Record<
+      string,
+      HTMLButtonElement | null
+    >
+  >({})
 
-  function setItemRef(key: string) {
-    return (element: HTMLButtonElement | null): void => {
-      itemRefs.current[key] = element
+  function setItemRef(
+    key: string,
+  ) {
+    return (
+      element:
+        | HTMLButtonElement
+        | null,
+    ): void => {
+      itemRefs.current[key] =
+        element
     }
   }
 
   useEffect(() => {
     const key = String(value)
-    const current = itemRefs.current[key]
+    const current =
+      itemRefs.current[key]
 
     if (current) {
       current.scrollIntoView({
@@ -240,10 +497,12 @@ function ScrollPicker({
       <p
         style={{
           margin: '0 0 8px',
-          color: 'rgba(215,199,182,0.72)',
+          color:
+            'rgba(215,199,182,0.72)',
           fontSize: '0.78rem',
           letterSpacing: '0.08em',
-          textTransform: 'uppercase',
+          textTransform:
+            'uppercase',
         }}
       >
         {label}
@@ -254,8 +513,10 @@ function ScrollPicker({
           position: 'relative',
           height: '142px',
           overflowY: 'auto',
-          scrollSnapType: 'y mandatory',
-          WebkitOverflowScrolling: 'touch',
+          scrollSnapType:
+            'y mandatory',
+          WebkitOverflowScrolling:
+            'touch',
           borderRadius: '26px',
           background:
             'linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.045), rgba(255,255,255,0.025))',
@@ -271,44 +532,61 @@ function ScrollPicker({
             top: '46px',
             height: '50px',
             marginTop: '-46px',
-            borderTop: '1px solid rgba(181,110,67,0.28)',
-            borderBottom: '1px solid rgba(181,110,67,0.28)',
-            background: 'rgba(181,110,67,0.055)',
+            borderTop:
+              '1px solid rgba(181,110,67,0.28)',
+            borderBottom:
+              '1px solid rgba(181,110,67,0.28)',
+            background:
+              'rgba(181,110,67,0.055)',
             zIndex: 1,
           }}
         />
 
-        {options.map((option) => {
-          const active = option === value
+        {options.map(
+          (option) => {
+            const active =
+              option === value
 
-          return (
-            <button
-              key={option}
-              ref={setItemRef(String(option))}
-              type="button"
-              onClick={() => onChange(option)}
-              style={{
-                position: 'relative',
-                zIndex: 2,
-                width: '100%',
-                height: '50px',
-                scrollSnapAlign: 'center',
-                border: 'none',
-                background: 'transparent',
-                color: active
-                  ? '#f5f0e8'
-                  : 'rgba(215,199,182,0.44)',
-                fontSize: active ? '1.35rem' : '1rem',
-                fontFamily: 'inherit',
-                cursor: 'pointer',
-                transition: 'all 0.16s ease',
-              }}
-            >
-              {option}
-              {suffix}
-            </button>
-          )
-        })}
+            return (
+              <button
+                key={option}
+                ref={setItemRef(
+                  String(option),
+                )}
+                type="button"
+                onClick={() =>
+                  onChange(option)
+                }
+                style={{
+                  position:
+                    'relative',
+                  zIndex: 2,
+                  width: '100%',
+                  height: '50px',
+                  scrollSnapAlign:
+                    'center',
+                  border: 'none',
+                  background:
+                    'transparent',
+                  color: active
+                    ? '#f5f0e8'
+                    : 'rgba(215,199,182,0.44)',
+                  fontSize: active
+                    ? '1.35rem'
+                    : '1rem',
+                  fontFamily:
+                    'inherit',
+                  cursor: 'pointer',
+                  transition:
+                    'all 0.16s ease',
+                }}
+              >
+                {option}
+                {suffix}
+              </button>
+            )
+          },
+        )}
       </div>
     </div>
   )
@@ -322,144 +600,382 @@ export default function WorkoutTracker({
   exercises,
 }: Props) {
   const router = useRouter()
-  const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
-  const storageKey = `aos-workout-variants:${clientId}:${program}:${dayName}:${getWorkoutSessionDate()}`
 
-  function setCardRef(index: number) {
-    return (element: HTMLDivElement | null): void => {
-      cardRefs.current[index] = element
+  const cardRefs = useRef<
+    Record<
+      number,
+      HTMLDivElement | null
+    >
+  >({})
+
+  const storageKey =
+    `aos-workout-variants:${clientId}:${program}:${dayName}:${getWorkoutSessionDate()}`
+
+  function setCardRef(
+    index: number,
+  ) {
+    return (
+      element:
+        | HTMLDivElement
+        | null,
+    ): void => {
+      cardRefs.current[index] =
+        element
     }
   }
 
-  const [activeIndex, setActiveIndex] = useState(0)
+  const [
+    activeIndex,
+    setActiveIndex,
+  ] = useState(0)
 
-  const [logs, setLogs] = useState<WorkoutLog[]>(() => {
-    let savedSelections: Record<string, string> = {}
-    if (typeof window !== 'undefined') {
-      try {
-        savedSelections = JSON.parse(window.localStorage.getItem(storageKey) || '{}')
-      } catch {
-        savedSelections = {}
+  const [logs, setLogs] =
+    useState<WorkoutLog[]>(() => {
+      let savedSelections: Record<
+        string,
+        string
+      > = {}
+
+      if (
+        typeof window !==
+        'undefined'
+      ) {
+        try {
+          savedSelections =
+            JSON.parse(
+              window.localStorage.getItem(
+                storageKey,
+              ) || '{}',
+            )
+        } catch {
+          savedSelections = {}
+        }
       }
-    }
 
-    return exercises.map((exercise, index) => {
-      const recommendedWeight = getRecommendedWeight(exercise)
-      const recommendedReps = getRecommendedReps(exercise)
-      const baselineWeight = getBaselineWeight(exercise)
-      const baselineReps = getBaselineReps(exercise)
+      return exercises.map(
+        (exercise, index) => {
+          const recommendedWeight =
+            getRecommendedWeight(
+              exercise,
+            )
 
-      const availableVariants = exercise.available_variants || []
-      const exerciseKey = `${getExerciseName(exercise)}:${index}`
-      const savedVariantId = savedSelections[exerciseKey]
-      const selectedVariant =
-        availableVariants.find(
-          (variant) => variant.id === savedVariantId
-        ) ||
-        availableVariants.find(
-          (variant) => variant.id === exercise.selected_variant_id
-        ) || availableVariants[0]
-      const selectedWeight = selectedVariant
-        ? getVariantAdjustedWeight({ baselineWeight, variant: selectedVariant })
-        : recommendedWeight
+          const recommendedReps =
+            getRecommendedReps(
+              exercise,
+            )
 
-      return {
-        exercise: getExerciseName(exercise),
-        display_name: selectedVariant?.name || getDisplayName(exercise),
+          const baselineWeight =
+            getBaselineWeight(
+              exercise,
+            )
 
-        selected_variant_id:
-          selectedVariant?.id || exercise.selected_variant_id || null,
-        selected_variant_name:
-          selectedVariant?.name ||
-          exercise.selected_variant_name ||
-          getExerciseName(exercise),
-        selected_equipment:
-          selectedVariant?.equipment || exercise.selected_equipment || null,
-        load_type:
-          selectedVariant?.load_type || exercise.load_type || 'total_load',
+          const baselineReps =
+            getBaselineReps(
+              exercise,
+            )
 
-        available_variants: availableVariants,
+          const availableVariants =
+            exercise.available_variants ||
+            []
 
-        planned_sets: Number(exercise.sets || 0),
-        planned_reps: recommendedReps,
-        planned_weight: selectedWeight,
+          const exerciseKey =
+            `${getExerciseName(exercise)}:${index}`
 
-        baseline_reps: baselineReps,
-        baseline_weight: baselineWeight,
+          const savedVariantId =
+            savedSelections[
+              exerciseKey
+            ]
 
-        actual_weight: selectedWeight,
-        actual_reps: recommendedReps,
+          const selectedVariant =
+            availableVariants.find(
+              (variant) =>
+                variant.id ===
+                savedVariantId,
+            ) ||
+            availableVariants.find(
+              (variant) =>
+                variant.id ===
+                exercise.selected_variant_id,
+            ) ||
+            availableVariants[0]
 
-        cycle_adjustment_label:
-          exercise.cycle_adjustment_label || 'Baseline training load',
-        cycle_adjustment_note: exercise.cycle_adjustment_note || '',
-        cycle_caution_active: !!exercise.cycle_caution_active,
+          const selectedWeight =
+            selectedVariant
+              ? getVariantAdjustedWeight(
+                  {
+                    baselineWeight,
+                    variant:
+                      selectedVariant,
+                  },
+                )
+              : recommendedWeight
 
-        completed: false,
-        notes: '',
-        client_cues: (exercise.client_cues || []).slice(0,3),
-        rest_seconds: exercise.rest_seconds || null,
-        rpe_target: exercise.rpe_target || '',
-        duration_label: exercise.duration_label || '',
-      }
-    })
-  })
+          return {
+            exercise:
+              getExerciseName(
+                exercise,
+              ),
 
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+            display_name:
+              selectedVariant?.name ||
+              getDisplayName(
+                exercise,
+              ),
 
-  function updateLog(index: number, field: keyof WorkoutLog, value: any) {
-    setLogs((prev) =>
-      prev.map((log, i) =>
-        i === index ? { ...log, [field]: value } : log
+            exercise_category:
+              exercise.exercise_category ||
+              exercise.category ||
+              '',
+
+            movement_type:
+              exercise.movement_type ||
+              exercise.type ||
+              '',
+
+            primary_muscles:
+              exercise.primary_muscles ||
+              [],
+
+            secondary_muscles:
+              exercise.secondary_muscles ||
+              [],
+
+            intended_muscles:
+              exercise.intended_muscles ||
+              [],
+
+            compensatory_muscles:
+              exercise.compensatory_muscles ||
+              [],
+
+            selected_variant_id:
+              selectedVariant?.id ||
+              exercise.selected_variant_id ||
+              null,
+
+            selected_variant_name:
+              selectedVariant?.name ||
+              exercise.selected_variant_name ||
+              getExerciseName(
+                exercise,
+              ),
+
+            selected_equipment:
+              selectedVariant?.equipment ||
+              exercise.selected_equipment ||
+              null,
+
+            load_type:
+              selectedVariant?.load_type ||
+              exercise.load_type ||
+              'total_load',
+
+            available_variants:
+              availableVariants,
+
+            planned_sets: Number(
+              exercise.sets || 0,
+            ),
+
+            planned_reps:
+              recommendedReps,
+
+            planned_weight:
+              selectedWeight,
+
+            baseline_reps:
+              baselineReps,
+
+            baseline_weight:
+              baselineWeight,
+
+            actual_weight:
+              selectedWeight,
+
+            actual_reps:
+              recommendedReps,
+
+            cycle_adjustment_label:
+              exercise.cycle_adjustment_label ||
+              'Baseline training load',
+
+            cycle_adjustment_note:
+              exercise.cycle_adjustment_note ||
+              '',
+
+            cycle_caution_active:
+              Boolean(
+                exercise.cycle_caution_active,
+              ),
+
+            completed: false,
+            notes: '',
+
+            client_cues:
+              (
+                exercise.client_cues ||
+                []
+              ).slice(0, 3),
+
+            rest_seconds:
+              exercise.rest_seconds ||
+              null,
+
+            rpe_target:
+              exercise.rpe_target ||
+              '',
+
+            duration_label:
+              exercise.duration_label ||
+              '',
+          }
+        },
       )
+    })
+
+  const [saving, setSaving] =
+    useState(false)
+
+  const [saved, setSaved] =
+    useState(false)
+
+  function updateLog(
+    index: number,
+    field: keyof WorkoutLog,
+    value: unknown,
+  ) {
+    setLogs((previous) =>
+      previous.map(
+        (log, currentIndex) =>
+          currentIndex === index
+            ? {
+                ...log,
+                [field]: value,
+              }
+            : log,
+      ),
     )
   }
 
-  function persistVariantSelections(nextLogs: WorkoutLog[]) {
-    if (typeof window === 'undefined') return
-    const selections = nextLogs.reduce<Record<string, string>>((map, log, index) => {
-      if (log.selected_variant_id) map[`${log.exercise}:${index}`] = log.selected_variant_id
-      return map
-    }, {})
-    window.localStorage.setItem(storageKey, JSON.stringify(selections))
+  function persistVariantSelections(
+    nextLogs: WorkoutLog[],
+  ) {
+    if (
+      typeof window ===
+      'undefined'
+    ) {
+      return
+    }
+
+    const selections =
+      nextLogs.reduce<
+        Record<string, string>
+      >(
+        (
+          map,
+          log,
+          index,
+        ) => {
+          if (
+            log.selected_variant_id
+          ) {
+            map[
+              `${log.exercise}:${index}`
+            ] =
+              log.selected_variant_id
+          }
+
+          return map
+        },
+        {},
+      )
+
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify(
+        selections,
+      ),
+    )
   }
 
-  function changeVariant(index: number, variantId: string) {
-    setLogs((prev) => {
-      const nextLogs = prev.map((log, i) => {
-        if (i !== index) return log
+  function changeVariant(
+    index: number,
+    variantId: string,
+  ) {
+    setLogs((previous) => {
+      const nextLogs =
+        previous.map(
+          (log, currentIndex) => {
+            if (
+              currentIndex !== index
+            ) {
+              return log
+            }
 
-        const selectedVariant = log.available_variants.find(
-          (variant) => variant.id === variantId
+            const selectedVariant =
+              log.available_variants.find(
+                (variant) =>
+                  variant.id ===
+                  variantId,
+              )
+
+            if (
+              !selectedVariant
+            ) {
+              return log
+            }
+
+            const adjustedWeight =
+              getVariantAdjustedWeight(
+                {
+                  baselineWeight:
+                    log.baseline_weight,
+
+                  variant:
+                    selectedVariant,
+                },
+              )
+
+            return {
+              ...log,
+
+              selected_variant_id:
+                selectedVariant.id,
+
+              selected_variant_name:
+                selectedVariant.name,
+
+              selected_equipment:
+                selectedVariant.equipment,
+
+              display_name:
+                selectedVariant.name,
+
+              load_type:
+                selectedVariant.load_type,
+
+              planned_weight:
+                adjustedWeight,
+
+              actual_weight:
+                adjustedWeight,
+            }
+          },
         )
 
-        if (!selectedVariant) return log
+      persistVariantSelections(
+        nextLogs,
+      )
 
-        const adjustedWeight = getVariantAdjustedWeight({
-          baselineWeight: log.baseline_weight,
-          variant: selectedVariant,
-        })
-
-        return {
-          ...log,
-          selected_variant_id: selectedVariant.id,
-          selected_variant_name: selectedVariant.name,
-          selected_equipment: selectedVariant.equipment,
-          display_name: selectedVariant.name,
-          load_type: selectedVariant.load_type,
-          planned_weight: adjustedWeight,
-          actual_weight: adjustedWeight,
-          notes: log.notes,
-        }
-      })
-      persistVariantSelections(nextLogs)
       return nextLogs
     })
   }
 
-  function scrollToExercise(index: number) {
-    const card = cardRefs.current[index]
+  function scrollToExercise(
+    index: number,
+  ) {
+    const card =
+      cardRefs.current[index]
 
     if (card) {
       card.scrollIntoView({
@@ -473,45 +989,81 @@ export default function WorkoutTracker({
   }
 
   function goNext() {
-    const nextIndex = Math.min(activeIndex + 1, logs.length - 1)
+    const nextIndex = Math.min(
+      activeIndex + 1,
+      logs.length - 1,
+    )
+
     scrollToExercise(nextIndex)
   }
 
   function goBack() {
-    const previousIndex = Math.max(activeIndex - 1, 0)
-    scrollToExercise(previousIndex)
+    const previousIndex =
+      Math.max(
+        activeIndex - 1,
+        0,
+      )
+
+    scrollToExercise(
+      previousIndex,
+    )
   }
 
   async function saveWorkout() {
     try {
       setSaving(true)
 
-      const completedLogs = logs.map((log) => ({
-        ...log,
-        completed: true,
-      }))
-
-      const response = await fetch('/api/workout-log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: clientId,
-          auth_user_id: authUserId,
-          program,
-          day_name: dayName,
-          workout_date: new Date().toISOString(),
-          exercise_logs: completedLogs,
+      const completedLogs =
+        logs.map((log) => ({
+          ...log,
           completed: true,
-        }),
-      })
+        }))
+
+      const response =
+        await fetch(
+          '/api/workout-log',
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            body: JSON.stringify({
+              client_id:
+                clientId,
+
+              auth_user_id:
+                authUserId,
+
+              program,
+              day_name: dayName,
+
+              workout_date:
+                new Date().toISOString(),
+
+              exercise_logs:
+                completedLogs,
+
+              completed: true,
+            }),
+          },
+        )
 
       if (!response.ok) {
-        throw new Error('Workout save failed')
+        throw new Error(
+          'Workout save failed',
+        )
       }
 
       setLogs(completedLogs)
       setSaved(true)
-      router.push('/dashboard')
+
+      router.push(
+        '/dashboard',
+      )
+
       router.refresh()
     } catch (error) {
       console.error(error)
@@ -526,30 +1078,51 @@ export default function WorkoutTracker({
         style={{
           display: 'flex',
           gap: '8px',
-          justifyContent: 'center',
+          justifyContent:
+            'center',
           marginBottom: '18px',
         }}
       >
-        {logs.map((_, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => scrollToExercise(index)}
-            style={{
-              width: index === activeIndex ? '24px' : '8px',
-              height: '8px',
-              borderRadius: '999px',
-              border: 'none',
-              background:
-                index === activeIndex
-                  ? 'rgba(181,110,67,0.9)'
-                  : 'rgba(215,199,182,0.28)',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            aria-label={`Go to exercise ${index + 1}`}
-          />
-        ))}
+        {logs.map(
+          (_, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() =>
+                scrollToExercise(
+                  index,
+                )
+              }
+              style={{
+                width:
+                  index ===
+                  activeIndex
+                    ? '24px'
+                    : '8px',
+
+                height: '8px',
+                borderRadius:
+                  '999px',
+                border: 'none',
+
+                background:
+                  index ===
+                  activeIndex
+                    ? 'rgba(181,110,67,0.9)'
+                    : 'rgba(215,199,182,0.28)',
+
+                cursor:
+                  'pointer',
+
+                transition:
+                  'all 0.2s ease',
+              }}
+              aria-label={`Go to exercise ${
+                index + 1
+              }`}
+            />
+          ),
+        )}
       </div>
 
       <div
@@ -557,366 +1130,760 @@ export default function WorkoutTracker({
           display: 'flex',
           gap: '22px',
           overflowX: 'auto',
-          scrollSnapType: 'x mandatory',
-          padding: '8px 4px 28px',
-          WebkitOverflowScrolling: 'touch',
+
+          scrollSnapType:
+            'x mandatory',
+
+          padding:
+            '8px 4px 28px',
+
+          WebkitOverflowScrolling:
+            'touch',
         }}
         onScroll={(event) => {
-          const container = event.currentTarget
+          const container =
+            event.currentTarget
+
           const containerCenter =
-            container.scrollLeft + container.offsetWidth / 2
+            container.scrollLeft +
+            container.offsetWidth /
+              2
 
           let nearestIndex = 0
-          let nearestDistance = Number.POSITIVE_INFINITY
+          let nearestDistance =
+            Number.POSITIVE_INFINITY
 
-          Object.entries(cardRefs.current).forEach(([key, element]) => {
-            if (!element) return
+          Object.entries(
+            cardRefs.current,
+          ).forEach(
+            ([key, element]) => {
+              if (!element) {
+                return
+              }
 
-            const elementCenter =
-              element.offsetLeft + element.offsetWidth / 2
+              const elementCenter =
+                element.offsetLeft +
+                element.offsetWidth /
+                  2
 
-            const distance = Math.abs(containerCenter - elementCenter)
+              const distance =
+                Math.abs(
+                  containerCenter -
+                    elementCenter,
+                )
 
-            if (distance < nearestDistance) {
-              nearestDistance = distance
-              nearestIndex = Number(key)
-            }
-          })
+              if (
+                distance <
+                nearestDistance
+              ) {
+                nearestDistance =
+                  distance
 
-          setActiveIndex(nearestIndex)
+                nearestIndex =
+                  Number(key)
+              }
+            },
+          )
+
+          setActiveIndex(
+            nearestIndex,
+          )
         }}
       >
-        {logs.map((exercise, index) => {
-          const loadLabel = getLoadLabel(exercise.load_type)
+        {logs.map(
+          (
+            exercise,
+            index,
+          ) => {
+            const loadLabel =
+              getLoadLabel(
+                exercise.load_type,
+              )
 
-          const weightOptions =
-            exercise.planned_weight < 15
-              ? [1, 2, 2.5, 5, 8, 10, 12, 15]
-              : buildNumberOptions({
-                  min: Math.max(0, exercise.planned_weight - 20),
-                  max: exercise.planned_weight + 20,
-                  step: 5,
-                  includeValue: exercise.actual_weight,
-                })
+            const weightOptions =
+              buildWeightOptions(
+                exercise,
+              )
 
-          const repOptions = buildNumberOptions({
-            min: Math.max(0, exercise.planned_reps - 8),
-            max: exercise.planned_reps + 8,
-            step: 1,
-            includeValue: exercise.actual_reps,
-          })
+            const repOptions =
+              buildNumberOptions({
+                min: Math.max(
+                  0,
+                  exercise.planned_reps -
+                    8,
+                ),
 
-          return (
-            <section
-              key={index}
-              ref={setCardRef(index)}
-              style={{
-                flex: '0 0 min(86vw, 620px)',
-                scrollSnapAlign: 'center',
-                border: exercise.cycle_caution_active
-                  ? '1px solid rgba(181,110,67,0.32)'
-                  : '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '34px',
-                padding: '32px',
-                minHeight: '560px',
-                background: exercise.cycle_caution_active
-                  ? 'rgba(181,110,67,0.08)'
-                  : 'rgba(18,18,18,0.48)',
-                boxShadow:
-                  '0 24px 80px rgba(0,0,0,0.18), inset 0 0 30px rgba(255,255,255,0.012)',
-                backdropFilter: 'blur(18px)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div>
-                <p
-                  style={{
-                    margin: '0 0 14px',
-                    color: 'rgba(197,139,87,0.95)',
-                    fontSize: '0.74rem',
-                    letterSpacing: '0.16em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Exercise {index + 1} of {logs.length}
-                </p>
+                max:
+                  exercise.planned_reps +
+                  8,
 
-                <h3
-                  style={{
-                    margin: '0 0 8px',
-                    fontSize: 'clamp(1.8rem, 4vw, 2.8rem)',
-                    lineHeight: 1.05,
-                    fontWeight: 500,
-                    letterSpacing: '-0.04em',
-                    color: '#f5f0e8',
-                  }}
-                >
-                  {exercise.display_name}
-                </h3>
+                step: 1,
 
-                <p
-                  style={{
-                    margin: '0 0 18px',
-                    color: 'rgba(215,199,182,0.68)',
-                    fontSize: '0.92rem',
-                  }}
-                >
-                  Selected: {exercise.selected_variant_name}
-                  {exercise.selected_equipment ? ` · Equipment: ${exercise.selected_equipment}` : ''}
-                </p>
-                {exercise.client_cues.length ? <ul className="workout-os-cues">{exercise.client_cues.map((cue)=><li key={cue}>{cue}</li>)}</ul> : null}
-                {exercise.rpe_target || exercise.rest_seconds ? <p className="workout-os-dose">{exercise.rpe_target}{exercise.rpe_target?' · ':''}Rest until HR is below 115 bpm. If HR is unavailable: Rest until breathing is controlled and form feels steady.</p> : null}
+                includeValue:
+                  exercise.actual_reps,
+              })
 
-                {exercise.available_variants.length > 1 && (
-                  <label>
-                    <p
-                      style={{
-                        margin: '0 0 8px',
-                        color: 'rgba(215,199,182,0.72)',
-                        fontSize: '0.78rem',
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Equipment / Variation
-                    </p>
+            const maximumWeight =
+              isLowerBodyExercise(
+                exercise,
+              )
+                ? 250
+                : 100
 
-                    <select
-                      value={exercise.selected_variant_id || ''}
-                      onChange={(event) =>
-                        changeVariant(index, event.target.value)
+            return (
+              <section
+                key={index}
+                ref={setCardRef(
+                  index,
+                )}
+                style={{
+                  flex:
+                    '0 0 min(86vw, 620px)',
+
+                  scrollSnapAlign:
+                    'center',
+
+                  border:
+                    exercise.cycle_caution_active
+                      ? '1px solid rgba(181,110,67,0.32)'
+                      : '1px solid rgba(255,255,255,0.08)',
+
+                  borderRadius:
+                    '34px',
+
+                  padding: '32px',
+
+                  minHeight:
+                    '560px',
+
+                  background:
+                    exercise.cycle_caution_active
+                      ? 'rgba(181,110,67,0.08)'
+                      : 'rgba(18,18,18,0.48)',
+
+                  boxShadow:
+                    '0 24px 80px rgba(0,0,0,0.18), inset 0 0 30px rgba(255,255,255,0.012)',
+
+                  backdropFilter:
+                    'blur(18px)',
+
+                  display: 'flex',
+
+                  flexDirection:
+                    'column',
+
+                  justifyContent:
+                    'space-between',
+                }}
+              >
+                <div>
+                  <p
+                    style={{
+                      margin:
+                        '0 0 14px',
+
+                      color:
+                        'rgba(197,139,87,0.95)',
+
+                      fontSize:
+                        '0.74rem',
+
+                      letterSpacing:
+                        '0.16em',
+
+                      textTransform:
+                        'uppercase',
+                    }}
+                  >
+                    Exercise{' '}
+                    {index + 1} of{' '}
+                    {logs.length}
+                  </p>
+
+                  <h3
+                    style={{
+                      margin:
+                        '0 0 8px',
+
+                      fontSize:
+                        'clamp(1.8rem, 4vw, 2.8rem)',
+
+                      lineHeight:
+                        1.05,
+
+                      fontWeight:
+                        500,
+
+                      letterSpacing:
+                        '-0.04em',
+
+                      color:
+                        '#f5f0e8',
+                    }}
+                  >
+                    {
+                      exercise.display_name
+                    }
+                  </h3>
+
+                  <p
+                    style={{
+                      margin:
+                        '0 0 18px',
+
+                      color:
+                        'rgba(215,199,182,0.68)',
+
+                      fontSize:
+                        '0.92rem',
+                    }}
+                  >
+                    Selected:{' '}
+                    {
+                      exercise.selected_variant_name
+                    }
+
+                    {exercise.selected_equipment
+                      ? ` · Equipment: ${exercise.selected_equipment}`
+                      : ''}
+                  </p>
+
+                  {exercise.client_cues
+                    .length ? (
+                    <ul className="workout-os-cues">
+                      {exercise.client_cues.map(
+                        (cue) => (
+                          <li key={cue}>
+                            {cue}
+                          </li>
+                        ),
+                      )}
+                    </ul>
+                  ) : null}
+
+                  {exercise.rpe_target ||
+                  exercise.rest_seconds ? (
+                    <p className="workout-os-dose">
+                      {
+                        exercise.rpe_target
                       }
-                      style={{
-                        width: '100%',
-                        borderRadius: '999px',
-                        border: '1px solid rgba(181,110,67,0.26)',
-                        background: 'rgba(5,5,5,0.34)',
-                        color: '#f5f0e8',
-                        padding: '14px 16px',
-                        marginBottom: '18px',
-                        fontFamily: 'inherit',
-                      }}
-                    >
-                      {exercise.available_variants.map((variant) => (
-                        <option key={variant.id} value={variant.id}>
-                          {variant.name} · {variant.equipment}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-                {exercise.available_variants.length <= 1 && (
-                  <p
-                    style={{
-                      margin: '0 0 18px',
-                      color: 'rgba(215,199,182,0.62)',
-                      fontSize: '0.86rem',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    No available alternatives for your current equipment.
-                  </p>
-                )}
 
-                <p
-                  style={{
-                    margin: '0 0 10px',
-                    color: 'rgba(197,139,87,0.95)',
-                    fontSize: '0.9rem',
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {exercise.cycle_adjustment_label}
-                </p>
+                      {exercise.rpe_target
+                        ? ' · '
+                        : ''}
 
-                {exercise.cycle_adjustment_note ? (
-                  <p
-                    style={{
-                      margin: '0 0 20px',
-                      color: 'rgba(215,199,182,0.78)',
-                      lineHeight: 1.65,
-                    }}
-                  >
-                    {exercise.cycle_adjustment_note}
-                  </p>
-                ) : null}
-
-                <div
-                  style={{
-                    display: 'grid',
-                    gap: '10px',
-                    marginBottom: '24px',
-                    color: '#d7c7b6',
-                    lineHeight: 1.65,
-                  }}
-                >
-                  <p style={{ margin: 0 }}>
-                    <strong>Recommended today:</strong>{' '}
-                    {exercise.duration_label
-                      ? exercise.duration_label
-                      : `${exercise.planned_sets} sets · ${exercise.planned_reps} reps · ${exercise.planned_weight} lbs ${loadLabel}`}
-                  </p>
-
-                  {!exercise.duration_label ? (
-                    <p style={{ margin: 0, opacity: 0.72 }}>
-                      <strong>Program baseline:</strong>{' '}
-                      {exercise.planned_sets} sets · {exercise.baseline_reps} reps ·{' '}
-                      {exercise.baseline_weight} lbs before equipment conversion
+                      Rest until HR is
+                      below 115 bpm. If HR
+                      is unavailable: rest
+                      until breathing is
+                      controlled and form
+                      feels steady.
                     </p>
                   ) : null}
 
-                  {exercise.load_type === 'per_hand' && (
-                    <p style={{ margin: 0, opacity: 0.72 }}>
-                      Dumbbell load is shown per hand. It is intentionally not
-                      calculated by simply dividing a barbell load in half.
+                  {exercise
+                    .available_variants
+                    .length > 1 ? (
+                    <label>
+                      <p
+                        style={{
+                          margin:
+                            '0 0 8px',
+
+                          color:
+                            'rgba(215,199,182,0.72)',
+
+                          fontSize:
+                            '0.78rem',
+
+                          letterSpacing:
+                            '0.08em',
+
+                          textTransform:
+                            'uppercase',
+                        }}
+                      >
+                        Equipment /
+                        Variation
+                      </p>
+
+                      <select
+                        value={
+                          exercise.selected_variant_id ||
+                          ''
+                        }
+                        onChange={(
+                          event,
+                        ) =>
+                          changeVariant(
+                            index,
+                            event.target
+                              .value,
+                          )
+                        }
+                        style={{
+                          width:
+                            '100%',
+
+                          borderRadius:
+                            '999px',
+
+                          border:
+                            '1px solid rgba(181,110,67,0.26)',
+
+                          background:
+                            'rgba(5,5,5,0.34)',
+
+                          color:
+                            '#f5f0e8',
+
+                          padding:
+                            '14px 16px',
+
+                          marginBottom:
+                            '18px',
+
+                          fontFamily:
+                            'inherit',
+                        }}
+                      >
+                        {exercise.available_variants.map(
+                          (
+                            variant,
+                          ) => (
+                            <option
+                              key={
+                                variant.id
+                              }
+                              value={
+                                variant.id
+                              }
+                            >
+                              {
+                                variant.name
+                              }{' '}
+                              ·{' '}
+                              {
+                                variant.equipment
+                              }
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+                  ) : (
+                    <p
+                      style={{
+                        margin:
+                          '0 0 18px',
+
+                        color:
+                          'rgba(215,199,182,0.62)',
+
+                        fontSize:
+                          '0.86rem',
+
+                        lineHeight:
+                          1.5,
+                      }}
+                    >
+                      No available
+                      alternatives for your
+                      current equipment.
                     </p>
                   )}
+
+                  <p
+                    style={{
+                      margin:
+                        '0 0 10px',
+
+                      color:
+                        'rgba(197,139,87,0.95)',
+
+                      fontSize:
+                        '0.9rem',
+
+                      letterSpacing:
+                        '0.04em',
+
+                      textTransform:
+                        'uppercase',
+                    }}
+                  >
+                    {
+                      exercise.cycle_adjustment_label
+                    }
+                  </p>
+
+                  {exercise.cycle_adjustment_note ? (
+                    <p
+                      style={{
+                        margin:
+                          '0 0 20px',
+
+                        color:
+                          'rgba(215,199,182,0.78)',
+
+                        lineHeight:
+                          1.65,
+                      }}
+                    >
+                      {
+                        exercise.cycle_adjustment_note
+                      }
+                    </p>
+                  ) : null}
+
+                  <div
+                    style={{
+                      display:
+                        'grid',
+
+                      gap: '10px',
+
+                      marginBottom:
+                        '24px',
+
+                      color:
+                        '#d7c7b6',
+
+                      lineHeight:
+                        1.65,
+                    }}
+                  >
+                    <p
+                      style={{
+                        margin: 0,
+                      }}
+                    >
+                      <strong>
+                        Recommended today:
+                      </strong>{' '}
+
+                      {exercise.duration_label
+                        ? exercise.duration_label
+                        : `${exercise.planned_sets} sets · ${exercise.planned_reps} reps · ${exercise.planned_weight} lbs ${loadLabel}`}
+                    </p>
+
+                    {!exercise.duration_label ? (
+                      <p
+                        style={{
+                          margin: 0,
+                          opacity:
+                            0.72,
+                        }}
+                      >
+                        <strong>
+                          Program baseline:
+                        </strong>{' '}
+
+                        {
+                          exercise.planned_sets
+                        }{' '}
+                        sets ·{' '}
+                        {
+                          exercise.baseline_reps
+                        }{' '}
+                        reps ·{' '}
+                        {
+                          exercise.baseline_weight
+                        }{' '}
+                        lbs before equipment
+                        conversion
+                      </p>
+                    ) : null}
+
+                    {exercise.load_type ===
+                    'per_hand' ? (
+                      <p
+                        style={{
+                          margin: 0,
+                          opacity:
+                            0.72,
+                        }}
+                      >
+                        Dumbbell load is
+                        shown per hand. It
+                        is intentionally not
+                        calculated by simply
+                        dividing a barbell
+                        load in half.
+                      </p>
+                    ) : null}
+
+                    <p
+                      style={{
+                        margin: 0,
+                        opacity: 0.72,
+                      }}
+                    >
+                      Available weight range:{' '}
+                      <strong>
+                        1–{maximumWeight} lb
+                      </strong>
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      display:
+                        'grid',
+
+                      gap: '18px',
+
+                      marginTop:
+                        '18px',
+                    }}
+                  >
+                    <ScrollPicker
+                      label={`Actual Weight (${loadLabel})`}
+                      value={
+                        exercise.actual_weight
+                      }
+                      options={
+                        weightOptions
+                      }
+                      suffix=" lb"
+                      onChange={(
+                        value,
+                      ) =>
+                        updateLog(
+                          index,
+                          'actual_weight',
+                          value,
+                        )
+                      }
+                    />
+
+                    <ScrollPicker
+                      label="Actual Reps"
+                      value={
+                        exercise.actual_reps
+                      }
+                      options={
+                        repOptions
+                      }
+                      onChange={(
+                        value,
+                      ) =>
+                        updateLog(
+                          index,
+                          'actual_reps',
+                          value,
+                        )
+                      }
+                    />
+
+                    <label>
+                      <p
+                        style={{
+                          margin:
+                            '0 0 8px',
+
+                          color:
+                            'rgba(215,199,182,0.72)',
+
+                          fontSize:
+                            '0.78rem',
+
+                          letterSpacing:
+                            '0.08em',
+
+                          textTransform:
+                            'uppercase',
+                        }}
+                      >
+                        Notes
+                      </p>
+
+                      <textarea
+                        value={
+                          exercise.notes
+                        }
+                        onChange={(
+                          event,
+                        ) =>
+                          updateLog(
+                            index,
+                            'notes',
+                            event.target
+                              .value,
+                          )
+                        }
+                        style={{
+                          width:
+                            '100%',
+
+                          marginTop:
+                            '4px',
+                        }}
+                        placeholder="Anything to note for this exercise?"
+                      />
+                    </label>
+
+                    <label
+                      style={{
+                        display:
+                          'flex',
+
+                        gap: 8,
+
+                        alignItems:
+                          'center',
+
+                        color:
+                          'rgba(215,199,182,0.86)',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={
+                          exercise.completed
+                        }
+                        onChange={(
+                          event,
+                        ) =>
+                          updateLog(
+                            index,
+                            'completed',
+                            event.target
+                              .checked,
+                          )
+                        }
+                        style={{
+                          accentColor:
+                            '#b56e43',
+                        }}
+                      />
+
+                      Completed
+                    </label>
+                  </div>
                 </div>
 
                 <div
                   style={{
-                    display: 'grid',
-                    gap: '18px',
-                    marginTop: '18px',
+                    display: 'flex',
+
+                    gap: '12px',
+
+                    justifyContent:
+                      'space-between',
+
+                    marginTop:
+                      '30px',
                   }}
                 >
-                  <ScrollPicker
-                    label={`Actual Weight (${loadLabel})`}
-                    value={exercise.actual_weight}
-                    options={weightOptions}
-                    suffix=" lb"
-                    onChange={(value) =>
-                      updateLog(index, 'actual_weight', value)
+                  <button
+                    type="button"
+                    onClick={goBack}
+                    disabled={
+                      index === 0
                     }
-                  />
+                    style={{
+                      borderRadius:
+                        '999px',
 
-                  <ScrollPicker
-                    label="Actual Reps"
-                    value={exercise.actual_reps}
-                    options={repOptions}
-                    onChange={(value) =>
-                      updateLog(index, 'actual_reps', value)
-                    }
-                  />
+                      border:
+                        '1px solid rgba(181,110,67,0.24)',
 
-                  <label>
-                    <p
+                      background:
+                        'rgba(181,110,67,0.055)',
+
+                      color:
+                        '#f5f0e8',
+
+                      padding:
+                        '12px 18px',
+
+                      cursor:
+                        index === 0
+                          ? 'default'
+                          : 'pointer',
+
+                      opacity:
+                        index === 0
+                          ? 0.4
+                          : 1,
+                    }}
+                  >
+                    Back
+                  </button>
+
+                  {index <
+                  logs.length - 1 ? (
+                    <button
+                      type="button"
+                      onClick={goNext}
                       style={{
-                        margin: '0 0 8px',
-                        color: 'rgba(215,199,182,0.72)',
-                        fontSize: '0.78rem',
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
+                        borderRadius:
+                          '999px',
+
+                        border:
+                          'none',
+
+                        background:
+                          'linear-gradient(180deg, rgba(181,110,67,0.58), rgba(120,72,44,0.46))',
+
+                        color:
+                          '#f5f0e8',
+
+                        padding:
+                          '12px 18px',
+
+                        cursor:
+                          'pointer',
                       }}
                     >
-                      Notes
-                    </p>
-
-                    <textarea
-                      value={exercise.notes}
-                      onChange={(e) =>
-                        updateLog(index, 'notes', e.target.value)
+                      Next Exercise
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={
+                        saveWorkout
+                      }
+                      disabled={
+                        saving
                       }
                       style={{
-                        width: '100%',
-                        marginTop: '4px',
+                        borderRadius:
+                          '999px',
+
+                        border:
+                          'none',
+
+                        background:
+                          'linear-gradient(180deg, rgba(181,110,67,0.58), rgba(120,72,44,0.46))',
+
+                        color:
+                          '#f5f0e8',
+
+                        padding:
+                          '12px 18px',
+
+                        cursor:
+                          'pointer',
+
+                        opacity:
+                          saving
+                            ? 0.65
+                            : 1,
                       }}
-                      placeholder="Anything to note for this exercise?"
-                    />
-                  </label>
-
-                  <label
-                    style={{
-                      display: 'flex',
-                      gap: 8,
-                      alignItems: 'center',
-                      color: 'rgba(215,199,182,0.86)',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={exercise.completed}
-                      onChange={(e) =>
-                        updateLog(index, 'completed', e.target.checked)
-                      }
-                      style={{ accentColor: '#b56e43' }}
-                    />
-                    Completed
-                  </label>
+                    >
+                      {saving
+                        ? 'Saving...'
+                        : saved
+                          ? 'Workout Saved'
+                          : 'Save Workout'}
+                    </button>
+                  )}
                 </div>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '12px',
-                  justifyContent: 'space-between',
-                  marginTop: '30px',
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={goBack}
-                  disabled={index === 0}
-                  style={{
-                    borderRadius: '999px',
-                    border: '1px solid rgba(181,110,67,0.24)',
-                    background: 'rgba(181,110,67,0.055)',
-                    color: '#f5f0e8',
-                    padding: '12px 18px',
-                    cursor: index === 0 ? 'default' : 'pointer',
-                    opacity: index === 0 ? 0.4 : 1,
-                  }}
-                >
-                  Back
-                </button>
-
-                {index < logs.length - 1 ? (
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    style={{
-                      borderRadius: '999px',
-                      border: 'none',
-                      background:
-                        'linear-gradient(180deg, rgba(181,110,67,0.58), rgba(120,72,44,0.46))',
-                      color: '#f5f0e8',
-                      padding: '12px 18px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Next Exercise
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={saveWorkout}
-                    disabled={saving}
-                    style={{
-                      borderRadius: '999px',
-                      border: 'none',
-                      background:
-                        'linear-gradient(180deg, rgba(181,110,67,0.58), rgba(120,72,44,0.46))',
-                      color: '#f5f0e8',
-                      padding: '12px 18px',
-                      cursor: 'pointer',
-                      opacity: saving ? 0.65 : 1,
-                    }}
-                  >
-                    {saving
-                      ? 'Saving...'
-                      : saved
-                      ? 'Workout Saved'
-                      : 'Save Workout'}
-                  </button>
-                )}
-              </div>
-            </section>
-          )
-        })}
+              </section>
+            )
+          },
+        )}
       </div>
     </div>
   )
