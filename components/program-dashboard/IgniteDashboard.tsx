@@ -496,37 +496,46 @@ export default function IgniteDashboard({
               />
 
               <Ring
-                value={
-                  macros.percent
-                }
-                icon="Ψ"
-                label="Nutrition"
-                detail={`${macros.percent}%`}
-              />
+  value={macros.percent}
+  icon="Ψ"
+  label="Nutrition"
+  detail={`${macros.percent}%`}
+  onClick={() => {
+    setFoodOpen((current) => !current)
+  }}
+  expanded={foodOpen}
+  controls="ignite-food-popup"
+/>
 
-              <Ring
-                value={
-                  workout.executionComplete
-                    ? 100
-                    : 0
-                }
-                icon="↟"
-                label="Workout"
-                detail={
-                  workout.executionComplete
-                    ? 'Complete'
-                    : 'Open'
-                }
-              />
+<Ring
+  value={
+    workout.executionComplete
+      ? 100
+      : 0
+  }
+  icon="↟"
+  label="Workout"
+  detail={
+    workout.executionComplete
+      ? 'Complete'
+      : 'Open'
+  }
+  href="/dashboard/program/ignite/workout"
+  ariaLabel="Open today’s workout"
+/>
 
-              <Ring
-                value={
-                  assessment.completedPercent
-                }
-                icon="✓"
-                label="Assessments"
-                detail={`${assessment.completedPercent}%`}
-              />
+<Ring
+  value={assessment.completedPercent}
+  icon="✓"
+  label="Check-In"
+  detail={
+    assessment.dailyCompleted
+      ? 'Complete'
+      : 'Open'
+  }
+  href="/dashboard/check-in"
+  ariaLabel="Open daily check-in"
+/>
             </div>
 
             <div className="ignite-momentum">
