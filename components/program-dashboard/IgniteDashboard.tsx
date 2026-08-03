@@ -320,6 +320,7 @@ export default function IgniteDashboard({
 }: {
   logic: ProgramLogicOutput
 }) {
+    const [foodOpen, setFoodOpen] = useState(false)
   const engine =
     useProgramLogicEngine(logic)
 
