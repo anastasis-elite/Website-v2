@@ -68,24 +68,76 @@ function getDaysAgoDate(days: number) {
   return date.toISOString()
 }
 
+function getRelatedRow<T>(
+  value: T | T[] | null | undefined
+): T | null {
+  if (Array.isArray(value)) {
+    return value[0] ?? null
+  }
+
+  return value ?? null
+}
+
 function normalizeEntry(entry: MealEntry) {
-  const foodName = entry.food_name || entry.name || 'Food'
+  const food = getRelatedRow(entry.foods)
+  const servingOption = getRelatedRow(
+    entry.food_serving_options
+  )
+
+  const foodName =
+    food?.name ||
+    entry.meal_name ||
+    'Food'
+
   const servingLabel =
-    entry.serving_label ||
-    entry.serving_size ||
-    `${entry.serving_amount || ''} ${entry.unit || ''}`.trim() ||
+    servingOption?.label ||
+    entry.serving_unit ||
+    `${
+      entry.serving_amount || ''
+    } ${
+      servingOption?.unit || ''
+    }`.trim() ||
     'Serving'
 
   return {
-    key: `${foodName.toLowerCase()}::${servingLabel.toLowerCase()}`,
+    key: `${entry.food_id}::${
+      entry.serving_option_id || servingLabel.toLowerCase()
+    }`,
+
+    foodId: entry.food_id,
+
+    servingOptionId:
+      entry.serving_option_id || null,
+
+    mealName:
+      entry.meal_name || 'Meal',
+
     foodName,
     servingLabel,
-    servingAmount: entry.serving_amount || null,
-    unit: entry.unit || null,
-    calories: Number(entry.calories || 0),
-    protein: Number(entry.protein_g || 0),
-    carbs: Number(entry.carbs_g || 0),
-    fats: Number(entry.fat_g || entry.fats_g || 0),
+
+    servingAmount:
+      Number(entry.serving_amount || 1),
+
+    unit:
+      servingOption?.unit ||
+      entry.serving_unit ||
+      null,
+
+    calories: Number(
+      food?.calories || 0
+    ),
+
+    protein: Number(
+      food?.protein_g || 0
+    ),
+
+    carbs: Number(
+      food?.carbs_g || 0
+    ),
+
+    fats: Number(
+      food?.fat_g || 0
+    ),
   }
 }
 
@@ -246,7 +298,7 @@ export async function GET() {
                 suggestion.foodName
               )}&serving=${encodeURIComponent(
                 suggestion.servingLabel
-              )}`}
+              )}
               onClick={() =>
                 setFoodOpen(false)
               }
@@ -360,21 +412,27 @@ export async function GET() {
     since7Time.setDate(since7Time.getDate() - 7)
 
     const counts = new Map<
-      string,
-      {
-        foodName: string
-        servingLabel: string
-        servingAmount: number | null
-        unit: string | null
-        calories: number
-        protein: number
-        carbs: number
-        fats: number
-        frequency7: number
-        frequency30: number
-        lastLoggedAt: string
-      }
-    >()
+  string,
+  {
+    foodId: string
+    servingOptionId: string | null
+    mealName: string
+
+    foodName: string
+    servingLabel: string
+    servingAmount: number
+    unit: string | null
+
+    calories: number
+    protein: number
+    carbs: number
+    fats: number
+
+    frequency7: number
+    frequency30: number
+    lastLoggedAt: string
+  }
+>()
 
     for (const entry of usableEntries as MealEntry[]) {
       const dateString = entry.logged_at || entry.created_at
@@ -385,18 +443,27 @@ export async function GET() {
       const existing =
         counts.get(normalized.key) ||
         {
-          foodName: normalized.foodName,
-          servingLabel: normalized.servingLabel,
-          servingAmount: normalized.servingAmount,
-          unit: normalized.unit,
-          calories: normalized.calories,
-          protein: normalized.protein,
-          carbs: normalized.carbs,
-          fats: normalized.fats,
-          frequency7: 0,
-          frequency30: 0,
-          lastLoggedAt: dateString,
-        }
+  foodId: normalized.foodId,
+  servingOptionId:
+    normalized.servingOptionId,
+  mealName: normalized.mealName,
+
+  foodName: normalized.foodName,
+  servingLabel:
+    normalized.servingLabel,
+  servingAmount:
+    normalized.servingAmount,
+  unit: normalized.unit,
+
+  calories: normalized.calories,
+  protein: normalized.protein,
+  carbs: normalized.carbs,
+  fats: normalized.fats,
+
+  frequency7: 0,
+  frequency30: 0,
+  lastLoggedAt: dateString,
+}
 
       existing.frequency30 += 1
 
