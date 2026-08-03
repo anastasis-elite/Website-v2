@@ -60,19 +60,29 @@ function Ring({
   icon,
   label,
   detail,
+  href,
+  ariaLabel,
+  onClick,
+  expanded,
+  controls,
 }: {
   value: number
   icon: string
   label: string
   detail: string
+  href?: string
+  ariaLabel?: string
+  onClick?: () => void
+  expanded?: boolean
+  controls?: string
 }) {
   const safeValue = Math.max(
     0,
     Math.min(100, value)
   )
 
-  return (
-    <div className="ignite-ring-item">
+  const content = (
+    <>
       <div
         className="ignite-ring"
         style={
@@ -90,10 +100,64 @@ function Ring({
 
       <strong>{label}</strong>
       <small>{detail}</small>
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="ignite-ring-item"
+        aria-label={
+          ariaLabel ||
+          `Open ${label}`
+        }
+        style={{
+          color: 'inherit',
+          textDecoration: 'none',
+          cursor: 'pointer',
+        }}
+      >
+        {content}
+      </Link>
+    )
+  }
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className="ignite-ring-item"
+        onClick={onClick}
+        aria-label={
+          ariaLabel ||
+          `Open ${label}`
+        }
+        aria-expanded={expanded}
+        aria-controls={controls}
+        style={{
+          appearance: 'none',
+          WebkitAppearance: 'none',
+          border: 0,
+          background: 'transparent',
+          color: 'inherit',
+          padding: 0,
+          margin: 0,
+          font: 'inherit',
+          cursor: 'pointer',
+        }}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <div className="ignite-ring-item">
+      {content}
     </div>
   )
 }
-
 function HydrationRing({
   value,
   consumed,
