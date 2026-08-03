@@ -6,20 +6,43 @@ export const runtime = 'nodejs'
 
 type MealEntry = {
   id: string
-  client_id: string
-  food_name?: string | null
-  name?: string | null
-  serving_label?: string | null
-  serving_size?: string | null
+  nutrition_log_id: string
+  food_id: string
+  meal_name?: string | null
   serving_amount?: number | null
-  unit?: string | null
-  calories?: number | null
-  protein_g?: number | null
-  carbs_g?: number | null
-  fat_g?: number | null
-  fats_g?: number | null
-  logged_at?: string | null
+  serving_unit?: string | null
+  serving_option_id?: string | null
+  grams?: number | null
+  day_block?: string | null
   created_at?: string | null
+
+  foods?:
+    | {
+        name?: string | null
+        calories?: number | null
+        protein_g?: number | null
+        carbs_g?: number | null
+        fat_g?: number | null
+      }
+    | Array<{
+        name?: string | null
+        calories?: number | null
+        protein_g?: number | null
+        carbs_g?: number | null
+        fat_g?: number | null
+      }>
+    | null
+
+  food_serving_options?:
+    | {
+        label?: string | null
+        unit?: string | null
+      }
+    | Array<{
+        label?: string | null
+        unit?: string | null
+      }>
+    | null
 }
 
 function getTimeBlock(hour: number) {
