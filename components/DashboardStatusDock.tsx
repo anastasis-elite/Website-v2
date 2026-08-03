@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import DashboardAssessmentMiniCard from '@/components/DashboardAssessmentMiniCard'
-import WaterCup from '@/components/WaterCup'
+
 import CycleProgressOrb from '@/components/CycleProgressOrb'
+import WaterCup from '@/components/WaterCup'
 import { getFlameVisualState } from '@/lib/dashboard/getFlameVisualState'
 
 type Props = {
@@ -15,200 +15,285 @@ type Props = {
   monthlyCheckInDue?: boolean
 }
 
-export default function DashboardStatusDock({
-  client,
-  cycleStatus,
-  dailyPlan,
-  assessmentDueCount = 0,
-  monthlyCheckInDue = false,
-}: Props) {
+function getWorkoutHref(program?: string | null): string {
+  const supportedPrograms = ['ember', 'ignite', 'phoenix']
+
+  const requestedProgram = String(
+    program || 'ember',
+  ).toLowerCase()
+
+  const programTier = supportedPrograms.includes(
+    requestedProgram,
+  )
+    ? requestedProgram
+    : 'ember'
+
+  return `/dashboard/program/${programTier}/workout`
+}
+
+export default function DashboardStatusDock(
+  props: Props,
+) {
+  const {
+    client,
+    cycleStatus,
+    dailyPlan,
+  } = props
+
   const [cycleOpen, setCycleOpen] = useState(false)
-  const [mealOpen, setMealOpen] = useState(false)
   const [waterOpen, setWaterOpen] = useState(false)
-  const [assessmentOpen, setAssessmentOpen] = useState(false)
 
-  const [mealSuggestions, setMealSuggestions] = useState<any[]>([])
-  const [mealLoading, setMealLoading] = useState(false)
-
-  
   const dockRef = useRef<HTMLDivElement | null>(null)
-  
-  useEffect(() => {
-    if (!monthlyCheckInDue || !client?.client_id) return
-
-    const monthKey = new Date().toISOString().slice(0, 7)
-    const storageKey = `monthly-check-in-prompt:${client.client_id}:${monthKey}`
-    if (window.localStorage.getItem(storageKey)) return
-
-    window.localStorage.setItem(storageKey, 'shown')
-    setAssessmentOpen(true)
-    setCycleOpen(false)
-    setMealOpen(false)
-    setWaterOpen(false)
-  }, [client?.client_id, monthlyCheckInDue])
 
   useEffect(() => {
-  function handleClickOutside(event: MouseEvent | TouchEvent) {
-    if (
-      dockRef.current &&
-      !dockRef.current.contains(event.target as Node)
+    function handleClickOutside(
+      event: MouseEvent | TouchEvent,
     ) {
-      setCycleOpen(false)
-      setMealOpen(false)
-      setWaterOpen(false)
-      setAssessmentOpen(false)
+      if (
+        dockRef.current &&
+        !dockRef.current.contains(
+          event.target as Node,
+        )
+      ) {
+        setCycleOpen(false)
+        setWaterOpen(false)
+      }
     }
-  }
 
-  document.addEventListener('mousedown', handleClickOutside)
-  document.addEventListener('touchstart', handleClickOutside)
+    document.addEventListener(
+      'mousedown',
+      handleClickOutside,
+    )
 
-  return () => {
-    document.removeEventListener('mousedown', handleClickOutside)
-    document.removeEventListener('touchstart', handleClickOutside)
-  }
-}, [])
-  
-  const dailyRemaining = dailyPlan?.dailyRemaining || {}
-  const dailyTargets = dailyPlan?.dailyTargets || {}
-  const flameScore = Number(client?.flame_score || 10)
-  const visualState = getFlameVisualState(flameScore)
+    document.addEventListener(
+      'touchstart',
+      handleClickOutside,
+    )
 
-  const proteinRemaining = dailyRemaining.protein || 0
-  const carbsRemaining = dailyRemaining.carbs || 0
-  const fatsRemaining = dailyRemaining.fats || 0
-  const waterRemaining = dailyRemaining.water || 0
-  const waterTarget = dailyTargets.water || 1
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleClickOutside,
+      )
 
-  const [localWaterRemaining, setLocalWaterRemaining] =
-    useState<number>(waterRemaining)
+      document.removeEventListener(
+        'touchstart',
+        handleClickOutside,
+      )
+    }
+  }, [])
 
-  const waterPercent = Math.round(
-    ((waterTarget - localWaterRemaining) / waterTarget) * 100
+  const dailyRemaining =
+    dailyPlan?.dailyRemaining || {}
+
+  const dailyTargets =
+    dailyPlan?.dailyTargets || {}
+
+  const flameScore = Number(
+    client?.flame_score || 10,
   )
 
-  async function loadMealSuggestions() {
-    try {
-      setMealLoading(true)
+  const visualState =
+    getFlameVisualState(flameScore)
 
-      const res = await fetch('/api/nutrition/quick-add-suggestions')
-      const data = await res.json()
+  const proteinRemaining =
+    dailyRemaining.protein || 0
 
-      if (!res.ok) {
-        console.error('Meal suggestions failed:', data)
-        return
-      }
+  const carbsRemaining =
+    dailyRemaining.carbs || 0
 
-      setMealSuggestions(data.suggestions || [])
-    } catch (error) {
-      console.error('Meal suggestions error:', error)
-    } finally {
-      setMealLoading(false)
-    }
-  }
+  const fatsRemaining =
+    dailyRemaining.fats || 0
+
+  const waterRemaining =
+    dailyRemaining.water || 0
+
+  const waterTarget =
+    dailyTargets.water || 1
+
+  const [
+    localWaterRemaining,
+    setLocalWaterRemaining,
+  ] = useState<number>(
+    waterRemaining,
+  )
+
+  const waterPercent = Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(
+        ((waterTarget -
+          localWaterRemaining) /
+          waterTarget) *
+          100,
+      ),
+    ),
+  )
+
+  const workoutHref =
+    getWorkoutHref(client?.program)
 
   return (
-    <div ref={dockRef} className="dashboard-status-dock">
+    <div
+      ref={dockRef}
+      className="dashboard-status-dock"
+    >
       <div className="dashboard-status-dock-inner">
         <div
           style={flameStyle}
-          data-flame-visual-state={visualState}
+          data-flame-visual-state={
+            visualState
+          }
           title={`Flame state: ${visualState}`}
         >
-          <span aria-hidden="true">🔥</span>
-          <strong>{Math.round(flameScore)}%</strong>
-          <small>{visualState.replace('_', ' ')}</small>
+          <span aria-hidden="true">
+            🔥
+          </span>
+
+          <strong>
+            {Math.round(flameScore)}%
+          </strong>
+
+          <small>
+            {visualState.replaceAll(
+              '_',
+              ' ',
+            )}
+          </small>
         </div>
 
-        <div
+        <button
+          type="button"
+          aria-label="View cycle status"
+          title="View cycle status"
           onClick={() => {
-            setCycleOpen(!cycleOpen)
-            setMealOpen(false)
+            setCycleOpen(
+              (current) => !current,
+            )
+
             setWaterOpen(false)
-            setAssessmentOpen(false)
           }}
-          style={{ cursor: 'pointer' }}
+          style={orbButtonStyle}
         >
           <CycleProgressOrb
-            cycleDay={cycleStatus?.cycleDay}
-            typicalCycleLength={cycleStatus?.typicalCycleLength || 30}
-            phase={cycleStatus?.phase}
+            cycleDay={
+              cycleStatus?.cycleDay
+            }
+            typicalCycleLength={
+              cycleStatus
+                ?.typicalCycleLength ||
+              30
+            }
+            phase={
+              cycleStatus?.phase
+            }
           />
-        </div>
+        </button>
 
         <div style={miniTextStyle}>
-          <strong>{proteinRemaining}g</strong>
+          <strong>
+            {proteinRemaining}g
+          </strong>
+
           <span>protein</span>
         </div>
 
         <div style={miniTextStyle}>
-          <strong>{carbsRemaining}g</strong>
+          <strong>
+            {carbsRemaining}g
+          </strong>
+
           <span>carbs</span>
         </div>
 
         <div style={miniTextStyle}>
-          <strong>{fatsRemaining}g</strong>
+          <strong>
+            {fatsRemaining}g
+          </strong>
+
           <span>fats</span>
         </div>
 
-        <div
+        <button
+          type="button"
+          aria-label="Quick add water"
+          title="Quick add water"
           onClick={() => {
-            setWaterOpen(!waterOpen)
+            setWaterOpen(
+              (current) => !current,
+            )
+
             setCycleOpen(false)
-            setMealOpen(false)
-            setAssessmentOpen(false)
           }}
-          style={{ cursor: 'pointer' }}
+          style={orbButtonStyle}
         >
           <WaterCup
             percentFull={waterPercent}
-            ouncesRemaining={localWaterRemaining}
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={async () => {
-            const next = !mealOpen
-
-            setMealOpen(next)
-            setCycleOpen(false)
-            setWaterOpen(false)
-            setAssessmentOpen(false)
-
-            if (next) {
-              await loadMealSuggestions()
+            ouncesRemaining={
+              localWaterRemaining
             }
-          }}
-          style={actionCircleStyle}
-        >
-          +
+          />
         </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            setAssessmentOpen(!assessmentOpen)
-            setCycleOpen(false)
-            setMealOpen(false)
-            setWaterOpen(false)
-          }}
+        <Link
+          href="/dashboard/check-in"
+          aria-label="Open Daily Check-In"
+          title="Daily Check-In"
           style={actionCircleStyle}
         >
-          *
-        </button>
+          <span aria-hidden="true">
+            ✓
+          </span>
+        </Link>
 
+        <Link
+          href="/dashboard/nutrition"
+          aria-label="Open Food Log"
+          title="Food Log"
+          style={actionCircleStyle}
+        >
+          <span aria-hidden="true">
+            +
+          </span>
+        </Link>
+
+        <Link
+          href={workoutHref}
+          aria-label="Open Today’s Workout"
+          title="Today’s Workout"
+          style={actionCircleStyle}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              letterSpacing:
+                '0.04em',
+            }}
+          >
+            W
+          </span>
+        </Link>
       </div>
 
-      {cycleOpen && (
+      {cycleOpen ? (
         <div style={cyclePopupStyle}>
           <p style={bodyStyle}>
-            Cycle Day: {cycleStatus?.cycleDay || '—'} · Phase:{' '}
-            {cycleStatus?.phase || 'unknown'}
+            Cycle Day:{' '}
+            {cycleStatus?.cycleDay ||
+              '—'}{' '}
+            · Phase:{' '}
+            {cycleStatus?.phase ||
+              'unknown'}
           </p>
 
           {cycleStatus?.cycleDay >=
-            (cycleStatus?.typicalCycleLength || 30) * 3 && (
+          (cycleStatus
+            ?.typicalCycleLength ||
+            30) *
+            3 ? (
             <p
               style={{
                 ...bodyStyle,
@@ -216,109 +301,107 @@ export default function DashboardStatusDock({
                 marginTop: '10px',
               }}
             >
-              Your cycle appears significantly delayed. Consider whether
-              pregnancy testing or professional guidance may be appropriate.
+              Your cycle appears
+              significantly delayed.
+              Consider whether pregnancy
+              testing or professional
+              guidance may be appropriate.
             </p>
-          )}
+          ) : null}
 
           <div style={popupButtonRowStyle}>
-            <Link href="/dashboard/cycle" style={buttonStyle}>
+            <Link
+              href="/dashboard/cycle"
+              style={buttonStyle}
+            >
               Open Cycle
             </Link>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {waterOpen && (
-        <div data-water-popup="true" style={waterPopupStyle}>
-          <p style={bodyStyle}>Quick Add Water</p>
-
-          <div style={waterGridStyle}>
-            {[8, 12, 16, 24].map((oz) => (
-              <button
-                key={oz}
-                type="button"
-                style={buttonStyle}
-                onClick={async () => {
-                  const res = await fetch('/api/nutrition/add-water', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      clientId: client?.client_id,
-                      ounces: oz,
-                    }),
-                  })
-
-                  if (!res.ok) {
-                    console.error('Water add failed:', await res.json())
-                    return
-                  }
-
-                  setLocalWaterRemaining((prev: number) =>
-                    Math.max(0, prev - oz)
-                  )
-                  setWaterOpen(false)
-                }}
-              >
-                +{oz} oz
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {mealOpen && (
-        <div style={mealPopupStyle}>
+      {waterOpen ? (
+        <div
+          data-water-popup="true"
+          style={waterPopupStyle}
+        >
           <p style={bodyStyle}>
-            Remaining: {proteinRemaining}g protein · {carbsRemaining}g carbs ·{' '}
-            {fatsRemaining}g fats
+            Quick Add Water
           </p>
 
-          <div style={mealButtonGridStyle}>
-            {mealLoading ? (
-              <p style={bodyStyle}>Loading suggestions...</p>
-            ) : mealSuggestions.length > 0 ? (
-              mealSuggestions.map((meal, index) => (
+          <div style={waterGridStyle}>
+            {[8, 12, 16, 24].map(
+              (ounces) => (
                 <button
-                  key={`${meal.foodName}-${meal.servingLabel}-${index}`}
+                  key={ounces}
                   type="button"
                   style={buttonStyle}
-                  onClick={() => {
-                    console.log('Quick add meal selected:', meal)
+                  onClick={async () => {
+                    const response =
+                      await fetch(
+                        '/api/nutrition/add-water',
+                        {
+                          method:
+                            'POST',
+
+                          headers: {
+                            'Content-Type':
+                              'application/json',
+                          },
+
+                          body:
+                            JSON.stringify(
+                              {
+                                clientId:
+                                  client?.client_id,
+
+                                ounces,
+                              },
+                            ),
+                        },
+                      )
+
+                    if (
+                      !response.ok
+                    ) {
+                      console.error(
+                        'Water add failed:',
+                        await response.json(),
+                      )
+
+                      return
+                    }
+
+                    setLocalWaterRemaining(
+                      (
+                        previous,
+                      ) =>
+                        Math.max(
+                          0,
+                          previous -
+                            ounces,
+                        ),
+                    )
+
+                    setWaterOpen(false)
                   }}
                 >
-                  {meal.foodName}
-                  <br />
-                  <span
-                    style={{
-                      opacity: 0.72,
-                      fontSize: '0.78rem',
-                    }}
-                  >
-                    {meal.servingLabel}
-                  </span>
+                  +{ounces} oz
                 </button>
-              ))
-            ) : (
-              <p style={bodyStyle}>
-                No repeat meals found yet.
-              </p>
+              ),
             )}
+          </div>
 
-            <Link href="/dashboard/nutrition" style={buttonStyle}>
-              Open Nutrition Log
+          <div style={popupButtonRowStyle}>
+            <Link
+              href="/dashboard/nutrition"
+              style={buttonStyle}
+            >
+              Open Nutrition
             </Link>
           </div>
         </div>
-      )}
-
-      {assessmentOpen && (
-        <div style={assessmentPopupStyle}>
-          <DashboardAssessmentMiniCard dueCount={assessmentDueCount} />
-        </div>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -326,16 +409,40 @@ export default function DashboardStatusDock({
 const actionCircleStyle = {
   width: '38px',
   height: '38px',
+  flex: '0 0 38px',
   borderRadius: '999px',
-  border: '1px solid rgba(181,110,67,0.32)',
-  background: 'rgba(181,110,67,0.08)',
+
+  border:
+    '1px solid rgba(181,110,67,0.32)',
+
+  background:
+    'rgba(181,110,67,0.08)',
+
   color: '#f5f0e8',
+
   display: 'grid',
   placeItems: 'center',
+
   textDecoration: 'none',
+
   fontSize: '1.05rem',
-  cursor: 'pointer',
   fontFamily: 'inherit',
+
+  cursor: 'pointer',
+
+  transition:
+    'transform 0.16s ease, background 0.16s ease, border-color 0.16s ease',
+} as const
+
+const orbButtonStyle = {
+  display: 'block',
+  padding: 0,
+  margin: 0,
+  border: 'none',
+  background: 'transparent',
+  color: 'inherit',
+  font: 'inherit',
+  cursor: 'pointer',
 } as const
 
 const miniTextStyle = {
@@ -365,13 +472,20 @@ const bodyStyle = {
 } as const
 
 const buttonStyle = {
-  border: '1px solid rgba(181,110,67,0.28)',
+  border:
+    '1px solid rgba(181,110,67,0.28)',
+
   color: '#f5f0e8',
+
   padding: '10px 14px',
+
   textDecoration: 'none',
   borderRadius: '999px',
   fontWeight: 500,
-  background: 'rgba(181,110,67,0.055)',
+
+  background:
+    'rgba(181,110,67,0.055)',
+
   fontSize: '0.86rem',
   cursor: 'pointer',
   fontFamily: 'inherit',
@@ -383,12 +497,17 @@ const popupBaseStyle = {
   left: '58px',
   padding: '20px',
   borderRadius: '26px',
+
   background:
     'linear-gradient(145deg, rgba(12,12,12,0.9), rgba(5,5,5,0.74))',
+
   backdropFilter: 'blur(24px)',
-  WebkitBackdropFilter: 'blur(24px)',
+  WebkitBackdropFilter:
+    'blur(24px)',
+
   boxShadow:
     '0 28px 90px rgba(0,0,0,0.42), inset 0 0 34px rgba(255,255,255,0.02)',
+
   zIndex: 95,
 } as const
 
@@ -404,20 +523,6 @@ const waterPopupStyle = {
   width: '220px',
 } as const
 
-const mealPopupStyle = {
-  ...popupBaseStyle,
-  top: '230px',
-  width: 'min(92vw, 320px)',
-} as const
-
-const assessmentPopupStyle = {
-  position: 'absolute',
-  left: '74px',
-  top: '120px',
-  width: 'min(92vw, 420px)',
-  zIndex: 90,
-} as const
-
 const popupButtonRowStyle = {
   display: 'flex',
   gap: '10px',
@@ -427,13 +532,8 @@ const popupButtonRowStyle = {
 
 const waterGridStyle = {
   display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
+  gridTemplateColumns:
+    '1fr 1fr',
   gap: '10px',
   marginTop: '12px',
-} as const
-
-const mealButtonGridStyle = {
-  display: 'grid',
-  gap: '10px',
-  marginTop: '14px',
 } as const
