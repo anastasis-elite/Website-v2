@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { hasCurrentLegalAcceptance } from '@/lib/legal/hasCurrentLegalAcceptance'
 import ClientDashboardNav from '@/components/navigation/ClientDashboardNav'
 import { isClientOnboardingComplete } from '@/lib/dashboard/isClientOnboardingComplete'
+import { TutorialProvider } from '@/components/tutorial/TutorialProvider'
+import TutorialDevPanel from '@/components/tutorial/TutorialDevPanel'
 
 export default async function DashboardLayout({
   children,
@@ -17,5 +19,13 @@ export default async function DashboardLayout({
   }
 
   const program=(['ember','ignite','phoenix'].includes(client.program)?client.program:'ignite') as 'ember'|'ignite'|'phoenix'
-  return <div className="dashboard-client-shell">{children}<ClientDashboardNav program={program}/></div>
+  return (
+    <TutorialProvider>
+      <div className="dashboard-client-shell">
+        {children}
+        <ClientDashboardNav program={program}/>
+        <TutorialDevPanel/>
+      </div>
+    </TutorialProvider>
+  )
 }
