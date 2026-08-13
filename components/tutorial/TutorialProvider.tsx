@@ -4,11 +4,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
 import {
+  CORE_ONBOARDING_TUTORIAL_ID,
   getTutorialDefinition,
   hasTutorialDefinition,
 } from '@/lib/tutorial/registry'
@@ -30,6 +32,8 @@ interface TutorialContextValue {
   status: TutorialStatus
   hasStarted: boolean
   isCompleted: boolean
+  isHydrating: boolean
+  persistenceError: string | null
   startTutorial: (tutorialId: TutorialId) => void
   nextStep: () => void
   goToStep: (stepId: TutorialStepId) => void
@@ -66,142 +70,206 @@ function requireTutorial(tutorialId: TutorialId) {
   return tutorial
 }
 
+async function requestTutorialProgress(
+  tutorialId: TutorialId,
+  init?: RequestInit
+): Promise<TutorialProgress | null> {
+  const url = init
+    ? '/api/tutorial-progress'
+    : `/api/tutorial-progress?tutorialId=${encodeURIComponent(tutorialId)}`
+  const response = await fetch(url, {
+    ...init,
+    cache: 'no-store',
+    headers: {
+      ...(init?.headers ?? {}),
+      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+    },
+  })
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: string } | null
+    throw new Error(body?.error ?? 'Tutorial progress request failed.')
+  }
+
+  const body = (await response.json()) as { progress: TutorialProgress | null }
+  return body.progress
+}
+
 export function TutorialProvider({ children }: { children: ReactNode }) {
   const [activeTutorialId, setActiveTutorialId] = useState<TutorialId | null>(null)
   const [progressByTutorialId, setProgressByTutorialId] = useState<
     Record<TutorialId, TutorialProgress>
   >({})
+  const [isHydrating, setIsHydrating] = useState(true)
+  const [persistenceError, setPersistenceError] = useState<string | null>(null)
+
+  const applyProgress = useCallback((progress: TutorialProgress) => {
+    setProgressByTutorialId((current) => ({
+      ...current,
+      [progress.tutorialId]: progress,
+    }))
+
+    setActiveTutorialId((currentActiveTutorialId) => {
+      if (progress.status === 'in_progress') return progress.tutorialId
+      if (currentActiveTutorialId === progress.tutorialId) return null
+      return currentActiveTutorialId
+    })
+  }, [])
+
+  const persistProgress = useCallback(
+    async (
+      tutorialId: TutorialId,
+      body: {
+        action: 'start' | 'step' | 'complete' | 'reset'
+        currentStepId?: TutorialStepId | null
+      }
+    ) => {
+      const progress = await requestTutorialProgress(tutorialId, {
+        method: 'POST',
+        body: JSON.stringify({ tutorialId, ...body }),
+      })
+
+      if (progress) applyProgress(progress)
+      return progress
+    },
+    [applyProgress]
+  )
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function hydrateTutorialProgress() {
+      try {
+        const progress = await requestTutorialProgress(CORE_ONBOARDING_TUTORIAL_ID)
+        if (!isMounted) return
+
+        setPersistenceError(null)
+        setProgressByTutorialId((current) => ({
+          ...current,
+          [CORE_ONBOARDING_TUTORIAL_ID]:
+            progress ?? createNotStartedProgress(CORE_ONBOARDING_TUTORIAL_ID),
+        }))
+        setActiveTutorialId(
+          progress?.status === 'in_progress' ? progress.tutorialId : null
+        )
+      } catch (error) {
+        if (!isMounted) return
+        console.error('TUTORIAL PROGRESS HYDRATION ERROR:', error)
+        setPersistenceError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load tutorial progress.'
+        )
+      } finally {
+        if (isMounted) setIsHydrating(false)
+      }
+    }
+
+    hydrateTutorialProgress()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const startTutorial = useCallback((tutorialId: TutorialId) => {
     const tutorial = requireTutorial(tutorialId)
 
-    setActiveTutorialId(tutorialId)
-    setProgressByTutorialId((current) => {
-      const existing = current[tutorialId]
-      if (existing?.status === 'completed') return current
+    if (isHydrating) return
+    if (progressByTutorialId[tutorialId]?.status === 'completed') return
 
-      const timestamp = nowIso()
-      return {
-        ...current,
-        [tutorialId]: {
-          tutorialId,
-          status: 'in_progress',
-          currentStepId: existing?.currentStepId ?? getInitialStepId(tutorial),
-          startedAt: existing?.startedAt ?? timestamp,
-          completedAt: null,
-          updatedAt: timestamp,
-        },
-      }
+    persistProgress(tutorialId, {
+      action: 'start',
+      currentStepId: getInitialStepId(tutorial),
+    }).catch((error) => {
+      console.error('TUTORIAL START ERROR:', error)
+      setPersistenceError(
+        error instanceof Error ? error.message : 'Unable to start tutorial.'
+      )
     })
-  }, [])
+  }, [isHydrating, persistProgress, progressByTutorialId])
 
   const completeTutorial = useCallback((tutorialId?: TutorialId) => {
     const targetTutorialId = tutorialId ?? activeTutorialId
     if (!targetTutorialId) return
-    requireTutorial(targetTutorialId)
+    const tutorial = requireTutorial(targetTutorialId)
 
-    setActiveTutorialId(targetTutorialId)
-    setProgressByTutorialId((current) => {
-      const timestamp = nowIso()
-      const existing =
-        current[targetTutorialId] ?? createNotStartedProgress(targetTutorialId)
-
-      return {
-        ...current,
-        [targetTutorialId]: {
-          ...existing,
-          status: 'completed',
-          completedAt: existing.completedAt ?? timestamp,
-          updatedAt: timestamp,
-        },
-      }
+    persistProgress(targetTutorialId, {
+      action: 'complete',
+      currentStepId:
+        progressByTutorialId[targetTutorialId]?.currentStepId ??
+        tutorial.steps[tutorial.steps.length - 1]?.stepId ??
+        null,
+    }).catch((error) => {
+      console.error('TUTORIAL COMPLETE ERROR:', error)
+      setPersistenceError(
+        error instanceof Error ? error.message : 'Unable to complete tutorial.'
+      )
     })
-  }, [activeTutorialId])
+  }, [activeTutorialId, persistProgress, progressByTutorialId])
 
   const resetTutorial = useCallback((tutorialId?: TutorialId) => {
+    if (process.env.NODE_ENV !== 'development') return
+
     const targetTutorialId = tutorialId ?? activeTutorialId
     if (!targetTutorialId) return
     requireTutorial(targetTutorialId)
 
-    setActiveTutorialId(targetTutorialId)
-    setProgressByTutorialId((current) => ({
-      ...current,
-      [targetTutorialId]: createNotStartedProgress(targetTutorialId),
-    }))
-  }, [activeTutorialId])
+    persistProgress(targetTutorialId, { action: 'reset' }).catch((error) => {
+      console.error('TUTORIAL RESET ERROR:', error)
+      setPersistenceError(
+        error instanceof Error ? error.message : 'Unable to reset tutorial.'
+      )
+    })
+  }, [activeTutorialId, persistProgress])
 
   const goToStep = useCallback((stepId: TutorialStepId) => {
-    setProgressByTutorialId((current) => {
-      if (!activeTutorialId) return current
+    if (!activeTutorialId) return
 
-      const tutorial = requireTutorial(activeTutorialId)
-      if (!tutorial.steps.some((step) => step.stepId === stepId)) {
-        throw new Error(
-          `Step "${stepId}" is not registered for tutorial "${activeTutorialId}".`
-        )
-      }
+    const tutorial = requireTutorial(activeTutorialId)
+    if (!tutorial.steps.some((step) => step.stepId === stepId)) {
+      throw new Error(
+        `Step "${stepId}" is not registered for tutorial "${activeTutorialId}".`
+      )
+    }
 
-      const existing =
-        current[activeTutorialId] ?? createNotStartedProgress(activeTutorialId)
-      const timestamp = nowIso()
-
-      return {
-        ...current,
-        [activeTutorialId]: {
-          ...existing,
-          status: 'in_progress',
-          currentStepId: stepId,
-          startedAt: existing.startedAt ?? timestamp,
-          completedAt: null,
-          updatedAt: timestamp,
-        },
-      }
+    persistProgress(activeTutorialId, {
+      action: 'step',
+      currentStepId: stepId,
+    }).catch((error) => {
+      console.error('TUTORIAL STEP ERROR:', error)
+      setPersistenceError(
+        error instanceof Error ? error.message : 'Unable to save tutorial step.'
+      )
     })
-  }, [activeTutorialId])
+  }, [activeTutorialId, persistProgress])
 
   const nextStep = useCallback(() => {
-    setProgressByTutorialId((current) => {
-      if (!activeTutorialId) return current
+    if (!activeTutorialId) return
 
-      const tutorial = requireTutorial(activeTutorialId)
-      const existing =
-        current[activeTutorialId] ?? createNotStartedProgress(activeTutorialId)
+    const tutorial = requireTutorial(activeTutorialId)
+    const existing =
+      progressByTutorialId[activeTutorialId] ?? createNotStartedProgress(activeTutorialId)
 
-      if (existing.status === 'completed') return current
+    if (existing.status === 'completed') return
 
-      const currentIndex = tutorial.steps.findIndex(
-        (step) => step.stepId === existing.currentStepId
+    const currentIndex = tutorial.steps.findIndex(
+      (step) => step.stepId === existing.currentStepId
+    )
+    const nextIndex = currentIndex < 0 ? 0 : currentIndex + 1
+    const nextStepId = tutorial.steps[nextIndex]?.stepId
+
+    const action = nextStepId ? 'step' : 'complete'
+    persistProgress(activeTutorialId, {
+      action,
+      currentStepId: nextStepId ?? existing.currentStepId,
+    }).catch((error) => {
+      console.error('TUTORIAL NEXT STEP ERROR:', error)
+      setPersistenceError(
+        error instanceof Error ? error.message : 'Unable to save tutorial progress.'
       )
-      const nextIndex = currentIndex < 0 ? 0 : currentIndex + 1
-      const nextStepId = tutorial.steps[nextIndex]?.stepId
-
-      if (!nextStepId) {
-        const timestamp = nowIso()
-        return {
-          ...current,
-          [activeTutorialId]: {
-            ...existing,
-            status: 'completed',
-            completedAt: existing.completedAt ?? timestamp,
-            updatedAt: timestamp,
-          },
-        }
-      }
-
-      const timestamp = nowIso()
-      return {
-        ...current,
-        [activeTutorialId]: {
-          ...existing,
-          status: 'in_progress',
-          currentStepId: nextStepId,
-          startedAt: existing.startedAt ?? timestamp,
-          completedAt: null,
-          updatedAt: timestamp,
-        },
-      }
     })
-  }, [activeTutorialId])
+  }, [activeTutorialId, persistProgress, progressByTutorialId])
 
   const value = useMemo<TutorialContextValue>(() => {
     const activeTutorial =
@@ -230,6 +298,8 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
       status,
       hasStarted: status !== 'not_started',
       isCompleted: status === 'completed',
+      isHydrating,
+      persistenceError,
       startTutorial,
       nextStep,
       goToStep,
@@ -240,7 +310,9 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     activeTutorialId,
     completeTutorial,
     goToStep,
+    isHydrating,
     nextStep,
+    persistenceError,
     progressByTutorialId,
     resetTutorial,
     startTutorial,

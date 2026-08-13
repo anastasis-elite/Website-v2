@@ -32,12 +32,14 @@ export default function TutorialDevPanel() {
       <div style={{ display: 'grid', gap: 2, color: '#c9b7ab' }}>
         <span>ID: {tutorial.activeTutorialId ?? 'none'}</span>
         <span>Status: {tutorial.status}</span>
+        <span>Hydrating: {tutorial.isHydrating ? 'yes' : 'no'}</span>
         <span>
           Step:{' '}
           {tutorial.currentStep
             ? `${tutorial.currentStepIndex + 1}. ${tutorial.currentStep.stepId}`
             : 'none'}
         </span>
+        {tutorial.persistenceError && <span>Error: {tutorial.persistenceError}</span>}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
         <button type="button" onClick={() => tutorial.startTutorial(CORE_ONBOARDING_TUTORIAL_ID)}>
