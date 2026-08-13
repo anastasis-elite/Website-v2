@@ -18,6 +18,12 @@ interface TutorialProgressRequestBody {
   currentStepId?: TutorialStepId | null
 }
 
+function logTutorialDebug(message: string, details?: Record<string, unknown>) {
+  if (process.env.NODE_ENV === 'development') {
+    console.info(`[tutorial] ${message}`, details ?? {})
+  }
+}
+
 function getFirstStepId(tutorialId: TutorialId) {
   return getTutorialDefinition(tutorialId)?.steps[0]?.stepId ?? null
 }
@@ -49,8 +55,18 @@ export async function GET(request: Request) {
 
     if (userError) throw userError
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    logTutorialDebug('authenticated user resolved', {
+      tutorialId,
+      userId: user.id,
+      method: 'GET',
+    })
 
     const progress = await getTutorialProgress(supabase, user.id, tutorialId)
+    logTutorialDebug('progress record status', {
+      tutorialId,
+      status: progress?.status ?? 'missing',
+      currentStepId: progress?.currentStepId ?? null,
+    })
     return NextResponse.json({ progress })
   } catch (error) {
     console.error('TUTORIAL PROGRESS READ ERROR:', error)
@@ -95,6 +111,12 @@ export async function POST(request: Request) {
 
     if (userError) throw userError
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    logTutorialDebug('authenticated user resolved', {
+      tutorialId,
+      userId: user.id,
+      method: 'POST',
+      action,
+    })
 
     let progress
     if (action === 'start') {
@@ -125,6 +147,12 @@ export async function POST(request: Request) {
       progress = await resetTutorialProgress(supabase, user.id, tutorialId)
     }
 
+    logTutorialDebug('progress record status', {
+      tutorialId,
+      action,
+      status: progress?.status ?? null,
+      currentStepId: progress?.currentStepId ?? null,
+    })
     return NextResponse.json({ progress })
   } catch (error) {
     console.error('TUTORIAL PROGRESS WRITE ERROR:', error)

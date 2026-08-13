@@ -5,6 +5,7 @@ import ClientDashboardNav from '@/components/navigation/ClientDashboardNav'
 import { isClientOnboardingComplete } from '@/lib/dashboard/isClientOnboardingComplete'
 import { TutorialProvider } from '@/components/tutorial/TutorialProvider'
 import TutorialDevPanel from '@/components/tutorial/TutorialDevPanel'
+import TutorialRenderer from '@/components/tutorial/TutorialRenderer'
 
 export default async function DashboardLayout({
   children,
@@ -21,9 +22,10 @@ export default async function DashboardLayout({
   const program=(['ember','ignite','phoenix'].includes(client.program)?client.program:'ignite') as 'ember'|'ignite'|'phoenix'
   return (
     <TutorialProvider>
-      <div className="dashboard-client-shell">
+      <div className="dashboard-client-shell" data-tutorial-id="dashboard-shell">
         {children}
         <ClientDashboardNav program={program}/>
+        <TutorialRenderer/>
         <TutorialDevPanel/>
       </div>
     </TutorialProvider>

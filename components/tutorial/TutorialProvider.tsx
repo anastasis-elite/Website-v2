@@ -63,6 +63,12 @@ function getInitialStepId(tutorial: TutorialDefinition) {
   return tutorial.steps[0]?.stepId ?? null
 }
 
+function logTutorialDebug(message: string, details?: Record<string, unknown>) {
+  if (process.env.NODE_ENV === 'development') {
+    console.info(`[tutorial] ${message}`, details ?? {})
+  }
+}
+
 function requireTutorial(tutorialId: TutorialId) {
   const tutorial = getTutorialDefinition(tutorialId)
   if (!tutorial) {
@@ -145,6 +151,12 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         if (!isMounted) return
 
         const decision = getTutorialHydrationDecision(progress)
+        logTutorialDebug('progress hydrated', {
+          tutorialId: CORE_ONBOARDING_TUTORIAL_ID,
+          status: progress?.status ?? 'missing',
+          currentStepId: progress?.currentStepId ?? null,
+          eligibility: decision,
+        })
 
         if (decision === 'skip' && progress) {
           setPersistenceError(null)
@@ -163,6 +175,10 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
             [CORE_ONBOARDING_TUTORIAL_ID]: progress,
           }))
           setActiveTutorialId(progress.tutorialId)
+          logTutorialDebug('tutorial resumed', {
+            tutorialId: progress.tutorialId,
+            currentStepId: progress.currentStepId,
+          })
           return
         }
 
@@ -184,6 +200,11 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         setActiveTutorialId(
           startedProgress?.status === 'in_progress' ? startedProgress.tutorialId : null
         )
+        logTutorialDebug('tutorial started', {
+          tutorialId: startedProgress?.tutorialId ?? CORE_ONBOARDING_TUTORIAL_ID,
+          status: startedProgress?.status ?? null,
+          currentStepId: startedProgress?.currentStepId ?? null,
+        })
       } catch (error) {
         if (!isMounted) return
         console.error('TUTORIAL PROGRESS HYDRATION ERROR:', error)
@@ -311,11 +332,17 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     const activeProgress = activeTutorialId
       ? progressByTutorialId[activeTutorialId] ?? null
       : null
-    const currentStepIndex =
+    const persistedStepIndex =
       activeTutorial && activeProgress?.currentStepId
         ? activeTutorial.steps.findIndex(
             (step) => step.stepId === activeProgress.currentStepId
           )
+        : -1
+    const currentStepIndex =
+      activeTutorial && activeProgress?.status === 'in_progress'
+        ? persistedStepIndex >= 0
+          ? persistedStepIndex
+          : 0
         : -1
     const currentStep =
       currentStepIndex >= 0 ? activeTutorial?.steps[currentStepIndex] ?? null : null
