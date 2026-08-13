@@ -14,6 +14,7 @@ import {
   getTutorialDefinition,
   hasTutorialDefinition,
 } from '@/lib/tutorial/registry'
+import { getTutorialHydrationDecision } from '@/lib/tutorial/launchPolicy'
 import type {
   TutorialDefinition,
   TutorialId,
@@ -143,14 +144,45 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         const progress = await requestTutorialProgress(CORE_ONBOARDING_TUTORIAL_ID)
         if (!isMounted) return
 
+        const decision = getTutorialHydrationDecision(progress)
+
+        if (decision === 'skip' && progress) {
+          setPersistenceError(null)
+          setProgressByTutorialId((current) => ({
+            ...current,
+            [CORE_ONBOARDING_TUTORIAL_ID]: progress,
+          }))
+          setActiveTutorialId(null)
+          return
+        }
+
+        if (decision === 'resume' && progress) {
+          setPersistenceError(null)
+          setProgressByTutorialId((current) => ({
+            ...current,
+            [CORE_ONBOARDING_TUTORIAL_ID]: progress,
+          }))
+          setActiveTutorialId(progress.tutorialId)
+          return
+        }
+
+        const startedProgress = await requestTutorialProgress(CORE_ONBOARDING_TUTORIAL_ID, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'start',
+            tutorialId: CORE_ONBOARDING_TUTORIAL_ID,
+          }),
+        })
+        if (!isMounted) return
+
         setPersistenceError(null)
         setProgressByTutorialId((current) => ({
           ...current,
           [CORE_ONBOARDING_TUTORIAL_ID]:
-            progress ?? createNotStartedProgress(CORE_ONBOARDING_TUTORIAL_ID),
+            startedProgress ?? createNotStartedProgress(CORE_ONBOARDING_TUTORIAL_ID),
         }))
         setActiveTutorialId(
-          progress?.status === 'in_progress' ? progress.tutorialId : null
+          startedProgress?.status === 'in_progress' ? startedProgress.tutorialId : null
         )
       } catch (error) {
         if (!isMounted) return
