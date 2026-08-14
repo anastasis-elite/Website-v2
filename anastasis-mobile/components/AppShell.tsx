@@ -1,6 +1,13 @@
 import type { ReactNode } from 'react'
-import { SafeAreaView, ScrollView, StyleSheet, View } from 'react-native'
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native'
 
+import { useProtectedSession } from '../lib/auth'
 import { colors, spacing } from '../lib/theme'
 import BottomNav from './BottomNav'
 
@@ -23,6 +30,18 @@ export default function AppShell({
   active,
   showNav = true,
 }: Props) {
+  const { loading, session } = useProtectedSession()
+
+  if (loading || !session) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" />
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
@@ -51,5 +70,10 @@ const styles = StyleSheet.create({
   },
   withNav: {
     paddingBottom: spacing.navBottom,
+  },
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })

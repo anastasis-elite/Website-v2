@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, View, type DimensionValue } from 'react-native'
 
 import { colors, radii } from '../lib/theme'
 
@@ -11,7 +11,7 @@ export default function ProgressBar({
   percent,
   color = colors.copper,
 }: Props) {
-  const width = `${Math.min(100, Math.max(0, percent))}%`
+  const width = `${Math.min(100, Math.max(0, percent))}%` as DimensionValue
 
   return (
     <View style={styles.track}>

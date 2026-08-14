@@ -8,7 +8,14 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "concierge",
+          "color": "#E66B38"
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,
@@ -19,10 +26,10 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "single"
     },
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": false
     }
   }
 }

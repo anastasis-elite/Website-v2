@@ -10,43 +10,107 @@ export type MacroProgress = {
   target: number
   consumed: number
   remaining: number
+  percent: number
 }
 
-export type MobileDashboardData = {
-  client: {
+export type MobileDailyAction = {
+  id: 'water' | 'nutrition' | 'check-in' | 'workout' | 'recovery'
+  label: string
+  status: 'complete' | 'urgent' | 'active' | 'upcoming'
+  progress: number
+  detail: string
+  href: string
+  kind: 'quick' | 'route'
+  required: boolean
+  primary?: boolean
+}
+
+export type MobileDailyState = {
+  engineVersion: string
+  generatedAt: string
+  user: {
+    id: string
     clientId: string
-    program: string
-    flameScore: number
+    name: string
+    program: 'ember' | 'ignite' | 'phoenix'
+    goal: string | null
   }
-  rhythm: {
-    phaseName: string
-    message: string
+  currentBlock: 'morning' | 'midday' | 'evening'
+  summary: {
+    title: string
+    body: string
+    adjusted: boolean
+    adjustmentReason: string | null
+    alert: string | null
   }
-  insight: {
-    concise?: string
-    reasoning?: string
-    observation?: string
-    meaning?: string
-    identityShift?: string
-    beliefChallenge?: string
-    nextStep?: string
-  } | null
-  macros: {
+  hydration: MacroProgress & {
+    status: string
+    prompt: string
+    recoverySupportNote: string
+  }
+  nutrition: {
+    status: 'known' | 'needs_input'
+    calories: MacroProgress
     protein: MacroProgress
     carbs: MacroProgress
     fats: MacroProgress
-    calories: MacroProgress
-    water: MacroProgress
+    remainingTargets: {
+      calories: number
+      protein: number
+      carbs: number
+      fats: number
+      water: number
+    }
+    suggestions: string[]
+    preWorkoutFuelPrompt: string
   }
-  cycle: {
-    day: number | null
-    phase: string | null
-    typicalCycleLength: number
+  workout: {
+    assigned: boolean
+    completed: boolean
+    title: string
+    type: string
+    durationMinutes: number | null
+    canTrain: boolean
+    adjustmentLevel: string
+    intensityTarget: string
   }
-  assessmentDueCount: number
+  dailyCheckIn: {
+    dailyCompleted: boolean
+    monthlyDueCount: number
+    completionPercent: number
+  }
+  recoveryAction: {
+    completed: boolean
+    target: number
+    actions: Array<{ id: string; label: string; minutes?: number }>
+  }
+  execution: {
+    score: number
+    streak: number
+    streakEligible: boolean
+    completedActions: MobileDailyAction[]
+    adjustedActions: string[]
+  }
+  priorities: string[]
+  nextAction: MobileDailyAction
+  actions: MobileDailyAction[]
+  dayComplete: boolean
+  closure: {
+    title: string
+    body: string
+    next: string | null
+  } | null
+  alerts: string[]
+  presentation: {
+    tier: 'ember' | 'ignite' | 'phoenix'
+    complexity: 'minimal' | 'guided' | 'direct'
+    maxTasksPerBlock: number
+    showTrends: boolean
+    showInsight: boolean
+  }
 }
 
-export async function getMobileDashboard(): Promise<MobileDashboardData> {
+async function getAccessToken() {
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -55,11 +119,19 @@ export async function getMobileDashboard(): Promise<MobileDashboardData> {
     throw new Error('No authenticated session')
   }
 
-  const response = await fetch(`${apiUrl}/api/mobile/dashboard`, {
-    method: 'GET',
+  return session.access_token
+}
+
+async function mobileFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = await getAccessToken()
+  const response = await fetch(`${apiUrl}${path}`, {
+    ...init,
+    method: init?.method || 'GET',
     headers: {
-      Authorization: `Bearer ${session.access_token}`,
+      ...(init?.headers || {}),
+      Authorization: `Bearer ${token}`,
       Accept: 'application/json',
+      'Content-Type': 'application/json',
     },
   })
 
@@ -67,9 +139,30 @@ export async function getMobileDashboard(): Promise<MobileDashboardData> {
 
   if (!response.ok) {
     throw new Error(
-      payload?.error || 'The dashboard could not be loaded.'
+      payload?.error || 'The mobile request could not be completed.',
     )
   }
 
-  return payload as MobileDashboardData
+  return payload as T
+}
+
+export async function getMobileDailyState() {
+  return mobileFetch<MobileDailyState>('/api/mobile/dashboard')
+}
+
+export async function addWater(ounces = 8) {
+  return mobileFetch<{ success: true }>('/api/mobile/actions/water', {
+    method: 'POST',
+    body: JSON.stringify({ ounces }),
+  })
+}
+
+export async function completeRecoveryAction() {
+  return mobileFetch<{ success: true }>('/api/mobile/actions/recovery', {
+    method: 'POST',
+    body: JSON.stringify({
+      activityType: 'Breathing reset',
+      minutes: 5,
+    }),
+  })
 }

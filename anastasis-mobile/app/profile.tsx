@@ -1,5 +1,6 @@
 import { router } from 'expo-router'
-import { StyleSheet, Text, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { Alert, StyleSheet, Text, View } from 'react-native'
 
 import AOSButton from '../components/AOSButton'
 import AOSCard from '../components/AOSCard'
@@ -7,6 +8,7 @@ import AppShell from '../components/AppShell'
 import MetricCard from '../components/MetricCard'
 import SectionHeader from '../components/SectionHeader'
 import { mockDashboard } from '../lib/mockData'
+import { scheduleTestConciergeNotification } from '../lib/notifications'
 import { colors } from '../lib/theme'
 import { supabase } from '../lib/supabase'
 
@@ -19,9 +21,31 @@ const rows = [
 ]
 
 export default function ProfileScreen() {
+  const [email, setEmail] = useState(mockDashboard.client.email)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setEmail(data.user.email)
+    })
+  }, [])
+
   async function signOut() {
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: 'local' })
     router.replace('/login')
+  }
+
+  async function testNotification() {
+    try {
+      await scheduleTestConciergeNotification()
+      Alert.alert('Notification scheduled', 'A test prompt will arrive shortly.')
+    } catch (error) {
+      Alert.alert(
+        'Notification unavailable',
+        error instanceof Error
+          ? error.message
+          : 'Unable to schedule a notification.',
+      )
+    }
   }
 
   return (
@@ -29,7 +53,7 @@ export default function ProfileScreen() {
       <SectionHeader
         eyebrow="Account"
         title={`${mockDashboard.client.name} ${mockDashboard.flame.icon}`}
-        copy={`${mockDashboard.client.program} program · ${mockDashboard.client.email}`}
+        copy={`${mockDashboard.client.program} program · ${email}`}
       />
 
       <View style={styles.metricGrid}>
@@ -72,6 +96,11 @@ export default function ProfileScreen() {
           Personal info, security, notification, and billing controls are
           represented here visually. Live profile editing is Phase 2.
         </Text>
+        <View style={styles.signOut}>
+          <AOSButton variant="secondary" onPress={testNotification}>
+            Test Notification
+          </AOSButton>
+        </View>
         <View style={styles.signOut}>
           <AOSButton variant="danger" onPress={signOut}>
             Log Out
