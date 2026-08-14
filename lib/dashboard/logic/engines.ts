@@ -8,6 +8,7 @@ import { runWorkoutOS } from '@/lib/workout-os/runWorkoutOS'
 import type { CapacityDose,GoalObjective,StructuralFilter } from '@/lib/workout-os/types'
 import { getClientTimeZone } from '@/lib/timezone'
 import { getWorkoutForToday, workoutFallbackAdjustmentLevel } from '@/lib/workout/getWorkoutForToday'
+import { getStreakRequirementDestinations } from '@/lib/dashboard/logic/streakRequirementDestinations'
 
 export function numeric(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -369,5 +370,5 @@ export function runFlameExecutionEngine({ inputs, hydration, nutrition, workoutD
   for(const row of inputs.executionHistory){if(!row.streak_eligible)break;priorStreak++}
   const existingStreak=priorStreak+(streakEligible?1:0)
   const resetMessage=inputs.missedDayCount>=4?'You’re not behind. Let’s restart with one simple step today. If you need support, contact your coach.':inputs.missedDayCount>=1?'Today’s streak uses a smaller, right-sized plan.':null
-  return { dailyScore: score, state, visualIntensity: Math.max(.2, score / 100), streak: existingStreak, streakEligible, completionMessage: messages[index], requirements:{date:inputs.date,programTier:inputs.program,capacityStatus:capacity.status,missedDayCount:inputs.missedDayCount,requiredItems,completedItems,completionScore:score,streakEligible,resetMessage} }
+  return { dailyScore: score, state, visualIntensity: Math.max(.2, score / 100), streak: existingStreak, streakEligible, completionMessage: messages[index], requirements:{date:inputs.date,programTier:inputs.program,capacityStatus:capacity.status,missedDayCount:inputs.missedDayCount,requiredItems,completedItems,itemDestinations:getStreakRequirementDestinations(inputs.program),completionScore:score,streakEligible,resetMessage} }
 }
