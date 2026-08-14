@@ -9,8 +9,10 @@ import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import { getEmberDashboardData } from '@/lib/dashboard/ember/getEmberDashboardData'
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
+import DashboardProgressLinks from '@/components/program-dashboard/DashboardProgressLinks'
 import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
 import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
+import HydrationQuickAdd from '@/components/hydration/HydrationQuickAdd'
 import {
   useAssessmentStatus,
   useClientDashboardData,
@@ -137,9 +139,38 @@ export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput })
           <article className="ember-panel ember-water-card">
             <p className="ember-panel-label">Water</p>
             <div className="ember-water-visuals">
-              <div className="ember-progress-ring" style={{ '--progress': `${hydration.percent * 3.6}deg` } as CSSProperties}>
-                <div><strong>{Math.round(data.water.consumed)}</strong><span>oz</span></div>
-              </div>
+              <HydrationQuickAdd
+                clientId={data.clientId}
+                consumed={data.water.consumed}
+                target={data.water.target}
+                defaultOunces={data.water.increment}
+                minimumOunces={4}
+                maximumOunces={64}
+                stepOunces={4}
+                onSaved={(newConsumedTotal) => {
+                  setData((current) => ({
+                    ...current,
+                    water: { ...current.water, consumed: newConsumedTotal },
+                  }))
+                  router.refresh()
+                }}
+                renderTrigger={({ open, addingWater: quickAddingWater, triggerRef, toggle }) => (
+                  <button
+                    ref={triggerRef}
+                    type="button"
+                    className="ember-progress-ring ember-progress-ring-button"
+                    data-tutorial-id="dashboard-water-progress"
+                    onClick={toggle}
+                    disabled={quickAddingWater}
+                    aria-label={`Water: ${Math.round(data.water.consumed)} of ${Math.round(data.water.target)} ounces. Add water.`}
+                    aria-expanded={open}
+                    aria-haspopup="dialog"
+                    style={{ '--progress': `${hydration.percent * 3.6}deg` } as CSSProperties}
+                  >
+                    <div><strong>{Math.round(data.water.consumed)}</strong><span>oz</span></div>
+                  </button>
+                )}
+              />
               <div className="ember-water-glass" aria-label={`${hydration.percent}% hydration complete`}>
                 <div className="ember-water-fill" style={{ height: `${hydration.percent}%` }} />
                 <span aria-hidden="true">♨</span>
@@ -152,7 +183,7 @@ export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput })
             {waterError && <p className="ember-inline-error" role="alert">{waterError}</p>}
           </article>
 
-          <article className="ember-panel ember-macro-card">
+          <article className="ember-panel ember-macro-card" data-tutorial-id="dashboard-nutrition-progress">
             <div className="ember-panel-heading">
               <p className="ember-panel-label">Macros</p>
               <Link href="/dashboard/nutrition">Details ›</Link>
@@ -191,6 +222,8 @@ export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput })
             <div><span className="ember-pillar-ring pillar-assessment">✓</span><strong>Assessment</strong><small>{assessment.executionComplete ? 'Complete' : 'Open'}</small></div>
           </div>
         </section>
+
+        <DashboardProgressLinks />
 
         <StreakRequirementsCard flame={engine.flameState}/>
         <nav className="ember-bottom-nav" aria-label="Ember dashboard navigation">

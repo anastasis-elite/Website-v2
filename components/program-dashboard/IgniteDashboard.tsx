@@ -14,6 +14,7 @@ import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboar
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
 
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
+import DashboardProgressLinks from '@/components/program-dashboard/DashboardProgressLinks'
 import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
 import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
 import HydrationQuickAdd from '@/components/hydration/HydrationQuickAdd'
@@ -66,6 +67,7 @@ function Ring({
   onClick,
   expanded,
   controls,
+  tutorialTargetId,
 }: {
   value: number
   icon: string
@@ -76,6 +78,7 @@ function Ring({
   onClick?: () => void
   expanded?: boolean
   controls?: string
+  tutorialTargetId?: string
 }) {
   const safeValue = Math.max(
     0,
@@ -109,6 +112,7 @@ function Ring({
       <Link
         href={href}
         className="ignite-ring-item"
+        data-tutorial-id={tutorialTargetId}
         aria-label={
           ariaLabel ||
           `Open ${label}`
@@ -129,6 +133,7 @@ function Ring({
       <button
         type="button"
         className="ignite-ring-item"
+        data-tutorial-id={tutorialTargetId}
         onClick={onClick}
         aria-label={
           ariaLabel ||
@@ -194,6 +199,7 @@ function HydrationRing({
           <button
             ref={triggerRef}
             type="button"
+            data-tutorial-id="dashboard-water-progress"
             onClick={toggle}
             disabled={addingWater}
             aria-label={`Water: ${Math.round(
@@ -519,9 +525,31 @@ export default function IgniteDashboard({
 
         <section className="ignite-top-grid">
           <article className="ignite-panel ignite-daily-progress">
-            <p className="ignite-label">
-              Daily Progress ⓘ
-            </p>
+            <div className="ignite-heading">
+              <p className="ignite-label">
+                Daily Actions ⓘ
+              </p>
+
+              <WorkoutFeedback
+                clientId={
+                  data.clientId
+                }
+                program="ignite"
+                assignedWorkoutId={String(
+                  engine
+                    .workoutDecision
+                    .plannedWorkout
+                    ?.id ||
+                    engine.workout
+                      .title
+                )}
+                workoutTitle={
+                  engine.workout
+                    .title
+                }
+                workoutHref="/dashboard/program/ignite/workout"
+              />
+            </div>
 
             <div className="ignite-rings">
               <HydrationRing
@@ -548,6 +576,7 @@ export default function IgniteDashboard({
                 expanded={foodOpen}
                 controls="ignite-food-popup"
                 ariaLabel="Open quick food log"
+                tutorialTargetId="dashboard-nutrition-progress"
               />
 
               <Ring
@@ -578,6 +607,24 @@ export default function IgniteDashboard({
                 }
                 href="/dashboard/check-in"
                 ariaLabel="Open daily check-in"
+                tutorialTargetId="dashboard-daily-checkin"
+              />
+
+              <Ring
+                value={
+                  recovery.completed
+                    ? 100
+                    : recovery.readiness ?? 0
+                }
+                icon="♥"
+                label="Recovery"
+                detail={
+                  recovery.completed
+                    ? 'Complete'
+                    : 'Open'
+                }
+                href="/dashboard/recovery"
+                ariaLabel="Open recovery"
               />
             </div>
 
@@ -1013,194 +1060,40 @@ export default function IgniteDashboard({
           </article>
         </section>
 
-        <section className="ignite-action-grid">
-          <article className="ignite-panel ignite-action-card">
-            <div className="ignite-heading">
-              <p className="ignite-label">
-                ↟ Today&apos;s Workout
-              </p>
-
-              <WorkoutFeedback
-                clientId={
-                  data.clientId
-                }
-                program="ignite"
-                assignedWorkoutId={String(
-                  engine
-                    .workoutDecision
-                    .plannedWorkout
-                    ?.id ||
-                    engine.workout
-                      .title
-                )}
-                workoutTitle={
-                  engine.workout
-                    .title
-                }
-                workoutHref="/dashboard/program/ignite/workout"
-              />
-            </div>
-
-            <h3>
-              {workout.title}
-            </h3>
-
-            <p>
-              {workout.type}
-
-              {workout.durationMinutes
-                ? ` · ${workout.durationMinutes} min`
-                : ''}
-            </p>
-
-            <Link
-              href="/dashboard/program/ignite/workout"
-              className="ignite-button"
-            >
-              {workout.executionComplete
-                ? 'Workout Complete ✓'
-                : 'View Workout'}
-            </Link>
-          </article>
-
-          <article className="ignite-panel ignite-action-card">
-            <p className="ignite-label">
-              ✓ Assessments
-            </p>
-
-            <h3>
-              {!assessment.dailyCompleted
-                ? 'Daily Check-In'
-                : assessment.monthlyDueCount
-                  ? 'Monthly Assessment Due'
-                  : 'Completed'}
-            </h3>
-
-            <p>
-              {assessment.dailyCompleted
-                ? 'Daily complete'
-                : 'Daily check-in open'}
-
-              {assessment.monthlyDueCount
-                ? ' · Monthly assessment due'
-                : ''}
-            </p>
-
-            <div className="ignite-mini-ring">
-              {
-                assessment.completedPercent
-              }
-              %
-            </div>
-
-            <Link
-              href={
-                !assessment.dailyCompleted
-                  ? '/dashboard/check-in'
-                  : assessment.monthlyDueCount
-                    ? '/dashboard/assessment/monthly'
-                    : '/dashboard/check-in'
-              }
-              className="ignite-button"
-            >
-              {!assessment.dailyCompleted
-                ? 'Check In'
-                : assessment.monthlyDueCount
-                  ? 'Continue Monthly'
-                  : 'View Check-In'}
-            </Link>
-          </article>
-
-          <article className="ignite-panel ignite-action-card">
-            <p className="ignite-label">
-              ♥ Recovery Check
-            </p>
-
-            <h3>
-              {recovery.completed
-                ? 'Check-in complete'
-                : 'How are you feeling?'}
-            </h3>
-
-            <p>
-              Use today&apos;s signals
-              to choose the right
-              recovery action.
-            </p>
-
-            <Link
-              href="/dashboard/recovery"
-              className="ignite-button"
-            >
-              {recovery.completed
-                ? 'View Recovery'
-                : 'Open Recovery'}
-            </Link>
-          </article>
-
+        <section className="ignite-secondary-strip">
           {cycle.enabled ? (
-            <article className="ignite-panel ignite-action-card ignite-cycle">
-              <p className="ignite-label">
-                Cycle Phase ⓘ
-              </p>
-
-              <h3>
+            <Link href="/dashboard/cycle">
+              <strong>Cycle</strong>
+              <span>
                 {cycle.phase?.replace(
                   '_',
                   ' '
-                )}
-              </h3>
-
-              <p>
-                Day{' '}
-                {cycle.day ??
-                  '—'}
-              </p>
-
-              <small>
-                {
-                  cycle.recommendation
-                }
-              </small>
-
-              <Link
-                href="/dashboard/cycle"
-                className="ignite-button"
-              >
-                View Cycle
-              </Link>
-            </article>
+                ) || 'Open'}
+              </span>
+            </Link>
           ) : (
-            <article className="ignite-panel ignite-action-card">
-              <p className="ignite-label">
-                Recovery Readiness
-              </p>
-
-              <h3>
+            <Link href="/dashboard/recovery">
+              <strong>Readiness</strong>
+              <span>
                 {recovery.readiness !==
                 null
                   ? `${recovery.readiness}%`
                   : 'Check-in open'}
-              </h3>
-
-              <p>
-                Log today&apos;s body
-                signals to calculate
-                readiness.
-              </p>
-
-              <Link
-                href="/dashboard/recovery"
-                className="ignite-button"
-              >
-                Open Recovery
-              </Link>
-            </article>
+              </span>
+            </Link>
           )}
+
+          {assessment.monthlyDueCount ? (
+            <Link href="/dashboard/assessment/monthly">
+              <strong>Monthly</strong>
+              <span>Assessment due</span>
+            </Link>
+          ) : null}
         </section>
 
-        <section className="ignite-bottom-grid">
-          <article className="ignite-panel ignite-trends">
+        <DashboardProgressLinks>
+          <div className="ignite-bottom-grid">
+            <article className="ignite-panel ignite-trends">
             <div className="ignite-heading">
               <p className="ignite-label">
                 Weekly Trend ⓘ
@@ -1265,9 +1158,9 @@ export default function IgniteDashboard({
                 </div>
               )
             )}
-          </article>
+            </article>
 
-          <article className="ignite-panel ignite-snapshot">
+            <article className="ignite-panel ignite-snapshot">
             <p className="ignite-label">
               Progress Snapshot ⓘ
             </p>
@@ -1375,8 +1268,9 @@ export default function IgniteDashboard({
                 ? 'Add Photos'
                 : 'View Photos'}
             </Link>
-          </article>
-        </section>
+            </article>
+          </div>
+        </DashboardProgressLinks>
 
         <StreakRequirementsCard
           flame={

@@ -16,6 +16,7 @@ import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashb
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
 
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
+import DashboardProgressLinks from '@/components/program-dashboard/DashboardProgressLinks'
 import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
 import BreathingReset from '@/components/recovery/BreathingReset'
 import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
@@ -204,9 +205,7 @@ export default function PhoenixDashboard({
     data.recovery
   )
 
-  const sleep = useSleepStatus(
-    data.sleep
-  )
+  const sleep = useSleepStatus(data.sleep)
 
   const workoutComplete =
     !data.workout.assigned ||
@@ -277,119 +276,10 @@ export default function PhoenixDashboard({
           </div>
         </header>
 
-        <section className="phoenix-support">
-          <span
-            className="phoenix-support-heart"
-            aria-hidden="true"
-          >
-            ♥
-          </span>
-
-          <div>
-            <small>
-              Today&apos;s insight
-            </small>
-
-            <h2>
-              {engine.insight.concise}
-            </h2>
-
-            <p>
-              {engine.flameState
-                .requirements.resetMessage ||
-                engine.insight.reasoning}
-            </p>
-          </div>
-
-          <BreathingReset
-            clientId={data.clientId}
-          />
-        </section>
-
-        <section
-          id="phoenix-plan"
-          className="phoenix-plan-panel"
-        >
-          <div className="phoenix-section-heading">
-            <p className="phoenix-label">
-              ▣ Today&apos;s Plan
-            </p>
-
-            <span>
-              {nextTask
-                ? `Next: ${nextTask.label}`
-                : flame.label}{' '}
-              · {score}%
-            </span>
-          </div>
-
-          <div className="phoenix-plan-grid">
-            {plan.blocks.map((block) => (
-              <PlanBlock
-                key={block.id}
-                block={block}
-                saving={plan.saving}
-                nextTaskId={
-                  nextTask?.id
-                }
-                onToggle={
-                  plan.toggleTask
-                }
-                onComplete={() =>
-                  plan.completeBlock(
-                    block.id
-                  )
-                }
-              />
-            ))}
-          </div>
-
-          {plan.error && (
-            <p
-              className="phoenix-error"
-              role="alert"
-            >
-              {plan.error}
-            </p>
-          )}
-        </section>
-
         <section className="phoenix-core-grid">
           <article className="phoenix-card phoenix-water">
             <p className="phoenix-label">
               ◆ Water
-            </p>
-
-            <div
-              className="phoenix-water-ring"
-              style={
-                {
-                  '--phoenix-progress': `${
-                    hydration.percent * 3.6
-                  }deg`,
-                } as CSSProperties
-              }
-            >
-              <div>
-                <strong>
-                  {Math.round(
-                    data.water.consumed
-                  )}
-                </strong>
-
-                <small>
-                  of{' '}
-                  {Math.round(
-                    data.water.target
-                  )}{' '}
-                  oz
-                </small>
-              </div>
-            </div>
-
-            <p>
-              {hydration.remaining} oz
-              left
             </p>
 
             <HydrationQuickAdd
@@ -429,23 +319,53 @@ export default function PhoenixDashboard({
                 <button
                   ref={triggerRef}
                   type="button"
-                  className="phoenix-primary-button"
+                  className="phoenix-water-ring phoenix-water-ring-button"
+                  data-tutorial-id="dashboard-water-progress"
                   disabled={
                     addingWater
                   }
                   onClick={toggle}
                   aria-expanded={open}
                   aria-haspopup="dialog"
+                  aria-label={`Water: ${Math.round(
+                    data.water.consumed
+                  )} of ${Math.round(
+                    data.water.target
+                  )} ounces. Add water.`}
+                  style={
+                    {
+                      '--phoenix-progress': `${
+                        hydration.percent * 3.6
+                      }deg`,
+                    } as CSSProperties
+                  }
                 >
-                  {addingWater
-                    ? 'Adding…'
-                    : '+ Add Water'}
+                  <div>
+                    <strong>
+                      {Math.round(
+                        data.water.consumed
+                      )}
+                    </strong>
+
+                    <small>
+                      of{' '}
+                      {Math.round(
+                        data.water.target
+                      )}{' '}
+                      oz
+                    </small>
+                  </div>
                 </button>
               )}
             />
+
+            <p>
+              {hydration.remaining} oz
+              left
+            </p>
           </article>
 
-          <article className="phoenix-card phoenix-nutrition">
+          <article className="phoenix-card phoenix-nutrition" data-tutorial-id="dashboard-nutrition-progress">
             <p className="phoenix-label">
               Ψ Nutrition
             </p>
@@ -603,24 +523,97 @@ export default function PhoenixDashboard({
             }
           />
 
-          <StatusCard
-            icon="☾"
-            title="Sleep"
-            value={
-              sleep.hours !== null
-                ? `${sleep.hours} hours`
-                : sleep.quality !== null
-                  ? `Quality ${sleep.quality}/10`
-                  : 'Not logged'
-            }
-            detail="Last night"
-            href="/dashboard/sleep"
-            action="Log Sleep"
-            complete={
-              sleep.logged
-            }
-          />
         </section>
+
+        <section
+          id="phoenix-plan"
+          className="phoenix-plan-panel"
+        >
+          <div className="phoenix-section-heading">
+            <p className="phoenix-label">
+              ▣ Today&apos;s Plan
+            </p>
+
+            <span>
+              {nextTask
+                ? `Next: ${nextTask.label}`
+                : flame.label}{' '}
+              · {score}%
+            </span>
+          </div>
+
+          <div className="phoenix-plan-grid">
+            {plan.blocks.map((block) => (
+              <PlanBlock
+                key={block.id}
+                block={block}
+                saving={plan.saving}
+                nextTaskId={
+                  nextTask?.id
+                }
+                onToggle={
+                  plan.toggleTask
+                }
+                onComplete={() =>
+                  plan.completeBlock(
+                    block.id
+                  )
+                }
+              />
+            ))}
+          </div>
+
+          {plan.error && (
+            <p
+              className="phoenix-error"
+              role="alert"
+            >
+              {plan.error}
+            </p>
+          )}
+        </section>
+
+        <section className="phoenix-support phoenix-support-secondary">
+          <span
+            className="phoenix-support-heart"
+            aria-hidden="true"
+          >
+            ♥
+          </span>
+
+          <div>
+            <small>
+              Today&apos;s insight
+            </small>
+
+            <h2>
+              {engine.insight.concise}
+            </h2>
+
+            <p>
+              {engine.flameState
+                .requirements.resetMessage ||
+                engine.insight.reasoning}
+            </p>
+          </div>
+
+          <div className="phoenix-secondary-actions">
+            <BreathingReset
+              clientId={data.clientId}
+            />
+
+            <Link
+              href="/dashboard/sleep"
+              className="phoenix-outline-button"
+            >
+              {sleep.logged
+                ? 'View Sleep'
+                : 'Log Sleep'}
+            </Link>
+          </div>
+        </section>
+
+        <DashboardProgressLinks />
 
         <StreakRequirementsCard
           flame={

@@ -18,6 +18,8 @@ const { getTutorialHydrationDecision } = await importTypescriptModule(
   'lib/tutorial/launchPolicy.ts'
 )
 
+const registrySource = readFileSync('lib/tutorial/registry.ts', 'utf8')
+
 test('existing authenticated user with no core tutorial progress starts automatically', () => {
   assert.equal(getTutorialHydrationDecision(null), 'start')
 })
@@ -37,4 +39,34 @@ test('completed core tutorial does not launch', () => {
 test('different completed tutorial does not block core tutorial launch', () => {
   const coreProgress = null
   assert.equal(getTutorialHydrationDecision(coreProgress), 'start')
+})
+
+test('core onboarding tutorial keeps its stable identity and opening steps', () => {
+  assert.match(registrySource, /CORE_ONBOARDING_TUTORIAL_ID = 'core-onboarding-v1'/)
+
+  const stepIds = Array.from(
+    registrySource.matchAll(/stepId: '([^']+)'/g),
+    (match) => match[1]
+  )
+
+  assert.deepEqual(stepIds.slice(0, 3), [
+    'welcome',
+    'open-dashboard',
+    'reveal-daily-flow',
+  ])
+})
+
+test('core onboarding extension registers daily dashboard targets', () => {
+  for (const targetId of [
+    'dashboard-water-progress',
+    'dashboard-nutrition-progress',
+    'dashboard-nav-nutrition',
+    'dashboard-daily-checkin',
+    'dashboard-progress-area',
+    'dashboard-progress-photos',
+    'dashboard-measurements',
+    'dashboard-strength-assessment',
+  ]) {
+    assert.match(registrySource, new RegExp(targetId))
+  }
 })
