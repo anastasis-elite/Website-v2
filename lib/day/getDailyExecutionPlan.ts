@@ -458,6 +458,7 @@ export async function getDailyExecutionPlan({
 
   return {
     date: today,
+    timezone: timeZone,
     executionStyle,
     calories,
     dailyTargets: {
