@@ -160,9 +160,44 @@ export function dailyPlanToScheduleEvents({
     })
   }
 
+  const hydrationTime = client.wake_time || '08:00'
+  const hydrationStart = zonedDateTimeToUtc(date, String(hydrationTime).slice(0, 5), timezone)
+  const hydrationRemaining = Number(dailyPlan.dailyRemaining?.water ?? 1)
+  const hydrationTarget = Number(dailyPlan.dailyTargets?.water ?? hydrationRemaining)
+  events.push({
+    ...fixedEvent({
+      id: `virtual-hydration-${date}`,
+      userId,
+      clientId: client.client_id,
+      title: 'Hydration quick add',
+      eventType: 'hydration',
+      date,
+      time: String(hydrationTime).slice(0, 5),
+      timezone,
+      minutes: 10,
+    }),
+    source: 'program',
+    status:
+      hydrationTarget > 0 && hydrationRemaining <= hydrationTarget * 0.15
+        ? 'completed'
+        : 'scheduled',
+    completed_at:
+      hydrationTarget > 0 && hydrationRemaining <= hydrationTarget * 0.15
+        ? new Date().toISOString()
+        : null,
+    flexibility_type: 'flexible',
+    priority: 'high',
+    required: true,
+    movable: true,
+    approval_required: false,
+    earliest_start_at: addMinutes(hydrationStart, -60).toISOString(),
+    latest_end_at: zonedDateTimeToUtc(date, '21:00', timezone).toISOString(),
+    action_route: '/dashboard/nutrition#hydration',
+  })
+
   for (const [key, label, time, route] of [
-    ['morning', 'Morning fuel and check-in', client.wake_time || '08:00', '/dashboard/day/morning'],
-    ['midday', 'Lunch and hydration', client.lunch_window_time || '12:00', '/dashboard/day/midday'],
+    ['morning', 'Morning fuel', client.wake_time || '08:00', '/dashboard/nutrition#aos-food-logger'],
+    ['midday', 'Lunch and hydration', client.lunch_window_time || '12:00', '/dashboard/nutrition#aos-food-logger'],
     ['evening', 'Dinner and recovery landing', client.dinner_window_time || '18:00', '/dashboard/day/evening'],
   ] as const) {
     const complete = dailyPlan.completedDailyTasks?.includes(`${key}-complete`)

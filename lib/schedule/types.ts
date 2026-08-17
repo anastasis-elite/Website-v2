@@ -96,6 +96,7 @@ export type ScheduleAdjustment = {
   suggested_duration_minutes: number | null
   requires_approval: boolean
   automatic: boolean
+  applied: boolean
 }
 
 export type NextScheduleAction = {
@@ -108,6 +109,9 @@ export type NextScheduleAction = {
   action_route: string | null
   overdue: boolean
   automatically_adjusted: boolean
+  can_complete: boolean
+  can_defer: boolean
+  short_reason: string
 }
 
 export type DailyScheduleState = {

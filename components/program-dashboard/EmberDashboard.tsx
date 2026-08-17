@@ -6,8 +6,10 @@ import { useRouter } from 'next/navigation'
 import type { CSSProperties } from 'react'
 import type { EmberDashboardData } from '@/lib/dashboard/ember/types'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
+import type { DailyScheduleState } from '@/lib/schedule/types'
 import { getEmberDashboardData } from '@/lib/dashboard/ember/getEmberDashboardData'
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
+import AdaptiveTodayForYou from '@/components/program-dashboard/AdaptiveTodayForYou'
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
 import DashboardProgressLinks from '@/components/program-dashboard/DashboardProgressLinks'
 import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
@@ -68,7 +70,13 @@ function ExecutionCard({
   )
 }
 
-export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput }) {
+export default function EmberDashboard({
+  logic,
+  schedule,
+}: {
+  logic: ProgramLogicOutput
+  schedule: DailyScheduleState
+}) {
   const engine = useProgramLogicEngine(logic)
   const router=useRouter()
   const initialData: EmberDashboardData = getEmberDashboardData(engine)
@@ -134,6 +142,12 @@ export default function EmberDashboard({ logic }: { logic: ProgramLogicOutput })
             <span aria-hidden="true">{flame.icon}</span><strong>{data.streak}</strong><small>Day streak</small>
           </div>
         </header>
+
+        <AdaptiveTodayForYou
+          schedule={schedule}
+          streak={data.streak}
+          insight={engine.insight.concise}
+        />
 
         <section className="ember-primary-grid" aria-label="Hydration and macros">
           <article className="ember-panel ember-water-card">

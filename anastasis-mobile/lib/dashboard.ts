@@ -23,6 +23,29 @@ export type MobileDailyAction = {
   kind: 'quick' | 'route'
   required: boolean
   primary?: boolean
+  scheduleEventId?: string | null
+  urgency?: 'now' | 'soon' | 'upcoming' | 'overdue' | 'none'
+  start_at?: string | null
+  reason?: string
+  can_complete?: boolean
+  can_defer?: boolean
+}
+
+export type MobileScheduleEvent = {
+  id: string
+  title: string
+  category: string
+  start_at: string
+  end_at: string
+  status: string
+  required: boolean
+  priority: string
+  external: boolean
+  can_complete: boolean
+  can_defer: boolean
+  adjusted: boolean
+  adjustment_reason: string | null
+  href: string
 }
 
 export type MobileDailyState = {
@@ -94,6 +117,8 @@ export type MobileDailyState = {
   priorities: string[]
   nextAction: MobileDailyAction
   actions: MobileDailyAction[]
+  scheduleEvents: MobileScheduleEvent[]
+  scheduleCompletedEvents: MobileScheduleEvent[]
   dayComplete: boolean
   closure: {
     title: string
@@ -147,7 +172,7 @@ async function mobileFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function getMobileDailyState() {
-  return mobileFetch<MobileDailyState>('/api/mobile/dashboard')
+  return mobileFetch<MobileDailyState>('/api/mobile/schedule')
 }
 
 export async function addWater(ounces = 8) {
@@ -164,5 +189,19 @@ export async function completeRecoveryAction() {
       activityType: 'Breathing reset',
       minutes: 5,
     }),
+  })
+}
+
+export async function completeScheduleEvent(eventId: string) {
+  return mobileFetch<{ success: true }>(`/api/mobile/schedule/${eventId}/complete`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
+export async function deferScheduleEvent(eventId: string) {
+  return mobileFetch<{ success: true }>(`/api/mobile/schedule/${eventId}/defer`, {
+    method: 'POST',
+    body: JSON.stringify({}),
   })
 }

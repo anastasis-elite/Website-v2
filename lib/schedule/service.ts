@@ -68,7 +68,7 @@ export async function getDailyScheduleState({
       ? await getProgramLogicForClient({ supabase, user, client })
       : null)
 
-  return buildDailyScheduleState({
+  const state = buildDailyScheduleState({
     date: day.date,
     timezone: day.timezone,
     now: new Date(),
@@ -76,7 +76,44 @@ export async function getDailyScheduleState({
     dayEnd: day.end,
     events: [...persistedEvents, ...virtualEvents],
     logic: effectiveLogic,
+    program: client.program || 'ignite',
   })
+
+  const appliedPersistedAdjustments = state.adjustments.filter(
+    (adjustment) => adjustment.automatic && adjustment.applied,
+  )
+
+  for (const adjustment of appliedPersistedAdjustments) {
+    const event = state.events.find((item) => item.id === adjustment.event_id)
+    if (!event || event.virtual) continue
+    if (!['anastasis', 'program', 'system', 'mobile'].includes(event.source)) continue
+    if (event.external_event_id || event.external_calendar_source) continue
+
+    const nextStart = adjustment.suggested_start_at
+    const nextEnd = adjustment.suggested_end_at
+    const nextDuration = adjustment.suggested_duration_minutes
+    if (
+      event.adjusted_start_at === nextStart &&
+      event.adjusted_end_at === nextEnd &&
+      event.adjusted_duration_minutes === nextDuration
+    ) {
+      continue
+    }
+
+    await supabase
+      .from('anastasis_schedule_events')
+      .update({
+        adjusted_start_at: nextStart,
+        adjusted_end_at: nextEnd,
+        adjusted_duration_minutes: nextDuration,
+        adaptive_reason: adjustment.reason,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', event.id)
+      .eq('user_id', user.id)
+  }
+
+  return state
 }
 
 export async function assertClientOwner({

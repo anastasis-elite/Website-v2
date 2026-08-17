@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import { formatLocalTime } from '@/lib/schedule/time'
+import AdaptiveTodayForYou from '@/components/program-dashboard/AdaptiveTodayForYou'
 
 function eventLabel(event: ScheduleEvent) {
   if (event.flexibility_type === 'fixed') return 'Fixed'
@@ -87,6 +88,12 @@ export default function ScheduleDashboardClient({
   return (
     <main className="schedule-page">
       <div className="schedule-shell">
+        <AdaptiveTodayForYou
+          schedule={schedule}
+          streak={0}
+          insight="The schedule is clear. Use the evening to protect recovery and tomorrow's setup."
+        />
+
         <header className="schedule-hero">
           <div>
             <p className="schedule-label">Today</p>
@@ -97,6 +104,9 @@ export default function ScheduleDashboardClient({
             <span>{action.urgency}</span>
             <strong>{action.start_at ? formatLocalTime(action.start_at, schedule.timezone) : 'Open'}</strong>
             <small>{action.overdue ? 'Overdue' : action.automatically_adjusted ? 'Adjusted' : 'Next action'}</small>
+            {action.action_route ? (
+              <a href={action.action_route} className="adaptive-primary-action">Open</a>
+            ) : null}
           </div>
         </header>
 
@@ -136,9 +146,10 @@ export default function ScheduleDashboardClient({
                   <p>{item.reason}</p>
                   <small>
                     {item.suggested_start_at
-                      ? `${formatLocalTime(item.suggested_start_at, schedule.timezone)} suggested`
+                      ? `${formatLocalTime(item.suggested_start_at, schedule.timezone)} ${item.applied ? 'applied' : 'suggested'}`
                       : 'No valid open window today'}
                     {item.requires_approval ? ' · approval required' : ''}
+                    {item.automatic && item.applied ? ' · automatic' : ''}
                   </small>
                 </article>
               ))}

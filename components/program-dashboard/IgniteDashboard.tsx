@@ -9,9 +9,11 @@ import type {
   IgniteTrend,
 } from '@/lib/dashboard/ignite/types'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
+import type { DailyScheduleState } from '@/lib/schedule/types'
 
 import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
+import AdaptiveTodayForYou from '@/components/program-dashboard/AdaptiveTodayForYou'
 
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
 import DashboardProgressLinks from '@/components/program-dashboard/DashboardProgressLinks'
@@ -323,8 +325,10 @@ function Sparkline({
 
 export default function IgniteDashboard({
   logic,
+  schedule,
 }: {
   logic: ProgramLogicOutput
+  schedule: DailyScheduleState
 }) {
     const [foodOpen, setFoodOpen] = useState(false)
   const [foodSuggestions, setFoodSuggestions] = useState<any[]>([])
@@ -522,6 +526,12 @@ export default function IgniteDashboard({
             </small>
           </div>
         </header>
+
+        <AdaptiveTodayForYou
+          schedule={schedule}
+          streak={data.streak}
+          insight={engine.insight.concise}
+        />
 
         <section className="ignite-top-grid">
           <article className="ignite-panel ignite-daily-progress">

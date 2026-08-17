@@ -15,10 +15,13 @@ import AppShell from '../components/AppShell'
 import ProgressBar from '../components/ProgressBar'
 import {
   addWater,
+  completeScheduleEvent,
   completeRecoveryAction,
+  deferScheduleEvent,
   getMobileDailyState,
   type MobileDailyAction,
   type MobileDailyState,
+  type MobileScheduleEvent,
 } from '../lib/dashboard'
 import { colors } from '../lib/theme'
 
@@ -48,6 +51,14 @@ function actionButtonLabel(action: MobileDailyAction) {
   if (action.kind === 'quick' && action.id === 'water') return 'Add 8 oz'
   if (action.kind === 'quick' && action.id === 'recovery') return 'Log reset'
   return action.label
+}
+
+function urgencyCopy(action: MobileDailyAction) {
+  if (action.urgency === 'overdue') return 'Overdue'
+  if (action.urgency === 'now') return 'Now'
+  if (action.urgency === 'soon') return 'Soon'
+  if (action.urgency === 'upcoming') return 'Upcoming'
+  return 'Open'
 }
 
 export default function TodayScreen() {
@@ -106,6 +117,50 @@ export default function TodayScreen() {
     }
   }
 
+  async function completeEvent(event: MobileScheduleEvent) {
+    if (!event.can_complete) {
+      Alert.alert('Approval needed', 'This schedule item cannot be changed from mobile.')
+      return
+    }
+
+    try {
+      setWorkingAction(event.id)
+      await completeScheduleEvent(event.id)
+      await loadState()
+    } catch (actionError) {
+      Alert.alert(
+        'Action unavailable',
+        actionError instanceof Error
+          ? actionError.message
+          : 'The event could not be completed.',
+      )
+    } finally {
+      setWorkingAction(null)
+    }
+  }
+
+  async function deferEvent(event: MobileScheduleEvent) {
+    if (!event.can_defer) {
+      Alert.alert('Suggestion only', 'This schedule item needs approval before it can move.')
+      return
+    }
+
+    try {
+      setWorkingAction(`defer-${event.id}`)
+      await deferScheduleEvent(event.id)
+      await loadState()
+    } catch (actionError) {
+      Alert.alert(
+        'Defer unavailable',
+        actionError instanceof Error
+          ? actionError.message
+          : 'No valid defer window was found.',
+      )
+    } finally {
+      setWorkingAction(null)
+    }
+  }
+
   if (loading) {
     return (
       <AppShell active="today">
@@ -131,9 +186,9 @@ export default function TodayScreen() {
     )
   }
 
-  const incomplete = state.actions.filter((action) => action.status !== 'complete')
   const completed = state.actions.filter((action) => action.status === 'complete')
   const nextAction = state.nextAction
+  const remainingEvents = state.scheduleEvents || []
 
   return (
     <AppShell active="today">
@@ -155,35 +210,10 @@ export default function TodayScreen() {
         </Pressable>
       </View>
 
-      <AOSCard>
-        <Text style={styles.eyebrow}>Current State</Text>
-        <Text style={styles.title}>{state.summary.title}</Text>
-        <Text style={styles.copy}>{state.summary.body}</Text>
-
-        {state.summary.adjustmentReason ? (
-          <View style={styles.adjustment}>
-            <Text style={styles.adjustmentLabel}>Adjusted</Text>
-            <Text style={styles.adjustmentText}>
-              {state.summary.adjustmentReason}
-            </Text>
-          </View>
-        ) : null}
-
-        {state.priorities.length ? (
-          <View style={styles.priorityRow}>
-            {state.priorities.map((priority) => (
-              <Text key={priority} style={styles.priority}>
-                {priority}
-              </Text>
-            ))}
-          </View>
-        ) : null}
-      </AOSCard>
-
       {state.dayComplete && state.closure ? (
         <AOSCard muted>
-          <Text style={styles.eyebrow}>Closed</Text>
-          <Text style={styles.sectionTitle}>{state.closure.title}</Text>
+          <Text style={styles.eyebrow}>Day Complete</Text>
+          <Text style={styles.title}>Today is closed</Text>
           <Text style={styles.copy}>{state.closure.body}</Text>
           <View style={styles.streakRow}>
             <Text style={styles.streakValue}>{state.execution.streak}</Text>
@@ -195,12 +225,13 @@ export default function TodayScreen() {
         </AOSCard>
       ) : (
         <AOSCard>
-          <Text style={styles.eyebrow}>Next Action</Text>
+          <Text style={styles.eyebrow}>Now</Text>
           <View style={styles.nextActionHeader}>
             <Text style={styles.nextIcon}>{icons[nextAction.id]}</Text>
             <View style={styles.nextCopy}>
+              <Text style={styles.urgency}>{urgencyCopy(nextAction)}</Text>
               <Text style={styles.nextTitle}>{nextAction.label}</Text>
-              <Text style={styles.copy}>{nextAction.detail}</Text>
+              <Text style={styles.copy}>{nextAction.reason || nextAction.detail}</Text>
             </View>
           </View>
           <ProgressBar percent={nextAction.progress} />
@@ -214,18 +245,40 @@ export default function TodayScreen() {
                 : actionButtonLabel(nextAction)}
             </AOSButton>
           </View>
+          {nextAction.scheduleEventId && (nextAction.can_complete || nextAction.can_defer) ? (
+            <View style={styles.inlineActions}>
+              {nextAction.can_complete ? (
+                <Pressable
+                  onPress={() => {
+                    const event = remainingEvents.find((item) => item.id === nextAction.scheduleEventId)
+                    if (event) completeEvent(event)
+                  }}
+                  style={styles.inlineButton}
+                >
+                  <Text style={styles.inlineButtonText}>Complete</Text>
+                </Pressable>
+              ) : null}
+              {nextAction.can_defer ? (
+                <Pressable
+                  onPress={() => {
+                    const event = remainingEvents.find((item) => item.id === nextAction.scheduleEventId)
+                    if (event) deferEvent(event)
+                  }}
+                  style={styles.inlineButton}
+                >
+                  <Text style={styles.inlineButtonText}>Defer</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
         </AOSCard>
       )}
 
       <AOSCard>
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.eyebrow}>Today</Text>
-            <Text style={styles.sectionTitle}>
-              {incomplete.length
-                ? `${incomplete.length} active`
-                : 'All required work is closed'}
-            </Text>
+            <Text style={styles.eyebrow}>Quick Actions</Text>
+            <Text style={styles.sectionTitle}>Command layer</Text>
           </View>
           <Text style={styles.score}>{state.execution.score}%</Text>
         </View>
@@ -252,6 +305,79 @@ export default function TodayScreen() {
               </Text>
             </Pressable>
           ))}
+        </View>
+      </AOSCard>
+
+      <AOSCard>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.eyebrow}>Today</Text>
+            <Text style={styles.sectionTitle}>
+              {remainingEvents.length
+                ? `${remainingEvents.length} remaining`
+                : 'No remaining schedule actions'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.scheduleList}>
+          {remainingEvents.slice(0, 6).map((event) => (
+            <View
+              key={event.id}
+              style={[
+                styles.scheduleEvent,
+                event.priority === 'high' || event.priority === 'critical'
+                  ? styles.scheduleEventUrgent
+                  : null,
+              ]}
+            >
+              <View style={styles.scheduleEventCopy}>
+                <Text style={styles.actionLabel}>{event.title}</Text>
+                <Text numberOfLines={2} style={styles.actionDetail}>
+                  {event.category.replace('_', ' ')}
+                  {event.adjusted ? ` · ${event.adjustment_reason}` : ''}
+                </Text>
+              </View>
+              <View style={styles.eventButtons}>
+                {event.can_defer ? (
+                  <Pressable
+                    disabled={workingAction === `defer-${event.id}`}
+                    onPress={() => deferEvent(event)}
+                    style={styles.eventButton}
+                  >
+                    <Text style={styles.eventButtonText}>Defer</Text>
+                  </Pressable>
+                ) : null}
+                {event.can_complete ? (
+                  <Pressable
+                    disabled={workingAction === event.id}
+                    onPress={() => completeEvent(event)}
+                    style={styles.eventButton}
+                  >
+                    <Text style={styles.eventButtonText}>Done</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+          ))}
+        </View>
+      </AOSCard>
+
+      <AOSCard muted>
+        <Text style={styles.eyebrow}>Totals</Text>
+        <View style={styles.totalsGrid}>
+          <View style={styles.totalCell}>
+            <Text style={styles.totalValue}>{Math.round(state.hydration.consumed)}</Text>
+            <Text style={styles.totalLabel}>oz water</Text>
+          </View>
+          <View style={styles.totalCell}>
+            <Text style={styles.totalValue}>{Math.round(state.nutrition.protein.consumed)}</Text>
+            <Text style={styles.totalLabel}>g protein</Text>
+          </View>
+          <View style={styles.totalCell}>
+            <Text style={styles.totalValue}>{state.execution.streak}</Text>
+            <Text style={styles.totalLabel}>streak</Text>
+          </View>
         </View>
       </AOSCard>
 
@@ -402,8 +528,37 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
   },
+  urgency: {
+    marginBottom: 4,
+    color: colors.copper,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
   buttonRow: {
     marginTop: 16,
+  },
+  inlineActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  inlineButton: {
+    minHeight: 40,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(230,107,56,0.34)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(230,107,56,0.08)',
+  },
+  inlineButtonText: {
+    color: '#EAB999',
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -479,6 +634,69 @@ const styles = StyleSheet.create({
   noteList: {
     gap: 8,
     marginTop: 8,
+  },
+  scheduleList: {
+    gap: 10,
+  },
+  scheduleEvent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.022)',
+    padding: 12,
+  },
+  scheduleEventUrgent: {
+    borderColor: 'rgba(230,107,56,0.42)',
+    backgroundColor: 'rgba(230,107,56,0.08)',
+  },
+  scheduleEventCopy: {
+    minWidth: 0,
+    flex: 1,
+  },
+  eventButtons: {
+    gap: 8,
+  },
+  eventButton: {
+    minWidth: 66,
+    minHeight: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(230,107,56,0.32)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(230,107,56,0.06)',
+  },
+  eventButtonText: {
+    color: '#EAB999',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  totalsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  totalCell: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: 14,
+    padding: 12,
+  },
+  totalValue: {
+    color: colors.text,
+    fontFamily: 'Georgia',
+    fontSize: 28,
+  },
+  totalLabel: {
+    marginTop: 4,
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
   completed: {
     marginTop: 2,

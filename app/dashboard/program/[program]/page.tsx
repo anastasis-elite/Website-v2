@@ -12,6 +12,7 @@ import { logRecommendationAudit } from '@/lib/legal/logRecommendationAudit'
 import { getProgramLogicEngine } from '@/lib/dashboard/logic/getProgramLogicEngine'
 import type { ProgramTier } from '@/lib/dashboard/logic/types'
 import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
+import { getDailyScheduleState } from '@/lib/schedule/service'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix'] as const
 
@@ -119,18 +120,25 @@ export default async function ProgramPage({
     confidenceLevel: 'rules_based',
   })
 
+  const schedule = await getDailyScheduleState({
+    supabase,
+    user,
+    client,
+    logic,
+  })
+
   return (
     <main>
       {program === 'ember' && (
-        <EmberDashboard logic={logic} />
+        <EmberDashboard logic={logic} schedule={schedule} />
       )}
 
       {program === 'ignite' && (
-        <IgniteDashboard logic={logic} />
+        <IgniteDashboard logic={logic} schedule={schedule} />
       )}
 
       {program === 'phoenix' && (
-        <PhoenixDashboard logic={logic} trackLabel={getPhoenixTrackLabel({ client, programJson })} />
+        <PhoenixDashboard logic={logic} schedule={schedule} trackLabel={getPhoenixTrackLabel({ client, programJson })} />
       )}
     </main>
   )

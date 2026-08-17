@@ -6,13 +6,13 @@ import type {
   ScheduleEvent,
 } from './types'
 
-const ACTION_ROUTES: Record<string, string> = {
-  workout: '/dashboard/program',
-  meal: '/dashboard/nutrition',
-  hydration: '/dashboard/nutrition',
+export const ACTION_ROUTES: Record<string, string> = {
+  workout: '/dashboard/program/ignite/workout',
+  meal: '/dashboard/nutrition#aos-food-logger',
+  hydration: '/dashboard/nutrition#hydration',
   recovery: '/dashboard/recovery',
   check_in: '/dashboard/check-in',
-  assessment: '/dashboard/assessment',
+  assessment: '/dashboard/assessment/start',
   sleep: '/dashboard/sleep',
 }
 
@@ -39,6 +39,18 @@ function canMove(event: ScheduleEvent) {
     !event.approval_required &&
     event.status === 'scheduled'
   )
+}
+
+function isInternalControlled(event: ScheduleEvent) {
+  return (
+    ['anastasis', 'program', 'system', 'mobile'].includes(event.source) &&
+    !event.external_event_id &&
+    !event.external_calendar_source
+  )
+}
+
+function canAutoApply(event: ScheduleEvent) {
+  return canMove(event) && isInternalControlled(event)
 }
 
 function priorityRank(event: ScheduleEvent) {
@@ -92,7 +104,7 @@ export function getOpenWindows(
   return windows
 }
 
-function firstValidWindow(
+export function firstValidWindow(
   windows: OpenWindow[],
   event: ScheduleEvent,
   now: Date,
@@ -114,6 +126,12 @@ function firstValidWindow(
   }
 
   return null
+}
+
+export function getActionRouteForEvent(event: ScheduleEvent, program = 'ignite') {
+  if (event.action_route) return event.action_route
+  if (event.event_type === 'workout') return `/dashboard/program/${program}/workout`
+  return ACTION_ROUTES[event.event_type] || '/dashboard/schedule'
 }
 
 export function buildScheduleAdjustments({
@@ -142,7 +160,7 @@ export function buildScheduleAdjustments({
 
   if (lowCapacity) {
     const workout = events.find(
-      (event) => event.event_type === 'workout' && canMove(event),
+      (event) => event.event_type === 'workout' && canAutoApply(event),
     )
     if (workout) {
       const currentDuration =
@@ -162,6 +180,7 @@ export function buildScheduleAdjustments({
         suggested_duration_minutes: suggestedDuration,
         requires_approval: false,
         automatic: true,
+        applied: true,
       })
     }
 
@@ -179,7 +198,8 @@ export function buildScheduleAdjustments({
           : new Date(now.getTime() + 10 * 60000).toISOString(),
         suggested_duration_minutes: 10,
         requires_approval: false,
-        automatic: true,
+        automatic: false,
+        applied: false,
       })
     }
   }
@@ -202,20 +222,48 @@ export function buildScheduleAdjustments({
       suggested_duration_minutes: duration,
       requires_approval: false,
       automatic: false,
+      applied: false,
     })
   }
 
   return adjustments
 }
 
+export function applyAutomaticAdjustments(
+  events: ScheduleEvent[],
+  adjustments: ScheduleAdjustment[],
+) {
+  const automaticByEvent = new Map(
+    adjustments
+      .filter((item) => item.automatic && item.applied)
+      .map((item) => [item.event_id, item]),
+  )
+
+  return events.map((event) => {
+    const adjustment = automaticByEvent.get(event.id)
+    if (!adjustment || !canAutoApply(event)) return event
+
+    return {
+      ...event,
+      adjusted_start_at: adjustment.suggested_start_at || event.adjusted_start_at,
+      adjusted_end_at: adjustment.suggested_end_at || event.adjusted_end_at,
+      adjusted_duration_minutes:
+        adjustment.suggested_duration_minutes || event.adjusted_duration_minutes,
+      adaptive_reason: adjustment.reason,
+    }
+  })
+}
+
 export function buildNextAction({
   nextActionableEvent,
   adjustments,
   now,
+  program = 'ignite',
 }: {
   nextActionableEvent: ScheduleEvent | null
   adjustments: ScheduleAdjustment[]
   now: Date
+  program?: string
 }): NextScheduleAction {
   const recoverySuggestion = adjustments.find(
     (item) => item.adjustment_type === 'suggest_recovery',
@@ -230,7 +278,10 @@ export function buildNextAction({
       reason: recoverySuggestion.reason,
       action_route: '/dashboard/recovery',
       overdue: false,
-      automatically_adjusted: true,
+      automatically_adjusted: false,
+      can_complete: false,
+      can_defer: false,
+      short_reason: 'Low capacity calls for recovery before more output.',
     }
   }
 
@@ -245,6 +296,9 @@ export function buildNextAction({
       action_route: null,
       overdue: false,
       automatically_adjusted: false,
+      can_complete: false,
+      can_defer: false,
+      short_reason: 'No remaining scheduled items.',
     }
   }
 
@@ -260,6 +314,7 @@ export function buildNextAction({
         ? 'soon'
         : 'upcoming'
   const adjustment = adjustments.find((item) => item.event_id === nextActionableEvent.id)
+  const reason = adjustment?.reason || (overdue ? 'This scheduled item has passed and still needs attention.' : 'This is the next scheduled item that needs attention.')
 
   return {
     id: nextActionableEvent.id,
@@ -267,13 +322,13 @@ export function buildNextAction({
     category: nextActionableEvent.event_type,
     start_at: nextActionableEvent.adjusted_start_at || nextActionableEvent.start_at,
     urgency,
-    reason: adjustment?.reason || (overdue ? 'This scheduled item has passed and still needs attention.' : 'This is the next scheduled item that needs attention.'),
-    action_route:
-      nextActionableEvent.action_route ||
-      ACTION_ROUTES[nextActionableEvent.event_type] ||
-      '/dashboard/schedule',
+    reason,
+    action_route: getActionRouteForEvent(nextActionableEvent, program),
     overdue,
-    automatically_adjusted: Boolean(adjustment?.automatic),
+    automatically_adjusted: Boolean(adjustment?.automatic && adjustment.applied),
+    can_complete: !nextActionableEvent.virtual && isActionable(nextActionableEvent),
+    can_defer: !nextActionableEvent.virtual && canAutoApply(nextActionableEvent),
+    short_reason: reason.length > 96 ? `${reason.slice(0, 93)}...` : reason,
   }
 }
 
@@ -285,6 +340,7 @@ export function buildDailyScheduleState({
   dayEnd,
   events,
   logic,
+  program,
 }: {
   date: string
   timezone: string
@@ -293,8 +349,20 @@ export function buildDailyScheduleState({
   dayEnd: Date
   events: ScheduleEvent[]
   logic?: any
+  program?: string
 }): DailyScheduleState {
-  const sorted = [...events].sort((a, b) => eventStart(a).getTime() - eventStart(b).getTime())
+  const initiallySorted = [...events].sort((a, b) => eventStart(a).getTime() - eventStart(b).getTime())
+  const initialOpenWindows = getOpenWindows(initiallySorted, dayStart, dayEnd, 10)
+  const adjustments = buildScheduleAdjustments({
+    events: initiallySorted,
+    openWindows: initialOpenWindows,
+    now,
+    capacity: logic?.capacityStatus,
+    recovery: logic?.recoveryStatus,
+    symptoms: logic?.symptoms,
+  })
+  const sorted = applyAutomaticAdjustments(initiallySorted, adjustments)
+    .sort((a, b) => eventStart(a).getTime() - eventStart(b).getTime())
   const completedEvents = sorted.filter((event) => event.status === 'completed')
   const remainingEvents = sorted.filter(isActionable)
   const upcomingEvents = remainingEvents.filter((event) => eventEnd(event) >= now)
@@ -303,14 +371,6 @@ export function buildDailyScheduleState({
   const flexibleEvents = sorted.filter((event) => event.flexibility_type === 'flexible')
   const approvalRequiredEvents = sorted.filter((event) => event.flexibility_type === 'approval_required' || event.approval_required)
   const openWindows = getOpenWindows(sorted, dayStart, dayEnd, 10)
-  const adjustments = buildScheduleAdjustments({
-    events: sorted,
-    openWindows,
-    now,
-    capacity: logic?.capacityStatus,
-    recovery: logic?.recoveryStatus,
-    symptoms: logic?.symptoms,
-  })
   const nextEvent = upcomingEvents[0] || null
   const nextActionableEvent =
     [...overdueEvents, ...upcomingEvents]
@@ -335,6 +395,11 @@ export function buildDailyScheduleState({
     adjustments,
     nextEvent,
     nextActionableEvent,
-    nextAction: buildNextAction({ nextActionableEvent, adjustments, now }),
+    nextAction: buildNextAction({
+      nextActionableEvent,
+      adjustments,
+      now,
+      program: program || logic?.program,
+    }),
   }
 }

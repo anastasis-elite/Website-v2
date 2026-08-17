@@ -393,7 +393,7 @@ setNutritionLog(log)
         {loading && <p style={styles.bodyStyle}>Loading...</p>}
         {message && <p style={styles.bodyStyle}>{message}</p>}
 
-        <section style={styles.cartBoxStyle}>
+        <section id="hydration" style={styles.cartBoxStyle}>
           <p style={styles.eyebrowStyle}>Today&apos;s Fuel Readiness</p>
           <h2 style={styles.h2Style}>{fuel.displayStatus}</h2>
           <p style={styles.bodyStyle}>{fuel.reasoning}</p>
