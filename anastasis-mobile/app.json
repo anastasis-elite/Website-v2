@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "scheme": "anastasis",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "plugins": [
       "expo-router",
       [
@@ -33,7 +32,8 @@
           "defaultChannel": "concierge",
           "color": "#E66B38"
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "ios": {
       "supportsTablet": true,
@@ -48,6 +48,7 @@
     },
     "android": {
       "package": "com.anastasiselite.mobile",
+      "versionCode": 1,
       "permissions": [
         "android.permission.health.READ_SLEEP",
         "android.permission.health.READ_RESTING_HEART_RATE",
