@@ -63,6 +63,10 @@ export type ProgramLogicInputs = {
   executionHistory: Array<{ log_date: string; streak_eligible: boolean }>
   yesterday: { workoutComplete: boolean; nutritionLogged: boolean; taskCount: number }
   monthlyAssessmentsDueCount: number
+  healthMetrics: {
+    today: Record<string, any>
+    recent: any[]
+  }
 }
 
 export type CapacityResult = { status: CapacityStatus; score: number; drivers: string[]; presentationComplexity: 'minimal' | 'guided' | 'direct' }
@@ -107,6 +111,19 @@ export type ProgramLogicOutput = {
   todayPlan: { phoenixTaskIds: string[] }
   insight: { concise: string; reasoning: string }
   progress: { weight: number | null; weightChange: number | null; bodyFat: number | null; bodyFatChange: number | null; photosDue: boolean; photoUrls: string[] }
+  passiveHealth: {
+    sleepDurationHours: number | null
+    steps: number | null
+    activeEnergy: number | null
+    workoutMinutes: number | null
+    hrv: number | null
+    restingHeartRate: number | null
+    respiratoryRate: number | null
+    bodyTemperature: number | null
+    weight: number | null
+    bodyFat: number | null
+    sources: string[]
+  }
   trends: DashboardTrend[]
   execution: { workoutComplete: boolean; nutritionLogged: boolean; assessmentComplete: boolean; recoveryComplete: boolean; phoenixTaskPercent: number }
   presentation: { tier: ProgramTier; complexity: 'minimal' | 'guided' | 'direct'; maxTasksPerBlock: number; showTrends: boolean; showInsight: boolean }

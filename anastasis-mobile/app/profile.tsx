@@ -13,6 +13,7 @@ import { colors } from '../lib/theme'
 import { supabase } from '../lib/supabase'
 
 const rows = [
+  ['Health & Wearables', '/health'],
   ['Assessments', '/assessments'],
   ['Progress History', '/progress'],
   ['Daily Check-In', '/check-in'],

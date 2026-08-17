@@ -346,13 +346,14 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, capacity:Ca
 }
 
 export function runFlameExecutionEngine({ inputs, hydration, nutrition, workoutDecision, capacity }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult; capacity: CapacityResult }): FlameResult {
-  const workoutComplete = Boolean(inputs.dailyPlan?.workoutCompleted)
+  const passiveWorkoutMinutes = nullableNumeric(inputs.healthMetrics.today?.workout?.value)
+  const workoutComplete = Boolean(inputs.dailyPlan?.workoutCompleted || (passiveWorkoutMinutes !== null && passiveWorkoutMinutes >= 10))
   const assessmentComplete = Boolean(inputs.todayRecovery?.check_in_completed_at)
   const recoveryComplete = inputs.todayRecoveryActivities.length>0
   const blockTaskCount = inputs.phoenixTaskIds.filter((id) => /^(morning|midday|evening)-complete$/.test(id)).length
   const phoenixTaskPercent = Math.min(100, (inputs.phoenixTaskIds.length / 9) * 100)
   const sleepComplete=Boolean(inputs.todayRecovery?.sleep_hours||inputs.todayRecovery?.sleep_quality)
-  const activityComplete=inputs.todayRecoveryActivities.length>0
+  const activityComplete=inputs.todayRecoveryActivities.length>0 || workoutComplete
   const lowestCapacity=capacity.status==='low_capacity'
   const requiredItems={nutrition:!lowestCapacity&&inputs.missedDayCount<1,hydration:!lowestCapacity&&inputs.missedDayCount<2,workoutOrMovement:!lowestCapacity&&inputs.missedDayCount<3,dailyCheckIn:true,recovery:inputs.program==='phoenix'||lowestCapacity,sleep:false,customTasks:inputs.program!=='ember'&&!lowestCapacity&&inputs.missedDayCount<3}
   const completedItems={nutrition:nutrition.dataStatus==='known',hydration:hydration.percent>=80,workoutOrMovement:workoutComplete||activityComplete,dailyCheckIn:assessmentComplete,recovery:recoveryComplete,sleep:sleepComplete,customTasks:blockTaskCount>=1||phoenixTaskPercent>=80}

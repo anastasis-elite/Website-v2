@@ -36,6 +36,17 @@ function normalizeRecentRecovery(
   })
 }
 
+function metricValue(metrics: Record<string, any>, metricType: string) {
+  return nullableNumber(metrics[metricType]?.value)
+}
+
+function mapMetricsByType(rows: any[] | null) {
+  return (rows || []).reduce<Record<string, any>>((map, row) => {
+    map[String(row.metric_type)] = row
+    return map
+  }, {})
+}
+
 export async function loadProgramLogicInputs({
   supabase, user, client, program, dailyPlan, cycleStatus, cycleAdjustment,
   plannedWorkout, plannedExercises, monthlyAssessmentsDueCount,
@@ -61,6 +72,7 @@ export async function loadProgramLogicInputs({
     { data: initialAssessment }, { data: measurementLogs }, { data: photoRecord },
     { data: phoenixTasks }, { data: recentTasks }, { data: todayWorkoutFeedback },
     { data: recoveryActivities }, { data: rawRecentRecovery }, { data: executionHistory },
+    { data: dailyHealthMetrics },
   ] = await Promise.all([
     supabase.from('assessments').select('*').eq('client_id', client.client_id).gte('submitted_at', start).lte('submitted_at', end).limit(1).maybeSingle(),
     supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).limit(1).maybeSingle(),
@@ -82,11 +94,22 @@ export async function loadProgramLogicInputs({
       .gte('log_date', sevenDaysAgo)
       .lt('log_date', today),
     supabase.from('daily_execution_status').select('log_date,streak_eligible').eq('user_id',user.id).eq('client_id',client.client_id).lt('log_date',today).order('log_date',{ascending:false}).limit(30),
+    supabase
+      .from('daily_health_metrics')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('client_id', client.client_id)
+      .gte('metric_date', sevenDaysAgo)
+      .lte('metric_date', today),
   ])
 
   const nutritionIds = (nutritionLogs || []).map((row: any) => row.id)
+  const todayHealthMetrics = mapMetricsByType(
+    (dailyHealthMetrics || []).filter((row: any) => String(row.metric_date) === today),
+  )
+  const passiveSleepHours = metricValue(todayHealthMetrics, 'sleep_duration')
   const sleepStatus=await getSleepStatusForDashboard(supabase,client.client_id,today)
-  const todayRecovery=sleepStatus.logged?{...(rawTodayRecovery||{}),sleep_hours:sleepStatus.durationHours,sleep_quality:sleepStatus.quality,sleep_bedtime:sleepStatus.bedtime,sleep_wake_time:sleepStatus.wakeTime}:rawTodayRecovery
+  const todayRecovery=sleepStatus.logged?{...(rawTodayRecovery||{}),sleep_hours:sleepStatus.durationHours,sleep_quality:sleepStatus.quality,sleep_bedtime:sleepStatus.bedtime,sleep_wake_time:sleepStatus.wakeTime}:passiveSleepHours!==null?{...(rawTodayRecovery||{}),sleep_hours:passiveSleepHours,passive_source:'health_integration'}:rawTodayRecovery
   const { data: nutritionTotals } = nutritionIds.length
     ? await supabase.from('nutrition_log_totals_by_block').select('*').in('nutrition_log_id', nutritionIds)
     : { data: [] }
@@ -224,7 +247,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
   if (todayRecovery?.check_in_completed_at) ['morning-checkin','midday-checkin','evening-checkin'].forEach((id) => automaticTaskIds.add(id))
   if (Array.isArray(todayRecovery?.daily_tasks)) todayRecovery.daily_tasks.forEach((id: string) => automaticTaskIds.add(id))
   if ((recoveryActivities || []).length) automaticTaskIds.add('evening-wind-down')
-  if (dailyPlan?.workoutCompleted) automaticTaskIds.add('midday-movement')
+  if (dailyPlan?.workoutCompleted || metricValue(todayHealthMetrics, 'workout')) automaticTaskIds.add('midday-movement')
   const waterTarget = Number(dailyPlan?.dailyTargets?.water || 0)
   const waterRemaining = Number(dailyPlan?.dailyRemaining?.water ?? waterTarget)
   if (waterTarget > 0 && ((waterTarget - waterRemaining) / waterTarget) >= .8) automaticTaskIds.add('morning-water')
@@ -272,5 +295,9 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
   taskCount: activityByDate.get(yesterday) || 0,
 },
     monthlyAssessmentsDueCount,
+    healthMetrics: {
+      today: todayHealthMetrics,
+      recent: dailyHealthMetrics || [],
+    },
   }
 }

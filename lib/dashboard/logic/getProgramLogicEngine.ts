@@ -479,10 +479,45 @@ export async function getProgramLogicEngine(
   const recovery =
     inputs.todayRecovery || {}
 
+  const todayHealth =
+    inputs.healthMetrics.today || {}
+
+  const passiveHealth = {
+    sleepDurationHours:
+      nullableNumeric(todayHealth.sleep_duration?.value),
+    steps:
+      nullableNumeric(todayHealth.steps?.value),
+    activeEnergy:
+      nullableNumeric(todayHealth.active_energy?.value),
+    workoutMinutes:
+      nullableNumeric(todayHealth.workout?.value),
+    hrv:
+      nullableNumeric(todayHealth.heart_rate_variability?.value),
+    restingHeartRate:
+      nullableNumeric(todayHealth.resting_heart_rate?.value),
+    respiratoryRate:
+      nullableNumeric(todayHealth.respiratory_rate?.value),
+    bodyTemperature:
+      nullableNumeric(todayHealth.body_temperature?.value),
+    weight:
+      nullableNumeric(todayHealth.body_weight?.value),
+    bodyFat:
+      nullableNumeric(todayHealth.body_fat_percentage?.value),
+    sources:
+      Array.from(
+        new Set(
+          Object.values(todayHealth)
+            .flatMap((metric: any) => metric?.source_providers || [])
+            .filter(Boolean),
+        ),
+      ).map(String),
+  }
+
   const sleepHours =
     nullableNumeric(
       recovery.sleep_hours ??
-        recovery.sleep_duration_hours,
+        recovery.sleep_duration_hours ??
+        passiveHealth.sleepDurationHours,
     )
 
   const sleepQuality =
@@ -495,6 +530,9 @@ export async function getProgramLogicEngine(
       inputs.todayRecovery
         ?.check_in_completed_at,
     )
+
+  const passiveWorkoutComplete =
+    (passiveHealth.workoutMinutes || 0) >= 10
 
   const recoveryComplete =
     inputs.todayRecoveryActivities
@@ -584,7 +622,8 @@ export async function getProgramLogicEngine(
 
       completed: Boolean(
         inputs.dailyPlan
-          ?.workoutCompleted,
+          ?.workoutCompleted ||
+          passiveWorkoutComplete,
       ),
 
       title:
@@ -687,12 +726,15 @@ export async function getProgramLogicEngine(
 
     progress: progress(inputs),
 
+    passiveHealth,
+
     trends: buildTrends(inputs),
 
     execution: {
       workoutComplete: Boolean(
         inputs.dailyPlan
-          ?.workoutCompleted,
+          ?.workoutCompleted ||
+          passiveWorkoutComplete,
       ),
 
       nutritionLogged:

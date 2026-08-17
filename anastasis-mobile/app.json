@@ -10,6 +10,24 @@
     "plugins": [
       "expo-router",
       [
+        "react-native-health",
+        {
+          "healthSharePermission": "Anastasis reads selected health metrics to reduce manual tracking and support daily recommendations.",
+          "healthUpdatePermission": "Anastasis does not write health data in this release."
+        }
+      ],
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "minSdkVersion": 26
+          }
+        }
+      ],
+      [
         "expo-notifications",
         {
           "defaultChannel": "concierge",
@@ -19,10 +37,31 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anastasiselite.mobile"
+      "bundleIdentifier": "com.anastasiselite.mobile",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Anastasis reads selected health metrics to reduce manual tracking and support daily recommendations.",
+        "NSHealthUpdateUsageDescription": "Anastasis does not write health data in this release."
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true
+      }
     },
     "android": {
-      "package": "com.anastasiselite.mobile"
+      "package": "com.anastasiselite.mobile",
+      "permissions": [
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_RESTING_HEART_RATE",
+        "android.permission.health.READ_HEART_RATE_VARIABILITY",
+        "android.permission.health.READ_RESPIRATORY_RATE",
+        "android.permission.health.READ_BODY_TEMPERATURE",
+        "android.permission.health.READ_SKIN_TEMPERATURE",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+        "android.permission.health.READ_EXERCISE",
+        "android.permission.health.READ_DISTANCE",
+        "android.permission.health.READ_WEIGHT",
+        "android.permission.health.READ_BODY_FAT"
+      ]
     },
     "web": {
       "bundler": "metro",
