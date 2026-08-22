@@ -100,6 +100,13 @@ export default function AdaptiveNutritionDashboard({
 
   const [message, setMessage] = useState('')
   const [foodLoggerOpen, setFoodLoggerOpen] = useState(isIgnite)
+  const [macroEntry, setMacroEntry] = useState({
+    calories: '',
+    protein: '',
+    carbs: '',
+    fats: '',
+  })
+  const [savingMacros, setSavingMacros] = useState(false)
 
   const [waterOunces, setWaterOunces] = useState(8);
   const [addingWater, setAddingWater] = useState(false);
@@ -139,6 +146,38 @@ export default function AdaptiveNutritionDashboard({
     await loadToday()
     setMessage('Food logged — today’s calories and macros are updated.')
     router.refresh()
+  }
+
+  async function handleMacroSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    if (!nutritionLog?.id) return
+
+    setSavingMacros(true)
+    setMessage('')
+
+    try {
+      const response = await fetch('/api/nutrition/add-macros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nutritionLogId: nutritionLog.id,
+          calories: Number(macroEntry.calories || 0),
+          protein: Number(macroEntry.protein || 0),
+          carbs: Number(macroEntry.carbs || 0),
+          fats: Number(macroEntry.fats || 0),
+        }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(payload?.error || 'Macros could not be saved.')
+      setMacroEntry({ calories: '', protein: '', carbs: '', fats: '' })
+      await loadToday()
+      setMessage('Macros logged.')
+      router.refresh()
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Macros could not be saved.')
+    } finally {
+      setSavingMacros(false)
+    }
   }
 
   useEffect(() => {
@@ -398,16 +437,16 @@ setNutritionLog(log)
           <h2 style={styles.h2Style}>{fuel.displayStatus}</h2>
           <p style={styles.bodyStyle}>{fuel.reasoning}</p>
           <p style={styles.bodyStyle}><strong>What to eat next:</strong> {engineNutrition.mealSuggestions[0]}</p>
-          {foodLoggingEnabled && nutritionLog?.id ? (
+          {(foodLoggingEnabled || isEmber) && nutritionLog?.id ? (
             <button
               type="button"
               onClick={() => {
-                setFoodLoggerOpen(true)
-                requestAnimationFrame(() => document.getElementById('aos-food-logger')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+                if (foodLoggingEnabled) setFoodLoggerOpen(true)
+                requestAnimationFrame(() => document.getElementById(foodLoggingEnabled ? 'aos-food-logger' : 'aos-macro-entry')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
               }}
               style={{ ...styles.primaryButtonStyle, margin: '16px 0 0' }}
             >
-              Log Food
+              {isEmber ? 'Add Macros' : 'Log Food'}
             </button>
           ) : null}
           <div style={styles.cardGridStyle}><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Before training</h3><p style={styles.compactCardTextStyle}>{fuel.preWorkoutAction}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Workout effect</h3><p style={styles.compactCardTextStyle}>{fuel.workoutAdjustment}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>After training</h3><p style={styles.compactCardTextStyle}>{fuel.postWorkoutPriority}</p></div></div>
@@ -626,6 +665,39 @@ setNutritionLog(log)
     )}
   </section>
 ) : null}
+
+        {isEmber && nutritionLog ? (
+          <section id="aos-macro-entry" style={styles.cartBoxStyle}>
+            <p style={styles.eyebrowStyle}>Macro Entry</p>
+            <h2 style={styles.h2Style}>Add Macros</h2>
+            <p style={styles.bodyStyle}>Enter the totals you want to record for this meal or block.</p>
+            <form onSubmit={handleMacroSubmit} style={{ display: 'grid', gap: 16 }}>
+              <div style={styles.cardGridStyle}>
+                {([
+                  ['calories', 'Calories'],
+                  ['protein', 'Protein (g)'],
+                  ['carbs', 'Carbs (g)'],
+                  ['fats', 'Fat (g)'],
+                ] as const).map(([key, label]) => (
+                  <label key={key} style={styles.compactCardStyle}>
+                    <span style={styles.compactCardTitleStyle}>{label}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={macroEntry[key]}
+                      onChange={(event) => setMacroEntry((current) => ({ ...current, [key]: event.target.value }))}
+                      style={styles.inputStyle}
+                    />
+                  </label>
+                ))}
+              </div>
+              <button type="submit" disabled={savingMacros} style={styles.primaryButtonStyle}>
+                {savingMacros ? 'Saving Macros...' : 'Add Macros'}
+              </button>
+            </form>
+          </section>
+        ) : null}
 
         {(isIgnite || isPhoenix) && nutritionLog ? (
           <details style={styles.cartBoxStyle}>

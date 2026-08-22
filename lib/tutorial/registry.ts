@@ -1,10 +1,37 @@
 import type { TutorialDefinition, TutorialId } from '@/lib/tutorial/types'
 import { onboardingJourney } from '@/lib/tutorial/onboarding-journey'
+import { getTierCapabilities, normalizeProgramTier, type ProgramTier } from '@/lib/entitlements'
 
 export const CORE_ONBOARDING_TUTORIAL_ID = 'core-onboarding-v1'
 const welcomeJourneyStep = onboardingJourney.find((step) => step.id === 'welcome')
 
-export const coreOnboardingTutorial: TutorialDefinition = {
+export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): TutorialDefinition {
+  const tier = normalizeProgramTier(tierValue)
+  const capabilities = getTierCapabilities(tier)
+  const nutritionCopy: Record<ProgramTier, { title: string; description: string }> = {
+    ember: {
+      title: 'Macro logging',
+      description: 'This shows nutrition progress. Ember uses macro entry, so you can record protein, carbs, fats, and calories without opening the meal logger.',
+    },
+    ignite: {
+      title: 'Meal logging',
+      description: 'This shows nutrition progress. Ignite uses meal logging and quick foods so Anastasis can give clearer nutrition guidance.',
+    },
+    phoenix: {
+      title: 'Recommended meals',
+      description: 'This shows nutrition progress. Phoenix surfaces recommended meals when nutrition is the next useful action, then lets you log or adjust them.',
+    },
+  }
+  const recoveryCopy: Record<ProgramTier, string> = {
+    ember: 'Recovery stays available as a place to record support without Anastasis choosing a specific modality for you.',
+    ignite: 'Recovery can include recommendations such as a mobility, breathing, or gentle movement option.',
+    phoenix: 'Recovery can become a directed next action when the available signals show what should happen next.',
+  }
+  const assessmentDescription = capabilities.postureAssessment
+    ? 'Upload progress photos, or use posture photos when you want Anastasis to estimate body landmarks. You can correct the points before they become part of your assessment history.'
+    : 'Upload progress and assessment photos for private comparison and history. Posture landmark assessment is available in higher-guidance tiers.'
+
+  return {
   tutorialId: CORE_ONBOARDING_TUTORIAL_ID,
   title: 'Core Onboarding',
   description: 'Foundational guided onboarding for the authenticated dashboard.',
@@ -49,18 +76,27 @@ export const coreOnboardingTutorial: TutorialDefinition = {
     {
       stepId: 'dashboard-nutrition-quick-add',
       kind: 'reveal',
-      title: 'Nutrition progress and quick foods',
-      description:
-        'This shows nutrition progress. After you repeatedly log the same foods in this time of day, Anastasis can surface those foods here for faster logging; until then, the full food log is always available.',
+      title: nutritionCopy[tier].title,
+      description: nutritionCopy[tier].description,
       revealTarget: { tutorialTargetId: 'dashboard-nutrition-progress' },
     },
     {
       stepId: 'dashboard-food-log',
       kind: 'reveal',
-      title: 'Open the full food log',
-      description:
-        'Tap Nutrition to open the full food log. Quick Add is for speed; the Nutrition page is where you can log and review the full day.',
+      title: tier === 'ember' ? 'Open macro entry' : tier === 'phoenix' ? 'Open nutrition recommendations' : 'Open the full food log',
+      description: tier === 'ember'
+        ? 'Tap Nutrition to open macro entry and review today’s targets.'
+        : tier === 'phoenix'
+          ? 'Tap Nutrition to review recommended meals, food logging, and the full day.'
+          : 'Tap Nutrition to open the full food log. Quick Add is for speed; the Nutrition page is where you can log and review the full day.',
       revealTarget: { tutorialTargetId: 'dashboard-nav-nutrition' },
+    },
+    {
+      stepId: 'dashboard-recovery',
+      kind: 'reveal',
+      title: 'Recovery',
+      description: recoveryCopy[tier],
+      revealTarget: { tutorialTargetId: 'dashboard-nav-recovery' },
     },
     {
       stepId: 'dashboard-daily-checkin',
@@ -81,9 +117,8 @@ export const coreOnboardingTutorial: TutorialDefinition = {
     {
       stepId: 'progress-photos',
       kind: 'reveal',
-      title: 'Progress photos',
-      description:
-        'Upload progress photos here so they become part of your longitudinal progress record. Posture photo analysis is coming soon.',
+      title: capabilities.postureAssessment ? 'Progress and posture photos' : 'Progress photos',
+      description: assessmentDescription,
       revealTarget: { tutorialTargetId: 'dashboard-progress-photos' },
     },
     {
@@ -103,7 +138,10 @@ export const coreOnboardingTutorial: TutorialDefinition = {
       revealTarget: { tutorialTargetId: 'dashboard-strength-assessment' },
     },
   ],
+  }
 }
+
+export const coreOnboardingTutorial: TutorialDefinition = buildCoreOnboardingTutorial()
 
 const tutorialRegistry: Record<TutorialId, TutorialDefinition> = {
   [coreOnboardingTutorial.tutorialId]: coreOnboardingTutorial,
@@ -111,6 +149,11 @@ const tutorialRegistry: Record<TutorialId, TutorialDefinition> = {
 
 export function getTutorialDefinition(tutorialId: TutorialId) {
   return tutorialRegistry[tutorialId] ?? null
+}
+
+export function getTierAwareTutorialDefinition(tutorialId: TutorialId, tier: unknown) {
+  if (tutorialId === CORE_ONBOARDING_TUTORIAL_ID) return buildCoreOnboardingTutorial(tier)
+  return getTutorialDefinition(tutorialId)
 }
 
 export function getTutorialDefinitions() {

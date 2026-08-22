@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getTierCapabilities } from '@/lib/entitlements'
 
 export const runtime = 'nodejs'
 
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
 
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('client_id, auth_user_id')
+      .select('client_id, auth_user_id, program')
       .eq('auth_user_id', user.id)
       .single()
 
@@ -41,6 +42,15 @@ export async function POST(req: Request) {
         },
         { status: 404 }
       )
+    }
+
+    const capabilities = getTierCapabilities(client.program)
+    if (!capabilities.assessmentPhotoUpload) {
+      return NextResponse.json({ error: 'Assessment photo upload is not available for this tier.' }, { status: 403 })
+    }
+
+    if (assessmentType === 'posture' && !capabilities.postureAssessment) {
+      return NextResponse.json({ error: 'Posture assessment is not available for this tier.' }, { status: 403 })
     }
 
     const uploadedPaths: Record<string, string | null> = {
@@ -134,9 +144,29 @@ posture_flags: {
       )
     }
 
+    const uploadedViews = assessmentType === 'posture' ? await Promise.all(
+      photoKeys
+        .map((key) => ({
+          view: key,
+          path: uploadedPaths[`${key}_photo_url`],
+        }))
+        .filter((item) => item.path)
+        .map(async (item) => {
+          const { data } = await supabase.storage
+            .from('assessment_photos')
+            .createSignedUrl(item.path as string, 3600)
+
+          return {
+            ...item,
+            signedUrl: data?.signedUrl || null,
+          }
+        }),
+    ) : []
+
     return NextResponse.json({
       success: true,
       record,
+      uploadedViews: uploadedViews.filter((item) => item.signedUrl),
     })
   } catch (error) {
     console.error('ASSESSMENT PHOTO UPLOAD ERROR:', error)

@@ -21,7 +21,7 @@ export default async function DashboardLayout({
 
   const program=(['ember','ignite','phoenix'].includes(client.program)?client.program:'ignite') as 'ember'|'ignite'|'phoenix'
   return (
-    <TutorialProvider>
+    <TutorialProvider tier={program}>
       <div className="dashboard-client-shell" data-tutorial-id="dashboard-shell">
         {children}
         <ClientDashboardNav program={program}/>

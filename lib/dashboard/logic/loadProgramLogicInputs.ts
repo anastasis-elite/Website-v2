@@ -127,8 +127,22 @@ const { data: allMealEntries } = nutritionIds.length
       .order('created_at', { ascending: false })
   : { data: [] }
 
+const { data: allMacroEntries } = nutritionIds.length
+  ? await supabase
+      .from('macro_entries')
+      .select('id,nutrition_log_id,calories,protein_g,carbs_g,fat_g,day_block,created_at')
+      .in('nutrition_log_id', nutritionIds)
+      .order('created_at', { ascending: false })
+  : { data: [] }
+
 const mealEntries = todayNutrition?.id
   ? (allMealEntries || []).filter(
+      (entry: any) => entry.nutrition_log_id === todayNutrition.id
+    )
+  : []
+
+const macroEntries = todayNutrition?.id
+  ? (allMacroEntries || []).filter(
       (entry: any) => entry.nutrition_log_id === todayNutrition.id
     )
   : []
@@ -162,6 +176,10 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
     (row: any) => row.nutrition_log_id === nutritionLog.id
   )
 
+  const macroEntriesForDay = (allMacroEntries || []).filter(
+    (entry: any) => entry.nutrition_log_id === nutritionLog.id
+  )
+
   const consumed = totalsForDay.reduce(
     (total: any, row: any) => ({
       calories:
@@ -180,6 +198,13 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
       fats: 0,
     }
   )
+
+  for (const entry of macroEntriesForDay) {
+    consumed.calories += Number(entry.calories || 0)
+    consumed.protein += Number(entry.protein_g || 0)
+    consumed.carbs += Number(entry.carbs_g || 0)
+    consumed.fats += Number(entry.fat_g || 0)
+  }
 
   const targetCalories = Number(nutritionLog.calories || 0)
   const targetProtein = Number(nutritionLog.protein || 0)
@@ -210,7 +235,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
 
   const mealCount = (allMealEntries || []).filter(
     (entry: any) => entry.nutrition_log_id === nutritionLog.id
-  ).length
+  ).length + macroEntriesForDay.length
 
   return {
     date,
@@ -282,6 +307,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
     recentRecovery,
     todaySymptoms, recentSymptoms: recentSymptoms || [], nutritionLogs: nutritionLogs || [],
     nutritionTotals: nutritionTotals || [],
+    macroEntries,
     mealEntries,
     recentFuelingHistory,
     workoutHistory: workoutHistory || [],

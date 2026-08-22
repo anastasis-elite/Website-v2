@@ -4,6 +4,7 @@ import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
 import { getPhoenixRecipeRecommendations } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
+import { getTierCapabilities } from '@/lib/entitlements'
 
 export default async function NutritionPage() {
   const { supabase, client, user } = await getDashboardContext()
@@ -17,6 +18,6 @@ export default async function NutritionPage() {
       logicProgram: logic.program,
     })
   }
-  const recipes=logic.program==='phoenix'?getPhoenixRecipeRecommendations({logic,client}):[]
+  const recipes=getTierCapabilities(logic.program).nutritionRecommendedMeal?getPhoenixRecipeRecommendations({logic,client}):[]
   return <NutritionDashboardClient logic={logic} recipes={recipes} />
 }

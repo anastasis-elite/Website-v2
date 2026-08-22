@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getTierCapabilities } from '@/lib/entitlements'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -57,6 +58,21 @@ export async function POST(request: Request) {
 
   if (log.auth_user_id !== user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const { data: client, error: clientError } = await supabase
+    .from('clients')
+    .select('client_id, program')
+    .eq('client_id', log.client_id)
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+
+  if (clientError || !client) {
+    return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
+  }
+
+  if (!getTierCapabilities(client.program).nutritionMealLogging) {
+    return NextResponse.json({ error: 'Meal logging is not available for this tier.' }, { status: 403 })
   }
 
   let grams: number | null = null

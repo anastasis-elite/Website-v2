@@ -49,6 +49,7 @@ export type ProgramLogicInputs = {
   recentSymptoms: any[]
   nutritionLogs: any[]
   nutritionTotals: any[]
+  macroEntries: any[]
   mealEntries: any[]
   recentFuelingHistory: FuelingHistoryDay[]
   workoutHistory: any[]

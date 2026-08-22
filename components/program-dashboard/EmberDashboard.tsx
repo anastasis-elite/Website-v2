@@ -9,7 +9,7 @@ import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
 import { getEmberDashboardData } from '@/lib/dashboard/ember/getEmberDashboardData'
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
-import AdaptiveTodayForYou from '@/components/program-dashboard/AdaptiveTodayForYou'
+import TierAwareDashboardWorkspace from '@/components/program-dashboard/TierAwareDashboardWorkspace'
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
 import DashboardProgressLinks from '@/components/program-dashboard/DashboardProgressLinks'
 import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
@@ -143,11 +143,7 @@ export default function EmberDashboard({
           </div>
         </header>
 
-        <AdaptiveTodayForYou
-          schedule={schedule}
-          streak={data.streak}
-          insight={engine.insight.concise}
-        />
+        <TierAwareDashboardWorkspace tier="ember" logic={logic} schedule={schedule} />
 
         <section className="ember-primary-grid" aria-label="Hydration and macros">
           <article className="ember-panel ember-water-card">

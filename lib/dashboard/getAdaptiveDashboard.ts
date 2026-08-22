@@ -1,3 +1,5 @@
+import { getTierCapabilities, normalizeProgramTier } from '@/lib/entitlements'
+
 type AdaptiveDashboardInput = {
   client: any
   monthlyAssessmentsDueCount?: number
@@ -19,7 +21,8 @@ export async function getAdaptiveDashboard({
 }: AdaptiveDashboardInput) {
   const daysSinceOnboarding = getDaysSince(client?.onboarding_completed_at)
 
-  const program = String(client?.program || 'ember').toLowerCase()
+  const program = normalizeProgramTier(client?.program || 'ember')
+  const capabilities = getTierCapabilities(program)
 
   const isEmber = program === 'ember'
   const isIgnite = program === 'ignite'
@@ -73,14 +76,14 @@ export async function getAdaptiveDashboard({
 
   const showStatusDock = isIgnite || isPhoenix
   const showDailyCarousel = isIgnite || isPhoenix
-  const showFoodLogging = isIgnite || isPhoenix
+  const showFoodLogging = capabilities.nutritionMealLogging
   const showMicroTracking = isIgnite || isPhoenix
   const showGeneralInsights = isIgnite || isPhoenix
   const showFlame = isIgnite || isPhoenix
 
   const showSymptoms = isPhoenix
   const showAdaptiveNutrition = isPhoenix
-  const showPosture = isPhoenix
+  const showPosture = capabilities.postureAssessment
   const showAdvancedInsights = isPhoenix
   const showPsychologicalInsights = isPhoenix
 

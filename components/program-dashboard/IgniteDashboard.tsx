@@ -13,7 +13,7 @@ import type { DailyScheduleState } from '@/lib/schedule/types'
 
 import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
-import AdaptiveTodayForYou from '@/components/program-dashboard/AdaptiveTodayForYou'
+import TierAwareDashboardWorkspace from '@/components/program-dashboard/TierAwareDashboardWorkspace'
 
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
 import DashboardProgressLinks from '@/components/program-dashboard/DashboardProgressLinks'
@@ -527,11 +527,7 @@ export default function IgniteDashboard({
           </div>
         </header>
 
-        <AdaptiveTodayForYou
-          schedule={schedule}
-          streak={data.streak}
-          insight={engine.insight.concise}
-        />
+        <TierAwareDashboardWorkspace tier="ignite" logic={logic} schedule={schedule} />
 
         <section className="ignite-top-grid">
           <article className="ignite-panel ignite-daily-progress">

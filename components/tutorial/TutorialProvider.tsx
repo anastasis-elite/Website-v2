@@ -12,8 +12,10 @@ import {
 import {
   CORE_ONBOARDING_TUTORIAL_ID,
   getTutorialDefinition,
+  getTierAwareTutorialDefinition,
   hasTutorialDefinition,
 } from '@/lib/tutorial/registry'
+import type { ProgramTier } from '@/lib/entitlements'
 import { getTutorialHydrationDecision } from '@/lib/tutorial/launchPolicy'
 import type {
   TutorialDefinition,
@@ -102,7 +104,7 @@ async function requestTutorialProgress(
   return body.progress
 }
 
-export function TutorialProvider({ children }: { children: ReactNode }) {
+export function TutorialProvider({ children, tier = 'ignite' }: { children: ReactNode; tier?: ProgramTier }) {
   const [activeTutorialId, setActiveTutorialId] = useState<TutorialId | null>(null)
   const [progressByTutorialId, setProgressByTutorialId] = useState<
     Record<TutorialId, TutorialProgress>
@@ -327,7 +329,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const value = useMemo<TutorialContextValue>(() => {
     const activeTutorial =
       activeTutorialId && hasTutorialDefinition(activeTutorialId)
-        ? getTutorialDefinition(activeTutorialId)
+        ? getTierAwareTutorialDefinition(activeTutorialId, tier)
         : null
     const activeProgress = activeTutorialId
       ? progressByTutorialId[activeTutorialId] ?? null
@@ -367,6 +369,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     }
   }, [
     activeTutorialId,
+    tier,
     completeTutorial,
     goToStep,
     isHydrating,

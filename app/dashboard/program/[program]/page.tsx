@@ -13,6 +13,7 @@ import { getProgramLogicEngine } from '@/lib/dashboard/logic/getProgramLogicEngi
 import type { ProgramTier } from '@/lib/dashboard/logic/types'
 import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
 import { getDailyScheduleState } from '@/lib/schedule/service'
+import { getPhoenixRecipeRecommendations } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix'] as const
 
@@ -126,6 +127,7 @@ export default async function ProgramPage({
     client,
     logic,
   })
+  const phoenixRecipes = program === 'phoenix' ? getPhoenixRecipeRecommendations({ logic, client }) : []
 
   return (
     <main>
@@ -138,7 +140,7 @@ export default async function ProgramPage({
       )}
 
       {program === 'phoenix' && (
-        <PhoenixDashboard logic={logic} schedule={schedule} trackLabel={getPhoenixTrackLabel({ client, programJson })} />
+        <PhoenixDashboard logic={logic} schedule={schedule} trackLabel={getPhoenixTrackLabel({ client, programJson })} recipes={phoenixRecipes} />
       )}
     </main>
   )

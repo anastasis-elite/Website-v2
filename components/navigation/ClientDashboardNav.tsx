@@ -17,7 +17,7 @@ export default function ClientDashboardNav({program}:{program:'ember'|'ignite'|'
     <Link href="/dashboard/nutrition" className={active('/dashboard/nutrition')?'active':''} data-tutorial-id="dashboard-nav-nutrition"><span aria-hidden="true">⌁</span><small>Nutrition</small></Link>
     <Link href={`${dashboard}/workout`} className={`client-dashboard-nav__flame ${active(`${dashboard}/workout`)?'active':''}`} aria-label="Open today’s workout"><span aria-hidden="true">🔥</span><small>Workout</small></Link>
     <Link href="/dashboard/check-in" className={active('/dashboard/check-in')?'active':''} data-tutorial-id="dashboard-daily-checkin"><span aria-hidden="true">✓</span><small>Check-In</small></Link>
-    <Link href="/dashboard/recovery" className={active('/dashboard/recovery')||active('/dashboard/sleep')||active('/dashboard/meditation')?'active':''}><span aria-hidden="true">♡</span><small>Recovery</small></Link>
+    <Link href="/dashboard/recovery" className={active('/dashboard/recovery')||active('/dashboard/sleep')||active('/dashboard/meditation')?'active':''} data-tutorial-id="dashboard-nav-recovery"><span aria-hidden="true">♡</span><small>Recovery</small></Link>
     <DashboardMoreMenu program={program}/>
   </nav>
 }

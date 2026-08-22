@@ -198,11 +198,22 @@ export function runNutritionEngine(inputs: ProgramLogicInputs): NutritionResult 
         fats: numeric(row.fat_eaten_g),
       })
     }
+    for (const row of inputs.macroEntries || []) {
+      if (row.nutrition_log_id !== currentLog.id) continue
+      const block = String(row.day_block || 'other').toLowerCase() as DayBlock
+      const targetBlock = DAY_BLOCK_ORDER.includes(block) ? block : getCurrentDayBlock(new Date())
+      blockConsumed[targetBlock] = addMacros(blockConsumed[targetBlock], {
+        calories: numeric(row.calories),
+        protein: numeric(row.protein_g),
+        carbs: numeric(row.carbs_g),
+        fats: numeric(row.fat_g),
+      })
+    }
   }
   if (currentLog && !DAY_BLOCK_ORDER.some((block) => macroCompletion(blockConsumed[block], blockTargets[block]) > 0)) {
     blockConsumed.morning = { calories: calories.consumed, protein: protein.consumed, carbs: carbs.consumed, fats: fats.consumed }
   }
-  const dataStatus = currentLog && inputs.mealEntries.length ? 'known' : 'needs_input'
+  const dataStatus = currentLog && (inputs.mealEntries.length || (inputs.macroEntries || []).length) ? 'known' : 'needs_input'
   const suggestions = dataStatus === 'needs_input' ? ['Log the next meal to calculate what remains.'] : protein.percent < 50 ? ['Choose the easiest protein-forward meal available.'] : carbs.percent < 40 && inputs.plannedWorkout ? ['Add an easy carbohydrate source before training.'] : ['Build the next meal around what remains.']
   return { dataStatus, calories, protein, carbs, fats, mealSuggestions: suggestions, preWorkoutFuelPrompt: dataStatus === 'needs_input' ? 'Log or eat a small balanced meal before demanding training.' : protein.percent < 35 || carbs.percent < 25 ? 'Eat protein and an easy carbohydrate before training.' : 'Use normal pre-workout timing.', postWorkoutPriority: 'Prioritize protein, fluids, and enough total energy after training.', blockTargets, blockConsumed }
 }

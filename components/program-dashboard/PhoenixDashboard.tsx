@@ -15,7 +15,8 @@ import type { DailyScheduleState } from '@/lib/schedule/types'
 
 import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashboardData'
 import { useProgramLogicEngine } from '@/components/program-dashboard/logic/hooks'
-import AdaptiveTodayForYou from '@/components/program-dashboard/AdaptiveTodayForYou'
+import TierAwareDashboardWorkspace from '@/components/program-dashboard/TierAwareDashboardWorkspace'
+import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
 import DashboardProgressLinks from '@/components/program-dashboard/DashboardProgressLinks'
@@ -171,10 +172,12 @@ export default function PhoenixDashboard({
   logic,
   trackLabel,
   schedule,
+  recipes = [],
 }: {
   logic: ProgramLogicOutput
   trackLabel: string
   schedule: DailyScheduleState
+  recipes?: PhoenixRecipe[]
 }) {
   const engine = useProgramLogicEngine(logic)
 
@@ -280,11 +283,7 @@ export default function PhoenixDashboard({
           </div>
         </header>
 
-        <AdaptiveTodayForYou
-          schedule={schedule}
-          streak={data.streak}
-          insight={engine.insight.concise}
-        />
+        <TierAwareDashboardWorkspace tier="phoenix" logic={logic} schedule={schedule} recipes={recipes} />
 
         <section className="phoenix-core-grid">
           <article className="phoenix-card phoenix-water">
