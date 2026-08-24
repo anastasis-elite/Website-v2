@@ -173,7 +173,13 @@ function DashboardCalendar({
       {mode === 'week' ? (
         <div className="tier-week-calendar" data-testid="calendar-week-grid">
           {weekDays.map((day) => (
-            <button key={day.date} type="button" className="tier-week-day" onClick={() => selectDate(day.date)}>
+            <button
+              key={day.date}
+              type="button"
+              className={`tier-week-day${day.date === selectedDate ? ' is-selected' : ''}${day.date === schedule.date ? ' is-today' : ''}`}
+              onClick={() => selectDate(day.date)}
+              aria-pressed={day.date === selectedDate}
+            >
               <span>{day.label}</span>
               <strong>{parseDateKey(day.date).getDate()}</strong>
               <div>
@@ -264,10 +270,26 @@ function buildPlanBlocks(tier: ProgramTier, logic: ProgramLogicOutput): PlanBloc
   ]
 }
 
-function MetricRing({ label, value, detail, href, tutorialId }: { label: string; value: number; detail: string; href?: string; tutorialId?: string }) {
+function MetricRing({
+  label,
+  value,
+  detail,
+  href,
+  tutorialId,
+  tone,
+}: {
+  label: string
+  value: number
+  detail: string
+  href?: string
+  tutorialId?: string
+  tone?: 'action' | 'recovery'
+}) {
+  const percent = progressPercent(value)
+  const className = `tier-metric-card${percent >= 100 ? ' is-complete' : ''}${tone === 'recovery' ? ' is-recovery' : ''}`
   const ring = (
-    <div className="tier-metric-ring" style={{ '--tier-progress': `${progressPercent(value) * 3.6}deg` } as CSSProperties}>
-      <strong>{progressPercent(value)}%</strong>
+    <div className="tier-metric-ring" style={{ '--tier-progress': `${percent * 3.6}deg` } as CSSProperties}>
+      <strong>{percent}%</strong>
     </div>
   )
   const content = (
@@ -277,7 +299,7 @@ function MetricRing({ label, value, detail, href, tutorialId }: { label: string;
       <small>{detail}</small>
     </>
   )
-  return href ? <Link href={href} className="tier-metric-card" data-tutorial-id={tutorialId}>{content}</Link> : <article className="tier-metric-card" data-tutorial-id={tutorialId}>{content}</article>
+  return href ? <Link href={href} className={className} data-tutorial-id={tutorialId}>{content}</Link> : <article className={className} data-tutorial-id={tutorialId}>{content}</article>
 }
 
 function CycleSummary({ logic }: { logic: ProgramLogicOutput }) {
@@ -291,9 +313,11 @@ function CycleSummary({ logic }: { logic: ProgramLogicOutput }) {
       </Link>
     )
   }
+  const cycleLength = 28
+  const progress = progressPercent((day / cycleLength) * 100)
   return (
     <Link href="/dashboard/cycle" className="tier-metric-card" data-testid="cycle-tracker">
-      <div className="tier-metric-ring is-cycle"><strong>Day {day}</strong></div>
+      <div className="tier-metric-ring is-cycle" style={{ '--tier-progress': `${progress * 3.6}deg` } as CSSProperties}><strong>Day {day}</strong></div>
       <span>{logic.cycle.phase ? logic.cycle.phase.replaceAll('_', ' ') : 'Cycle'}</span>
       <small>{logic.cycle.insight || logic.cycle.recoveryAdjustment}</small>
     </Link>
@@ -331,7 +355,7 @@ function ProgressTab({ logic, tier }: { logic: ProgramLogicOutput; tier: Program
         <MetricRing label={tier === 'ember' ? 'Macros' : 'Nutrition'} value={nutritionPercent} detail={logic.execution.nutritionLogged ? 'Logged today' : 'Ready to log'} href="/dashboard/nutrition" />
         <MetricRing label="Workout" value={logic.execution.workoutComplete ? 100 : 0} detail={logic.workout.assigned ? logic.workout.title : 'Recovery day'} href={`/dashboard/program/${tier}/workout`} />
         <MetricRing label="Check-In" value={logic.assessments.dailyCompleted ? 100 : 0} detail={logic.assessments.dailyCompleted ? 'Complete' : 'Open'} href="/dashboard/check-in" tutorialId="dashboard-daily-checkin" />
-        <MetricRing label="Recovery" value={logic.execution.recoveryComplete ? 100 : 0} detail={logic.execution.recoveryComplete ? 'Complete' : 'Available'} href="/dashboard/recovery" />
+        <MetricRing label="Recovery" value={logic.execution.recoveryComplete ? 100 : 0} detail={logic.execution.recoveryComplete ? 'Complete' : 'Available'} href="/dashboard/recovery" tone="recovery" />
         <CycleSummary logic={logic} />
       </div>
       <MacroRows logic={logic} tier={tier} />
