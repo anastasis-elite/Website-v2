@@ -762,5 +762,5 @@ setNutritionLog(log)
 }
 
 function Recipe({ recipe }: { recipe: PhoenixRecipe }) {
-  return <details style={styles.cardStyle}><summary style={{cursor:'pointer'}}><h3 style={styles.cardTitleStyle}>{recipe.title}</h3><p style={styles.cardTextStyle}>{recipe.reason}</p><small>{recipe.prepMinutes} min · {recipe.macros.protein}g protein · {recipe.macros.calories} cal</small></summary><h4>Ingredients</h4><ul>{recipe.ingredients.map((item)=><li key={item}>{item}</li>)}</ul><h4>Simple steps</h4><ol>{recipe.steps.map((step)=><li key={step}>{step}</li>)}</ol></details>
+  return <details style={styles.cardStyle}><summary style={{cursor:'pointer'}}><h3 style={styles.cardTitleStyle}>{recipe.title}</h3><p style={styles.cardTextStyle}>{recipe.reason}</p><small>{recipe.totalMinutes} min · {recipe.macros.protein}g protein · {recipe.macros.calories} cal</small></summary><h4>Ingredients</h4><ul>{recipe.ingredientLines.map((item)=><li key={item}>{item}</li>)}</ul><h4>Simple steps</h4><ol>{recipe.steps.map((step)=><li key={step}>{step}</li>)}</ol><p style={styles.cardTextStyle}>Servings: {recipe.servings} · {recipe.meal_type} · {recipe.tags.join(', ')}</p><a href={`/dashboard/nutrition#aos-food-logger?recipe=${recipe.id}`} style={styles.primaryButtonStyle}>Log this recipe</a></details>
 }

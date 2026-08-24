@@ -17,6 +17,7 @@ export type TierCapability =
   | 'nutritionMacroEntry'
   | 'nutritionMealLogging'
   | 'nutritionRecommendedMeal'
+  | 'recipeFavorites'
   | 'recoveryBasic'
   | 'recoveryRecommendation'
   | 'recoveryDirectedNextAction'
@@ -48,6 +49,7 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     nutritionMacroEntry: true,
     nutritionMealLogging: false,
     nutritionRecommendedMeal: false,
+    recipeFavorites: true,
     nutrition: 'macro_entry',
     recoveryBasic: true,
     recoveryRecommendation: false,
@@ -67,6 +69,7 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     nutritionMacroEntry: false,
     nutritionMealLogging: true,
     nutritionRecommendedMeal: false,
+    recipeFavorites: true,
     nutrition: 'meal_logging',
     recoveryBasic: true,
     recoveryRecommendation: true,
@@ -86,6 +89,7 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     nutritionMacroEntry: false,
     nutritionMealLogging: true,
     nutritionRecommendedMeal: true,
+    recipeFavorites: true,
     nutrition: 'recommended_meal',
     recoveryBasic: true,
     recoveryRecommendation: true,

@@ -62,6 +62,30 @@ export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): Tuto
       revealTarget: { tutorialTargetId: 'dashboard-navigation' },
     },
     {
+      stepId: 'dashboard-daily-insight',
+      kind: 'reveal',
+      title: 'Daily Insight',
+      description:
+        'Daily Insight changes with the context Anastasis actually has for today, such as schedule load, recovery, nutrition, and the next useful action.',
+      revealTarget: { tutorialTargetId: 'dashboard-daily-insight' },
+    },
+    {
+      stepId: 'dashboard-calendar',
+      kind: 'reveal',
+      title: 'Calendar views',
+      description:
+        'Use Day, Week, and Month to see scheduled items and suggested openings. Day also has Morning, Midday, and Evening views for the plan.',
+      revealTarget: { tutorialTargetId: 'dashboard-calendar' },
+    },
+    {
+      stepId: 'dashboard-whats-next',
+      kind: 'reveal',
+      title: 'What’s Next',
+      description:
+        'What’s Next shows the current or next relevant action Anastasis can identify from today’s context.',
+      revealTarget: { tutorialTargetId: 'dashboard-whats-next' },
+    },
+    {
       stepId: 'dashboard-water-quick-add',
       kind: 'action',
       title: 'Quick add water from the dashboard',
@@ -87,7 +111,7 @@ export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): Tuto
       description: tier === 'ember'
         ? 'Tap Nutrition to open macro entry and review today’s targets.'
         : tier === 'phoenix'
-          ? 'Tap Nutrition to review recommended meals, food logging, and the full day.'
+          ? 'Tap Nutrition to review reusable recipes, recommended meals when they fit today, food logging, and the full day.'
           : 'Tap Nutrition to open the full food log. Quick Add is for speed; the Nutrition page is where you can log and review the full day.',
       revealTarget: { tutorialTargetId: 'dashboard-nav-nutrition' },
     },
@@ -109,9 +133,9 @@ export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): Tuto
     {
       stepId: 'dashboard-progress-area',
       kind: 'reveal',
-      title: 'Progress lives together',
+      title: 'Progress, Assessments, and Trends',
       description:
-        'Photos, measurements, and strength assessments are grouped here because they are periodic progress tools, not daily logging tasks.',
+        'Use these tabs for current progress, assessment tools, progress photos, measurements, and weekly trend history.',
       revealTarget: { tutorialTargetId: 'dashboard-progress-area' },
     },
     {
