@@ -47,7 +47,7 @@ export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): Tuto
       stepId: 'open-dashboard',
       kind: 'action',
       title: 'Open the dashboard',
-      description: 'Use the highlighted Dashboard control to continue the walkthrough.',
+      description: 'Dashboard is where you see your day and overall state. Use the highlighted control to continue.',
       target: { tutorialTargetId: 'client-dashboard-home' },
       requiredAction: {
         actionType: 'navigate',
@@ -60,6 +60,13 @@ export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): Tuto
       title: 'Dashboard navigation revealed',
       description: 'This navigation stays available while the guided walkthrough continues across screens.',
       revealTarget: { tutorialTargetId: 'dashboard-navigation' },
+    },
+    {
+      stepId: 'dashboard-workout-access',
+      kind: 'reveal',
+      title: 'Workout',
+      description: 'Workout is direct access to today’s training experience.',
+      revealTarget: { tutorialTargetId: 'dashboard-nav-workout' },
     },
     {
       stepId: 'dashboard-daily-insight',
