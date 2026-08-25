@@ -1,10 +1,6 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
-import WorkoutTracker from '@/components/WorkoutTracker'
-import { AOSCard } from '@/components/aos-ui/AOSCard'
-import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
-import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
+import WorkoutDashboard from '@/components/workout-dashboard/WorkoutDashboard'
 
 import { getAssessmentWindow } from '@/lib/assessments/getAssessmentWindow'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
@@ -14,6 +10,7 @@ import { getProgramLogicEngine } from '@/lib/dashboard/logic/getProgramLogicEngi
 import type { ProgramTier } from '@/lib/dashboard/logic/types'
 import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
+import { buildMuscleReadiness } from '@/lib/workout/muscleReadiness'
 
 const SUPPORTED_PROGRAMS: ProgramTier[] = [
   'ember',
@@ -50,6 +47,10 @@ type AssignedExercise = {
   selected_variant_name?: string
   selected_equipment?: string
   load_type?: string
+  primary_muscles?: string[]
+  secondary_muscles?: string[]
+  intended_muscles?: string[]
+  compensatory_muscles?: string[]
 
   available_variants?: Array<{
     id: string
@@ -88,46 +89,6 @@ function getWorkoutStateLabel(
   }
 
   return 'Today’s Workout'
-}
-
-function getExerciseName(
-  exercise: AssignedExercise,
-): string {
-  return (
-    exercise.display_name ||
-    exercise.name ||
-    exercise.exercise ||
-    'Exercise'
-  )
-}
-
-function getExerciseLoadLabel(
-  exercise: AssignedExercise,
-): string {
-  if (exercise.duration_label) {
-    return exercise.duration_label
-  }
-
-  const sets = exercise.sets ?? '—'
-  const reps =
-    exercise.recommended_reps ??
-    exercise.reps ??
-    '—'
-
-  const rawWeight =
-    exercise.recommended_weight ??
-    exercise.calculated_weight ??
-    0
-
-  const numericWeight = Number(rawWeight)
-
-  const load =
-    Number.isFinite(numericWeight) &&
-    numericWeight > 0
-      ? `${Math.round(numericWeight)} load`
-      : 'Bodyweight'
-
-  return `${sets} sets · ${reps} reps · ${load}`
 }
 
 function getAssessmentWindowStart(
@@ -190,6 +151,8 @@ export default async function ProgramWorkoutPage({
     safetyFlags,
     dailyPlan,
     strengthAssessmentResult,
+    workoutHistoryResult,
+    recoverySignalsResult,
   ] = await Promise.all([
     supabase
       .from('program_outputs')
@@ -240,6 +203,28 @@ export default async function ProgramWorkoutPage({
           data: null,
           error: null,
         }),
+
+    supabase
+      .from('workout_logs')
+      .select(
+        'id,workout_date,day_name,completed,exercise_logs',
+      )
+      .eq('client_id', client.client_id)
+      .order('workout_date', {
+        ascending: false,
+      })
+      .limit(30),
+
+    supabase
+      .from('recovery_logs')
+      .select(
+        'log_date,soreness_level,soreness_regions,check_in_completed_at',
+      )
+      .eq('client_id', client.client_id)
+      .order('log_date', {
+        ascending: false,
+      })
+      .limit(7),
   ])
 
   const output = outputResult.data
@@ -315,220 +300,56 @@ export default async function ProgramWorkoutPage({
     : logic.workoutDecision
         .reasonForModification
 
+  const workoutHistory =
+    workoutHistoryResult.data || []
+
+  const recoverySignals =
+    recoverySignalsResult.data || []
+
+  const muscleReadiness =
+    buildMuscleReadiness({
+      tier: clientProgram,
+      todaysExercises: assignedExercises,
+      workoutHistory,
+      recoverySignals,
+    })
+
   return (
     <main className="aos-workout-page">
       <div className="aos-workout-shell">
-        {showStrengthAssessmentOffer ? (
-          <section
-            aria-labelledby="strength-assessment-title"
-            style={{
-              marginBottom: '28px',
-            }}
-          >
-            <AOSCard>
-              <p className="aos-eyebrow">
-                Monthly strength assessment
-              </p>
-
-              <h2
-                id="strength-assessment-title"
-                className="aos-card-title"
-              >
-                Your strength assessment
-                window is open.
-              </h2>
-
-              <p className="aos-muted-copy">
-                Your current cycle timing may
-                provide a clearer picture of
-                your strength and performance.
-                Complete this month&apos;s
-                assessment to update your load,
-                repetition, and progression
-                baselines.
-              </p>
-
-              {strengthAssessmentWindow
-                .estimatedEndDate ? (
-                <p className="aos-muted-copy">
-                  This estimated window remains
-                  open through{' '}
-                  {new Date(
-                    `${strengthAssessmentWindow.estimatedEndDate}T12:00:00`,
-                  ).toLocaleDateString(
-                    'en-US',
-                    {
-                      month: 'long',
-                      day: 'numeric',
-                    },
-                  )}
-                  .
-                </p>
-              ) : null}
-
-              <Link
-                href="/dashboard/assessment/start2"
-                className="aos-primary-link"
-              >
-                Begin Strength Assessment
-              </Link>
-            </AOSCard>
-          </section>
-        ) : null}
-
-        <header className="aos-workout-header">
-          <div>
-            <p className="aos-eyebrow">
-              {clientProgram} ·{' '}
-              {workoutStateLabel}
-            </p>
-
-            <h1>{workoutTitle}</h1>
-
-            <p>
-              {
-                logic.workoutDecision
-                  .intensityTarget
-              }
-              .{' '}
-              {
-                logic.workoutDecision
-                  .reasonForModification
-              }
-            </p>
-          </div>
-
-          <WorkoutFeedback
-            clientId={client.client_id}
-            program={clientProgram}
-            assignedWorkoutId={String(
-              assignedWorkout?.id ||
-                logic.workout.title,
-            )}
-            workoutTitle={workoutTitle}
-            workoutHref={`/dashboard/program/${clientProgram}/workout`}
-          />
-        </header>
-
-        {hasSafetyFlags ? (
-          <SafetyEscalationNotice
-            flags={safetyFlags}
-            embedded
-          />
-        ) : null}
-
-        <div className="aos-workout-guidance">
-          <AOSCard>
-            <p className="aos-eyebrow">
-              Fuel first
-            </p>
-
-            <h2>
-              {
-                logic.fuelReadiness
-                  .displayStatus
-              }
-            </h2>
-
-            <p>
-              {logic.workoutDecision
-                .preWorkoutFuelPrompt ||
-                logic.fuelReadiness
-                  .preWorkoutAction}
-            </p>
-          </AOSCard>
-
-          <AOSCard>
-            <p className="aos-eyebrow">
-              Today&apos;s adjustment
-            </p>
-
-            <h2>
-              {logic.workoutDecision.adjustmentLevel.replaceAll(
-                '_',
-                ' ',
-              )}
-            </h2>
-
-            <p>
-              {logic.workoutDecision.modifications.join(
-                ' ',
-              ) ||
-                'Use the planned workout.'}
-            </p>
-          </AOSCard>
-        </div>
-
-        <section className="aos-workout-tracker-shell">
-          {showInteractiveWorkout ? (
-            <WorkoutTracker
-              clientId={client.client_id}
-              authUserId={
-                client.auth_user_id
-              }
-              program={
-                output?.program ||
-                clientProgram
-              }
-              dayName={
-                assignedWorkout?.day_name ||
-                workoutTitle
-              }
-              exercises={assignedExercises}
-            />
-          ) : (
-            <div className="aos-workout-preview">
-              <p className="aos-eyebrow">
-                Plan remains visible
-              </p>
-
-              <h2>{previewTitle}</h2>
-
-              <p>{previewMessage}</p>
-
-              {hasAssignedExercises ? (
-                <div>
-                  {assignedExercises.map(
-                    (exercise, index) => {
-                      const exerciseName =
-                        getExerciseName(
-                          exercise,
-                        )
-
-                      return (
-                        <article
-                          key={
-                            exercise.id
-                              ? String(
-                                  exercise.id,
-                                )
-                              : `${exerciseName}-${index}`
-                          }
-                        >
-                          <span>
-                            {index + 1}
-                          </span>
-
-                          <div>
-                            <strong>
-                              {exerciseName}
-                            </strong>
-
-                            <small>
-                              {getExerciseLoadLabel(
-                                exercise,
-                              )}
-                            </small>
-                          </div>
-                        </article>
-                      )
-                    },
-                  )}
-                </div>
-              ) : null}
-            </div>
+        <WorkoutDashboard
+          clientId={client.client_id}
+          authUserId={client.auth_user_id}
+          program={clientProgram}
+          workoutTitle={workoutTitle}
+          workoutStateLabel={workoutStateLabel}
+          assignedWorkoutId={String(
+            assignedWorkout?.id ||
+              logic.workout.title,
           )}
-        </section>
+          assignedDayName={
+            assignedWorkout?.day_name ||
+            workoutTitle
+          }
+          assignedExercises={assignedExercises}
+          showInteractiveWorkout={
+            showInteractiveWorkout
+          }
+          hasSafetyFlags={hasSafetyFlags}
+          safetyFlags={safetyFlags}
+          previewTitle={previewTitle}
+          previewMessage={previewMessage}
+          logic={logic}
+          outputProgram={output?.program}
+          muscleReadiness={muscleReadiness}
+          workoutHistory={workoutHistory}
+          showStrengthAssessmentOffer={
+            showStrengthAssessmentOffer
+          }
+          strengthAssessmentWindowEndDate={
+            strengthAssessmentWindow.estimatedEndDate
+          }
+        />
       </div>
     </main>
   )

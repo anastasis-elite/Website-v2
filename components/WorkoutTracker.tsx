@@ -105,6 +105,8 @@ type Props = {
   program: string
   dayName: string
   exercises: Exercise[]
+  onExerciseFocus?: (exercise: Exercise) => void
+  onExerciseBlur?: () => void
 }
 
 const LOWER_BODY_MUSCLES = new Set([
@@ -598,6 +600,8 @@ export default function WorkoutTracker({
   program,
   dayName,
   exercises,
+  onExerciseFocus,
+  onExerciseBlur,
 }: Props) {
   const router = useRouter()
 
@@ -1236,6 +1240,22 @@ export default function WorkoutTracker({
                 ref={setCardRef(
                   index,
                 )}
+                onMouseEnter={() =>
+                  onExerciseFocus?.(
+                    exercises[index],
+                  )
+                }
+                onMouseLeave={() =>
+                  onExerciseBlur?.()
+                }
+                onFocus={() =>
+                  onExerciseFocus?.(
+                    exercises[index],
+                  )
+                }
+                onBlur={() =>
+                  onExerciseBlur?.()
+                }
                 style={{
                   flex:
                     '0 0 min(86vw, 620px)',
