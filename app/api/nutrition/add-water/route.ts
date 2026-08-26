@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
+import { calculateClientNutritionTargets, normalizeCyclePhase, nutritionLogAuditFields } from '@/lib/nutrition/targetService'
 
 export async function POST(request: Request) {
   try {
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
     }
 
-    let { data: log, error: logError } = await supabase
+    const { data: log, error: logError } = await supabase
       .from('nutrition_logs')
       .select('*')
       .eq('client_id', clientId)
@@ -52,22 +53,11 @@ export async function POST(request: Request) {
     }
 
     if (!log) {
-      const { data: strengthAssessment } = await supabase
-        .from('assessments')
-        .select('*')
-        .eq('client_id', clientId)
-        .eq('assessment_type', 'strength')
-        .order('submitted_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      const weight = Number(strengthAssessment?.data?.weight || 0)
-
-      const calories = weight ? Math.round(weight * 12) : 2000
-      const protein = weight ? Math.round(weight * 0.8) : 150
-      const fats = Math.round((calories * 0.28) / 9)
-      const carbs = Math.round((calories - protein * 4 - fats * 9) / 4)
-      const water = weight ? Math.round(weight * 0.6) : 100
+      const nutrition = await calculateClientNutritionTargets({
+        supabase,
+        clientId,
+      })
+      const { target, water, weightLbs } = nutrition
       const birthdate = client.birthdate ? new Date(client.birthdate) : null
       const now = new Date()
       const age = birthdate && !Number.isNaN(birthdate.getTime())
@@ -75,10 +65,10 @@ export async function POST(request: Request) {
         : 35
       const micronutrientTargets = calculateMicronutrientTargets({
         age,
-        calories,
-        weightLbs: weight || Math.max(100, Math.round(water / 0.6)),
+        calories: target.calories,
+        weightLbs,
         waterOz: water,
-        cyclePhase: 'unknown',
+        cyclePhase: normalizeCyclePhase(nutrition.phase),
         trainingLevel: 'general_fitness',
       })
 
@@ -88,13 +78,14 @@ export async function POST(request: Request) {
           client_id: clientId,
           auth_user_id: user.id,
           log_date: today,
-          calories,
-          protein,
-          carbs,
-          fats,
+          calories: target.calories,
+          protein: target.protein,
+          carbs: target.carbs,
+          fats: target.fats,
           water_oz: water,
           water_consumed_oz: Number(ounces),
           ...micronutrientTargets,
+          ...nutritionLogAuditFields(target),
           updated_at: new Date().toISOString(),
         })
         .select('*')

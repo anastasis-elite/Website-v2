@@ -17,6 +17,25 @@ type NutritionLog = {
   protein?: number | null
   carbs?: number | null
   fats?: number | null
+  calculation_mode?: string | null
+  calculation_status?: string | null
+  formula_version?: string | null
+  nutrition_calculation?: {
+    statusLabel?: string
+    statusDescription?: string
+    calculationMode?: string
+    calculationStatus?: string
+    normalizedGoal?: string
+    bmi?: number | null
+    leanBodyMassKg?: number | null
+    bodyFatPercentUsed?: number | null
+    activityFactor?: number | null
+    rollingActiveEnergy?: number | null
+    rollingRestingEnergy?: number | null
+    finalMacroPercentages?: { protein?: number; carbs?: number; fats?: number }
+    safeguardAdjusted?: boolean
+    safeguardsApplied?: string[]
+  } | null
   fiber_target_g?: number | null
   sodium_target_mg?: number | null
   potassium_target_mg?: number | null
@@ -308,6 +327,7 @@ export default function AdaptiveNutritionDashboard({
       meals: [],
       completed: false,
       cyclePhase: targets?.phase,
+      nutritionCalculation: targets?.nutritionCalculation,
       trainingLevel:
         tier === 'phoenix' ? 'recovery' : 'strength_hypertrophy',
     }),
@@ -542,6 +562,12 @@ setNutritionLog(log)
             <h2 style={styles.h2Style}>
               {isEmber ? 'Targets Today' : 'Macro Targets + Remaining'}
             </h2>
+            <p style={styles.bodyStyle}>
+              {nutritionLog.nutrition_calculation?.statusLabel ||
+                (nutritionLog.calculation_status === 'manual_override'
+                  ? 'Manually overridden target'
+                  : 'Estimated nutrition target')}
+            </p>
 
             <div style={styles.cardGridStyle}>
               <div style={styles.cardStyle}>
@@ -616,6 +642,30 @@ setNutritionLog(log)
                 )}
               </div>
             </div>
+            {nutritionLog.nutrition_calculation ? (
+              <details style={{ marginTop: 16 }}>
+                <summary style={{ cursor: 'pointer', ...styles.bodyStyle }}>
+                  How this was calculated
+                </summary>
+                <p style={styles.bodyStyle}>
+                  Goal: {nutritionLog.nutrition_calculation.normalizedGoal || 'recomp'}.
+                  {nutritionLog.nutrition_calculation.bodyFatPercentUsed
+                    ? ` Body composition used ${nutritionLog.nutrition_calculation.bodyFatPercentUsed}% body fat and ${nutritionLog.nutrition_calculation.leanBodyMassKg} kg lean mass.`
+                    : nutritionLog.nutrition_calculation.bmi
+                      ? ` BMI context: ${nutritionLog.nutrition_calculation.bmi}.`
+                      : ''}
+                  {nutritionLog.nutrition_calculation.calculationMode === 'wearable'
+                    ? ` Connected activity averaged ${nutritionLog.nutrition_calculation.rollingActiveEnergy || 0} active calories.`
+                    : ` Assessment activity factor: ${nutritionLog.nutrition_calculation.activityFactor || 'estimated'}.`}
+                  {nutritionLog.nutrition_calculation.finalMacroPercentages
+                    ? ` Macros emphasize ${nutritionLog.nutrition_calculation.finalMacroPercentages.protein}% protein, ${nutritionLog.nutrition_calculation.finalMacroPercentages.carbs}% carbs, and ${nutritionLog.nutrition_calculation.finalMacroPercentages.fats}% fat.`
+                    : ''}
+                  {nutritionLog.nutrition_calculation.safeguardAdjusted
+                    ? ' Protein or fat safeguards adjusted the default split to support normal physiological function.'
+                    : ''}
+                </p>
+              </details>
+            ) : null}
           </section>
         )}
 

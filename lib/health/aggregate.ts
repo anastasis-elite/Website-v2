@@ -14,6 +14,7 @@ const sumMetrics = new Set<HealthMetricType>([
   'sleep_duration',
   'steps',
   'active_energy',
+  'resting_energy',
   'walking_running_distance',
 ])
 

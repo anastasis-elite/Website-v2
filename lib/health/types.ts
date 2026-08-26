@@ -10,6 +10,7 @@ export const HEALTH_METRIC_TYPES = [
   'body_temperature',
   'steps',
   'active_energy',
+  'resting_energy',
   'workout',
   'walking_running_distance',
   'body_weight',

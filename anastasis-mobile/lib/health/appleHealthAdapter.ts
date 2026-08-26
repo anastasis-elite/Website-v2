@@ -83,6 +83,7 @@ async function requestOrCheckPermissions(request = false): Promise<PermissionSta
         permissions.BodyTemperature,
         permissions.Steps,
         permissions.ActiveEnergyBurned,
+        permissions.BasalEnergyBurned,
         permissions.Workout,
         permissions.DistanceWalkingRunning,
         permissions.Weight,
@@ -176,6 +177,10 @@ export const AppleHealthAdapter: HealthProviderAdapter = {
     }
     for (const row of await callHealth<any>('getActiveEnergyBurned', options)) {
       const item = normalized(row, 'active_energy', 'kcal')
+      if (item) samples.push(item)
+    }
+    for (const row of await callHealth<any>('getBasalEnergyBurned', options)) {
+      const item = normalized(row, 'resting_energy', 'kcal')
       if (item) samples.push(item)
     }
     for (const row of await callHealth<any>('getDailyDistanceWalkingRunningSamples', options)) {

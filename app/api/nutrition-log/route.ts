@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
+import { nutritionLogAuditFields } from '@/lib/nutrition/targetService'
 import { getClientLocalDate } from '@/lib/timezone'
 
 function calculateAge(birthdate?: string | null) {
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
       completed,
       cyclePhase,
       trainingLevel,
+      nutritionCalculation,
     } = body
 
     if (!client_id) {
@@ -104,6 +106,10 @@ export async function POST(req: Request) {
       cyclePhase: cyclePhase || 'unknown',
       trainingLevel: trainingLevel || 'general_fitness',
     })
+    const auditFields =
+      nutritionCalculation && typeof nutritionCalculation === 'object'
+        ? nutritionLogAuditFields(nutritionCalculation)
+        : {}
 
     const { data: nutritionLog, error: nutritionLogError } = await supabase
       .from('nutrition_logs')
@@ -120,6 +126,7 @@ export async function POST(req: Request) {
           meals: Array.isArray(meals) ? meals : [],
           completed: completed ?? false,
           ...micronutrientTargets,
+          ...auditFields,
           updated_at: new Date().toISOString(),
         },
         {
