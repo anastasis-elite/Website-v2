@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import * as styles from '@/app/styles/globalstyles'
 import NutritionFoodLogger from '@/components/NutritionFoodLogger'
 import { useRouter } from 'next/navigation'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
@@ -87,6 +87,37 @@ type Remaining = {
   b12_remaining_mcg?: number | null
 }
 
+type ProgressTab = 'daily' | 'trends'
+type IntakeTab = 'water' | 'meal'
+type ManagementTab = 'goals' | 'micros' | 'recipes'
+
+function progressPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)))
+}
+
+function roundValue(value: number | string | null | undefined) {
+  return Math.round(Number(value || 0))
+}
+
+function TrendLine({ values }: { values: Array<number | null> }) {
+  const points = values
+    .map((value, index) => ({ value, index }))
+    .filter((point): point is { value: number; index: number } => point.value !== null)
+
+  if (points.length < 2) {
+    return <span className="tier-no-trend">Keep logging to build this trend.</span>
+  }
+
+  const raw = points.map((point) => point.value)
+  const min = Math.min(...raw)
+  const range = Math.max(...raw) - min || 1
+  const coordinates = points
+    .map((point) => `${(point.index / Math.max(1, values.length - 1)) * 100},${44 - ((point.value - min) / range) * 36}`)
+    .join(' ')
+
+  return <svg className="tier-trend-line" viewBox="0 0 100 48" role="img"><polyline points={coordinates} /></svg>
+}
+
 export default function AdaptiveNutritionDashboard({
   program,
   logic,
@@ -118,7 +149,6 @@ export default function AdaptiveNutritionDashboard({
   const [fatTarget, setFatTarget] = useState('')
 
   const [message, setMessage] = useState('')
-  const [foodLoggerOpen, setFoodLoggerOpen] = useState(isIgnite)
   const [macroEntry, setMacroEntry] = useState({
     calories: '',
     protein: '',
@@ -129,6 +159,9 @@ export default function AdaptiveNutritionDashboard({
 
   const [waterOunces, setWaterOunces] = useState(8);
   const [addingWater, setAddingWater] = useState(false);
+  const [progressTab, setProgressTab] = useState<ProgressTab>('daily')
+  const [intakeTab, setIntakeTab] = useState<IntakeTab>('water')
+  const [managementTab, setManagementTab] = useState<ManagementTab>('goals')
   
   async function addWater() {
   setAddingWater(true);
@@ -432,385 +465,326 @@ setNutritionLog(log)
     ['B12', nutritionLog?.b12_target_mcg, remaining?.b12_remaining_mcg, 'mcg'],
   ]
 
+  const macroMetrics = [
+    {
+      label: 'Calories',
+      target: Number(nutritionLog?.calories ?? calorieTarget ?? logic.nutrition.calories.target),
+      remaining: Number(remaining?.calories_remaining ?? logic.nutrition.calories.remaining),
+      unit: 'cal',
+    },
+    {
+      label: 'Protein',
+      target: Number(nutritionLog?.protein ?? proteinTarget ?? logic.nutrition.protein.target),
+      remaining: Number(remaining?.protein_remaining_g ?? logic.nutrition.protein.remaining),
+      unit: 'g',
+    },
+    {
+      label: 'Carbohydrates',
+      target: Number(nutritionLog?.carbs ?? carbTarget ?? logic.nutrition.carbs.target),
+      remaining: Number(remaining?.carbs_remaining_g ?? logic.nutrition.carbs.remaining),
+      unit: 'g',
+    },
+    {
+      label: 'Fat',
+      target: Number(nutritionLog?.fats ?? fatTarget ?? logic.nutrition.fats.target),
+      remaining: Number(remaining?.fat_remaining_g ?? logic.nutrition.fats.remaining),
+      unit: 'g',
+    },
+  ].map((metric) => {
+    const consumed = Math.max(0, metric.target - metric.remaining)
+    return {
+      ...metric,
+      consumed,
+      percent: metric.target ? progressPercent((consumed / metric.target) * 100) : 0,
+    }
+  })
+
+  const nutritionTrends = logic.trends.filter((trend) => ['calories', 'protein', 'water'].includes(trend.key))
+  const managementTabs: Array<{ key: ManagementTab; label: string }> = [
+    { key: 'goals', label: 'Goals / Assessment' },
+    ...(isIgnite || isPhoenix ? [{ key: 'micros' as ManagementTab, label: 'Micronutrients' }] : []),
+    ...(isPhoenix && phoenixRecipes.length ? [{ key: 'recipes' as ManagementTab, label: 'Recipes' }] : []),
+  ]
+
+  const nutritionStatus =
+    nutritionLog?.nutrition_calculation?.statusLabel ||
+    (nutritionLog?.calculation_status === 'manual_override'
+      ? 'Manually overridden target'
+      : 'Estimated nutrition target')
+
   return (
     <main className="aos-nutrition-page">
       <div className="aos-nutrition-shell">
-        <p style={styles.eyebrowStyle}>
-          {isEmber ? 'Nutrition Targets' : 'Nutrition Intelligence'}
-        </p>
-
-        <h1 style={styles.h1Style}>
-          {isEmber ? 'Today’s Targets' : 'Today’s Intake'}
-        </h1>
-
-        <p style={styles.heroTextStyle}>
-          {isEmber
-            ? 'Ember gives you the macro and hydration targets to support your training, cycle phase, and recovery.'
-            : 'Track intake against your macro and micronutrient targets.'}
-        </p>
-
-        {loading && <p style={styles.bodyStyle}>Loading...</p>}
-        {message && <p style={styles.bodyStyle}>{message}</p>}
-
-        <section id="hydration" style={styles.cartBoxStyle}>
-          <p style={styles.eyebrowStyle}>Today&apos;s Fuel Readiness</p>
-          <h2 style={styles.h2Style}>{fuel.displayStatus}</h2>
-          <p style={styles.bodyStyle}>{fuel.reasoning}</p>
-          <p style={styles.bodyStyle}><strong>What to eat next:</strong> {engineNutrition.mealSuggestions[0]}</p>
-          {(foodLoggingEnabled || isEmber) && nutritionLog?.id ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (foodLoggingEnabled) setFoodLoggerOpen(true)
-                requestAnimationFrame(() => document.getElementById(foodLoggingEnabled ? 'aos-food-logger' : 'aos-macro-entry')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-              }}
-              style={{ ...styles.primaryButtonStyle, margin: '16px 0 0' }}
-            >
-              {isEmber ? 'Add Macros' : 'Log Food'}
-            </button>
-          ) : null}
-          <div style={styles.cardGridStyle}><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Before training</h3><p style={styles.compactCardTextStyle}>{fuel.preWorkoutAction}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>Workout effect</h3><p style={styles.compactCardTextStyle}>{fuel.workoutAdjustment}</p></div><div style={styles.compactCardStyle}><h3 style={styles.compactCardTitleStyle}>After training</h3><p style={styles.compactCardTextStyle}>{fuel.postWorkoutPriority}</p></div></div>
-        </section>
-
-        <section style={styles.cartBoxStyle}>
-  <p style={styles.eyebrowStyle}>Hydration</p>
-
-  <div
-    style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '16px',
-      marginBottom: '18px',
-    }}
-  >
-    <h2
-      style={{
-        ...styles.h2Style,
-        marginBottom: 0,
-      }}
-    >
-      Add Water
-    </h2>
-
-    <span
-      style={{
-        ...styles.cardTextStyle,
-        margin: 0,
-        fontWeight: 600,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {waterOunces} oz
-    </span>
-  </div>
-
-  <input
-    id="water-ounces"
-    type="range"
-    min="4"
-    max="64"
-    step="4"
-    value={waterOunces}
-    onChange={(event) =>
-      setWaterOunces(Number(event.target.value))
-    }
-    disabled={addingWater}
-    aria-label="Water amount to add"
-    style={{
-      width: '100%',
-      cursor: addingWater ? 'not-allowed' : 'pointer',
-      accentColor: '#a85832',
-      opacity: addingWater ? 0.6 : 1,
-    }}
-  />
-
-  <div
-    style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginTop: '8px',
-      marginBottom: '20px',
-    }}
-  >
-    <span style={{ ...styles.cardTextStyle, margin: 0 }}>
-      4 oz
-    </span>
-
-    <span style={{ ...styles.cardTextStyle, margin: 0 }}>
-      64 oz
-    </span>
-  </div>
-
-  <button
-    type="button"
-    onClick={addWater}
-    disabled={addingWater}
-    style={{
-      ...styles.primaryButtonStyle,
-      opacity: addingWater ? 0.65 : 1,
-      cursor: addingWater ? 'not-allowed' : 'pointer',
-    }}
-  >
-    {addingWater ? 'Adding Water…' : `Add ${waterOunces} oz`}
-  </button>
-</section>
-        
-        {nutritionLog && (
-          <section style={styles.cartBoxStyle}>
-            <h2 style={styles.h2Style}>
-              {isEmber ? 'Targets Today' : 'Macro Targets + Remaining'}
-            </h2>
-            <p style={styles.bodyStyle}>
-              {nutritionLog.nutrition_calculation?.statusLabel ||
-                (nutritionLog.calculation_status === 'manual_override'
-                  ? 'Manually overridden target'
-                  : 'Estimated nutrition target')}
+        <section className="nutrition-dashboard-workspace" data-tier={tier}>
+          <article className="tier-daily-insight workout-objective nutrition-objective" data-testid="nutrition-objective">
+            <p className="tier-dashboard-label">
+              {isEmber ? 'Nutrition Targets' : 'Nutrition Intelligence'}
             </p>
-
-            <div style={styles.cardGridStyle}>
-              <div style={styles.cardStyle}>
-                <h3 style={styles.cardTitleStyle}>Calories</h3>
-                {isEmber ? (
-                  <input
-                    type="number"
-                    value={calorieTarget}
-                    readOnly
-                    style={{ ...styles.inputStyle, opacity: 0.85 }}
-                  />
-                ) : (
-                  <p style={styles.cardTextStyle}>
-                    Target: {nutritionLog.calories ?? 0}
-                    <br />
-                    Remaining: {remaining?.calories_remaining ?? 0}
-                  </p>
-                )}
-              </div>
-
-              <div style={styles.cardStyle}>
-                <h3 style={styles.cardTitleStyle}>Protein</h3>
-                {isEmber ? (
-                  <input
-                    type="number"
-                    value={proteinTarget}
-                    readOnly
-                    style={{ ...styles.inputStyle, opacity: 0.85 }}
-                  />
-                ) : (
-                  <p style={styles.cardTextStyle}>
-                    Target: {nutritionLog.protein ?? 0}g
-                    <br />
-                    Remaining: {remaining?.protein_remaining_g ?? 0}g
-                  </p>
-                )}
-              </div>
-
-              <div style={styles.cardStyle}>
-                <h3 style={styles.cardTitleStyle}>Carbs</h3>
-                {isEmber ? (
-                  <input
-                    type="number"
-                    value={carbTarget}
-                    readOnly
-                    style={{ ...styles.inputStyle, opacity: 0.85 }}
-                  />
-                ) : (
-                  <p style={styles.cardTextStyle}>
-                    Target: {nutritionLog.carbs ?? 0}g
-                    <br />
-                    Remaining: {remaining?.carbs_remaining_g ?? 0}g
-                  </p>
-                )}
-              </div>
-
-              <div style={styles.cardStyle}>
-                <h3 style={styles.cardTitleStyle}>Fat</h3>
-                {isEmber ? (
-                  <input
-                    type="number"
-                    value={fatTarget}
-                    readOnly
-                    style={{ ...styles.inputStyle, opacity: 0.85 }}
-                  />
-                ) : (
-                  <p style={styles.cardTextStyle}>
-                    Target: {nutritionLog.fats ?? 0}g
-                    <br />
-                    Remaining: {remaining?.fat_remaining_g ?? 0}g
-                  </p>
-                )}
-              </div>
+            <div>
+              <h1>{isEmber ? 'Today’s Targets' : 'Today’s Intake'}</h1>
+              {(foodLoggingEnabled || isEmber) && nutritionLog?.id ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIntakeTab('meal')
+                    requestAnimationFrame(() => document.getElementById(foodLoggingEnabled ? 'aos-food-logger' : 'aos-macro-entry')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+                  }}
+                  className="tier-primary-action"
+                >
+                  {isEmber ? 'Add Macros' : 'Log Food'}
+                </button>
+              ) : null}
             </div>
-            {nutritionLog.nutrition_calculation ? (
-              <details style={{ marginTop: 16 }}>
-                <summary style={{ cursor: 'pointer', ...styles.bodyStyle }}>
-                  How this was calculated
-                </summary>
-                <p style={styles.bodyStyle}>
-                  Goal: {nutritionLog.nutrition_calculation.normalizedGoal || 'recomp'}.
-                  {nutritionLog.nutrition_calculation.bodyFatPercentUsed
-                    ? ` Body composition used ${nutritionLog.nutrition_calculation.bodyFatPercentUsed}% body fat and ${nutritionLog.nutrition_calculation.leanBodyMassKg} kg lean mass.`
-                    : nutritionLog.nutrition_calculation.bmi
-                      ? ` BMI context: ${nutritionLog.nutrition_calculation.bmi}.`
-                      : ''}
-                  {nutritionLog.nutrition_calculation.calculationMode === 'wearable'
-                    ? ` Connected activity averaged ${nutritionLog.nutrition_calculation.rollingActiveEnergy || 0} active calories.`
-                    : ` Assessment activity factor: ${nutritionLog.nutrition_calculation.activityFactor || 'estimated'}.`}
-                  {nutritionLog.nutrition_calculation.finalMacroPercentages
-                    ? ` Macros emphasize ${nutritionLog.nutrition_calculation.finalMacroPercentages.protein}% protein, ${nutritionLog.nutrition_calculation.finalMacroPercentages.carbs}% carbs, and ${nutritionLog.nutrition_calculation.finalMacroPercentages.fats}% fat.`
-                    : ''}
-                  {nutritionLog.nutrition_calculation.safeguardAdjusted
-                    ? ' Protein or fat safeguards adjusted the default split to support normal physiological function.'
-                    : ''}
-                </p>
-              </details>
+            <p>{fuel.displayStatus}. {fuel.reasoning}</p>
+            <small>What to eat next: {engineNutrition.mealSuggestions[0]}</small>
+            <div className="nutrition-objective-metrics">
+              <article><span>Calories</span><strong>{roundValue(macroMetrics[0]?.consumed)} / {roundValue(macroMetrics[0]?.target)} cal</strong></article>
+              <article><span>Remaining</span><strong>{roundValue(macroMetrics[0]?.remaining)} cal</strong></article>
+              <article><span>Water</span><strong>{roundValue(logic.hydration.consumed)} / {roundValue(logic.hydration.target)} oz</strong></article>
+            </div>
+          </article>
+
+          {loading && <p className="nutrition-status">Loading...</p>}
+          {message && <p className="nutrition-status">{message}</p>}
+
+          <div className="nutrition-dashboard-row">
+            <section className="nutrition-dashboard-panel" data-testid="nutrition-progress-panel">
+              <div className="tier-panel-heading">
+                <div>
+                  <p className="tier-dashboard-label">Nutrition Progress</p>
+                  <h2>{progressTab === 'daily' ? 'Daily Progress' : 'Weekly Trends'}</h2>
+                </div>
+                <div className="tier-tab-list nutrition-panel-tabs" role="tablist" aria-label="Nutrition progress">
+                  {([
+                    ['daily', 'Daily Progress'],
+                    ['trends', 'Trends'],
+                  ] as const).map(([key, label]) => (
+                    <button key={key} type="button" className={progressTab === key ? 'is-active' : ''} onClick={() => setProgressTab(key)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {progressTab === 'daily' ? (
+                <div className="nutrition-progress-grid" data-testid="nutrition-daily-progress-tab">
+                  {macroMetrics.map((metric) => (
+                    <article key={metric.label} className="tier-metric-card">
+                      <div className="tier-metric-ring" style={{ '--tier-progress': `${metric.percent * 3.6}deg` } as CSSProperties}>
+                        <strong>{metric.percent}%</strong>
+                      </div>
+                      <span>{metric.label}</span>
+                      <small>{roundValue(metric.consumed)} / {roundValue(metric.target)} {metric.unit}</small>
+                      <small>{roundValue(metric.remaining)} {metric.unit} remaining</small>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+
+              {progressTab === 'trends' ? (
+                <div className="tier-trends-layout nutrition-trends-layout" data-testid="nutrition-trends-tab">
+                  {nutritionTrends.length ? nutritionTrends.map((trend) => (
+                    <article key={trend.key}>
+                      <div><span>{trend.label}</span><strong>{trend.currentAverage === null ? 'No data' : `${Math.round(trend.currentAverage)}${trend.unit}`}</strong></div>
+                      <TrendLine values={trend.values} />
+                      <small>{trend.comparisonPercent === null ? 'Current history stays connected here.' : `${trend.comparisonPercent}% vs prior period`}</small>
+                    </article>
+                  )) : <p className="tier-calendar-empty">Keep logging meals and water to build weekly nutrition trends.</p>}
+                </div>
+              ) : null}
+            </section>
+
+            <section className="nutrition-dashboard-panel nutrition-intake-panel" data-testid="nutrition-intake-panel">
+              <div className="tier-panel-heading">
+                <div>
+                  <p className="tier-dashboard-label">Intake</p>
+                  <h2>{intakeTab === 'water' ? 'Water' : isEmber ? 'Macro Entry' : 'Log Meal'}</h2>
+                </div>
+                <div className="tier-tab-list nutrition-panel-tabs" role="tablist" aria-label="Intake controls">
+                  {([
+                    ['water', 'Water'],
+                    ['meal', isEmber ? 'Macros' : 'Log Meal'],
+                  ] as const).map(([key, label]) => (
+                    <button key={key} type="button" className={intakeTab === key ? 'is-active' : ''} onClick={() => setIntakeTab(key)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {intakeTab === 'water' ? (
+                <div id="hydration" className="nutrition-water-panel">
+                  <div className="nutrition-water-summary">
+                    <div className="tier-metric-ring" style={{ '--tier-progress': `${progressPercent(logic.hydration.percent) * 3.6}deg` } as CSSProperties}>
+                      <strong>{progressPercent(logic.hydration.percent)}%</strong>
+                    </div>
+                    <div>
+                      <span>Current Water</span>
+                      <strong>{roundValue(logic.hydration.consumed)} / {roundValue(logic.hydration.target)} oz</strong>
+                      <small>{logic.hydration.prompt}</small>
+                    </div>
+                  </div>
+
+                  <div className="nutrition-water-control">
+                    <div>
+                      <span>Add Water</span>
+                      <strong>{waterOunces} oz</strong>
+                    </div>
+                    <input
+                      id="water-ounces"
+                      type="range"
+                      min="4"
+                      max="64"
+                      step="4"
+                      value={waterOunces}
+                      onChange={(event) => setWaterOunces(Number(event.target.value))}
+                      disabled={addingWater}
+                      aria-label="Water amount to add"
+                    />
+                    <div><small>4 oz</small><small>64 oz</small></div>
+                    <button type="button" onClick={addWater} disabled={addingWater} className="tier-primary-action">
+                      {addingWater ? 'Adding Water...' : `Add ${waterOunces} oz`}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {intakeTab === 'meal' ? (
+                <div id={foodLoggingEnabled ? 'aos-food-logger' : 'aos-macro-entry'} className="nutrition-log-meal-panel">
+                  {foodLoggingEnabled && nutritionLog?.id ? (
+                    <NutritionFoodLogger
+                      nutritionLogId={nutritionLog.id}
+                      initialRemaining={
+                        remaining
+                          ? {
+                              calories_remaining: remaining.calories_remaining ?? null,
+                              protein_remaining_g: remaining.protein_remaining_g ?? null,
+                              carbs_remaining_g: remaining.carbs_remaining_g ?? null,
+                              fat_remaining_g: remaining.fat_remaining_g ?? null,
+                              fiber_remaining_g: remaining.fiber_remaining_g ?? null,
+                              sodium_remaining_mg: remaining.sodium_remaining_mg ?? null,
+                              potassium_remaining_mg: remaining.potassium_remaining_mg ?? null,
+                              magnesium_remaining_mg: remaining.magnesium_remaining_mg ?? null,
+                              calcium_remaining_mg: remaining.calcium_remaining_mg ?? null,
+                              iron_remaining_mg: remaining.iron_remaining_mg ?? null,
+                              choline_remaining_mg: remaining.choline_remaining_mg ?? null,
+                              vitamin_c_remaining_mg: remaining.vitamin_c_remaining_mg ?? null,
+                              vitamin_d_remaining_mcg: remaining.vitamin_d_remaining_mcg ?? null,
+                            }
+                          : null
+                      }
+                      onUpdated={handleFoodUpdated}
+                    />
+                  ) : null}
+
+                  {isEmber && nutritionLog ? (
+                    <form onSubmit={handleMacroSubmit} className="nutrition-macro-form">
+                      <p>Enter the totals you want to record for this meal or block.</p>
+                      <div className="nutrition-macro-entry-grid">
+                        {([
+                          ['calories', 'Calories'],
+                          ['protein', 'Protein (g)'],
+                          ['carbs', 'Carbs (g)'],
+                          ['fats', 'Fat (g)'],
+                        ] as const).map(([key, label]) => (
+                          <label key={key}>
+                            <span>{label}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={macroEntry[key]}
+                              onChange={(event) => setMacroEntry((current) => ({ ...current, [key]: event.target.value }))}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <button type="submit" disabled={savingMacros} className="tier-primary-action">
+                        {savingMacros ? 'Saving Macros...' : 'Add Macros'}
+                      </button>
+                    </form>
+                  ) : null}
+
+                  {!nutritionLog?.id ? (
+                    <p className="tier-calendar-empty">
+                      {loading ? 'Preparing food logging...' : message || 'Food logging could not be prepared yet.'}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+          </div>
+
+          <section className="tier-info-panel nutrition-management-panel" data-testid="nutrition-management-panel">
+            <div className="tier-tab-list nutrition-management-tabs" role="tablist" aria-label="Nutrition management">
+              {managementTabs.map((item) => (
+                <button key={item.key} type="button" className={managementTab === item.key ? 'is-active' : ''} onClick={() => setManagementTab(item.key)}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {managementTab === 'goals' ? (
+              <div className="tier-info-grid nutrition-goals-grid" data-testid="nutrition-goals-assessment-tab">
+                <article><span>Goal</span><strong>{nutritionLog?.nutrition_calculation?.normalizedGoal || logic.client.goal || 'Recomp'}</strong><small>{nutritionStatus}</small></article>
+                <article><span>Calories</span><strong>{roundValue(macroMetrics[0]?.target)} cal</strong><small>{roundValue(macroMetrics[0]?.remaining)} remaining today</small></article>
+                <article><span>Protein</span><strong>{roundValue(macroMetrics[1]?.target)}g</strong><small>{roundValue(macroMetrics[1]?.consumed)}g logged</small></article>
+                <article><span>Carbohydrates</span><strong>{roundValue(macroMetrics[2]?.target)}g</strong><small>{roundValue(macroMetrics[2]?.consumed)}g logged</small></article>
+                <article><span>Fat</span><strong>{roundValue(macroMetrics[3]?.target)}g</strong><small>{roundValue(macroMetrics[3]?.consumed)}g logged</small></article>
+                <article><span>Hydration</span><strong>{roundValue(logic.hydration.target)} oz</strong><small>{logic.hydration.recoverySupportNote}</small></article>
+                {nutritionLog?.nutrition_calculation?.bmi ? <article><span>BMI Context</span><strong>{nutritionLog.nutrition_calculation.bmi}</strong><small>Assessment-derived context</small></article> : null}
+                {nutritionLog?.nutrition_calculation?.bodyFatPercentUsed ? <article><span>Body Fat</span><strong>{nutritionLog.nutrition_calculation.bodyFatPercentUsed}%</strong><small>{nutritionLog.nutrition_calculation.leanBodyMassKg ? `${nutritionLog.nutrition_calculation.leanBodyMassKg} kg lean mass used` : 'Used in target calculation'}</small></article> : null}
+                {nutritionLog?.nutrition_calculation?.activityFactor ? <article><span>Activity</span><strong>{nutritionLog.nutrition_calculation.activityFactor}</strong><small>{nutritionLog.nutrition_calculation.calculationMode === 'wearable' ? 'Connected activity mode' : 'Assessment activity factor'}</small></article> : null}
+                {nutritionLog?.nutrition_calculation?.finalMacroPercentages ? (
+                  <article><span>Macro Split</span><strong>{nutritionLog.nutrition_calculation.finalMacroPercentages.protein}% / {nutritionLog.nutrition_calculation.finalMacroPercentages.carbs}% / {nutritionLog.nutrition_calculation.finalMacroPercentages.fats}%</strong><small>Protein / carbs / fat</small></article>
+                ) : null}
+              </div>
+            ) : null}
+
+            {managementTab === 'micros' ? (
+              <div className="nutrition-micro-grid" data-testid="nutrition-micronutrients-tab">
+                {microRows.map(([label, target, remainingValue, unit]) => {
+                  const targetValue = Number(target || 0)
+                  const leftValue = Number(remainingValue || 0)
+                  const currentValue = targetValue ? Math.max(0, Math.round((targetValue - leftValue) * 10) / 10) : 0
+                  return (
+                    <article key={String(label)}>
+                      <span>{label}</span>
+                      <strong>{currentValue}{unit}</strong>
+                      <small>Target: {targetValue}{unit} · Remaining: {leftValue}{unit}</small>
+                    </article>
+                  )
+                })}
+              </div>
+            ) : null}
+
+            {managementTab === 'recipes' ? (
+              <div className="nutrition-recipes-grid" data-testid="nutrition-recipes-tab">
+                {phoenixRecipes.map((recipe)=><Recipe key={recipe.id} recipe={recipe}/>)}
+              </div>
             ) : null}
           </section>
-        )}
+        </section>
 
-        {foodLoggingEnabled ? (
-  <section id="aos-food-logger" data-tier={tier} style={styles.cartBoxStyle}>
-    <p style={styles.eyebrowStyle}>Food Logging</p>
-
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-      <h2 style={{ ...styles.h2Style, marginBottom: 0 }}>Log Food</h2>
-      {nutritionLog?.id && !isIgnite ? (
-        <button type="button" onClick={() => setFoodLoggerOpen((open) => !open)} style={styles.secondaryButtonStyle}>
-          {foodLoggerOpen ? 'Hide Logger' : 'Open Logger'}
-        </button>
-      ) : null}
-    </div>
-
-    {nutritionLog?.id ? (isIgnite || foodLoggerOpen) ? (
-      <NutritionFoodLogger
-  nutritionLogId={nutritionLog.id}
-  initialRemaining={
-    remaining
-      ? {
-          calories_remaining: remaining.calories_remaining ?? null,
-          protein_remaining_g: remaining.protein_remaining_g ?? null,
-          carbs_remaining_g: remaining.carbs_remaining_g ?? null,
-          fat_remaining_g: remaining.fat_remaining_g ?? null,
-          fiber_remaining_g: remaining.fiber_remaining_g ?? null,
-          sodium_remaining_mg: remaining.sodium_remaining_mg ?? null,
-          potassium_remaining_mg: remaining.potassium_remaining_mg ?? null,
-          magnesium_remaining_mg: remaining.magnesium_remaining_mg ?? null,
-          calcium_remaining_mg: remaining.calcium_remaining_mg ?? null,
-          iron_remaining_mg: remaining.iron_remaining_mg ?? null,
-          choline_remaining_mg: remaining.choline_remaining_mg ?? null,
-          vitamin_c_remaining_mg: remaining.vitamin_c_remaining_mg ?? null,
-          vitamin_d_remaining_mcg: remaining.vitamin_d_remaining_mcg ?? null,
-        }
-      : null
-  }
-  onUpdated={handleFoodUpdated}
-/>
-    ) : (
-      <p style={{ ...styles.bodyStyle, marginTop: 16 }}>Open the logger to search foods, choose a serving size, and update today’s macros.</p>
-    ) : (
-      <p style={{ ...styles.bodyStyle, marginTop: 16 }}>
-        {loading ? 'Preparing food logging…' : message || 'Food logging could not be prepared yet.'}
-      </p>
-    )}
-  </section>
-) : null}
-
-        {isEmber && nutritionLog ? (
-          <section id="aos-macro-entry" style={styles.cartBoxStyle}>
-            <p style={styles.eyebrowStyle}>Macro Entry</p>
-            <h2 style={styles.h2Style}>Add Macros</h2>
-            <p style={styles.bodyStyle}>Enter the totals you want to record for this meal or block.</p>
-            <form onSubmit={handleMacroSubmit} style={{ display: 'grid', gap: 16 }}>
-              <div style={styles.cardGridStyle}>
-                {([
-                  ['calories', 'Calories'],
-                  ['protein', 'Protein (g)'],
-                  ['carbs', 'Carbs (g)'],
-                  ['fats', 'Fat (g)'],
-                ] as const).map(([key, label]) => (
-                  <label key={key} style={styles.compactCardStyle}>
-                    <span style={styles.compactCardTitleStyle}>{label}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={macroEntry[key]}
-                      onChange={(event) => setMacroEntry((current) => ({ ...current, [key]: event.target.value }))}
-                      style={styles.inputStyle}
-                    />
-                  </label>
-                ))}
-              </div>
-              <button type="submit" disabled={savingMacros} style={styles.primaryButtonStyle}>
-                {savingMacros ? 'Saving Macros...' : 'Add Macros'}
-              </button>
-            </form>
-          </section>
-        ) : null}
-
-        {(isIgnite || isPhoenix) && nutritionLog ? (
-          <details style={styles.cartBoxStyle}>
-            <summary
-              style={{
-                ...styles.sectionTitleStyle,
-                cursor: 'pointer',
-                marginBottom: 0,
-              }}
-            >
-              Micronutrient Targets + Remaining
-            </summary>
-
-            <div style={{ ...styles.cardGridStyle, marginTop: '28px' }}>
-              {microRows.map(([label, target, remainingValue, unit]) => {
-                const targetValue = Number(target || 0)
-                const leftValue = Number(remainingValue || 0)
-                const currentValue = targetValue ? Math.max(0, Math.round((targetValue - leftValue) * 10) / 10) : 0
-                return (
-                  <div key={String(label)} style={styles.compactCardStyle}>
-                    <h3 style={styles.compactCardTitleStyle}>{label}</h3>
-                    <p style={styles.compactCardTextStyle}>
-                      Current: {currentValue}
-                      {unit}
-                      <br />
-                      Target: {targetValue}
-                      {unit}
-                      <br />
-                      Remaining: {leftValue}
-                      {unit}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-          </details>
-        ) : null}
-
-        {isEmber ? (
-          <section style={styles.cartBoxStyle}>
-            <p style={styles.eyebrowStyle}>Hydration</p>
-            <h2 style={styles.h2Style}>Water target active</h2>
-            <p style={styles.bodyStyle}>
-              Use your water target as a daily anchor. Hydration supports
-              training output, digestion, recovery, and cycle-related fluid
-              shifts.
-            </p>
-          </section>
-        ) : null}
-
-        {isPhoenix ? (
-          <section id="phoenix-recipes" style={styles.cartBoxStyle}>
-            <p style={styles.eyebrowStyle}>Phoenix Nutrition</p>
-            <h2 style={styles.h2Style}>Simple meals that fit today.</h2>
-            <p style={styles.bodyStyle}>Choose one only if deciding what to eat feels heavy.</p>
-            <div style={styles.cardGridStyle}>{phoenixRecipes.map((recipe)=><Recipe key={recipe.id} recipe={recipe}/>)}</div>
-          </section>
-        ) : null}
       </div>
     </main>
   )
 }
 
 function Recipe({ recipe }: { recipe: PhoenixRecipe }) {
-  return <details style={styles.cardStyle}><summary style={{cursor:'pointer'}}><h3 style={styles.cardTitleStyle}>{recipe.title}</h3><p style={styles.cardTextStyle}>{recipe.reason}</p><small>{recipe.totalMinutes} min · {recipe.macros.protein}g protein · {recipe.macros.calories} cal</small></summary><h4>Ingredients</h4><ul>{recipe.ingredientLines.map((item)=><li key={item}>{item}</li>)}</ul><h4>Simple steps</h4><ol>{recipe.steps.map((step)=><li key={step}>{step}</li>)}</ol><p style={styles.cardTextStyle}>Servings: {recipe.servings} · {recipe.meal_type} · {recipe.tags.join(', ')}</p><a href={`/dashboard/nutrition#aos-food-logger?recipe=${recipe.id}`} style={styles.primaryButtonStyle}>Log this recipe</a></details>
+  return (
+    <details>
+      <summary>
+        <h3>{recipe.title}</h3>
+        <p>{recipe.reason}</p>
+        <small>{recipe.totalMinutes} min · {recipe.macros.protein}g protein · {recipe.macros.calories} cal</small>
+      </summary>
+      <h4>Ingredients</h4>
+      <ul>{recipe.ingredientLines.map((item)=><li key={item}>{item}</li>)}</ul>
+      <h4>Simple steps</h4>
+      <ol>{recipe.steps.map((step)=><li key={step}>{step}</li>)}</ol>
+      <p>Servings: {recipe.servings} · {recipe.meal_type} · {recipe.tags.join(', ')}</p>
+      <a href={`/dashboard/nutrition#aos-food-logger?recipe=${recipe.id}`} className="tier-primary-action">Log this recipe</a>
+    </details>
+  )
 }
