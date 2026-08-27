@@ -19,7 +19,7 @@ import {
 type Values = { sleepHours:number; sleepQuality:number; stress:number; soreness:number; energy:number; mood:number; hunger:number; notes:string; periodStarted:boolean; sorenessRegions:SorenessRegionKey[] }
 type SliderKey = 'sleepHours' | 'sleepQuality' | 'stress' | 'soreness' | 'energy' | 'mood' | 'hunger'
 
-export default function DailyCheckInForm({ clientId, program, initial, cycleTrackingEnabled }: { clientId:string; program:string; initial:Partial<Values>; cycleTrackingEnabled:boolean }) {
+export default function DailyCheckInForm({ clientId, program, initial, cycleTrackingEnabled, stayOnSave = false }: { clientId:string; program:string; initial:Partial<Values>; cycleTrackingEnabled:boolean; stayOnSave?: boolean }) {
   const router = useRouter()
   const initialSoreness = initial.soreness ?? 5
   const initialSorenessRegions = initialSoreness > 5
@@ -65,7 +65,8 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
       const payload = await response.json()
       if(!response.ok){setMessage(payload.error||'Check-in could not be saved.');return}
       setMessage('Saved. Today’s recommendations are updating.')
-      router.push(`/dashboard/program/${program}`); router.refresh()
+      if (!stayOnSave) router.push(`/dashboard/program/${program}`)
+      router.refresh()
     } catch {
       setMessage('Check-in could not be saved. Check your connection and try again.')
     } finally {
