@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import vm from 'node:vm'
 import ts from 'typescript'
 
 async function importTypescriptModule(path) {
@@ -14,8 +15,26 @@ async function importTypescriptModule(path) {
   return import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`)
 }
 
+function loadCommonJsTypescript(path, localModules = {}) {
+  const source = readFileSync(path, 'utf8')
+  const compiled = ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      esModuleInterop: true,
+    },
+  }).outputText
+  const module = { exports: {} }
+  const require = (id) => localModules[id] || {}
+  vm.runInNewContext(compiled, { exports: module.exports, module, require })
+  return module.exports
+}
+
 const calendar = await importTypescriptModule('lib/calendar/view.ts')
-const insight = await importTypescriptModule('lib/dashboard/dailyInsight.ts')
+const resilience = loadCommonJsTypescript('lib/dashboard/resilienceEngine.ts')
+const insight = loadCommonJsTypescript('lib/dashboard/dailyInsight.ts', {
+  './resilienceEngine': resilience,
+})
 const recipes = await importTypescriptModule('lib/nutrition/recipes/catalog.ts')
 
 function scheduleEvent(overrides = {}) {
@@ -104,15 +123,58 @@ function logic(overrides = {}) {
     recoveryCheck: {
       energy: overrides.energy ?? null,
       stress: overrides.stress ?? null,
+      soreness: overrides.soreness ?? null,
+      sleepQuality: overrides.sleepQuality ?? null,
+    },
+    recoveryStatus: {
+      status: overrides.recoveryStatus ?? 'normal_training_day',
+    },
+    fuelReadiness: {
+      status: overrides.fuelStatus ?? 'well_fueled',
+    },
+    hydration: {
+      status: overrides.hydrationStatus ?? 'ready',
+      percent: overrides.hydrationPercent ?? 90,
     },
     flameState: {
       requirements: {
+        missedDayCount: overrides.missedDayCount ?? 0,
         requiredItems: { recovery: Boolean(overrides.recoveryRequired) },
         completedItems: { recovery: false },
       },
     },
-    workoutDecision: { completed: Boolean(overrides.workoutComplete) },
+    workoutDecision: {
+      completed: Boolean(overrides.workoutComplete),
+      canTrain: overrides.canTrain ?? true,
+      adjustmentLevel: overrides.workoutAdjustmentLevel ?? 'level_0_full_plan',
+      allowLoadProgression: Boolean(overrides.allowLoadProgression),
+      allowEnduranceProgression: Boolean(overrides.allowEnduranceProgression),
+    },
     workout: { completed: Boolean(overrides.workoutComplete) },
+    sleep: {
+      hours: overrides.sleepHours ?? null,
+      quality: overrides.sleepQuality ?? null,
+    },
+    symptoms: {
+      severity: overrides.symptomSeverity ?? 'none',
+      redFlag: Boolean(overrides.symptomRedFlag),
+    },
+    passiveHealth: {
+      sleepDurationHours: overrides.passiveSleepHours ?? null,
+      steps: overrides.steps ?? null,
+      activeEnergy: overrides.activeEnergy ?? null,
+      workoutMinutes: overrides.workoutMinutes ?? null,
+      hrv: overrides.hrv ?? null,
+      restingHeartRate: overrides.restingHeartRate ?? null,
+      respiratoryRate: null,
+      bodyTemperature: null,
+      weight: null,
+      bodyFat: null,
+      sources: [],
+    },
+    execution: {
+      workoutComplete: Boolean(overrides.workoutComplete),
+    },
   }
 }
 
@@ -202,4 +264,49 @@ test('daily insight selects schedule, workout, nutrition, and tier-aware CTAs', 
   })
   assert.equal(nutrition.category, 'nutrition')
   assert.equal(nutrition.action.label, 'Add macros')
+})
+
+test('daily insight consumes resilience evaluation before task availability', () => {
+  const overreaching = insight.buildDailyInsight({
+    tier: 'phoenix',
+    logic: logic({
+      sleepHours: 5,
+      hrv: 28,
+      soreness: 8,
+      workoutMinutes: 85,
+      recoveryStatus: 'modify_workout',
+    }),
+    schedule: dailySchedule({ category: 'workout', openWindows: [{ start_at: '2026-08-24T15:00:00.000Z', end_at: '2026-08-24T16:00:00.000Z', minutes: 60 }] }),
+  })
+  assert.equal(overreaching.category, 'recovery')
+  assert.doesNotMatch(overreaching.message, /Starting is the highest-value/)
+
+  const ready = insight.buildDailyInsight({
+    tier: 'phoenix',
+    logic: logic({
+      sleepHours: 8,
+      hrv: 60,
+      soreness: 2,
+      energy: 8,
+      steps: 1200,
+      workoutMinutes: 0,
+    }),
+    schedule: dailySchedule({ category: 'workout', openWindows: [{ start_at: '2026-08-24T15:00:00.000Z', end_at: '2026-08-24T16:00:00.000Z', minutes: 60 }] }),
+  })
+  assert.equal(ready.category, 'workout')
+  assert.match(ready.message, /ready for more stimulus/)
+
+  const missed = insight.buildDailyInsight({
+    tier: 'ignite',
+    logic: logic({
+      sleepHours: 7.5,
+      hrv: 55,
+      soreness: 2,
+      energy: 7,
+      missedDayCount: 1,
+    }),
+    schedule: dailySchedule({ category: 'workout', openWindows: [{ start_at: '2026-08-24T15:00:00.000Z', end_at: '2026-08-24T16:00:00.000Z', minutes: 60 }] }),
+  })
+  assert.equal(missed.category, 'consistency')
+  assert.match(missed.message, /does not need to be compensated/)
 })

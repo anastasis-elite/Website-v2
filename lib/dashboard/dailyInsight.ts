@@ -1,6 +1,11 @@
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
 import type { ProgramTier } from '@/lib/entitlements'
+import {
+  evaluateResilience,
+  type ResilienceEngineInput,
+  type ResilienceEvaluation,
+} from './resilienceEngine'
 
 export type DailyInsightCategory =
   | 'motivation'
@@ -42,6 +47,8 @@ export type DailyInsightContext = {
     carbs?: number
     fats?: number
   }
+  resilienceInput: ResilienceEngineInput
+  resilience: ResilienceEvaluation
 }
 
 function firstOpenWindow(schedule: DailyScheduleState, minimumMinutes = 25) {
@@ -74,14 +81,51 @@ export function gatherDailyInsightContext({
   const workoutComplete = Boolean(logic.workout?.completed)
   const energy = Number(logic.recoveryCheck?.energy ?? NaN)
   const stress = Number(logic.recoveryCheck?.stress ?? NaN)
+  const resilienceInput: ResilienceEngineInput = {
+    sleepHours: logic.sleep?.hours ?? logic.passiveHealth?.sleepDurationHours ?? null,
+    sleepQuality: logic.recoveryCheck?.sleepQuality ?? logic.sleep?.quality ?? null,
+    hrv: logic.passiveHealth?.hrv ?? null,
+    restingHeartRate: logic.passiveHealth?.restingHeartRate ?? null,
+    respiratoryRate: logic.passiveHealth?.respiratoryRate ?? null,
+    bodyTemperature: logic.passiveHealth?.bodyTemperature ?? null,
+    energy: logic.recoveryCheck?.energy ?? null,
+    stress: logic.recoveryCheck?.stress ?? null,
+    soreness: logic.recoveryCheck?.soreness ?? null,
+    symptomSeverity: logic.symptoms?.severity ?? null,
+    symptomRedFlag: Boolean(logic.symptoms?.redFlag),
+    recoveryRequired,
+    recoveryStatus: logic.recoveryStatus?.status ?? null,
+    fuelStatus: logic.fuelReadiness?.status ?? null,
+    hydrationStatus: logic.hydration?.status ?? null,
+    hydrationPercent: logic.hydration?.percent ?? null,
+    calories: logic.nutrition?.calories,
+    protein: logic.nutrition?.protein,
+    carbs: logic.nutrition?.carbs,
+    fats: logic.nutrition?.fats,
+    workoutMinutes: logic.passiveHealth?.workoutMinutes ?? null,
+    steps: logic.passiveHealth?.steps ?? null,
+    activeEnergy: logic.passiveHealth?.activeEnergy ?? null,
+    hasWorkoutToday: schedule.events.some((event) => event.event_type === 'workout'),
+    workoutComplete,
+    missedWorkoutYesterday: logic.flameState?.requirements?.missedDayCount === 1 && !logic.execution?.workoutComplete,
+    missedDayCount: logic.flameState?.requirements?.missedDayCount ?? null,
+    scheduleDensity: scheduleDensity(schedule),
+    openWindowMinutes: firstOpenWindow(schedule)?.minutes || 0,
+    nextActionCategory: schedule.nextAction.category,
+    canTrain: logic.workoutDecision?.canTrain,
+    workoutAdjustmentLevel: logic.workoutDecision?.adjustmentLevel ?? null,
+    allowLoadProgression: logic.workoutDecision?.allowLoadProgression,
+    allowEnduranceProgression: logic.workoutDecision?.allowEnduranceProgression,
+  }
+  const resilience = evaluateResilience(resilienceInput)
 
   return {
     tier,
     date: schedule.date,
-    scheduleDensity: scheduleDensity(schedule),
-    openWindowMinutes: firstOpenWindow(schedule)?.minutes || 0,
+    scheduleDensity: resilienceInput.scheduleDensity || scheduleDensity(schedule),
+    openWindowMinutes: resilienceInput.openWindowMinutes || 0,
     nextActionCategory: schedule.nextAction.category,
-    hasWorkoutToday: schedule.events.some((event) => event.event_type === 'workout'),
+    hasWorkoutToday: Boolean(resilienceInput.hasWorkoutToday),
     workoutComplete,
     recoveryRequired,
     lowEnergy: Number.isFinite(energy) && energy <= 3,
@@ -91,11 +135,95 @@ export function gatherDailyInsightContext({
       carbs: Number(logic.nutrition?.carbs?.remaining ?? NaN) || undefined,
       fats: Number(logic.nutrition?.fats?.remaining ?? NaN) || undefined,
     },
+    resilienceInput,
+    resilience,
   }
 }
 
 export function selectDailyInsight(context: DailyInsightContext): DailyInsight {
   const base = { id: `${context.date}-${context.tier}`, date: context.date }
+  const { resilience } = context
+
+  if (resilience.priority === 'safety') {
+    return {
+      ...base,
+      category: 'recovery',
+      message:
+        'Your current signals call for the existing recovery guidance first. Do not add training stress until those signals settle.',
+      reason: resilience.recommendations[0],
+      action: { type: 'open_recovery', label: 'Open recovery', target: '/dashboard/recovery' },
+    }
+  }
+
+  if (resilience.priority === 'recovery') {
+    return {
+      ...base,
+      category: 'recovery',
+      message:
+        context.resilienceInput.workoutMinutes || context.resilienceInput.activeEnergy
+          ? 'Your recovery signals are lower while your recent output is still high. Today will benefit more from recovery than another hard session.'
+          : context.tier === 'phoenix'
+            ? 'You do not need to prove anything with intensity today. Follow the recovery signal first, then let the next action be smaller and cleaner.'
+            : 'Your body is asking for a steadier pace today. Keep the next action doable instead of forcing intensity.',
+      reason: resilience.recommendations[0],
+      action: { type: 'open_recovery', label: 'Open recovery', target: '/dashboard/recovery' },
+    }
+  }
+
+  if (resilience.priority === 'fueling') {
+    return {
+      ...base,
+      category: 'nutrition',
+      message:
+        'Your activity and recovery signals point to fueling as the priority. Eat enough to support adaptation before adding more intensity.',
+      reason: resilience.recommendations[0],
+      action: { type: 'open_nutrition', label: context.tier === 'ember' ? 'Add macros' : 'Log meal', target: '/dashboard/nutrition' },
+    }
+  }
+
+  if (resilience.priority === 'hydration') {
+    return {
+      ...base,
+      category: 'nutrition',
+      message:
+        'Hydration is the clearest support signal today. Stabilize water and electrolytes before asking your body for more output.',
+      reason: resilience.recommendations[0],
+      action: { type: 'open_nutrition', label: context.tier === 'ember' ? 'Add macros' : 'Log meal', target: '/dashboard/nutrition' },
+    }
+  }
+
+  if (resilience.priority === 'schedule_protection') {
+    return {
+      ...base,
+      category: 'schedule',
+      message:
+        'Your schedule is packed while stress or recovery is already strained. Protect capacity today instead of adding another optional task.',
+      reason: resilience.recommendations[0],
+      action: { type: 'view_day', label: 'View day', target: '/dashboard/schedule' },
+    }
+  }
+
+  if (resilience.priority === 'normal_return') {
+    return {
+      ...base,
+      category: 'consistency',
+      message:
+        'Yesterday does not need to be compensated for. Your current signals support returning to today’s plan at the normal dose.',
+      reason: resilience.recommendations[0],
+      action: { type: 'view_day', label: 'View day', target: '/dashboard/schedule' },
+    }
+  }
+
+  if (resilience.priority === 'training' && context.nextActionCategory === 'workout' && context.openWindowMinutes >= 25) {
+    return {
+      ...base,
+      category: 'workout',
+      message:
+        'Your recovery is strong, but movement has been below your normal range. Your body is ready for more stimulus today.',
+      reason: resilience.recommendations[0],
+      action: { type: 'start_workout', label: 'Start workout', target: `/dashboard/program/${context.tier}/workout` },
+    }
+  }
 
   if (context.lowEnergy || context.recoveryRequired) {
     return {
