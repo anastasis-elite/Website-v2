@@ -87,6 +87,15 @@ function age(birthdate: unknown) {
   )
 }
 
+function nonEmptyObject(value: unknown) {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      Object.keys(value as Record<string, unknown>).length,
+  )
+}
+
 function buildTrends(
   inputs: Awaited<
     ReturnType<
@@ -587,6 +596,30 @@ export async function getProgramLogicEngine(
         inputs.client.capacity_state ||
         inputs.client.capacity ||
         null,
+
+      accountability: {
+        preferences:
+          (nonEmptyObject(inputs.client.accountability_preferences)
+            ? inputs.client.accountability_preferences
+            : null) ||
+          inputs.client.onboarding_data?.accountabilityPreferences ||
+          null,
+        persona:
+          inputs.client.accountability_partner_persona ||
+          null,
+        natalProfile:
+          inputs.client.natal_profile ||
+          null,
+        memory:
+          inputs.client.accountability_memory ||
+          null,
+        behaviorSummary:
+          inputs.client.accountability_behavior_summary ||
+          null,
+        learnedCommunicationProfile:
+          inputs.client.accountability_communication_profile ||
+          null,
+      },
     },
 
     program: inputs.program,

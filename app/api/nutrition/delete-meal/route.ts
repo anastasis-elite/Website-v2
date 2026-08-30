@@ -38,21 +38,49 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { error } = await supabase
+  const { data: deletedRows, error } = await supabase
     .from('meal_entries')
     .delete()
     .eq('id', mealEntryId)
     .eq('nutrition_log_id', nutritionLogId)
+    .select('id')
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const { data: remaining } = await supabase
+  if (!deletedRows?.length) {
+    return NextResponse.json(
+      { error: 'Meal entry not found.' },
+      { status: 404 }
+    )
+  }
+
+  const { error: logUpdateError } = await supabase
+    .from('nutrition_logs')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', nutritionLogId)
+    .eq('auth_user_id', user.id)
+
+  if (logUpdateError) {
+    return NextResponse.json(
+      { error: logUpdateError.message },
+      { status: 500 }
+    )
+  }
+
+  const { data: remaining, error: remainingError } = await supabase
     .from('nutrition_log_remaining')
     .select('*')
     .eq('nutrition_log_id', nutritionLogId)
     .maybeSingle()
+
+  if (remainingError) {
+    return NextResponse.json(
+      { error: remainingError.message },
+      { status: 500 }
+    )
+  }
 
   return NextResponse.json({
     success: true,

@@ -28,6 +28,7 @@ export default function OnboardingProfileForm({ client }: { client: any }) {
     cycleStart4: '',
     cycleStart5: '',
     cycleStart6: '',
+    accountabilitySupportPreference: 'encourage_without_pressure',
   })
 
   function handleChange(
@@ -130,6 +131,27 @@ export default function OnboardingProfileForm({ client }: { client: any }) {
           onChange={handleChange}
           style={styles.inputStyle}
         />
+
+        <div style={{ display: 'grid', gap: 8 }}>
+          <label style={styles.labelStyle}>
+            How should your accountability partner support you?
+          </label>
+
+          <select
+            name="accountabilitySupportPreference"
+            value={formData.accountabilitySupportPreference}
+            onChange={handleChange}
+            style={styles.inputStyle}
+          >
+            <option value="call_me_out">Call me on my shit.</option>
+            <option value="remind_me_why">Remind me why I&apos;m doing this.</option>
+            <option value="make_next_step_smaller">Help me make the next step smaller.</option>
+            <option value="facts_and_direction">Give me the facts and tell me what to do.</option>
+            <option value="encourage_without_pressure">Encourage me without pressuring me.</option>
+            <option value="push_when_ready">Push me when you know I can handle more.</option>
+            <option value="help_me_stop">Help me stop when I&apos;m doing too much.</option>
+          </select>
+        </div>
         
         <select
           name="reproductiveStatus"

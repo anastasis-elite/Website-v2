@@ -1,13 +1,3 @@
-alter table public.nutrition_logs
-  add column if not exists formula_version text,
-  add column if not exists calculation_mode text,
-  add column if not exists calculation_status text,
-  add column if not exists bmr_kcal numeric,
-  add column if not exists estimated_tdee_kcal numeric,
-  add column if not exists goal_adjusted_calories numeric,
-  add column if not exists nutrition_calculation jsonb not null default '{}'::jsonb,
-  add column if not exists calculated_at timestamptz;
-
 do $$
 declare
   constraint_name text;
@@ -79,6 +69,3 @@ alter table public.daily_health_metrics
     'body_weight',
     'body_fat_percentage'
   ));
-
-create index if not exists nutrition_logs_calculation_mode_idx
-  on public.nutrition_logs(client_id, log_date desc, calculation_mode);

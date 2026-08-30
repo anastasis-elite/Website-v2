@@ -6,6 +6,16 @@ import {
   type ResilienceEngineInput,
   type ResilienceEvaluation,
 } from './resilienceEngine'
+import * as accountabilityEngine from '@/lib/accountability/accountabilityEngine'
+import * as astrologyProfile from '@/lib/accountability/astrologyProfile'
+import type {
+  AccountabilityBehaviorSummary,
+  AccountabilityMemory,
+  AccountabilityPreferences,
+  AccountabilityResponse,
+  NatalProfile,
+  PartnerPersona,
+} from '@/lib/accountability/accountabilityTypes'
 
 export type DailyInsightCategory =
   | 'motivation'
@@ -24,6 +34,7 @@ export type DailyInsight = {
   category: DailyInsightCategory
   message: string
   reason?: string
+  accountability?: AccountabilityResponse
   action?: {
     type: string
     label: string
@@ -49,6 +60,13 @@ export type DailyInsightContext = {
   }
   resilienceInput: ResilienceEngineInput
   resilience: ResilienceEvaluation
+  accountability?: {
+    preferences?: AccountabilityPreferences
+    persona?: PartnerPersona
+    natalProfile?: NatalProfile
+    memory?: AccountabilityMemory
+    behaviorSummary?: AccountabilityBehaviorSummary
+  }
 }
 
 function firstOpenWindow(schedule: DailyScheduleState, minimumMinutes = 25) {
@@ -137,6 +155,17 @@ export function gatherDailyInsightContext({
     },
     resilienceInput,
     resilience,
+    accountability: {
+      preferences: logic.client?.accountability?.preferences as AccountabilityPreferences | undefined,
+      persona: logic.client?.accountability?.persona as PartnerPersona | undefined,
+      natalProfile: astrologyProfile.buildNatalProfile
+        ? astrologyProfile.buildNatalProfile({
+            storedProfile: logic.client?.accountability?.natalProfile as NatalProfile | undefined,
+          })
+        : undefined,
+      memory: logic.client?.accountability?.memory as AccountabilityMemory | undefined,
+      behaviorSummary: logic.client?.accountability?.behaviorSummary as AccountabilityBehaviorSummary | undefined,
+    },
   }
 }
 
@@ -298,5 +327,23 @@ export function buildDailyInsight(input: {
   logic: ProgramLogicOutput
   schedule: DailyScheduleState
 }) {
-  return selectDailyInsight(gatherDailyInsightContext(input))
+  const context = gatherDailyInsightContext(input)
+  const insight = selectDailyInsight(context)
+  if (!accountabilityEngine.runAccountabilityPartnerEngine) return insight
+
+  return {
+    ...insight,
+    accountability: accountabilityEngine.runAccountabilityPartnerEngine({
+      clientId: input.logic.client?.id,
+      resilienceState: context.resilience,
+      dailyInsight: insight,
+      availableTime: context.openWindowMinutes,
+      scheduleLoad: context.scheduleDensity,
+      recentBehavior: context.accountability?.behaviorSummary,
+      userPreferences: context.accountability?.preferences,
+      natalProfile: context.accountability?.natalProfile,
+      persona: context.accountability?.persona || null,
+      memory: context.accountability?.memory,
+    }),
+  }
 }

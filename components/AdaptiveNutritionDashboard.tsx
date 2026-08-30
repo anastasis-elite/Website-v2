@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import NutritionFoodLogger from '@/components/NutritionFoodLogger'
@@ -88,8 +88,16 @@ type Remaining = {
 }
 
 type ProgressTab = 'daily' | 'trends'
-type IntakeTab = 'water' | 'meal'
+type IntakeTab = 'water' | 'meal' | 'suggested'
 type ManagementTab = 'goals' | 'micros' | 'recipes'
+
+type SuggestedFood = {
+  foodId: string
+  name: string
+  serving: string | null
+  contribution: string
+  reason: string
+}
 
 function progressPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)))
@@ -162,6 +170,32 @@ export default function AdaptiveNutritionDashboard({
   const [progressTab, setProgressTab] = useState<ProgressTab>('daily')
   const [intakeTab, setIntakeTab] = useState<IntakeTab>('water')
   const [managementTab, setManagementTab] = useState<ManagementTab>('goals')
+  const [suggestedFoods, setSuggestedFoods] = useState<SuggestedFood[]>([])
+  const [suggestedFoodsState, setSuggestedFoodsState] = useState<'idle' | 'loading' | 'ready' | 'needs_logs' | 'complete' | 'error'>('idle')
+  const [suggestedFoodsMessage, setSuggestedFoodsMessage] = useState('')
+
+  const loadSuggestedFoods = useCallback(async () => {
+    if (!nutritionLog?.id) return
+
+    setSuggestedFoodsState('loading')
+    setSuggestedFoodsMessage('')
+
+    try {
+      const response = await fetch(`/api/nutrition/suggested-foods?nutritionLogId=${encodeURIComponent(nutritionLog.id)}`)
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Suggested foods could not be loaded.')
+      }
+
+      setSuggestedFoods(payload?.suggestions || [])
+      setSuggestedFoodsState(payload?.state || 'ready')
+    } catch (error) {
+      setSuggestedFoods([])
+      setSuggestedFoodsState('error')
+      setSuggestedFoodsMessage(error instanceof Error ? error.message : 'Suggested foods could not be loaded.')
+    }
+  }, [nutritionLog?.id])
   
   async function addWater() {
   setAddingWater(true);
@@ -194,9 +228,17 @@ export default function AdaptiveNutritionDashboard({
   }
 }
   
-  async function handleFoodUpdated() {
+  async function handleFoodUpdated(updatedRemaining?: Remaining | null, action: 'added' | 'removed' = 'added') {
+    if (updatedRemaining) {
+      setRemaining(updatedRemaining)
+    }
+
     await loadToday()
-    setMessage('Food logged — today’s calories and macros are updated.')
+    setMessage(
+      action === 'removed'
+        ? 'Food removed — today’s calories, macros, and micronutrients are updated.'
+        : 'Food logged — today’s calories, macros, and micronutrients are updated.'
+    )
     router.refresh()
   }
 
@@ -235,6 +277,10 @@ export default function AdaptiveNutritionDashboard({
   useEffect(() => {
     loadToday()
   }, [])
+
+  useEffect(() => {
+    void loadSuggestedFoods()
+  }, [loadSuggestedFoods, remaining])
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
@@ -598,12 +644,13 @@ setNutritionLog(log)
               <div className="tier-panel-heading">
                 <div>
                   <p className="tier-dashboard-label">Intake</p>
-                  <h2>{intakeTab === 'water' ? 'Water' : isEmber ? 'Macro Entry' : 'Log Meal'}</h2>
+                  <h2>{intakeTab === 'water' ? 'Water' : intakeTab === 'suggested' ? 'Suggested Foods' : isEmber ? 'Macro Entry' : 'Food Log'}</h2>
                 </div>
                 <div className="tier-tab-list nutrition-panel-tabs" role="tablist" aria-label="Intake controls">
                   {([
                     ['water', 'Water'],
-                    ['meal', isEmber ? 'Macros' : 'Log Meal'],
+                    ['meal', 'Food Log'],
+                    ['suggested', 'Suggested Foods'],
                   ] as const).map(([key, label]) => (
                     <button key={key} type="button" className={intakeTab === key ? 'is-active' : ''} onClick={() => setIntakeTab(key)}>
                       {label}
@@ -667,9 +714,21 @@ setNutritionLog(log)
                               magnesium_remaining_mg: remaining.magnesium_remaining_mg ?? null,
                               calcium_remaining_mg: remaining.calcium_remaining_mg ?? null,
                               iron_remaining_mg: remaining.iron_remaining_mg ?? null,
+                              zinc_remaining_mg: remaining.zinc_remaining_mg ?? null,
+                              selenium_remaining_mcg: remaining.selenium_remaining_mcg ?? null,
                               choline_remaining_mg: remaining.choline_remaining_mg ?? null,
+                              vitamin_a_remaining_mcg: remaining.vitamin_a_remaining_mcg ?? null,
                               vitamin_c_remaining_mg: remaining.vitamin_c_remaining_mg ?? null,
                               vitamin_d_remaining_mcg: remaining.vitamin_d_remaining_mcg ?? null,
+                              vitamin_e_remaining_mg: remaining.vitamin_e_remaining_mg ?? null,
+                              vitamin_k_remaining_mcg: remaining.vitamin_k_remaining_mcg ?? null,
+                              b1_remaining_mg: remaining.b1_remaining_mg ?? null,
+                              b2_remaining_mg: remaining.b2_remaining_mg ?? null,
+                              b3_remaining_mg: remaining.b3_remaining_mg ?? null,
+                              b5_remaining_mg: remaining.b5_remaining_mg ?? null,
+                              b6_remaining_mg: remaining.b6_remaining_mg ?? null,
+                              b9_remaining_mcg: remaining.b9_remaining_mcg ?? null,
+                              b12_remaining_mcg: remaining.b12_remaining_mcg ?? null,
                             }
                           : null
                       }
@@ -709,6 +768,41 @@ setNutritionLog(log)
                     <p className="tier-calendar-empty">
                       {loading ? 'Preparing food logging...' : message || 'Food logging could not be prepared yet.'}
                     </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {intakeTab === 'suggested' ? (
+                <div className="nutrition-suggested-foods-panel" data-testid="nutrition-suggested-foods-tab">
+                  {suggestedFoodsState === 'loading' ? (
+                    <p className="tier-calendar-empty">Finding today’s best matches...</p>
+                  ) : null}
+
+                  {suggestedFoodsState === 'needs_logs' ? (
+                    <p className="tier-calendar-empty">Log your meals and we’ll help you fill the gaps.</p>
+                  ) : null}
+
+                  {suggestedFoodsState === 'complete' ? (
+                    <p className="tier-calendar-empty">You’re well covered today.</p>
+                  ) : null}
+
+                  {suggestedFoodsState === 'error' ? (
+                    <p className="tier-calendar-empty">{suggestedFoodsMessage}</p>
+                  ) : null}
+
+                  {suggestedFoodsState === 'ready' && suggestedFoods.length ? (
+                    <div className="nutrition-suggested-foods-list">
+                      {suggestedFoods.map((food) => (
+                        <article key={food.foodId} className="nutrition-suggested-food-card">
+                          <div>
+                            <span>{food.contribution}</span>
+                            <strong>{food.name}</strong>
+                            <small>{food.serving || 'Serving available in food log'}</small>
+                          </div>
+                          <p>{food.reason}</p>
+                        </article>
+                      ))}
+                    </div>
                   ) : null}
                 </div>
               ) : null}

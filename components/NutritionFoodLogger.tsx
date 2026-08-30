@@ -19,15 +19,27 @@ type Remaining = {
   magnesium_remaining_mg: number | null
   calcium_remaining_mg: number | null
   iron_remaining_mg: number | null
+  zinc_remaining_mg?: number | null
+  selenium_remaining_mcg?: number | null
   choline_remaining_mg: number | null
+  vitamin_a_remaining_mcg?: number | null
   vitamin_c_remaining_mg: number | null
   vitamin_d_remaining_mcg: number | null
+  vitamin_e_remaining_mg?: number | null
+  vitamin_k_remaining_mcg?: number | null
+  b1_remaining_mg?: number | null
+  b2_remaining_mg?: number | null
+  b3_remaining_mg?: number | null
+  b5_remaining_mg?: number | null
+  b6_remaining_mg?: number | null
+  b9_remaining_mcg?: number | null
+  b12_remaining_mcg?: number | null
 }
 
 type Props = {
   nutritionLogId: string
   initialRemaining?: Remaining | null
-  onUpdated?: () => void
+  onUpdated?: (remaining?: Remaining | null, action?: 'added' | 'removed') => void
 }
 
 type ServingOption = {
@@ -94,6 +106,10 @@ export default function NutritionFoodLogger({
   useEffect(() => {
     void loadTodayMeals()
   }, [loadTodayMeals])
+
+  useEffect(() => {
+    setRemaining(initialRemaining)
+  }, [initialRemaining])
 
   async function selectFood(food: Food) {
     setSelectedFood(food)
@@ -201,8 +217,8 @@ export default function NutritionFoodLogger({
     setSelectedServingOptionId('')
     setAdding(false)
 
+    onUpdated?.(data.remaining || null, 'added')
     await loadTodayMeals()
-    onUpdated?.()
   }
 
   async function deleteMeal(mealEntryId: string) {
@@ -231,8 +247,8 @@ export default function NutritionFoodLogger({
       setRemaining(data.remaining)
     }
 
+    onUpdated?.(data.remaining || null, 'removed')
     await loadTodayMeals()
-    onUpdated?.()
 
     setMessage('Food removed — today’s progress and remaining macros are updated.')
     setSaved(true)

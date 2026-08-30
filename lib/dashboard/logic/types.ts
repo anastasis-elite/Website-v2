@@ -89,7 +89,22 @@ export type DashboardTrend = { key: 'calories' | 'protein' | 'water' | 'workouts
 export type ProgramLogicOutput = {
   engineVersion: string
   generatedAt: string
-  client: { id: string; name: string; age: number | null; program: ProgramTier; goal: string | null; baselineCapacity: string | null }
+  client: {
+    id: string
+    name: string
+    age: number | null
+    program: ProgramTier
+    goal: string | null
+    baselineCapacity: string | null
+    accountability?: {
+      preferences?: unknown
+      persona?: unknown
+      natalProfile?: unknown
+      memory?: unknown
+      behaviorSummary?: unknown
+      learnedCommunicationProfile?: unknown
+    }
+  }
   program: ProgramTier
   capacityStatus: CapacityResult
   recoveryStatus: RecoveryResult

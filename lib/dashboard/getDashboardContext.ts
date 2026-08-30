@@ -49,6 +49,12 @@ export async function getDashboardContext({
         primary_goal: currentProfile.primary_goal,
         workout_days_available: currentProfile.workout_days_available ?? client.workout_days_available,
         current_workout_minutes_per_session: currentProfile.workout_minutes_available ?? client.current_workout_minutes_per_session,
+        accountability_preferences: currentProfile.accountability_preferences,
+        accountability_partner_persona: currentProfile.accountability_partner_persona,
+        accountability_communication_profile: currentProfile.accountability_communication_profile,
+        accountability_memory: currentProfile.accountability_memory,
+        accountability_behavior_summary: currentProfile.accountability_behavior_summary,
+        natal_profile: currentProfile.natal_profile,
       }
     : client
 

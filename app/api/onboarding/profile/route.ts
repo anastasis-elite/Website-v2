@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTimezoneFromState } from '@/lib/timezone'
+import { applyExplicitPreferences, getDefaultCommunicationProfile } from '@/lib/accountability/communicationProfile'
+import { createPartnerPersona } from '@/lib/accountability/partnerPersona'
 
 export async function POST(req: Request) {
   try {
@@ -33,6 +35,12 @@ export async function POST(req: Request) {
 
     const timezone = getTimezoneFromState(body.state)
     const completedAt = new Date().toISOString()
+    const accountabilityPreferences = {
+      supportPreference:
+        typeof body.accountabilitySupportPreference === 'string'
+          ? body.accountabilitySupportPreference
+          : 'encourage_without_pressure',
+    }
 
     const { data: updatedClient, error } = await supabase
       .from('clients')
@@ -55,6 +63,7 @@ export async function POST(req: Request) {
         onboarding_data: {
           ...body,
           timezone,
+          accountabilityPreferences,
         },
 
         cycle_tracking_enabled:
@@ -96,6 +105,40 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: 'Client profile was not found.' },
         { status: 404 }
+      )
+    }
+
+    const communicationProfile = applyExplicitPreferences(
+      getDefaultCommunicationProfile(),
+      accountabilityPreferences,
+    )
+    const partnerPersona = createPartnerPersona({
+      userId: user.id,
+      clientId: updatedClient.client_id,
+      profile: communicationProfile,
+    })
+
+    const { error: profileError } = await supabase
+      .from('client_current_profiles')
+      .upsert(
+        {
+          user_id: user.id,
+          client_id: updatedClient.client_id,
+          accountability_preferences: accountabilityPreferences,
+          accountability_partner_persona: partnerPersona,
+          accountability_communication_profile: communicationProfile,
+          updated_at: completedAt,
+        },
+        { onConflict: 'client_id' },
+      )
+
+    if (profileError) {
+      return NextResponse.json(
+        {
+          error: 'Profile saved, but accountability partner initialization failed.',
+          details: profileError.message,
+        },
+        { status: 500 }
       )
     }
 

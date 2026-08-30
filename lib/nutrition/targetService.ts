@@ -167,52 +167,9 @@ function wearablePermissionDenied(integrations: HealthIntegrationRow[]) {
   return integrations.some((row) => row.permission_status === 'denied')
 }
 
-function buildAuditPayload(target: NutritionTargetResult) {
-  return {
-    formulaVersion: target.formulaVersion,
-    calculationMode: target.calculationMode,
-    calculationStatus: target.calculationStatus,
-    statusLabel: target.statusLabel,
-    statusDescription: target.statusDescription,
-    bmr: target.bmr,
-    estimatedTdee: target.estimatedTdee,
-    goalAdjustedCalories: target.goalAdjustedCalories,
-    bmi: target.bmi,
-    bodyFatPercentUsed: target.bodyFatPercentUsed,
-    leanBodyMassKg: target.leanBodyMassKg,
-    fatMassKg: target.fatMassKg,
-    activityFactor: target.activityFactor,
-    rollingActiveEnergy: target.rollingActiveEnergy,
-    rollingRestingEnergy: target.rollingRestingEnergy,
-    rollingWearableTdee: target.rollingWearableTdee,
-    goalModifier: target.goalModifier,
-    normalizedGoal: target.normalizedGoal,
-    defaultMacroPercentages: target.defaultMacroPercentages,
-    finalMacroPercentages: target.finalMacroPercentages,
-    finalMacroGrams: {
-      protein: target.protein,
-      carbs: target.carbs,
-      fats: target.fats,
-    },
-    safeguardAdjusted: target.safeguardAdjusted,
-    safeguardsApplied: target.safeguardsApplied,
-    dataDateRange: target.dataDateRange,
-    lastCalculatedAt: target.lastCalculatedAt,
-    inputs: target.inputs,
-  }
-}
-
 export function nutritionLogAuditFields(target: NutritionTargetResult) {
-  return {
-    formula_version: target.formulaVersion,
-    calculation_mode: target.calculationMode,
-    calculation_status: target.calculationStatus,
-    bmr_kcal: target.bmr,
-    estimated_tdee_kcal: target.estimatedTdee,
-    goal_adjusted_calories: target.goalAdjustedCalories,
-    nutrition_calculation: buildAuditPayload(target),
-    calculated_at: target.lastCalculatedAt,
-  }
+  void target
+  return {}
 }
 
 export async function calculateClientNutritionTargets({

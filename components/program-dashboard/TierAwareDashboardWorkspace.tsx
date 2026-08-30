@@ -77,6 +77,12 @@ function DailyInsightCard({ insight }: { insight: DailyInsight }) {
     <article className={`tier-daily-insight tier-insight-${insight.category}`} data-tutorial-id="dashboard-daily-insight">
       <p className="tier-dashboard-label">Today&apos;s Insight</p>
       <p>{insight.message}</p>
+      {insight.accountability ? (
+        <div className="tier-accountability-message">
+          <p className="tier-dashboard-label">From {insight.accountability.partner.name}</p>
+          <p>{insight.accountability.message}</p>
+        </div>
+      ) : null}
       {insight.action ? (
         <Link href={insight.action.target} className="tier-secondary-action">{insight.action.label}</Link>
       ) : null}
