@@ -1242,6 +1242,13 @@ a {
   text-align: center;
 }
 
+.legal-footer-brand {
+  margin: 0 auto 14px;
+  color: rgba(245,240,232,.84);
+  font-size: .9rem;
+  line-height: 1.6;
+}
+
 .legal-footer nav {
   display: flex;
   justify-content: center;

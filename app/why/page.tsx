@@ -1,6 +1,30 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import * as styles from '../styles/globalstyles'
 import TrackEvent from '@/components/TrackEvent'
+import { BRAND_NAME } from '@/lib/seo'
+
+const whyDescription =
+  'Understand why Anastasis connects capacity, recovery, fitness, nutrition, and daily support for women instead of treating health as another full-time job.'
+
+export const metadata: Metadata = {
+  title: 'Why Anastasis',
+  description: whyDescription,
+  alternates: {
+    canonical: '/why',
+  },
+  openGraph: {
+    title: 'Why Anastasis',
+    description: whyDescription,
+    url: '/why',
+    siteName: BRAND_NAME,
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Why Anastasis',
+    description: whyDescription,
+  },
+}
 
 const sectionBlock = {
   marginBottom: '110px',

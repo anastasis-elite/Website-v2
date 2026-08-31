@@ -1,10 +1,11 @@
 import type { MetadataRoute } from 'next'
+import { BRAND_DESCRIPTION } from '@/lib/seo'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Anastasis | Woman-Centered Performance',
+    name: 'Anastasis | Health & Performance Concierge Platform for Women',
     short_name: 'Anastasis',
-    description: 'Your personalized training, nutrition, cycle, and recovery system.',
+    description: BRAND_DESCRIPTION,
     start_url: '/dashboard',
     scope: '/',
     display: 'standalone',

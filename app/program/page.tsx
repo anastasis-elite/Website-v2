@@ -1,6 +1,30 @@
+import type { Metadata } from 'next'
 import * as styles from '../styles/globalstyles'
 import TrackEvent from '@/components/TrackEvent'
 import Link from 'next/link'
+import { BRAND_NAME } from '@/lib/seo'
+
+const programDescription =
+  'Explore Anastasis program paths for personalized fitness, nutrition, recovery, progress tracking, and daily support.'
+
+export const metadata: Metadata = {
+  title: 'Anastasis Programs',
+  description: programDescription,
+  alternates: {
+    canonical: '/program',
+  },
+  openGraph: {
+    title: 'Anastasis Programs',
+    description: programDescription,
+    url: '/program',
+    siteName: BRAND_NAME,
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Anastasis Programs',
+    description: programDescription,
+  },
+}
 
 const paths = [
   {
@@ -129,6 +153,21 @@ export default function ProgramPage() {
             rebuild in a way your life can actually sustain. The difference is
             the amount of structure, guidance, personalization, and support
             provided along the way.
+          </p>
+
+          <p
+            style={{
+              ...styles.heroTextStyle,
+              maxWidth: '760px',
+              margin: '0 auto 48px auto',
+            }}
+          >
+            Anastasis is a health and performance concierge platform for women.
+            Learn more about{' '}
+            <Link href="/what-is-anastasis" style={{ color: '#c58b57', textDecoration: 'underline' }}>
+              how Anastasis works
+            </Link>
+            .
           </p>
 
           <div style={styles.cardGridStyle}>

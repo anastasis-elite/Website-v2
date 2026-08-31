@@ -1,8 +1,32 @@
+import type { Metadata } from 'next'
 import Image from 'next/image'
 import Button from '../components/Button'
 import MistReveal from '../components/MistReveal'
 import TrackEvent from '@/components/TrackEvent'
 import TrackedButton from '@/components/TrackedButton'
+import { BRAND_NAME, BRAND_TITLE } from '@/lib/seo'
+
+const homeDescription =
+  'Anastasis brings personalized fitness, nutrition, recovery, progress tracking, and daily support into one adaptive health and performance platform for women.'
+
+export const metadata: Metadata = {
+  title: BRAND_TITLE,
+  description: homeDescription,
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: BRAND_TITLE,
+    description: homeDescription,
+    url: '/',
+    siteName: BRAND_NAME,
+  },
+  twitter: {
+    card: 'summary',
+    title: BRAND_TITLE,
+    description: homeDescription,
+  },
+}
 
 export default function Home() {
   return (
@@ -157,6 +181,12 @@ export default function Home() {
           </TrackedButton>
 
           <Button href="#how-it-works">See How It Works</Button>
+        </div>
+
+        <div style={{ marginTop: '22px' }}>
+          <Button href="/what-is-anastasis" variant="secondary">
+            What is Anastasis?
+          </Button>
         </div>
 
         <div

@@ -1,6 +1,30 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import * as styles from '../styles/globalstyles'
 import TrackEvent from '@/components/TrackEvent'
+import { BRAND_NAME } from '@/lib/seo'
+
+const aboutDescription =
+  'Learn about Anastasis, a health and performance concierge platform for women built around adaptive fitness, nutrition, recovery, and daily support.'
+
+export const metadata: Metadata = {
+  title: 'About Anastasis',
+  description: aboutDescription,
+  alternates: {
+    canonical: '/about',
+  },
+  openGraph: {
+    title: 'About Anastasis',
+    description: aboutDescription,
+    url: '/about',
+    siteName: BRAND_NAME,
+  },
+  twitter: {
+    card: 'summary',
+    title: 'About Anastasis',
+    description: aboutDescription,
+  },
+}
 
 export default function AboutPage() {
   return (
@@ -28,6 +52,13 @@ export default function AboutPage() {
           This system was built to help women rebuild trust with their bodies
           through intelligent structure, recovery, progression, and nervous
           system support.
+        </p>
+        <p>
+          For a clearer overview of the platform itself, read{' '}
+          <Link href="/what-is-anastasis" style={{ color: '#c58b57', textDecoration: 'underline' }}>
+            what Anastasis is
+          </Link>
+          .
         </p>
       </section>
 
@@ -86,8 +117,8 @@ export default function AboutPage() {
           Anastasis exists to help women feel safe, strong, informed, and
           supported inside their own bodies again.
         </p>
-        <Link href="/apply" style={styles.primaryButtonStyle}>
-          See if you’re ready
+        <Link href="/program" style={styles.primaryButtonStyle}>
+          Explore Anastasis programs
         </Link>
       </section>
     </main>

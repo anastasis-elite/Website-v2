@@ -122,6 +122,10 @@ export default function AuthButton() {
                 About
               </Link>
 
+              <Link href="/what-is-anastasis" onClick={closeMenu}>
+                What Is Anastasis?
+              </Link>
+
               <Link href="/why" onClick={closeMenu}>
                 Why
               </Link>
@@ -175,6 +179,10 @@ export default function AuthButton() {
                 About
               </Link>
 
+              <Link href="/what-is-anastasis" onClick={closeMenu}>
+                What Is Anastasis?
+              </Link>
+
               <Link href="/why" onClick={closeMenu}>
                 Why
               </Link>
@@ -199,6 +207,10 @@ export default function AuthButton() {
 
               <Link href="/about" onClick={closeMenu}>
                 About
+              </Link>
+
+              <Link href="/what-is-anastasis" onClick={closeMenu}>
+                What Is Anastasis?
               </Link>
 
               <Link href="/why" onClick={closeMenu}>
