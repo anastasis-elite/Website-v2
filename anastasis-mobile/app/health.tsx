@@ -24,12 +24,15 @@ function statusLabel(value?: string | null) {
 
 function formatTime(value?: string | null) {
   if (!value) return 'Never'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Never'
+
   return new Intl.DateTimeFormat(undefined, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-  }).format(new Date(value))
+  }).format(date)
 }
 
 export default function HealthScreen() {
@@ -67,7 +70,7 @@ export default function HealthScreen() {
   }, [adapter])
 
   useEffect(() => {
-    loadStatus()
+    Promise.resolve().then(loadStatus)
   }, [loadStatus])
 
   useEffect(() => {
@@ -161,7 +164,7 @@ export default function HealthScreen() {
             ) : null}
 
             <View style={styles.actions}>
-              <AOSButton disabled={!adapter || syncing} onPress={syncNow}>
+              <AOSButton disabled={!adapter || !syncWindow || syncing} onPress={syncNow}>
                 {syncing ? 'Syncing' : integration ? 'Sync Now' : `Connect ${adapter?.label || 'Health'}`}
               </AOSButton>
               {adapter?.openSettings ? (

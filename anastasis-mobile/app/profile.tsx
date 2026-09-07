@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Alert, StyleSheet, Text, View } from 'react-native'
+import { Alert, Linking, StyleSheet, Text, View } from 'react-native'
 
 import AOSButton from '../components/AOSButton'
 import AOSCard from '../components/AOSCard'
@@ -18,6 +18,10 @@ const rows = [
   ['Progress History', '/progress'],
   ['Daily Check-In', '/check-in'],
   ['Cycle Awareness', '/cycle'],
+  ['Privacy Policy', 'https://www.anastasiselite.com/privacy'],
+  ['Terms of Service', 'https://www.anastasiselite.com/terms'],
+  ['Health Disclaimer', 'https://www.anastasiselite.com/health-disclaimer'],
+  ['Request Account Deletion', 'mailto:Anastasis.elite@gmail.com?subject=Account%20Deletion%20Request'],
   ['Help & Support', 'mailto:Anastasis.elite@gmail.com'],
 ]
 
@@ -31,7 +35,13 @@ export default function ProfileScreen() {
   }, [])
 
   async function signOut() {
-    await supabase.auth.signOut({ scope: 'local' })
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      Alert.alert('Unable to log out', error.message)
+      return
+    }
+
     router.replace('/login')
   }
 
@@ -80,7 +90,11 @@ export default function ProfileScreen() {
               key={label}
               variant="secondary"
               onPress={() => {
-                if (!href.startsWith('mailto:')) {
+                if (href.startsWith('http') || href.startsWith('mailto:')) {
+                  Linking.openURL(href).catch(() => {
+                    Alert.alert('Link unavailable', 'This link could not be opened.')
+                  })
+                } else {
                   router.push(href as never)
                 }
               }}

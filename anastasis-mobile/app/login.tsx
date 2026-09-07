@@ -2,7 +2,10 @@ import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -23,11 +26,9 @@ export default function LoginScreen() {
     let mounted = true
 
     async function checkExistingSession() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      const { data, error } = await supabase.auth.getSession()
 
-      if (mounted && session) {
+      if (mounted && !error && data.session) {
         router.replace('/today')
       }
     }
@@ -73,49 +74,59 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <View style={styles.container}>
-        <View style={styles.brand}>
-          <Text style={styles.flame}>🔥</Text>
-          <View>
-            <Text style={styles.brandText}>ANASTASIS</Text>
-            <Text style={styles.brandSub}>Client Platform</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboard}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.brand}>
+            <Text style={styles.flame}>🔥</Text>
+            <View>
+              <Text style={styles.brandText}>ANASTASIS</Text>
+              <Text style={styles.brandSub}>Client Platform</Text>
+            </View>
           </View>
-        </View>
 
-        <AOSCard>
-          <Text style={styles.heading}>Welcome back</Text>
-          <Text style={styles.subheading}>
-            Sign in to continue your daily plan.
-          </Text>
+          <AOSCard>
+            <Text style={styles.heading}>Welcome back</Text>
+            <Text style={styles.subheading}>
+              Sign in to continue your daily plan.
+            </Text>
 
-          <TextInput
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            onChangeText={setEmail}
-            placeholder="Email"
-            placeholderTextColor={colors.subtle}
-            style={styles.input}
-            value={email}
-          />
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder="Email"
+              placeholderTextColor={colors.subtle}
+              returnKeyType="next"
+              style={styles.input}
+              value={email}
+            />
 
-          <TextInput
-            autoCapitalize="none"
-            autoComplete="password"
-            onChangeText={setPassword}
-            onSubmitEditing={handleLogin}
-            placeholder="Password"
-            placeholderTextColor={colors.subtle}
-            secureTextEntry
-            style={styles.input}
-            value={password}
-          />
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="password"
+              onChangeText={setPassword}
+              onSubmitEditing={handleLogin}
+              placeholder="Password"
+              placeholderTextColor={colors.subtle}
+              returnKeyType="go"
+              secureTextEntry
+              style={styles.input}
+              value={password}
+            />
 
-          <AOSButton disabled={loading} onPress={handleLogin}>
-            {loading ? 'Signing in' : 'Sign in'}
-          </AOSButton>
-        </AOSCard>
-      </View>
+            <AOSButton disabled={loading} onPress={handleLogin}>
+              {loading ? 'Signing in' : 'Sign in'}
+            </AOSButton>
+          </AOSCard>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -125,10 +136,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  container: {
+  keyboard: {
     flex: 1,
+  },
+  container: {
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 18,
+    paddingVertical: 24,
   },
   brand: {
     flexDirection: 'row',

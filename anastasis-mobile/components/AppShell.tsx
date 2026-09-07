@@ -49,6 +49,7 @@ export default function AppShell({
           styles.content,
           showNav && styles.withNav,
         ]}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {children}

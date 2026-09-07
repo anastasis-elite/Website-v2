@@ -17,12 +17,12 @@ type Props = {
   active: NavKey
 }
 
-const primaryItems: Array<{
+const primaryItems: {
   key: NavKey
   label: string
   icon: string
   href: string
-}> = [
+}[] = [
   { key: 'today', label: 'Today', icon: '⌂', href: '/today' },
   { key: 'nutrition', label: 'Nutrition', icon: 'Ψ', href: '/nutrition' },
   { key: 'workout', label: 'Workout', icon: '🔥', href: '/workout' },

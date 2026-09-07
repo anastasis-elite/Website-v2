@@ -23,7 +23,7 @@ export default function RecoveryScreen() {
       />
 
       <AOSCard>
-        <Text style={styles.eyebrow}>Today's Recommendation</Text>
+        <Text style={styles.eyebrow}>{"Today's Recommendation"}</Text>
         <Text style={styles.title}>{data.recovery.status}</Text>
         <Text style={styles.copy}>{data.recovery.recommendation}</Text>
         <View style={styles.readiness}>

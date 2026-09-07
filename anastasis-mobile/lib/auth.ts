@@ -15,12 +15,11 @@ export function useProtectedSession() {
     let mounted = true
 
     async function restore() {
-      const {
-        data: { session: currentSession },
-      } = await supabase.auth.getSession()
+      const { data, error } = await supabase.auth.getSession()
 
       if (!mounted) return
 
+      const currentSession = error ? null : data.session
       setSession(currentSession)
       setLoading(false)
 

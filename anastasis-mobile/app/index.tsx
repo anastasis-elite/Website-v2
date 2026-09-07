@@ -17,13 +17,11 @@ export default function IndexScreen() {
     let mounted = true
 
     async function restoreSession() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      const { data, error } = await supabase.auth.getSession()
 
       if (!mounted) return
 
-      setDestination(session ? '/today' : '/login')
+      setDestination(!error && data.session ? '/today' : '/login')
     }
 
     restoreSession()

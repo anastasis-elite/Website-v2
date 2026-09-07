@@ -84,7 +84,7 @@ export default function TodayScreen() {
   }, [])
 
   useEffect(() => {
-    loadState()
+    Promise.resolve().then(loadState)
   }, [loadState])
 
   async function handleAction(action: MobileDailyAction) {

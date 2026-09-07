@@ -6,13 +6,21 @@
     "orientation": "portrait",
     "scheme": "anastasis",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
     "plugins": [
       "expo-router",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#070707"
+        }
+      ],
+      [
         "react-native-health",
         {
-          "healthSharePermission": "Anastasis reads selected health metrics to reduce manual tracking and support daily recommendations.",
-          "healthUpdatePermission": "Anastasis does not write health data in this release."
+          "healthSharePermission": "Anastasis reads selected health metrics to reduce manual tracking and support daily recommendations."
         }
       ],
       "react-native-health-connect",
@@ -37,10 +45,10 @@
     ],
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "1",
       "bundleIdentifier": "com.anastasiselite.mobile",
       "infoPlist": {
-        "NSHealthShareUsageDescription": "Anastasis reads selected health metrics to reduce manual tracking and support daily recommendations.",
-        "NSHealthUpdateUsageDescription": "Anastasis does not write health data in this release."
+        "NSHealthShareUsageDescription": "Anastasis reads selected health metrics to reduce manual tracking and support daily recommendations."
       },
       "entitlements": {
         "com.apple.developer.healthkit": true
@@ -58,15 +66,21 @@
         "android.permission.health.READ_SKIN_TEMPERATURE",
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+        "android.permission.health.READ_BASAL_METABOLIC_RATE",
         "android.permission.health.READ_EXERCISE",
         "android.permission.health.READ_DISTANCE",
         "android.permission.health.READ_WEIGHT",
         "android.permission.health.READ_BODY_FAT"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#070707"
+      }
     },
     "web": {
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "favicon": "./assets/favicon.png"
     },
     "experiments": {
       "typedRoutes": false

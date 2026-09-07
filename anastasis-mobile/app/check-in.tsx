@@ -37,7 +37,7 @@ export default function CheckInScreen() {
       ) : null}
 
       <AOSCard>
-        <Text style={styles.eyebrow}>Today's Signals</Text>
+        <Text style={styles.eyebrow}>{"Today's Signals"}</Text>
         <Text style={styles.title}>How are you, actually?</Text>
         <View style={styles.sliderList}>
           {sliders.map((label, index) => (

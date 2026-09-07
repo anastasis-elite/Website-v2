@@ -24,7 +24,7 @@ export default function NutritionScreen() {
       />
 
       <AOSCard>
-        <Text style={styles.eyebrow}>Today's Fuel Readiness</Text>
+        <Text style={styles.eyebrow}>{"Today's Fuel Readiness"}</Text>
         <Text style={styles.title}>Ready with support</Text>
         <Text style={styles.copy}>{data.workout.fuelPrompt}</Text>
         <View style={styles.adviceGrid}>
