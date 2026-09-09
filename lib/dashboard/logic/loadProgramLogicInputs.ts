@@ -72,7 +72,7 @@ export async function loadProgramLogicInputs({
     { data: initialAssessment }, { data: measurementLogs }, { data: photoRecord },
     { data: phoenixTasks }, { data: recentTasks }, { data: todayWorkoutFeedback },
     { data: recoveryActivities }, { data: rawRecentRecovery }, { data: executionHistory },
-    { data: dailyHealthMetrics },
+    { data: dailyHealthMetrics }, { data: latestBodySessions }, { data: activeBodySession },
   ] = await Promise.all([
     supabase.from('assessments').select('*').eq('client_id', client.client_id).gte('submitted_at', start).lte('submitted_at', end).limit(1).maybeSingle(),
     supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).limit(1).maybeSingle(),
@@ -101,6 +101,23 @@ export async function loadProgramLogicInputs({
       .eq('client_id', client.client_id)
       .gte('metric_date', sevenDaysAgo)
       .lte('metric_date', today),
+    supabase
+      .from('body_assessment_sessions')
+      .select('id,assessment_type,status,started_at,completed_at')
+      .eq('user_id', user.id)
+      .eq('client_id', client.client_id)
+      .eq('status', 'completed')
+      .order('completed_at', { ascending: false })
+      .limit(20),
+    supabase
+      .from('body_assessment_sessions')
+      .select('id,assessment_type,status,started_at')
+      .eq('user_id', user.id)
+      .eq('client_id', client.client_id)
+      .eq('status', 'draft')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   const nutritionIds = (nutritionLogs || []).map((row: any) => row.id)
@@ -300,6 +317,13 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
   missedDayCount++
 }
   const recentRecovery = normalizeRecentRecovery(rawRecentRecovery || [], recentRecoveryDates)
+  const completedBodySessions = latestBodySessions || []
+  const latestMonthlySession = completedBodySessions.find((row: any) =>
+    ['monthly', 'full'].includes(String(row.assessment_type))
+  )
+  const latestStructuralSession = completedBodySessions.find((row: any) =>
+    ['structural', 'full'].includes(String(row.assessment_type))
+  )
 
   return {
     date: today, userId: user.id, client, program, dailyPlan, cycleStatus, cycleAdjustment,
@@ -321,6 +345,18 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
   taskCount: activityByDate.get(yesterday) || 0,
 },
     monthlyAssessmentsDueCount,
+    bodyAssessment: {
+      latestMonthlyCompletedAt: latestMonthlySession?.completed_at || null,
+      latestStructuralCompletedAt: latestStructuralSession?.completed_at || null,
+      activeSession: activeBodySession
+        ? {
+            id: String(activeBodySession.id),
+            assessment_type: String(activeBodySession.assessment_type),
+            status: String(activeBodySession.status),
+            started_at: activeBodySession.started_at || null,
+          }
+        : null,
+    },
     healthMetrics: {
       today: todayHealthMetrics,
       recent: dailyHealthMetrics || [],

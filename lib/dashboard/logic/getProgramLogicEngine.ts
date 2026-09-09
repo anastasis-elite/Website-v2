@@ -23,6 +23,7 @@ import type {
 
 import { evaluateCapacityHistory } from '@/lib/workout-os/evaluateCapacityHistory'
 import { buildRecoveryActions } from '@/lib/workout-os/buildRecoveryActions'
+import { getBodyAssessmentScheduleStatus } from '@/lib/body-assessment/schedule'
 
 export const DASHBOARD_ENGINE_VERSION =
   'aos_daily_logic_v1.0.0'
@@ -551,6 +552,17 @@ export async function getProgramLogicEngine(
     1 +
     inputs.monthlyAssessmentsDueCount
 
+  const bodyAssessmentStatus =
+    getBodyAssessmentScheduleStatus({
+      today: inputs.date,
+      latestMonthlyCompletedAt:
+        inputs.bodyAssessment.latestMonthlyCompletedAt,
+      latestStructuralCompletedAt:
+        inputs.bodyAssessment.latestStructuralCompletedAt,
+      activeSession:
+        inputs.bodyAssessment.activeSession,
+    })
+
   const outputBase = {
     capacityStatus,
     recoveryStatus,
@@ -706,6 +718,9 @@ export async function getProgramLogicEngine(
             assessmentTotal) *
             100,
         ),
+
+      body:
+        bodyAssessmentStatus,
     },
 
     recoveryCheck: {

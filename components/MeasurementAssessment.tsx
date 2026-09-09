@@ -27,6 +27,15 @@ type MeasurementKey =
   | 'ribcage'
   | 'torso_length'
   | 'inseam'
+  | 'height'
+  | 'left_shoulder_to_elbow'
+  | 'right_shoulder_to_elbow'
+  | 'left_elbow_to_wrist'
+  | 'right_elbow_to_wrist'
+  | 'left_hip_to_knee'
+  | 'right_hip_to_knee'
+  | 'left_knee_to_ankle'
+  | 'right_knee_to_ankle'
 
 type MeasurementField = {
   key: MeasurementKey
@@ -184,9 +193,81 @@ const measurementFields: MeasurementField[] = [
       'Measure at the lower glute/upper hamstring fold area. This is optional and intended for advanced physique tracking.',
   },
   {
+    key: 'height',
+    label: 'Height',
+    group: '9-Month Structural',
+    advanced: true,
+    description:
+      'Record standing height in the same conditions each time when possible.',
+  },
+  {
+    key: 'left_shoulder_to_elbow',
+    label: 'Left Shoulder to Elbow',
+    group: '9-Month Structural',
+    advanced: true,
+    description:
+      'Measure from the shoulder/acromion landmark to the elbow on the left side.',
+  },
+  {
+    key: 'right_shoulder_to_elbow',
+    label: 'Right Shoulder to Elbow',
+    group: '9-Month Structural',
+    advanced: true,
+    description:
+      'Measure from the shoulder/acromion landmark to the elbow on the right side.',
+  },
+  {
+    key: 'left_elbow_to_wrist',
+    label: 'Left Elbow to Wrist',
+    group: '9-Month Structural',
+    advanced: true,
+    description:
+      'Measure from the elbow landmark to the wrist landmark on the left side.',
+  },
+  {
+    key: 'right_elbow_to_wrist',
+    label: 'Right Elbow to Wrist',
+    group: '9-Month Structural',
+    advanced: true,
+    description:
+      'Measure from the elbow landmark to the wrist landmark on the right side.',
+  },
+  {
+    key: 'left_hip_to_knee',
+    label: 'Left Hip to Knee',
+    group: '9-Month Structural',
+    advanced: true,
+    description:
+      'Measure from the hip or pelvic landmark to the knee landmark on the left side.',
+  },
+  {
+    key: 'right_hip_to_knee',
+    label: 'Right Hip to Knee',
+    group: '9-Month Structural',
+    advanced: true,
+    description:
+      'Measure from the hip or pelvic landmark to the knee landmark on the right side.',
+  },
+  {
+    key: 'left_knee_to_ankle',
+    label: 'Left Knee to Ankle',
+    group: '9-Month Structural',
+    advanced: true,
+    description:
+      'Measure from the knee landmark to the ankle landmark on the left side.',
+  },
+  {
+    key: 'right_knee_to_ankle',
+    label: 'Right Knee to Ankle',
+    group: '9-Month Structural',
+    advanced: true,
+    description:
+      'Measure from the knee landmark to the ankle landmark on the right side.',
+  },
+  {
     key: 'ribcage',
     label: 'Ribcage',
-    group: 'Structural',
+    group: '9-Month Structural',
     advanced: true,
     description:
       'Measure around the ribcage, generally below the breast tissue and above the waist.',
@@ -194,7 +275,7 @@ const measurementFields: MeasurementField[] = [
   {
     key: 'torso_length',
     label: 'Torso Length',
-    group: 'Structural',
+    group: '9-Month Structural',
     advanced: true,
     description:
       'Measure from the base of the neck or shoulder line down to the natural waist. Keep posture natural.',
@@ -202,7 +283,7 @@ const measurementFields: MeasurementField[] = [
   {
     key: 'inseam',
     label: 'Inseam',
-    group: 'Structural',
+    group: '9-Month Structural',
     advanced: true,
     description:
       'Measure from the upper inner thigh down to the ankle or floor depending on your tracking purpose.',
@@ -307,8 +388,9 @@ export default function MeasurementAssessment({ clientId }: { clientId: string }
           <h2 style={styles.sectionTitleStyle}>Measurement Inputs</h2>
 
           <p style={styles.bodyStyle}>
-            Tap any measurement name to focus the diagram and see exactly where
-            to measure. Record in inches unless your coach instructs otherwise.
+            Tap any measurement name to focus the diagram. Monthly regional
+            measurements and 9-month structural lengths are stored as raw
+            history before any Estimated results are calculated.
           </p>
 
           <label
@@ -582,7 +664,6 @@ function MeasurementDiagram({
       pointerEvents: 'none',
     }}
   >
-          {/* your corrected lines stay here */}
           <GuideLine y={160} color={lineColor('neck')} label="Neck" />
           <GuideLine y={195} color={lineColor('shoulders')} label="Shoulders" />
           <GuideLine y={225} color={lineColor('bust_chest')} label="Chest" />

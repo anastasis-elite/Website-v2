@@ -233,19 +233,18 @@ export default function WhatIsAnastasisPage() {
           <section style={styles.sectionStyle}>
             <h2 style={styles.sectionTitleStyle}>Founder / Expertise</h2>
             <p style={styles.bodyStyle}>
-              Anastasis is founder-led and formulation-driven. The founder&apos;s
-              work sits at the intersection of fitness programming, nutrition
-              strategy, recovery systems, women-first physiology, behavioral
-              design, and Adaptive Human Engineering. Those credentials are not
-              used as decorative biography; they are used to formulate the logic
-              behind how Anastasis evaluates capacity, builds programs, and
-              adapts support.
+              Anastasis is the system behind years of individualized coaching,
+              translated into structured, repeatable formulations that can scale
+              beyond one-on-one support. Its training, nutrition, recovery, and
+              assessment decisions are governed by Anastasis formulation logic,
+              not open-ended AI guesses.
             </p>
             <p style={styles.bodyStyle}>
-              The app is where the model lives. Workouts, nutrition targets,
-              dashboards, assessments, and AI-assisted insights are delivery
-              layers for a founder-developed methodology, not substitutes for
-              the methodology itself.
+              The methodology was intentionally developed around women&apos;s
+              physiology, recovery, hormonal context where provided, real-life
+              workload, and performance demands. AI may support conversational
+              and accountability experiences where appropriate, but it does not
+              replace the core Anastasis formulation engine.
             </p>
           </section>
 

@@ -373,12 +373,20 @@ function AssessmentsTab({ logic, capabilities }: { logic: ProgramLogicOutput; ca
   const postureCopy = capabilities.postureAssessment
     ? 'Posture landmark assessment available'
     : 'Progress photos available'
+  const bodyAssessment = logic.assessments.body
+  const bodyAssessmentDetail = bodyAssessment.inProgress
+    ? 'Continue'
+    : bodyAssessment.dueKind === 'none'
+      ? `Next check-in in ${bodyAssessment.daysUntilNext} day${bodyAssessment.daysUntilNext === 1 ? '' : 's'}`
+      : bodyAssessment.structuralDue
+        ? 'Monthly measurements and structural lengths'
+        : 'Monthly regional measurements'
   return (
     <div className="tier-assessment-grid" data-testid="dashboard-assessments-tab">
+      <Link href={bodyAssessment.href} title="Measurements" data-tutorial-id="dashboard-body-assessment"><span>Body Assessment</span><strong>{bodyAssessment.title}</strong><small>{bodyAssessmentDetail}</small></Link>
       <Link href="/dashboard/assessment/photos" data-tutorial-id="dashboard-progress-photos"><span>Progress Photos</span><strong>{logic.progress.photoUrls.length ? `${logic.progress.photoUrls.length} saved` : 'Available'}</strong><small>{logic.progress.photosDue ? 'Photo update available' : 'History available'}</small></Link>
       <Link href="/dashboard/assessment/photos"><span>Assessment Photos</span><strong>Available</strong><small>{postureCopy}</small></Link>
       <Link href="/dashboard/assessment/start" data-tutorial-id="dashboard-strength-assessment"><span>Strength Assessment</span><strong>{logic.assessments.monthlyDueCount ? 'Due' : 'Current'}</strong><small>Functional progress history</small></Link>
-      <Link href="/dashboard/assessment/measurements" data-tutorial-id="dashboard-measurements"><span>Measurements</span><strong>{logic.progress.weight ?? 'Ready'}</strong><small>Body measurements and trends</small></Link>
       <Link href={capabilities.postureAssessment ? '/dashboard/assessment/photos?type=posture' : '/dashboard/assessment/photos'} aria-disabled={!capabilities.postureAssessment}><span>Posture Assessment</span><strong>{capabilities.postureAssessment ? 'Available' : 'Ignite/Phoenix'}</strong><small>{capabilities.postureAssessment ? 'Confirm landmarks before saving' : 'Not included in Ember'}</small></Link>
     </div>
   )

@@ -64,6 +64,16 @@ export type ProgramLogicInputs = {
   executionHistory: Array<{ log_date: string; streak_eligible: boolean }>
   yesterday: { workoutComplete: boolean; nutritionLogged: boolean; taskCount: number }
   monthlyAssessmentsDueCount: number
+  bodyAssessment: {
+    latestMonthlyCompletedAt: string | null
+    latestStructuralCompletedAt: string | null
+    activeSession: {
+      id: string
+      assessment_type: string
+      status: string
+      started_at: string | null
+    } | null
+  }
   healthMetrics: {
     today: Record<string, any>
     recent: any[]
@@ -118,7 +128,23 @@ export type ProgramLogicOutput = {
   hydration: HydrationResult
   nutrition: NutritionResult
   workout: { assigned: boolean; completed: boolean; title: string; type: string; durationMinutes: number | null }
-  assessments: { dailyCompleted: boolean; monthlyDueCount: number; completionPercent: number }
+  assessments: {
+    dailyCompleted: boolean
+    monthlyDueCount: number
+    completionPercent: number
+    body: {
+      dueKind: 'none' | 'monthly' | 'structural' | 'full'
+      monthlyDue: boolean
+      structuralDue: boolean
+      inProgress: boolean
+      title: string
+      actionLabel: string
+      href: string
+      nextMonthlyDueDate: string
+      nextStructuralDueDate: string
+      daysUntilNext: number
+    }
+  }
   recoveryCheck: { completed: boolean; energy: number | null; stress: number | null; soreness: number | null; sleepQuality: number | null }
   sleep: { logged: boolean; hours: number | null; quality: number | null }
   cycle: CycleResult
