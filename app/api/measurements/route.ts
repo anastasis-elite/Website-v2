@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
   BODY_ASSESSMENT_FORMULA_VERSION,
-  calculateRegionalCompositionEstimate,
+  calculateBodyCompositionEstimate,
+  inchesToCm,
   type RegionalMeasurementInput,
 } from '@/lib/body-assessment/calculations'
 
@@ -25,6 +26,19 @@ const regionalCircumferenceKeys: Record<string, { region: string; side: 'left' |
   ribcage: { region: 'upper_torso', side: 'midline', site: 'ribcage_circumference' },
 }
 
+const skinfoldKeys: Record<string, { region: string; side: 'left' | 'right' | 'midline'; site: string; surfaceShare?: number }> = {
+  left_triceps_skinfold_mm: { region: 'upper_arm', side: 'left', site: 'triceps_posterior', surfaceShare: 0.5 },
+  right_triceps_skinfold_mm: { region: 'upper_arm', side: 'right', site: 'triceps_posterior', surfaceShare: 0.5 },
+  left_biceps_skinfold_mm: { region: 'upper_arm', side: 'left', site: 'biceps_anterior', surfaceShare: 0.5 },
+  right_biceps_skinfold_mm: { region: 'upper_arm', side: 'right', site: 'biceps_anterior', surfaceShare: 0.5 },
+  abdominal_skinfold_mm: { region: 'torso_abdomen', side: 'midline', site: 'abdominal' },
+  suprailiac_skinfold_mm: { region: 'pelvis_hips', side: 'midline', site: 'suprailiac' },
+  left_thigh_skinfold_mm: { region: 'thigh', side: 'left', site: 'anterior_thigh' },
+  right_thigh_skinfold_mm: { region: 'thigh', side: 'right', site: 'anterior_thigh' },
+  left_calf_skinfold_mm: { region: 'lower_leg_calf', side: 'left', site: 'medial_calf' },
+  right_calf_skinfold_mm: { region: 'lower_leg_calf', side: 'right', site: 'medial_calf' },
+}
+
 const structuralLengthKeys: Record<string, { region: string; side: 'left' | 'right' | 'midline'; site: string }> = {
   height: { region: 'whole_body', side: 'midline', site: 'height' },
   torso_length: { region: 'torso_abdomen', side: 'midline', site: 'collarbone_upper_torso_to_hip_pelvic_landmark' },
@@ -37,10 +51,6 @@ const structuralLengthKeys: Record<string, { region: string; side: 'left' | 'rig
   right_hip_to_knee: { region: 'thigh', side: 'right', site: 'hip_to_knee' },
   left_knee_to_ankle: { region: 'lower_leg_calf', side: 'left', site: 'knee_to_ankle' },
   right_knee_to_ankle: { region: 'lower_leg_calf', side: 'right', site: 'knee_to_ankle' },
-}
-
-function inchesToCm(value: number) {
-  return value * 2.54
 }
 
 function cleanNumericMap(value: unknown) {
@@ -64,9 +74,19 @@ function groupedRegionalInputs(measurements: Record<string, number>): RegionalMe
     const current = byRegion.get(id) || {
       region: config.region,
       side: config.side,
+      circumferences: [],
+      skinfoldSites: [],
     }
 
-    current.midpointCircumferenceCm = inchesToCm(value)
+    current.circumferences = [
+      ...(current.circumferences || []),
+      {
+        site: config.site,
+        circumferenceCm: inchesToCm(value),
+        position: config.site.includes('lower') || config.site.includes('under') ? 1 : config.site.includes('bust') ? 0 : 0.5,
+      },
+    ]
+    current.midpointCircumferenceCm = current.midpointCircumferenceCm ?? inchesToCm(value)
     byRegion.set(id, current)
   }
 
@@ -78,9 +98,34 @@ function groupedRegionalInputs(measurements: Record<string, number>): RegionalMe
     const current = byRegion.get(id) || {
       region: config.region,
       side: config.side,
+      circumferences: [],
+      skinfoldSites: [],
     }
 
     current.lengthCm = inchesToCm(value)
+    byRegion.set(id, current)
+  }
+
+  for (const [key, config] of Object.entries(skinfoldKeys)) {
+    const value = measurements[key]
+    if (!value) continue
+
+    const id = `${config.region}:${config.side}`
+    const current = byRegion.get(id) || {
+      region: config.region,
+      side: config.side,
+      circumferences: [],
+      skinfoldSites: [],
+    }
+
+    current.skinfoldSites = [
+      ...(current.skinfoldSites || []),
+      {
+        site: config.site,
+        skinfoldMm: value,
+        surfaceShare: config.surfaceShare,
+      },
+    ]
     byRegion.set(id, current)
   }
 
@@ -209,6 +254,22 @@ export async function POST(req: Request) {
     const rawRows = Object.entries(cleanMeasurements).flatMap(([key, value]) => {
       const regional = regionalCircumferenceKeys[key]
       const structural = structuralLengthKeys[key]
+      const skinfold = skinfoldKeys[key]
+
+      if (key === 'weight') {
+        return [{
+          session_id: session.id,
+          client_id,
+          user_id: user.id,
+          measurement_group: 'scale',
+          region: 'whole_body',
+          side: 'midline',
+          site: 'scale_weight',
+          value,
+          unit: 'lb',
+          measurement_quality: 'not_recorded',
+        }]
+      }
 
       if (regional) {
         return [{
@@ -240,6 +301,21 @@ export async function POST(req: Request) {
         }]
       }
 
+      if (skinfold) {
+        return [{
+          session_id: session.id,
+          client_id,
+          user_id: user.id,
+          measurement_group: 'skinfold',
+          region: skinfold.region,
+          side: skinfold.side,
+          site: skinfold.site,
+          value,
+          unit: 'mm',
+          measurement_quality: 'not_recorded',
+        }]
+      }
+
       return []
     })
 
@@ -256,8 +332,13 @@ export async function POST(req: Request) {
       }
     }
 
-    const regionalResults = groupedRegionalInputs(cleanMeasurements)
-      .map(calculateRegionalCompositionEstimate)
+    const regionalInputs = groupedRegionalInputs(cleanMeasurements)
+    const wholeBodyEstimate = calculateBodyCompositionEstimate({
+      bodyWeightLbs: cleanMeasurements.weight || null,
+      segments: regionalInputs,
+    })
+
+    const regionalResults = wholeBodyEstimate.segments
       .map((result) => ({
         session_id: session.id,
         client_id,
@@ -269,8 +350,28 @@ export async function POST(req: Request) {
         estimated_volume_liters: result.estimatedVolumeLiters,
         estimated_subcutaneous_fat_mass_kg: result.estimatedSubcutaneousFatMassKg,
         estimated_remaining_non_fat_mass_kg: result.estimatedRemainingNonFatMassKg,
+        raw_estimated_segment_mass_kg: result.rawEstimatedSegmentMassKg,
+        final_estimated_segment_mass_kg: result.finalSegmentMassKg,
+        estimated_adipose_volume_liters: result.estimatedAdiposeVolumeMl === null ? null : result.estimatedAdiposeVolumeMl / 1000,
+        estimated_non_adipose_volume_liters: result.estimatedNonAdiposeVolumeMl === null ? null : result.estimatedNonAdiposeVolumeMl / 1000,
+        regional_fat_mass_percentage: result.regionalFatMassPercentage,
+        regional_mass_share: result.regionalMassShare,
+        regional_fat_distribution: result.regionalFatDistribution,
+        confidence: result.confidence,
+        data_completeness: result.dataCompleteness,
         scale_weight_reconciliation: {
           scale_weight_lbs: cleanMeasurements.weight || null,
+          segment_volume_ml: result.segmentVolumeMl,
+          estimated_adipose_volume_ml: result.estimatedAdiposeVolumeMl,
+          estimated_non_adipose_volume_ml: result.estimatedNonAdiposeVolumeMl,
+          raw_estimated_segment_mass_kg: result.rawEstimatedSegmentMassKg,
+          final_segment_mass_kg: result.finalSegmentMassKg,
+          final_non_adipose_mass_kg: result.finalNonAdiposeMassKg,
+          regional_fat_mass_percentage: result.regionalFatMassPercentage,
+          regional_mass_share: result.regionalMassShare,
+          regional_fat_distribution: result.regionalFatDistribution,
+          confidence: result.confidence,
+          data_completeness: result.dataCompleteness,
           note: result.reconciliationNote,
         },
         quality_flags: result.qualityFlags,
@@ -284,6 +385,36 @@ export async function POST(req: Request) {
       if (resultError) {
         return NextResponse.json(
           { error: resultError.message },
+          { status: 500 },
+        )
+      }
+    }
+
+    if (cleanMeasurements.weight) {
+      const { error: compositionError } = await supabase
+        .from('body_assessment_composition_results')
+        .insert({
+          session_id: session.id,
+          client_id,
+          user_id: user.id,
+          formula_version: wholeBodyEstimate.formulaVersion,
+          estimate_status: wholeBodyEstimate.status,
+          measured_body_weight_lbs: wholeBodyEstimate.measuredBodyWeightLbs,
+          measured_body_weight_kg: wholeBodyEstimate.measuredBodyWeightKg,
+          modeled_raw_mass_kg: wholeBodyEstimate.modeledRawMassKg,
+          modeled_final_mass_kg: wholeBodyEstimate.modeledFinalMassKg,
+          total_estimated_fat_mass_kg: wholeBodyEstimate.totalEstimatedFatMassKg,
+          total_estimated_non_fat_mass_kg: wholeBodyEstimate.totalEstimatedNonFatMassKg,
+          whole_body_fat_percentage: wholeBodyEstimate.wholeBodyFatPercentage,
+          unresolved_structural_mass_kg: wholeBodyEstimate.unresolvedStructuralMassKg,
+          reconciliation_mass_kg: wholeBodyEstimate.reconciliationMassKg,
+          calculation_snapshot: wholeBodyEstimate,
+          quality_flags: wholeBodyEstimate.qualityFlags,
+        })
+
+      if (compositionError) {
+        return NextResponse.json(
+          { error: compositionError.message },
           { status: 500 },
         )
       }

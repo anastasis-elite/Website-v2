@@ -4,6 +4,17 @@ import { useState } from 'react'
 import * as styles from '@/app/styles/globalstyles'
 
 type MeasurementKey =
+  | 'weight'
+  | 'left_triceps_skinfold_mm'
+  | 'right_triceps_skinfold_mm'
+  | 'left_biceps_skinfold_mm'
+  | 'right_biceps_skinfold_mm'
+  | 'abdominal_skinfold_mm'
+  | 'suprailiac_skinfold_mm'
+  | 'left_thigh_skinfold_mm'
+  | 'right_thigh_skinfold_mm'
+  | 'left_calf_skinfold_mm'
+  | 'right_calf_skinfold_mm'
   | 'bust_chest'
   | 'underbust'
   | 'left_upper_arm'
@@ -42,10 +53,19 @@ type MeasurementField = {
   label: string
   group: string
   description: string
+  unit?: 'in' | 'lb' | 'mm'
   advanced?: boolean
 }
 
 const measurementFields: MeasurementField[] = [
+  {
+    key: 'weight',
+    label: 'Measured Body Weight',
+    group: 'Scale',
+    unit: 'lb',
+    description:
+      'Record the current scale weight from the same scale and similar conditions when possible. This anchors total body mass for estimated composition calculations.',
+  },
   {
     key: 'bust_chest',
     label: 'Bust / Chest',
@@ -159,6 +179,96 @@ const measurementFields: MeasurementField[] = [
     advanced: true,
     description:
       'Measure around the high hip area, above the fullest part of the glutes and below the waist.',
+  },
+  {
+    key: 'left_triceps_skinfold_mm',
+    label: 'Left Triceps Skinfold',
+    group: 'Advanced Skinfolds',
+    unit: 'mm',
+    advanced: true,
+    description:
+      'Record the left posterior upper-arm skinfold in millimeters when a caliper measurement is available.',
+  },
+  {
+    key: 'right_triceps_skinfold_mm',
+    label: 'Right Triceps Skinfold',
+    group: 'Advanced Skinfolds',
+    unit: 'mm',
+    advanced: true,
+    description:
+      'Record the right posterior upper-arm skinfold in millimeters when a caliper measurement is available.',
+  },
+  {
+    key: 'left_biceps_skinfold_mm',
+    label: 'Left Biceps Skinfold',
+    group: 'Advanced Skinfolds',
+    unit: 'mm',
+    advanced: true,
+    description:
+      'Record the left anterior upper-arm skinfold in millimeters when a caliper measurement is available.',
+  },
+  {
+    key: 'right_biceps_skinfold_mm',
+    label: 'Right Biceps Skinfold',
+    group: 'Advanced Skinfolds',
+    unit: 'mm',
+    advanced: true,
+    description:
+      'Record the right anterior upper-arm skinfold in millimeters when a caliper measurement is available.',
+  },
+  {
+    key: 'abdominal_skinfold_mm',
+    label: 'Abdominal Skinfold',
+    group: 'Advanced Skinfolds',
+    unit: 'mm',
+    advanced: true,
+    description:
+      'Record the abdominal skinfold in millimeters when a caliper measurement is available.',
+  },
+  {
+    key: 'suprailiac_skinfold_mm',
+    label: 'Suprailiac Skinfold',
+    group: 'Advanced Skinfolds',
+    unit: 'mm',
+    advanced: true,
+    description:
+      'Record the suprailiac skinfold in millimeters when a caliper measurement is available.',
+  },
+  {
+    key: 'left_thigh_skinfold_mm',
+    label: 'Left Thigh Skinfold',
+    group: 'Advanced Skinfolds',
+    unit: 'mm',
+    advanced: true,
+    description:
+      'Record the left anterior thigh skinfold in millimeters when a caliper measurement is available.',
+  },
+  {
+    key: 'right_thigh_skinfold_mm',
+    label: 'Right Thigh Skinfold',
+    group: 'Advanced Skinfolds',
+    unit: 'mm',
+    advanced: true,
+    description:
+      'Record the right anterior thigh skinfold in millimeters when a caliper measurement is available.',
+  },
+  {
+    key: 'left_calf_skinfold_mm',
+    label: 'Left Calf Skinfold',
+    group: 'Advanced Skinfolds',
+    unit: 'mm',
+    advanced: true,
+    description:
+      'Record the left medial calf skinfold in millimeters when a caliper measurement is available.',
+  },
+  {
+    key: 'right_calf_skinfold_mm',
+    label: 'Right Calf Skinfold',
+    group: 'Advanced Skinfolds',
+    unit: 'mm',
+    advanced: true,
+    description:
+      'Record the right medial calf skinfold in millimeters when a caliper measurement is available.',
   },
   {
     key: 'left_quad_sweep',
@@ -451,7 +561,7 @@ export default function MeasurementAssessment({ clientId }: { clientId: string }
                         value={values[field.key]}
                         onFocus={() => setActiveKey(field.key)}
                         onChange={(e) => updateValue(field.key, e.target.value)}
-                        placeholder="Inches"
+                        placeholder={field.unit === 'lb' ? 'Pounds' : field.unit === 'mm' ? 'Millimeters' : 'Inches'}
                         style={styles.inputStyle}
                       />
                     </div>
