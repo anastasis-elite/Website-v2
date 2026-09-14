@@ -215,6 +215,7 @@ export async function POST(request: Request) {
         cycle_day: cycleStatus.cycleDay,
         cycle_phase: cycleStatus.phase,
         source: 'member_entry',
+        provenance_category: 'self_reported',
         raw_entry: {
           products,
           symptoms,
@@ -250,6 +251,7 @@ export async function POST(request: Request) {
           change_interval_hours: product.changeIntervalHours || null,
           leak_or_overflow: Boolean(product.leakOrOverflow),
           custom_label: product.customLabel || null,
+          provenance_category: 'measured',
           raw_entry: product,
         })),
       )
@@ -275,6 +277,7 @@ export async function POST(request: Request) {
           training_readiness: trainingReadiness,
           symptom_severity: symptoms,
           numeric_scales: { energy, fatigue, perceivedRecovery, trainingReadiness },
+          provenance_category: 'self_reported',
           raw_entry: body,
           updated_at: new Date().toISOString(),
         },
@@ -309,6 +312,7 @@ export async function POST(request: Request) {
           menstrualFlowLogId: flowLog.id,
           cycleDailySymptomDate: logDate,
         },
+        provenance_category: 'calculated',
       }, { onConflict: 'user_id,client_id,log_date' })
       .select('*')
       .single()
@@ -371,6 +375,7 @@ export async function POST(request: Request) {
       latest_cycle_deviation: trend.latestCycleDeviation,
       anticipatory_window: trend.anticipatoryWindow,
       observations: trend.observations,
+      provenance_category: 'calculated',
     })
 
     if (trendError) {
@@ -396,6 +401,10 @@ export async function POST(request: Request) {
         algorithm_version: escalation.algorithmVersion,
         source_table: 'cycle_burden_scores',
         source_record_id: burdenScore.id,
+        provenance_category: 'algorithmic_wellness_observation',
+        appointment_request_offered: false,
+        clinician_contact_authorized: false,
+        health_summary_share_authorized: false,
       })
 
       if (followUpError) {
@@ -425,6 +434,7 @@ export async function POST(request: Request) {
           clinical_escalation_status: flag.clinicalEscalationStatus,
           algorithm_version: flag.algorithmVersion,
           suppressed_reason: flag.suppressedReason || null,
+          provenance_category: 'algorithmic_wellness_observation',
         })
         .select('*')
         .single()

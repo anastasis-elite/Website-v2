@@ -170,7 +170,7 @@ const measurementFields: MeasurementField[] = [
     group: 'Advanced Core',
     advanced: true,
     description:
-      'Measure around the lower abdomen below the natural waist. This is optional and useful for more detailed inflammation, posture, or body composition tracking.',
+      'Measure around the lower abdomen below the natural waist. This is optional and useful for more detailed symptom-context, posture, or body composition tracking.',
   },
   {
     key: 'high_hip',
@@ -578,7 +578,7 @@ export default function MeasurementAssessment({ clientId }: { clientId: string }
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               style={styles.textareaStyle}
-              placeholder="Anything that may affect today's measurements? Hydration, soreness, cycle phase, inflammation, digestion, etc."
+              placeholder="Anything that may affect today's measurements? Hydration, soreness, cycle phase, digestion, recovery, etc."
             />
           </div>
 

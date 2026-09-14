@@ -216,11 +216,24 @@ export async function GET(request: Request) {
       recommendation_date: new Date().toISOString().split('T')[0],
       recommendation_area: 'nutrition',
       affected_item: 'suggested_foods',
+      recommendation: {
+        state: suggestions.length ? 'ready' : 'complete',
+        suggestions: suggestions.map((suggestion) => ({
+          foodId: suggestion.foodId,
+          name: suggestion.name,
+          reason: suggestion.reason,
+          contribution: suggestion.contribution,
+          score: suggestion.score,
+        })),
+      },
       pattern_keys: physiologyEffects.audit.patternKeys,
       evidence_domains: physiologyEffects.audit.evidenceDomains,
       rule_version: physiologyEffects.ruleVersion,
+      formulation_rule_id: physiologyEffects.ruleVersion,
+      algorithm_version: physiologyEffects.ruleVersion,
       confidence_at_recommendation: physiologyEffects.audit.confidenceAtRecommendation,
       recommendation_effects: physiologyEffects.effects,
+      user_response: {},
     })
   }
 

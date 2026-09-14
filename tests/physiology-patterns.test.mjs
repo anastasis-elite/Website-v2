@@ -237,17 +237,65 @@ test('sensitive reproductive data is excluded from analytics payloads', () => {
 })
 
 test('migration preserves raw logs, algorithm versions, and existing cycle data', () => {
-  const sql = readFileSync(resolve(root, 'supabase/migrations/20260914_menstrual_burden_physiology_patterns.sql'), 'utf8')
+  const sql = [
+    readFileSync(resolve(root, 'supabase/migrations/20260914_menstrual_burden_physiology_patterns.sql'), 'utf8'),
+    readFileSync(resolve(root, 'supabase/migrations/20260914_provenance_audit_privacy_hardening.sql'), 'utf8'),
+  ].join('\n')
 
   assert.match(sql, /create table if not exists public\.menstrual_product_logs/i)
   assert.match(sql, /raw_entry jsonb not null default/i)
   assert.match(sql, /create table if not exists public\.cycle_burden_scores/i)
   assert.match(sql, /algorithm_version text not null/i)
+  assert.match(sql, /provenance_category text not null default 'calculated'/i)
   assert.match(sql, /unique \(user_id, client_id, log_date\)/i)
   assert.match(sql, /clients update own cycle burden scores/i)
   assert.match(sql, /alter table public\.cycle_logs\s+add column if not exists/i)
   assert.doesNotMatch(sql, /drop table public\.cycle_logs/i)
   assert.doesNotMatch(sql, /delete from public\.cycle_logs/i)
+})
+
+test('recommendation audit preserves trigger, recommendation snapshot, and rule version', () => {
+  const effects = recommendationEffects.buildPhysiologyRecommendationEffects({
+    flowBurden: {
+      burdenScore: 14,
+      burdenBand: 'very_high',
+      factors: ['overflow_or_leak'],
+      algorithmVersion: menstrual.MENSTRUAL_FLOW_BURDEN_VERSION,
+    },
+    activePatterns: [{
+      pattern: 'stress_recovery_associated',
+      confidence: 0.52,
+      contributingDomains: ['menstrual_reproductive', 'recovery'],
+      algorithmVersion: patterns.PHYSIOLOGY_PATTERN_VERSION,
+      recommendationEffects: ['recovery_support_priority'],
+    }],
+  })
+  const route = readFileSync(resolve(root, 'app/api/nutrition/suggested-foods/route.ts'), 'utf8')
+
+  assert.ok(effects.audit.patternKeys.includes('menstrual_flow_burden'))
+  assert.ok(effects.audit.patternKeys.includes('stress_recovery_associated'))
+  assert.match(route, /recommendation:\s*{/)
+  assert.match(route, /formulation_rule_id:\s*physiologyEffects\.ruleVersion/)
+  assert.match(route, /algorithm_version:\s*physiologyEffects\.ruleVersion/)
+  assert.match(route, /user_response:\s*{}/)
+})
+
+test('appointment contact and health summary sharing permissions stay independent', () => {
+  const sql = [
+    readFileSync(resolve(root, 'supabase/migrations/20260914_menstrual_burden_physiology_patterns.sql'), 'utf8'),
+    readFileSync(resolve(root, 'supabase/migrations/20260914_provenance_audit_privacy_hardening.sql'), 'utf8'),
+  ].join('\n')
+
+  assert.match(sql, /authorized_to_contact_clinician boolean not null default false/i)
+  assert.match(sql, /authorized_to_share_health_summary boolean not null default false/i)
+  assert.match(sql, /clinician_contact_authorized boolean not null default false/i)
+  assert.match(sql, /health_summary_share_authorized boolean not null default false/i)
+})
+
+test('posthog autocapture is disabled to avoid raw sensitive form payloads', () => {
+  const source = readFileSync(resolve(root, 'lib/posthog.ts'), 'utf8')
+
+  assert.match(source, /autocapture:\s*false/)
 })
 
 test('lab evidence remains separate and is not converted into a diagnosis', () => {

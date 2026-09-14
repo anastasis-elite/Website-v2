@@ -120,6 +120,16 @@ export default function WhatIsAnastasisPage() {
         affiliation: {
           '@id': absoluteUrl('/#organization'),
         },
+        hasCredential: [
+          {
+            '@type': 'EducationalOccupationalCredential',
+            credentialCategory: 'Certified Personal Trainer',
+          },
+          {
+            '@type': 'EducationalOccupationalCredential',
+            credentialCategory: 'Certified Nutrition Coach',
+          },
+        ],
         knowsAbout: [
           'Adaptive Human Engineering',
           'women-first physiology',
@@ -235,9 +245,11 @@ export default function WhatIsAnastasisPage() {
             <p style={styles.bodyStyle}>
               Anastasis is the system behind years of individualized coaching,
               translated into structured, repeatable formulations that can scale
-              beyond one-on-one support. Its training, nutrition, recovery, and
-              assessment decisions are governed by Anastasis formulation logic,
-              not open-ended AI guesses.
+              beyond one-on-one support. The founder&apos;s public coaching
+              credentials are Certified Personal Trainer and Certified Nutrition
+              Coach; these are not medical credentials. Its training, nutrition,
+              recovery, and assessment decisions are governed by Anastasis
+              formulation logic, not open-ended AI guesses.
             </p>
             <p style={styles.bodyStyle}>
               The methodology was intentionally developed around women&apos;s

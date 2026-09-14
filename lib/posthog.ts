@@ -13,6 +13,7 @@ if (
 
       capture_pageview: true,
       capture_pageleave: true,
+      autocapture: false,
     }
   )
 }

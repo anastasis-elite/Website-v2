@@ -80,7 +80,10 @@ export function buildPhysiologyRecommendationEffects(context?: PhysiologyRecomme
 
   const patternKeys = activePatterns
     .filter((pattern) => pattern.confidence >= 0.35)
-    .map((pattern) => pattern.pattern)
+    .map((pattern) => String(pattern.pattern))
+  if (highFlow || context?.flowEnergyPattern) {
+    patternKeys.unshift('menstrual_flow_burden')
+  }
   const evidenceDomains = Array.from(
     new Set(activePatterns.flatMap((pattern) => pattern.contributingDomains || [])),
   )

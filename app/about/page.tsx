@@ -71,7 +71,7 @@ export default function AboutPage() {
           {[
             'How is your body adapting?',
             'Is recovery being supported?',
-            'Is inflammation masking progress?',
+            'Are recovery or symptom patterns affecting progress?',
             'Is your posture compensating?',
             'Is your nervous system overwhelmed?',
             'Is your training aligned with your life?',
@@ -102,9 +102,9 @@ export default function AboutPage() {
           Your body is not broken. Bodies adapt.
         </p>
         <p>
-          When a system fails to account for stress, hormones, recovery,
-          inflammation, posture, and nervous system load, it eventually stops
-          producing results.
+          When a system fails to consider stress, cycle context where provided,
+          recovery, symptom patterns, posture, and nervous system load, it
+          eventually stops producing results.
         </p>
         <p>
           That does not mean you failed. It means the architecture failed you.
