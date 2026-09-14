@@ -76,6 +76,13 @@ export type SuggestedFood = {
   score: number
 }
 
+export type SuggestedFoodRecommendationEffect = {
+  key: string
+  priorityBoost: number
+  reason: string
+  nutrients: string[]
+}
+
 type Gap = {
   key: keyof SuggestedFoodCandidate
   remainingKey: keyof NutritionRemainingSnapshot
@@ -121,16 +128,57 @@ function bestServing(food: SuggestedFoodCandidate) {
   return option?.label || null
 }
 
+const nutrientFieldByEffectKey: Record<string, keyof SuggestedFoodCandidate> = {
+  protein: 'protein_g',
+  fiber: 'fiber_g',
+  iron: 'iron_mg',
+  vitamin_c: 'vitamin_c_mg',
+  potassium: 'potassium_mg',
+  magnesium: 'magnesium_mg',
+  sodium: 'sodium_mg',
+  zinc: 'zinc_mg',
+  b6: 'b6_mg',
+}
+
+function physiologyEffectScore(food: SuggestedFoodCandidate, effects: SuggestedFoodRecommendationEffect[]) {
+  let score = 0
+  const reasons: string[] = []
+
+  for (const effect of effects) {
+    const matchingNutrients = effect.nutrients.filter((nutrient) => {
+      const field = nutrientFieldByEffectKey[nutrient]
+      return field ? numeric(food[field]) > 0 : false
+    })
+
+    if (!matchingNutrients.length) continue
+
+    const nutrientScore = matchingNutrients.reduce((sum, nutrient) => {
+      const field = nutrientFieldByEffectKey[nutrient]
+      return sum + Math.min(1, numeric(field ? food[field] : 0) / 12)
+    }, 0)
+
+    score += nutrientScore * 12 * Math.max(0, effect.priorityBoost)
+    reasons.push(effect.reason)
+  }
+
+  return {
+    score,
+    reason: reasons[0] || null,
+  }
+}
+
 export function buildSuggestedFoods({
   remaining,
   candidates,
   loggedFoodIds,
   avoidTerms,
+  recommendationEffects,
 }: {
   remaining: NutritionRemainingSnapshot | null
   candidates: SuggestedFoodCandidate[]
   loggedFoodIds?: string[]
   avoidTerms?: string[]
+  recommendationEffects?: SuggestedFoodRecommendationEffect[]
 }): SuggestedFood[] {
   if (!remaining) return []
 
@@ -199,6 +247,17 @@ export function buildSuggestedFoods({
         })
       }
 
+      const physiology = physiologyEffectScore(food, recommendationEffects || [])
+      if (physiology.score > 0) {
+        score += physiology.score
+        contributions.push({
+          label: 'current physiology support',
+          value: physiology.score,
+          unit: '',
+          score: physiology.score,
+        })
+      }
+
       if (caloriesRemaining > 0 && calories <= caloriesRemaining) score += 10
       if (proteinRemaining > 8 && fatsRemaining <= 5 && protein >= 18 && fats <= 6) score += 18
 
@@ -206,7 +265,9 @@ export function buildSuggestedFoods({
       if (!best || score <= 0) return null
 
       const reason =
-        best.label === 'protein'
+        physiology.reason && physiology.score >= best.score
+          ? physiology.reason
+          : best.label === 'protein'
           ? fatsRemaining <= 5 && fats <= 6
             ? 'Lean match for today’s protein gap'
             : 'Helps close today’s protein gap'

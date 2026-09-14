@@ -1,4 +1,5 @@
 import posthog from '@/lib/posthog'
+import { sanitizeAnalyticsProperties } from '@/lib/analytics/sensitiveHealthData'
 
 export function trackEvent(
   eventName: string,
@@ -7,7 +8,7 @@ export function trackEvent(
   if (typeof window === 'undefined') return
 
   posthog.capture(eventName, {
-    ...properties,
+    ...sanitizeAnalyticsProperties(properties),
     timestamp: new Date().toISOString(),
   })
 }

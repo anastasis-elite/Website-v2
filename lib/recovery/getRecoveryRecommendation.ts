@@ -35,7 +35,16 @@ export async function getRecoveryRecommendation({
     .eq('log_date', today)
     .maybeSingle()
 
-  const sleepQuality = Number(todayRecoveryLog?.sleep_quality || 0)
+  const { data: todayFlowBurden } = await supabase
+    .from('cycle_burden_scores')
+    .select('burden_score, burden_band')
+    .eq('user_id', user.id)
+    .eq('client_id', client.client_id)
+    .eq('log_date', today)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
   const sorenessLevel = Number(todayRecoveryLog?.soreness_level || 0)
   const stressLevel = Number(todayRecoveryLog?.stress_level || 0)
   const energyLevel = Number(todayRecoveryLog?.energy_level || 0)
@@ -47,6 +56,9 @@ export async function getRecoveryRecommendation({
   const unusuallyFatigued = !!todayRecoveryLog?.unusually_fatigued
 
   const workoutCompleted = !!todayWorkoutLog?.completed
+  const highFlowBurden =
+    todayFlowBurden?.burden_band === 'high' ||
+    todayFlowBurden?.burden_band === 'very_high'
 
   const nutritionLogged =
     !!todayNutritionLog &&
@@ -99,6 +111,13 @@ export async function getRecoveryRecommendation({
       'High stress changes how your body responds to training. Prioritize a downshift today: slower breathing, a calmer pace, food, hydration, and reduced pressure.'
     saunaAllowed = false
     intensity = 'low'
+  } else if (highFlowBurden) {
+    recoveryFocus = 'cycle_support'
+    title = 'Support the high-burden window'
+    recommendation =
+      'Today’s cycle log shows higher flow burden. Keep training decisions conservative, prioritize enough food, hydration, electrolytes, and recovery signals, and consider follow-up if this pattern feels unusual or severe.'
+    saunaAllowed = false
+    intensity = 'low'
   } else if (cycleSymptoms || cycleStatus.recoveryCaution) {
     recoveryFocus = 'cycle_support'
     title = 'Cycle awareness matters today'
@@ -134,5 +153,6 @@ export async function getRecoveryRecommendation({
     nutritionLogged,
     hasRecoveryCheckIn: !!todayRecoveryLog,
     cycleStatus,
+    flowBurden: todayFlowBurden || null,
   }
 }

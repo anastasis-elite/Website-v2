@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 
 import * as styles from '@/app/styles/globalstyles'
+import CycleFlowLogger from '@/components/CycleFlowLogger'
 
 type CycleStatus = {
   enabled: boolean
@@ -697,6 +698,8 @@ export default function CycleTracker({
           </p>
         ) : null}
       </section>
+
+      <CycleFlowLogger clientId={clientId} />
 
       <section style={styles.cartBoxStyle}>
         <h2 style={styles.sectionTitleStyle}>

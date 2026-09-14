@@ -78,6 +78,8 @@ export default async function CyclePage() {
   const [
     todayLogResult,
     periodStartLogsResult,
+    latestTrendResult,
+    latestFollowUpResult,
   ] = await Promise.all([
     supabase
       .from('cycle_logs')
@@ -116,6 +118,29 @@ export default async function CyclePage() {
       .order('log_date', {
         ascending: true,
       }),
+
+    supabase
+      .from('cycle_burden_trends')
+      .select('*')
+      .eq('client_id', client.client_id)
+      .eq('user_id', client.auth_user_id)
+      .order('calculated_at', {
+        ascending: false,
+      })
+      .limit(1)
+      .maybeSingle(),
+
+    supabase
+      .from('clinical_follow_up_events')
+      .select('*')
+      .eq('client_id', client.client_id)
+      .eq('user_id', client.auth_user_id)
+      .eq('event_type', 'menstrual_flow')
+      .order('created_at', {
+        ascending: false,
+      })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   const todayLog =
@@ -124,6 +149,9 @@ export default async function CyclePage() {
   const periodStartLogs =
     (periodStartLogsResult.data ??
       []) as PeriodStartLog[]
+  const latestTrend = latestTrendResult.data
+  const latestFollowUp =
+    latestFollowUpResult.data
 
   const cyclePrediction =
     getCyclePrediction({
@@ -372,6 +400,59 @@ export default async function CyclePage() {
           }
           todayLog={todayLog}
         />
+
+        {latestTrend?.observations?.length ||
+        latestFollowUp?.user_message ? (
+          <section style={styles.cartBoxStyle}>
+            <h2 style={styles.sectionTitleStyle}>
+              Cycle Burden Trends
+            </h2>
+
+            {latestTrend?.observations?.length ? (
+              <div
+                style={{
+                  display: 'grid',
+                  gap: '10px',
+                }}
+              >
+                {latestTrend.observations.map(
+                  (observation: string) => (
+                    <p
+                      key={observation}
+                      style={styles.bodyStyle}
+                    >
+                      {observation}
+                    </p>
+                  ),
+                )}
+              </div>
+            ) : null}
+
+            {latestTrend?.typical_highest_flow_days
+              ?.length ? (
+              <p style={styles.bodyStyle}>
+                Typical highest-flow cycle day
+                {latestTrend
+                  .typical_highest_flow_days
+                  .length === 1
+                  ? ''
+                  : 's'}
+                :{' '}
+                {latestTrend.typical_highest_flow_days.join(
+                  ', ',
+                )}
+              </p>
+            ) : null}
+
+            {latestFollowUp?.user_message ? (
+              <p style={styles.bodyStyle}>
+                {
+                  latestFollowUp.user_message
+                }
+              </p>
+            ) : null}
+          </section>
+        ) : null}
 
         <div style={styles.buttonRowStyle}>
           <Link
