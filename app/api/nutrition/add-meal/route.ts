@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTierCapabilities } from '@/lib/entitlements'
+import { mealPeriodToDayBlock, normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -25,6 +26,13 @@ export async function POST(request: Request) {
     symptoms = [],
     symptomNotes,
     dayBlock,
+    mealPeriod,
+    entrySource = 'manual',
+    entryState = 'confirmed',
+    barcode,
+    estimateMetadata,
+    confidence,
+    recurringFoodId,
   } = body
 
   if (!nutritionLogId || !foodId) {
@@ -71,14 +79,38 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
   }
 
-  if (!getTierCapabilities(client.program).nutritionMealLogging) {
-    return NextResponse.json({ error: 'Meal logging is not available for this tier.' }, { status: 403 })
+  const capabilities = getTierCapabilities(client.program)
+  if (!capabilities.nutritionTracking || !capabilities.nutritionMealLogging) {
+    return NextResponse.json({ error: 'Food logging is not available for this tier.' }, { status: 403 })
+  }
+
+  const source = String(entrySource || 'manual')
+  if (!['manual', 'barcode', 'recurring', 'photo_estimate'].includes(source)) {
+    return NextResponse.json({ error: 'Invalid nutrition entry source.' }, { status: 400 })
+  }
+
+  if (source === 'barcode' && !capabilities.nutritionBarcodeScanning) {
+    return NextResponse.json({ error: 'Barcode scanning is not available for this tier.' }, { status: 403 })
+  }
+
+  if (source === 'recurring' && !capabilities.nutritionAutomaticPreLogging) {
+    return NextResponse.json({ error: 'Recurring food logging is not available for this tier.' }, { status: 403 })
+  }
+
+  if (source === 'photo_estimate' && !capabilities.nutritionPhotoMacroEstimation) {
+    return NextResponse.json({ error: 'Photo macro estimation is not available for this tier.' }, { status: 403 })
+  }
+
+  const state = String(entryState || 'confirmed')
+  if (!['scheduled', 'pre_logged', 'confirmed', 'skipped'].includes(state)) {
+    return NextResponse.json({ error: 'Invalid nutrition entry state.' }, { status: 400 })
   }
 
   let grams: number | null = null
   let resolvedServingUnit = servingUnit || 'serving'
-  const normalizedMealName = String(mealName || 'Meal')
-  const inferredDayBlock = String(dayBlock || '').toLowerCase() || (/breakfast|pre workout/i.test(normalizedMealName) ? 'morning' : /lunch|snack/i.test(normalizedMealName) ? 'midday' : /dinner|supper|post workout/i.test(normalizedMealName) ? 'evening' : 'other')
+  const normalizedMealPeriod = normalizeMealPeriod(mealPeriod || mealName)
+  const normalizedMealName = String(mealName || normalizedMealPeriod || 'Meal')
+  const inferredDayBlock = String(dayBlock || '').toLowerCase() || mealPeriodToDayBlock(normalizedMealPeriod)
   if (!['morning','midday','evening','other'].includes(inferredDayBlock)) return NextResponse.json({ error: 'Invalid meal time block.' }, { status: 400 })
 
   if (servingOptionId) {
@@ -117,6 +149,17 @@ export async function POST(request: Request) {
       serving_option_id: servingOptionId || null,
       grams,
       day_block: inferredDayBlock,
+      meal_period: normalizedMealPeriod,
+      entry_source: source,
+      entry_state: state,
+      verified: source !== 'photo_estimate',
+      estimated: source === 'photo_estimate',
+      barcode: barcode || null,
+      estimate_metadata: estimateMetadata && typeof estimateMetadata === 'object' ? estimateMetadata : {},
+      confidence: confidence === undefined || confidence === null ? null : Number(confidence),
+      recurring_food_id: recurringFoodId || null,
+      confirmed_at: state === 'confirmed' ? new Date().toISOString() : null,
+      skipped_at: state === 'skipped' ? new Date().toISOString() : null,
       symptoms_after: symptomNotes || null,
       notes: symptomNotes || null,
     })

@@ -14,16 +14,20 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q')?.trim().toLowerCase()
+  const barcode = searchParams.get('barcode')?.trim()
 
-  if (!q) {
+  if (!q && !barcode) {
     return NextResponse.json({ foods: [] })
   }
 
-  const { data, error } = await supabase
+  const query = supabase
     .from('foods')
-    .select('id, name')
-    .ilike('normalized_name', `%${q}%`)
+    .select('id, name, brand_name, barcode, calories, protein_g, carbs_g, fat_g, fiber_g')
     .limit(12)
+
+  const { data, error } = barcode
+    ? await query.eq('barcode', barcode)
+    : await query.ilike('normalized_name', `%${q}%`)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

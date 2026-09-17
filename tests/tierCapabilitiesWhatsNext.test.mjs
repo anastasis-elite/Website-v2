@@ -90,8 +90,13 @@ test('tier capabilities normalize casing and expose predictable matrix', () => {
   assert.equal(normalizeProgramTier('bad-value'), 'ignite')
 
   const ember = getTierCapabilities('EMBER')
+  assert.equal(ember.nutritionTracking, true)
   assert.equal(ember.nutritionMacroEntry, true)
-  assert.equal(ember.nutritionMealLogging, false)
+  assert.equal(ember.nutritionMealLogging, true)
+  assert.equal(ember.nutritionBarcodeScanning, true)
+  assert.equal(ember.nutritionRecurringFoodDetection, false)
+  assert.equal(ember.nutritionAutomaticPreLogging, false)
+  assert.equal(ember.nutritionPhotoMacroEstimation, false)
   assert.equal(ember.nutritionRecommendedMeal, false)
   assert.equal(ember.workoutDisplay, true)
   assert.equal(ember.recoveryBasic, true)
@@ -101,6 +106,10 @@ test('tier capabilities normalize casing and expose predictable matrix', () => {
 
   const ignite = getTierCapabilities('ignite')
   assert.equal(ignite.nutritionMealLogging, true)
+  assert.equal(ignite.nutritionBarcodeScanning, true)
+  assert.equal(ignite.nutritionRecurringFoodDetection, true)
+  assert.equal(ignite.nutritionAutomaticPreLogging, true)
+  assert.equal(ignite.nutritionPhotoMacroEstimation, false)
   assert.equal(ignite.recoveryRecommendation, true)
   assert.equal(ignite.recoveryDirectedNextAction, false)
   assert.equal(ignite.assessmentPhotoUpload, true)
@@ -108,6 +117,7 @@ test('tier capabilities normalize casing and expose predictable matrix', () => {
 
   const phoenix = getTierCapabilities('phoenix')
   assert.equal(phoenix.nutritionRecommendedMeal, true)
+  assert.equal(phoenix.nutritionPhotoMacroEstimation, true)
   assert.equal(phoenix.recoveryDirectedNextAction, true)
   assert.equal(phoenix.workoutDisplay, true)
   assert.equal(phoenix.assessmentPhotoUpload, true)

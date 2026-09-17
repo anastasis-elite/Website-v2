@@ -31,6 +31,14 @@ export async function GET(request: Request) {
       serving_unit,
       grams,
       day_block,
+      meal_period,
+      entry_source,
+      entry_state,
+      verified,
+      estimated,
+      barcode,
+      confidence,
+      estimate_metadata,
       created_at,
       foods (
         name

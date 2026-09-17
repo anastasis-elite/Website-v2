@@ -3,7 +3,7 @@ import { getTierCapabilities, normalizeProgramTier, type ProgramTier } from '@/l
 export type FoodLoggingTier = ProgramTier | string | null | undefined
 
 export function canLogFood(tier: FoodLoggingTier) {
-  return getTierCapabilities(tier).nutritionMealLogging
+  return getTierCapabilities(tier).nutritionTracking
 }
 
 export { normalizeProgramTier }

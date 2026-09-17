@@ -14,8 +14,13 @@ export type TierCapability =
   | 'calendar'
   | 'whatsNext'
   | 'workoutDisplay'
+  | 'nutritionTracking'
   | 'nutritionMacroEntry'
   | 'nutritionMealLogging'
+  | 'nutritionBarcodeScanning'
+  | 'nutritionRecurringFoodDetection'
+  | 'nutritionAutomaticPreLogging'
+  | 'nutritionPhotoMacroEstimation'
   | 'nutritionRecommendedMeal'
   | 'recipeFavorites'
   | 'recoveryBasic'
@@ -46,8 +51,13 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     calendar: true,
     whatsNext: true,
     workoutDisplay: true,
+    nutritionTracking: true,
     nutritionMacroEntry: true,
-    nutritionMealLogging: false,
+    nutritionMealLogging: true,
+    nutritionBarcodeScanning: true,
+    nutritionRecurringFoodDetection: false,
+    nutritionAutomaticPreLogging: false,
+    nutritionPhotoMacroEstimation: false,
     nutritionRecommendedMeal: false,
     recipeFavorites: true,
     nutrition: 'macro_entry',
@@ -66,8 +76,13 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     calendar: true,
     whatsNext: true,
     workoutDisplay: true,
-    nutritionMacroEntry: false,
+    nutritionTracking: true,
+    nutritionMacroEntry: true,
     nutritionMealLogging: true,
+    nutritionBarcodeScanning: true,
+    nutritionRecurringFoodDetection: true,
+    nutritionAutomaticPreLogging: true,
+    nutritionPhotoMacroEstimation: false,
     nutritionRecommendedMeal: false,
     recipeFavorites: true,
     nutrition: 'meal_logging',
@@ -86,8 +101,13 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     calendar: true,
     whatsNext: true,
     workoutDisplay: true,
-    nutritionMacroEntry: false,
+    nutritionTracking: true,
+    nutritionMacroEntry: true,
     nutritionMealLogging: true,
+    nutritionBarcodeScanning: true,
+    nutritionRecurringFoodDetection: true,
+    nutritionAutomaticPreLogging: true,
+    nutritionPhotoMacroEstimation: true,
     nutritionRecommendedMeal: true,
     recipeFavorites: true,
     nutrition: 'recommended_meal',

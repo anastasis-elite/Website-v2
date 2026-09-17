@@ -10,6 +10,8 @@ import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeReco
 import { useFuelReadinessEngine, useNutritionEngine, usePhoenixRecipes } from '@/components/nutrition/hooks'
 import { canLogFood, normalizeProgramTier } from '@/lib/nutrition/canLogFood'
 import { getClientLocalDateOffset } from '@/lib/timezone'
+import { getTierCapabilities } from '@/lib/entitlements'
+import { getMealPeriodForLocalDate } from '@/lib/nutrition/mealPeriod'
 
 type NutritionLog = {
   id: string
@@ -146,6 +148,7 @@ export default function AdaptiveNutritionDashboard({
   const isIgnite = tier === 'ignite'
   const isPhoenix = tier === 'phoenix'
   const foodLoggingEnabled = canLogFood(tier)
+  const capabilities = getTierCapabilities(tier)
 
   const [loading, setLoading] = useState(true)
   const [nutritionLog, setNutritionLog] = useState<NutritionLog | null>(null)
@@ -259,6 +262,7 @@ export default function AdaptiveNutritionDashboard({
           protein: Number(macroEntry.protein || 0),
           carbs: Number(macroEntry.carbs || 0),
           fats: Number(macroEntry.fats || 0),
+          mealPeriod: getMealPeriodForLocalDate(),
         }),
       })
       const payload = await response.json().catch(() => null)
@@ -577,7 +581,7 @@ setNutritionLog(log)
                   }}
                   className="tier-primary-action"
                 >
-                  {isEmber ? 'Add Macros' : 'Log Food'}
+                  Add Food
                 </button>
               ) : null}
             </div>
@@ -644,7 +648,7 @@ setNutritionLog(log)
               <div className="tier-panel-heading">
                 <div>
                   <p className="tier-dashboard-label">Intake</p>
-                  <h2>{intakeTab === 'water' ? 'Water' : intakeTab === 'suggested' ? 'Suggested Foods' : isEmber ? 'Macro Entry' : 'Food Log'}</h2>
+                  <h2>{intakeTab === 'water' ? 'Water' : intakeTab === 'suggested' ? 'Suggested Foods' : 'Food Log'}</h2>
                 </div>
                 <div className="tier-tab-list nutrition-panel-tabs" role="tablist" aria-label="Intake controls">
                   {([
@@ -701,6 +705,12 @@ setNutritionLog(log)
                   {foodLoggingEnabled && nutritionLog?.id ? (
                     <NutritionFoodLogger
                       nutritionLogId={nutritionLog.id}
+                      capabilities={{
+                        nutritionBarcodeScanning: capabilities.nutritionBarcodeScanning,
+                        nutritionRecurringFoodDetection: capabilities.nutritionRecurringFoodDetection,
+                        nutritionAutomaticPreLogging: capabilities.nutritionAutomaticPreLogging,
+                        nutritionPhotoMacroEstimation: capabilities.nutritionPhotoMacroEstimation,
+                      }}
                       initialRemaining={
                         remaining
                           ? {

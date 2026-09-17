@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTierCapabilities } from '@/lib/entitlements'
+import { mealPeriodToDayBlock, normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
 
 function macroNumber(value: unknown) {
   const parsed = Number(value || 0)
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
   }
 
   const capabilities = getTierCapabilities(client.program)
-  if (!capabilities.nutritionMacroEntry) {
+  if (!capabilities.nutritionTracking || !capabilities.nutritionMacroEntry) {
     return NextResponse.json({ error: 'Macro-only entry is not available for this tier.' }, { status: 403 })
   }
 
@@ -63,7 +64,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Enter at least one macro value.' }, { status: 400 })
   }
 
-  const dayBlock = String(body.dayBlock || 'other').toLowerCase()
+  const mealPeriod = normalizeMealPeriod(body.mealPeriod)
+  const dayBlock = String(body.dayBlock || mealPeriodToDayBlock(mealPeriod)).toLowerCase()
   if (!['morning', 'midday', 'evening', 'other'].includes(dayBlock)) {
     return NextResponse.json({ error: 'Invalid macro block.' }, { status: 400 })
   }
@@ -79,6 +81,10 @@ export async function POST(request: Request) {
       carbs_g: carbs,
       fat_g: fats,
       day_block: dayBlock,
+      meal_period: mealPeriod,
+      entry_source: 'manual',
+      verified: true,
+      estimated: false,
     })
     .select('*')
     .single()
