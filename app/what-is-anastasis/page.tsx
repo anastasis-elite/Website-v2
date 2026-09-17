@@ -213,7 +213,7 @@ export default function WhatIsAnastasisPage() {
             <h2 style={styles.sectionTitleStyle}>Methodology and Origin</h2>
             <p style={styles.bodyStyle}>
               Anastasis comes from a systems-first view of women&apos;s health: when
-              a woman is exhausted, inflamed, under-recovered, under-fueled,
+              a woman is exhausted, under-supported, under-recovered, under-fueled,
               overloaded, or disconnected from her body, another rigid plan is
               not enough. The origin of the platform is the belief that the
               environment, workload, physiology, nutrition, recovery, and daily

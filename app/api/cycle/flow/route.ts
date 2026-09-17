@@ -233,6 +233,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: flowLogError.message }, { status: 500 })
     }
 
+    const { error: flowProvenanceError } = await supabase.from('health_provenance_records').insert({
+      user_id: user.id,
+      client_id: clientId,
+      datum_date: logDate,
+      datum_kind: 'menstrual_product_log',
+      provenance_category: 'self_reported',
+      source_label: 'Member-recorded menstrual flow entry',
+      source_table: 'menstrual_flow_logs',
+      source_record_id: flowLog.id,
+      datum_payload: { productCount: products.length },
+      may_influence_wellness_recommendations: true,
+      may_be_treated_as_diagnosis: false,
+    })
+
+    if (flowProvenanceError) {
+      return NextResponse.json({ error: flowProvenanceError.message }, { status: 500 })
+    }
+
     if (products.length) {
       const { error: productError } = await supabase.from('menstrual_product_logs').insert(
         products.map((product) => ({
@@ -319,6 +337,27 @@ export async function POST(request: Request) {
 
     if (burdenError) {
       return NextResponse.json({ error: burdenError.message }, { status: 500 })
+    }
+
+    const { error: burdenProvenanceError } = await supabase.from('health_provenance_records').insert({
+      user_id: user.id,
+      client_id: clientId,
+      datum_date: logDate,
+      datum_kind: 'flow_burden',
+      provenance_category: 'calculated',
+      source_label: 'Anastasis calculated menstrual flow burden',
+      source_table: 'cycle_burden_scores',
+      source_record_id: burdenScore.id,
+      datum_payload: {
+        burdenBand: burden.burdenBand,
+        algorithmVersion: burden.algorithmVersion,
+      },
+      may_influence_wellness_recommendations: true,
+      may_be_treated_as_diagnosis: false,
+    })
+
+    if (burdenProvenanceError) {
+      return NextResponse.json({ error: burdenProvenanceError.message }, { status: 500 })
     }
 
     const [{ data: periodStarts }, { data: burdenRows }, { data: symptomRows }] = await Promise.all([
@@ -444,6 +483,29 @@ export async function POST(request: Request) {
       }
 
       if (savedFlag) {
+        const { error: patternProvenanceError } = await supabase.from('health_provenance_records').insert({
+          user_id: user.id,
+          client_id: clientId,
+          datum_date: logDate,
+          datum_kind: 'physiology_pattern',
+          provenance_category: 'algorithmic_wellness_observation',
+          source_label: 'Anastasis algorithmic wellness observation',
+          source_table: 'physiology_pattern_flags',
+          source_record_id: savedFlag.id,
+          datum_payload: {
+            pattern: flag.pattern,
+            confidence: flag.confidence,
+            algorithmVersion: flag.algorithmVersion,
+            suppressedReason: flag.suppressedReason || null,
+          },
+          may_influence_wellness_recommendations: flag.confidence > 0,
+          may_be_treated_as_diagnosis: false,
+        })
+
+        if (patternProvenanceError) {
+          return NextResponse.json({ error: patternProvenanceError.message }, { status: 500 })
+        }
+
         const evidenceRows = [...flag.supportingEvidence, ...flag.conflictingEvidence].map((item) => ({
           pattern_flag_id: savedFlag.id,
           user_id: user.id,

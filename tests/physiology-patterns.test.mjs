@@ -42,6 +42,7 @@ const patterns = loadTs('lib/physiology/patternEngine.ts')
 const recommendationEffects = loadTs('lib/physiology/recommendationEffects.ts')
 const suggestedFoods = loadTs('lib/nutrition/suggestedFoods.ts')
 const analytics = loadTs('lib/analytics/sensitiveHealthData.ts')
+const provenance = loadTs('lib/health/provenance.ts')
 
 test('one symptom alone does not create a hormone-associated pattern', () => {
   const [flag] = patterns.evaluatePhysiologyPatterns({
@@ -224,6 +225,37 @@ test('high flow plus low energy can influence food priority without diagnosing a
   assert.doesNotMatch(`${foods[0].reason} ${foods[0].contribution}`, /anemia|deficien|ferritin|hemoglobin/i)
 })
 
+test('iron supplementation is not automatically recommended from flow burden support', () => {
+  const effects = recommendationEffects.buildPhysiologyRecommendationEffects({
+    flowBurden: {
+      burdenScore: 14,
+      burdenBand: 'very_high',
+      factors: ['tampon_ultra'],
+      algorithmVersion: menstrual.MENSTRUAL_FLOW_BURDEN_VERSION,
+    },
+    activePatterns: [],
+  })
+
+  const foods = suggestedFoods.buildSuggestedFoods({
+    remaining: {
+      calories_remaining: 500,
+      protein_remaining_g: 20,
+      iron_remaining_mg: 10,
+      vitamin_c_remaining_mg: 40,
+    },
+    loggedFoodIds: [],
+    avoidTerms: [],
+    recommendationEffects: effects.effects,
+    candidates: [
+      { id: 'iron-pill', name: 'Ferrous Iron Supplement Tablet', calories: 5, protein_g: 0, carbs_g: 0, fat_g: 0, iron_mg: 18 },
+      { id: 'lentil-pepper', name: 'Lentil and Pepper Bowl', calories: 380, protein_g: 22, carbs_g: 52, fat_g: 7, iron_mg: 6, vitamin_c_mg: 62 },
+    ],
+  })
+
+  assert.equal(foods[0].foodId, 'lentil-pepper')
+  assert.equal(foods.some((food) => /supplement|tablet|ferrous/i.test(food.name)), false)
+})
+
 test('sensitive reproductive data is excluded from analytics payloads', () => {
   const clean = analytics.sanitizeAnalyticsProperties({
     button: 'save',
@@ -234,6 +266,50 @@ test('sensitive reproductive data is excluded from analytics payloads', () => {
 
   assert.deepEqual(clean, { button: 'save' })
   assert.equal(analytics.analyticsPayloadHasSensitiveHealthData({ cycleDay: 2 }), true)
+})
+
+test('raw menstrual records survive algorithm updates', () => {
+  const firstAlgorithm = menstrual.calculateDailyMenstrualFlowBurden({
+    products: [{
+      productType: 'cup',
+      estimatedMl: 20,
+      empties: 2,
+      capacityMl: 30,
+      fullness: '75',
+      quantity: 2,
+      rawNote: 'ignored extra value',
+    }],
+  })
+  const rawEntry = {
+    products: [{
+      productType: 'cup',
+      estimatedMl: 20,
+      empties: 2,
+      capacityMl: 30,
+      fullness: '75',
+      quantity: 2,
+    }],
+  }
+  const historicalRecord = {
+    raw_entry: JSON.parse(JSON.stringify(rawEntry)),
+    algorithm_version: firstAlgorithm.algorithmVersion,
+    burden_score: firstAlgorithm.burdenScore,
+  }
+
+  const secondAlgorithm = menstrual.calculateDailyMenstrualFlowBurden({
+    products: [{
+      productType: 'cup',
+      estimatedMl: 25,
+      empties: 2,
+      capacityMl: 30,
+      fullness: '75',
+      quantity: 2,
+    }],
+  })
+
+  assert.deepEqual(historicalRecord.raw_entry, rawEntry)
+  assert.equal(historicalRecord.algorithm_version, menstrual.MENSTRUAL_FLOW_BURDEN_VERSION)
+  assert.notEqual(secondAlgorithm.burdenScore, historicalRecord.burden_score)
 })
 
 test('migration preserves raw logs, algorithm versions, and existing cycle data', () => {
@@ -324,4 +400,29 @@ test('lab evidence remains separate and is not converted into a diagnosis', () =
   assert.equal(flag.classification, 'algorithmic_wellness_observation_non_diagnostic')
   assert.match(clinicianRecord.nonDiagnosticBoundary, /No hormone concentration was determined/i)
   assert.doesNotMatch(JSON.stringify(clinicianRecord), /estrogenHigh|estrogen high|estrogen_domin/i)
+})
+
+test('lab values and clinician diagnoses retain strict provenance categories', () => {
+  const lab = provenance.classifyHealthDatumProvenance({
+    kind: 'lab_value',
+    source: 'clinician',
+  })
+  const diagnosis = provenance.classifyHealthDatumProvenance({
+    kind: 'medical_diagnosis',
+    source: 'clinician',
+  })
+  const pattern = provenance.classifyHealthDatumProvenance({
+    kind: 'physiology_pattern',
+    source: 'algorithm',
+  })
+  const sql = readFileSync(resolve(root, 'supabase/migrations/20260917_health_provenance_records.sql'), 'utf8')
+
+  assert.equal(lab.provenanceCategory, 'clinician_provided')
+  assert.equal(lab.mayBeTreatedAsDiagnosis, false)
+  assert.equal(diagnosis.provenanceCategory, 'clinician_provided')
+  assert.equal(diagnosis.mayBeTreatedAsDiagnosis, true)
+  assert.equal(pattern.provenanceCategory, 'algorithmic_wellness_observation')
+  assert.equal(pattern.mayBeTreatedAsDiagnosis, false)
+  assert.match(sql, /diagnoses_are_clinician_provided/i)
+  assert.match(sql, /algorithmic_observations_are_not_diagnoses/i)
 })

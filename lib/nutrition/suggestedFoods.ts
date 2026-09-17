@@ -140,6 +140,16 @@ const nutrientFieldByEffectKey: Record<string, keyof SuggestedFoodCandidate> = {
   b6: 'b6_mg',
 }
 
+const supplementNamePatterns = [
+  /\bsupplement\b/i,
+  /\btablet\b/i,
+  /\bcapsule\b/i,
+  /\bchewable\b/i,
+  /\bdrop\b/i,
+  /\biron pill\b/i,
+  /\bferrous\b/i,
+]
+
 function physiologyEffectScore(food: SuggestedFoodCandidate, effects: SuggestedFoodRecommendationEffect[]) {
   let score = 0
   const reasons: string[] = []
@@ -196,6 +206,8 @@ export function buildSuggestedFoods({
       if (!food.id || !food.name || logged.has(food.id)) return false
 
       const foodName = food.name.toLowerCase()
+      if (supplementNamePatterns.some((pattern) => pattern.test(food.name))) return false
+
       const allergens = (food.allergens || []).map((allergen) => allergen.toLowerCase())
 
       return avoid.every((term) => !foodName.includes(term) && !allergens.includes(term))
