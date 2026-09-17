@@ -105,3 +105,28 @@ test('ember receives tracking-level muscle data without detailed recovery intell
   assert.equal(chest.recentTrainingLoad, undefined)
   assert.equal(chest.reasons[0], 'Included in today’s workout.')
 })
+
+test('readiness uses only completed performed exercises from workout history', () => {
+  const readiness = buildMuscleReadiness({
+    tier: 'phoenix',
+    todaysExercises: [],
+    workoutHistory: [
+      {
+        workout_date: '2026-08-24T12:00:00.000Z',
+        completed: true,
+        exercise_logs: [
+          { exercise: 'Shoulder Press', sets: 4, actual_reps: 10, actual_weight: 30, completed: true },
+          { exercise: 'Romanian deadlift', sets: 4, actual_reps: 10, actual_weight: 95, completed: false },
+        ],
+      },
+    ],
+    recoverySignals: [],
+    now: new Date('2026-08-25T12:00:00.000Z'),
+  })
+
+  const shoulder = readiness.find((item) => item.muscleId === 'left_anterior_deltoid')
+  const hamstrings = readiness.find((item) => item.muscleId === 'left_hamstrings')
+
+  assert.equal(shoulder.state, 'recovering')
+  assert.equal(hamstrings.state, 'unknown')
+})

@@ -23,7 +23,9 @@ export async function POST(req: Request) {
       client_id,
       program,
       day_name,
+      workout_source,
       workout_date,
+      planned_exercises,
       exercise_logs,
     } = body
 
@@ -34,7 +36,9 @@ export async function POST(req: Request) {
         auth_user_id: user.id,
         program,
         day_name,
+        workout_source: workout_source === 'manual' ? 'manual' : 'recommended',
         workout_date,
+        planned_exercises: Array.isArray(planned_exercises) ? planned_exercises : [],
         exercise_logs,
         completed: body.completed ?? true,
         updated_at: new Date().toISOString(),

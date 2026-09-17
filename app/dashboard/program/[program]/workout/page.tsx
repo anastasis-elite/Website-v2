@@ -207,7 +207,7 @@ export default async function ProgramWorkoutPage({
     supabase
       .from('workout_logs')
       .select(
-        'id,workout_date,day_name,completed,exercise_logs',
+        'id,workout_date,day_name,completed,workout_source,planned_exercises,exercise_logs',
       )
       .eq('client_id', client.client_id)
       .order('workout_date', {
@@ -343,6 +343,11 @@ export default async function ProgramWorkoutPage({
           outputProgram={output?.program}
           muscleReadiness={muscleReadiness}
           workoutHistory={workoutHistory}
+          memberEquipment={
+            Array.isArray(client.equipment_access)
+              ? client.equipment_access
+              : []
+          }
           showStrengthAssessmentOffer={
             showStrengthAssessmentOffer
           }

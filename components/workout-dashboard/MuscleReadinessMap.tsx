@@ -9,41 +9,72 @@ import {
   type MuscleReadinessState,
 } from '@/lib/workout/muscleReadiness'
 
-const musclePaths: Record<MuscleId, string> = {
-  left_upper_traps: 'M353 495 C322 514 295 544 287 585 C322 571 349 552 371 518 Z',
-  right_upper_traps: 'M509 495 C540 514 567 544 575 585 C540 571 513 552 491 518 Z',
-  left_anterior_deltoid: 'M267 571 C222 586 206 643 221 700 C255 695 281 665 292 610 Z',
-  right_anterior_deltoid: 'M595 571 C640 586 656 643 641 700 C607 695 581 665 570 610 Z',
-  left_lateral_deltoid: 'M220 635 C187 690 185 775 206 840 C226 796 238 718 234 655 Z',
-  right_lateral_deltoid: 'M642 635 C675 690 677 775 656 840 C636 796 624 718 628 655 Z',
-  left_pectoralis_major: 'M305 635 C351 604 402 610 421 669 C388 700 340 698 302 668 Z',
-  right_pectoralis_major: 'M441 669 C460 610 511 604 557 635 L560 668 C522 698 474 700 441 669 Z',
-  left_biceps: 'M213 712 C184 760 182 856 206 948 C233 892 244 801 235 724 Z',
-  right_biceps: 'M649 712 C678 760 680 856 656 948 C629 892 618 801 627 724 Z',
-  left_triceps: 'M235 720 C251 780 244 882 214 948 C202 862 204 781 220 721 Z',
-  right_triceps: 'M627 720 C611 780 618 882 648 948 C660 862 658 781 642 721 Z',
-  left_forearms: 'M201 934 C171 1005 165 1108 200 1196 C227 1141 235 1016 216 941 Z',
-  right_forearms: 'M661 934 C691 1005 697 1108 662 1196 C635 1141 627 1016 646 941 Z',
-  rectus_abdominis: 'M382 715 C414 704 448 704 480 715 C491 802 485 904 431 958 C377 904 371 802 382 715 Z',
-  left_external_oblique: 'M305 707 C337 724 364 781 365 903 C335 887 309 821 297 738 Z',
-  right_external_oblique: 'M557 707 C525 724 498 781 497 903 C527 887 553 821 565 738 Z',
-  left_lat_region: 'M300 665 C335 710 350 810 332 904 C296 859 279 761 286 683 Z',
-  right_lat_region: 'M562 665 C527 710 512 810 530 904 C566 859 583 761 576 683 Z',
-  erector_spinae_region: 'M399 680 C419 735 420 898 384 1001 L431 1053 L478 1001 C442 898 443 735 463 680 Z',
-  left_glute_max: 'M337 1012 C375 977 426 994 430 1065 C406 1113 356 1119 319 1076 Z',
-  right_glute_max: 'M432 1065 C436 994 487 977 525 1012 L543 1076 C506 1119 456 1113 432 1065 Z',
-  left_glute_medius: 'M313 953 C348 943 386 966 399 1008 C363 1014 330 995 309 967 Z',
-  right_glute_medius: 'M549 953 C514 943 476 966 463 1008 C499 1014 532 995 553 967 Z',
-  left_quadriceps: 'M318 1096 C377 1121 413 1185 411 1396 C358 1383 321 1241 302 1120 Z',
-  right_quadriceps: 'M544 1096 C485 1121 449 1185 451 1396 C504 1383 541 1241 560 1120 Z',
-  left_hamstrings: 'M332 1097 C379 1135 397 1240 384 1402 C338 1352 311 1215 306 1116 Z',
-  right_hamstrings: 'M530 1097 C483 1135 465 1240 478 1402 C524 1352 551 1215 556 1116 Z',
-  left_adductors: 'M399 1110 C428 1185 430 1325 412 1436 C383 1340 378 1206 386 1121 Z',
-  right_adductors: 'M463 1110 C434 1185 432 1325 450 1436 C479 1340 484 1206 476 1121 Z',
-  left_calves: 'M338 1405 C382 1448 392 1608 361 1691 C321 1620 316 1485 338 1405 Z',
-  right_calves: 'M524 1405 C480 1448 470 1608 501 1691 C541 1620 546 1485 524 1405 Z',
-  left_tibialis_anterior: 'M391 1400 C420 1488 413 1609 382 1694 C370 1584 370 1485 391 1400 Z',
-  right_tibialis_anterior: 'M471 1400 C442 1488 449 1609 480 1694 C492 1584 492 1485 471 1400 Z',
+type MuscleGeometry = {
+  points: Array<[number, number]>
+}
+
+function mirror(points: MuscleGeometry['points']): MuscleGeometry['points'] {
+  return points.map(([x, y]) => [100 - x, y])
+}
+
+function pointsToSvg(points: MuscleGeometry['points']) {
+  return points.map(([x, y]) => `${x},${y}`).join(' ')
+}
+
+const leftGeometry = {
+  upperTrap: [[41.1, 25.7], [37.8, 26.4], [35.7, 27.6], [38.8, 28.6], [43.9, 27.6]],
+  anteriorDeltoid: [[35.8, 28.2], [32.6, 28.9], [30.6, 31.2], [30.7, 34.5], [33.8, 33.9], [36.7, 30.2]],
+  lateralDeltoid: [[31.0, 32.7], [28.7, 35.8], [27.8, 40.2], [28.8, 44.3], [31.2, 42.3], [32.4, 36.2]],
+  pectoralis: [[36.6, 31.0], [41.8, 30.4], [48.5, 31.4], [47.9, 35.0], [40.3, 35.1], [35.7, 33.5]],
+  biceps: [[30.2, 36.0], [28.4, 41.0], [28.2, 48.5], [30.0, 52.4], [32.2, 47.1], [32.3, 38.4]],
+  triceps: [[32.3, 36.9], [33.8, 41.7], [32.5, 48.9], [30.4, 52.2], [30.8, 44.3], [31.2, 38.2]],
+  forearms: [[29.6, 50.7], [27.6, 55.8], [27.8, 61.0], [29.8, 63.3], [31.0, 60.2], [31.1, 54.8]],
+  oblique: [[36.3, 35.1], [39.8, 36.9], [40.0, 45.1], [36.7, 48.1], [34.5, 42.9], [34.6, 37.7]],
+  lat: [[34.8, 34.3], [37.5, 38.4], [37.3, 46.5], [35.0, 50.2], [33.4, 43.3], [33.6, 37.2]],
+  gluteMax: [[37.5, 49.4], [43.1, 48.7], [48.6, 50.0], [48.2, 54.1], [42.0, 55.2], [36.2, 52.7]],
+  gluteMedius: [[35.4, 47.1], [40.4, 46.6], [44.8, 48.9], [40.4, 50.2], [35.4, 49.1]],
+  quadriceps: [[35.4, 53.0], [42.5, 52.7], [47.9, 57.8], [47.0, 70.5], [40.2, 69.7], [36.0, 61.1]],
+  hamstrings: [[36.4, 54.0], [41.6, 55.1], [44.9, 63.2], [43.7, 71.4], [39.0, 67.8], [35.4, 58.7]],
+  adductors: [[44.8, 54.5], [48.8, 55.3], [48.4, 72.0], [45.5, 69.5], [43.6, 61.2]],
+  calves: [[38.2, 71.8], [43.9, 74.1], [44.4, 85.8], [41.5, 89.0], [37.4, 84.4], [36.8, 76.5]],
+  tibialis: [[45.0, 71.5], [47.6, 74.8], [46.7, 87.0], [44.1, 89.2], [42.9, 81.4]],
+} satisfies Record<string, MuscleGeometry['points']>
+
+export const muscleMapGeometry: Record<MuscleId, MuscleGeometry> = {
+  left_upper_traps: { points: leftGeometry.upperTrap },
+  right_upper_traps: { points: mirror(leftGeometry.upperTrap) },
+  left_anterior_deltoid: { points: leftGeometry.anteriorDeltoid },
+  right_anterior_deltoid: { points: mirror(leftGeometry.anteriorDeltoid) },
+  left_lateral_deltoid: { points: leftGeometry.lateralDeltoid },
+  right_lateral_deltoid: { points: mirror(leftGeometry.lateralDeltoid) },
+  left_pectoralis_major: { points: leftGeometry.pectoralis },
+  right_pectoralis_major: { points: mirror(leftGeometry.pectoralis) },
+  left_biceps: { points: leftGeometry.biceps },
+  right_biceps: { points: mirror(leftGeometry.biceps) },
+  left_triceps: { points: leftGeometry.triceps },
+  right_triceps: { points: mirror(leftGeometry.triceps) },
+  left_forearms: { points: leftGeometry.forearms },
+  right_forearms: { points: mirror(leftGeometry.forearms) },
+  rectus_abdominis: { points: [[45.4, 35.2], [54.6, 35.2], [55.7, 43.4], [52.5, 49.2], [50.0, 50.3], [47.5, 49.2], [44.3, 43.4]] },
+  left_external_oblique: { points: leftGeometry.oblique },
+  right_external_oblique: { points: mirror(leftGeometry.oblique) },
+  left_lat_region: { points: leftGeometry.lat },
+  right_lat_region: { points: mirror(leftGeometry.lat) },
+  erector_spinae_region: { points: [[47.5, 34.0], [52.5, 34.0], [53.7, 47.1], [50.0, 54.2], [46.3, 47.1]] },
+  left_glute_max: { points: leftGeometry.gluteMax },
+  right_glute_max: { points: mirror(leftGeometry.gluteMax) },
+  left_glute_medius: { points: leftGeometry.gluteMedius },
+  right_glute_medius: { points: mirror(leftGeometry.gluteMedius) },
+  left_quadriceps: { points: leftGeometry.quadriceps },
+  right_quadriceps: { points: mirror(leftGeometry.quadriceps) },
+  left_hamstrings: { points: leftGeometry.hamstrings },
+  right_hamstrings: { points: mirror(leftGeometry.hamstrings) },
+  left_adductors: { points: leftGeometry.adductors },
+  right_adductors: { points: mirror(leftGeometry.adductors) },
+  left_calves: { points: leftGeometry.calves },
+  right_calves: { points: mirror(leftGeometry.calves) },
+  left_tibialis_anterior: { points: leftGeometry.tibialis },
+  right_tibialis_anterior: { points: mirror(leftGeometry.tibialis) },
 }
 
 const stateLabels: Record<MuscleReadinessState, string> = {
@@ -94,16 +125,17 @@ export default function MuscleReadinessMap({
           className="workout-body-image"
           priority={false}
         />
-        <svg className="workout-muscle-overlay" viewBox="0 0 862 1825" role="img" aria-label="Interactive muscle readiness map">
+        <svg className="workout-muscle-overlay" viewBox="0 0 100 100" role="img" aria-label="Interactive muscle readiness map" preserveAspectRatio="none">
           {MUSCLE_REGIONS.map((region) => {
             const item = byId.get(region.id)
             const state = item?.state || 'unknown'
             const isActive = activeId === region.id
             const isHighlighted = highlighted.has(region.id) || Boolean(item?.exercisesToday?.length)
+            const geometry = muscleMapGeometry[region.id]
             return (
-              <path
+              <polygon
                 key={region.id}
-                d={musclePaths[region.id]}
+                points={pointsToSvg(geometry.points)}
                 className={`workout-muscle-region readiness-${state}${isActive ? ' is-selected' : ''}${isHighlighted ? ' is-in-workout' : ''}`}
                 tabIndex={0}
                 role="button"

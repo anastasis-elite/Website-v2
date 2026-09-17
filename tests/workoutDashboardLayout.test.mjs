@@ -13,8 +13,8 @@ test('workout dashboard uses objective, two-panel row, and full-width toggle pan
   assert.match(map, /data-testid="muscle-readiness-panel"/)
   assert.match(dashboard, /data-testid="today-workout-panel"/)
   assert.match(dashboard, /data-testid="workout-toggle-panel"/)
-  assert.match(css, /\.workout-dashboard-row\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/)
-  assert.match(css, /@media\(max-width:860px\).*\.workout-dashboard-row.*grid-template-columns:1fr/s)
+  assert.match(css, /\.workout-dashboard-row\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(340px,\.8fr\)/)
+  assert.match(css, /@media\(max-width:980px\).*\.workout-dashboard-row.*grid-template-columns:1fr/s)
 })
 
 test('workout toggle panel contains workout-specific tab set', () => {
@@ -36,16 +36,19 @@ test('route reuses existing workout engine and reads existing history and recove
 
 test('muscle map reuses existing body model and exposes interactive muscle labels', () => {
   assert.match(map, /src="\/woman-silhouette\.png"/)
-  assert.match(map, /viewBox="0 0 862 1825"/)
+  assert.match(map, /viewBox="0 0 100 100"/)
+  assert.match(map, /muscleMapGeometry/)
+  assert.match(map, /mirror\(leftGeometry/)
   assert.match(map, /role="button"/)
   assert.match(map, /aria-label=\{`\$\{region\.label\}: \$\{stateLabels\[state\]\}`\}/)
   assert.match(map, /data-muscle-id=\{region\.id\}/)
   assert.match(map, /workout-readiness-legend/)
 })
 
-test('workout panel has an intentional internal scroll area on desktop', () => {
+test('workout panel lets exercise cards and form controls fit their container', () => {
   assert.match(dashboard, /className="workout-scroll-region"/)
-  assert.match(css, /\.workout-current-panel\{[^}]*max-height:820px/)
-  assert.match(css, /\.workout-scroll-region\{[^}]*overflow:auto/)
-  assert.match(css, /@media\(max-width:860px\).*\.workout-scroll-region\{overflow:visible\}/s)
+  assert.match(css, /\.workout-scroll-region\{[^}]*overflow:visible/)
+  assert.match(css, /\.workout-exercise-card\{[^}]*max-width:100%/)
+  assert.match(css, /\.workout-exercise-notes textarea\{[^}]*min-height:104px/)
+  assert.match(css, /\.workout-completed-control\{[^}]*min-height:44px/)
 })

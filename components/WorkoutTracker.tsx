@@ -31,15 +31,15 @@ type Exercise = {
   sets?: number | string
 
   reps?: number | string
-  target_reps?: number
-  recommended_reps?: number
-  cycle_adjusted_reps?: number
-  baseline_reps?: number
+  target_reps?: number | string
+  recommended_reps?: number | string
+  cycle_adjusted_reps?: number | string
+  baseline_reps?: number | string
 
-  calculated_weight?: number
-  recommended_weight?: number
-  cycle_adjusted_weight?: number
-  baseline_weight?: number
+  calculated_weight?: number | string
+  recommended_weight?: number | string
+  cycle_adjusted_weight?: number | string
+  baseline_weight?: number | string
 
   selected_variant_id?: string
   selected_variant_name?: string
@@ -105,6 +105,8 @@ type Props = {
   program: string
   dayName: string
   exercises: Exercise[]
+  workoutSource?: 'recommended' | 'manual'
+  plannedExercises?: unknown[]
   onExerciseFocus?: (exercise: Exercise) => void
   onExerciseBlur?: () => void
 }
@@ -495,7 +497,7 @@ function ScrollPicker({
   }, [value])
 
   return (
-    <div>
+    <div className="workout-tracker">
       <p
         style={{
           margin: '0 0 8px',
@@ -600,6 +602,8 @@ export default function WorkoutTracker({
   program,
   dayName,
   exercises,
+  workoutSource = 'recommended',
+  plannedExercises = exercises,
   onExerciseFocus,
   onExerciseBlur,
 }: Props) {
@@ -843,6 +847,9 @@ export default function WorkoutTracker({
   const [saved, setSaved] =
     useState(false)
 
+  const completedCount =
+    logs.filter((log) => log.completed).length
+
   function updateLog(
     index: number,
     field: keyof WorkoutLog,
@@ -1018,10 +1025,7 @@ export default function WorkoutTracker({
       setSaving(true)
 
       const completedLogs =
-        logs.map((log) => ({
-          ...log,
-          completed: true,
-        }))
+        logs.filter((log) => log.completed)
 
       const response =
         await fetch(
@@ -1043,14 +1047,20 @@ export default function WorkoutTracker({
 
               program,
               day_name: dayName,
+              workout_source:
+                workoutSource,
 
               workout_date:
                 new Date().toISOString(),
 
+              planned_exercises:
+                plannedExercises,
+
               exercise_logs:
                 completedLogs,
 
-              completed: true,
+              completed:
+                completedLogs.length > 0,
             }),
           },
         )
@@ -1061,7 +1071,7 @@ export default function WorkoutTracker({
         )
       }
 
-      setLogs(completedLogs)
+      setLogs(logs)
       setSaved(true)
 
       router.push(
@@ -1078,7 +1088,12 @@ export default function WorkoutTracker({
 
   return (
     <div>
+      <p className="workout-completion-summary">
+        {completedCount} of {logs.length} exercise{logs.length === 1 ? '' : 's'} marked completed
+      </p>
+
       <div
+        className="workout-exercise-carousel"
         style={{
           display: 'flex',
           gap: '8px',
@@ -1130,6 +1145,7 @@ export default function WorkoutTracker({
       </div>
 
       <div
+        className="workout-exercise-track"
         style={{
           display: 'flex',
           gap: '22px',
@@ -1237,6 +1253,7 @@ export default function WorkoutTracker({
             return (
               <section
                 key={index}
+                className="workout-exercise-card"
                 ref={setCardRef(
                   index,
                 )}
@@ -1258,7 +1275,10 @@ export default function WorkoutTracker({
                 }
                 style={{
                   flex:
-                    '0 0 min(86vw, 620px)',
+                    '0 0 min(100%, 620px)',
+
+                  maxWidth:
+                    '100%',
 
                   scrollSnapAlign:
                     'center',
@@ -1271,10 +1291,10 @@ export default function WorkoutTracker({
                   borderRadius:
                     '34px',
 
-                  padding: '32px',
+                  padding: 'clamp(18px, 3vw, 32px)',
 
                   minHeight:
-                    '560px',
+                    'auto',
 
                   background:
                     exercise.cycle_caution_active
@@ -1291,6 +1311,9 @@ export default function WorkoutTracker({
 
                   flexDirection:
                     'column',
+
+                  boxSizing:
+                    'border-box',
 
                   justifyContent:
                     'space-between',
@@ -1556,6 +1579,7 @@ export default function WorkoutTracker({
                   ) : null}
 
                   <div
+                    className="workout-exercise-inputs"
                     style={{
                       display:
                         'grid',
@@ -1695,7 +1719,7 @@ export default function WorkoutTracker({
                       }
                     />
 
-                    <label>
+                    <label className="workout-exercise-notes">
                       <p
                         style={{
                           margin:
@@ -1743,6 +1767,7 @@ export default function WorkoutTracker({
                     </label>
 
                     <label
+                      className="workout-completed-control"
                       style={{
                         display:
                           'flex',
@@ -1783,6 +1808,7 @@ export default function WorkoutTracker({
                 </div>
 
                 <div
+                  className="workout-exercise-actions"
                   style={{
                     display: 'flex',
 
@@ -1865,7 +1891,8 @@ export default function WorkoutTracker({
                         saveWorkout
                       }
                       disabled={
-                        saving
+                        saving ||
+                        completedCount === 0
                       }
                       style={{
                         borderRadius:
@@ -1884,10 +1911,14 @@ export default function WorkoutTracker({
                           '12px 18px',
 
                         cursor:
-                          'pointer',
+                          completedCount ===
+                            0 || saving
+                            ? 'default'
+                            : 'pointer',
 
                         opacity:
-                          saving
+                          saving ||
+                          completedCount === 0
                             ? 0.65
                             : 1,
                       }}

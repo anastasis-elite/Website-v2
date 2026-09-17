@@ -6,6 +6,7 @@ import Link from 'next/link'
 import WorkoutTracker from '@/components/WorkoutTracker'
 import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
 import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
+import ManualWorkoutBuilder from '@/components/workout-dashboard/ManualWorkoutBuilder'
 import MuscleReadinessMap from '@/components/workout-dashboard/MuscleReadinessMap'
 import {
   getMuscleIdsForExercise,
@@ -44,6 +45,8 @@ type WorkoutLogRow = {
   workout_date?: string
   day_name?: string
   completed?: boolean
+  workout_source?: 'recommended' | 'manual'
+  planned_exercises?: AssignedExercise[]
   exercise_logs?: AssignedExercise[]
 }
 
@@ -65,6 +68,7 @@ type Props = {
   outputProgram?: string | null
   muscleReadiness: MuscleReadiness[]
   workoutHistory: WorkoutLogRow[]
+  memberEquipment: string[]
   showStrengthAssessmentOffer: boolean
   strengthAssessmentWindowEndDate?: string | null
 }
@@ -166,7 +170,7 @@ function HistoryTab({ history }: { history: WorkoutLogRow[] }) {
         <article key={row.id || `${row.workout_date}-${index}`}>
           <time>{row.workout_date ? new Date(row.workout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Workout'}</time>
           <strong>{row.day_name || 'Completed workout'}</strong>
-          <small>{row.completed ? 'Completed' : 'Not completed'} · {(row.exercise_logs || []).length} exercises</small>
+          <small>{row.completed ? 'Completed' : 'Not completed'} · {row.workout_source || 'recommended'} · {(row.exercise_logs || []).length} performed</small>
         </article>
       )) : <p className="tier-calendar-empty">Workout history will appear after completed sessions.</p>}
     </div>
@@ -175,6 +179,7 @@ function HistoryTab({ history }: { history: WorkoutLogRow[] }) {
 
 export default function WorkoutDashboard(props: Props) {
   const [tab, setTab] = useState<Tab>('progress')
+  const [workoutMode, setWorkoutMode] = useState<'recommended' | 'manual'>('recommended')
   const [highlightedMuscles, setHighlightedMuscles] = useState<MuscleId[]>([])
   const focus = useMemo(() => summarizeWorkoutMuscleFocus(props.assignedExercises).slice(0, 3), [props.assignedExercises])
 
@@ -207,14 +212,42 @@ export default function WorkoutDashboard(props: Props) {
               <p className="tier-dashboard-label">{props.workoutStateLabel}</p>
               <h2>Today&apos;s Workout</h2>
             </div>
+            <div className="workout-mode-switch" role="tablist" aria-label="Workout mode">
+              {(['recommended', 'manual'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  role="tab"
+                  aria-selected={workoutMode === mode}
+                  className={workoutMode === mode ? 'is-active' : ''}
+                  onClick={() => setWorkoutMode(mode)}
+                >
+                  {mode === 'recommended' ? 'Recommended' : 'Manual'}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="workout-scroll-region">
-            {props.showInteractiveWorkout ? (
+            {workoutMode === 'manual' ? (
+              <ManualWorkoutBuilder
+                clientId={props.clientId}
+                authUserId={props.authUserId}
+                program={props.outputProgram || props.program}
+                recommendedDayName={props.assignedDayName}
+                recommendedExercises={props.assignedExercises}
+                memberEquipment={props.memberEquipment}
+                readiness={props.muscleReadiness}
+                onExerciseFocus={setHighlightedMuscles}
+                onExerciseBlur={() => setHighlightedMuscles([])}
+              />
+            ) : props.showInteractiveWorkout ? (
               <WorkoutTracker
                 clientId={props.clientId}
                 authUserId={props.authUserId}
                 program={props.outputProgram || props.program}
                 dayName={props.assignedDayName}
+                workoutSource="recommended"
+                plannedExercises={props.assignedExercises}
                 exercises={props.assignedExercises}
                 onExerciseFocus={(exercise) => setHighlightedMuscles(getMuscleIdsForExercise(exercise))}
                 onExerciseBlur={() => setHighlightedMuscles([])}

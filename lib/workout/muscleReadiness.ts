@@ -77,6 +77,9 @@ type ExerciseLike = {
   reps?: number | string
   recommended_reps?: number | string
   target_reps?: number | string
+  actual_reps?: number | string
+  actual_weight?: number | string
+  completed?: boolean
 }
 
 type WorkoutHistoryRow = {
@@ -174,19 +177,20 @@ const aliases: Record<string, CanonicalMuscle[]> = {
 }
 
 const nameRules: Array<{ pattern: RegExp; muscles: CanonicalMuscle[] }> = [
-  { pattern: /squat|leg press|lunge|split squat|step[- ]?up|leg extension/i, muscles: ['quads', 'glutes'] },
-  { pattern: /deadlift|rdl|hinge|good morning|back extension/i, muscles: ['hamstrings', 'glutes', 'lower_back'] },
-  { pattern: /hip thrust|glute bridge|kickback|abduction/i, muscles: ['glutes'] },
+  { pattern: /squat|leg press|hack press|lunge|split squat|step[- ]?up|leg extension/i, muscles: ['quads', 'glutes'] },
+  { pattern: /deadlift|rdl|hinge|good morning|back extension|hyper ?extension|pull[- ]?through/i, muscles: ['hamstrings', 'glutes', 'lower_back'] },
+  { pattern: /hip thrust|glute bridge|frog pump|kickback|abduction/i, muscles: ['glutes'] },
   { pattern: /adduction|adductor/i, muscles: ['adductors'] },
   { pattern: /calf raise|calves/i, muscles: ['calves'] },
   { pattern: /tibialis|toe raise/i, muscles: ['feet_ankles'] },
-  { pattern: /bench|push[- ]?up|chest press|fly|incline press/i, muscles: ['chest', 'shoulders', 'triceps'] },
-  { pattern: /shoulder press|front raise/i, muscles: ['shoulders', 'triceps'] },
-  { pattern: /lateral raise/i, muscles: ['shoulders'] },
-  { pattern: /row|pulldown|pull[- ]?up|lat/i, muscles: ['lats', 'upper_back', 'biceps'] },
+  { pattern: /bench|push[- ]?up|chest press|fly|pec deck|incline press|dumbbell press|machine press|smith machine press|close[- ]?grip press/i, muscles: ['chest', 'shoulders', 'triceps'] },
+  { pattern: /shoulder press|arnold press|front raise|y[- ]?raise/i, muscles: ['shoulders', 'triceps'] },
+  { pattern: /lateral raise|seated lateral|rear delt/i, muscles: ['shoulders'] },
+  { pattern: /row|pulldown|pull[- ]?up|lat|face ?pull|reverse pec deck/i, muscles: ['lats', 'upper_back', 'biceps'] },
   { pattern: /curl/i, muscles: ['biceps', 'forearms'] },
-  { pattern: /tricep|pressdown|pulldown|skull/i, muscles: ['triceps'] },
-  { pattern: /carry|plank|crunch|dead bug|pallof|rotation|woodchop/i, muscles: ['core'] },
+  { pattern: /tricep|pressdown|pushdown|pulldown|skull|overhead rope extension/i, muscles: ['triceps'] },
+  { pattern: /arm circuit/i, muscles: ['biceps', 'triceps', 'forearms'] },
+  { pattern: /carry|plank|crunch|dead ?bug|pallof|rotation|twist|woodchop|leg raise|knee raise|lower ab|rollout|birddog/i, muscles: ['core'] },
 ]
 
 function normalize(value: unknown) {
@@ -228,8 +232,10 @@ export function getMuscleIdsForExercise(exercise: ExerciseLike): MuscleId[] {
 
 function trainingLoad(exercise: ExerciseLike) {
   const sets = numeric(exercise.sets) || 1
-  const reps = numeric(exercise.recommended_reps ?? exercise.reps ?? exercise.target_reps) || 1
-  return Math.max(1, sets * reps)
+  const reps = numeric(exercise.actual_reps ?? exercise.recommended_reps ?? exercise.reps ?? exercise.target_reps) || 1
+  const load = numeric(exercise.actual_weight)
+  const loadFactor = load > 0 ? Math.min(2.5, 1 + load / 200) : 1
+  return Math.max(1, sets * reps * loadFactor)
 }
 
 function daysBetween(date: string, now: Date) {
@@ -272,7 +278,7 @@ export function buildMuscleReadiness({
     const ageDays = daysBetween(date, now)
     if (ageDays === null) return
 
-    ;(row.exercise_logs || []).forEach((exercise) => {
+    ;(row.exercise_logs || []).filter((exercise) => exercise.completed !== false).forEach((exercise) => {
       getMuscleIdsForExercise(exercise).forEach((muscleId) => {
         const previous = lastByMuscle.get(muscleId)
         if (!previous || new Date(date).getTime() > new Date(previous).getTime()) {
