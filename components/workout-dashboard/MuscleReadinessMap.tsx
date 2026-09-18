@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Image from 'next/image'
 import {
   MUSCLE_REGIONS,
+  getMuscleReadinessPresentation,
   type MuscleId,
   type MuscleReadiness,
   type MuscleReadinessState,
@@ -78,10 +79,10 @@ export const muscleMapGeometry: Record<MuscleId, MuscleGeometry> = {
 }
 
 const stateLabels: Record<MuscleReadinessState, string> = {
-  ready: 'Ready',
-  available: 'Available',
-  recovering: 'Recovering',
-  rest: 'Rest',
+  ready: 'High readiness',
+  available: 'Moderate readiness',
+  recovering: 'Reduced loading suggested',
+  rest: 'Recovery still accumulating',
   unknown: 'Not enough data',
 }
 
@@ -95,24 +96,43 @@ function formatLastTrained(value?: string) {
 export default function MuscleReadinessMap({
   readiness,
   highlightedMuscleIds = [],
+  selectedMuscleId,
+  onSelectMuscle,
+  heading = 'Readiness Map',
+  eyebrow = 'Muscle Readiness',
 }: {
   readiness: MuscleReadiness[]
   highlightedMuscleIds?: MuscleId[]
+  selectedMuscleId?: MuscleId | null
+  onSelectMuscle?: (muscleId: MuscleId) => void
+  heading?: string
+  eyebrow?: string
 }) {
-  const [selectedId, setSelectedId] = useState<MuscleId | null>(null)
+  const [internalSelectedId, setInternalSelectedId] = useState<MuscleId | null>(null)
   const [hoveredId, setHoveredId] = useState<MuscleId | null>(null)
   const byId = useMemo(() => new Map(readiness.map((item) => [item.muscleId, item])), [readiness])
+  const selectedId = selectedMuscleId ?? internalSelectedId
   const activeId = hoveredId || selectedId
   const active = activeId ? byId.get(activeId) : null
   const activeDefinition = activeId ? MUSCLE_REGIONS.find((region) => region.id === activeId) : null
   const highlighted = new Set(highlightedMuscleIds)
+  const activePresentation = active ? getMuscleReadinessPresentation(active.state) : null
+
+  function selectMuscle(regionId: MuscleId) {
+    if (onSelectMuscle) {
+      onSelectMuscle(regionId)
+      return
+    }
+
+    setInternalSelectedId((current) => (current === regionId ? null : regionId))
+  }
 
   return (
     <section className="workout-muscle-panel" data-testid="muscle-readiness-panel">
       <div className="tier-panel-heading">
         <div>
-          <p className="tier-dashboard-label">Muscle Readiness</p>
-          <h2>Readiness Map</h2>
+          <p className="tier-dashboard-label">{eyebrow}</p>
+          <h2>{heading}</h2>
         </div>
       </div>
 
@@ -145,7 +165,7 @@ export default function MuscleReadinessMap({
                 onMouseLeave={() => setHoveredId(null)}
                 onFocus={() => setHoveredId(region.id)}
                 onBlur={() => setHoveredId(null)}
-                onClick={() => setSelectedId((current) => (current === region.id ? null : region.id))}
+                onClick={() => selectMuscle(region.id)}
               />
             )
           })}
@@ -162,9 +182,10 @@ export default function MuscleReadinessMap({
         {active && activeDefinition ? (
           <>
             <strong>{activeDefinition.label}</strong>
-            <span>{stateLabels[active.state]}</span>
+            <span>{active.readinessScore ? `${active.readinessScore}% ready · ` : ''}{stateLabels[active.state]}</span>
             {formatLastTrained(active.lastTrainedAt) ? <small>Last trained: {formatLastTrained(active.lastTrainedAt)}</small> : null}
             {active.exercisesToday?.length ? <small>Today: {active.exercisesToday.slice(0, 2).join(', ')}</small> : null}
+            {activePresentation ? <small>{activePresentation.guidance}</small> : null}
             {active.reasons?.[0] ? <small>{active.reasons[0]}</small> : null}
           </>
         ) : (

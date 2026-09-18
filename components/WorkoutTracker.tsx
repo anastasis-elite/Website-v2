@@ -58,6 +58,7 @@ type Exercise = {
 }
 
 type WorkoutLog = {
+  id?: string | number
   exercise: string
   display_name: string
 
@@ -97,6 +98,9 @@ type WorkoutLog = {
   rest_seconds: number | null
   rpe_target: string
   duration_label: string
+  started_at?: string
+  finished_at?: string
+  set_logs?: ManualSetLog[]
 }
 
 type Props = {
@@ -109,6 +113,17 @@ type Props = {
   plannedExercises?: unknown[]
   onExerciseFocus?: (exercise: Exercise) => void
   onExerciseBlur?: () => void
+  onManualExerciseFinished?: () => void
+}
+
+type ManualSetLog = {
+  id: string
+  set_number: number
+  weight: number
+  weight_unit: 'lb'
+  reps: number
+  set_started_at: string
+  completed_at: string
 }
 
 const LOWER_BODY_MUSCLES = new Set([
@@ -172,6 +187,26 @@ function getExerciseName(exercise: Exercise): string {
     exercise.name ||
     'Exercise'
   )
+}
+
+export default function WorkoutTracker(props: Props) {
+  if (props.workoutSource === 'manual' && props.exercises.length === 1) {
+    return (
+      <ManualSetLogger
+        clientId={props.clientId}
+        authUserId={props.authUserId}
+        program={props.program}
+        dayName={props.dayName}
+        exercise={props.exercises[0]}
+        plannedExercises={props.plannedExercises || props.exercises}
+        onExerciseFocus={props.onExerciseFocus}
+        onExerciseBlur={props.onExerciseBlur}
+        onManualExerciseFinished={props.onManualExerciseFinished}
+      />
+    )
+  }
+
+  return <ProgrammedWorkoutTracker {...props} />
 }
 
 function getDisplayName(exercise: Exercise): string {
@@ -302,6 +337,51 @@ function getWorkoutSessionDate(): string {
   return new Date()
     .toISOString()
     .slice(0, 10)
+}
+
+function buildManualWorkoutLog(exercise: Exercise, sets: ManualSetLog[]): WorkoutLog {
+  const totalReps = sets.reduce((sum, set) => sum + set.reps, 0)
+  const averageWeight = sets.length
+    ? Math.round(sets.reduce((sum, set) => sum + set.weight, 0) / sets.length)
+    : getRecommendedWeight(exercise)
+  const selectedVariant = exercise.available_variants?.find((variant) => variant.id === exercise.selected_variant_id)
+  const firstSet = sets[0]
+
+  return {
+    id: exercise.id,
+    exercise: getExerciseName(exercise),
+    display_name: selectedVariant?.name || getDisplayName(exercise),
+    exercise_category: exercise.exercise_category || exercise.category || 'strength',
+    movement_type: exercise.movement_type || exercise.type || 'strength',
+    primary_muscles: exercise.primary_muscles || [],
+    secondary_muscles: exercise.secondary_muscles || [],
+    intended_muscles: exercise.intended_muscles || [],
+    compensatory_muscles: exercise.compensatory_muscles || [],
+    selected_variant_id: selectedVariant?.id || exercise.selected_variant_id || null,
+    selected_variant_name: selectedVariant?.name || exercise.selected_variant_name || getExerciseName(exercise),
+    selected_equipment: selectedVariant?.equipment || exercise.selected_equipment || null,
+    load_type: selectedVariant?.load_type || exercise.load_type || 'total_load',
+    available_variants: exercise.available_variants || [],
+    planned_sets: Number(exercise.sets || 0),
+    planned_reps: getRecommendedReps(exercise),
+    planned_weight: getRecommendedWeight(exercise),
+    baseline_reps: getBaselineReps(exercise),
+    baseline_weight: getBaselineWeight(exercise),
+    actual_weight: averageWeight,
+    actual_reps: totalReps,
+    cycle_adjustment_label: exercise.cycle_adjustment_label || 'Manual training load',
+    cycle_adjustment_note: exercise.cycle_adjustment_note || '',
+    cycle_caution_active: Boolean(exercise.cycle_caution_active),
+    completed: sets.length > 0,
+    notes: '',
+    client_cues: (exercise.client_cues || []).slice(0, 3),
+    rest_seconds: exercise.rest_seconds || null,
+    rpe_target: exercise.rpe_target || '',
+    duration_label: sets.length ? `${sets.length} sets · ${totalReps} total reps · ${averageWeight} lb avg` : '',
+    started_at: firstSet?.set_started_at,
+    finished_at: sets[sets.length - 1]?.completed_at,
+    set_logs: sets,
+  } as WorkoutLog
 }
 
 function buildNumberOptions({
@@ -596,7 +676,254 @@ function ScrollPicker({
   )
 }
 
-export default function WorkoutTracker({
+function ManualSetLogger({
+  clientId,
+  authUserId,
+  program,
+  dayName,
+  exercise,
+  plannedExercises,
+  onExerciseFocus,
+  onExerciseBlur,
+  onManualExerciseFinished,
+}: {
+  clientId: string
+  authUserId: string
+  program: string
+  dayName: string
+  exercise: Exercise
+  plannedExercises: unknown[]
+  onExerciseFocus?: (exercise: Exercise) => void
+  onExerciseBlur?: () => void
+  onManualExerciseFinished?: () => void
+}) {
+  const router = useRouter()
+  const storageKey = `aos-manual-sets:${clientId}:${program}:${getExerciseName(exercise)}:${getWorkoutSessionDate()}`
+  const [exerciseStartedAt] = useState(() => new Date().toISOString())
+  const [setStartedAt, setSetStartedAt] = useState(() => new Date().toISOString())
+  const [weight, setWeight] = useState(() => roundTrainingWeight(getRecommendedWeight(exercise)))
+  const [reps, setReps] = useState(() => getRecommendedReps(exercise) || 10)
+  const [sets, setSets] = useState<ManualSetLog[]>(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(storageKey) || '[]')
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  })
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const loadLabel = getLoadLabel(exercise.load_type || 'total_load')
+  const nextSetNumber = sets.length + 1
+
+  function persistDraft(nextSets: ManualSetLog[]) {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(storageKey, JSON.stringify(nextSets))
+  }
+
+  async function persistSets(nextSets: ManualSetLog[], finishedAt?: string) {
+    const exerciseLog = buildManualWorkoutLog(exercise, nextSets)
+    const response = await fetch('/api/workout-set-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: clientId,
+        auth_user_id: authUserId,
+        program,
+        day_name: dayName,
+        workout_source: 'manual',
+        workout_date: new Date().toISOString(),
+        planned_exercises: plannedExercises,
+        exercise,
+        exercise_started_at: exerciseStartedAt,
+        exercise_finished_at: finishedAt || null,
+        exercise_logs: [exerciseLog],
+        sets: nextSets,
+        completed: nextSets.length > 0,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Set save failed')
+    }
+  }
+
+  async function completeSet() {
+    const completedAt = new Date().toISOString()
+    const nextSet: ManualSetLog = {
+      id: `${Date.now()}-${nextSetNumber}`,
+      set_number: nextSetNumber,
+      weight,
+      weight_unit: 'lb',
+      reps,
+      set_started_at: setStartedAt,
+      completed_at: completedAt,
+    }
+    const nextSets = [...sets, nextSet]
+
+    try {
+      setSaving(true)
+      await persistSets(nextSets)
+      setSets(nextSets)
+      persistDraft(nextSets)
+      setWeight(nextSet.weight)
+      setReps(nextSet.reps)
+      setSetStartedAt(new Date().toISOString())
+      setMessage(`Set ${nextSet.set_number} saved.`)
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      setMessage('Set could not be saved.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function updateSet(id: string, field: 'weight' | 'reps', value: number) {
+    const nextSets = sets.map((set) => (set.id === id ? { ...set, [field]: value } : set))
+
+    try {
+      setSaving(true)
+      await persistSets(nextSets)
+      setSets(nextSets)
+      persistDraft(nextSets)
+      setMessage('Set updated.')
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      setMessage('Set update failed.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function deleteSet(id: string) {
+    const confirmed = window.confirm('Delete this set?')
+    if (!confirmed) return
+    const nextSets = sets
+      .filter((set) => set.id !== id)
+      .map((set, index) => ({ ...set, set_number: index + 1 }))
+
+    try {
+      setSaving(true)
+      await persistSets(nextSets)
+      setSets(nextSets)
+      persistDraft(nextSets)
+      setMessage('Set deleted.')
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      setMessage('Set delete failed.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function finishExercise() {
+    try {
+      setSaving(true)
+      await persistSets(sets, new Date().toISOString())
+      if (typeof window !== 'undefined') window.localStorage.removeItem(storageKey)
+      onManualExerciseFinished?.()
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      setMessage('Exercise finish failed.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section
+      className="manual-set-logger"
+      data-testid="manual-set-logger"
+      onMouseEnter={() => onExerciseFocus?.(exercise)}
+      onMouseLeave={onExerciseBlur}
+      onFocus={() => onExerciseFocus?.(exercise)}
+      onBlur={onExerciseBlur}
+    >
+      <div className="manual-set-heading">
+        <p className="tier-dashboard-label">Log Sets</p>
+        <h3>{getDisplayName(exercise)}</h3>
+        <small>{exercise.selected_equipment ? `${exercise.selected_equipment} · ` : ''}{loadLabel}</small>
+      </div>
+
+      {sets.length ? (
+        <div className="manual-set-history" data-testid="manual-set-history">
+          {sets.map((set) => (
+            <article key={set.id}>
+              <span>Set {set.set_number}</span>
+              <label>
+                Weight
+                <input
+                  inputMode="decimal"
+                  type="number"
+                  min="0"
+                  value={set.weight}
+                  onChange={(event) => updateSet(set.id, 'weight', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Reps
+                <input
+                  inputMode="numeric"
+                  type="number"
+                  min="0"
+                  value={set.reps}
+                  onChange={(event) => updateSet(set.id, 'reps', Number(event.target.value))}
+                />
+              </label>
+              <button type="button" onClick={() => deleteSet(set.id)}>Delete</button>
+              <small>{new Date(set.completed_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</small>
+            </article>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="manual-current-set">
+        <strong>Set {nextSetNumber}</strong>
+        <div>
+          <label>
+            Weight
+            <input
+              inputMode="decimal"
+              type="number"
+              min="0"
+              value={weight}
+              onChange={(event) => setWeight(Number(event.target.value))}
+            />
+          </label>
+          <label>
+            Reps
+            <input
+              inputMode="numeric"
+              type="number"
+              min="0"
+              value={reps}
+              onChange={(event) => setReps(Number(event.target.value))}
+            />
+          </label>
+        </div>
+        <button type="button" className="manual-primary-button" onClick={completeSet} disabled={saving}>
+          {saving ? 'Saving...' : 'Set Done'}
+        </button>
+      </div>
+
+      {message ? <p className="manual-set-message">{message}</p> : null}
+
+      <div className="manual-session-actions">
+        <button type="button" className="manual-secondary-button" onClick={finishExercise} disabled={saving || sets.length === 0}>
+          Finish Exercise
+        </button>
+      </div>
+    </section>
+  )
+}
+
+function ProgrammedWorkoutTracker({
   clientId,
   authUserId,
   program,

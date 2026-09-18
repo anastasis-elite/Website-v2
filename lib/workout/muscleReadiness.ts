@@ -9,6 +9,11 @@ export type MuscleReadinessState =
   | 'rest'
   | 'unknown'
 
+export type MuscleReadinessPresentation = {
+  label: string
+  guidance: string
+}
+
 export type MuscleId =
   | 'left_upper_traps'
   | 'right_upper_traps'
@@ -133,6 +138,33 @@ export const MUSCLE_REGIONS: MuscleRegionDefinition[] = [
   { id: 'left_tibialis_anterior', label: 'Left tibialis anterior region', canonicalMuscles: ['feet_ankles'], view: 'front', side: 'left' },
   { id: 'right_tibialis_anterior', label: 'Right tibialis anterior region', canonicalMuscles: ['feet_ankles'], view: 'front', side: 'right' },
 ]
+
+export const MUSCLE_READINESS_PRESENTATION: Record<MuscleReadinessState, MuscleReadinessPresentation> = {
+  ready: {
+    label: 'High readiness',
+    guidance: 'Higher loading capacity indicated.',
+  },
+  available: {
+    label: 'Moderate readiness',
+    guidance: 'Training is available with normal attention to form.',
+  },
+  recovering: {
+    label: 'Reduced loading suggested',
+    guidance: 'Recovery is still accumulating.',
+  },
+  rest: {
+    label: 'Recovery still accumulating',
+    guidance: 'Use caution with higher demand work.',
+  },
+  unknown: {
+    label: 'Not enough data',
+    guidance: 'Readiness will refine as workouts and recovery inputs are logged.',
+  },
+}
+
+export function getMuscleReadinessPresentation(state: MuscleReadinessState) {
+  return MUSCLE_READINESS_PRESENTATION[state] || MUSCLE_READINESS_PRESENTATION.unknown
+}
 
 const CANONICAL_MUSCLES = new Set<CanonicalMuscle>([
   'neck', 'upper_traps', 'shoulders', 'chest', 'upper_back', 'lats', 'rhomboids',

@@ -3,14 +3,22 @@
 import { useMemo, useState } from 'react'
 
 import WorkoutTracker from '@/components/WorkoutTracker'
+import MuscleReadinessMap from '@/components/workout-dashboard/MuscleReadinessMap'
 import {
-  MANUAL_WORKOUT_MUSCLES,
   filterManualExercises,
-  getReadinessForCanonicalMuscle,
+  getAvailableEquipmentForMuscles,
+  getAvailableMovementFamilies,
+  getReadinessSummaryForCanonicalMuscle,
   normalizeEquipmentList,
+  sortManualExercisesByReadiness,
   type ManualWorkoutExercise,
 } from '@/lib/workout/manualWorkout'
-import { getMuscleIdsForExercise, type MuscleId, type MuscleReadiness } from '@/lib/workout/muscleReadiness'
+import {
+  MUSCLE_REGIONS,
+  getMuscleIdsForExercise,
+  type MuscleId,
+  type MuscleReadiness,
+} from '@/lib/workout/muscleReadiness'
 import type { CanonicalMuscle } from '@/lib/workout-os/types'
 
 type Props = {
@@ -25,36 +33,32 @@ type Props = {
   onExerciseBlur?: () => void
 }
 
+type Step = 'muscle' | 'equipment' | 'movement' | 'exercise' | 'logging' | 'complete'
+
 function titleCase(value: string) {
   return value.replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
-function summarizeMuscles(exercise: ManualWorkoutExercise) {
-  const primary = exercise.primary_muscles?.map(titleCase).join(', ') || 'General'
-  const secondary = exercise.secondary_muscles?.slice(0, 3).map(titleCase).join(', ')
-  return { primary, secondary }
+function regionToMuscles(regionId: MuscleId | null): CanonicalMuscle[] {
+  if (!regionId) return []
+  return MUSCLE_REGIONS.find((region) => region.id === regionId)?.canonicalMuscles || []
 }
 
-function applySelectedEquipment(exercise: ManualWorkoutExercise, equipment: string[]): ManualWorkoutExercise {
-  const normalized = normalizeEquipmentList(equipment)
-  const variants = normalized.includes('*')
-    ? exercise.available_variants
-    : exercise.available_variants.filter((variant) =>
-        normalized.some((item) => item === variant.equipment || item.includes(variant.equipment) || variant.equipment.includes(item)),
-      )
-  const availableVariants = variants.length ? variants : exercise.available_variants
-  const selected = availableVariants[0] || exercise.available_variants[0]
+function firstMuscleLabel(muscles: CanonicalMuscle[]) {
+  return muscles[0] ? titleCase(muscles[0]) : 'Muscle'
+}
 
-  return {
-    ...exercise,
-    display_name: selected?.name || exercise.display_name,
-    selected_variant_id: selected?.id || exercise.selected_variant_id,
-    selected_variant_name: selected?.name || exercise.selected_variant_name,
-    selected_equipment: selected?.equipment || exercise.selected_equipment,
-    equipment: selected?.equipment || exercise.equipment,
-    load_type: selected?.load_type || exercise.load_type,
-    available_variants: availableVariants,
-  }
+function exerciseKey(exercise: ManualWorkoutExercise, index: number) {
+  return `${exercise.id}:${exercise.selected_variant_id}:${index}`
+}
+
+function summarizeExercise(exercise: ManualWorkoutExercise) {
+  const secondary = exercise.secondary_muscles?.slice(0, 2).map(titleCase).join(', ')
+  return [
+    exercise.movement_family_label,
+    titleCase(exercise.selected_equipment),
+    secondary ? `Secondary: ${secondary}` : null,
+  ].filter(Boolean).join(' · ')
 }
 
 export default function ManualWorkoutBuilder({
@@ -68,106 +72,112 @@ export default function ManualWorkoutBuilder({
   onExerciseFocus,
   onExerciseBlur,
 }: Props) {
-  const savedEquipment = useMemo(() => normalizeEquipmentList(memberEquipment), [memberEquipment])
-  const [selectedMuscles, setSelectedMuscles] = useState<CanonicalMuscle[]>([])
-  const [temporaryEquipment, setTemporaryEquipment] = useState(savedEquipment)
-  const [search, setSearch] = useState('')
-  const [workout, setWorkout] = useState<ManualWorkoutExercise[]>([])
+  const [step, setStep] = useState<Step>('muscle')
+  const [selectedRegionId, setSelectedRegionId] = useState<MuscleId | null>(null)
+  const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null)
+  const [selectedMovementFamily, setSelectedMovementFamily] = useState<string | null>(null)
+  const [activeExercise, setActiveExercise] = useState<ManualWorkoutExercise | null>(null)
+  const [completedExercises, setCompletedExercises] = useState<ManualWorkoutExercise[]>([])
 
-  const allEquipment = useMemo(() => {
-    const fromResults = filterManualExercises({ muscles: [], equipment: ['*'] })
-      .flatMap((exercise) => exercise.available_variants.map((variant) => variant.equipment))
-    return Array.from(new Set([...savedEquipment.filter((item) => item !== '*'), ...fromResults])).sort()
-  }, [savedEquipment])
+  const selectedMuscles = useMemo(() => regionToMuscles(selectedRegionId), [selectedRegionId])
+  const primaryMuscle = selectedMuscles[0]
+  const readinessSummary = primaryMuscle
+    ? getReadinessSummaryForCanonicalMuscle(readiness, primaryMuscle)
+    : null
 
-  const results = useMemo(
-    () => filterManualExercises({ muscles: selectedMuscles, equipment: temporaryEquipment, search }).slice(0, 18),
-    [selectedMuscles, temporaryEquipment, search],
-  )
+  const availableEquipment = useMemo(() => {
+    const derived = getAvailableEquipmentForMuscles(selectedMuscles)
+    const member = normalizeEquipmentList(memberEquipment)
+    if (!member.length || member.includes('*')) return derived
+    const memberSet = new Set(member)
+    const overlap = derived.filter((equipment) => memberSet.has(equipment))
+    return overlap.length ? overlap : derived
+  }, [memberEquipment, selectedMuscles])
 
-  function toggleMuscle(muscle: CanonicalMuscle) {
-    setSelectedMuscles((previous) =>
-      previous.includes(muscle) ? previous.filter((item) => item !== muscle) : [...previous, muscle],
-    )
-  }
-
-  function toggleEquipment(equipment: string) {
-    setTemporaryEquipment((previous) => {
-      const withoutAll = previous.filter((item) => item !== '*')
-      const next = withoutAll.includes(equipment)
-        ? withoutAll.filter((item) => item !== equipment)
-        : [...withoutAll, equipment]
-      return next.length ? next : ['bodyweight']
+  const movementFamilies = useMemo(() => {
+    if (!selectedEquipment) return []
+    return getAvailableMovementFamilies({
+      muscles: selectedMuscles,
+      equipment: [selectedEquipment],
     })
+  }, [selectedEquipment, selectedMuscles])
+
+  const exercises = useMemo(() => {
+    if (!selectedEquipment || !selectedMovementFamily) return []
+    const filtered = filterManualExercises({
+      muscles: selectedMuscles,
+      equipment: [selectedEquipment],
+      movementFamily: selectedMovementFamily,
+    })
+    return sortManualExercisesByReadiness(filtered, readinessSummary?.state || 'unknown')
+  }, [readinessSummary?.state, selectedEquipment, selectedMovementFamily, selectedMuscles])
+
+  function resetSelection(nextStep: Step = 'muscle') {
+    setSelectedRegionId(null)
+    setSelectedEquipment(null)
+    setSelectedMovementFamily(null)
+    setActiveExercise(null)
+    setStep(nextStep)
+    onExerciseBlur?.()
   }
 
-  function addExercise(exercise: ManualWorkoutExercise) {
-    const prepared = applySelectedEquipment(exercise, temporaryEquipment)
-    setWorkout((previous) => [
-      ...previous,
-      {
-        ...prepared,
-        id: `${prepared.id}-${previous.length + 1}`,
-      },
-    ])
+  function chooseRegion(regionId: MuscleId) {
+    setSelectedRegionId(regionId)
+    setSelectedEquipment(null)
+    setSelectedMovementFamily(null)
+    setActiveExercise(null)
+    setStep('equipment')
   }
 
-  function removeExercise(index: number) {
-    setWorkout((previous) => previous.filter((_, currentIndex) => currentIndex !== index))
+  function chooseEquipment(equipment: string) {
+    setSelectedEquipment(equipment)
+    setSelectedMovementFamily(null)
+    setActiveExercise(null)
+    setStep('movement')
   }
 
-  if (workout.length) {
+  function chooseMovement(family: string) {
+    setSelectedMovementFamily(family)
+    setActiveExercise(null)
+    setStep('exercise')
+  }
+
+  function chooseExercise(exercise: ManualWorkoutExercise) {
+    setActiveExercise({
+      ...exercise,
+      id: `${exercise.id}-${Date.now()}`,
+    })
+    setStep('logging')
+  }
+
+  function finishExercise() {
+    if (activeExercise) {
+      setCompletedExercises((previous) => [...previous, activeExercise])
+    }
+    setActiveExercise(null)
+    setStep('complete')
+    onExerciseBlur?.()
+  }
+
+  function finishWorkout() {
+    resetSelection('complete')
+  }
+
+  if (step === 'logging' && activeExercise) {
     return (
-      <div className="manual-workout-builder" data-testid="manual-workout-builder">
-        <div className="manual-workout-summary">
-          <div>
-            <p className="tier-dashboard-label">Manual Workout</p>
-            <h3>{workout.length} exercise{workout.length === 1 ? '' : 's'}</h3>
-          </div>
-          <button type="button" className="manual-secondary-button" onClick={() => setWorkout([])}>
-            Clear
-          </button>
-        </div>
-        <ol className="manual-workout-list" data-testid="manual-workout-list">
-          {workout.map((exercise, index) => (
-            <li key={`${exercise.id}-${index}`}>
-              <span>{index + 1}</span>
-              <div>
-                <strong>{exercise.display_name}</strong>
-                <small>{exercise.sets} x {exercise.reps} · {exercise.selected_equipment}</small>
-              </div>
-              <button type="button" onClick={() => removeExercise(index)}>Remove</button>
-            </li>
-          ))}
-        </ol>
-        <details className="manual-add-more">
-          <summary>Add exercise</summary>
-          <ManualExercisePicker
-            selectedMuscles={selectedMuscles}
-            toggleMuscle={toggleMuscle}
-            readiness={readiness}
-            allEquipment={allEquipment}
-            temporaryEquipment={temporaryEquipment}
-            toggleEquipment={toggleEquipment}
-            search={search}
-            setSearch={setSearch}
-            results={results}
-            addExercise={addExercise}
-            onExerciseFocus={onExerciseFocus}
-            onExerciseBlur={onExerciseBlur}
-          />
-        </details>
+      <div className="manual-workout-builder manual-workout-builder--logging" data-testid="manual-workout-builder">
         <WorkoutTracker
-          key={workout.map((exercise) => exercise.id).join('|')}
+          key={exerciseKey(activeExercise, completedExercises.length)}
           clientId={clientId}
           authUserId={authUserId}
           program={program}
           dayName="Manual Workout"
           workoutSource="manual"
           plannedExercises={recommendedExercises}
-          exercises={workout}
+          exercises={[activeExercise]}
           onExerciseFocus={(exercise) => onExerciseFocus?.(getMuscleIdsForExercise(exercise))}
           onExerciseBlur={onExerciseBlur}
+          onManualExerciseFinished={finishExercise}
         />
       </div>
     )
@@ -177,119 +187,122 @@ export default function ManualWorkoutBuilder({
     <div className="manual-workout-builder" data-testid="manual-workout-builder">
       <div className="manual-workout-summary">
         <div>
-          <p className="tier-dashboard-label">Manual</p>
-          <h3>Build today&apos;s workout</h3>
+          <p className="tier-dashboard-label">Manual Workout</p>
+          <h3>{step === 'complete' ? 'Session in progress' : 'Choose from readiness'}</h3>
         </div>
-        <small>Recommendation preserved: {recommendedDayName}</small>
+        <small>Plan preserved: {recommendedDayName}</small>
       </div>
-      <ManualExercisePicker
-        selectedMuscles={selectedMuscles}
-        toggleMuscle={toggleMuscle}
-        readiness={readiness}
-        allEquipment={allEquipment}
-        temporaryEquipment={temporaryEquipment}
-        toggleEquipment={toggleEquipment}
-        search={search}
-        setSearch={setSearch}
-        results={results}
-        addExercise={addExercise}
-        onExerciseFocus={onExerciseFocus}
-        onExerciseBlur={onExerciseBlur}
-      />
-    </div>
-  )
-}
 
-function ManualExercisePicker({
-  selectedMuscles,
-  toggleMuscle,
-  readiness,
-  allEquipment,
-  temporaryEquipment,
-  toggleEquipment,
-  search,
-  setSearch,
-  results,
-  addExercise,
-  onExerciseFocus,
-  onExerciseBlur,
-}: {
-  selectedMuscles: CanonicalMuscle[]
-  toggleMuscle: (muscle: CanonicalMuscle) => void
-  readiness: MuscleReadiness[]
-  allEquipment: string[]
-  temporaryEquipment: string[]
-  toggleEquipment: (equipment: string) => void
-  search: string
-  setSearch: (value: string) => void
-  results: ManualWorkoutExercise[]
-  addExercise: (exercise: ManualWorkoutExercise) => void
-  onExerciseFocus?: (muscleIds: MuscleId[]) => void
-  onExerciseBlur?: () => void
-}) {
-  return (
-    <>
-      <div className="manual-builder-section">
-        <p className="manual-builder-label">Muscle groups</p>
-        <div className="manual-chip-grid" data-testid="manual-muscle-selector">
-          {MANUAL_WORKOUT_MUSCLES.map((muscle) => {
-            const state = getReadinessForCanonicalMuscle(readiness, muscle)
-            return (
-              <button
-                key={muscle}
-                type="button"
-                className={selectedMuscles.includes(muscle) ? 'is-selected' : ''}
-                onClick={() => toggleMuscle(muscle)}
-              >
-                <span>{titleCase(muscle)}</span>
-                <small>{titleCase(state)}</small>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-      <div className="manual-builder-section">
-        <p className="manual-builder-label">Different equipment today</p>
-        <div className="manual-equipment-row" data-testid="manual-equipment-filter">
-          {allEquipment.map((equipment) => (
-            <button
-              key={equipment}
-              type="button"
-              className={temporaryEquipment.includes(equipment) || temporaryEquipment.includes('*') ? 'is-selected' : ''}
-              onClick={() => toggleEquipment(equipment)}
-            >
-              {titleCase(equipment)}
-            </button>
-          ))}
-        </div>
-      </div>
-      <label className="manual-search">
-        <span>Search exercises</span>
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search exercises..." />
-      </label>
-      <div className="manual-exercise-results" data-testid="manual-exercise-results">
-        {results.length ? results.map((exercise) => {
-          const muscles = summarizeMuscles(exercise)
-          const equipment = Array.from(new Set(exercise.available_variants.map((variant) => variant.equipment))).map(titleCase).join(', ')
-          return (
-            <article
-              key={exercise.id}
-              onMouseEnter={() => onExerciseFocus?.(getMuscleIdsForExercise(exercise))}
-              onMouseLeave={onExerciseBlur}
-              onFocus={() => onExerciseFocus?.(getMuscleIdsForExercise(exercise))}
-              onBlur={onExerciseBlur}
-            >
+      {completedExercises.length ? (
+        <ol className="manual-workout-list" data-testid="manual-workout-list">
+          {completedExercises.map((exercise, index) => (
+            <li key={`${exercise.id}-${index}`}>
+              <span>{index + 1}</span>
               <div>
                 <strong>{exercise.display_name}</strong>
-                <small>Primary: {muscles.primary}</small>
-                {muscles.secondary ? <small>Secondary: {muscles.secondary}</small> : null}
-                <small>Equipment: {equipment}</small>
+                <small>{summarizeExercise(exercise)}</small>
               </div>
-              <button type="button" onClick={() => addExercise(exercise)}>Add</button>
-            </article>
-          )
-        }) : <p className="tier-calendar-empty">No exercises match these filters.</p>}
-      </div>
-    </>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+
+      {step === 'muscle' || step === 'equipment' ? (
+        <MuscleReadinessMap
+          readiness={readiness}
+          selectedMuscleId={selectedRegionId}
+          onSelectMuscle={chooseRegion}
+          heading="Choose muscle"
+          eyebrow="Live Readiness Map"
+        />
+      ) : null}
+
+      {selectedRegionId && readinessSummary ? (
+        <section className="manual-readiness-context" data-testid="manual-readiness-context">
+          <span>{firstMuscleLabel(selectedMuscles)}</span>
+          <strong>{typeof readinessSummary.score === 'number' ? `${readinessSummary.score}% ready` : readinessSummary.label}</strong>
+          <small>{readinessSummary.guidance}</small>
+          {readinessSummary.reason ? <small>{readinessSummary.reason}</small> : null}
+        </section>
+      ) : null}
+
+      {step === 'equipment' ? (
+        <section className="manual-builder-section">
+          <p className="manual-builder-label">Equipment</p>
+          <div className="manual-equipment-row" data-testid="manual-equipment-filter">
+            {availableEquipment.map((equipment) => (
+              <button
+                key={equipment}
+                type="button"
+                className={selectedEquipment === equipment ? 'is-selected' : ''}
+                onClick={() => chooseEquipment(equipment)}
+              >
+                {titleCase(equipment)}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {step === 'movement' ? (
+        <section className="manual-builder-section">
+          <p className="manual-builder-label">Movement Family</p>
+          <div className="manual-chip-grid manual-chip-grid--single" data-testid="manual-movement-filter">
+            {movementFamilies.map((family) => (
+              <button
+                key={family.id}
+                type="button"
+                className={selectedMovementFamily === family.id ? 'is-selected' : ''}
+                onClick={() => chooseMovement(family.id)}
+              >
+                <span>{family.label}</span>
+                <small>{firstMuscleLabel(selectedMuscles)} · {titleCase(selectedEquipment || '')}</small>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {step === 'exercise' ? (
+        <section className="manual-builder-section">
+          <p className="manual-builder-label">Exercise</p>
+          <div className="manual-exercise-results" data-testid="manual-exercise-results">
+            {exercises.map((exercise) => (
+              <article
+                key={exercise.id}
+                onMouseEnter={() => onExerciseFocus?.(getMuscleIdsForExercise(exercise))}
+                onMouseLeave={onExerciseBlur}
+                onFocus={() => onExerciseFocus?.(getMuscleIdsForExercise(exercise))}
+                onBlur={onExerciseBlur}
+              >
+                <div>
+                  <strong>{exercise.display_name}</strong>
+                  <small>{summarizeExercise(exercise)}</small>
+                  <small>{exercise.demand_profile === 'higher_loading' ? 'Higher training demand' : exercise.demand_profile === 'controlled' ? 'Controlled option' : 'Moderate demand'}</small>
+                </div>
+                <button type="button" onClick={() => chooseExercise(exercise)}>Open</button>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {step === 'complete' ? (
+        <div className="manual-session-actions">
+          <button type="button" className="manual-primary-button" onClick={() => resetSelection('muscle')}>
+            Add another exercise
+          </button>
+          <button type="button" className="manual-secondary-button" onClick={finishWorkout}>
+            Finish workout
+          </button>
+        </div>
+      ) : null}
+
+      {step !== 'muscle' && step !== 'complete' ? (
+        <button type="button" className="manual-secondary-button" onClick={() => resetSelection('muscle')}>
+          Back to readiness map
+        </button>
+      ) : null}
+    </div>
   )
 }
