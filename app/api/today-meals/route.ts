@@ -48,7 +48,8 @@ export async function GET(request: Request) {
     .order('created_at', { ascending: false })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('TODAY MEALS LOAD ERROR:', error)
+    return NextResponse.json({ error: "Today's logged food could not be loaded. Please try again." }, { status: 500 })
   }
 
   return NextResponse.json({ meals: data || [] })

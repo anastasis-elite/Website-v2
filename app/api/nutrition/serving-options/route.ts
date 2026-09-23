@@ -29,7 +29,8 @@ export async function GET(request: Request) {
     .order('sort_order', { ascending: true })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('NUTRITION SERVING OPTIONS ERROR:', error)
+    return NextResponse.json({ error: 'Serving options could not be loaded. Please try again.' }, { status: 500 })
   }
 
   return NextResponse.json({

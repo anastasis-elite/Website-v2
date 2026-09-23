@@ -7,6 +7,7 @@ import {
   type NutritionRemainingSnapshot,
   type SuggestedFoodCandidate,
 } from '@/lib/nutrition/suggestedFoods'
+import { flattenFoodsNutrition, foodWithNutritionSelect } from '@/lib/nutrition/foodModel'
 import { buildPhysiologyRecommendationEffects } from '@/lib/physiology/recommendationEffects'
 
 type MealRow = {
@@ -74,7 +75,8 @@ export async function GET(request: Request) {
     .maybeSingle()
 
   if (remainingError) {
-    return NextResponse.json({ error: remainingError.message }, { status: 500 })
+    console.error('NUTRITION SUGGESTED REMAINING ERROR:', remainingError)
+    return NextResponse.json({ error: 'Suggested foods could not be loaded. Please try again.' }, { status: 500 })
   }
 
   const { data: meals, error: mealError } = await supabase
@@ -83,7 +85,8 @@ export async function GET(request: Request) {
     .eq('nutrition_log_id', nutritionLogId)
 
   if (mealError) {
-    return NextResponse.json({ error: mealError.message }, { status: 500 })
+    console.error('NUTRITION SUGGESTED MEALS ERROR:', mealError)
+    return NextResponse.json({ error: 'Suggested foods could not be loaded. Please try again.' }, { status: 500 })
   }
 
   const loggedFoodIds = (meals || [])
@@ -110,34 +113,7 @@ export async function GET(request: Request) {
     .from('foods')
     .select(
       `
-        id,
-        name,
-        calories,
-        protein_g,
-        carbs_g,
-        fat_g,
-        fiber_g,
-        sodium_mg,
-        potassium_mg,
-        magnesium_mg,
-        calcium_mg,
-        iron_mg,
-        zinc_mg,
-        selenium_mcg,
-        choline_mg,
-        vitamin_a_mcg,
-        vitamin_c_mg,
-        vitamin_d_mcg,
-        vitamin_e_mg,
-        vitamin_k_mcg,
-        b1_mg,
-        b2_mg,
-        b3_mg,
-        b5_mg,
-        b6_mg,
-        b9_mcg,
-        b12_mcg,
-        allergens,
+        ${foodWithNutritionSelect},
         food_serving_options (
           label,
           grams,
@@ -146,11 +122,11 @@ export async function GET(request: Request) {
         )
       `,
     )
-    .gt('calories', 0)
     .limit(250)
 
   if (foodsError) {
-    return NextResponse.json({ error: foodsError.message }, { status: 500 })
+    console.error('NUTRITION SUGGESTED FOODS ERROR:', foodsError)
+    return NextResponse.json({ error: 'Suggested foods could not be loaded. Please try again.' }, { status: 500 })
   }
 
   const [{ data: latestBurden }, { data: latestTrend }, { data: latestPatterns }] = await Promise.all([
@@ -203,7 +179,7 @@ export async function GET(request: Request) {
 
   const suggestions = buildSuggestedFoods({
     remaining: remaining as NutritionRemainingSnapshot | null,
-    candidates: (foods || []) as SuggestedFoodCandidate[],
+    candidates: flattenFoodsNutrition(foods) as SuggestedFoodCandidate[],
     loggedFoodIds,
     avoidTerms: avoidTermsFromClient(client),
     recommendationEffects: physiologyEffects.effects,

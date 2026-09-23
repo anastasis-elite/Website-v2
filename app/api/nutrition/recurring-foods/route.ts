@@ -59,7 +59,8 @@ export async function GET() {
     .gte('log_date', sinceDate)
 
   if (logsError) {
-    return NextResponse.json({ error: logsError.message }, { status: 500 })
+    console.error('NUTRITION RECURRING LOGS ERROR:', logsError)
+    return NextResponse.json({ error: 'Recurring foods could not be loaded. Please try again.' }, { status: 500 })
   }
 
   const logIds = (logs || []).map((log) => log.id)
@@ -91,7 +92,8 @@ export async function GET() {
     .gte('created_at', since.toISOString())
 
   if (mealsError) {
-    return NextResponse.json({ error: mealsError.message }, { status: 500 })
+    console.error('NUTRITION RECURRING MEALS ERROR:', mealsError)
+    return NextResponse.json({ error: 'Recurring foods could not be loaded. Please try again.' }, { status: 500 })
   }
 
   const counts = new Map<string, {
@@ -197,7 +199,10 @@ export async function POST(request: Request) {
       .select('*')
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('NUTRITION RECURRING UPDATE ERROR:', error)
+      return NextResponse.json({ error: 'Recurring food could not be updated. Please try again.' }, { status: 500 })
+    }
     return NextResponse.json({ success: true, pattern: data })
   }
 
@@ -230,7 +235,8 @@ export async function POST(request: Request) {
     .single()
 
   if (error || !data) {
-    return NextResponse.json({ error: error?.message || 'Recurring food could not be saved.' }, { status: 500 })
+    console.error('NUTRITION RECURRING INSERT ERROR:', error)
+    return NextResponse.json({ error: 'Recurring food could not be saved. Please try again.' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true, pattern: data })

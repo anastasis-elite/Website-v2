@@ -46,7 +46,8 @@ export async function POST(request: Request) {
     .select('id')
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('NUTRITION DELETE MEAL ERROR:', error)
+    return NextResponse.json({ error: 'Food could not be removed. Please try again.' }, { status: 500 })
   }
 
   if (!deletedRows?.length) {
@@ -63,8 +64,9 @@ export async function POST(request: Request) {
     .eq('auth_user_id', user.id)
 
   if (logUpdateError) {
+    console.error('NUTRITION DELETE MEAL LOG UPDATE ERROR:', logUpdateError)
     return NextResponse.json(
-      { error: logUpdateError.message },
+      { error: 'Food was removed, but today could not be refreshed. Please reload.' },
       { status: 500 }
     )
   }
@@ -76,8 +78,9 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (remainingError) {
+    console.error('NUTRITION DELETE MEAL REMAINING ERROR:', remainingError)
     return NextResponse.json(
-      { error: remainingError.message },
+      { error: 'Food was removed, but today could not be refreshed. Please reload.' },
       { status: 500 }
     )
   }

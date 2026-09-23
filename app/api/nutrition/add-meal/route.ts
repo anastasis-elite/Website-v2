@@ -136,6 +136,23 @@ export async function POST(request: Request) {
 
     grams = amount * Number(servingOption.grams)
     resolvedServingUnit = servingOption.label
+  } else {
+    const { data: food, error: foodError } = await supabase
+      .from('foods')
+      .select('id, default_serving_unit, grams_per_serving')
+      .eq('id', foodId)
+      .single()
+
+    if (foodError || !food) {
+      console.error('NUTRITION ADD MEAL FOOD LOOKUP ERROR:', foodError)
+      return NextResponse.json(
+        { error: "We couldn't add this food. Please try again." },
+        { status: 404 }
+      )
+    }
+
+    grams = amount * Number(food.grams_per_serving || 100)
+    resolvedServingUnit = servingUnit || food.default_serving_unit || 'serving'
   }
 
   const { data: mealEntry, error } = await supabase
@@ -167,8 +184,9 @@ export async function POST(request: Request) {
     .single()
 
   if (error || !mealEntry) {
+    console.error('NUTRITION ADD MEAL INSERT ERROR:', error)
     return NextResponse.json(
-      { error: error?.message || 'Unable to add meal.' },
+      { error: "We couldn't add this food. Please try again." },
       { status: 500 }
     )
   }
@@ -186,8 +204,9 @@ export async function POST(request: Request) {
       .insert(symptomRows)
 
     if (symptomError) {
+      console.error('NUTRITION ADD MEAL SYMPTOM INSERT ERROR:', symptomError)
       return NextResponse.json(
-        { error: symptomError.message },
+        { error: "We couldn't add this food. Please try again." },
         { status: 500 }
       )
     }
@@ -202,8 +221,9 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (remainingError) {
+    console.error('NUTRITION ADD MEAL REMAINING ERROR:', remainingError)
     return NextResponse.json(
-      { error: remainingError.message },
+      { error: "Food was added, but today's remaining macros could not be refreshed." },
       { status: 500 }
     )
   }

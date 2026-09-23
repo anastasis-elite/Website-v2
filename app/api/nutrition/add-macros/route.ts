@@ -90,7 +90,8 @@ export async function POST(request: Request) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('NUTRITION ADD MACROS ERROR:', error)
+    return NextResponse.json({ error: 'Macros could not be added. Please try again.' }, { status: 500 })
   }
 
   await supabase

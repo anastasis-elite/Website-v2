@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { flattenFoodsNutrition, foodWithNutritionSelect } from '@/lib/nutrition/foodModel'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
 
   const query = supabase
     .from('foods')
-    .select('id, name, brand_name, barcode, calories, protein_g, carbs_g, fat_g, fiber_g')
+    .select(foodWithNutritionSelect)
     .limit(12)
 
   const { data, error } = barcode
@@ -30,8 +31,9 @@ export async function GET(request: Request) {
     : await query.ilike('normalized_name', `%${q}%`)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('NUTRITION FOOD SEARCH ERROR:', error)
+    return NextResponse.json({ error: 'Food search failed. Please try again.' }, { status: 500 })
   }
 
-  return NextResponse.json({ foods: data || [] })
+  return NextResponse.json({ foods: flattenFoodsNutrition(data) })
 }

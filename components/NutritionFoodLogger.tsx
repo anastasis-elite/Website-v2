@@ -15,7 +15,8 @@ declare global {
 type Food = {
   id: string
   name: string
-  brand_name?: string | null
+  brand?: string | null
+  brandName?: string | null
   barcode?: string | null
   calories?: number | null
   protein_g?: number | null
@@ -155,6 +156,9 @@ export default function NutritionFoodLogger({
   const [dismissedRecurring, setDismissedRecurring] = useState<Set<string>>(new Set())
   const [customFood, setCustomFood] = useState({
     name: '',
+    brand: '',
+    servingSize: '1',
+    servingUnit: 'serving',
     calories: '',
     protein: '',
     carbs: '',
@@ -442,7 +446,7 @@ export default function NutritionFoodLogger({
       return
     }
 
-    setCustomFood({ name: '', calories: '', protein: '', carbs: '', fats: '', fiber: '' })
+    setCustomFood({ name: '', brand: '', servingSize: '1', servingUnit: 'serving', calories: '', protein: '', carbs: '', fats: '', fiber: '' })
     await selectFood(data.food, scannedBarcode ? 'barcode' : 'manual')
     setMessage('Custom food saved. Review serving size, then add it to today.')
   }
@@ -633,7 +637,7 @@ export default function NutritionFoodLogger({
       <div style={{ display: 'grid', gap: '10px', marginTop: '20px' }}>
         {foods.map((food) => (
           <button key={food.id} type="button" onClick={() => void selectFood(food)} style={{ ...styles.secondaryButtonStyle, textAlign: 'left', opacity: selectedFood?.id === food.id ? 1 : 0.7 }}>
-            {food.name}{food.brand_name ? ` - ${food.brand_name}` : ''}
+            {food.name}{food.brand ? ` - ${food.brand}` : ''}
           </button>
         ))}
       </div>
@@ -650,6 +654,9 @@ export default function NutritionFoodLogger({
         <h3 style={styles.sectionTitleStyle}>Create Custom Food</h3>
         <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(120px,1fr))' }}>
           <input style={styles.inputStyle} value={customFood.name} onChange={(event) => setCustomFood((current) => ({ ...current, name: event.target.value }))} placeholder="Food name" />
+          <input style={styles.inputStyle} value={customFood.brand} onChange={(event) => setCustomFood((current) => ({ ...current, brand: event.target.value }))} placeholder="Brand optional" />
+          <input style={styles.inputStyle} type="number" min="0.01" step="0.25" value={customFood.servingSize} onChange={(event) => setCustomFood((current) => ({ ...current, servingSize: event.target.value }))} placeholder="Serving size" />
+          <input style={styles.inputStyle} value={customFood.servingUnit} onChange={(event) => setCustomFood((current) => ({ ...current, servingUnit: event.target.value }))} placeholder="Serving unit" />
           {(['calories', 'protein', 'carbs', 'fats', 'fiber'] as const).map((key) => (
             <input key={key} style={styles.inputStyle} type="number" min="0" step="1" value={customFood[key]} onChange={(event) => setCustomFood((current) => ({ ...current, [key]: event.target.value }))} placeholder={key === 'fats' ? 'fat g' : key} />
           ))}

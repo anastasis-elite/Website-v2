@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTierCapabilities } from '@/lib/entitlements'
+import { flattenFoodNutrition, foodWithNutritionSelect } from '@/lib/nutrition/foodModel'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -35,13 +36,14 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from('foods')
-    .select('id, name, brand_name, barcode, barcode_format, calories, protein_g, carbs_g, fat_g, fiber_g')
+    .select(foodWithNutritionSelect)
     .eq('barcode', barcode)
     .limit(1)
     .maybeSingle()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('NUTRITION BARCODE LOOKUP ERROR:', error)
+    return NextResponse.json({ error: 'Barcode lookup failed. Please try again.' }, { status: 500 })
   }
 
   if (!data) {
@@ -52,5 +54,5 @@ export async function GET(request: Request) {
     })
   }
 
-  return NextResponse.json({ found: true, food: data })
+  return NextResponse.json({ found: true, food: flattenFoodNutrition(data) })
 }

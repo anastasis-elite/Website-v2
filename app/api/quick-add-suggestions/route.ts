@@ -10,10 +10,20 @@ export const runtime = 'nodejs'
 
 type RelatedFood = {
   name?: string | null
-  calories?: number | null
-  protein_g?: number | null
-  carbs_g?: number | null
-  fat_g?: number | null
+  food_nutrients?:
+    | Array<{
+        calories?: number | null
+        protein_g?: number | null
+        carbs_g?: number | null
+        fat_g?: number | null
+      }>
+    | {
+        calories?: number | null
+        protein_g?: number | null
+        carbs_g?: number | null
+        fat_g?: number | null
+      }
+    | null
 }
 
 type RelatedServingOption = {
@@ -174,6 +184,19 @@ function normalizeEntry(
       unit ? ` ${unit}` : ''
     }`
 
+  const nutrients =
+    getRelatedRow(
+      food?.food_nutrients,
+    )
+
+  const grams =
+    Number(
+      entry.grams || 0,
+    )
+
+  const scale =
+    grams > 0 ? grams / 100 : 0
+
   return {
     key: `${entry.food_id}::${
       entry.serving_option_id ||
@@ -195,21 +218,13 @@ function normalizeEntry(
     servingAmount,
     unit,
 
-    calories: Number(
-      food?.calories || 0,
-    ),
+    calories: Number(nutrients?.calories || 0) * scale,
 
-    protein: Number(
-      food?.protein_g || 0,
-    ),
+    protein: Number(nutrients?.protein_g || 0) * scale,
 
-    carbs: Number(
-      food?.carbs_g || 0,
-    ),
+    carbs: Number(nutrients?.carbs_g || 0) * scale,
 
-    fats: Number(
-      food?.fat_g || 0,
-    ),
+    fats: Number(nutrients?.fat_g || 0) * scale,
 
     createdAt:
       entry.created_at,
@@ -380,10 +395,12 @@ export async function GET() {
           created_at,
           foods (
             name,
-            calories,
-            protein_g,
-            carbs_g,
-            fat_g
+            food_nutrients (
+              calories,
+              protein_g,
+              carbs_g,
+              fat_g
+            )
           ),
           food_serving_options (
             label,
@@ -591,12 +608,10 @@ export async function GET() {
       suggestions,
     })
   } catch (error) {
+    console.error('QUICK ADD SUGGESTIONS ERROR:', error)
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Quick-add suggestions failed',
+        error: 'Quick-add suggestions failed. Please try again.',
       },
       {
         status: 500,

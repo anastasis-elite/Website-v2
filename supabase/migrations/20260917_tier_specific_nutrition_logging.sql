@@ -5,7 +5,7 @@
 alter table public.foods
   add column if not exists barcode text,
   add column if not exists barcode_format text,
-  add column if not exists brand_name text,
+  add column if not exists brand text,
   add column if not exists source text not null default 'catalog',
   add column if not exists client_id text references public.clients(client_id) on delete cascade,
   add column if not exists auth_user_id uuid references auth.users(id) on delete cascade,
