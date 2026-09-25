@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
 import { calculateClientNutritionTargets, normalizeCyclePhase } from '@/lib/nutrition/targetService'
+import { safeErrorResponse } from '@/lib/security/http'
 
 export async function GET(req: Request) {
   try {
@@ -11,15 +12,31 @@ export async function GET(req: Request) {
     const program = searchParams.get('program') || ''
 
     const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return safeErrorResponse('Unauthorized', 401)
+
+    const { data: client } = await supabase
+      .from('clients')
+      .select('client_id,program')
+      .eq('client_id', client_id)
+      .eq('auth_user_id', user.id)
+      .maybeSingle()
+
+    if (!client) return safeErrorResponse('Client not found.', 404)
+
     const nutrition = await calculateClientNutritionTargets({
       supabase,
-      clientId: client_id,
-      program,
+      clientId: client.client_id,
+      program: client.program || program,
     })
     const { target, water, weightLbs } = nutrition
-    const trainingLevel = program === 'phoenix'
+    const resolvedProgram = client.program || program
+    const trainingLevel = resolvedProgram === 'phoenix'
       ? 'recovery'
-      : program === 'ignite' || program === 'ember'
+      : resolvedProgram === 'ignite' || resolvedProgram === 'ember'
         ? 'strength_hypertrophy'
         : 'general_fitness'
     const micronutrientTargets = calculateMicronutrientTargets({
@@ -32,49 +49,23 @@ export async function GET(req: Request) {
     })
 
     return NextResponse.json({
-      client_id,
-      program,
-      tdee: target.estimatedTdee,
+      client_id: client.client_id,
+      program: resolvedProgram,
       calories: target.calories,
       protein: target.protein,
       carbs: target.carbs,
       fats: target.fats,
       water,
-      formulaVersion: target.formulaVersion,
-      calculationMode: target.calculationMode,
       calculationStatus: target.calculationStatus,
       statusLabel: target.statusLabel,
       statusDescription: target.statusDescription,
-      bmr: target.bmr,
-      estimatedTdee: target.estimatedTdee,
-      goalAdjustedCalories: target.goalAdjustedCalories,
-      bmi: target.bmi,
-      bodyFatPercentUsed: target.bodyFatPercentUsed,
-      leanBodyMassKg: target.leanBodyMassKg,
-      fatMassKg: target.fatMassKg,
-      activityFactor: target.activityFactor,
-      rollingActiveEnergy: target.rollingActiveEnergy,
-      rollingRestingEnergy: target.rollingRestingEnergy,
-      goalModifier: target.goalModifier,
-      defaultMacroPercentages: target.defaultMacroPercentages,
-      finalMacroPercentages: target.finalMacroPercentages,
-      safeguardAdjusted: target.safeguardAdjusted,
-      safeguardsApplied: target.safeguardsApplied,
-      dataDateRange: target.dataDateRange,
       lastCalculatedAt: target.lastCalculatedAt,
-      nutritionCalculation: target,
       ...micronutrientTargets,
       micros:
         'Prioritize magnesium, potassium, sodium, calcium, iron, B vitamins, vitamin D, and omega-3 rich foods.',
       recipes: [],
     })
   } catch (error) {
-    return NextResponse.json(
-      {
-        error: 'Nutrition route failed',
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 }
-    )
+    return safeErrorResponse('Nutrition route failed', 500, error)
   }
 }

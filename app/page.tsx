@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Button from '../components/Button'
@@ -7,7 +8,7 @@ import TrackedButton from '@/components/TrackedButton'
 import { BRAND_NAME, BRAND_TITLE } from '@/lib/seo'
 
 const homeDescription =
-  'Anastasis brings personalized fitness, nutrition, recovery, progress tracking, and daily support into one adaptive health and performance platform for women.'
+  'Anastasis brings your workouts, nutrition, recovery, symptoms, cycle, goals, and schedule together so you can understand what your body needs today.'
 
 export const metadata: Metadata = {
   title: BRAND_TITLE,
@@ -28,9 +29,132 @@ export const metadata: Metadata = {
   },
 }
 
+const eyebrowStyle: CSSProperties = {
+  letterSpacing: '6px',
+  fontSize: '12px',
+  color: '#c58b57',
+  opacity: 0.78,
+  marginBottom: '28px',
+  textTransform: 'uppercase',
+}
+
+const sectionStyle: CSSProperties = {
+  padding: '100px 24px 120px',
+  position: 'relative',
+  zIndex: 2,
+}
+
+const sectionInnerStyle: CSSProperties = {
+  maxWidth: '1020px',
+  margin: '0 auto',
+  textAlign: 'center',
+}
+
+const sectionTitleStyle: CSSProperties = {
+  fontSize: 'var(--landing-section-title)',
+  lineHeight: 1.08,
+  letterSpacing: '0',
+  margin: '0 auto 34px',
+  maxWidth: '920px',
+  fontWeight: 500,
+  textWrap: 'balance',
+}
+
+const bodyStyle: CSSProperties = {
+  maxWidth: '790px',
+  margin: '0 auto',
+  fontSize: 'var(--landing-body)',
+  lineHeight: 1.9,
+  color: 'rgba(215,199,182,0.82)',
+}
+
+const gridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+  gap: '22px',
+  maxWidth: '980px',
+  margin: '0 auto',
+}
+
+const cardStyle: CSSProperties = {
+  background: 'rgba(18,18,18,0.56)',
+  borderRadius: '30px',
+  padding: '32px 28px',
+  backdropFilter: 'blur(18px)',
+  boxShadow: '0 24px 80px rgba(0,0,0,0.16)',
+  textAlign: 'left',
+}
+
+const cardTitleStyle: CSSProperties = {
+  fontSize: '1.22rem',
+  margin: '0 0 14px',
+  fontWeight: 500,
+  letterSpacing: '0',
+  color: '#f5f0e8',
+}
+
+const cardTextStyle: CSSProperties = {
+  fontSize: '1rem',
+  lineHeight: 1.8,
+  color: 'rgba(215,199,182,0.8)',
+  margin: 0,
+}
+
+const heroQuestions = [
+  'Should I train hard today?',
+  'Do I need more recovery?',
+  'What should I eat?',
+  'Why am I exhausted?',
+  'Am I doing enough?',
+]
+
+const auditOutcomes = [
+  'What needs your attention now',
+  'What may be making things harder',
+  'What changes could make the biggest difference',
+  'What you can stop worrying about for now',
+]
+
+const workSteps = [
+  {
+    title: '1. Check in',
+    label: 'Assess',
+    body:
+      'Tell Anastasis how you’re feeling, how you slept, what’s sore, where you are in your cycle, what your schedule looks like, and anything else affecting your day.',
+  },
+  {
+    title: '2. Your plan adjusts',
+    label: 'Adapt',
+    body:
+      'Your workouts, nutrition, recovery, and daily priorities can change based on what’s actually happening—not what a generic plan assumed would happen.',
+  },
+  {
+    title: '3. Know what to do next',
+    label: 'Direct',
+    body:
+      'Open Anastasis and see what deserves your attention today.',
+  },
+]
+
+const reliefStatements = [
+  'No piecing together five apps.',
+  'No trying to remember everything your trainer, nutrition coach, doctor, podcast, and Instagram told you.',
+  'No treating every health goal like it has to be accomplished today.',
+]
+
+const womenCarry = [
+  'Running a business.',
+  'Leading a team.',
+  'Raising kids.',
+  'Managing a household.',
+  'Chasing a big goal.',
+  'Doing several of those at the same time.',
+]
+
 export default function Home() {
   return (
     <main
+      className="landing-page"
       style={{
         minHeight: '100vh',
         overflow: 'hidden',
@@ -92,11 +216,24 @@ export default function Home() {
                 fontSize: '12px',
                 color: '#c58b57',
                 opacity: 0.82,
-                marginBottom: '32px',
+                marginBottom: '12px',
                 textTransform: 'uppercase',
               }}
             >
               Health & Performance Concierge
+            </p>
+
+            <p
+              style={{
+                maxWidth: '560px',
+                margin: '0 auto',
+                fontSize: '0.9rem',
+                lineHeight: 1.7,
+                color: 'rgba(215,199,182,0.66)',
+              }}
+            >
+              One place to understand your workouts, food, recovery, symptoms,
+              cycle, goals, and real life together.
             </p>
           </MistReveal>
         </div>
@@ -104,63 +241,94 @@ export default function Home() {
         <h1
           className="hero-headline-delay"
           style={{
-            fontSize: 'clamp(2.3rem, 5vw, 4.8rem)',
+            fontSize: 'var(--landing-hero-title)',
             lineHeight: 1.12,
             fontWeight: 400,
             maxWidth: '980px',
-            margin: '72px auto 42px',
-            letterSpacing: '-0.04em',
+            margin: '64px auto 34px',
+            letterSpacing: '0',
             textAlign: 'center',
             color: '#f5f0e8',
             textWrap: 'balance',
           }}
         >
-          Stop managing your health
-          <br />
-          like another full-time job.
+          Stop trying to figure out what your body needs every day.
         </h1>
 
-        <p
+        <div
           style={{
             maxWidth: '790px',
-            margin: '0 auto 24px',
-            fontSize: 'clamp(1.05rem, 2vw, 1.24rem)',
-            lineHeight: 1.9,
-            color: 'rgba(215,199,182,0.88)',
-            textWrap: 'balance',
+            margin: '0 auto 34px',
+            display: 'grid',
+            gap: '18px',
           }}
         >
-          Anastasis turns your body, schedule, goals, symptoms, recovery, and
-          real life into a personalized plan—so you know what to do, when to do
-          it, and what can wait.
-        </p>
+          <p
+            style={{
+              fontSize: 'var(--landing-body-large)',
+              lineHeight: 1.8,
+              color: 'rgba(215,199,182,0.9)',
+              margin: 0,
+              textWrap: 'balance',
+            }}
+          >
+            You already have enough to manage.
+          </p>
 
-        <p
+          <p
+            style={{
+              fontSize: 'var(--landing-body-large)',
+              lineHeight: 1.85,
+              color: 'rgba(215,199,182,0.82)',
+              margin: 0,
+              textWrap: 'balance',
+            }}
+          >
+            Anastasis brings your workouts, nutrition, recovery, symptoms,
+            cycle, goals, and schedule together—then helps you decide what to
+            do today.
+          </p>
+        </div>
+
+        <div
           style={{
-            maxWidth: '760px',
-            margin: '0 auto 18px',
-            fontSize: 'clamp(1rem, 2vw, 1.12rem)',
-            lineHeight: 1.88,
-            color: 'rgba(215,199,182,0.76)',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+            gap: '12px',
+            maxWidth: '860px',
+            margin: '0 auto 34px',
+            width: '100%',
           }}
         >
-          Start with the Capacity Audit to uncover what is consuming your
-          energy, limiting your performance, and creating unnecessary health
-          decisions.
-        </p>
+          {heroQuestions.map((question) => (
+            <div
+              key={question}
+              style={{
+                background: 'rgba(18,18,18,0.5)',
+                border: '1px solid rgba(197,139,87,0.12)',
+                borderRadius: '22px',
+                padding: '18px 16px',
+                color: 'rgba(245,240,232,0.9)',
+                fontSize: '0.98rem',
+                lineHeight: 1.45,
+                boxShadow: '0 18px 60px rgba(0,0,0,0.13)',
+              }}
+            >
+              {question}
+            </div>
+          ))}
+        </div>
 
         <p
           style={{
             maxWidth: '720px',
-            margin: '0 auto 52px',
-            fontSize: '0.96rem',
+            margin: '0 auto 44px',
+            fontSize: '1.04rem',
             lineHeight: 1.8,
             color: 'rgba(197,139,87,0.9)',
           }}
         >
-          In approximately 10 minutes, you will receive a clear starting point,
-          your highest-priority areas, and the Anastasis path designed for your
-          current needs.
+          You have one place helping you put the pieces together.
         </p>
 
         <div
@@ -169,7 +337,7 @@ export default function Home() {
             gap: '18px',
             justifyContent: 'center',
             flexWrap: 'wrap',
-            marginTop: '36px',
+            marginTop: '12px',
           }}
         >
           <TrackedButton
@@ -177,7 +345,7 @@ export default function Home() {
             event="audit_cta_clicked_1"
             properties={{ location: 'hero', page: 'landing' }}
           >
-            Build My Personalized Plan
+            See What My Body Needs
           </TrackedButton>
 
           <Button href="#how-it-works">See How It Works</Button>
@@ -201,137 +369,42 @@ export default function Home() {
             letterSpacing: '0.02em',
           }}
         >
-          <span>Approximately 10 minutes</span>
-          <span>Personalized starting point</span>
-          <span>Clear next step</span>
+          <span>About 10 minutes</span>
+          <span>One clear starting point</span>
+          <span>Next step today</span>
         </div>
 
-        <div style={{ height: '100px' }} />
+        <div style={{ height: '80px' }} />
       </section>
 
-      <section
-        id="outcome"
-        style={{
-          padding: '90px 24px 120px',
-          position: 'relative',
-          zIndex: 2,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '1020px',
-            margin: '0 auto',
-            textAlign: 'center',
-          }}
-        >
-          <p
-            style={{
-              letterSpacing: '6px',
-              fontSize: '12px',
-              color: '#c58b57',
-              opacity: 0.78,
-              marginBottom: '28px',
-              textTransform: 'uppercase',
-            }}
-          >
-            What you receive
-          </p>
+      <section id="outcome" style={sectionStyle}>
+        <div style={sectionInnerStyle}>
+          <p style={eyebrowStyle}>Capacity Audit</p>
 
-          <h2
-            style={{
-              fontSize: 'clamp(2.1rem, 5vw, 4.2rem)',
-              lineHeight: 1.08,
-              letterSpacing: '-0.04em',
-              margin: '0 auto 34px',
-              maxWidth: '920px',
-              fontWeight: 500,
-              textWrap: 'balance',
-            }}
-          >
-            One assessment.
-            <br />
-            A clear path forward.
+          <h2 style={sectionTitleStyle}>
+            You don’t have to fix everything at once.
           </h2>
-
-          <p
-            style={{
-              maxWidth: '770px',
-              margin: '0 auto 68px',
-              fontSize: '1.1rem',
-              lineHeight: 1.92,
-              color: 'rgba(215,199,182,0.8)',
-            }}
-          >
-            The Capacity Audit does more than give you a score. It identifies
-            what deserves your attention first, what can stop becoming another
-            priority, and what level of support will reduce the load you have
-            been carrying.
-          </p>
 
           <div
             style={{
+              ...bodyStyle,
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
               gap: '22px',
-              maxWidth: '980px',
-              margin: '0 auto 64px',
+              marginBottom: '56px',
             }}
           >
-            {[
-              {
-                title: 'What is draining you',
-                body:
-                  'See which areas of your health, recovery, routine, and daily life are consuming the most capacity.',
-              },
-              {
-                title: 'What matters first',
-                body:
-                  'Understand which changes will create the greatest return instead of trying to improve everything at once.',
-              },
-              {
-                title: 'What can wait',
-                body:
-                  'Stop turning every possible improvement into another urgent task on an already full list.',
-              },
-              {
-                title: 'What support fits',
-                body:
-                  'Receive a clear recommendation for the Anastasis experience that matches your current needs and level of capacity.',
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                style={{
-                  background: 'rgba(18,18,18,0.56)',
-                  borderRadius: '30px',
-                  padding: '34px 30px',
-                  backdropFilter: 'blur(18px)',
-                  boxShadow: '0 24px 80px rgba(0,0,0,0.16)',
-                  textAlign: 'left',
-                }}
-              >
-                <h3
-                  style={{
-                    fontSize: '1.24rem',
-                    margin: '0 0 14px',
-                    fontWeight: 500,
-                    letterSpacing: '-0.02em',
-                    color: '#f5f0e8',
-                  }}
-                >
-                  {item.title}
-                </h3>
+            <p style={{ margin: 0 }}>Start with a 10-minute assessment.</p>
+            <p style={{ margin: 0 }}>
+              We look at what’s going on with your energy, sleep, nutrition,
+              training, recovery, symptoms, stress, schedule, and goals.
+            </p>
+            <p style={{ margin: 0 }}>Then we help you understand:</p>
+          </div>
 
-                <p
-                  style={{
-                    fontSize: '1rem',
-                    lineHeight: 1.85,
-                    color: 'rgba(215,199,182,0.8)',
-                    margin: 0,
-                  }}
-                >
-                  {item.body}
-                </p>
+          <div style={{ ...gridStyle, marginBottom: '58px' }}>
+            {auditOutcomes.map((item) => (
+              <div key={item} style={cardStyle}>
+                <p style={cardTextStyle}>{item}</p>
               </div>
             ))}
           </div>
@@ -341,294 +414,57 @@ export default function Home() {
             event="audit_cta_clicked_2"
             properties={{ location: 'outcome', page: 'landing' }}
           >
-            Show Me What to Prioritize
+            Find My Starting Point
           </TrackedButton>
         </div>
       </section>
 
-      <section
-        id="seen"
-        style={{
-          padding: '100px 24px 120px',
-          position: 'relative',
-          zIndex: 2,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '980px',
-            margin: '0 auto',
-            textAlign: 'center',
-          }}
-        >
-          <p
-            style={{
-              letterSpacing: '6px',
-              fontSize: '12px',
-              color: '#c58b57',
-              opacity: 0.78,
-              marginBottom: '28px',
-              textTransform: 'uppercase',
-            }}
-          >
-            The real problem
-          </p>
+      <section id="seen" style={sectionStyle}>
+        <div style={{ ...sectionInnerStyle, maxWidth: '980px' }}>
+          <p style={eyebrowStyle}>The real problem</p>
 
-          <h2
-            style={{
-              fontSize: 'clamp(2.1rem, 5vw, 4.2rem)',
-              lineHeight: 1.08,
-              letterSpacing: '-0.04em',
-              margin: '0 auto 38px',
-              maxWidth: '920px',
-              fontWeight: 500,
-              textWrap: 'balance',
-            }}
-          >
-            You do not need
-            <br />
-            more health information.
-          </h2>
+          <h2 style={sectionTitleStyle}>You already know the basics.</h2>
 
-          <p
-            style={{
-              maxWidth: '780px',
-              margin: '0 auto 28px',
-              fontSize: '1.12rem',
-              lineHeight: 1.94,
-              color: 'rgba(215,199,182,0.84)',
-            }}
-          >
-            You already know that sleep, movement, nutrition, stress, recovery,
-            and consistency matter.
-          </p>
-
-          <p
+          <div
             style={{
               maxWidth: '790px',
-              margin: '0 auto 70px',
+              margin: '0 auto 52px',
+              display: 'grid',
+              gap: '18px',
               fontSize: '1.08rem',
-              lineHeight: 1.94,
-              color: 'rgba(215,199,182,0.76)',
-            }}
-          >
-            The problem is having to decide—every single day—how all of it
-            applies to your body, your goals, your schedule, your symptoms, and
-            your current capacity.
-          </p>
-
-          <div
-            style={{
-              display: 'grid',
-              gap: '22px',
-              maxWidth: '860px',
-              margin: '0 auto 70px',
-            }}
-          >
-            {[
-              'You are constantly deciding what to eat, how to train, when to rest, and whether you are doing enough.',
-              'You are piecing together symptoms, cycle changes, soreness, recovery, stress, and competing recommendations.',
-              'You have plans that only work when your life is calm, predictable, and centered around following them.',
-              'Taking care of yourself has become one more system you are responsible for managing.',
-              'You do not need more motivation. You need fewer decisions and better direction.',
-            ].map((item) => (
-              <div
-                key={item}
-                style={{
-                  background: 'rgba(18,18,18,0.56)',
-                  borderRadius: '28px',
-                  padding: '26px 28px',
-                  backdropFilter: 'blur(18px)',
-                  boxShadow: '0 24px 80px rgba(0,0,0,0.16)',
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: '1.05rem',
-                    lineHeight: 1.8,
-                    color: 'rgba(215,199,182,0.84)',
-                    margin: 0,
-                  }}
-                >
-                  {item}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <Button href="#what-it-is">See the Difference</Button>
-        </div>
-      </section>
-
-      <section
-        id="what-it-is"
-        style={{
-          padding: '100px 24px 120px',
-          position: 'relative',
-          zIndex: 2,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '1020px',
-            margin: '0 auto',
-            textAlign: 'center',
-          }}
-        >
-          <p
-            style={{
-              letterSpacing: '6px',
-              fontSize: '12px',
-              color: '#c58b57',
-              opacity: 0.78,
-              marginBottom: '28px',
-              textTransform: 'uppercase',
-            }}
-          >
-            What Anastasis changes
-          </p>
-
-          <h2
-            style={{
-              fontSize: 'clamp(2.2rem, 5vw, 4.4rem)',
-              lineHeight: 1.06,
-              letterSpacing: '-0.04em',
-              margin: '0 auto 42px',
-              maxWidth: '920px',
-              fontWeight: 500,
-              textWrap: 'balance',
-            }}
-          >
-            From managing everything
-            <br />
-            to knowing what comes next.
-          </h2>
-
-          <p
-            style={{
-              fontSize: '1.12rem',
-              lineHeight: 1.95,
+              lineHeight: 1.85,
               color: 'rgba(215,199,182,0.82)',
-              margin: '0 auto 64px',
-              maxWidth: '780px',
             }}
           >
-            Anastasis coordinates the separate pieces of caring for yourself
-            and turns them into clear daily direction.
-          </p>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '26px',
-              maxWidth: '980px',
-              margin: '0 auto 72px',
-            }}
-          >
-            <div
+            <p style={{ margin: 0 }}>You know you should eat well.</p>
+            <p style={{ margin: 0 }}>You know sleep matters.</p>
+            <p style={{ margin: 0 }}>
+              You know you need to move your body, manage stress, drink water,
+              recover, and stay consistent.
+            </p>
+            <p
               style={{
-                background: 'rgba(18,18,18,0.56)',
-                borderRadius: '34px',
-                padding: '42px 34px',
-                backdropFilter: 'blur(18px)',
-                boxShadow: '0 24px 80px rgba(0,0,0,0.16)',
-                textAlign: 'left',
+                margin: '16px 0 0',
+                color: 'rgba(245,240,232,0.92)',
+                fontSize: '1.18rem',
               }}
             >
-              <p
-                style={{
-                  letterSpacing: '4px',
-                  fontSize: '11px',
-                  color: '#c58b57',
-                  opacity: 0.82,
-                  margin: '0 0 20px',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Before Anastasis
-              </p>
-
-              <h3
-                style={{
-                  fontSize: '1.48rem',
-                  lineHeight: 1.35,
-                  margin: '0 0 18px',
-                  fontWeight: 500,
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                You hold all the information and make every decision.
-              </h3>
-
-              <p
-                style={{
-                  fontSize: '1.02rem',
-                  lineHeight: 1.9,
-                  color: 'rgba(215,199,182,0.8)',
-                  margin: 0,
-                }}
-              >
-                You piece together workouts, meals, symptoms, recovery,
-                appointments, supplements, goals, and advice—then try to
-                determine what matters today.
-              </p>
-            </div>
-
-            <div
-              style={{
-                background: 'rgba(18,18,18,0.56)',
-                borderRadius: '34px',
-                padding: '42px 34px',
-                backdropFilter: 'blur(18px)',
-                boxShadow: '0 24px 80px rgba(0,0,0,0.16)',
-                textAlign: 'left',
-              }}
-            >
-              <p
-                style={{
-                  letterSpacing: '4px',
-                  fontSize: '11px',
-                  color: '#c58b57',
-                  opacity: 0.82,
-                  margin: '0 0 20px',
-                  textTransform: 'uppercase',
-                }}
-              >
-                With Anastasis
-              </p>
-
-              <h3
-                style={{
-                  fontSize: '1.48rem',
-                  lineHeight: 1.35,
-                  margin: '0 0 18px',
-                  fontWeight: 500,
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                You receive the next best actions for your actual life.
-              </h3>
-
-              <p
-                style={{
-                  fontSize: '1.02rem',
-                  lineHeight: 1.9,
-                  color: 'rgba(215,199,182,0.8)',
-                  margin: 0,
-                }}
-              >
-                You open one platform, complete a check-in, and see what
-                deserves attention based on what your body and life require
-                now.
-              </p>
-            </div>
+              Knowing isn’t the problem.
+            </p>
+            <p style={{ margin: 0 }}>
+              The problem is figuring out what your body needs when you’re
+              tired, sore, stressed, on your period, short on time, slept
+              terribly, have a packed schedule—or all of the above.
+            </p>
+            <p style={{ margin: 0 }}>
+              Most health and fitness plans tell you what to do.
+            </p>
           </div>
 
           <div
             style={{
               maxWidth: '860px',
-              margin: '0 auto',
+              margin: '0 auto 58px',
               background: 'rgba(181,110,67,0.08)',
               border: '1px solid rgba(197,139,87,0.15)',
               borderRadius: '34px',
@@ -637,26 +473,27 @@ export default function Home() {
           >
             <p
               style={{
-                fontSize: '1.12rem',
-                lineHeight: 1.9,
-                color: 'rgba(245,240,232,0.88)',
+                fontSize: 'var(--landing-moment)',
+                lineHeight: 1.35,
+                letterSpacing: '0',
+                color: 'rgba(245,240,232,0.92)',
                 margin: 0,
+                textWrap: 'balance',
               }}
             >
-              Less guessing. Fewer decisions. More consistency. More of your
-              capacity available for the work, people, and life that matter to
-              you.
+              Anastasis helps determine what makes sense for you today.
             </p>
           </div>
+
+          <Button href="#how-it-works">See How It Works</Button>
         </div>
       </section>
 
       <section
         id="how-it-works"
         style={{
-          padding: '100px 24px 140px',
-          position: 'relative',
-          zIndex: 2,
+          ...sectionStyle,
+          paddingBottom: '140px',
         }}
       >
         <div
@@ -666,106 +503,161 @@ export default function Home() {
             textAlign: 'center',
           }}
         >
-          <p
-            style={{
-              letterSpacing: '6px',
-              fontSize: '12px',
-              color: '#c58b57',
-              opacity: 0.78,
-              marginBottom: '28px',
-              textTransform: 'uppercase',
-            }}
-          >
-            How it works
-          </p>
+          <p style={eyebrowStyle}>How it works</p>
 
           <h2
             style={{
-              fontSize: 'clamp(2.3rem, 5vw, 4.6rem)',
+              ...sectionTitleStyle,
+              fontSize: 'var(--landing-hero-title)',
               lineHeight: 1.04,
-              letterSpacing: '-0.04em',
-              margin: '0 auto 42px',
-              maxWidth: '920px',
-              fontWeight: 500,
             }}
           >
-            Assess.
-            <br />
-            Adapt.
-            <br />
-            Direct.
+            How Anastasis works
           </h2>
-
-          <p
-            style={{
-              fontSize: '1.12rem',
-              lineHeight: 1.95,
-              color: 'rgba(215,199,182,0.82)',
-              margin: '0 auto 90px',
-              maxWidth: '790px',
-            }}
-          >
-            You do not receive a static plan and get left alone to manage it.
-            Anastasis continues interpreting your inputs and adjusting what
-            happens next.
-          </p>
 
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: '26px',
-              margin: '0 auto 90px',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '18px',
+              maxWidth: '920px',
+              margin: '0 auto 76px',
             }}
           >
             {[
-              {
-                title: '1. Assess',
-                body:
-                  'The Capacity Audit identifies where your current system is strained, what is consuming capacity, and what should be addressed first.',
-              },
-              {
-                title: '2. Adapt',
-                body:
-                  'Your training, nutrition, recovery, routines, and recommendations are shaped around your body, schedule, goals, symptoms, and real responsibilities.',
-              },
-              {
-                title: '3. Direct',
-                body:
-                  'Daily check-ins give Anastasis updated context so it can show you what matters today, what has changed, and what can wait.',
-              },
-            ].map((item) => (
+              'Tell us what’s going on.',
+              'We put the pieces together.',
+              'You get a clear next step.',
+            ].map((step) => (
               <div
-                key={item.title}
+                key={step}
                 style={{
                   background: 'rgba(18,18,18,0.56)',
-                  borderRadius: '34px',
-                  padding: '40px 34px',
-                  backdropFilter: 'blur(18px)',
+                  borderRadius: '28px',
+                  padding: '28px 24px',
+                  color: 'rgba(245,240,232,0.9)',
+                  fontSize: '1.12rem',
+                  lineHeight: 1.55,
                   boxShadow: '0 24px 80px rgba(0,0,0,0.16)',
-                  textAlign: 'left',
                 }}
               >
-                <h3
+                {step}
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              ...gridStyle,
+              gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))',
+              marginBottom: '72px',
+            }}
+          >
+            {workSteps.map((item) => (
+              <div key={item.title} style={{ ...cardStyle, padding: '40px 34px' }}>
+                <p
                   style={{
-                    fontSize: '1.38rem',
-                    marginBottom: '18px',
-                    fontWeight: 500,
-                    letterSpacing: '-0.02em',
+                    letterSpacing: '4px',
+                    fontSize: '11px',
+                    color: '#c58b57',
+                    opacity: 0.82,
+                    margin: '0 0 18px',
+                    textTransform: 'uppercase',
                   }}
                 >
+                  {item.label}
+                </p>
+
+                <h3 style={{ ...cardTitleStyle, fontSize: '1.38rem' }}>
                   {item.title}
                 </h3>
 
+                <p style={cardTextStyle}>{item.body}</p>
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gap: '16px',
+              maxWidth: '860px',
+              margin: '0 auto 64px',
+            }}
+          >
+            {reliefStatements.map((item) => (
+              <div
+                key={item}
+                style={{
+                  background: 'rgba(18,18,18,0.46)',
+                  borderRadius: '24px',
+                  padding: '22px 26px',
+                  color: 'rgba(215,199,182,0.84)',
+                  fontSize: '1.02rem',
+                  lineHeight: 1.65,
+                }}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              maxWidth: '760px',
+              margin: '0 auto',
+              background: 'rgba(181,110,67,0.08)',
+              border: '1px solid rgba(197,139,87,0.15)',
+              borderRadius: '34px',
+              padding: '38px 34px',
+            }}
+          >
+            <p
+              style={{
+                fontSize: 'var(--landing-moment)',
+                lineHeight: 1.35,
+                color: 'rgba(245,240,232,0.92)',
+                margin: 0,
+                textWrap: 'balance',
+              }}
+            >
+              Just: “Here’s what matters right now.”
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="for-you" style={sectionStyle}>
+        <div style={{ ...sectionInnerStyle, maxWidth: '980px' }}>
+          <p style={eyebrowStyle}>Who it is for</p>
+
+          <h2 style={sectionTitleStyle}>
+            Built for women who already carry a lot.
+          </h2>
+
+          <div
+            style={{
+              ...gridStyle,
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              marginBottom: '54px',
+            }}
+          >
+            {womenCarry.map((item) => (
+              <div
+                key={item}
+                style={{
+                  ...cardStyle,
+                  padding: '24px 22px',
+                  textAlign: 'center',
+                }}
+              >
                 <p
                   style={{
-                    fontSize: '1.02rem',
-                    lineHeight: 1.95,
-                    color: 'rgba(215,199,182,0.82)',
-                    margin: 0,
+                    ...cardTextStyle,
+                    color: 'rgba(245,240,232,0.88)',
                   }}
                 >
-                  {item.body}
+                  {item}
                 </p>
               </div>
             ))}
@@ -773,89 +665,66 @@ export default function Home() {
 
           <div
             style={{
-              maxWidth: '860px',
-              margin: '0 auto 90px',
-              background: 'rgba(18,18,18,0.52)',
-              borderRadius: '34px',
-              padding: '42px 34px',
-              backdropFilter: 'blur(18px)',
-              boxShadow: '0 24px 80px rgba(0,0,0,0.18)',
+              maxWidth: '780px',
+              margin: '0 auto 54px',
+              display: 'grid',
+              gap: '20px',
+              fontSize: '1.08rem',
+              lineHeight: 1.85,
+              color: 'rgba(215,199,182,0.82)',
             }}
           >
-            <h3
-              style={{
-                fontSize: '1.5rem',
-                marginBottom: '20px',
-                fontWeight: 500,
-              }}
-            >
-              What this means in real life
-            </h3>
-
-            <p
-              style={{
-                fontSize: '1.05rem',
-                lineHeight: 1.9,
-                color: 'rgba(215,199,182,0.82)',
-                margin: '0 auto',
-                maxWidth: '720px',
-              }}
-            >
-              You check in. Anastasis evaluates what changed. Your priorities
-              adjust. You execute what matters and leave the rest alone.
+            <p style={{ margin: 0 }}>
+              You want to feel strong, energized, healthy, and at home in your
+              body.
             </p>
           </div>
 
           <div
             style={{
-              maxWidth: '900px',
-              margin: '0 auto 90px',
+              maxWidth: '880px',
+              margin: '0 auto 54px',
+              padding: '44px 34px',
+              borderRadius: '34px',
+              background:
+                'radial-gradient(circle at top, rgba(181,110,67,0.14), rgba(18,18,18,0.52) 62%)',
+              boxShadow: '0 30px 90px rgba(0,0,0,0.2)',
             }}
           >
             <p
               style={{
-                letterSpacing: '6px',
-                fontSize: '12px',
-                color: '#c58b57',
-                opacity: 0.78,
-                marginBottom: '28px',
-                textTransform: 'uppercase',
-              }}
-            >
-              Built for high-capacity women
-            </p>
-
-            <h2
-              style={{
-                fontSize: 'clamp(2rem, 5vw, 3.8rem)',
-                lineHeight: 1.1,
-                letterSpacing: '-0.04em',
-                margin: '0 auto 32px',
-                maxWidth: '880px',
-                fontWeight: 500,
+                fontSize: 'var(--landing-large-moment)',
+                lineHeight: 1.18,
+                letterSpacing: '0',
+                margin: 0,
+                color: '#f5f0e8',
                 textWrap: 'balance',
               }}
             >
-              Your life cannot revolve around managing your health.
-            </h2>
-
-            <p
-              style={{
-                fontSize: '1.08rem',
-                lineHeight: 1.95,
-                color: 'rgba(215,199,182,0.8)',
-                margin: '0 auto',
-                maxWidth: '760px',
-              }}
-            >
-              Anastasis is for the woman building a business, leading a team,
-              raising a family, pursuing demanding goals, or carrying
-              responsibilities that require her capacity. She is not looking
-              for more motivation. She is looking for a system capable of
-              matching the complexity of her life.
+              You just don’t want taking care of yourself to become another
+              full-time job.
             </p>
           </div>
 
+          <p
+            style={{
+              ...bodyStyle,
+              color: 'rgba(197,139,87,0.9)',
+            }}
+          >
+            That’s what Anastasis is built for.
+          </p>
+        </div>
+      </section>
+
+      <section
+        id="start"
+        style={{
+          ...sectionStyle,
+          paddingBottom: '140px',
+        }}
+      >
+        <div style={sectionInnerStyle}>
           <div
             style={{
               maxWidth: '900px',
@@ -868,45 +737,48 @@ export default function Home() {
               boxShadow: '0 30px 90px rgba(0,0,0,0.2)',
             }}
           >
-            <p
-              style={{
-                letterSpacing: '6px',
-                fontSize: '12px',
-                color: '#c58b57',
-                opacity: 0.82,
-                marginBottom: '24px',
-                textTransform: 'uppercase',
-              }}
-            >
+            <p style={{ ...eyebrowStyle, opacity: 0.82 }}>
               Your starting point
             </p>
 
             <h2
               style={{
-                fontSize: 'clamp(2rem, 5vw, 3.7rem)',
+                fontSize: 'var(--landing-final-title)',
                 lineHeight: 1.1,
-                letterSpacing: '-0.04em',
+                letterSpacing: '0',
                 margin: '0 auto 28px',
                 maxWidth: '820px',
                 fontWeight: 500,
                 textWrap: 'balance',
               }}
             >
-              Your body should not be another system you have to run alone.
+              Your body shouldn’t be another thing you have to manage alone.
             </h2>
 
-            <p
+            <div
               style={{
-                fontSize: '1.08rem',
-                lineHeight: 1.92,
-                color: 'rgba(215,199,182,0.82)',
-                margin: '0 auto 42px',
                 maxWidth: '720px',
+                margin: '0 auto 42px',
+                display: 'grid',
+                gap: '18px',
+                fontSize: '1.08rem',
+                lineHeight: 1.85,
+                color: 'rgba(215,199,182,0.82)',
               }}
             >
-              Complete the Capacity Audit to discover what Anastasis would
-              prioritize, personalize, and begin managing with you.
-            </p>
+              <p style={{ margin: 0 }}>
+                You don’t need another plan to follow perfectly.
+              </p>
+              <p style={{ margin: 0 }}>
+                You need something that can look at the bigger picture and help
+                you understand what your body needs, what matters today, and
+                what can wait.
+              </p>
+              <p style={{ margin: 0 }}>Start with the Capacity Audit.</p>
+              <p style={{ margin: 0 }}>
+                In about 10 minutes, we’ll begin putting the pieces together.
+              </p>
+            </div>
 
             <div
               style={{
@@ -921,7 +793,7 @@ export default function Home() {
                 event="audit_cta_clicked_3"
                 properties={{ location: 'final_cta', page: 'landing' }}
               >
-                Build My Personalized Plan
+                Show Me Where to Start
               </TrackedButton>
 
               <Button href="/program">Explore Anastasis</Button>
@@ -935,8 +807,7 @@ export default function Home() {
                 color: 'rgba(215,199,182,0.56)',
               }}
             >
-              Approximately 10 minutes · Personalized starting point · Clear
-              recommendation
+              About 10 minutes · Clear starting point · One next step
             </p>
           </div>
         </div>

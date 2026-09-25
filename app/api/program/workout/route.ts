@@ -1,22 +1,18 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
+import { parseJsonObject, safeErrorResponse } from '@/lib/security/http'
 
 export const runtime = 'nodejs'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
 export async function POST(req: Request) {
   try {
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json(
-        { error: 'Missing Supabase server environment variables.' },
-        { status: 500 }
-      )
-    }
+    const body = parseJsonObject(await req.json().catch(() => null))
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-    const body = await req.json()
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    if (!user) return safeErrorResponse('Unauthorized', 401)
 
     const clientId = body.client_id || body.clientId
     const dayName = body.day_name || body.dayName
@@ -25,6 +21,20 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: 'Missing client_id.' },
         { status: 400 }
+      )
+    }
+
+    const { data: client } = await supabase
+      .from('clients')
+      .select('client_id')
+      .eq('client_id', clientId)
+      .eq('auth_user_id', user.id)
+      .maybeSingle()
+
+    if (!client) {
+      return NextResponse.json(
+        { error: 'Client not found.' },
+        { status: 404 }
       )
     }
 
@@ -38,7 +48,7 @@ export async function POST(req: Request) {
 
     if (error) {
       return NextResponse.json(
-        { error: 'Unable to load program.', details: error.message },
+        { error: 'Unable to load program.' },
         { status: 500 }
       )
     }
@@ -76,12 +86,6 @@ export async function POST(req: Request) {
       exercises: selectedDay.exercises || [],
     })
   } catch (error) {
-    return NextResponse.json(
-      {
-        error: 'Workout route failed',
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 }
-    )
+    return safeErrorResponse('Workout route failed', 500, error)
   }
 }

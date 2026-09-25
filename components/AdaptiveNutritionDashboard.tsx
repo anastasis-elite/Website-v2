@@ -101,6 +101,19 @@ type SuggestedFood = {
   reason: string
 }
 
+type NutrientInsight = {
+  nutrientKey: string
+  nutrientName: string
+  action: string
+  confidenceCategory: string
+  patternState: string
+  message: string
+  why: string[]
+  foodFirst: boolean
+  clinicianEscalation: boolean
+  safetyEscalationReason: string | null
+}
+
 function progressPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)))
 }
@@ -176,6 +189,7 @@ export default function AdaptiveNutritionDashboard({
   const [suggestedFoods, setSuggestedFoods] = useState<SuggestedFood[]>([])
   const [suggestedFoodsState, setSuggestedFoodsState] = useState<'idle' | 'loading' | 'ready' | 'needs_logs' | 'complete' | 'error'>('idle')
   const [suggestedFoodsMessage, setSuggestedFoodsMessage] = useState('')
+  const [nutrientInsights, setNutrientInsights] = useState<NutrientInsight[]>([])
 
   const loadSuggestedFoods = useCallback(async () => {
     if (!nutritionLog?.id) return
@@ -199,6 +213,20 @@ export default function AdaptiveNutritionDashboard({
       setSuggestedFoodsMessage(error instanceof Error ? error.message : 'Suggested foods could not be loaded.')
     }
   }, [nutritionLog?.id])
+
+  const loadNutrientInsights = useCallback(async () => {
+    const clientId = logic.client.id
+    if (!clientId) return
+
+    try {
+      const response = await fetch(`/api/nutrition/nutrient-insights?clientId=${encodeURIComponent(clientId)}`)
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) return
+      setNutrientInsights(payload?.insights || [])
+    } catch {
+      setNutrientInsights([])
+    }
+  }, [logic.client.id])
   
   async function addWater() {
   setAddingWater(true);
@@ -285,6 +313,10 @@ export default function AdaptiveNutritionDashboard({
   useEffect(() => {
     void loadSuggestedFoods()
   }, [loadSuggestedFoods, remaining])
+
+  useEffect(() => {
+    void loadNutrientInsights()
+  }, [loadNutrientInsights, remaining])
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
@@ -596,6 +628,29 @@ setNutritionLog(log)
 
           {loading && <p className="nutrition-status">Loading...</p>}
           {message && <p className="nutrition-status">{message}</p>}
+
+          {nutrientInsights.length ? (
+            <section className="nutrition-dashboard-panel nutrient-insight-card" data-testid="nutrient-insight-card">
+              <div className="tier-panel-heading">
+                <div>
+                  <p className="tier-dashboard-label">Nutrient Insight</p>
+                  <h2>{nutrientInsights[0].nutrientName}</h2>
+                </div>
+                <a className="tier-secondary-action" href={`/dashboard/nutrition/nutrients/${nutrientInsights[0].nutrientKey}`}>
+                  Details
+                </a>
+              </div>
+              <p>{nutrientInsights[0].message}</p>
+              <details className="nutrient-why-panel">
+                <summary>Why am I seeing this?</summary>
+                <ul>
+                  {nutrientInsights[0].why.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              </details>
+            </section>
+          ) : null}
 
           <div className="nutrition-dashboard-row">
             <section className="nutrition-dashboard-panel" data-testid="nutrition-progress-panel">

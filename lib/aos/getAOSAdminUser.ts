@@ -7,5 +7,5 @@ export async function getAOSAdminUser() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  return isAOSAdmin(user?.email) ? user : null
+  return isAOSAdmin(user?.email, user?.app_metadata) ? user : null
 }

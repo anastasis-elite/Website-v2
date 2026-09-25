@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAOSAdminUser } from '@/lib/aos/getAOSAdminUser'
 
 import igniteGym from '@/data/template/igniteGym.json'
 import emberGym from '@/data/template/emberGym.json'
@@ -27,6 +28,11 @@ const templates: Record<string, any> = {
 }
 
 export async function GET(req: NextRequest) {
+  const admin = await getAOSAdminUser()
+  if (!admin) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   const searchParams = req.nextUrl.searchParams
 
   const program = searchParams.get('program')

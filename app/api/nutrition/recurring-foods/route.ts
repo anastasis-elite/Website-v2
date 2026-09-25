@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTierCapabilities } from '@/lib/entitlements'
 import { mealPeriodToDayBlock, normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
+import { classifyRecurringMealPattern } from '@/lib/nutrition/recurringMealIntelligence'
 
 type MealHistoryRow = {
   food_id: string
@@ -140,21 +141,39 @@ export async function GET() {
   )
 
   const suggestions = Array.from(counts.entries())
-    .filter(([key, item]) => item.days.size >= 3 && !activeKeys.has(key))
+    .filter(([key, item]) => {
+      const pattern = classifyRecurringMealPattern(
+        Array.from(item.days).map((day) => ({
+          date: day,
+          weekday: new Date(`${day}T12:00:00.000Z`).getDay(),
+        })),
+      )
+      return pattern.eligibleForSuggestion && !activeKeys.has(key)
+    })
     .sort(([, first], [, second]) => second.days.size - first.days.size)
     .slice(0, 4)
-    .map(([, item]) => ({
-      foodId: item.foodId,
-      foodName: item.foodName,
-      mealPeriod: item.mealPeriod,
-      mealName: item.mealName,
-      servingAmount: item.servingAmount,
-      servingUnit: item.servingUnit,
-      servingOptionId: item.servingOptionId,
-      frequency: item.days.size,
-      daysOfWeek: Array.from(item.weekdays),
-      lastLoggedAt: item.lastLoggedAt,
-    }))
+    .map(([, item]) => {
+      const pattern = classifyRecurringMealPattern(
+        Array.from(item.days).map((day) => ({
+          date: day,
+          weekday: new Date(`${day}T12:00:00.000Z`).getDay(),
+        })),
+      )
+      return {
+        foodId: item.foodId,
+        foodName: item.foodName,
+        mealPeriod: item.mealPeriod,
+        mealName: item.mealName,
+        servingAmount: item.servingAmount,
+        servingUnit: item.servingUnit,
+        servingOptionId: item.servingOptionId,
+        frequency: item.days.size,
+        daysOfWeek: pattern.daysOfWeek,
+        patternType: pattern.patternType,
+        eligibleForAutomaticPrelog: pattern.eligibleForAutomaticPrelog,
+        lastLoggedAt: item.lastLoggedAt,
+      }
+    })
 
   return NextResponse.json({ suggestions, active: active || [] })
 }

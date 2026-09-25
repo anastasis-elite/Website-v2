@@ -1,24 +1,20 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { generateProgram } from '@/lib/program/generateProgram'
 import { evaluateSafetyEscalation } from '@/lib/safety/evaluateSafetyEscalation'
+import { createClient } from '@/lib/supabase/server'
+import { parseJsonObject, safeErrorResponse } from '@/lib/security/http'
 
 export const runtime = 'nodejs'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
 export async function POST(req: Request) {
   try {
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json(
-        { error: 'Missing Supabase server environment variables.' },
-        { status: 500 }
-      )
-    }
+    const body = parseJsonObject(await req.json().catch(() => null))
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-    const body = await req.json()
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    if (!user) return safeErrorResponse('Unauthorized', 401)
 
     const clientId = body.client_id || body.clientId
 
@@ -33,14 +29,12 @@ export async function POST(req: Request) {
       .from('clients')
       .select('*')
       .eq('client_id', clientId)
+      .eq('auth_user_id', user.id)
       .maybeSingle()
 
     if (clientError || !client) {
       return NextResponse.json(
-        {
-          error: 'Client not found.',
-          details: clientError?.message,
-        },
+        { error: 'Client not found.' },
         { status: 404 }
       )
     }
@@ -114,10 +108,7 @@ export async function POST(req: Request) {
 
     if (saveError) {
       return NextResponse.json(
-        {
-          error: 'Program generated but failed to save.',
-          details: saveError.message,
-        },
+        { error: 'Program generated but failed to save.' },
         { status: 500 }
       )
     }
@@ -138,16 +129,16 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       redirect: '/dashboard/program',
-      program: generatedProgram,
-      savedProgram,
+      program: {
+        program: generatedProgram.program,
+        days: generatedProgram.days,
+      },
+      savedProgram: {
+        id: savedProgram.id,
+        generated_at: savedProgram.generated_at,
+      },
     })
   } catch (error) {
-    return NextResponse.json(
-      {
-        error: 'Program generation route failed',
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 }
-    )
+    return safeErrorResponse('Program generation route failed', 500, error)
   }
 }

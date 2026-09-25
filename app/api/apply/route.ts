@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { TERMS_VERSION } from '@/lib/legal/config'
+import { safeErrorResponse } from '@/lib/security/http'
 
 export const runtime = 'nodejs'
 
@@ -85,10 +86,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json(
   {
-    error: `Capacity Audit save failed: ${error.message}`,
-    details: error.message,
-    code: error.code,
-    hint: error.hint,
+    error: 'Capacity Audit save failed.',
   },
   { status: 500 }
 )
@@ -103,9 +101,6 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Apply API error:', error)
 
-    const message =
-      error instanceof Error ? error.message : 'Application submission failed'
-
-    return NextResponse.json({ error: message }, { status: 500 })
+    return safeErrorResponse('Application submission failed', 500, error)
   }
 }

@@ -9,6 +9,7 @@ import type { CapacityDose,GoalObjective,StructuralFilter } from '@/lib/workout-
 import { getClientTimeZone } from '@/lib/timezone'
 import { getWorkoutForToday, workoutFallbackAdjustmentLevel } from '@/lib/workout/getWorkoutForToday'
 import { getStreakRequirementDestinations } from '@/lib/dashboard/logic/streakRequirementDestinations'
+import { calculateHydrationPacing } from '@/lib/hydration/pacing'
 
 export function numeric(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -168,8 +169,33 @@ export function runHydrationEngine(inputs: ProgramLogicInputs): HydrationResult 
   const consumed = Math.max(0, target - numeric(remaining.water, target))
   const percent = clamp((consumed / target) * 100)
   const dataKnown = Boolean(inputs.nutritionLogs.find((row) => row.log_date === inputs.date))
-  const status = !dataKnown ? 'needs_input' : percent < 35 ? 'low' : percent < 70 ? 'building' : 'ready'
-  return { consumed, target, remaining: Math.max(0, Math.round(target - consumed)), percent, status, prompt: status === 'needs_input' ? 'Log water so readiness can be calculated.' : status === 'low' ? 'Drink water before higher-output training.' : status === 'building' ? 'Keep water available and continue steadily.' : 'Hydration is supporting today’s plan.', recoverySupportNote: percent < 35 ? 'Low hydration can amplify fatigue, headache, and perceived effort.' : 'Continue normal hydration through the day.' }
+  const pacing = calculateHydrationPacing({
+    consumed,
+    target,
+    wakeTime: inputs.client?.wake_time || inputs.todayRecovery?.sleep_wake_time,
+    bedTime: inputs.client?.bed_time || inputs.todayRecovery?.sleep_bedtime,
+  })
+  const status = !dataKnown
+    ? 'needs_input'
+    : pacing.state === 'behind'
+      ? 'low'
+      : pacing.state === 'slightly_behind'
+        ? 'building'
+        : percent >= 70 || pacing.state === 'ahead_of_pace'
+          ? 'ready'
+          : 'building'
+  return {
+    consumed,
+    target,
+    remaining: Math.max(0, Math.round(target - consumed)),
+    percent,
+    status,
+    paceState: pacing.state,
+    expectedPercent: pacing.expectedPercent,
+    dayElapsedPercent: pacing.dayElapsedPercent,
+    prompt: status === 'needs_input' ? 'Log water so readiness can be calculated.' : pacing.prompt,
+    recoverySupportNote: pacing.state === 'behind' ? 'Low hydration pace can amplify fatigue, headache, and perceived effort.' : 'Continue normal hydration through the day.',
+  }
 }
 
 export function runNutritionEngine(inputs: ProgramLogicInputs): NutritionResult {

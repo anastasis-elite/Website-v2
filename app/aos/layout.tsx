@@ -15,7 +15,7 @@ export default async function AOSLayout({
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!isAOSAdmin(user?.email)) {
+  if (!isAOSAdmin(user?.email, user?.app_metadata)) {
     redirect('/aos-login')
   }
 
