@@ -159,6 +159,7 @@ export default function NutritionFoodLogger({
     brand: '',
     servingSize: '1',
     servingUnit: 'serving',
+    servingGrams: '',
     calories: '',
     protein: '',
     carbs: '',
@@ -288,7 +289,13 @@ export default function NutritionFoodLogger({
 
     if (data.remaining) setRemaining(data.remaining)
 
-    setMessage(source === 'photo_estimate' ? 'Estimated food logged after review.' : 'Food logged. Today’s progress and remaining macros are updated.')
+    setMessage(
+      data.refreshStatus === 'degraded'
+        ? 'Food logged. Today’s remaining totals are refreshing.'
+        : source === 'photo_estimate'
+          ? 'Estimated food logged after review.'
+          : 'Food logged. Today’s progress and remaining macros are updated.'
+    )
     setSaved(true)
     setSearch('')
     setFoods([])
@@ -446,7 +453,12 @@ export default function NutritionFoodLogger({
       return
     }
 
-    setCustomFood({ name: '', brand: '', servingSize: '1', servingUnit: 'serving', calories: '', protein: '', carbs: '', fats: '', fiber: '' })
+    if (!data?.food) {
+      setMessage('Custom food saved. Search for it if it does not appear right away.')
+      return
+    }
+
+    setCustomFood({ name: '', brand: '', servingSize: '1', servingUnit: 'serving', servingGrams: '', calories: '', protein: '', carbs: '', fats: '', fiber: '' })
     await selectFood(data.food, scannedBarcode ? 'barcode' : 'manual')
     setMessage('Custom food saved. Review serving size, then add it to today.')
   }
@@ -657,6 +669,7 @@ export default function NutritionFoodLogger({
           <input style={styles.inputStyle} value={customFood.brand} onChange={(event) => setCustomFood((current) => ({ ...current, brand: event.target.value }))} placeholder="Brand optional" />
           <input style={styles.inputStyle} type="number" min="0.01" step="0.25" value={customFood.servingSize} onChange={(event) => setCustomFood((current) => ({ ...current, servingSize: event.target.value }))} placeholder="Serving size" />
           <input style={styles.inputStyle} value={customFood.servingUnit} onChange={(event) => setCustomFood((current) => ({ ...current, servingUnit: event.target.value }))} placeholder="Serving unit" />
+          <input style={styles.inputStyle} type="number" min="0.01" step="0.1" value={customFood.servingGrams} onChange={(event) => setCustomFood((current) => ({ ...current, servingGrams: event.target.value }))} placeholder="Serving weight g" />
           {(['calories', 'protein', 'carbs', 'fats', 'fiber'] as const).map((key) => (
             <input key={key} style={styles.inputStyle} type="number" min="0" step="1" value={customFood[key]} onChange={(event) => setCustomFood((current) => ({ ...current, [key]: event.target.value }))} placeholder={key === 'fats' ? 'fat g' : key} />
           ))}

@@ -94,11 +94,47 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Macros could not be added. Please try again.' }, { status: 500 })
   }
 
-  await supabase
+  let refreshStatus: 'success' | 'degraded' = 'success'
+
+  const { error: logUpdateError } = await supabase
     .from('nutrition_logs')
-    .update({ completed: true, updated_at: new Date().toISOString() })
+    .update({ updated_at: new Date().toISOString() })
     .eq('id', log.id)
     .eq('auth_user_id', user.id)
 
-  return NextResponse.json({ success: true, entry })
+  if (logUpdateError) {
+    console.error('NUTRITION ADD MACROS LOG UPDATE ERROR:', {
+      route: 'app/api/nutrition/add-macros',
+      stage: 'nutrition_log_touch',
+      table: 'nutrition_logs',
+      code: logUpdateError.code || null,
+      message: logUpdateError.message || null,
+      userId: user.id,
+      nutritionLogId,
+      entryId: entry.id,
+    })
+    refreshStatus = 'degraded'
+  }
+
+  const { data: remaining, error: remainingError } = await supabase
+    .from('nutrition_log_remaining')
+    .select('*')
+    .eq('nutrition_log_id', log.id)
+    .maybeSingle()
+
+  if (remainingError) {
+    console.error('NUTRITION ADD MACROS REMAINING ERROR:', {
+      route: 'app/api/nutrition/add-macros',
+      stage: 'remaining_refresh',
+      table: 'nutrition_log_remaining',
+      code: remainingError.code || null,
+      message: remainingError.message || null,
+      userId: user.id,
+      nutritionLogId,
+      entryId: entry.id,
+    })
+    refreshStatus = 'degraded'
+  }
+
+  return NextResponse.json({ success: true, entry, remaining: remainingError ? null : remaining, refreshStatus })
 }

@@ -12,6 +12,7 @@ import { canLogFood, normalizeProgramTier } from '@/lib/nutrition/canLogFood'
 import { getClientLocalDateOffset } from '@/lib/timezone'
 import { getTierCapabilities } from '@/lib/entitlements'
 import { getMealPeriodForLocalDate } from '@/lib/nutrition/mealPeriod'
+import { trackEvent } from '@/lib/analytics'
 
 type NutritionLog = {
   id: string
@@ -114,6 +115,21 @@ type NutrientInsight = {
   safetyEscalationReason: string | null
 }
 
+type SupplementRecommendation = {
+  productId: string
+  productName: string
+  productUrl: string | null
+  category: string
+  recommendationCopy: string
+  disclaimerCopy: string
+  why: {
+    nutrition: string
+    trend: string
+    reason: string
+    disclaimer: string
+  }
+}
+
 function progressPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)))
 }
@@ -190,6 +206,9 @@ export default function AdaptiveNutritionDashboard({
   const [suggestedFoodsState, setSuggestedFoodsState] = useState<'idle' | 'loading' | 'ready' | 'needs_logs' | 'complete' | 'error'>('idle')
   const [suggestedFoodsMessage, setSuggestedFoodsMessage] = useState('')
   const [nutrientInsights, setNutrientInsights] = useState<NutrientInsight[]>([])
+  const [supplementRecommendation, setSupplementRecommendation] = useState<SupplementRecommendation | null>(null)
+  const [supplementDismissed, setSupplementDismissed] = useState(false)
+  const [supplementShownKey, setSupplementShownKey] = useState('')
 
   const loadSuggestedFoods = useCallback(async () => {
     if (!nutritionLog?.id) return
@@ -225,6 +244,27 @@ export default function AdaptiveNutritionDashboard({
       setNutrientInsights(payload?.insights || [])
     } catch {
       setNutrientInsights([])
+    }
+  }, [logic.client.id])
+
+  const loadSupplementRecommendation = useCallback(async () => {
+    const clientId = logic.client.id
+    if (!clientId) return
+
+    try {
+      const response = await fetch(`/api/nutrition/supplement-recommendation?clientId=${encodeURIComponent(clientId)}`)
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) return
+      setSupplementRecommendation(payload?.recommendation || null)
+      setSupplementDismissed(false)
+      for (const resolved of payload?.resolvedRecommendations || []) {
+        trackEvent('supplement_recommendation_resolved', {
+          product_id: String(resolved.productId || ''),
+          recommendation_category: String(resolved.category || 'general_nutrition'),
+        })
+      }
+    } catch {
+      setSupplementRecommendation(null)
     }
   }, [logic.client.id])
   
@@ -296,8 +336,11 @@ export default function AdaptiveNutritionDashboard({
       const payload = await response.json().catch(() => null)
       if (!response.ok) throw new Error(payload?.error || 'Macros could not be saved.')
       setMacroEntry({ calories: '', protein: '', carbs: '', fats: '' })
+      if (payload?.remaining) {
+        setRemaining(payload.remaining)
+      }
       await loadToday()
-      setMessage('Macros logged.')
+      setMessage(payload?.refreshStatus === 'degraded' ? 'Macros logged. Today’s remaining totals are refreshing.' : 'Macros logged.')
       router.refresh()
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Macros could not be saved.')
@@ -317,6 +360,25 @@ export default function AdaptiveNutritionDashboard({
   useEffect(() => {
     void loadNutrientInsights()
   }, [loadNutrientInsights, remaining])
+
+  useEffect(() => {
+    void loadSupplementRecommendation()
+  }, [loadSupplementRecommendation, remaining])
+
+  useEffect(() => {
+    if (!supplementRecommendation || supplementDismissed) return
+    const key = `${supplementRecommendation.productId}:${supplementRecommendation.category}`
+    if (supplementShownKey === key) return
+    setSupplementShownKey(key)
+    trackEvent('supplement_recommendation_eligible', {
+      product_id: supplementRecommendation.productId,
+      recommendation_category: supplementRecommendation.category,
+    })
+    trackEvent('supplement_recommendation_shown', {
+      product_id: supplementRecommendation.productId,
+      recommendation_category: supplementRecommendation.category,
+    })
+  }, [supplementRecommendation, supplementDismissed, supplementShownKey])
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
@@ -649,6 +711,66 @@ setNutritionLog(log)
                   ))}
                 </ul>
               </details>
+            </section>
+          ) : null}
+
+          {supplementRecommendation && !supplementDismissed ? (
+            <section className="nutrition-dashboard-panel supplement-recommendation-card" data-testid="supplement-recommendation-card">
+              <div className="tier-panel-heading">
+                <div>
+                  <p className="tier-dashboard-label">Optional Nutrition Support</p>
+                  <h2>{supplementRecommendation.productName}</h2>
+                </div>
+                <button
+                  type="button"
+                  className="supplement-dismiss-button"
+                  aria-label="Dismiss supplement recommendation"
+                  onClick={() => {
+                    setSupplementDismissed(true)
+                    trackEvent('supplement_recommendation_dismissed', {
+                      product_id: supplementRecommendation.productId,
+                      recommendation_category: supplementRecommendation.category,
+                    })
+                  }}
+                >
+                  x
+                </button>
+              </div>
+              <p>{supplementRecommendation.recommendationCopy}</p>
+              <details
+                className="nutrient-why-panel"
+                onToggle={(event) => {
+                  if ((event.currentTarget as HTMLDetailsElement).open) {
+                    trackEvent('supplement_recommendation_expanded', {
+                      product_id: supplementRecommendation.productId,
+                      recommendation_category: supplementRecommendation.category,
+                    })
+                  }
+                }}
+              >
+                <summary>Why you&apos;re seeing this</summary>
+                <div className="supplement-why-copy">
+                  <p><strong>Nutrition:</strong> {supplementRecommendation.why.nutrition}</p>
+                  <p><strong>Trend:</strong> {supplementRecommendation.why.trend}</p>
+                  <p><strong>Reason:</strong> {supplementRecommendation.why.reason}</p>
+                  <p>{supplementRecommendation.why.disclaimer}</p>
+                </div>
+              </details>
+              <div className="supplement-card-actions">
+                {supplementRecommendation.productUrl ? (
+                  <a
+                    className="tier-secondary-action"
+                    href={supplementRecommendation.productUrl}
+                    onClick={() => trackEvent('supplement_recommendation_clicked', {
+                      product_id: supplementRecommendation.productId,
+                      recommendation_category: supplementRecommendation.category,
+                    })}
+                  >
+                    View option
+                  </a>
+                ) : null}
+                <small>{supplementRecommendation.disclaimerCopy}</small>
+              </div>
             </section>
           ) : null}
 

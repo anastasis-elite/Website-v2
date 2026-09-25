@@ -2,6 +2,50 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTierCapabilities } from '@/lib/entitlements'
 import { mealPeriodToDayBlock, normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
+import {
+  normalizeNutritionEntrySource,
+  normalizeNutritionEntryState,
+  positiveFiniteNumber,
+  resolveMealServingGrams,
+} from '@/lib/nutrition/mealEntry'
+
+type SupabaseDiagnosticError = {
+  code?: string
+  message?: string
+}
+
+function logAddMealDiagnostic({
+  stage,
+  table,
+  error,
+  userId,
+  nutritionLogId,
+  foodId,
+  servingOptionId,
+  entryId,
+}: {
+  stage: string
+  table: string
+  error?: SupabaseDiagnosticError | null
+  userId?: unknown
+  nutritionLogId?: unknown
+  foodId?: unknown
+  servingOptionId?: unknown
+  entryId?: unknown
+}) {
+  console.error('NUTRITION_ADD_MEAL_DIAGNOSTIC', {
+    route: 'app/api/nutrition/add-meal',
+    stage,
+    table,
+    code: error?.code || null,
+    message: error?.message || null,
+    userId: userId || null,
+    nutritionLogId: nutritionLogId || null,
+    foodId: foodId || null,
+    servingOptionId: servingOptionId || null,
+    entryId: entryId || null,
+  })
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -22,6 +66,7 @@ export async function POST(request: Request) {
     mealName,
     servingAmount,
     servingUnit,
+    grams: submittedGrams,
     servingOptionId,
     symptoms = [],
     symptomNotes,
@@ -42,9 +87,9 @@ export async function POST(request: Request) {
     )
   }
 
-  const amount = Number(servingAmount || 1)
+  const amount = positiveFiniteNumber(servingAmount ?? 1)
 
-  if (!Number.isFinite(amount) || amount <= 0) {
+  if (!amount) {
     return NextResponse.json(
       { error: 'Serving amount must be greater than zero.' },
       { status: 400 }
@@ -58,6 +103,15 @@ export async function POST(request: Request) {
     .single()
 
   if (logError || !log) {
+    logAddMealDiagnostic({
+      stage: 'nutrition_log_lookup',
+      table: 'nutrition_logs',
+      error: logError,
+      userId: user.id,
+      nutritionLogId,
+      foodId,
+      servingOptionId,
+    })
     return NextResponse.json(
       { error: 'Nutrition log not found.' },
       { status: 404 }
@@ -65,6 +119,14 @@ export async function POST(request: Request) {
   }
 
   if (log.auth_user_id !== user.id) {
+    logAddMealDiagnostic({
+      stage: 'nutrition_log_ownership',
+      table: 'nutrition_logs',
+      userId: user.id,
+      nutritionLogId,
+      foodId,
+      servingOptionId,
+    })
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -76,6 +138,15 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (clientError || !client) {
+    logAddMealDiagnostic({
+      stage: 'client_lookup',
+      table: 'clients',
+      error: clientError,
+      userId: user.id,
+      nutritionLogId,
+      foodId,
+      servingOptionId,
+    })
     return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
   }
 
@@ -84,8 +155,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Food logging is not available for this tier.' }, { status: 403 })
   }
 
-  const source = String(entrySource || 'manual')
-  if (!['manual', 'barcode', 'recurring', 'photo_estimate'].includes(source)) {
+  const source = normalizeNutritionEntrySource(entrySource)
+  if (!source) {
     return NextResponse.json({ error: 'Invalid nutrition entry source.' }, { status: 400 })
   }
 
@@ -101,8 +172,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Photo macro estimation is not available for this tier.' }, { status: 403 })
   }
 
-  const state = String(entryState || 'confirmed')
-  if (!['scheduled', 'pre_logged', 'confirmed', 'skipped'].includes(state)) {
+  const state = normalizeNutritionEntryState(entryState)
+  if (!state) {
     return NextResponse.json({ error: 'Invalid nutrition entry state.' }, { status: 400 })
   }
 
@@ -113,6 +184,28 @@ export async function POST(request: Request) {
   const inferredDayBlock = String(dayBlock || '').toLowerCase() || mealPeriodToDayBlock(normalizedMealPeriod)
   if (!['morning','midday','evening','other'].includes(inferredDayBlock)) return NextResponse.json({ error: 'Invalid meal time block.' }, { status: 400 })
 
+  const { data: food, error: foodError } = await supabase
+    .from('foods')
+    .select('id, default_serving_unit, grams_per_serving')
+    .eq('id', foodId)
+    .single()
+
+  if (foodError || !food) {
+    logAddMealDiagnostic({
+      stage: 'food_lookup',
+      table: 'foods',
+      error: foodError,
+      userId: user.id,
+      nutritionLogId,
+      foodId,
+      servingOptionId,
+    })
+    return NextResponse.json(
+      { error: "We couldn't add this food. Please try again." },
+      { status: 404 }
+    )
+  }
+
   if (servingOptionId) {
     const { data: servingOption, error: servingOptionError } = await supabase
       .from('food_serving_options')
@@ -121,38 +214,88 @@ export async function POST(request: Request) {
       .single()
 
     if (servingOptionError || !servingOption) {
-      return NextResponse.json(
-        { error: 'Serving option not found.' },
-        { status: 404 }
-      )
-    }
-
-    if (servingOption.food_id !== foodId) {
-      return NextResponse.json(
-        { error: 'Serving option does not match selected food.' },
-        { status: 400 }
-      )
-    }
-
-    grams = amount * Number(servingOption.grams)
-    resolvedServingUnit = servingOption.label
-  } else {
-    const { data: food, error: foodError } = await supabase
-      .from('foods')
-      .select('id, default_serving_unit, grams_per_serving')
-      .eq('id', foodId)
-      .single()
-
-    if (foodError || !food) {
-      console.error('NUTRITION ADD MEAL FOOD LOOKUP ERROR:', foodError)
+      logAddMealDiagnostic({
+        stage: 'serving_option_lookup',
+        table: 'food_serving_options',
+        error: servingOptionError,
+        userId: user.id,
+        nutritionLogId,
+        foodId,
+        servingOptionId,
+      })
       return NextResponse.json(
         { error: "We couldn't add this food. Please try again." },
         { status: 404 }
       )
     }
 
-    grams = amount * Number(food.grams_per_serving || 100)
-    resolvedServingUnit = servingUnit || food.default_serving_unit || 'serving'
+    if (servingOption.food_id !== foodId) {
+      logAddMealDiagnostic({
+        stage: 'serving_option_food_mismatch',
+        table: 'food_serving_options',
+        userId: user.id,
+        nutritionLogId,
+        foodId,
+        servingOptionId,
+      })
+      return NextResponse.json(
+        { error: 'Serving option does not match selected food.' },
+        { status: 400 }
+      )
+    }
+
+    const resolvedServing = resolveMealServingGrams({ amount, explicitGrams: submittedGrams, food, servingOption })
+    if (!resolvedServing) {
+      logAddMealDiagnostic({
+        stage: 'serving_conversion',
+        table: 'food_serving_options',
+        userId: user.id,
+        nutritionLogId,
+        foodId,
+        servingOptionId,
+      })
+      return NextResponse.json(
+        { error: 'Serving conversion is missing for this food.' },
+        { status: 400 }
+      )
+    }
+
+    grams = resolvedServing.grams
+    resolvedServingUnit = resolvedServing.servingUnit
+  } else {
+    const resolvedServing = resolveMealServingGrams({ amount, explicitGrams: submittedGrams, food })
+    if (!resolvedServing) {
+      logAddMealDiagnostic({
+        stage: 'serving_conversion',
+        table: 'foods',
+        userId: user.id,
+        nutritionLogId,
+        foodId,
+        servingOptionId,
+      })
+      return NextResponse.json(
+        { error: 'Serving conversion is missing for this food.' },
+        { status: 400 }
+      )
+    }
+
+    grams = resolvedServing.grams
+    resolvedServingUnit = servingUnit || resolvedServing.servingUnit
+  }
+
+  if (!positiveFiniteNumber(grams)) {
+    logAddMealDiagnostic({
+      stage: 'serving_conversion',
+      table: servingOptionId ? 'food_serving_options' : 'foods',
+      userId: user.id,
+      nutritionLogId,
+      foodId,
+      servingOptionId,
+    })
+    return NextResponse.json(
+      { error: 'Serving conversion is missing for this food.' },
+      { status: 400 }
+    )
   }
 
   const { data: mealEntry, error } = await supabase
@@ -184,12 +327,22 @@ export async function POST(request: Request) {
     .single()
 
   if (error || !mealEntry) {
-    console.error('NUTRITION ADD MEAL INSERT ERROR:', error)
+    logAddMealDiagnostic({
+      stage: 'meal_entry_insert',
+      table: 'meal_entries',
+      error,
+      userId: user.id,
+      nutritionLogId,
+      foodId,
+      servingOptionId,
+    })
     return NextResponse.json(
       { error: "We couldn't add this food. Please try again." },
       { status: 500 }
     )
   }
+
+  let refreshStatus: 'success' | 'degraded' = 'success'
 
   if (Array.isArray(symptoms) && symptoms.length > 0) {
     const symptomRows = symptoms.map((symptomTypeId: string) => ({
@@ -204,15 +357,39 @@ export async function POST(request: Request) {
       .insert(symptomRows)
 
     if (symptomError) {
-      console.error('NUTRITION ADD MEAL SYMPTOM INSERT ERROR:', symptomError)
-      return NextResponse.json(
-        { error: "We couldn't add this food. Please try again." },
-        { status: 500 }
-      )
+      logAddMealDiagnostic({
+        stage: 'meal_symptom_insert',
+        table: 'meal_symptoms',
+        error: symptomError,
+        userId: user.id,
+        nutritionLogId,
+        foodId,
+        servingOptionId,
+        entryId: mealEntry.id,
+      })
+      refreshStatus = 'degraded'
     }
   }
 
-  await supabase.from('nutrition_logs').update({ completed: true, updated_at: new Date().toISOString() }).eq('id', nutritionLogId).eq('auth_user_id', user.id)
+  const { error: logUpdateError } = await supabase
+    .from('nutrition_logs')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', nutritionLogId)
+    .eq('auth_user_id', user.id)
+
+  if (logUpdateError) {
+    logAddMealDiagnostic({
+      stage: 'nutrition_log_touch',
+      table: 'nutrition_logs',
+      error: logUpdateError,
+      userId: user.id,
+      nutritionLogId,
+      foodId,
+      servingOptionId,
+      entryId: mealEntry.id,
+    })
+    refreshStatus = 'degraded'
+  }
 
   const { data: remaining, error: remainingError } = await supabase
     .from('nutrition_log_remaining')
@@ -221,17 +398,24 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (remainingError) {
-    console.error('NUTRITION ADD MEAL REMAINING ERROR:', remainingError)
-    return NextResponse.json(
-      { error: "Food was added, but today's remaining macros could not be refreshed." },
-      { status: 500 }
-    )
+    logAddMealDiagnostic({
+      stage: 'remaining_refresh',
+      table: 'nutrition_log_remaining',
+      error: remainingError,
+      userId: user.id,
+      nutritionLogId,
+      foodId,
+      servingOptionId,
+      entryId: mealEntry.id,
+    })
+    refreshStatus = 'degraded'
   }
 
   return NextResponse.json({
     success: true,
     mealEntryId: mealEntry.id,
     dayBlock: inferredDayBlock,
-    remaining,
+    refreshStatus,
+    remaining: remainingError ? null : remaining,
   })
 }
