@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getMealLoggingAccess } from '@/lib/nutrition/mealLoggingAccess'
 import { flattenFoodsNutrition, foodWithNutritionSelect } from '@/lib/nutrition/foodModel'
 
 export async function GET(request: Request) {
@@ -13,11 +14,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const access = await getMealLoggingAccess(supabase, user.id)
+  if (!access.allowed) return NextResponse.json({ error: access.error }, { status: access.status })
+
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q')?.trim().toLowerCase()
-  const barcode = searchParams.get('barcode')?.trim()
 
-  if (!q && !barcode) {
+  if (!q) {
     return NextResponse.json({ foods: [] })
   }
 
@@ -26,9 +29,7 @@ export async function GET(request: Request) {
     .select(foodWithNutritionSelect)
     .limit(12)
 
-  const { data, error } = barcode
-    ? await query.eq('barcode', barcode)
-    : await query.ilike('normalized_name', `%${q}%`)
+  const { data, error } = await query.ilike('normalized_name', `%${q}%`)
 
   if (error) {
     console.error('NUTRITION FOOD SEARCH ERROR:', error)

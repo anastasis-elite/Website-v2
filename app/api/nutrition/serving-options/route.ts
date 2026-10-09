@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getMealLoggingAccess } from '@/lib/nutrition/mealLoggingAccess'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -11,6 +12,9 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const access = await getMealLoggingAccess(supabase, user.id)
+  if (!access.allowed) return NextResponse.json({ error: access.error }, { status: access.status })
 
   const { searchParams } = new URL(request.url)
   const foodId = searchParams.get('foodId')

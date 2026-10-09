@@ -72,8 +72,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
   }
 
-  if (!getTierCapabilities(client.program).nutritionTracking) {
+  if (!getTierCapabilities(client.program).nutritionMealLogging) {
     return NextResponse.json({ error: 'Nutrition tracking is not available for this tier.' }, { status: 403 })
+  }
+
+  if (barcode && !getTierCapabilities(client.program).nutritionBarcodeScanning) {
+    return NextResponse.json({ error: 'Barcode scanning is not available for this tier.' }, { status: 403 })
   }
 
   const servingGrams = ['g', 'gram', 'grams'].includes(servingUnitKey)

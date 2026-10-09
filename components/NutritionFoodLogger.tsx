@@ -66,6 +66,8 @@ type Props = {
   onUpdated?: (remaining?: Remaining | null, action?: 'added' | 'removed') => void
 }
 
+type InputMethod = 'manual' | 'barcode' | 'image'
+
 type ServingOption = {
   id: string
   label: string
@@ -124,18 +126,52 @@ function firstRelated<T>(value: T | T[] | null | undefined) {
   return Array.isArray(value) ? value[0] ?? null : value ?? null
 }
 
-export default function NutritionFoodLogger({
+export default function NutritionFoodLogger(props: Props) {
+  const [method, setMethod] = useState<InputMethod>('manual')
+  const [revision, setRevision] = useState(0)
+  const descriptions = { manual: 'Find or enter what I ate', barcode: 'Scan packaged food', image: 'Take or upload a picture' }
+  return (
+    <div>
+      <div className="tier-tab-list" role="tablist" aria-label="Meal logging method" style={{ marginBottom: 18, flexWrap: 'wrap' }}>
+        {(['manual', 'barcode', 'image'] as const).map((inputMethod) => (
+          <button key={inputMethod} id={`meal-method-${inputMethod}`} role="tab" type="button" aria-selected={method === inputMethod} aria-controls={`meal-panel-${inputMethod}`} className={method === inputMethod ? 'is-active' : ''} onClick={() => setMethod(inputMethod)}>
+            {inputMethod === 'manual' ? 'Manual' : inputMethod === 'barcode' ? 'Barcode' : 'Image'}
+          </button>
+        ))}
+      </div>
+      {(['manual', 'barcode', 'image'] as const).map((inputMethod) => (
+        <div key={inputMethod} id={`meal-panel-${inputMethod}`} role="tabpanel" aria-labelledby={`meal-method-${inputMethod}`} hidden={method !== inputMethod}>
+          <p style={{ ...styles.bodyStyle, marginBottom: 18 }}>{descriptions[inputMethod]}</p>
+          {inputMethod === 'image' && !props.capabilities.nutritionPhotoMacroEstimation ? (
+            <p style={styles.compactCardTextStyle}>Image meal logging is available with PHOENIX. You can use Manual or Barcode.</p>
+          ) : inputMethod === 'barcode' && !props.capabilities.nutritionBarcodeScanning ? (
+            <p style={styles.compactCardTextStyle}>Barcode logging is unavailable for this tier.</p>
+          ) : (
+            <FoodInputLogger {...props} method={inputMethod} revision={revision} onUpdated={(remaining, action) => {
+              setRevision((current) => current + 1)
+              props.onUpdated?.(remaining, action)
+            }} />
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function FoodInputLogger({
   nutritionLogId,
   capabilities,
   initialRemaining = null,
   onUpdated,
-}: Props) {
+  method,
+  revision,
+}: Props & { method: InputMethod; revision: number }) {
   const [search, setSearch] = useState('')
   const [foods, setFoods] = useState<Food[]>([])
   const [selectedFood, setSelectedFood] = useState<Food | null>(null)
   const [servingAmount, setServingAmount] = useState('1')
   const [mealName, setMealName] = useState<MealPeriod>(() => getMealPeriodForLocalDate())
-  const [entrySource, setEntrySource] = useState<'manual' | 'barcode' | 'recurring' | 'photo_estimate'>('manual')
+  const [entrySource, setEntrySource] = useState<'manual' | 'barcode' | 'recurring' | 'photo_estimate'>(method === 'image' ? 'photo_estimate' : method)
   const [message, setMessage] = useState('')
   const [saved, setSaved] = useState(false)
   const [remaining, setRemaining] = useState<Remaining | null>(initialRemaining)
@@ -149,6 +185,8 @@ export default function NutritionFoodLogger({
   const [scannerOpen, setScannerOpen] = useState(false)
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
   const [scannedBarcode, setScannedBarcode] = useState('')
+  const [barcodeBusy, setBarcodeBusy] = useState(false)
+  const [barcodeMessage, setBarcodeMessage] = useState('')
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoMessage, setPhotoMessage] = useState('')
   const [recurringCandidates, setRecurringCandidates] = useState<RecurringCandidate[]>([])
@@ -192,7 +230,7 @@ export default function NutritionFoodLogger({
   useEffect(() => {
     void loadTodayMeals()
     void loadRecurringFoods()
-  }, [loadTodayMeals, loadRecurringFoods])
+  }, [loadTodayMeals, loadRecurringFoods, revision])
 
   useEffect(() => {
     setRemaining(initialRemaining)
@@ -274,7 +312,6 @@ export default function NutritionFoodLogger({
         servingOptionId: selectedServingOptionId,
         entrySource: source,
         entryState: 'confirmed',
-        barcode: selectedFood.barcode || scannedBarcode || null,
         recurringFoodId,
       }),
     })
@@ -304,7 +341,7 @@ export default function NutritionFoodLogger({
     setServingOptions([])
     setSelectedServingOptionId('')
     setScannedBarcode('')
-    setEntrySource('manual')
+    setEntrySource(method === 'image' ? 'photo_estimate' : method)
     setAdding(false)
 
     onUpdated?.(data.remaining || null, 'added')
@@ -357,10 +394,10 @@ export default function NutritionFoodLogger({
   async function startBarcodeScan() {
     if (!capabilities.nutritionBarcodeScanning) return
 
-    setMessage('')
+    setBarcodeMessage('')
     setSaved(false)
     if (!window.BarcodeDetector) {
-      setMessage('Barcode scanning is not supported by this browser yet. Search or add the food manually.')
+      setBarcodeMessage('Camera scanning is unavailable in this browser. Enter the barcode below or use Manual.')
       return
     }
 
@@ -378,7 +415,7 @@ export default function NutritionFoodLogger({
         }
       })
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Camera permission could not be requested.')
+      setBarcodeMessage(error instanceof Error ? error.message : 'Camera permission could not be requested.')
     }
   }
 
@@ -395,7 +432,7 @@ export default function NutritionFoodLogger({
         return
       }
     } catch {
-      setMessage('Barcode scan could not read this label. Try better light or search manually.')
+      setBarcodeMessage('Barcode scan could not read this label. Try better light or use Manual.')
     }
 
     requestAnimationFrame(() => void scanFrame())
@@ -409,23 +446,31 @@ export default function NutritionFoodLogger({
   }
 
   async function lookupBarcode(barcode: string) {
+    setBarcodeBusy(true)
+    setBarcodeMessage('')
     setScannedBarcode(barcode)
+    try {
     const res = await fetch(`/api/nutrition/barcode?barcode=${encodeURIComponent(barcode)}`)
     const data = await res.json().catch(() => null)
 
     if (!res.ok) {
-      setMessage(data?.error || 'Barcode lookup failed.')
+      setBarcodeMessage(data?.error || "We couldn't find that barcode. Try searching for the food manually.")
       return
     }
 
     if (!data?.found) {
-      setMessage(data?.message || 'No food matched this barcode. Add it as a custom food to save it.')
+      setBarcodeMessage(data?.message || "We couldn't find that barcode. Try searching for the food manually.")
       return
     }
 
     await selectFood(data.food, 'barcode')
     setMealName(getMealPeriodForLocalDate())
-    setMessage('Barcode found. Review the nutrition and serving size before adding it.')
+    setBarcodeMessage('Barcode found. Review the nutrition and serving size before adding it.')
+    } catch {
+      setBarcodeMessage("We couldn't find that barcode. Try searching for the food manually.")
+    } finally {
+      setBarcodeBusy(false)
+    }
   }
 
   async function createCustomFood() {
@@ -441,8 +486,7 @@ export default function NutritionFoodLogger({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...customFood,
-        barcode: scannedBarcode || null,
-        source: scannedBarcode ? 'barcode_custom' : 'custom',
+        ...(method === 'barcode' && scannedBarcode ? { barcode: scannedBarcode } : {}),
       }),
     })
     const data = await res.json().catch(() => null)
@@ -459,7 +503,7 @@ export default function NutritionFoodLogger({
     }
 
     setCustomFood({ name: '', brand: '', servingSize: '1', servingUnit: 'serving', servingGrams: '', calories: '', protein: '', carbs: '', fats: '', fiber: '' })
-    await selectFood(data.food, scannedBarcode ? 'barcode' : 'manual')
+    await selectFood(data.food, method === 'barcode' ? 'barcode' : 'manual')
     setMessage('Custom food saved. Review serving size, then add it to today.')
   }
 
@@ -469,14 +513,13 @@ export default function NutritionFoodLogger({
     setPhotoBusy(true)
     setPhotoMessage('')
     try {
-      await requestCameraStream().then((stream) => stream.getTracks().forEach((track) => track.stop()))
       const form = new FormData()
       form.append('photo', file)
       const res = await fetch('/api/nutrition/photo-estimate', { method: 'POST', body: form })
       const data = await res.json().catch(() => null)
-      setPhotoMessage(data?.error || 'Photo estimate could not be prepared.')
+      setPhotoMessage(data?.error || "We couldn't analyze this image. You can add the food manually instead.")
     } catch (error) {
-      setPhotoMessage(error instanceof Error ? error.message : 'Camera permission could not be requested.')
+      setPhotoMessage("We couldn't analyze this image. You can add the food manually instead.")
     } finally {
       setPhotoBusy(false)
     }
@@ -527,38 +570,38 @@ export default function NutritionFoodLogger({
     const food = firstRelated(pattern.foods)
     setMealName((pattern.meal_period || 'Other') as MealPeriod)
     setServingAmount(String(pattern.serving_amount || 1))
-    setSelectedServingOptionId(pattern.serving_option_id || '')
     await selectFood({ id: pattern.food_id, name: food?.name || 'Recurring food' }, 'recurring')
+    setSelectedServingOptionId(pattern.serving_option_id || '')
   }
 
   const visibleRecurring = recurringCandidates.filter((candidate) => !dismissedRecurring.has(candidate.foodId + candidate.mealPeriod))
 
   return (
     <div>
-      <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', marginBottom: 18 }}>
-        <button type="button" style={styles.primaryButtonStyle} onClick={() => document.getElementById('nutrition-food-search')?.focus()}>
-          Add Food
-        </button>
+      {method === 'barcode' ? <div style={{ display: 'grid', gap: 10, marginBottom: 18 }}>
         <button type="button" style={styles.secondaryButtonStyle} onClick={startBarcodeScan}>
           Scan Barcode
         </button>
-        {capabilities.nutritionPhotoMacroEstimation ? (
+        <label style={styles.labelStyle} htmlFor="nutrition-barcode">Or enter a barcode</label>
+        <input id="nutrition-barcode" style={styles.inputStyle} inputMode="numeric" value={scannedBarcode} onChange={(event) => setScannedBarcode(event.target.value)} />
+        <button type="button" style={styles.primaryButtonStyle} disabled={barcodeBusy || !scannedBarcode.trim()} onClick={() => void lookupBarcode(scannedBarcode.trim())}>{barcodeBusy ? 'Looking up...' : 'Find Product'}</button>
+        {barcodeMessage ? <p role="status" style={styles.bodyStyle}>{barcodeMessage}</p> : null}
+      </div> : null}
+      {method === 'image' ? (
+        <div>
           <label style={{ ...styles.secondaryButtonStyle, textAlign: 'center', cursor: photoBusy ? 'default' : 'pointer' }}>
-            {photoBusy ? 'Analyzing...' : 'Take Photo'}
+            {photoBusy ? 'Analyzing...' : 'Take or Upload Image'}
             <input
               type="file"
               accept="image/*"
-              capture="environment"
+              disabled={photoBusy}
               style={{ display: 'none' }}
               onChange={(event) => void handlePhotoSelected(event.target.files?.[0] || null)}
             />
           </label>
-        ) : (
-          <button type="button" style={{ ...styles.secondaryButtonStyle, opacity: 0.55 }} disabled>
-            Take Photo - PHOENIX
-          </button>
-        )}
-      </div>
+          <p style={{ ...styles.compactCardTextStyle, marginTop: 12 }}>Image estimates require your review before logging. Portion size and ingredients can change the nutrition values.</p>
+        </div>
+      ) : null}
 
       {scannerOpen ? (
         <div style={{ ...styles.compactCardStyle, marginBottom: 18 }}>
@@ -574,11 +617,11 @@ export default function NutritionFoodLogger({
 
       {photoMessage ? (
         <p role="status" style={{ ...styles.bodyStyle, marginBottom: 18 }}>
-          Estimated from your photo - actual nutrition may vary. {photoMessage}
+          {photoMessage}
         </p>
       ) : null}
 
-      {capabilities.nutritionRecurringFoodDetection ? (
+      {method === 'manual' && capabilities.nutritionRecurringFoodDetection ? (
         <div style={{ display: 'grid', gap: 12, marginBottom: 20 }}>
           {visibleRecurring.map((candidate) => (
             <div key={`${candidate.foodId}-${candidate.mealPeriod}`} style={styles.compactCardStyle}>
@@ -620,12 +663,9 @@ export default function NutritionFoodLogger({
             )
           })}
         </div>
-      ) : (
-        <p style={{ ...styles.compactCardTextStyle, marginBottom: 18, opacity: 0.75 }}>
-          Recurring food detection unlocks with IGNITE and PHOENIX.
-        </p>
-      )}
+      ) : null}
 
+      {method !== 'image' ? <>
       <div style={styles.fieldWrap}>
         <label style={styles.labelStyle}>Meal</label>
         <select style={styles.inputStyle} value={mealName} onChange={(e) => setMealName(e.target.value as MealPeriod)}>
@@ -637,6 +677,7 @@ export default function NutritionFoodLogger({
         </select>
       </div>
 
+      {method === 'manual' ? <>
       <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
         <label style={styles.labelStyle}>Search Food</label>
         <input id="nutrition-food-search" style={styles.inputStyle} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="egg, rice, yogurt..." />
@@ -653,6 +694,7 @@ export default function NutritionFoodLogger({
           </button>
         ))}
       </div>
+      </> : null}
 
       {selectedFood && (
         <p style={{ ...styles.bodyStyle, marginTop: '18px' }}>
@@ -699,13 +741,10 @@ export default function NutritionFoodLogger({
         </div>
       )}
 
-      <button type="button" style={{ ...styles.primaryButtonStyle, marginTop: '18px' }} onClick={() => void addMeal()} disabled={adding || searching || !selectedFood}>
+      <button type="button" style={{ ...styles.primaryButtonStyle, marginTop: '18px' }} onClick={() => void addMeal()} disabled={adding || searching || loadingServingOptions || !selectedFood}>
         {adding ? 'Adding...' : 'Add Meal'}
       </button>
-
-      <p style={{ ...styles.compactCardTextStyle, marginTop: 12 }}>
-        Photo-based nutrition estimates are approximations. Portion size, ingredients, preparation methods, sauces, oils, brands, and other factors can significantly change calorie and macronutrient values. For the most accurate nutrition tracking, measure or weigh your food and verify nutrition information when available.
-      </p>
+      </> : null}
 
       {message && (
         <p role="status" aria-live="polite" style={{ ...styles.bodyStyle, marginTop: '18px', padding: '14px 16px', borderRadius: 14, border: saved ? '1px solid rgba(224,122,66,.7)' : '1px solid rgba(255,255,255,.12)', background: saved ? 'linear-gradient(135deg,rgba(181,78,35,.25),rgba(224,122,66,.08))' : 'rgba(255,255,255,.03)' }}>
