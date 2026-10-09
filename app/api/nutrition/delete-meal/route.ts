@@ -1,5 +1,7 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getMealLoggingAccess } from '@/lib/nutrition/mealLoggingAccess'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -13,6 +15,9 @@ export async function POST(request: Request) {
   }
 
   const { mealEntryId, nutritionLogId } = await request.json()
+
+  const access = await getMealLoggingAccess(supabase, user.id)
+  if (!access.allowed) return NextResponse.json({ error: access.error }, { status: access.status })
 
   if (!mealEntryId || !nutritionLogId) {
     return NextResponse.json(
@@ -84,6 +89,8 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
+
+  invalidateDailyPlan()
 
   return NextResponse.json({
     success: true,

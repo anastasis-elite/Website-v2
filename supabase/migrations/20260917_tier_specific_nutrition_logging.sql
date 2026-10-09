@@ -1,4 +1,5 @@
--- Tier-specific nutrition logging metadata.
+-- Tier-specific nutrition logging metadata. This migration was not applied to
+-- production; ingestion details stay on foods/providers, not meal_entries.
 -- Additive only: preserves existing nutrition_logs, meal_entries, macro_entries,
 -- foods, and all historical nutrition data.
 
@@ -23,11 +24,6 @@ alter table public.meal_entries
   add column if not exists entry_source text not null default 'manual',
   add column if not exists meal_period text,
   add column if not exists entry_state text not null default 'confirmed',
-  add column if not exists verified boolean not null default true,
-  add column if not exists estimated boolean not null default false,
-  add column if not exists barcode text,
-  add column if not exists confidence numeric check (confidence is null or (confidence >= 0 and confidence <= 1)),
-  add column if not exists estimate_metadata jsonb not null default '{}'::jsonb,
   add column if not exists recurring_food_id uuid,
   add column if not exists confirmed_at timestamptz,
   add column if not exists skipped_at timestamptz;
@@ -64,6 +60,8 @@ begin
       check (meal_period is null or meal_period in ('Wake Up','Breakfast','Brunch','Lunch','Snack','Dinner','Pre-Bed','Other'));
   end if;
 end $$;
+
+notify pgrst, 'reload schema';
 
 update public.meal_entries
 set meal_period = case

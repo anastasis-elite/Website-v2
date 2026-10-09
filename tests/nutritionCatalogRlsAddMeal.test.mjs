@@ -18,7 +18,7 @@ const launchRlsMigration = readFileSync(
   'supabase/migrations/20260708_launch_readiness_profiles_payments_rls.sql',
   'utf8'
 )
-const addMealRoute = readFileSync('app/api/nutrition/add-meal/route.ts', 'utf8')
+const addMealRoute = readFileSync('lib/nutrition/createMealEntry.ts', 'utf8')
 const addMacrosRoute = readFileSync('app/api/nutrition/add-macros/route.ts', 'utf8')
 const customFoodRoute = readFileSync('app/api/nutrition/custom-food/route.ts', 'utf8')
 const mealEntryHelpers = readFileSync('lib/nutrition/mealEntry.ts', 'utf8')
@@ -77,7 +77,7 @@ test('nutrition log and meal symptom RLS are owner-scoped for normal authenticat
 
 test('add meal checks log ownership, food readability, and serving option parent before insert', () => {
   assert.match(addMealRoute, /\.from\('nutrition_logs'\)\s*\.select\('id, client_id, auth_user_id'\)/s)
-  assert.match(addMealRoute, /if \(log\.auth_user_id !== user\.id\)/)
+  assert.match(addMealRoute, /if \(log\.auth_user_id !== userId\)/)
   assert.match(addMealRoute, /stage: 'nutrition_log_ownership'/)
   assert.match(addMealRoute, /\.from\('foods'\)\s*\.select\('id, default_serving_unit, grams_per_serving'\)/s)
   assert.match(addMealRoute, /\.from\('food_serving_options'\)\s*\.select\('id, food_id, label, unit, grams'\)/s)

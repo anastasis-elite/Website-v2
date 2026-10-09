@@ -1,3 +1,4 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTierCapabilities } from '@/lib/entitlements'
@@ -72,8 +73,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
   }
 
-  if (!getTierCapabilities(client.program).nutritionTracking) {
+  if (!getTierCapabilities(client.program).nutritionMealLogging) {
     return NextResponse.json({ error: 'Nutrition tracking is not available for this tier.' }, { status: 403 })
+  }
+
+  if (barcode && !getTierCapabilities(client.program).nutritionBarcodeScanning) {
+    return NextResponse.json({ error: 'Barcode scanning is not available for this tier.' }, { status: 403 })
   }
 
   const servingGrams = ['g', 'gram', 'grams'].includes(servingUnitKey)
@@ -142,8 +147,11 @@ export async function POST(request: Request) {
       error: savedFoodError,
       userId: user.id,
     })
+    invalidateDailyPlan()
     return NextResponse.json({ success: true, food: null, refreshStatus: 'degraded' })
   }
+
+  invalidateDailyPlan()
 
   return NextResponse.json({ success: true, food: flattenFoodNutrition(savedFood), refreshStatus: 'success' })
 }

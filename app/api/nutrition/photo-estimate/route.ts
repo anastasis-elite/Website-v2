@@ -35,10 +35,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Attach a meal photo to estimate nutrition.' }, { status: 400 })
   }
 
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.type) || photo.size > 10 * 1024 * 1024) {
+    return NextResponse.json({ error: 'Choose a JPEG, PNG, or WebP image smaller than 10 MB.' }, { status: 400 })
+  }
+
   return NextResponse.json(
     {
       configured: false,
-      error: 'Photo analysis is not configured yet. Connect and test a vision nutrition estimation service before enabling photo-derived estimates.',
+      error: "We couldn't analyze this image. You can add the food manually instead.",
       disclaimer:
         'Photo-based nutrition estimates are approximations. Portion size, ingredients, preparation methods, sauces, oils, brands, and other factors can significantly change calorie and macronutrient values. For the most accurate nutrition tracking, measure or weigh your food and verify nutrition information when available.',
     },

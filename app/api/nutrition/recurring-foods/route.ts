@@ -1,3 +1,4 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTierCapabilities } from '@/lib/entitlements'
@@ -222,6 +223,7 @@ export async function POST(request: Request) {
       console.error('NUTRITION RECURRING UPDATE ERROR:', error)
       return NextResponse.json({ error: 'Recurring food could not be updated. Please try again.' }, { status: 500 })
     }
+    invalidateDailyPlan()
     return NextResponse.json({ success: true, pattern: data })
   }
 
@@ -257,6 +259,8 @@ export async function POST(request: Request) {
     console.error('NUTRITION RECURRING INSERT ERROR:', error)
     return NextResponse.json({ error: 'Recurring food could not be saved. Please try again.' }, { status: 500 })
   }
+
+  invalidateDailyPlan()
 
   return NextResponse.json({ success: true, pattern: data })
 }

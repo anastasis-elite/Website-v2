@@ -43,14 +43,14 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('NUTRITION BARCODE LOOKUP ERROR:', error)
-    return NextResponse.json({ error: 'Barcode lookup failed. Please try again.' }, { status: 500 })
+    return NextResponse.json({ error: "We couldn't find that barcode. Try searching for the food manually." }, { status: 500 })
   }
 
   if (!data) {
     return NextResponse.json({
       found: false,
       barcode,
-      message: 'No matching food was found in the connected Anastasis food catalog. Add it as a custom food to log this barcode.',
+      message: "We couldn't find that barcode. Try searching for the food manually.",
     })
   }
 
