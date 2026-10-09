@@ -57,7 +57,7 @@ function scoreFromHighIsGood(value: number | null | undefined) {
 }
 
 function formatStatus(value: string) {
-  return value.replaceAll('_', ' ')
+  return value === 'modify_workout' ? 'A lighter workout fits today' : value.replaceAll('_', ' ')
 }
 
 function formatDuration(action: ProgramLogicOutput['recoveryActions'][number]) {
@@ -279,7 +279,7 @@ export default function RecoveryDashboardClient({
                       <article key={action.id}>
                         <span>{formatDuration(action)}</span>
                         <strong>{action.label}</strong>
-                        <small>Suggested by the existing recovery engine.</small>
+                        <small>An option for today. Choose what fits your capacity.</small>
                       </article>
                     )) : <p className="tier-calendar-empty">{logic.symptoms.recoveryRecommendation}</p>}
                   </div>
@@ -340,7 +340,7 @@ export default function RecoveryDashboardClient({
             {managementTab === 'insights' ? (
               <div className="tier-info-grid recovery-insights-grid" data-testid="recovery-insights-tab">
                 <article><span>Readiness</span><strong>{logic.workoutDecision.intensityTarget}</strong><small>{logic.workoutDecision.reasonForModification}</small></article>
-                <article><span>Capacity Drivers</span><strong>{logic.capacityStatus.drivers.length ? logic.capacityStatus.drivers.join(', ') : 'Stable'}</strong><small>Existing capacity engine output.</small></article>
+                <article><span>Capacity Drivers</span><strong>{logic.capacityStatus.drivers.length ? logic.capacityStatus.drivers.join(', ') : 'Stable'}</strong><small>Based on the inputs available today.</small></article>
                 <article><span>Sleep Support</span><strong>{logic.sleep.logged ? 'Logged' : 'Needs input'}</strong><small>{logic.sleep.logged ? 'Sleep is informing today’s guidance.' : 'Check in to add sleep context.'}</small></article>
                 <article><span>Hydration</span><strong>{logic.hydration.status.replaceAll('_', ' ')}</strong><small>{logic.hydration.prompt}</small></article>
                 {passiveMetrics.map(([label, value, unit]) => (

@@ -1,6 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 import * as styles from '@/app/styles/globalstyles'
 import CycleFlowLogger from '@/components/CycleFlowLogger'
@@ -15,6 +17,7 @@ type CycleStatus = {
 }
 
 type TodayCycleLog = {
+  answered_fields?: string[] | null
   bleeding?: boolean
   cramps?: boolean
   headache?: boolean
@@ -34,6 +37,7 @@ type Props = {
   lastPeriodStart?: string | null
   averageCycleLength?: number | null
   cycleTrackingEnabled?: boolean
+  sharedSymptomNames?: string[]
   todayLog?: TodayCycleLog
 }
 
@@ -91,7 +95,12 @@ export default function CycleTracker({
   averageCycleLength,
   cycleTrackingEnabled,
   todayLog,
+  sharedSymptomNames = [],
 }: Props) {
+  const [answered, setAnswered] = useState(() => new Set(todayLog?.answered_fields || Object.entries(todayLog || {}).filter(([,value]) => value === true).map(([key]) => key)))
+  const markAnswered = (field: string) => setAnswered(current => new Set([...current,field]))
+  const router = useRouter()
+  const saveLock = useRef(false)
   const [enabled, setEnabled] = useState(
     Boolean(cycleTrackingEnabled),
   )
@@ -116,20 +125,20 @@ export default function CycleTracker({
   )
 
   const [cramps, setCramps] = useState(
-    Boolean(todayLog?.cramps),
+    Boolean(todayLog?.cramps ?? (sharedSymptomNames.some(name => name.includes('cramp')) || undefined)),
   )
 
   const [headache, setHeadache] = useState(
-    Boolean(todayLog?.headache),
+    Boolean(todayLog?.headache ?? (sharedSymptomNames.some(name => name.includes('headache')) || undefined)),
   )
 
   const [fatigue, setFatigue] = useState(
-    Boolean(todayLog?.fatigue),
+    Boolean(todayLog?.fatigue ?? (sharedSymptomNames.some(name => name.includes('fatigue')) || undefined)),
   )
 
   const [moodSensitivity, setMoodSensitivity] =
     useState(
-      Boolean(todayLog?.mood_sensitivity),
+      Boolean(todayLog?.mood_sensitivity ?? (sharedSymptomNames.some(name => name.includes('mood')) || undefined)),
     )
 
   const [notes, setNotes] = useState(
@@ -197,6 +206,8 @@ export default function CycleTracker({
 
   async function saveCycleData() {
     try {
+      if (saveLock.current) return
+      saveLock.current = true
       setSaving(true)
       setSaved(false)
       setError('')
@@ -247,12 +258,11 @@ export default function CycleTracker({
           cycle_history:
             cleanedCycleHistory,
 
-          bleeding,
-          cramps,
-          headache,
-          fatigue,
-          mood_sensitivity:
-            moodSensitivity,
+          ...(answered.has('bleeding') ? { bleeding } : {}),
+          ...(answered.has('cramps') ? { cramps } : {}),
+          ...(answered.has('headache') ? { headache } : {}),
+          ...(answered.has('fatigue') ? { fatigue } : {}),
+          ...(answered.has('mood_sensitivity') ? { mood_sensitivity: moodSensitivity } : {}),
           notes,
         }),
       })
@@ -307,7 +317,7 @@ export default function CycleTracker({
           null,
       )
 
-      setSaved(true)
+      setSaved(true); router.refresh()
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
@@ -315,6 +325,7 @@ export default function CycleTracker({
           : 'Cycle update failed',
       )
     } finally {
+      saveLock.current = false
       setSaving(false)
     }
   }
@@ -707,9 +718,7 @@ export default function CycleTracker({
         </h2>
 
         <p style={styles.bodyStyle}>
-          These inputs help the system prioritize
-          your actual signals over an estimated
-          phase.
+          Optional. Today’s saved symptoms are shared across cycle and recovery. Only update what has changed; unchecked defaults are not recorded as answers.
         </p>
 
         <div
@@ -722,33 +731,31 @@ export default function CycleTracker({
           <CycleCheckbox
             label="Bleeding today"
             checked={bleeding}
-            onChange={setBleeding}
+            onChange={value => { markAnswered('bleeding'); setBleeding(value) }}
           />
 
           <CycleCheckbox
             label="Cramps"
             checked={cramps}
-            onChange={setCramps}
+            onChange={value => { markAnswered('cramps'); setCramps(value) }}
           />
 
           <CycleCheckbox
             label="Headache"
             checked={headache}
-            onChange={setHeadache}
+            onChange={value => { markAnswered('headache'); setHeadache(value) }}
           />
 
           <CycleCheckbox
             label="Fatigue"
             checked={fatigue}
-            onChange={setFatigue}
+            onChange={value => { markAnswered('fatigue'); setFatigue(value) }}
           />
 
           <CycleCheckbox
             label="Mood sensitivity"
             checked={moodSensitivity}
-            onChange={
-              setMoodSensitivity
-            }
+            onChange={value => { markAnswered('mood_sensitivity'); setMoodSensitivity(value) }}
           />
         </div>
 
@@ -786,10 +793,11 @@ export default function CycleTracker({
           {saving
             ? 'Saving...'
             : saved
-              ? 'Cycle Saved'
+              ? 'Saved · today’s guidance updated'
               : 'Save Cycle Note'}
         </button>
 
+        {saved ? <p role="status" style={styles.bodyStyle}>Today’s guidance now includes your updated cycle context. <Link href="/dashboard">See today’s next step</Link></p> : null}
         {error ? (
           <p
             style={{

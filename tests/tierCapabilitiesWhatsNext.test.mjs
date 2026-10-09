@@ -131,9 +131,9 @@ test('nutrition What’s Next respects Ember, Ignite, and Phoenix render modes',
     logic: logic('ember'),
     schedule: schedule('meal'),
   })
-  assert.equal(ember.title, 'Add Macros')
+  assert.equal(ember.title, 'Review nutrition guidance')
   assert.equal(ember.data.mode, 'macro_entry')
-  assert.equal(ember.primaryAction.label, 'Add Macros')
+  assert.equal(ember.primaryAction.label, 'Review guidance')
 
   const ignite = buildWhatsNextState({
     tier: 'ignite',

@@ -33,7 +33,8 @@ export async function POST(req: Request) {
       )
     }
 
-    const timezone = getTimezoneFromState(body.state)
+    const { data: existing } = await supabase.from('clients').select('*').eq('auth_user_id', user.id).maybeSingle()
+    const timezone = existing?.timezone || getTimezoneFromState(body.state)
     const completedAt = new Date().toISOString()
     const accountabilityPreferences = {
       supportPreference:
@@ -60,7 +61,10 @@ export async function POST(req: Request) {
         last_period_start: body.lastPeriodStart || null,
         average_cycle_length: Number(body.averageCycleLength || 28),
 
+        execution_style: ['schedule','flow','hybrid'].includes(body.executionStyle) ? body.executionStyle : existing?.execution_style || 'flow',
+        carousel_style: ['section','step'].includes(body.carouselStyle) ? body.carouselStyle : existing?.carousel_style || 'section',
         onboarding_data: {
+          ...existing?.onboarding_data,
           ...body,
           timezone,
           accountabilityPreferences,
@@ -71,7 +75,7 @@ export async function POST(req: Request) {
           body.reproductiveStatus === 'irregular_cycles',
 
         onboarding_completed: true,
-        onboarding_completed_at: completedAt,
+        onboarding_completed_at: existing?.onboarding_completed_at || completedAt,
         updated_at: completedAt,
 
         last_six_cycle_starts: body.knowsLastSixCycles

@@ -1,10 +1,12 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import { formatLocalTime } from '@/lib/schedule/time'
-import AdaptiveTodayForYou from '@/components/program-dashboard/AdaptiveTodayForYou'
+import DailyPlanCard from '@/components/DailyPlanCard'
+import ScheduleEventActions from '@/components/ScheduleEventActions'
+import { zonedDateTimeToUtc } from '@/lib/schedule/time'
 
 function eventLabel(event: ScheduleEvent) {
   if (event.flexibility_type === 'fixed') return 'Fixed'
@@ -24,6 +26,7 @@ export default function ScheduleDashboardClient({
   clientId: string
 }) {
   const router = useRouter()
+  const submitLock = useRef(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
@@ -37,6 +40,8 @@ export default function ScheduleDashboardClient({
 
   async function saveEvent(event: React.FormEvent) {
     event.preventDefault()
+    if (submitLock.current) return
+    submitLock.current = true
     setSaving(true)
     setError('')
     try {
@@ -46,8 +51,8 @@ export default function ScheduleDashboardClient({
         body: JSON.stringify({
           ...form,
           client_id: clientId,
-          start_at: new Date(form.start_at).toISOString(),
-          end_at: new Date(form.end_at).toISOString(),
+          start_at: zonedDateTimeToUtc(form.start_at.split('T')[0], form.start_at.split('T')[1], initialSchedule.timezone).toISOString(),
+          end_at: zonedDateTimeToUtc(form.end_at.split('T')[0], form.end_at.split('T')[1], initialSchedule.timezone).toISOString(),
           timezone: initialSchedule.timezone,
         }),
       })
@@ -58,105 +63,20 @@ export default function ScheduleDashboardClient({
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Event could not be saved.')
     } finally {
+      submitLock.current = false
       setSaving(false)
     }
   }
 
-  async function complete(event: ScheduleEvent) {
-    if (event.virtual) return
-    setSaving(true)
-    setError('')
-    try {
-      const response = await fetch(`/api/schedule/${event.id}/complete`, { method: 'POST' })
-      const payload = await response.json()
-      if (!response.ok) throw new Error(payload.error || 'Event could not be completed.')
-      router.refresh()
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Event could not be completed.')
-    } finally {
-      setSaving(false)
-    }
-  }
 
   const schedule = initialSchedule
-  const action = schedule.nextAction
-  const current = schedule.events.find((event) => {
-    const now = new Date(schedule.now).getTime()
-    return new Date(event.start_at).getTime() <= now && new Date(event.end_at).getTime() >= now
-  })
 
   return (
     <main className="schedule-page">
       <div className="schedule-shell">
-        <AdaptiveTodayForYou
-          schedule={schedule}
-          streak={0}
-          insight="The schedule is clear. Use the evening to protect recovery and tomorrow's setup."
-        />
-
-        <header className="schedule-hero">
-          <div>
-            <p className="schedule-label">Today</p>
-            <h1>{action.title}</h1>
-            <p>{action.reason}</p>
-          </div>
-          <div className="schedule-next-card">
-            <span>{action.urgency}</span>
-            <strong>{action.start_at ? formatLocalTime(action.start_at, schedule.timezone) : 'Open'}</strong>
-            <small>{action.overdue ? 'Overdue' : action.automatically_adjusted ? 'Adjusted' : 'Next action'}</small>
-            {action.action_route ? (
-              <a href={action.action_route} className="adaptive-primary-action">Open</a>
-            ) : null}
-          </div>
-        </header>
-
-        <section className="schedule-summary-grid">
-          <article>
-            <span>Now</span>
-            <strong>{current?.title || 'Open window'}</strong>
-            <small>{current ? eventLabel(current) : 'No active block'}</small>
-          </article>
-          <article>
-            <span>Remaining</span>
-            <strong>{schedule.upcomingEvents.length}</strong>
-            <small>{schedule.flexibleEvents.length} flexible</small>
-          </article>
-          <article>
-            <span>Completed</span>
-            <strong>{schedule.completedEvents.length}</strong>
-            <small>{schedule.overdueEvents.length} overdue</small>
-          </article>
-          <article>
-            <span>Open Time</span>
-            <strong>{schedule.openWindows.length}</strong>
-            <small>{schedule.timezone}</small>
-          </article>
-        </section>
-
-        {schedule.adjustments.length ? (
-          <section className="schedule-panel">
-            <div className="schedule-section-heading">
-              <p className="schedule-label">Adaptive Changes</p>
-              <span>{schedule.adjustments.length}</span>
-            </div>
-            <div className="schedule-change-list">
-              {schedule.adjustments.map((item) => (
-                <article key={`${item.event_id}-${item.adjustment_type}`}>
-                  <strong>{item.title}</strong>
-                  <p>{item.reason}</p>
-                  <small>
-                    {item.suggested_start_at
-                      ? `${formatLocalTime(item.suggested_start_at, schedule.timezone)} ${item.applied ? 'applied' : 'suggested'}`
-                      : 'No valid open window today'}
-                    {item.requires_approval ? ' · approval required' : ''}
-                    {item.automatic && item.applied ? ' · automatic' : ''}
-                  </small>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
+        <header className="schedule-hero"><div><p className="schedule-label">{schedule.date} · {schedule.timezone}</p><h1>Your day, with room to breathe</h1><p>Fixed commitments stay in place. Flexible actions can move or be skipped today.</p></div></header>
+        {schedule.dailyRecommendation ? <DailyPlanCard plan={schedule.dailyRecommendation} compact /> : null}
+        {error ? <p role="alert">{error}</p> : null}
         <section className="schedule-grid">
           <div className="schedule-panel">
             <div className="schedule-section-heading">
@@ -164,28 +84,24 @@ export default function ScheduleDashboardClient({
               <span>{schedule.date}</span>
             </div>
             <div className="schedule-timeline">
-              {schedule.events.map((event) => (
-                <article className={`schedule-event schedule-${event.flexibility_type}`} key={event.id}>
-                  <time>{formatLocalTime(event.start_at, schedule.timezone)}</time>
+              {schedule.events.filter(event => !['skipped','cancelled'].includes(event.status)).map((event) => (
+                <article id={`event-${event.id}`} className={`schedule-event schedule-${event.flexibility_type}`} key={event.id}>
+                  <time>{formatLocalTime(event.adjusted_start_at || event.start_at, schedule.timezone)}{event.adjusted_start_at ? <small>Originally {formatLocalTime(event.start_at, schedule.timezone)}</small> : null}</time>
                   <div>
                     <h3>{event.title}</h3>
                     <p>{event.description || event.event_type.replaceAll('_', ' ')}</p>
                     <div>
                       <span>{eventLabel(event)}</span>
-                      <span>{event.priority}</span>
-                      <span>{event.status}</span>
-                      {event.virtual ? <span>plan</span> : null}
+                      <span>{event.suggested ? 'Suggested time' : event.status}</span>
                     </div>
                   </div>
-                  <button type="button" disabled={saving || event.virtual || event.status === 'completed'} onClick={() => complete(event)}>
-                    {event.status === 'completed' ? 'Done' : 'Complete'}
-                  </button>
+                  <ScheduleEventActions event={event} program={schedule.program} timezone={schedule.timezone} suggestion={schedule.adjustments.find(item => item.event_id === event.id && !item.applied)} />
                 </article>
               ))}
             </div>
           </div>
 
-          <aside className="schedule-panel">
+          <aside className="schedule-panel"><details><summary>Add a commitment or action</summary>
             <div className="schedule-section-heading">
               <p className="schedule-label">Add Event</p>
             </div>
@@ -228,7 +144,7 @@ export default function ScheduleDashboardClient({
               <button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Add Event'}</button>
               {error ? <p role="alert">{error}</p> : null}
             </form>
-          </aside>
+          </details></aside>
         </section>
       </div>
     </main>

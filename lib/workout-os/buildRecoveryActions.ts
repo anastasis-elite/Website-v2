@@ -52,9 +52,9 @@ const EPSOM_SALT_SOAK: RecoveryAction = {
 
 const HYDRATION_ACTION: RecoveryAction = {
   id: 'hydration_support',
-  label: 'Complete remaining hydration target',
+  label: 'Have a little water at your own pace',
   duration: {
-    minutes: 10,
+    minutes: 0,
   },
 }
 

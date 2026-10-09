@@ -36,7 +36,7 @@ test('nutrition dashboard exposes progress, intake, and management tab systems',
 
 test('nutrition dashboard reuses existing nutrition data and logging components', () => {
   assert.match(dashboard, /NutritionFoodLogger/)
-  assert.match(dashboard, /fetch\('\/api\/nutrition\/add-water'/)
+  assert.match(readFileSync('components/hydration/HydrationQuickAdd.tsx', 'utf8'), /fetch\('\/api\/nutrition\/add-water'/)
   assert.match(dashboard, /fetch\('\/api\/nutrition\/add-macros'/)
   assert.match(dashboard, /\/api\/nutrition\/suggested-foods\?nutritionLogId=/)
   assert.match(dashboard, /nutrition_log_remaining/)

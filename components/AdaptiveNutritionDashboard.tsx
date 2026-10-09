@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import HydrationQuickAdd from '@/components/hydration/HydrationQuickAdd'
 import NutritionFoodLogger from '@/components/NutritionFoodLogger'
 import { useRouter } from 'next/navigation'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
@@ -167,7 +168,11 @@ export default function AdaptiveNutritionDashboard({
   recipes: PhoenixRecipe[]
 }) {
   const router=useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
+  useEffect(() => {
+    const followHash = () => { if (window.location.hash === '#hydration') setIntakeTab('water'); else if (window.location.hash === '#aos-food-logger') setIntakeTab('meal') }
+    followHash(); window.addEventListener('hashchange', followHash); return () => window.removeEventListener('hashchange', followHash)
+  }, [])
   const engineNutrition=useNutritionEngine(logic)
   const fuel=useFuelReadinessEngine(logic)
   const phoenixRecipes=usePhoenixRecipes(recipes)
@@ -197,10 +202,8 @@ export default function AdaptiveNutritionDashboard({
   })
   const [savingMacros, setSavingMacros] = useState(false)
 
-  const [waterOunces, setWaterOunces] = useState(8);
-  const [addingWater, setAddingWater] = useState(false);
   const [progressTab, setProgressTab] = useState<ProgressTab>('daily')
-  const [intakeTab, setIntakeTab] = useState<IntakeTab>('water')
+  const [intakeTab, setIntakeTab] = useState<IntakeTab>('meal')
   const [managementTab, setManagementTab] = useState<ManagementTab>('goals')
   const [suggestedFoods, setSuggestedFoods] = useState<SuggestedFood[]>([])
   const [suggestedFoodsState, setSuggestedFoodsState] = useState<'idle' | 'loading' | 'ready' | 'needs_logs' | 'complete' | 'error'>('idle')
@@ -268,37 +271,6 @@ export default function AdaptiveNutritionDashboard({
     }
   }, [logic.client.id])
   
-  async function addWater() {
-  setAddingWater(true);
-  setMessage('');
-
-  try {
-    const response = await fetch('/api/nutrition/add-water', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        clientId: logic.client.id,
-        ounces: waterOunces,
-      }),
-    });
-
-    const payload = await response.json();
-
-    if (!response.ok) {
-      setMessage(payload.error || 'Water could not be saved.');
-      return;
-    }
-
-    router.refresh();
-  } catch {
-    setMessage('Water could not be saved.');
-  } finally {
-    setAddingWater(false);
-  }
-}
-  
   async function handleFoodUpdated(updatedRemaining?: Remaining | null, action: 'added' | 'removed' = 'added') {
     if (updatedRemaining) {
       setRemaining(updatedRemaining)
@@ -330,7 +302,7 @@ export default function AdaptiveNutritionDashboard({
           protein: Number(macroEntry.protein || 0),
           carbs: Number(macroEntry.carbs || 0),
           fats: Number(macroEntry.fats || 0),
-          mealPeriod: getMealPeriodForLocalDate(),
+          mealPeriod: getMealPeriodForLocalDate(new Date(), logic.client.timezone),
         }),
       })
       const payload = await response.json().catch(() => null)
@@ -349,9 +321,6 @@ export default function AdaptiveNutritionDashboard({
     }
   }
 
-  useEffect(() => {
-    loadToday()
-  }, [])
 
   useEffect(() => {
     void loadSuggestedFoods()
@@ -400,7 +369,7 @@ export default function AdaptiveNutritionDashboard({
     )
   }
 
-  async function loadToday() {
+  const loadToday = useCallback(async () => {
     setLoading(true)
     setMessage('')
 
@@ -583,7 +552,9 @@ setNutritionLog(log)
     setCalorieTarget(Number(log.calories || calculateCalories(initialProtein, initialCarbs, initialFat)))
 
     setLoading(false)
-  }
+  }, [supabase, logic.client, tier])
+
+  useEffect(() => { void loadToday().catch(() => { setLoading(false); setMessage('Today’s nutrition could not be loaded. Refresh to try again.') }) }, [loadToday])
 
   const microRows = [
     ['Fiber', nutritionLog?.fiber_target_g, remaining?.fiber_remaining_g, 'g'],
@@ -853,27 +824,7 @@ setNutritionLog(log)
                     </div>
                   </div>
 
-                  <div className="nutrition-water-control">
-                    <div>
-                      <span>Add Water</span>
-                      <strong>{waterOunces} oz</strong>
-                    </div>
-                    <input
-                      id="water-ounces"
-                      type="range"
-                      min="4"
-                      max="64"
-                      step="4"
-                      value={waterOunces}
-                      onChange={(event) => setWaterOunces(Number(event.target.value))}
-                      disabled={addingWater}
-                      aria-label="Water amount to add"
-                    />
-                    <div><small>4 oz</small><small>64 oz</small></div>
-                    <button type="button" onClick={addWater} disabled={addingWater} className="tier-primary-action">
-                      {addingWater ? 'Adding Water...' : `Add ${waterOunces} oz`}
-                    </button>
-                  </div>
+                  <HydrationQuickAdd clientId={logic.client.id} consumed={logic.hydration.consumed} target={logic.hydration.target} renderTrigger={({ toggle, triggerRef }) => <button ref={triggerRef} type="button" className="tier-primary-action" onClick={toggle}>Log water</button>} />
                 </div>
               ) : null}
 
@@ -881,6 +832,7 @@ setNutritionLog(log)
                 <div id={foodLoggingEnabled ? 'aos-food-logger' : 'aos-macro-entry'} className="nutrition-log-meal-panel">
                   {foodLoggingEnabled && nutritionLog?.id ? (
                     <NutritionFoodLogger
+                      timezone={logic.fuelReadiness.timeZone}
                       nutritionLogId={nutritionLog.id}
                       capabilities={{
                         nutritionBarcodeScanning: capabilities.nutritionBarcodeScanning,

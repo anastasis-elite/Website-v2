@@ -68,6 +68,8 @@ type Props = {
   outputProgram?: string | null
   muscleReadiness: MuscleReadiness[]
   workoutHistory: WorkoutLogRow[]
+  timezone?: string
+  weightUnit?: 'lb' | 'kg'
   memberEquipment: string[]
   showStrengthAssessmentOffer: boolean
   strengthAssessmentWindowEndDate?: string | null
@@ -204,7 +206,7 @@ export default function WorkoutDashboard(props: Props) {
       {props.hasSafetyFlags ? <SafetyEscalationNotice flags={props.safetyFlags} embedded /> : null}
 
       <div className="workout-dashboard-row">
-        <MuscleReadinessMap readiness={props.muscleReadiness} highlightedMuscleIds={highlightedMuscles} />
+        <details className="daily-disclosure"><summary>Muscle readiness details</summary><MuscleReadinessMap readiness={props.muscleReadiness} highlightedMuscleIds={highlightedMuscles} /></details>
 
         <section className="workout-current-panel" data-testid="today-workout-panel">
           <div className="tier-panel-heading">
@@ -227,12 +229,14 @@ export default function WorkoutDashboard(props: Props) {
               ))}
             </div>
           </div>
-          <div className="workout-scroll-region">
+          <div className="workout-session-region">
             {workoutMode === 'manual' ? (
               <ManualWorkoutBuilder
                 clientId={props.clientId}
                 authUserId={props.authUserId}
                 program={props.outputProgram || props.program}
+                timezone={props.timezone}
+                weightUnit={props.weightUnit}
                 recommendedDayName={props.assignedDayName}
                 recommendedExercises={props.assignedExercises}
                 memberEquipment={props.memberEquipment}
@@ -242,6 +246,8 @@ export default function WorkoutDashboard(props: Props) {
               />
             ) : props.showInteractiveWorkout ? (
               <WorkoutTracker
+                timezone={props.timezone}
+                weightUnit={props.weightUnit}
                 clientId={props.clientId}
                 authUserId={props.authUserId}
                 program={props.outputProgram || props.program}

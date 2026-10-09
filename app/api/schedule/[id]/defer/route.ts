@@ -1,3 +1,8 @@
+import { dashboardApiError } from '@/lib/dashboard/apiError'
+import { scheduleConflict } from '@/lib/schedule/actions'
+import { getDailyScheduleState } from '@/lib/schedule/service'
+import { getClientLocalDate } from '@/lib/timezone'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 
@@ -7,7 +12,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const { supabase, user } = await getDashboardContext()
+    const { supabase, user, client } = await getDashboardContext()
     const body = await request.json()
     const startAt = body.start_at ? new Date(body.start_at) : null
     const endAt = body.end_at ? new Date(body.end_at) : null
@@ -24,15 +29,19 @@ export async function POST(
     if (existing.flexibility_type !== 'flexible' || !existing.movable || existing.approval_required) {
       return NextResponse.json({ error: 'Only movable flexible events can be deferred.' }, { status: 400 })
     }
-    if (!startAt || !endAt || endAt <= startAt) {
+    if (!startAt || !endAt || !Number.isFinite(startAt.getTime()) || !Number.isFinite(endAt.getTime()) || endAt <= startAt || startAt < new Date()) {
       return NextResponse.json({ error: 'A valid defer window is required.' }, { status: 400 })
     }
 
+    const schedule = await getDailyScheduleState({ supabase, user, client, date: getClientLocalDate(client, startAt) })
+    const conflict = scheduleConflict(schedule.events, id, startAt, endAt, schedule.preferences?.transitionMinutes)
+    if (conflict) return NextResponse.json({ error: conflict }, { status: 409 })
     const { data, error } = await supabase
       .from('anastasis_schedule_events')
       .update({
-        start_at: startAt.toISOString(),
-        end_at: endAt.toISOString(),
+        adjusted_start_at: startAt.toISOString(),
+        adjusted_end_at: endAt.toISOString(),
+        adjusted_duration_minutes: Math.round((endAt.getTime()-startAt.getTime())/60000),
         status: 'scheduled',
         adaptive_reason: 'Deferred by user from the adaptive schedule interface.',
         updated_at: new Date().toISOString(),
@@ -43,11 +52,9 @@ export async function POST(
       .single()
 
     if (error) throw new Error(error.message)
+    invalidateDailyPlan()
     return NextResponse.json({ success: true, event: data })
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Event could not be deferred.' },
-      { status: 500 },
-    )
+    return dashboardApiError(error, 'Event could not be deferred.')
   }
 }

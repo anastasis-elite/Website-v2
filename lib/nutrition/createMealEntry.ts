@@ -1,3 +1,4 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { NormalizedMealInput, MealEntryInsert } from '@/lib/nutrition/mealEntry'
@@ -50,6 +51,7 @@ function logAddMealDiagnostic({
 
 export async function createMealEntry(supabase: SupabaseClient, userId: string, input: NormalizedMealInput) {
   const {
+    requestId,
     nutritionLogId,
     foodId,
     mealName,
@@ -163,6 +165,10 @@ export async function createMealEntry(supabase: SupabaseClient, userId: string, 
     return NextResponse.json({ error: 'Invalid nutrition entry state.' }, { status: 400 })
   }
 
+  if (requestId) {
+    const { data: previous } = await supabase.from('meal_entries').select('id').eq('id', requestId).eq('nutrition_log_id', nutritionLogId).maybeSingle()
+    if (previous) return NextResponse.json({ success: true, mealEntryId: previous.id, replayed: true })
+  }
   let grams: number | null = null
   let resolvedServingUnit = servingUnit || 'serving'
   const normalizedMealPeriod = normalizeMealPeriod(mealPeriod || mealName)
@@ -285,6 +291,7 @@ export async function createMealEntry(supabase: SupabaseClient, userId: string, 
   }
 
   const entry: MealEntryInsert = {
+      ...(requestId ? { id: requestId } : {}),
       nutrition_log_id: nutritionLogId,
       food_id: foodId,
       meal_name: normalizedMealName,
@@ -309,6 +316,10 @@ export async function createMealEntry(supabase: SupabaseClient, userId: string, 
     .select('id')
     .single()
 
+  if (error?.code === '23505' && requestId) {
+    const { data: previous } = await supabase.from('meal_entries').select('id').eq('id', requestId).eq('nutrition_log_id', nutritionLogId).maybeSingle()
+    if (previous) return NextResponse.json({ success: true, mealEntryId: previous.id, replayed: true })
+  }
   if (error || !mealEntry) {
     logAddMealDiagnostic({
       stage: 'meal_entry_insert',
@@ -393,6 +404,8 @@ export async function createMealEntry(supabase: SupabaseClient, userId: string, 
     })
     refreshStatus = 'degraded'
   }
+
+  invalidateDailyPlan()
 
   return NextResponse.json({
     success: true,

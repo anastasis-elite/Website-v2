@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import * as styles from '@/app/styles/globalstyles'
 import { getMealPeriodForLocalDate, mealPeriods, type MealPeriod } from '@/lib/nutrition/mealPeriod'
 
@@ -55,6 +56,7 @@ type Remaining = {
 }
 
 type Props = {
+  timezone?: string
   nutritionLogId: string
   capabilities: {
     nutritionBarcodeScanning: boolean
@@ -78,6 +80,7 @@ type ServingOption = {
 
 type MealEntry = {
   id: string
+  food_id?: string
   meal_name: string
   meal_period: string | null
   serving_amount: number
@@ -90,9 +93,7 @@ type MealEntry = {
   estimated?: boolean | null
   confidence?: number | null
   created_at: string
-  foods: {
-    name: string
-  } | null
+  foods: Food | null
 }
 
 type RecurringCandidate = {
@@ -129,33 +130,24 @@ function firstRelated<T>(value: T | T[] | null | undefined) {
 export default function NutritionFoodLogger(props: Props) {
   const [method, setMethod] = useState<InputMethod>('manual')
   const [revision, setRevision] = useState(0)
+  const methods: InputMethod[] = ['manual', ...(props.capabilities.nutritionBarcodeScanning ? ['barcode' as const] : []), ...(props.capabilities.nutritionPhotoMacroEstimation ? ['image' as const] : [])]
   const descriptions = { manual: 'Find or enter what I ate', barcode: 'Scan packaged food', image: 'Take or upload a picture' }
-  return (
-    <div>
-      <div className="tier-tab-list" role="tablist" aria-label="Meal logging method" style={{ marginBottom: 18, flexWrap: 'wrap' }}>
-        {(['manual', 'barcode', 'image'] as const).map((inputMethod) => (
-          <button key={inputMethod} id={`meal-method-${inputMethod}`} role="tab" type="button" aria-selected={method === inputMethod} aria-controls={`meal-panel-${inputMethod}`} className={method === inputMethod ? 'is-active' : ''} onClick={() => setMethod(inputMethod)}>
-            {inputMethod === 'manual' ? 'Manual' : inputMethod === 'barcode' ? 'Barcode' : 'Image'}
-          </button>
-        ))}
-      </div>
-      {(['manual', 'barcode', 'image'] as const).map((inputMethod) => (
-        <div key={inputMethod} id={`meal-panel-${inputMethod}`} role="tabpanel" aria-labelledby={`meal-method-${inputMethod}`} hidden={method !== inputMethod}>
-          <p style={{ ...styles.bodyStyle, marginBottom: 18 }}>{descriptions[inputMethod]}</p>
-          {inputMethod === 'image' && !props.capabilities.nutritionPhotoMacroEstimation ? (
-            <p style={styles.compactCardTextStyle}>Image meal logging is available with PHOENIX. You can use Manual or Barcode.</p>
-          ) : inputMethod === 'barcode' && !props.capabilities.nutritionBarcodeScanning ? (
-            <p style={styles.compactCardTextStyle}>Barcode logging is unavailable for this tier.</p>
-          ) : (
-            <FoodInputLogger {...props} method={inputMethod} revision={revision} onUpdated={(remaining, action) => {
-              setRevision((current) => current + 1)
-              props.onUpdated?.(remaining, action)
-            }} />
-          )}
-        </div>
-      ))}
+  return <div className="focused-meal-entry">
+    <div className="tier-tab-list" role="tablist" aria-label="Meal logging method">
+      {methods.map(inputMethod => <button key={inputMethod} id={`meal-method-${inputMethod}`} role="tab" type="button" tabIndex={method === inputMethod ? 0 : -1} aria-selected={method === inputMethod} aria-controls={`meal-entry-panel-${inputMethod}`} className={method === inputMethod ? 'is-active' : ''} onClick={() => setMethod(inputMethod)} onKeyDown={event => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+        event.preventDefault()
+        const index = methods.indexOf(inputMethod)
+        const next = event.key === 'Home' ? methods[0] : event.key === 'End' ? methods.at(-1)! : methods[(index + (event.key === 'ArrowRight' ? 1 : methods.length - 1)) % methods.length]
+        setMethod(next)
+        document.getElementById(`meal-method-${next}`)?.focus()
+      }}>{inputMethod === 'manual' ? 'Search / manual' : inputMethod === 'barcode' ? 'Barcode' : 'Photo'}</button>)}
     </div>
-  )
+    {methods.map(inputMethod => <div key={inputMethod} id={`meal-entry-panel-${inputMethod}`} role="tabpanel" aria-labelledby={`meal-method-${inputMethod}`} hidden={method !== inputMethod}>
+      <p style={{ ...styles.bodyStyle, marginTop: 12 }}>{descriptions[inputMethod]}</p>
+      <FoodInputLogger {...props} method={inputMethod} active={method === inputMethod} onMethodChange={setMethod} revision={revision} onUpdated={(remaining, action) => { setRevision(current => current+1); props.onUpdated?.(remaining, action) }}/>
+    </div>)}
+  </div>
 }
 
 function FoodInputLogger({
@@ -165,12 +157,21 @@ function FoodInputLogger({
   onUpdated,
   method,
   revision,
-}: Props & { method: InputMethod; revision: number }) {
+  timezone = 'America/Chicago',
+  onMethodChange,
+  active,
+}: Props & { method: InputMethod; active: boolean; revision: number; onMethodChange: (method: InputMethod) => void }) {
+  const router = useRouter()
+  const inputId = useId()
+  const submitLock = useRef(false)
+  const requestId = useRef<string | null>(null)
+  const lastSubmission = useRef('')
+  const [showCustom, setShowCustom] = useState(false)
   const [search, setSearch] = useState('')
   const [foods, setFoods] = useState<Food[]>([])
   const [selectedFood, setSelectedFood] = useState<Food | null>(null)
   const [servingAmount, setServingAmount] = useState('1')
-  const [mealName, setMealName] = useState<MealPeriod>(() => getMealPeriodForLocalDate())
+  const [mealName, setMealName] = useState<MealPeriod>(() => getMealPeriodForLocalDate(new Date(), timezone))
   const [entrySource, setEntrySource] = useState<'manual' | 'barcode' | 'recurring' | 'photo_estimate'>(method === 'image' ? 'photo_estimate' : method)
   const [message, setMessage] = useState('')
   const [saved, setSaved] = useState(false)
@@ -187,6 +188,8 @@ function FoodInputLogger({
   const [scannedBarcode, setScannedBarcode] = useState('')
   const [barcodeBusy, setBarcodeBusy] = useState(false)
   const [barcodeMessage, setBarcodeMessage] = useState('')
+  const [photoAvailable,setPhotoAvailable]=useState<boolean | null>(null)
+  useEffect(()=>{if(method!=='image'||!active)return;let cancelled=false;void fetch('/api/nutrition/photo-estimate').then(res=>res.json()).then(data=>{if(!cancelled){setPhotoAvailable(data.available===true);if(!data.available)setPhotoMessage(data.message||'Photo estimation is unavailable. Search / manual entry is still available.')}}).catch(()=>{if(!cancelled){setPhotoAvailable(false);setPhotoMessage('Photo estimation could not be checked. Search / manual entry is still available.')}});return()=>{cancelled=true}},[method,active])
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoMessage, setPhotoMessage] = useState('')
   const [recurringCandidates, setRecurringCandidates] = useState<RecurringCandidate[]>([])
@@ -209,21 +212,29 @@ function FoodInputLogger({
   const scanningRef = useRef(false)
 
   const loadTodayMeals = useCallback(async () => {
+    try {
     const res = await fetch(`/api/today-meals?nutritionLogId=${nutritionLogId}`)
     const data = await res.json()
 
     if (res.ok) {
       setTodayMeals(data.meals || [])
     }
+    } catch {
+      setMessage("Today's logged food could not be loaded. Please try again.")
+    }
   }, [nutritionLogId])
 
   const loadRecurringFoods = useCallback(async () => {
     if (!capabilities.nutritionRecurringFoodDetection) return
+    try {
     const res = await fetch('/api/nutrition/recurring-foods')
     const data = await res.json().catch(() => null)
     if (res.ok) {
       setRecurringCandidates(data?.suggestions || [])
       setRecurringPatterns(data?.active || [])
+    }
+    } catch {
+      // Recurring suggestions must not prevent adding or refreshing a meal.
     }
   }, [capabilities.nutritionRecurringFoodDetection])
 
@@ -249,7 +260,7 @@ function FoodInputLogger({
     setSelectedServingOptionId('')
     setMessage('')
     setLoadingServingOptions(true)
-
+    try {
     const res = await fetch(`/api/nutrition/serving-options?foodId=${food.id}`)
     const data = await res.json()
 
@@ -263,7 +274,11 @@ function FoodInputLogger({
     setServingOptions(options)
     const defaultOption = options.find((option: ServingOption) => option.is_default) || options[0]
     if (defaultOption) setSelectedServingOptionId(defaultOption.id)
+    } catch {
+      setMessage('Unable to load serving options. Please try again.')
+    } finally {
     setLoadingServingOptions(false)
+    }
   }
 
   async function searchFoods() {
@@ -289,21 +304,28 @@ function FoodInputLogger({
   }
 
   async function addMeal(source: typeof entrySource = entrySource, recurringFoodId?: string) {
+    if (submitLock.current) return
     if (!selectedFood) {
       setMessage('Select a food first.')
       return
     }
 
+    submitLock.current = true
+    const fingerprint = JSON.stringify([nutritionLogId, selectedFood.id, mealName, servingAmount, selectedServingOptionId, source, recurringFoodId])
+    if (lastSubmission.current !== fingerprint) requestId.current = null
+    lastSubmission.current = fingerprint
+    requestId.current ||= crypto.randomUUID()
     setAdding(true)
     setMessage('')
     setSaved(false)
-
+    try {
     const selectedServingOption = servingOptions.find((option) => option.id === selectedServingOptionId)
     const res = await fetch('/api/nutrition/add-meal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         nutritionLogId,
+        requestId: requestId.current,
         foodId: selectedFood.id,
         mealName,
         mealPeriod: mealName,
@@ -319,7 +341,7 @@ function FoodInputLogger({
     const data = await res.json()
 
     if (!res.ok) {
-      setMessage(data.error || 'Unable to add meal.')
+      setMessage(data.error || 'Unable to add this food. Please try again.')
       setAdding(false)
       return
     }
@@ -334,6 +356,8 @@ function FoodInputLogger({
           : 'Food logged. Today’s progress and remaining macros are updated.'
     )
     setSaved(true)
+    requestId.current = null
+    router.refresh()
     setSearch('')
     setFoods([])
     setSelectedFood(null)
@@ -347,13 +371,19 @@ function FoodInputLogger({
     onUpdated?.(data.remaining || null, 'added')
     await loadTodayMeals()
     await loadRecurringFoods()
+    } catch {
+      setMessage('Unable to add this food. Please try again.')
+    } finally {
+      submitLock.current = false
+      setAdding(false)
+    }
   }
 
   async function deleteMeal(mealEntryId: string) {
     setDeletingMealId(mealEntryId)
     setMessage('')
     setSaved(false)
-
+    try {
     const res = await fetch('/api/nutrition/delete-meal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -374,6 +404,11 @@ function FoodInputLogger({
     setMessage('Food removed. Today’s progress and remaining macros are updated.')
     setSaved(true)
     setDeletingMealId('')
+    } catch {
+      setMessage('Food could not be removed. Please try again.')
+    } finally {
+      setDeletingMealId('')
+    }
   }
 
   async function requestCameraStream() {
@@ -387,7 +422,7 @@ function FoodInputLogger({
         audio: false,
       })
     } catch {
-      throw new Error('Camera access is needed to scan food barcodes or capture meal photos. Allow camera access in your browser or device settings, then try again.')
+      throw new Error('Camera access was not granted. Enter the barcode below or return to Search / manual.')
     }
   }
 
@@ -464,7 +499,7 @@ function FoodInputLogger({
     }
 
     await selectFood(data.food, 'barcode')
-    setMealName(getMealPeriodForLocalDate())
+    setMealName(getMealPeriodForLocalDate(new Date(), timezone))
     setBarcodeMessage('Barcode found. Review the nutrition and serving size before adding it.')
     } catch {
       setBarcodeMessage("We couldn't find that barcode. Try searching for the food manually.")
@@ -481,6 +516,7 @@ function FoodInputLogger({
 
     setAdding(true)
     setMessage('')
+    try {
     const res = await fetch('/api/nutrition/custom-food', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -503,8 +539,14 @@ function FoodInputLogger({
     }
 
     setCustomFood({ name: '', brand: '', servingSize: '1', servingUnit: 'serving', servingGrams: '', calories: '', protein: '', carbs: '', fats: '', fiber: '' })
+    setShowCustom(false)
     await selectFood(data.food, method === 'barcode' ? 'barcode' : 'manual')
     setMessage('Custom food saved. Review serving size, then add it to today.')
+    } catch {
+      setMessage('Custom food could not be saved. Please try again.')
+    } finally {
+      setAdding(false)
+    }
   }
 
   async function handlePhotoSelected(file: File | null) {
@@ -517,8 +559,9 @@ function FoodInputLogger({
       form.append('photo', file)
       const res = await fetch('/api/nutrition/photo-estimate', { method: 'POST', body: form })
       const data = await res.json().catch(() => null)
-      setPhotoMessage(data?.error || "We couldn't analyze this image. You can add the food manually instead.")
-    } catch (error) {
+      if (res.ok && data?.food?.id) { await selectFood(data.food, 'photo_estimate'); setPhotoMessage('Review the estimated food and serving amount, then confirm to log it.') }
+      else setPhotoMessage(data?.error || "We couldn't analyze this image. You can add the food manually instead.")
+    } catch {
       setPhotoMessage("We couldn't analyze this image. You can add the food manually instead.")
     } finally {
       setPhotoBusy(false)
@@ -574,6 +617,15 @@ function FoodInputLogger({
     setSelectedServingOptionId(pattern.serving_option_id || '')
   }
 
+  useEffect(() => {
+    if (!active) {
+      scanningRef.current = false
+      cameraStream?.getTracks().forEach((track) => track.stop())
+      setCameraStream(null)
+      setScannerOpen(false)
+    }
+  }, [active, cameraStream])
+
   const visibleRecurring = recurringCandidates.filter((candidate) => !dismissedRecurring.has(candidate.foodId + candidate.mealPeriod))
 
   return (
@@ -585,16 +637,16 @@ function FoodInputLogger({
         <label style={styles.labelStyle} htmlFor="nutrition-barcode">Or enter a barcode</label>
         <input id="nutrition-barcode" style={styles.inputStyle} inputMode="numeric" value={scannedBarcode} onChange={(event) => setScannedBarcode(event.target.value)} />
         <button type="button" style={styles.primaryButtonStyle} disabled={barcodeBusy || !scannedBarcode.trim()} onClick={() => void lookupBarcode(scannedBarcode.trim())}>{barcodeBusy ? 'Looking up...' : 'Find Product'}</button>
-        {barcodeMessage ? <p role="status" style={styles.bodyStyle}>{barcodeMessage}</p> : null}
+        {barcodeMessage ? <p role="status" style={styles.bodyStyle}>{barcodeMessage}</p> : null}<button type="button" onClick={() => onMethodChange('manual')}>Return to Search / manual</button>
       </div> : null}
       {method === 'image' ? (
         <div>
-          <label style={{ ...styles.secondaryButtonStyle, textAlign: 'center', cursor: photoBusy ? 'default' : 'pointer' }}>
-            {photoBusy ? 'Analyzing...' : 'Take or Upload Image'}
+          <label style={{ ...styles.secondaryButtonStyle, textAlign: 'center', cursor: photoBusy || photoAvailable !== true ? 'default' : 'pointer' }}>
+            {photoBusy ? 'Analyzing…' : photoAvailable === null ? 'Checking photo availability…' : photoAvailable ? 'Take or upload a photo' : 'Photo estimation unavailable'}
             <input
               type="file"
               accept="image/*"
-              disabled={photoBusy}
+              disabled={photoBusy || photoAvailable !== true}
               style={{ display: 'none' }}
               onChange={(event) => void handlePhotoSelected(event.target.files?.[0] || null)}
             />
@@ -617,7 +669,7 @@ function FoodInputLogger({
 
       {photoMessage ? (
         <p role="status" style={{ ...styles.bodyStyle, marginBottom: 18 }}>
-          {photoMessage}
+          {photoMessage}<button type="button" onClick={() => onMethodChange('manual')}>Search / manual</button>
         </p>
       ) : null}
 
@@ -665,21 +717,27 @@ function FoodInputLogger({
         </div>
       ) : null}
 
-      {method !== 'image' ? <>
-      <div style={styles.fieldWrap}>
-        <label style={styles.labelStyle}>Meal</label>
-        <select style={styles.inputStyle} value={mealName} onChange={(e) => setMealName(e.target.value as MealPeriod)}>
+      <>
+      {selectedFood ? <div style={styles.fieldWrap}>
+        <label style={styles.labelStyle} htmlFor={`${inputId}-meal-name`}>Meal</label>
+        <select id={`${inputId}-meal-name`} style={styles.inputStyle} value={mealName} onChange={(e) => setMealName(e.target.value as MealPeriod)}>
           {mealPeriods.map((period) => (
             <option key={period} value={period}>
               {period}
             </option>
           ))}
         </select>
-      </div>
+      </div> : null}
 
       {method === 'manual' ? <>
+      {todayMeals.some(meal => meal.foods?.id) ? <div style={{ marginTop: 14 }}>
+        <p style={styles.labelStyle}>Recently logged today</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {todayMeals.filter((meal, index, all) => meal.foods?.id && all.findIndex(item => item.foods?.id === meal.foods?.id) === index).slice(0, 5).map(meal => <button key={meal.foods!.id} type="button" style={{ ...styles.secondaryButtonStyle, width: 'auto' }} onClick={() => void selectFood(meal.foods!)}>{meal.foods!.name}</button>)}
+        </div>
+      </div> : null}
       <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-        <label style={styles.labelStyle}>Search Food</label>
+        <label htmlFor="nutrition-food-search" style={styles.labelStyle}>Search food</label>
         <input id="nutrition-food-search" style={styles.inputStyle} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="egg, rice, yogurt..." />
       </div>
 
@@ -704,34 +762,36 @@ function FoodInputLogger({
         </p>
       )}
 
-      <div style={{ ...styles.compactCardStyle, marginTop: 20 }}>
+      {method !== 'image' ? <button type="button" className="tier-secondary-action" onClick={() => setShowCustom(!showCustom)}>{showCustom ? 'Close custom food' : method === 'barcode' ? 'Create a custom packaged food' : 'Can’t find it? Create a custom food'}</button> : null}
+      {showCustom && method !== 'image' ? <div style={{ ...styles.compactCardStyle, marginTop: 20 }}>
         <h3 style={styles.sectionTitleStyle}>Create Custom Food</h3>
         <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(120px,1fr))' }}>
-          <input style={styles.inputStyle} value={customFood.name} onChange={(event) => setCustomFood((current) => ({ ...current, name: event.target.value }))} placeholder="Food name" />
-          <input style={styles.inputStyle} value={customFood.brand} onChange={(event) => setCustomFood((current) => ({ ...current, brand: event.target.value }))} placeholder="Brand optional" />
-          <input style={styles.inputStyle} type="number" min="0.01" step="0.25" value={customFood.servingSize} onChange={(event) => setCustomFood((current) => ({ ...current, servingSize: event.target.value }))} placeholder="Serving size" />
-          <input style={styles.inputStyle} value={customFood.servingUnit} onChange={(event) => setCustomFood((current) => ({ ...current, servingUnit: event.target.value }))} placeholder="Serving unit" />
-          <input style={styles.inputStyle} type="number" min="0.01" step="0.1" value={customFood.servingGrams} onChange={(event) => setCustomFood((current) => ({ ...current, servingGrams: event.target.value }))} placeholder="Serving weight g" />
+          <input style={styles.inputStyle} value={customFood.name} onChange={(event) => setCustomFood((current) => ({ ...current, name: event.target.value }))} aria-label="Custom food name" placeholder="Food name" />
+          <input style={styles.inputStyle} value={customFood.brand} onChange={(event) => setCustomFood((current) => ({ ...current, brand: event.target.value }))} aria-label="Brand (optional)" placeholder="Brand optional" />
+          <input style={styles.inputStyle} type="number" min="0.01" step="0.25" value={customFood.servingSize} onChange={(event) => setCustomFood((current) => ({ ...current, servingSize: event.target.value }))} aria-label="Custom serving size" placeholder="Serving size" />
+          <input style={styles.inputStyle} value={customFood.servingUnit} onChange={(event) => setCustomFood((current) => ({ ...current, servingUnit: event.target.value }))} aria-label="Custom serving unit" placeholder="Serving unit" />
+          <input style={styles.inputStyle} type="number" min="0.01" step="0.1" value={customFood.servingGrams} onChange={(event) => setCustomFood((current) => ({ ...current, servingGrams: event.target.value }))} aria-label="Serving weight (grams)" placeholder="Serving weight g" />
           {(['calories', 'protein', 'carbs', 'fats', 'fiber'] as const).map((key) => (
-            <input key={key} style={styles.inputStyle} type="number" min="0" step="1" value={customFood[key]} onChange={(event) => setCustomFood((current) => ({ ...current, [key]: event.target.value }))} placeholder={key === 'fats' ? 'fat g' : key} />
+            <input key={key} style={styles.inputStyle} type="number" min="0" step="1" value={customFood[key]} onChange={(event) => setCustomFood((current) => ({ ...current, [key]: event.target.value }))} aria-label={key} placeholder={key === 'fats' ? 'fat g' : key} />
           ))}
         </div>
         <button type="button" style={{ ...styles.secondaryButtonStyle, marginTop: 12 }} onClick={createCustomFood} disabled={adding}>
           Save Custom Food
         </button>
-      </div>
+      </div> : null}
 
+      {selectedFood ? <>
       {loadingServingOptions ? <p style={{ ...styles.bodyStyle, marginTop: '12px' }}>Loading serving sizes...</p> : null}
 
       <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-        <label style={styles.labelStyle}>Serving Amount</label>
-        <input style={styles.inputStyle} type="number" min="0" step="0.25" value={servingAmount} onChange={(e) => setServingAmount(e.target.value)} />
+        <label htmlFor={`${inputId}-serving-amount`} style={styles.labelStyle}>Serving amount</label>
+        <input style={styles.inputStyle} id={`${inputId}-serving-amount`} type="number" min="0.01" step="0.25" value={servingAmount} onChange={(e) => setServingAmount(e.target.value)} />
       </div>
 
       {servingOptions.length > 0 && (
         <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-          <label style={styles.labelStyle}>Serving Size</label>
-          <select style={styles.inputStyle} value={selectedServingOptionId} onChange={(e) => setSelectedServingOptionId(e.target.value)}>
+          <label htmlFor={`${inputId}-serving-size`} style={styles.labelStyle}>Serving unit</label>
+          <select id={`${inputId}-serving-size`} style={styles.inputStyle} value={selectedServingOptionId} onChange={(e) => setSelectedServingOptionId(e.target.value)}>
             {servingOptions.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
@@ -740,11 +800,13 @@ function FoodInputLogger({
           </select>
         </div>
       )}
+      {!loadingServingOptions && servingOptions.length === 0 ? <p style={styles.bodyStyle}>Amount is in standard servings for this food. Create a custom food if you need a different serving size.</p> : null}
 
       <button type="button" style={{ ...styles.primaryButtonStyle, marginTop: '18px' }} onClick={() => void addMeal()} disabled={adding || searching || loadingServingOptions || !selectedFood}>
-        {adding ? 'Adding...' : 'Add Meal'}
+        {adding ? 'Saving…' : 'Confirm meal and save'}
       </button>
       </> : null}
+      </>
 
       {message && (
         <p role="status" aria-live="polite" style={{ ...styles.bodyStyle, marginTop: '18px', padding: '14px 16px', borderRadius: 14, border: saved ? '1px solid rgba(224,122,66,.7)' : '1px solid rgba(255,255,255,.12)', background: saved ? 'linear-gradient(135deg,rgba(181,78,35,.25),rgba(224,122,66,.08))' : 'rgba(255,255,255,.03)' }}>

@@ -1,15 +1,17 @@
 'use client'
 
 import Link from 'next/link'
+import DailyPlanCard from '@/components/DailyPlanCard'
+import DailyDisplayPreferences from '@/components/DailyDisplayPreferences'
+import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
+import { getLocalDaypart, getLocalMinutes } from '@/lib/timezone'
 import type { CSSProperties } from 'react'
-import { useMemo, useState } from 'react'
+import { useEffect,useMemo, useState } from 'react'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import { formatLocalTime } from '@/lib/schedule/time'
 import { getTierCapabilities, type ProgramTier } from '@/lib/entitlements'
-import { buildWhatsNextState, type WhatsNextState } from '@/lib/dashboard/whatsNext'
-import { buildDailyInsight, type DailyInsight } from '@/lib/dashboard/dailyInsight'
 import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
 import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashboardData'
 import {
@@ -20,7 +22,6 @@ import {
   buildWeekDays,
   itemsForDate,
   parseDateKey,
-  toDateKey,
   type CalendarDisplayItem,
 } from '@/lib/calendar/view'
 
@@ -38,56 +39,11 @@ function eventRange(event: ScheduleEvent, timezone: string) {
   return `${formatLocalTime(event.adjusted_start_at || event.start_at, timezone)}-${formatLocalTime(event.adjusted_end_at || event.end_at, timezone)}`
 }
 
-function itemDaypart(item: CalendarDisplayItem): Daypart {
-  const hour = new Date(item.start_at).getHours()
+function itemDaypart(item: CalendarDisplayItem, timezone: string): Daypart {
+  const hour = getLocalMinutes(new Date(item.start_at), timezone) / 60
   if (hour < 11) return 'morning'
   if (hour < 17) return 'midday'
   return 'evening'
-}
-
-function WhatsNextCard({ state, timezone }: { state: WhatsNextState; timezone: string }) {
-  const data = state.data as any
-  return (
-    <article className={`tier-whats-next-card tier-whats-next-${state.type}`} data-tutorial-id="dashboard-whats-next">
-      <p className="tier-dashboard-label">What&apos;s Next</p>
-      {state.startTime ? <span className="tier-dashboard-time">{formatLocalTime(state.startTime, timezone)}</span> : null}
-      <h2>{state.title}</h2>
-      {state.subtitle ? <p>{state.subtitle}</p> : null}
-
-      {state.type === 'workout' && data?.exercises?.length ? (
-        <ul className="tier-mini-list">
-          {data.exercises.map((exercise: string) => <li key={exercise}>{exercise}</li>)}
-        </ul>
-      ) : null}
-
-      {state.primaryAction ? (
-        <div className="tier-action-row">
-          <Link className="tier-primary-action" href={state.primaryAction.href}>{state.primaryAction.label}</Link>
-          {state.secondaryActions?.map((action) => (
-            <Link key={`${action.label}-${action.href}`} className="tier-secondary-action" href={action.href}>{action.label}</Link>
-          ))}
-        </div>
-      ) : null}
-    </article>
-  )
-}
-
-function DailyInsightCard({ insight }: { insight: DailyInsight }) {
-  return (
-    <article className={`tier-daily-insight tier-insight-${insight.category}`} data-tutorial-id="dashboard-daily-insight">
-      <p className="tier-dashboard-label">Today&apos;s Insight</p>
-      <p>{insight.message}</p>
-      {insight.accountability ? (
-        <div className="tier-accountability-message">
-          <p className="tier-dashboard-label">From {insight.accountability.partner.name}</p>
-          <p>{insight.accountability.message}</p>
-        </div>
-      ) : null}
-      {insight.action ? (
-        <Link href={insight.action.target} className="tier-secondary-action">{insight.action.label}</Link>
-      ) : null}
-    </article>
-  )
 }
 
 function DashboardCalendar({
@@ -97,15 +53,17 @@ function DashboardCalendar({
   schedule: DailyScheduleState
   planBlocks: PlanBlock[]
 }) {
+  const [dateExplicit,setDateExplicit]=useState(false);const [segmentExplicit,setSegmentExplicit]=useState(false)
   const [mode, setMode] = useState<CalendarMode>('day')
   const [selectedDate, setSelectedDate] = useState(schedule.date)
-  const [daypart, setDaypart] = useState<Daypart>('morning')
-  const items = useMemo(() => buildCalendarItems(schedule.events, schedule.openWindows), [schedule.events, schedule.openWindows])
+  const [daypart, setDaypart] = useState<Daypart>(() => getLocalDaypart(new Date(schedule.now), schedule.timezone))
+  useEffect(()=>{if(!dateExplicit)setSelectedDate(schedule.date);if(!segmentExplicit&&!dateExplicit)setDaypart(getLocalDaypart(new Date(schedule.now),schedule.timezone))},[schedule.date,schedule.now,schedule.timezone,dateExplicit,segmentExplicit])
+  const items = useMemo(() => buildCalendarItems(schedule.events, schedule.openWindows, schedule.timezone), [schedule.events, schedule.openWindows, schedule.timezone])
   const selectedItems = itemsForDate(items, selectedDate)
-  const monthCells = buildMonthGrid({ selectedDate, items })
+  const monthCells = buildMonthGrid({ selectedDate, items, today: schedule.date })
   const weekDays = buildWeekDays(selectedDate, items)
   const selectedPlanBlock = planBlocks.find((block) => block.id === daypart)
-  const daypartItems = selectedItems.filter((item) => itemDaypart(item) === daypart)
+  const daypartItems = selectedItems.filter((item) => itemDaypart(item, schedule.timezone) === daypart)
   const showTodayPlan = selectedDate === schedule.date && Boolean(selectedPlanBlock)
   const itemTitles = new Set(daypartItems.map((item) => item.title.trim().toLowerCase()))
   const planTasks = showTodayPlan
@@ -113,18 +71,21 @@ function DashboardCalendar({
     : []
 
   function selectDate(date: string) {
+    setDateExplicit(true)
     setSelectedDate(date)
     setMode('day')
   }
 
   function go(delta: number) {
+    setDateExplicit(true)
     if (mode === 'month') setSelectedDate((current) => addMonths(current, delta))
     else if (mode === 'week') setSelectedDate((current) => addDays(current, delta * 7))
     else setSelectedDate((current) => addDays(current, delta))
   }
 
   function today() {
-    setSelectedDate(toDateKey(new Date()))
+    setDateExplicit(false)
+    setSelectedDate(schedule.date)
   }
 
   const selected = parseDateKey(selectedDate)
@@ -202,7 +163,7 @@ function DashboardCalendar({
         <div className="tier-day-calendar" data-testid="calendar-day-view">
           <div className="tier-daypart-control" role="tablist" aria-label="Day plan time">
             {(['morning', 'midday', 'evening'] as Daypart[]).map((item) => (
-              <button key={item} type="button" className={daypart === item ? 'is-active' : ''} onClick={() => setDaypart(item)}>
+              <button key={item} type="button" className={daypart === item ? 'is-active' : ''} onClick={() => {setSegmentExplicit(true);setDaypart(item)}}>
                 {item}
               </button>
             ))}
@@ -352,14 +313,14 @@ function MacroRows({ logic, tier }: { logic: ProgramLogicOutput; tier: ProgramTi
   )
 }
 
-function ProgressTab({ logic, tier }: { logic: ProgramLogicOutput; tier: ProgramTier }) {
+export function ProgressTab({ logic, tier }: { logic: ProgramLogicOutput; tier: ProgramTier }) {
   const nutritionPercent = Math.round((logic.nutrition.protein.percent + logic.nutrition.carbs.percent + logic.nutrition.fats.percent) / 3)
   return (
     <div className="tier-progress-layout">
       <div className="tier-metric-grid" data-testid="dashboard-daily-actions">
         <MetricRing label="Hydration" value={logic.hydration.percent} detail={`${Math.round(logic.hydration.consumed)} / ${Math.round(logic.hydration.target)} oz`} href="/dashboard/nutrition" tutorialId="dashboard-water-progress" />
         <MetricRing label={tier === 'ember' ? 'Macros' : 'Nutrition'} value={nutritionPercent} detail={logic.execution.nutritionLogged ? 'Logged today' : 'Ready to log'} href="/dashboard/nutrition" />
-        <MetricRing label="Workout" value={logic.execution.workoutComplete ? 100 : 0} detail={logic.workout.assigned ? logic.workout.title : 'Recovery day'} href={`/dashboard/program/${tier}/workout`} />
+        <MetricRing label="Workout" value={logic.execution.workoutComplete ? 100 : 0} detail={logic.execution.workoutInProgress ? 'Session saved · continue when ready' : logic.workout.assigned ? logic.workout.title : 'Recovery day'} href={`/dashboard/program/${tier}/workout`} />
         <MetricRing label="Check-In" value={logic.assessments.dailyCompleted ? 100 : 0} detail={logic.assessments.dailyCompleted ? 'Complete' : 'Open'} href="/dashboard/check-in" tutorialId="dashboard-daily-checkin" />
         <MetricRing label="Recovery" value={logic.execution.recoveryComplete ? 100 : 0} detail={logic.execution.recoveryComplete ? 'Complete' : 'Available'} href="/dashboard/recovery" tone="recovery" />
         <CycleSummary logic={logic} />
@@ -369,7 +330,7 @@ function ProgressTab({ logic, tier }: { logic: ProgramLogicOutput; tier: Program
   )
 }
 
-function AssessmentsTab({ logic, capabilities }: { logic: ProgramLogicOutput; capabilities: ReturnType<typeof getTierCapabilities> }) {
+export function AssessmentsTab({ logic, capabilities }: { logic: ProgramLogicOutput; capabilities: ReturnType<typeof getTierCapabilities> }) {
   const postureCopy = capabilities.postureAssessment
     ? 'Posture landmark assessment available'
     : 'Progress photos available'
@@ -402,7 +363,7 @@ function TrendLine({ values }: { values: Array<number | null> }) {
   return <svg className="tier-trend-line" viewBox="0 0 100 48" role="img"><polyline points={coordinates} /></svg>
 }
 
-function TrendsTab({ logic }: { logic: ProgramLogicOutput }) {
+export function TrendsTab({ logic }: { logic: ProgramLogicOutput }) {
   return (
     <div className="tier-trends-layout" data-testid="dashboard-trends-tab">
       {logic.trends.map((trend) => (
@@ -434,8 +395,7 @@ function CalendarPill({
           <small>{item.event_type.replaceAll('_', ' ')} · {item.source.replaceAll('_', ' ')}</small>
           {item.suggested ? (
             <div className="tier-suggestion-actions">
-              <Link href="/dashboard/schedule">Schedule</Link>
-              <Link href="/dashboard/schedule">Dismiss</Link>
+              <Link href="/dashboard/schedule">Review suggestion</Link>
             </div>
           ) : item.event ? (
             <small>{eventRange(item.event, timezone)} · {item.status}</small>
@@ -450,7 +410,6 @@ export default function TierAwareDashboardWorkspace({
   tier,
   logic,
   schedule,
-  recipes = [],
 }: {
   tier: ProgramTier
   logic: ProgramLogicOutput
@@ -459,45 +418,35 @@ export default function TierAwareDashboardWorkspace({
 }) {
   const [tab, setTab] = useState<PanelTab>('progress')
   const capabilities = getTierCapabilities(tier)
-  const whatsNext = useMemo(
-    () => buildWhatsNextState({ tier, capabilities, logic, schedule, recipes }),
-    [tier, capabilities, logic, schedule, recipes],
-  )
-  const dailyInsight = useMemo(
-    () => buildDailyInsight({ tier, logic, schedule }),
-    [tier, logic, schedule],
-  )
   const planBlocks = useMemo(() => buildPlanBlocks(tier, logic), [tier, logic])
 
+  const plan = schedule.dailyRecommendation || buildDailyRecommendation(logic, schedule)
+  const quiet = schedule.preferences?.carouselStyle === 'step'
+  const flexible = schedule.preferences?.executionStyle === 'flow'
+  const preview = schedule.events.filter(event => !['cancelled','skipped'].includes(event.status) && new Date(event.adjusted_end_at || event.end_at) >= new Date(schedule.now)).slice(0, 3)
   return (
-    <section className="tier-dashboard-workspace" data-tier={tier}>
-      <DailyInsightCard insight={dailyInsight} />
-      <div className="tier-dashboard-row">
-        <DashboardCalendar schedule={schedule} planBlocks={planBlocks} />
-        <WhatsNextCard state={whatsNext} timezone={schedule.timezone} />
-      </div>
-
-      <section className="tier-info-panel" data-tutorial-id="dashboard-progress-area">
-        <div className="tier-tab-list" role="tablist" aria-label="Dashboard information">
-          {(['progress', 'assessments', 'trends'] as PanelTab[]).map((item) => (
-            <button key={item} type="button" className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>
-              {item[0].toUpperCase() + item.slice(1)}
-            </button>
-          ))}
+    <section className="tier-dashboard-workspace daily-home" data-tier={tier} data-quiet={quiet}>
+      <DailyPlanCard plan={plan} />
+      <DailyDisplayPreferences {...schedule.preferences} />
+      {quiet ? <p className="daily-quiet-note">One step is enough for now. Your schedule and details are here whenever you need them.</p> : <section className="daily-essentials" aria-label="Daily essentials">
+        {plan.supporting.map(action => <Link key={action.id} href={action.href}><strong>{action.title}</strong><span>{action.reason}</span></Link>)}
+      </section>}
+      {quiet ? <details className="daily-disclosure"><summary>Schedule and progress</summary><SchedulePreview preview={preview} flexible={flexible} schedule={schedule} logic={logic} plan={plan} /></details> : <SchedulePreview preview={preview} flexible={flexible} schedule={schedule} logic={logic} plan={plan} />}
+      <details className="daily-disclosure" id="progress"><summary>Progress, assessments, and details</summary>
+        <div className="tier-tab-list" aria-label="Dashboard information">
+          {(['progress', 'assessments', 'trends'] as PanelTab[]).map(item => <button key={item} type="button" aria-pressed={tab === item} className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>{item}</button>)}
         </div>
-
-        {tab === 'progress' ? (
-          <ProgressTab logic={logic} tier={tier} />
-        ) : null}
-
-        {tab === 'assessments' ? (
-          <AssessmentsTab logic={logic} capabilities={capabilities} />
-        ) : null}
-
-        {tab === 'trends' ? (
-          <TrendsTab logic={logic} />
-        ) : null}
-      </section>
+        {tab === 'progress' ? <ProgressTab logic={logic} tier={tier} /> : tab === 'assessments' ? <AssessmentsTab logic={logic} capabilities={capabilities} /> : <TrendsTab logic={logic} />}
+        <details><summary>Detailed calendar</summary><DashboardCalendar schedule={schedule} planBlocks={planBlocks} /></details>
+      </details>
     </section>
   )
 }
+function SchedulePreview({ preview, flexible, schedule, logic, plan }: { preview: ScheduleEvent[]; flexible: boolean; schedule: DailyScheduleState; logic: ProgramLogicOutput; plan: ReturnType<typeof buildDailyRecommendation> }) {
+    return <div className="daily-preview">
+      <section aria-label="Schedule preview"><div className="tier-panel-heading"><h2>{flexible ? 'Room for your day' : 'Coming up'}</h2><Link href="/dashboard/schedule">Schedule</Link></div>
+        {preview.length ? preview.map(event => <Link key={event.id} href={event.suggested ? `/dashboard/schedule#event-${event.id}` : event.action_route || `/dashboard/schedule#event-${event.id}`}><time>{eventRange(event, schedule.timezone)}</time><strong>{event.title}</strong><small>{event.status === 'completed' ? 'Done' : event.suggested ? 'Suggested time · choose in Schedule' : event.flexibility_type === 'fixed' ? 'Fixed commitment' : 'Flexible'}</small></Link>) : <p>No more scheduled items. Leave this space open.</p>}
+      </section>
+      <section aria-label="Progress summary"><h2>Your recorded progress</h2><p>{logic.assessments.dailyCompleted ? 'Check-in saved.' : 'Check-in available.'} {logic.execution.workoutComplete ? `Completed workout recorded${logic.execution.completedWorkoutTitle ? `: ${logic.execution.completedWorkoutTitle}` : ' today'}.` : logic.execution.workoutInProgress ? 'A partial workout is saved. Continue when ready.' : 'No completed workout recorded today.'}</p><p>{plan.evidence.food === 'not_logged' ? 'Food not logged yet.' : plan.evidence.food === 'partial' ? 'Food partly logged.' : 'Food logged today.'} {plan.evidence.water === 'not_logged' ? 'Water not logged yet.' : `${Math.round(logic.hydration.consumed)} oz water logged.`}</p></section>
+    </div>
+  }

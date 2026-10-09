@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getClientLocalDate } from '@/lib/timezone'
 
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -189,7 +190,7 @@ export async function GET(request: Request) {
     await supabase.from('pattern_recommendation_events').insert({
       user_id: user.id,
       client_id: log.client_id,
-      recommendation_date: new Date().toISOString().split('T')[0],
+      recommendation_date: getClientLocalDate(client),
       recommendation_area: 'nutrition',
       affected_item: 'suggested_foods',
       recommendation: {

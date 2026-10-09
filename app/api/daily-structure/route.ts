@@ -1,3 +1,4 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
@@ -144,6 +145,8 @@ export async function POST(req: Request) {
         { status: 500 }
       )
     }
+
+    invalidateDailyPlan()
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,7 @@
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { redirect } from 'next/navigation'
 import { hasCurrentLegalAcceptance } from '@/lib/legal/hasCurrentLegalAcceptance'
+import DailyPlanRefresh from '@/components/DailyPlanRefresh'
 import ClientDashboardNav from '@/components/navigation/ClientDashboardNav'
 import { isClientOnboardingComplete } from '@/lib/dashboard/isClientOnboardingComplete'
 import { TutorialProvider } from '@/components/tutorial/TutorialProvider'
@@ -23,6 +24,7 @@ export default async function DashboardLayout({
   return (
     <TutorialProvider tier={program}>
       <div className="dashboard-client-shell" data-tutorial-id="dashboard-shell">
+        <DailyPlanRefresh />
         {children}
         <ClientDashboardNav program={program}/>
         <TutorialRenderer/>

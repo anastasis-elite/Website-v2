@@ -1,3 +1,4 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 
 import {
@@ -559,6 +560,8 @@ export async function POST(request: Request) {
         }
       }
     }
+
+    invalidateDailyPlan()
 
     return NextResponse.json({
       success: true,

@@ -1,8 +1,9 @@
+import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
-import { getClientDayRange } from './time'
+import { getClientDayRange, zonedDateTimeToUtc } from './time'
 import { buildDailyScheduleState } from './engine'
-import { dailyPlanToScheduleEvents } from './dailyPlanAdapter'
+import { dailyPlanToScheduleEvents, recurringCommitmentsToEvents } from './dailyPlanAdapter'
 import type { DailyScheduleState, ScheduleEvent } from './types'
 
 export async function loadScheduleEventsForDay({
@@ -23,12 +24,14 @@ export async function loadScheduleEventsForDay({
     .select('*')
     .eq('user_id', userId)
     .eq('client_id', clientId)
-    .lt('start_at', dayEnd.toISOString())
-    .gt('end_at', dayStart.toISOString())
+    .or(`and(start_at.lt.${dayEnd.toISOString()},end_at.gt.${dayStart.toISOString()}),and(adjusted_start_at.lt.${dayEnd.toISOString()},adjusted_end_at.gt.${dayStart.toISOString()})`)
     .order('start_at', { ascending: true })
 
   if (error) throw new Error(error.message)
-  return (data || []) as ScheduleEvent[]
+  // Keep the original time for context, but place a moved event on its effective day.
+  return ((data || []) as ScheduleEvent[]).filter(event =>
+    new Date(event.adjusted_start_at || event.start_at) < dayEnd &&
+    new Date(event.adjusted_end_at || event.end_at) > dayStart)
 }
 
 export async function getDailyScheduleState({
@@ -55,12 +58,15 @@ export async function getDailyScheduleState({
     dayEnd: day.end,
   })
 
+  const { data: blocks, error: blocksError } = await supabase.from('client_schedule_blocks').select('*').eq('client_id', client.client_id).eq('user_id', user.id).eq('active', true)
+  if (blocksError) throw new Error(blocksError.message)
+  const commitments = recurringCommitmentsToEvents({ userId: user.id, client, date: day.date, timezone: day.timezone, blocks: blocks || [] })
   const dailyPlan = includeVirtualPlan
     ? await getDailyExecutionPlan({ supabase, client })
     : null
   const virtualEvents =
     includeVirtualPlan && dailyPlan?.date === day.date
-      ? dailyPlanToScheduleEvents({ userId: user.id, client, dailyPlan })
+      ? dailyPlanToScheduleEvents({ userId: user.id, client, dailyPlan }).filter(event => !commitments.some(c => c.event_type === event.event_type && event.flexibility_type === 'fixed') && !persistedEvents.some(e => ['workout','hydration'].includes(event.event_type) && e.event_type === event.event_type && !['skipped','cancelled'].includes(e.status)))
       : []
   const effectiveLogic =
     logic ||
@@ -72,45 +78,31 @@ export async function getDailyScheduleState({
     date: day.date,
     timezone: day.timezone,
     now: new Date(),
-    dayStart: day.start,
-    dayEnd: day.end,
-    events: [...persistedEvents, ...virtualEvents],
+    dayStart: client.wake_time && (!client.bed_time || client.wake_time < client.bed_time) ? zonedDateTimeToUtc(day.date, client.wake_time, day.timezone) : day.start,
+    dayEnd: client.bed_time && (!client.wake_time || client.wake_time < client.bed_time) ? zonedDateTimeToUtc(day.date, client.bed_time, day.timezone) : day.end,
+    events: [...commitments, ...persistedEvents.map(event => {
+      if (event.status !== 'scheduled' || !effectiveLogic || dailyPlan?.date !== day.date) return event
+      const confirmed = event.event_type === 'workout' ? effectiveLogic.execution.workoutComplete : event.event_type === 'check_in' ? effectiveLogic.assessments.dailyCompleted : event.event_type === 'hydration' ? effectiveLogic.hydration.status !== 'needs_input' && effectiveLogic.hydration.remaining <= 0 : false
+      return confirmed ? { ...event, status: 'completed' as const } : event
+    }), ...virtualEvents.map(event => {
+      const override = client.onboarding_data?.scheduleOverrides?.[event.id]
+      return override ? { ...event, ...override } : event
+    })],
+    transitionMinutes: Number(client.onboarding_data?.transitionMinutes ?? 10),
     logic: effectiveLogic,
     program: client.program || 'ignite',
   })
 
-  const appliedPersistedAdjustments = state.adjustments.filter(
-    (adjustment) => adjustment.automatic && adjustment.applied,
-  )
-
-  for (const adjustment of appliedPersistedAdjustments) {
-    const event = state.events.find((item) => item.id === adjustment.event_id)
-    if (!event || event.virtual) continue
-    if (!['anastasis', 'program', 'system', 'mobile'].includes(event.source)) continue
-    if (event.external_event_id || event.external_calendar_source) continue
-
-    const nextStart = adjustment.suggested_start_at
-    const nextEnd = adjustment.suggested_end_at
-    const nextDuration = adjustment.suggested_duration_minutes
-    if (
-      event.adjusted_start_at === nextStart &&
-      event.adjusted_end_at === nextEnd &&
-      event.adjusted_duration_minutes === nextDuration
-    ) {
-      continue
-    }
-
-    await supabase
-      .from('anastasis_schedule_events')
-      .update({
-        adjusted_start_at: nextStart,
-        adjusted_end_at: nextEnd,
-        adjusted_duration_minutes: nextDuration,
-        adaptive_reason: adjustment.reason,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', event.id)
-      .eq('user_id', user.id)
+  state.preferences = { executionStyle: client.execution_style || 'flow', carouselStyle: client.carousel_style || 'section',
+    transitionMinutes: Number(client.onboarding_data?.transitionMinutes ?? 10) }
+  state.program = client.program || 'ignite'
+  if (effectiveLogic && dailyPlan?.date === day.date) {
+    state.dailyRecommendation = buildDailyRecommendation(effectiveLogic, state)
+    const primary = state.dailyRecommendation.primary
+    state.nextAction = { ...state.nextAction, id: primary.eventId || primary.id, title: primary.title,
+      category: (primary.category === 'nutrition' ? 'meal' : primary.category === 'none' ? 'custom' : primary.category) as any,
+      reason: primary.reason, short_reason: primary.reason, action_route: primary.href,
+      start_at: null, overdue: false, urgency: 'now', can_complete: false, can_defer: Boolean(primary.eventId) }
   }
 
   return state

@@ -1,18 +1,12 @@
 'use client'
 
 import Link from 'next/link'
+import { getGreeting } from '@/lib/timezone'
 import type { CSSProperties } from 'react'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
 import TierAwareDashboardWorkspace from '@/components/program-dashboard/TierAwareDashboardWorkspace'
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
-
-function greeting() {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good Morning'
-  if (hour < 17) return 'Good Afternoon'
-  return 'Good Evening'
-}
 
 function flameState(score: number) {
   if (score < 25) return { label: 'Spark', icon: '✦', intensity: .28 }
@@ -41,12 +35,10 @@ export default function EmberDashboard({
             <div><strong>EMBER</strong><small>Strong. Focused. Unstoppable.</small></div>
           </div>
           <div className="ember-greeting">
-            <h1>{greeting()}, {logic.client.name} <span aria-hidden="true">{flame.icon}</span></h1>
-            <p>Let&apos;s execute today.</p>
+            <h1>{getGreeting(new Date(schedule.now), schedule.timezone)}, {logic.client.name} <span aria-hidden="true">{flame.icon}</span></h1>
+            <p>Here’s what makes sense for you now.</p>
           </div>
-          <div className="ember-streak" data-flame-state={flame.label.toLowerCase().replaceAll(' ', '-')}>
-            <span aria-hidden="true">{flame.icon}</span><strong>{logic.flameState.streak}</strong><small>Day streak</small>
-          </div>
+
         </header>
 
         <TierAwareDashboardWorkspace tier="ember" logic={logic} schedule={schedule} />

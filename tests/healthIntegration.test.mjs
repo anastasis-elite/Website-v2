@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
+import {importTs} from './typescriptModule.mjs'
 
 async function importTypescriptModule(path) {
   const source = readFileSync(path, 'utf8')
@@ -21,7 +22,7 @@ const { normalizeAppleHrvSample, normalizeHealthConnectHrvSample } =
 const { aggregateHealthSamplesForDay } =
   await importTypescriptModule('lib/health/aggregate.ts')
 const { buildDailyScheduleState } =
-  await importTypescriptModule('lib/schedule/engine.ts')
+  await importTs('lib/schedule/engine.ts')
 
 function loadCommonJsTypescript(path, localModules = {}) {
   const source = readFileSync(path, 'utf8')

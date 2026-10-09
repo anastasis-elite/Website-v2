@@ -46,7 +46,7 @@ test('muscle map reuses existing body model and exposes interactive muscle label
 })
 
 test('workout panel lets exercise cards and form controls fit their container', () => {
-  assert.match(dashboard, /className="workout-scroll-region"/)
+  assert.match(dashboard, /className="workout-session-region"/)
   assert.match(css, /\.workout-scroll-region\{[^}]*overflow:visible/)
   assert.match(css, /\.workout-exercise-card\{[^}]*max-width:100%/)
   assert.match(css, /\.workout-exercise-notes textarea\{[^}]*min-height:104px/)

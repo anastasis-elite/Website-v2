@@ -1,3 +1,4 @@
+import { importTs } from './typescriptModule.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
@@ -30,7 +31,7 @@ function loadCommonJsTypescript(path, localModules = {}) {
   return module.exports
 }
 
-const calendar = await importTypescriptModule('lib/calendar/view.ts')
+const calendar = await importTs('lib/calendar/view.ts')
 const resilience = loadCommonJsTypescript('lib/dashboard/resilienceEngine.ts')
 const insight = loadCommonJsTypescript('lib/dashboard/dailyInsight.ts', {
   './resilienceEngine': resilience,

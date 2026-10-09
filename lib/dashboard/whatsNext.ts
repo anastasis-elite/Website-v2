@@ -103,11 +103,11 @@ function nutritionState({ tier, capabilities, logic, recipes }: BuildWhatsNextIn
 
   return {
     type: 'nutrition',
-    title: 'Add Macros',
+    title: 'Review nutrition guidance',
     subtitle: `${logic.nutrition.protein.remaining}g protein · ${logic.nutrition.carbs.remaining}g carbs · ${logic.nutrition.fats.remaining}g fat remaining`,
     priority: 50,
     data: { mode: 'macro_entry', tier },
-    primaryAction: { label: 'Add Macros', href: '/dashboard/nutrition#aos-macro-entry' },
+    primaryAction: { label: 'Review guidance', href: '/dashboard/nutrition' },
   }
 }
 
@@ -172,6 +172,11 @@ function calendarState(event: ScheduleEvent | null): WhatsNextState {
 
 export function buildWhatsNextState(input: BuildWhatsNextInput): WhatsNextState {
   const { capabilities, logic, schedule } = input
+  if (schedule.dailyRecommendation) {
+    const action = schedule.dailyRecommendation.primary
+    return { type: (action.category === 'check_in' ? 'check_in' : ['workout','hydration','recovery','assessment','nutrition','none'].includes(action.category) ? action.category : 'calendar_event') as WhatsNextType,
+      title: action.title, subtitle: action.reason, priority: 80, primaryAction: { label: action.title, href: action.href }, data: action }
+  }
   const activeEvent = schedule.events.find((event) => eventIsActive(event, schedule.now)) || null
   const activeCalendarEvent = activeEvent && isCalendarCommitment(activeEvent) ? activeEvent : null
   const next = schedule.nextAction

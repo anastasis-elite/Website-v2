@@ -1,3 +1,5 @@
+import { getClientLocalDate } from '@/lib/timezone'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
@@ -41,14 +43,14 @@ export async function POST(request: Request) {
 
   const { data: client } = await supabase
     .from('clients')
-    .select('client_id')
+    .select('client_id,timezone,state')
     .eq('client_id', clientId)
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
   if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = getClientLocalDate(client)
   const { data: existing } = await supabase
     .from('recovery_logs')
     .select('daily_tasks')
@@ -68,6 +70,8 @@ export async function POST(request: Request) {
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  invalidateDailyPlan()
 
   return NextResponse.json({ success: true, block, completedTasks: mergedTasks })
 }

@@ -1,0 +1,40 @@
+'use client'
+import { useEffect,useState } from 'react'
+import Link from 'next/link'
+import ClientDashboardNav from '@/components/navigation/ClientDashboardNav'
+import IgniteDashboard from '@/components/program-dashboard/IgniteDashboard'
+import EmberDashboard from '@/components/program-dashboard/EmberDashboard'
+import PhoenixDashboard from '@/components/program-dashboard/PhoenixDashboard'
+import ActivityWorkoutTracker from '@/components/ActivityWorkoutTracker'
+import NutritionFoodLogger from '@/components/NutritionFoodLogger'
+import ScheduleDashboardClient from '@/app/dashboard/schedule/ScheduleDashboardClient'
+import DailyPlanCard from '@/components/DailyPlanCard'
+import {getTierCapabilities} from '@/lib/entitlements'
+export default function QAClient({view,logic,schedule,exercises}:any) {
+ const [ready,setReady]=useState(false)
+ useEffect(()=>{
+   const original=window.fetch;let meals:any[]=[];let session:any=null
+   window.fetch=async(input:any,options:any)=>{
+    const url=String(input);if(!url.startsWith('/api/'))return original(input,options)
+    let payload:any={success:true};const body=options?.body?JSON.parse(options.body):{}
+    if(url.includes('search-foods'))payload={foods:[{id:'20000000-0000-4000-8000-000000000001',name:'Plain Greek yogurt',calories:120,protein_g:20,carbs_g:6,fat_g:0}]}
+    else if(url.includes('serving-options'))payload={servingOptions:[{id:'30000000-0000-4000-8000-000000000001',label:'Container',grams:170,unit:'container'}]}
+    else if(url.includes('today-meals'))payload={meals,remaining:null}
+    else if(url.includes('barcode'))payload={found:false,message:'No product found. Search manually instead.'}
+    else if(url.includes('photo-estimate'))payload={available:false,message:'Photo estimation is unavailable. Search / manual entry is still available.'}
+    else if(url.includes('recurring-foods'))payload={patterns:[],candidates:[]}
+    else if(url.includes('add-meal')) {meals.push({...body,id:'qa-meal-'+meals.length,meal_name:body.mealName,meal_period:body.mealPeriod,serving_amount:body.servingAmount,serving_unit:body.servingUnit,entry_source:body.entrySource,foods:{id:body.foodId,name:'Plain Greek yogurt'},calories:120,created_at:new Date().toISOString()});payload={success:true,mealEntry:meals.at(-1),remaining:null}}
+    else if(url.includes('workout-log')) {if(options?.method==='POST')session={exercise_logs:body.exercise_logs,completed:body.completed};payload={success:true,session}}
+    return Response.json(payload)
+   }
+   window.BarcodeDetector = class { async detect() {return []} }
+   Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>{throw new DOMException('Denied in QA fixture','NotAllowedError')}}})
+   setReady(true);return()=>{window.fetch=original}
+ },[])
+ if(!ready)return <p>Loading isolated local QA fixture…</p>
+ const caps=getTierCapabilities(logic.program)
+ return <div className="dashboard-client-shell"><aside style={{padding:'12px 18px',background:'#402c21',color:'#fff',fontSize:14}}>Local QA fixture · simulated data and saves · no customer account<Link href="/local-dashboard-qa?view=home"> Home </Link><Link href="/local-dashboard-qa?view=workout"> Workout </Link><Link href="/local-dashboard-qa?view=meal"> Meal </Link><Link href="/local-dashboard-qa?view=schedule"> Schedule </Link></aside>
+ {view==='home'?(logic.program==='ember'?<EmberDashboard logic={logic} schedule={schedule}/>:logic.program==='phoenix'?<PhoenixDashboard logic={logic} schedule={schedule} trackLabel="QA fixture"/>:<IgniteDashboard logic={logic} schedule={schedule}/>):view==='schedule'?<ScheduleDashboardClient initialSchedule={schedule} clientId="LOCAL-QA-ONLY"/>:<main className="schedule-page"><div className="schedule-shell"><h1>{view==='workout'?'Today’s workout':'Log a meal'}</h1><DailyPlanCard plan={schedule.dailyRecommendation} compact/>{view==='workout'?<ActivityWorkoutTracker clientId="LOCAL-QA-ONLY" authUserId="local-qa" program={logic.program} dayName="QA strength and movement" exercises={exercises} timezone="America/Chicago"/>:caps.nutritionMealLogging?<NutritionFoodLogger nutritionLogId="10000000-0000-4000-8000-000000000001" capabilities={caps} timezone="America/Chicago"/>:<p>Ember includes nutrition guidance. Meal logging is available in Ignite and Phoenix.</p>}</div></main>}
+ <ClientDashboardNav program={logic.program}/>
+ </div>
+}

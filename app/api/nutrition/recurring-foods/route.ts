@@ -1,3 +1,6 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { addLocalDays, getClientLocalDate, getClientTimeZone, localDateKey } from '@/lib/timezone'
+import { getClientDayRange } from '@/lib/schedule/time'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTierCapabilities } from '@/lib/entitlements'
@@ -19,10 +22,6 @@ function firstRelated<T>(value: T | T[] | null | undefined) {
   return Array.isArray(value) ? value[0] ?? null : value ?? null
 }
 
-function dateKey(dateString: string) {
-  return new Date(dateString).toISOString().slice(0, 10)
-}
-
 export async function GET() {
   const supabase = await createClient()
   const {
@@ -35,7 +34,7 @@ export async function GET() {
 
   const { data: client, error: clientError } = await supabase
     .from('clients')
-    .select('client_id, program')
+    .select('client_id, program, timezone, onboarding_data, state')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -48,9 +47,9 @@ export async function GET() {
     return NextResponse.json({ error: 'Recurring food detection is not available for this tier.' }, { status: 403 })
   }
 
-  const since = new Date()
-  since.setDate(since.getDate() - 45)
-  const sinceDate = since.toISOString().slice(0, 10)
+  const timezone = getClientTimeZone(client)
+  const sinceDate = addLocalDays(getClientLocalDate(client), -45)
+  const since = getClientDayRange(client, sinceDate).start
 
   const { data: logs, error: logsError } = await supabase
     .from('nutrition_logs')
@@ -128,8 +127,9 @@ export async function GET() {
       lastLoggedAt: meal.created_at,
     }
 
-    existing.days.add(dateKey(meal.created_at))
-    existing.weekdays.add(new Date(meal.created_at).getDay())
+    const mealDate = localDateKey(new Date(meal.created_at), timezone)
+    existing.days.add(mealDate)
+    existing.weekdays.add(new Date(`${mealDate}T12:00:00Z`).getUTCDay())
     if (new Date(meal.created_at) > new Date(existing.lastLoggedAt)) {
       existing.lastLoggedAt = meal.created_at
     }
@@ -145,7 +145,7 @@ export async function GET() {
       const pattern = classifyRecurringMealPattern(
         Array.from(item.days).map((day) => ({
           date: day,
-          weekday: new Date(`${day}T12:00:00.000Z`).getDay(),
+          weekday: new Date(`${day}T12:00:00.000Z`).getUTCDay(),
         })),
       )
       return pattern.eligibleForSuggestion && !activeKeys.has(key)
@@ -156,7 +156,7 @@ export async function GET() {
       const pattern = classifyRecurringMealPattern(
         Array.from(item.days).map((day) => ({
           date: day,
-          weekday: new Date(`${day}T12:00:00.000Z`).getDay(),
+          weekday: new Date(`${day}T12:00:00.000Z`).getUTCDay(),
         })),
       )
       return {
@@ -222,6 +222,7 @@ export async function POST(request: Request) {
       console.error('NUTRITION RECURRING UPDATE ERROR:', error)
       return NextResponse.json({ error: 'Recurring food could not be updated. Please try again.' }, { status: 500 })
     }
+    invalidateDailyPlan()
     return NextResponse.json({ success: true, pattern: data })
   }
 
@@ -257,6 +258,8 @@ export async function POST(request: Request) {
     console.error('NUTRITION RECURRING INSERT ERROR:', error)
     return NextResponse.json({ error: 'Recurring food could not be saved. Please try again.' }, { status: 500 })
   }
+
+  invalidateDailyPlan()
 
   return NextResponse.json({ success: true, pattern: data })
 }

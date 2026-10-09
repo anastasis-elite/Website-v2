@@ -5,6 +5,7 @@ export type NutritionEntrySource = (typeof nutritionEntrySources)[number]
 export type NutritionEntryState = (typeof nutritionEntryStates)[number]
 
 export type NormalizedMealInput = {
+  requestId?: string
   nutritionLogId: string
   foodId: string
   servingAmount: number
@@ -23,6 +24,7 @@ export type NormalizedMealInput = {
 
 // Deliberately enumerated: never spread a request or provider response into a row.
 export type MealEntryInsert = {
+  id?: string
   nutrition_log_id: string
   food_id: string
   meal_name: string
@@ -63,7 +65,7 @@ export function normalizeMealInput(value: unknown):
     entrySource: source,
     entryState: 'confirmed',
   }
-  for (const key of ['servingOptionId', 'recurringFoodId'] as const) {
+  for (const key of ['requestId', 'servingOptionId', 'recurringFoodId'] as const) {
     if (body[key] === undefined || body[key] === null || body[key] === '') continue
     if (typeof body[key] !== 'string' || !uuidPattern.test(body[key])) return { ok: false, error: 'Invalid serving or recurring food.' }
     input[key] = body[key]

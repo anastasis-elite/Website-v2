@@ -1,3 +1,7 @@
+import { dashboardApiError } from '@/lib/dashboard/apiError'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { healthEventTypes } from '@/lib/schedule/actions'
+import { getActionRouteForEvent } from '@/lib/schedule/engine'
 import { NextResponse } from 'next/server'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 
@@ -7,7 +11,10 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const { supabase, user } = await getDashboardContext()
+    const { supabase, user, client } = await getDashboardContext()
+    const { data: existing } = await supabase.from('anastasis_schedule_events').select('*').eq('id', id).eq('user_id', user.id).maybeSingle()
+    if (!existing) return NextResponse.json({ error: 'Event not found.' }, { status: 404 })
+    if (healthEventTypes.has(existing.event_type)) return NextResponse.json({ error: 'Open this activity and save what you did to complete it.', href: getActionRouteForEvent(existing, client.program) }, { status: 409 })
     const completedAt = new Date().toISOString()
     const { data, error } = await supabase
       .from('anastasis_schedule_events')
@@ -19,11 +26,9 @@ export async function POST(
 
     if (error) throw new Error(error.message)
     if (!data) return NextResponse.json({ error: 'Event not found.' }, { status: 404 })
+    invalidateDailyPlan()
     return NextResponse.json({ success: true, event: data })
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Event could not be completed.' },
-      { status: 500 },
-    )
+    return dashboardApiError(error, 'Event could not be completed.')
   }
 }

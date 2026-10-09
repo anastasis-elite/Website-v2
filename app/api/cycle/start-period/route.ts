@@ -1,3 +1,5 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { getClientLocalDate } from '@/lib/timezone'
 import { NextResponse } from 'next/server'
 
 import { getCyclePrediction } from '@/lib/cycle/getCyclePrediction'
@@ -36,10 +38,6 @@ function getDateOnly(value: unknown): string | null {
   }
 
   return parsedDate.toISOString().split('T')[0]
-}
-
-function getToday(): string {
-  return new Date().toISOString().split('T')[0]
 }
 
 function getValidFallbackCycleLength(
@@ -121,6 +119,7 @@ export async function POST(req: Request) {
         `
           client_id,
           auth_user_id,
+          timezone, onboarding_data, state,
           last_period_start,
           average_cycle_length
         `,
@@ -146,7 +145,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const today = getToday()
+    const today = getClientLocalDate(client)
     const updatedAt = new Date().toISOString()
 
     const { error: logError } =
@@ -259,6 +258,8 @@ export async function POST(req: Request) {
         { status: 500 },
       )
     }
+
+    invalidateDailyPlan()
 
     return NextResponse.json({
       success: true,

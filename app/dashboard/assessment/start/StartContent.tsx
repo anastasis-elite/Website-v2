@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect,useRef,useState } from 'react'
 import * as styles from '../../../styles/globalstyles'
 import AssessmentPhotoUpload from '@/components/AssessmentPhotoUpload'
 
@@ -9,6 +9,11 @@ type ClientData = {
   full_name?: string
   email?: string
   birthdate?: string
+  workout_days_available?: number | string
+  equipment_access?: string[]
+  experience_level?: string
+  primary_goal?: string
+  limitations?: string[]
   program?: string
 }
 
@@ -19,11 +24,11 @@ export default function StartContent({ client, assessmentType = 'initial' }: { c
     fullName: client.full_name || '',
     email: client.email || '',
     birthdate: client.birthdate || '',
-    trainingDays: '',
-    equipmentAccess: '',
-    experienceLevel: '',
-    primaryFocus: '',
-    currentLimitations: '',
+    trainingDays: String(client.workout_days_available || ''),
+    equipmentAccess: (client.equipment_access || []).join(', '),
+    experienceLevel: client.experience_level || '',
+    primaryFocus: client.primary_goal || '',
+    currentLimitations: (client.limitations || []).join(', '),
     recoveryCapacity: '',
     sleepQuality: '',
     stressLevel: '',
@@ -31,6 +36,9 @@ export default function StartContent({ client, assessmentType = 'initial' }: { c
     notes: '',
   })
 
+  const lock=useRef(false);const draftKey=`anastasis-assessment:${client.client_id}:${assessmentType}`;const [draftReady,setDraftReady]=useState(false)
+  useEffect(()=>{try {const saved=JSON.parse(localStorage.getItem(draftKey)||'null');if(saved) setFormData(current=>({...current,...Object.fromEntries(Object.entries(saved).filter(([key,value])=>key in current && typeof value==='string'))}))}catch{}setDraftReady(true)},[draftKey])
+  useEffect(()=>{if(draftReady)try{localStorage.setItem(draftKey,JSON.stringify(formData))}catch{}},[draftReady,draftKey,formData])
   const [status, setStatus] = useState<'idle' | 'submitting' | 'error'>('idle')
   const [message, setMessage] = useState('')
 
@@ -47,6 +55,8 @@ export default function StartContent({ client, assessmentType = 'initial' }: { c
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if(lock.current)return
+    lock.current=true
     setStatus('submitting')
     setMessage('')
 
@@ -68,13 +78,14 @@ export default function StartContent({ client, assessmentType = 'initial' }: { c
         throw new Error(data.error || 'Assessment submission failed')
       }
 
+      localStorage.removeItem(draftKey)
       window.location.href = data.redirect || (assessmentType === 'monthly' ? '/dashboard/assessment/monthly' : '/dashboard/assessment/start2')
 
     } catch (error) {
       console.error('ASSESSMENT ERROR:', error)
       setStatus('error')
       setMessage(error instanceof Error ? error.message : 'Something went wrong. Please try again.')
-    }
+    } finally { lock.current=false }
   }
 
   return (
@@ -84,7 +95,7 @@ export default function StartContent({ client, assessmentType = 'initial' }: { c
         <p className="aos-eyebrow">{assessmentType === 'monthly' ? 'Monthly Assessment' : 'Assessment'}</p>
 
         <h1>
-          Let’s build the starting point.
+          {assessmentType === 'monthly' ? 'Review what has changed.' : 'Let’s build the starting point.'}
         </h1>
 
         <p>
@@ -94,6 +105,7 @@ export default function StartContent({ client, assessmentType = 'initial' }: { c
         </p>
         </header>
 
+<p>Your draft stays in this browser while you complete the assessment. Known profile information is prefilled. Fields marked required must be answered before submitting.</p>
         <form onSubmit={handleSubmit} style={styles.cartBoxStyle}>
           <input type="hidden" name="client_id" value={formData.client_id} readOnly />
 

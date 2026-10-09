@@ -1,3 +1,4 @@
+import { localDateKey } from '@/lib/timezone'
 import type { OpenWindow, ScheduleEvent } from '@/lib/schedule/types'
 
 export type CalendarViewMode = 'day' | 'week' | 'month'
@@ -31,7 +32,6 @@ export type CalendarWeekDay = {
   items: CalendarDisplayItem[]
 }
 
-const dayMs = 24 * 60 * 60 * 1000
 
 function pad(value: number) {
   return String(value).padStart(2, '0')
@@ -72,15 +72,15 @@ export function calendarItemSource(event: ScheduleEvent): CalendarItemSource {
   return 'anastasis'
 }
 
-export function eventDateKey(event: Pick<ScheduleEvent, 'adjusted_start_at' | 'start_at'>) {
-  return toDateKey(new Date(event.adjusted_start_at || event.start_at))
+export function eventDateKey(event: Pick<ScheduleEvent, 'adjusted_start_at' | 'start_at'>, timezone?: string) {
+  return localDateKey(new Date(event.adjusted_start_at || event.start_at), timezone || 'America/Chicago')
 }
 
-export function buildCalendarItems(events: ScheduleEvent[], windows: OpenWindow[] = []): CalendarDisplayItem[] {
+export function buildCalendarItems(events: ScheduleEvent[], windows: OpenWindow[] = [], timezone = 'America/Chicago'): CalendarDisplayItem[] {
   const eventItems = events.map((event) => ({
     id: event.id,
     title: event.title,
-    date: eventDateKey(event),
+    date: eventDateKey(event, timezone),
     start_at: event.adjusted_start_at || event.start_at,
     end_at: event.adjusted_end_at || event.end_at,
     source: calendarItemSource(event),
@@ -92,8 +92,8 @@ export function buildCalendarItems(events: ScheduleEvent[], windows: OpenWindow[
 
   const suggestionItems = windows.map((window) => ({
     id: `suggestion-${window.start_at}-${window.end_at}`,
-    title: 'Suggested opening',
-    date: toDateKey(new Date(window.start_at)),
+    title: 'Potentially available',
+    date: localDateKey(new Date(window.start_at), timezone),
     start_at: window.start_at,
     end_at: window.end_at,
     source: 'suggestion' as const,
@@ -118,11 +118,11 @@ export function buildMonthGrid({
 }): CalendarMonthCell[] {
   const selected = parseDateKey(selectedDate)
   const first = new Date(selected.getFullYear(), selected.getMonth(), 1)
-  const gridStart = new Date(first.getTime() - first.getDay() * dayMs)
+  const gridStart = new Date(first); gridStart.setDate(first.getDate() - first.getDay())
   const month = selected.getMonth()
 
   return Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(gridStart.getTime() + index * dayMs)
+    const date = new Date(gridStart); date.setDate(gridStart.getDate() + index)
     const key = toDateKey(date)
     return {
       date: key,

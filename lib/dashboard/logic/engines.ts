@@ -6,7 +6,7 @@ import type {
 import { buildStructuralFilter } from '@/lib/workout-os/structuralFilter'
 import { runWorkoutOS } from '@/lib/workout-os/runWorkoutOS'
 import type { CapacityDose,GoalObjective,StructuralFilter } from '@/lib/workout-os/types'
-import { getClientTimeZone } from '@/lib/timezone'
+import { getClientTimeZone, getLocalMinutes } from '@/lib/timezone'
 import { getWorkoutForToday, workoutFallbackAdjustmentLevel } from '@/lib/workout/getWorkoutForToday'
 import { getStreakRequirementDestinations } from '@/lib/dashboard/logic/streakRequirementDestinations'
 import { calculateHydrationPacing } from '@/lib/hydration/pacing'
@@ -135,7 +135,7 @@ export function runCapacityEngine(inputs: ProgramLogicInputs, symptoms: SymptomR
   if (signals.soreness !== null && signals.soreness >= 8) { score -= 12; drivers.push('high soreness') }
   if (symptoms.severity === 'moderate') { score -= 15; drivers.push('symptoms') }
   if (symptoms.severity === 'severe') { score -= 35; drivers.push('severe symptoms') }
-  if (!inputs.yesterday.workoutComplete && !inputs.yesterday.nutritionLogged) { score -= 8; drivers.push('yesterday was incomplete') }
+  // Missing logs do not establish missed food or training.
   if (['too_much_today','not_feeling_workout'].includes(inputs.todayWorkoutFeedback?.response)) { score -= 8; drivers.push('workout feedback') }
   const recentCompleted = inputs.workoutHistory.filter((row) => row.completed).length
   if (recentCompleted >= 4 && (signals.energy || 0) >= 7) score += 10
@@ -168,10 +168,12 @@ export function runHydrationEngine(inputs: ProgramLogicInputs): HydrationResult 
   const target = Math.max(1, numeric(targets.water, 100))
   const consumed = Math.max(0, target - numeric(remaining.water, target))
   const percent = clamp((consumed / target) * 100)
-  const dataKnown = Boolean(inputs.nutritionLogs.find((row) => row.log_date === inputs.date))
+  const dataKnown = inputs.nutritionLogs.some(row => row.log_date === inputs.date && Number(row.water_consumed_oz) > 0)
   const pacing = calculateHydrationPacing({
     consumed,
     target,
+    localTimeMinutes: getLocalMinutes(new Date(), getClientTimeZone(inputs.client)),
+    hasLoggedIntake: dataKnown,
     wakeTime: inputs.client?.wake_time || inputs.todayRecovery?.sleep_wake_time,
     bedTime: inputs.client?.bed_time || inputs.todayRecovery?.sleep_bedtime,
   })
@@ -193,8 +195,8 @@ export function runHydrationEngine(inputs: ProgramLogicInputs): HydrationResult 
     paceState: pacing.state,
     expectedPercent: pacing.expectedPercent,
     dayElapsedPercent: pacing.dayElapsedPercent,
-    prompt: status === 'needs_input' ? 'Log water so readiness can be calculated.' : pacing.prompt,
-    recoverySupportNote: pacing.state === 'behind' ? 'Low hydration pace can amplify fatigue, headache, and perceived effort.' : 'Continue normal hydration through the day.',
+    prompt: status === 'needs_input' ? 'Log what you’ve had so today’s guidance can use it.' : pacing.prompt,
+    recoverySupportNote: 'Logged water is one part of the picture. Keep drinking at your own pace and follow your individual fluid guidance.',
   }
 }
 
@@ -227,7 +229,7 @@ export function runNutritionEngine(inputs: ProgramLogicInputs): NutritionResult 
     for (const row of inputs.macroEntries || []) {
       if (row.nutrition_log_id !== currentLog.id) continue
       const block = String(row.day_block || 'other').toLowerCase() as DayBlock
-      const targetBlock = DAY_BLOCK_ORDER.includes(block) ? block : getCurrentDayBlock(new Date())
+      const targetBlock = DAY_BLOCK_ORDER.includes(block) ? block : getCurrentDayBlock(getClientLocalTime(inputs.client).local)
       blockConsumed[targetBlock] = addMacros(blockConsumed[targetBlock], {
         calories: numeric(row.calories),
         protein: numeric(row.protein_g),
@@ -241,7 +243,7 @@ export function runNutritionEngine(inputs: ProgramLogicInputs): NutritionResult 
   }
   const dataStatus = currentLog && (inputs.mealEntries.length || (inputs.macroEntries || []).length) ? 'known' : 'needs_input'
   const suggestions = dataStatus === 'needs_input' ? ['Log the next meal to calculate what remains.'] : protein.percent < 50 ? ['Choose the easiest protein-forward meal available.'] : carbs.percent < 40 && inputs.plannedWorkout ? ['Add an easy carbohydrate source before training.'] : ['Build the next meal around what remains.']
-  return { dataStatus, calories, protein, carbs, fats, mealSuggestions: suggestions, preWorkoutFuelPrompt: dataStatus === 'needs_input' ? 'Log or eat a small balanced meal before demanding training.' : protein.percent < 35 || carbs.percent < 25 ? 'Eat protein and an easy carbohydrate before training.' : 'Use normal pre-workout timing.', postWorkoutPriority: 'Prioritize protein, fluids, and enough total energy after training.', blockTargets, blockConsumed }
+  return { dataStatus, calories, protein, carbs, fats, mealSuggestions: suggestions, preWorkoutFuelPrompt: dataStatus === 'needs_input' ? 'Log your latest meal to help us understand your fueling.' : protein.percent < 35 || carbs.percent < 25 ? 'Eat protein and an easy carbohydrate before training.' : 'Use normal pre-workout timing.', postWorkoutPriority: 'Prioritize protein, fluids, and enough total energy after training.', blockTargets, blockConsumed }
 }
 
 export function runFuelReadinessEngine(inputs: ProgramLogicInputs, hydration: HydrationResult, nutrition: NutritionResult, recovery: RecoveryResult): FuelReadinessResult {
@@ -252,7 +254,7 @@ export function runFuelReadinessEngine(inputs: ProgramLogicInputs, hydration: Hy
   const previous = getPreviousBlockCompletionStatus(nutrition.blockConsumed, nutrition.blockTargets, currentBlock)
   const blockCompletionPercent = Math.round(macroCompletion(consumedThroughCurrentBlock, expectedThroughCurrentBlock) * 100)
   const currentBlockOnTrack = blockCompletionPercent >= 70
-  if (nutrition.dataStatus === 'needs_input') return { status: 'unknown_needs_input', displayStatus: 'Needs Fuel', confidence: 'low', preWorkoutAction: 'Log or eat a simple meal and drink water before deciding on intensity.', workoutAdjustment: 'Preserve movement; avoid max-effort work until fueling is known.', postWorkoutPriority: nutrition.postWorkoutPriority, reasoning: `Fuel readiness is based on ${currentBlock} intake expectations, but food intake is not sufficiently logged yet.`, currentBlock, timeZone, expectedThroughCurrentBlock, consumedThroughCurrentBlock, previousBlocksComplete: previous.complete, currentBlockOnTrack, blockCompletionPercent }
+  if (nutrition.dataStatus === 'needs_input') return { status: 'unknown_needs_input', displayStatus: 'Not logged', confidence: 'low', preWorkoutAction: 'Log or eat a simple meal and drink water before deciding on intensity.', workoutAdjustment: 'Preserve movement; avoid max-effort work until fueling is known.', postWorkoutPriority: nutrition.postWorkoutPriority, reasoning: `Fuel readiness is based on ${currentBlock} intake expectations, but food intake is not sufficiently logged yet.`, currentBlock, timeZone, expectedThroughCurrentBlock, consumedThroughCurrentBlock, previousBlocksComplete: previous.complete, currentBlockOnTrack, blockCompletionPercent }
   const mealAgeHours = inputs.mealEntries[0]?.created_at ? (Date.now() - new Date(inputs.mealEntries[0].created_at).getTime()) / 3600000 : null
   const demand = inputs.plannedWorkout ? numeric(inputs.plannedWorkout.duration_minutes ?? inputs.plannedWorkout.estimated_duration, 45) : 0
   let points = (blockCompletionPercent * .7) + (hydration.percent * .2) + (previous.complete ? 10 : 0)
@@ -382,9 +384,8 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, capacity:Ca
   return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, displayWorkout:true,canTrain:workoutForToday.completionEligible&&(workoutForToday.type!=='planned'||os.canTrain),adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: `${workoutForToday.type === 'planned' ? os.dose.rpe : 'Easy effort'} · Rest until HR is below 115 bpm.`, reasonForModification: modifications[0] || workoutForToday.reason, preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression,allowEnduranceProgression }
 }
 
-export function runFlameExecutionEngine({ inputs, hydration, nutrition, workoutDecision, capacity }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult; capacity: CapacityResult }): FlameResult {
-  const passiveWorkoutMinutes = nullableNumeric(inputs.healthMetrics.today?.workout?.value)
-  const workoutComplete = Boolean(inputs.dailyPlan?.workoutCompleted || (passiveWorkoutMinutes !== null && passiveWorkoutMinutes >= 10))
+export function runFlameExecutionEngine({ inputs, hydration, nutrition, capacity }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult; capacity: CapacityResult }): FlameResult {
+  const workoutComplete = Boolean(inputs.dailyPlan?.workoutCompleted)
   const assessmentComplete = Boolean(inputs.todayRecovery?.check_in_completed_at)
   const recoveryComplete = inputs.todayRecoveryActivities.length>0
   const blockTaskCount = inputs.phoenixTaskIds.filter((id) => /^(morning|midday|evening)-complete$/.test(id)).length

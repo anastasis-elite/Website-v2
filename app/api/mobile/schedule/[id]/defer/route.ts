@@ -1,8 +1,10 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createMobileRequestContext } from '@/lib/mobile/auth'
-import { firstValidWindow, getOpenWindows } from '@/lib/schedule/engine'
-import { getClientDayRange } from '@/lib/schedule/time'
-import { loadScheduleEventsForDay } from '@/lib/schedule/service'
+import { firstValidWindow } from '@/lib/schedule/engine'
+import { getDailyScheduleState } from '@/lib/schedule/service'
+import { getClientLocalDate } from '@/lib/timezone'
+import { scheduleConflict } from '@/lib/schedule/actions'
 import type { ScheduleEvent } from '@/lib/schedule/types'
 
 function minutesBetween(start: string, end: string) {
@@ -55,25 +57,13 @@ export async function POST(
     let startAt = body.start_at ? new Date(body.start_at) : null
     let endAt = body.end_at ? new Date(body.end_at) : null
 
-    if (!startAt || !endAt || endAt <= startAt) {
-      const day = getClientDayRange(context.client, body.date)
-      const events = await loadScheduleEventsForDay({
-        supabase: context.supabase,
-        userId: context.user.id,
-        clientId: context.client.client_id,
-        dayStart: day.start,
-        dayEnd: day.end,
-      })
+    if (!startAt || !endAt || !Number.isFinite(startAt.getTime()) || !Number.isFinite(endAt.getTime()) || endAt <= startAt) {
+      const schedule = await getDailyScheduleState({supabase:context.supabase,user:context.user,client:context.client,date:body.date})
       const duration =
         existing.estimated_duration_minutes ||
         existing.adjusted_duration_minutes ||
         minutesBetween(existing.start_at, existing.end_at)
-      const windows = getOpenWindows(
-        events.filter((event) => event.id !== existing.id),
-        day.start,
-        day.end,
-        Math.min(10, duration),
-      )
+      const windows = schedule.openWindows
       const nextWindow = firstValidWindow(windows, existing as ScheduleEvent, new Date(), duration)
 
       if (!nextWindow) {
@@ -87,14 +77,16 @@ export async function POST(
       endAt = nextWindow.end
     }
 
+    if(startAt < new Date()) return NextResponse.json({error:'Choose a later time.'},{status:400})
+    const schedule = await getDailyScheduleState({supabase:context.supabase,user:context.user,client:context.client,date:getClientLocalDate(context.client,startAt)})
+    const conflict = scheduleConflict(schedule.events,id,startAt,endAt,schedule.preferences?.transitionMinutes)
+    if(conflict) return NextResponse.json({error:conflict},{status:409})
     const { data, error } = await context.supabase
       .from('anastasis_schedule_events')
       .update({
-        start_at: startAt.toISOString(),
-        end_at: endAt.toISOString(),
-        adjusted_start_at: null,
-        adjusted_end_at: null,
-        adjusted_duration_minutes: null,
+        adjusted_start_at: startAt.toISOString(),
+        adjusted_end_at: endAt.toISOString(),
+        adjusted_duration_minutes: Math.round((endAt.getTime()-startAt.getTime())/60000),
         status: 'scheduled',
         adaptive_reason: 'Deferred by user from the mobile command layer.',
         updated_at: new Date().toISOString(),
@@ -105,6 +97,7 @@ export async function POST(
       .single()
 
     if (error) throw new Error(error.message)
+    invalidateDailyPlan()
     return NextResponse.json({ success: true, event: data })
   } catch (error) {
     return NextResponse.json(

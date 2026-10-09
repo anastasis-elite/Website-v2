@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { getGreeting } from '@/lib/timezone'
 import type { CSSProperties } from 'react'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
@@ -42,15 +43,11 @@ export default function PhoenixDashboard({
           </div>
 
           <div className="phoenix-greeting">
-            <h1>Good Morning, {logic.client.name} <span aria-hidden="true">♥</span></h1>
+            <h1>{getGreeting(new Date(schedule.now), schedule.timezone)}, {logic.client.name} <span aria-hidden="true">♥</span></h1>
             <p>We&apos;ve got your day. One step at a time.</p>
           </div>
 
-          <div className="phoenix-streak">
-            <span aria-hidden="true">{flame.icon}</span>
-            <strong>{logic.flameState.streak}</strong>
-            <small>Day streak</small>
-          </div>
+
         </header>
 
         <TierAwareDashboardWorkspace tier="phoenix" logic={logic} schedule={schedule} recipes={recipes} />

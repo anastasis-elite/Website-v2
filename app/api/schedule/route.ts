@@ -1,7 +1,10 @@
+import { dashboardApiError } from '@/lib/dashboard/apiError'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { assertClientOwner, getDailyScheduleState } from '@/lib/schedule/service'
-import { getClientTimeZone } from '@/lib/timezone'
+import { scheduleConflict } from '@/lib/schedule/actions'
+import { getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
 
 const eventTypes = new Set(['workout','meal','hydration','recovery','check_in','assessment','work','school','appointment','medical','dental','personal','household','sleep','custom'])
 const flexTypes = new Set(['fixed','flexible','approval_required'])
@@ -20,10 +23,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, schedule: state })
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Schedule could not be loaded.' },
-      { status: 500 },
-    )
+    return dashboardApiError(error, 'Schedule could not be loaded.')
   }
 }
 
@@ -41,6 +41,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Title, start, and end are required.' }, { status: 400 })
     }
 
+    const start = new Date(body.start_at), end = new Date(body.end_at)
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return NextResponse.json({ error: 'Choose a valid start and end.' }, { status: 400 })
+    const schedule = await getDailyScheduleState({ supabase,user,client,date:getClientLocalDate(client,start) })
+    const conflict = scheduleConflict(schedule.events,'new',start,end,schedule.preferences?.transitionMinutes)
+    if(conflict) return NextResponse.json({ error:conflict },{status:409})
     const eventType = eventTypes.has(body.event_type) ? body.event_type : 'custom'
     const flexibility = flexTypes.has(body.flexibility_type) ? body.flexibility_type : 'flexible'
     const fixed = flexibility === 'fixed'
@@ -84,11 +89,9 @@ export async function POST(request: Request) {
       .single()
 
     if (error) throw new Error(error.message)
+    invalidateDailyPlan()
     return NextResponse.json({ success: true, event: data })
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Schedule event could not be saved.' },
-      { status: 500 },
-    )
+    return dashboardApiError(error, 'Schedule event could not be saved.')
   }
 }

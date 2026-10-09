@@ -13,7 +13,7 @@ export type FlameState = 'spark' | 'ember' | 'small_flame' | 'steady_flame' | 's
 
 export type DailyMacro = { target: number; consumed: number; remaining: number; percent: number }
 export type DayBlock = 'morning' | 'midday' | 'evening'
-export type FuelReadinessDisplayStatus = 'On Track' | 'Needs Fuel' | 'Depleted' | 'Complete'
+export type FuelReadinessDisplayStatus = 'Not logged' | 'On Track' | 'Needs Fuel' | 'Depleted' | 'Complete'
 export type MacroSnapshot = { calories: number; protein: number; carbs: number; fats: number }
 export type FuelingHistoryDay = {
   date: string
@@ -100,6 +100,7 @@ export type ProgramLogicOutput = {
   engineVersion: string
   generatedAt: string
   client: {
+    timezone?: string
     id: string
     name: string
     age: number | null
@@ -167,6 +168,6 @@ export type ProgramLogicOutput = {
     sources: string[]
   }
   trends: DashboardTrend[]
-  execution: { workoutComplete: boolean; nutritionLogged: boolean; assessmentComplete: boolean; recoveryComplete: boolean; phoenixTaskPercent: number }
+  execution: { workoutInProgress?: boolean; completedWorkoutTitle?: string | null; completedWorkoutId?: string | null; completedWorkoutAt?: string | null; workoutComplete: boolean; nutritionLogged: boolean; assessmentComplete: boolean; recoveryComplete: boolean; phoenixTaskPercent: number }
   presentation: { tier: ProgramTier; complexity: 'minimal' | 'guided' | 'direct'; maxTasksPerBlock: number; showTrends: boolean; showInsight: boolean }
 }

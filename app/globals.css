@@ -2164,3 +2164,74 @@ main > *,
     width: 100%;
   }
 }
+
+/* Daily guidance: warm, readable, and deliberately quiet. */
+.daily-plan-card { width: min(1100px, calc(100% - 32px)); margin: 20px auto; padding: clamp(20px, 4vw, 32px); border: 1px solid #82533e; border-radius: 24px; background: linear-gradient(125deg, #30201a, #181310); color: #f6eee8; }
+.daily-home .daily-plan-card { width: 100%; margin: 0; }
+.daily-plan-card h2 { font-size: clamp(1.45rem, 4vw, 2rem); line-height: 1.2; margin: 10px 0; }
+.daily-plan-card p { max-width: 65ch; line-height: 1.6; font-size: 1rem; color: #e6d5c8; }
+.daily-plan-card small { display: block; color: #cfb8a5; font-size: .875rem; margin-top: 18px; line-height: 1.5; }
+.daily-plan-card.is-compact h2 { font-size: 1.3rem; }
+.daily-essentials { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.daily-essentials a, .daily-preview section, .daily-disclosure, .daily-preferences { color: #eee1d5; padding: 20px; border-radius: 20px; border: 1px solid #564033; background: #191411; }
+.daily-essentials a { text-decoration: none; }
+.daily-essentials strong, .daily-essentials span { display: block; line-height: 1.5; }
+.daily-essentials span { color: #d5bfab; margin-top: 8px; font-size: .95rem; }
+.daily-preview { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+.daily-preview h2 { font-size: 1.2rem; }
+.daily-preview section > a { display: grid; padding: 12px 0; color: #e5c3aa; gap: 5px; text-decoration: none; border-bottom: 1px solid #473429; }
+.daily-preview p { color: #d9c8b8; line-height: 1.6; }
+.daily-disclosure summary, .daily-preferences summary, .activity-session summary, .schedule-panel summary { cursor: pointer; min-height: 44px; align-content: center; font-size: 1rem; color: #ead9c9; }
+.daily-preferences form { display: grid; gap: 14px; padding-top: 16px; }
+.daily-preferences label, .activity-session label, .daily-action-dialog label, .schedule-event-actions label { display: grid; gap: 8px; color: #f0ded0; font-size: .95rem; }
+.daily-preferences select, .daily-preferences input, .activity-session input, .activity-session select, .activity-number-control input, .daily-action-dialog input, .schedule-event-actions input { width: 100%; min-height: 48px; border: 1px solid #8b6750; border-radius: 12px; padding: 10px 12px; background: #211915; color: #f6ece3; font: inherit; }
+.daily-action-dialog { width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: auto; padding: 24px; border: 1px solid #a7704d; border-radius: 24px; background: #211711; color: #f4e6da; }
+.daily-action-dialog::backdrop { background: #000b; }
+.daily-action-dialog p { line-height: 1.6; color: #ddc6b4; }
+.daily-action-dialog label { margin: 18px 0; }
+.daily-action-dialog button, .activity-session button, .schedule-event-actions button { min-height: 44px; padding: 10px 16px; border: 1px solid #8d6047; border-radius: 12px; color: #f4dac7; background: #38251b; font: inherit; cursor: pointer; }
+.activity-session { display: grid; gap: 18px; padding-bottom: 24px; }
+.activity-session > p { margin: 0; line-height: 1.6; color: #ddc8b6; }
+.activity-exercise { border: 1px solid #604535; border-radius: 20px; padding: 20px; background: #1b1511; }
+.activity-exercise h3 { font-size: 1.25rem; color: #f4e5d8; }
+.activity-exercise p { color: #dfcbb9; line-height: 1.5; }
+.activity-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
+.activity-exercise[data-activity="cardio"] .activity-inputs, .activity-exercise[data-activity="breathing"] .activity-inputs, .activity-exercise[data-activity="mobility"] .activity-inputs { grid-template-columns: 1fr; }
+.schedule-event-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.schedule-event-actions small, .schedule-event-actions p { width: 100%; font-size: .9rem; color: #d4bdaa; margin: 0; line-height: 1.5; }
+.schedule-event time small { display: block; font-size: .875rem; color: #ccb19b; }
+.schedule-event-actions > div { width: 100%; display: grid; gap: 12px; }
+.focused-meal-entry { min-width: 0; }
+.focused-meal-entry button, .focused-meal-entry input, .focused-meal-entry select { min-height: 44px; }
+.focused-meal-entry .tier-tab-list { flex-wrap: wrap; }
+.tier-dashboard-workspace .tier-dashboard-label, .tier-dashboard-workspace small, .schedule-shell small { font-size: max(.875rem, 12px); }
+.workout-session-region { overflow: visible; max-height: none; }
+.dashboard-client-shell { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+.dashboard-client-shell :is(button, a, input, select, summary):focus-visible { outline: 3px solid #e6af7f; outline-offset: 4px; }
+.dashboard-client-shell button:disabled { opacity: .65; cursor: wait; }
+.daily-quiet-note { color: #ddc7b4; line-height: 1.6; }
+@media (max-width: 600px) {
+  .daily-essentials, .daily-preview { grid-template-columns: 1fr; }
+  .daily-plan-card { width: calc(100% - 24px); padding: 20px; }
+  .daily-home .daily-plan-card { width: 100%; }
+  .daily-essentials a, .daily-preview section, .daily-disclosure, .daily-preferences { padding: 18px; }
+  .activity-exercise { padding: 16px; }
+  .activity-inputs { grid-template-columns: 1fr; }
+  .schedule-event { grid-template-columns: 1fr !important; }
+  .schedule-event-actions { width: 100%; }
+  .schedule-grid, .workout-dashboard-row { display: flex; flex-direction: column; }
+  .workout-dashboard-row > details { order: 2; }
+  .schedule-shell, .aos-workout-shell { padding-inline: 12px; }
+  .tier-primary-action { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; text-align: center; white-space: normal; }
+}
+
+.dashboard-client-shell .client-dashboard-nav__item small {font-size:.65rem;letter-spacing:.01em;color:#d8c3b4}
+@media (max-width: 720px) {
+  .client-dashboard-nav {grid-template-columns:repeat(2,minmax(0,1fr)) 82px repeat(2,minmax(0,1fr));}
+  .client-dashboard-nav__item--checkin, .client-dashboard-nav__item--recovery {display:none;}
+  .client-dashboard-nav__item--nutrition {grid-column:2;grid-row:1;}
+  .client-dashboard-nav__item--schedule {grid-column:4;grid-row:1;}
+  .client-dashboard-nav>.dashboard-more-menu {grid-column:5;grid-row:1;}
+  .dashboard-client-shell .client-dashboard-nav__item small {font-size:.72rem;}
+  .client-dashboard-nav__item {min-height:58px;}
+}

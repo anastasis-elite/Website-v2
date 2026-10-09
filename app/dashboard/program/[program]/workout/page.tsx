@@ -1,3 +1,6 @@
+import DailyPlanCard from '@/components/DailyPlanCard'
+import { getDailyScheduleState } from '@/lib/schedule/service'
+import { getClientTimeZone } from '@/lib/timezone'
 import { redirect } from 'next/navigation'
 
 import WorkoutDashboard from '@/components/workout-dashboard/WorkoutDashboard'
@@ -314,10 +317,14 @@ export default async function ProgramWorkoutPage({
       recoverySignals,
     })
 
+  const schedule = await getDailyScheduleState({ supabase, user, client, logic })
   return (
     <main className="aos-workout-page">
       <div className="aos-workout-shell">
+        <DailyPlanCard plan={schedule.dailyRecommendation!} compact />
         <WorkoutDashboard
+          timezone={getClientTimeZone(client)}
+          weightUnit={client.weight_unit === 'kg' || client.unit_preference === 'metric' || client.onboarding_data?.unitPreference === 'metric' ? 'kg' : 'lb'}
           clientId={client.client_id}
           authUserId={client.auth_user_id}
           program={clientProgram}

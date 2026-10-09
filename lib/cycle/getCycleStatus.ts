@@ -1,3 +1,5 @@
+import { getClientLocalDate } from '@/lib/timezone'
+
 export function getCycleStatus(client: any) {
   if (!client.cycle_tracking_enabled || !client.last_period_start) {
     return {
@@ -10,7 +12,7 @@ export function getCycleStatus(client: any) {
     }
   }
 
-  const today = new Date()
+  const today = new Date(`${getClientLocalDate(client)}T00:00:00Z`)
   const lastStart = new Date(client.last_period_start)
 
   const msPerDay = 1000 * 60 * 60 * 24
@@ -21,9 +23,9 @@ export function getCycleStatus(client: any) {
 
   const actualDay = daysSinceStart
 
-  let cycleDay = actualDay
+  const cycleDay = actualDay
   let phase = 'follicular'
-  let isExtendedCycle = actualDay > cycleLength + 3
+  const isExtendedCycle = actualDay > cycleLength + 3
   let recoveryCaution = false
   let recoveryNote =
     'Use this only as awareness. Your actual symptoms and recovery signals matter most.'

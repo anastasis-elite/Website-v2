@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import Link from 'next/link'
+import { useCallback, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import SymptomLogger from '@/components/SymptomLogger'
 import { AOSButton } from '@/components/aos-ui/AOSButton'
@@ -26,11 +27,14 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
     ? (initial.sorenessRegions || []).filter(isSorenessRegionKey)
     : []
   const [values,setValues] = useState<Values>({sleepHours:initial.sleepHours ?? 7,sleepQuality:initial.sleepQuality ?? 5,stress:initial.stress ?? 5,soreness:initialSoreness,energy:initial.energy ?? 5,mood:initial.mood ?? 5,hunger:initial.hunger ?? 5,notes:initial.notes ?? '',periodStarted:false,sorenessRegions:initialSorenessRegions})
+  const lock = useRef(false)
+  const [answered, setAnswered] = useState<Set<string>>(() => new Set(Object.keys(initial).filter(key => initial[key as keyof Values] !== undefined && initial[key as keyof Values] !== null)))
   const [saving,setSaving] = useState(false)
   const [message,setMessage] = useState('')
   const [sorenessDialogOpen,setSorenessDialogOpen] = useState(false)
   const closeSorenessDialog = useCallback(() => setSorenessDialogOpen(false), [])
   const updateSlider = (key: SliderKey, value: number) => {
+    setAnswered(current => new Set(current).add(key))
     setValues((current) => {
       if (key !== 'soreness') return { ...current, [key]: value }
       if (value <= 5) {
@@ -50,42 +54,46 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
     }))
     setMessage('')
   }
-  const slider = (key:SliderKey,label:string) => <AOSSlider key={key} label={label} value={Number(values[key])} min={key==='sleepHours'?0:1} max={key==='sleepHours'?12:10} step={key==='sleepHours'?0.5:1} suffix={key==='sleepHours'?' hours':'/10'} onChange={(value)=>updateSlider(key,value)}/>
+  const slider = (key:SliderKey,label:string) => <AOSSlider key={key} label={`${label}${key === 'energy' ? '' : ' (optional)'}${answered.has(key) ? '' : ' — not answered'}`} value={Number(values[key])} min={key==='sleepHours'?0:1} max={key==='sleepHours'?12:10} step={key==='sleepHours'?0.5:1} suffix={key==='sleepHours'?' hours':'/10'} onChange={(value)=>updateSlider(key,value)}/>
 
   async function save(event:React.FormEvent) {
     event.preventDefault(); setMessage('')
-    if (values.soreness > 5 && values.sorenessRegions.length === 0) {
+    if (lock.current) return
+    if (!answered.has('energy')) { setMessage('Choose your energy level first. The other questions are optional.'); return }
+    if (answered.has('soreness') && values.soreness > 5 && values.sorenessRegions.length === 0) {
       setMessage('Select where you are experiencing soreness.')
       setSorenessDialogOpen(true)
       return
     }
+    lock.current = true
     setSaving(true)
     try {
-      const response = await fetch('/api/daily-check-in',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,...values})})
+      const response = await fetch('/api/daily-check-in',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,...Object.fromEntries(Object.entries(values).filter(([key]) => answered.has(key))), sorenessRegions: values.sorenessRegions, periodStarted: values.periodStarted})})
       const payload = await response.json()
       if(!response.ok){setMessage(payload.error||'Check-in could not be saved.');return}
-      setMessage('Saved. Today’s recommendations are updating.')
+      setMessage('Saved. Today’s workout and recovery guidance now use your answers. Your next step is ready on home.')
       if (!stayOnSave) router.push(`/dashboard/program/${program}`)
       router.refresh()
     } catch {
       setMessage('Check-in could not be saved. Check your connection and try again.')
     } finally {
+      lock.current = false
       setSaving(false)
     }
   }
 
   return <div className="daily-check-in-layout">
     <AOSCard as="form" className="aos-check-in-form" onSubmit={save}>
-      <AOSSectionHeader eyebrow="Today's signals" title="How are you, actually?" copy="Move each marker to match how your body feels right now." />
+      <AOSSectionHeader eyebrow="Today's signals" title="How are you, actually?" copy="Start with energy. The other questions are optional; untouched markers are not saved as answers." />
       <div className="aos-slider-grid">{slider('sleepHours','Sleep duration')}{slider('sleepQuality','Sleep quality')}{slider('energy','Energy')}{slider('stress','Stress')}{slider('soreness','Soreness')}{slider('mood','Mood')}{slider('hunger','Hunger')}</div>
       {values.soreness > 5 && values.sorenessRegions.length ? <div className="aos-chip-list" aria-label="Selected soreness regions">{values.sorenessRegions.map((region) => {
         const label = SORENESS_REGIONS.find((item) => item.key === region)?.label || region
         return <button type="button" key={region} className="aos-chip is-selected" aria-pressed="true" onClick={() => toggleSorenessRegion(region)}>{label}</button>
       })}</div> : null}
       {cycleTrackingEnabled ? <div className="aos-period-panel"><span className="aos-period-panel__icon" aria-hidden="true">◒</span><AOSToggle label="My period started today" description="This updates your cycle day and today's recommendations." checked={values.periodStarted} onChange={(periodStarted)=>setValues((current)=>({...current,periodStarted}))}/></div> : null}
-      <AOSInput multiline label="Optional notes" placeholder="Anything else your body is telling you?" rows={4} value={values.notes} onChange={(event)=>setValues((current)=>({...current,notes:event.target.value}))}/>
+      <AOSInput multiline label="Optional notes" placeholder="Anything else your body is telling you?" rows={4} value={values.notes} onChange={(event)=>{ setAnswered(current => new Set(current).add('notes')); setValues((current)=>({...current,notes:event.target.value})) }}/>
       <AOSButton type="submit" disabled={saving}>{saving?'Saving…':'Save Daily Check-In'}</AOSButton>
-      {message?<p className="aos-status" role="status">{message}</p>:null}
+      {message?<p className="aos-status" role="status">{message}</p>:null}<Link href={`/dashboard/program/${program}`} className="tier-secondary-action">See today’s next step</Link>
     </AOSCard>
     <div className="aos-symptom-column"><AOSSectionHeader eyebrow="Symptoms" title="Add any body signal." copy="Optional. Tap the area where you feel something."/><SymptomLogger clientId={clientId}/></div>
     <AOSModal open={sorenessDialogOpen} title="Soreness regions" onClose={closeSorenessDialog}>

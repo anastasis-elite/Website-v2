@@ -58,31 +58,35 @@ export function getTimezoneFromState(state?: string) {
 }
 
 export function getClientTimeZone(client: any) {
-  return (
-    client?.timezone ||
-    client?.onboarding_data?.timezone ||
-    getTimezoneFromState(client?.state || client?.onboarding_data?.state)
-  )
+  const candidate = client?.timezone || client?.onboarding_data?.timezone || getTimezoneFromState(client?.state || client?.onboarding_data?.state)
+  try { new Intl.DateTimeFormat('en-US', { timeZone: candidate }).format(); return candidate as string }
+  catch { return getTimezoneFromState(client?.state || client?.onboarding_data?.state) }
 }
 
-export function getClientLocalDate(client: any) {
-  return getClientLocalDateOffset(client, 0)
+export function localDateKey(now: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now)
+  return ['year', 'month', 'day'].map(type => parts.find(p => p.type === type)!.value).join('-')
 }
-
-export function getClientLocalDateOffset(client: any, offsetDays = 0) {
-  const timeZone = getClientTimeZone(client)
-
-  const localDate = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date())
-
-  const [year, month, day] = localDate.split('-').map(Number)
-
-  const adjustedDate = new Date(Date.UTC(year, month - 1, day))
-  adjustedDate.setUTCDate(adjustedDate.getUTCDate() + offsetDays)
-
-  return adjustedDate.toISOString().slice(0, 10)
+export function addLocalDays(date: string, offset: number) {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day + offset)).toISOString().slice(0, 10)
+}
+export function getClientLocalDate(client: any, now = new Date()) { return localDateKey(now, getClientTimeZone(client)) }
+export function getClientLocalDateOffset(client: any, offsetDays = 0, now = new Date()) {
+  return addLocalDays(getClientLocalDate(client, now), offsetDays)
+}
+export function getLocalMinutes(now: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', hour: '2-digit', minute: '2-digit' }).formatToParts(now)
+  return Number(parts.find(p => p.type === 'hour')!.value) * 60 + Number(parts.find(p => p.type === 'minute')!.value)
+}
+export function getLocalDaypart(now: Date, timeZone: string): 'morning' | 'midday' | 'evening' {
+  const minutes = getLocalMinutes(now, timeZone)
+  return minutes < 11 * 60 ? 'morning' : minutes < 17 * 60 ? 'midday' : 'evening'
+}
+export function getGreeting(now: Date, timeZone: string) {
+  const minutes = getLocalMinutes(now, timeZone)
+  return minutes < 12 * 60 ? 'Good Morning' : minutes < 17 * 60 ? 'Good Afternoon' : 'Good Evening'
+}
+export function recordLocalDate(value: string, timeZone: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : localDateKey(new Date(value), timeZone)
 }

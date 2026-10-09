@@ -12,6 +12,7 @@ export type HydrationPacingInput = {
   target: number
   now?: Date
   localTimeMinutes?: number
+  hasLoggedIntake?: boolean
   wakeTime?: string | null
   bedTime?: string | null
 }
@@ -46,7 +47,7 @@ function minutesFromDate(date: Date) {
 export function calculateHydrationPacing(input: HydrationPacingInput): HydrationPacingResult {
   const target = Number(input.target)
   const consumed = Number(input.consumed)
-  if (!Number.isFinite(target) || target <= 0 || !Number.isFinite(consumed)) {
+  if (input.hasLoggedIntake === false || !Number.isFinite(target) || target <= 0 || !Number.isFinite(consumed)) {
     return {
       state: 'insufficient_data',
       consumedPercent: 0,
@@ -60,12 +61,13 @@ export function calculateHydrationPacing(input: HydrationPacingInput): Hydration
   const config = NUTRITION_INTELLIGENCE_CONFIG.hydration
   const wake = parseTime(input.wakeTime, config.defaultWakeTime)
   let bed = parseTime(input.bedTime, config.defaultBedTime)
-  if (bed <= wake) bed += 24 * 60
+  const overnight = bed <= wake
+  if (overnight) bed += 24 * 60
 
   let current = typeof input.localTimeMinutes === 'number'
     ? input.localTimeMinutes
     : minutesFromDate(input.now || new Date())
-  if (current < wake) current += 24 * 60
+  if (overnight && current < wake) current += 24 * 60
 
   const wakingMinutes = Math.max(1, bed - wake)
   const elapsedMinutes = clamp(current - wake, 0, wakingMinutes)

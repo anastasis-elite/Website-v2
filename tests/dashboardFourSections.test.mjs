@@ -24,12 +24,13 @@ test('tier dashboards no longer render standalone removed dashboard sections', (
   }
 })
 
-test('shared dashboard owns the final four-section structure', () => {
-  assert.match(workspace, /Today&apos;s Insight/)
-  assert.match(workspace, /data-tutorial-id="dashboard-calendar"/)
-  assert.match(workspace, /data-tutorial-id="dashboard-whats-next"/)
-  assert.match(workspace, /dashboard-progress-area/)
-  assert.match(workspace, /'progress', 'assessments', 'trends'/)
+test('shared home puts the next action before essentials, preview, and collapsed details', () => {
+  assert.match(workspace, /<DailyPlanCard plan=\{plan\}/)
+  assert.match(workspace, /aria-label="Daily essentials"/)
+  assert.match(workspace, /aria-label="Schedule preview"/)
+  assert.match(workspace, /aria-label="Progress summary"/)
+  assert.match(workspace, /data-quiet=\{quiet\}/)
+  assert.match(workspace, /Progress, assessments, and details/)
 })
 
 test('calendar day view contains Today plan daypart switching', () => {

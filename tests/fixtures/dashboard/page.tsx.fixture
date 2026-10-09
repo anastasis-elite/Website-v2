@@ -1,0 +1,19 @@
+// Isolated development-only browser fixture. Never connects to a customer account.
+import { notFound } from 'next/navigation'
+import { getProgramLogicEngine } from '@/lib/dashboard/logic/getProgramLogicEngine'
+import { buildDailyScheduleState } from '@/lib/schedule/engine'
+import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
+import { dailyPlanToScheduleEvents } from '@/lib/schedule/dailyPlanAdapter'
+import QAClient from './QAClient'
+export default async function QAPage({searchParams}:{searchParams:Promise<{view?:string;tier?:string;quiet?:string}>}) {
+ if(process.env.NODE_ENV !== 'development') notFound()
+ const params=await searchParams;const program=params.tier || 'ignite';const date='2026-10-08'
+ const client={client_id:'LOCAL-QA-ONLY',auth_user_id:'local-qa',full_name:'Maya (QA)',program,timezone:'America/Chicago',wake_time:'07:00',bed_time:'22:00',preferred_workout_time:'18:00',work_start_time:'09:00',work_end_time:'17:00',current_workout_minutes_per_session:30,execution_style:'hybrid',carousel_style:params.quiet==='true'?'step':'section',onboarding_data:{transitionMinutes:10},cycle_tracking_enabled:false}
+ const exercises=[{id:'strength',exercise:'Dumbbell squat',sets:2,reps:8,recommended_weight:15,load_type:'per_hand'}, {id:'walk',exercise:'Walking',duration_label:'10 min'}, {id:'breath',exercise:'Breathing',reps:'5 breaths'}, {id:'mobility',exercise:'Mobility flow',duration_seconds:30}]
+ const dailyPlan={date,timezone:client.timezone,calories:1800,dailyTargets:{protein:110,carbs:200,fats:60,water:111},dailyRemaining:{calories:1800,protein:110,carbs:200,fats:60,water:111},timing:{timezone:client.timezone,workoutTime:'18:00'},completedDailyTasks:[],workoutCompleted:false}
+ const supabase={from:(table:string)=>{const single=table==='recovery_logs'?{log_date:date,energy_level:6,sleep_hours:7,check_in_completed_at:'2026-10-08T13:00Z'}:null;const query:any={then:(resolve:any)=>resolve({data:[],error:null})};for(const name of ['select','eq','gte','gt','lte','lt','order','limit','in','or','not','upsert','insert','update'])query[name]=()=>query;query.maybeSingle=query.single=async()=>({data:single,error:null});return query}}
+ const logic=await getProgramLogicEngine({supabase,user:{id:'local-qa'},client,program:program as any,dailyPlan,cycleStatus:{enabled:false,phase:null,label:'Not tracked',cycleDay:null},cycleAdjustment:{multiplier:1},plannedWorkout:{day_name:'Strength and movement',title:'Strength and movement'},plannedExercises:exercises,monthlyAssessmentsDueCount:0})
+ const schedule=buildDailyScheduleState({date,timezone:client.timezone,now:new Date('2026-10-08T20:40Z'),dayStart:new Date('2026-10-08T12:00Z'),dayEnd:new Date('2026-10-09T03:00Z'),events:dailyPlanToScheduleEvents({userId:'local-qa',client,dailyPlan}),logic,program,transitionMinutes:10})
+ schedule.preferences={executionStyle:'hybrid',carouselStyle:client.carousel_style,transitionMinutes:10};schedule.dailyRecommendation=buildDailyRecommendation(logic,schedule)
+ return <QAClient view={params.view || 'home'} logic={logic} schedule={schedule} exercises={exercises}/>
+}

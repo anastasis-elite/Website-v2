@@ -1,3 +1,5 @@
+import { getClientLocalDate } from '@/lib/timezone'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { analyzeSymptomSignal } from '@/lib/symptoms/analyzeSymptomSignal'
@@ -17,6 +19,7 @@ export async function POST(request: Request) {
 
   const {
     clientId,
+    requestId,
     symptomTypeId,
     bodyRegionId,
     severity,
@@ -34,12 +37,17 @@ export async function POST(request: Request) {
 
   const { data: ownedClient } = await supabase
     .from('clients')
-    .select('client_id')
+    .select('*')
     .eq('client_id', clientId)
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!ownedClient) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
 
+  if (requestId && !/^[0-9a-f-]{36}$/i.test(requestId)) return NextResponse.json({ error: 'Invalid submission.' }, { status: 400 })
+  if (requestId) {
+    const { data: existing } = await supabase.from('client_symptom_logs').select('*').eq('id', requestId).eq('auth_user_id', user.id).maybeSingle()
+    if (existing) return NextResponse.json({ success: true, symptomLog: existing, replayed: true })
+  }
   const { data: symptomType, error: symptomError } = await supabase
     .from('symptom_types')
     .select('id, name, category')
@@ -53,7 +61,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getClientLocalDate(ownedClient)
 
   const { data: todayCycleLog } = await supabase
     .from('cycle_logs')
@@ -131,7 +139,8 @@ export async function POST(request: Request) {
 
   const { data: symptomLog, error } = await supabase
     .from('client_symptom_logs')
-    .insert({
+    .upsert({
+      ...(requestId ? { id: requestId } : {}),
       client_id: clientId,
       auth_user_id: user.id,
       symptom_type_id: symptomTypeId,
@@ -156,6 +165,8 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  invalidateDailyPlan()
 
   return NextResponse.json({
     success: true,

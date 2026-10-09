@@ -21,8 +21,11 @@ export const mealPeriods: MealPeriod[] = [
   'Other',
 ]
 
-export function getMealPeriodForLocalDate(date = new Date()): MealPeriod {
-  const minutes = date.getHours() * 60 + date.getMinutes()
+export function getMealPeriodForLocalDate(date = new Date(), timezone?: string): MealPeriod {
+  const parts = timezone ? new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(date) : null
+  const minutes = parts
+    ? Number(parts.find((part) => part.type === 'hour')?.value) * 60 + Number(parts.find((part) => part.type === 'minute')?.value)
+    : date.getHours() * 60 + date.getMinutes()
 
   if (minutes >= 4 * 60 && minutes <= 5 * 60 + 59) return 'Wake Up'
   if (minutes >= 6 * 60 && minutes <= 9 * 60 + 29) return 'Breakfast'

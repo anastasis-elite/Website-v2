@@ -1,3 +1,4 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { getClientLocalDateOffset } from '@/lib/timezone'
 import { createMobileRequestContext } from '@/lib/mobile/auth'
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true })
+    invalidateDailyPlan();return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json(
       {

@@ -25,6 +25,8 @@ type Props = {
   clientId: string
   authUserId: string
   program: string
+  timezone?: string
+  weightUnit?: 'lb' | 'kg'
   recommendedDayName: string
   recommendedExercises: unknown[]
   memberEquipment: string[]
@@ -65,6 +67,8 @@ export default function ManualWorkoutBuilder({
   clientId,
   authUserId,
   program,
+  timezone,
+  weightUnit,
   recommendedDayName,
   recommendedExercises,
   memberEquipment,
@@ -77,7 +81,7 @@ export default function ManualWorkoutBuilder({
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null)
   const [selectedMovementFamily, setSelectedMovementFamily] = useState<string | null>(null)
   const [activeExercise, setActiveExercise] = useState<ManualWorkoutExercise | null>(null)
-  const [completedExercises, setCompletedExercises] = useState<ManualWorkoutExercise[]>([])
+  const [completedExercises, setCompletedExercises] = useState<Array<ManualWorkoutExercise & { completion_status?: string }>>([])
 
   const selectedMuscles = useMemo(() => regionToMuscles(selectedRegionId), [selectedRegionId])
   const primaryMuscle = selectedMuscles[0]
@@ -150,9 +154,9 @@ export default function ManualWorkoutBuilder({
     setStep('logging')
   }
 
-  function finishExercise() {
+  function finishExercise(completed = true) {
     if (activeExercise) {
-      setCompletedExercises((previous) => [...previous, activeExercise])
+      setCompletedExercises((previous) => [...previous, { ...activeExercise, completion_status: completed ? 'Complete' : 'Partial exercise saved' }])
     }
     setActiveExercise(null)
     setStep('complete')
@@ -171,6 +175,8 @@ export default function ManualWorkoutBuilder({
           clientId={clientId}
           authUserId={authUserId}
           program={program}
+          timezone={timezone}
+          weightUnit={weightUnit}
           dayName="Manual Workout"
           workoutSource="manual"
           plannedExercises={recommendedExercises}
@@ -200,7 +206,7 @@ export default function ManualWorkoutBuilder({
               <span>{index + 1}</span>
               <div>
                 <strong>{exercise.display_name}</strong>
-                <small>{summarizeExercise(exercise)}</small>
+                <small>{String(exercise.completion_status || 'Saved')} · {summarizeExercise(exercise)}</small>
               </div>
             </li>
           ))}

@@ -77,6 +77,7 @@ export type ScheduleEvent = {
   created_at?: string
   updated_at?: string
   virtual?: boolean
+  suggested?: boolean
   action_route?: string | null
 }
 
@@ -115,6 +116,7 @@ export type NextScheduleAction = {
 }
 
 export type DailyScheduleState = {
+  program?: string
   date: string
   timezone: string
   now: string
@@ -129,5 +131,7 @@ export type DailyScheduleState = {
   adjustments: ScheduleAdjustment[]
   nextEvent: ScheduleEvent | null
   nextActionableEvent: ScheduleEvent | null
+  dailyRecommendation?: import('@/lib/dashboard/dailyRecommendation').DailyRecommendation
+  preferences?: { executionStyle: string; carouselStyle: string; transitionMinutes: number }
   nextAction: NextScheduleAction
 }

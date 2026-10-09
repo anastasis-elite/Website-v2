@@ -1,3 +1,4 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAvailableWindows } from '@/lib/schedule/getAvailableWindows'
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { clientId, blocks } = await request.json()
-  const { data: client } = await supabase.from('clients').select('client_id').eq('client_id', clientId).eq('auth_user_id', user.id).maybeSingle()
+  const { data: client } = await supabase.from('clients').select('client_id,onboarding_data').eq('client_id', clientId).eq('auth_user_id', user.id).maybeSingle()
   if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
   if (!Array.isArray(blocks) || blocks.length > 100) return NextResponse.json({ error: 'Invalid schedule.' }, { status: 400 })
   const rows = blocks.map((block: any) => ({
@@ -22,13 +23,10 @@ export async function POST(request: Request) {
     end_time: String(block.end_time || ''),
     active: true,
   }))
-  if (rows.some((row: any) => !blockTypes.has(row.block_type) || !/^\d{2}:\d{2}/.test(row.start_time) || !/^\d{2}:\d{2}/.test(row.end_time) || !row.days_of_week.length)) return NextResponse.json({ error: 'Each schedule block needs a type, day, start, and end time.' }, { status: 400 })
-  const { error: deleteError } = await supabase.from('client_schedule_blocks').delete().eq('client_id', client.client_id).eq('user_id', user.id)
-  if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 })
-  if (rows.length) {
-    const { error } = await supabase.from('client_schedule_blocks').insert(rows)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-  const windows = Object.fromEntries([0,1,2,3,4,5,6].map((day) => [day, getAvailableWindows(rows, day, 10)]))
+  if (rows.some((row: any) => !blockTypes.has(row.block_type) || !/^([01]\d|2[0-3]):[0-5]\d(:00)?$/.test(row.start_time) || !/^([01]\d|2[0-3]):[0-5]\d(:00)?$/.test(row.end_time) || !row.days_of_week.length)) return NextResponse.json({ error: 'Each schedule block needs a type, day, start, and end time.' }, { status: 400 })
+  const { error } = await supabase.rpc('replace_daily_commitments', { p_client_id: client.client_id, p_blocks: rows })
+  if (error) return NextResponse.json({ error: 'Commitments could not be saved. Your previous schedule is unchanged; try again.' }, { status: 500 })
+  const windows = Object.fromEntries([0,1,2,3,4,5,6].map((day) => [day, getAvailableWindows(rows, day, 10, Number(client.onboarding_data?.transitionMinutes ?? 10))]))
+  invalidateDailyPlan()
   return NextResponse.json({ success: true, availableWindows: windows })
 }

@@ -1,3 +1,5 @@
+import DailyPlanCard from '@/components/DailyPlanCard'
+import { getDailyScheduleState } from '@/lib/schedule/service'
 import NutritionDashboardClient from './NutritionDashboardClient'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
@@ -19,5 +21,6 @@ export default async function NutritionPage() {
     })
   }
   const recipes=getTierCapabilities(logic.program).nutritionRecommendedMeal?getPhoenixRecipeRecommendations({logic,client}):[]
-  return <NutritionDashboardClient logic={logic} recipes={recipes} />
+  const schedule = await getDailyScheduleState({ supabase, user, client, logic })
+  return <><DailyPlanCard plan={schedule.dailyRecommendation!} compact /><NutritionDashboardClient logic={logic} recipes={recipes} /></>
 }

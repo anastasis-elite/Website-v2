@@ -1,3 +1,4 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 
 import { getCyclePrediction } from '@/lib/cycle/getCyclePrediction'
@@ -16,15 +17,7 @@ type PeriodStartLog = {
   period_start_date?: string | null
 }
 
-function rating(value: unknown): number {
-  return Math.max(
-    1,
-    Math.min(
-      10,
-      Math.round(Number(value) || 5),
-    ),
-  )
-}
+
 
 function getDateOnly(
   value: unknown,
@@ -245,103 +238,26 @@ export async function POST(
     const updatedAt =
       new Date().toISOString()
 
-    const sorenessLevel =
-      rating(body.soreness)
-
-    const submittedRegions =
-      Array.isArray(
-        body.sorenessRegions,
-      )
-        ? body.sorenessRegions
-        : []
-
-    const validatedSorenessRegions =
-      sorenessLevel <= 5
-        ? []
-        : Array.from(
-            new Set(
-              submittedRegions.filter(
-                isSorenessRegionKey,
-              ),
-            ),
-          )
-
-    if (
-      sorenessLevel > 5 &&
-      validatedSorenessRegions
-        .length === 0
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            'Select where you are experiencing soreness.',
-        },
-        {
-          status: 400,
-        },
-      )
+    const { data: previous } = await supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle()
+    const fields: Record<string, string> = { sleepHours: 'sleep_hours', sleepQuality: 'sleep_quality', stress: 'stress_level', soreness: 'soreness_level', energy: 'energy_level', mood: 'mood_level', hunger: 'hunger_level' }
+    const answers: Record<string, unknown> = {}
+    for (const [key, column] of Object.entries(fields)) {
+      if (body[key] === undefined) continue
+      const value = Number(body[key])
+      const min = key === 'sleepHours' ? 0 : 1, max = key === 'sleepHours' ? 12 : 10
+      if (body[key] === null || !Number.isFinite(value) || value < min || value > max) return NextResponse.json({ error: `Choose a valid ${key}.` }, { status: 400 })
+      answers[column] = value
     }
-
-    const {
-      error: recoveryError,
-    } =
-      await updateOrInsertByClientDate(
-        supabase,
-        'recovery_logs',
-        {
-          client_id:
-            client.client_id,
-          auth_user_id:
-            user.id,
-          log_date: today,
-
-          sleep_hours: Math.max(
-            0,
-            Math.min(
-              12,
-              Number(
-                body.sleepHours,
-              ) || 0,
-            ),
-          ),
-
-          sleep_quality:
-            rating(
-              body.sleepQuality,
-            ),
-
-          stress_level:
-            rating(body.stress),
-
-          soreness_level:
-            sorenessLevel,
-
-          soreness_regions:
-            validatedSorenessRegions,
-
-          energy_level:
-            rating(body.energy),
-
-          mood_level:
-            rating(body.mood),
-
-          hunger_level:
-            rating(body.hunger),
-
-          notes:
-            typeof body.notes ===
-            'string'
-              ? body.notes.trim() ||
-                null
-              : null,
-
-          check_in_completed_at:
-            updatedAt,
-
-          updated_at:
-            updatedAt,
-        },
-      )
+    if (answers.energy_level === undefined && previous?.energy_level == null) return NextResponse.json({ error: 'Choose your energy level. Other questions are optional.' }, { status: 400 })
+    if (answers.soreness_level !== undefined) {
+      const soreness = Number(answers.soreness_level)
+      const regions = soreness <= 5 ? [] : Array.from(new Set((Array.isArray(body.sorenessRegions) ? body.sorenessRegions : []).filter(isSorenessRegionKey)))
+      if (soreness > 5 && !regions.length) return NextResponse.json({ error: 'Select where you are experiencing soreness.' }, { status: 400 })
+      answers.soreness_regions = regions
+    }
+    if (body.notes !== undefined) answers.notes = typeof body.notes === 'string' ? body.notes.trim() || null : null
+    const { error: recoveryError } = await supabase.from('recovery_logs').upsert({ client_id: client.client_id, auth_user_id: user.id, log_date: today,
+      ...answers, check_in_completed_at: previous?.check_in_completed_at || updatedAt, updated_at: updatedAt }, { onConflict: 'client_id,log_date' })
 
     if (recoveryError) {
       return NextResponse.json(
@@ -525,6 +441,8 @@ export async function POST(
         )
       }
     }
+
+    invalidateDailyPlan()
 
     return NextResponse.json({
       success: true,

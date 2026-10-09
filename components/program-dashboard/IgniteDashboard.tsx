@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { getGreeting } from '@/lib/timezone'
 import type { CSSProperties } from 'react'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
@@ -38,15 +39,11 @@ export default function IgniteDashboard({
           </div>
 
           <div className="ignite-greeting">
-            <h1>Good Morning, {logic.client.name} {flame.icon}</h1>
+            <h1>{getGreeting(new Date(schedule.now), schedule.timezone)}, {logic.client.name} {flame.icon}</h1>
             <p>One choice at a time.</p>
           </div>
 
-          <div className="ignite-streak">
-            <span>{flame.icon}</span>
-            <strong>{logic.flameState.streak}</strong>
-            <small>Day streak</small>
-          </div>
+
         </header>
 
         <TierAwareDashboardWorkspace tier="ignite" logic={logic} schedule={schedule} />

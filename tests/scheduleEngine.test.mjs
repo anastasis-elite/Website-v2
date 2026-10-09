@@ -1,20 +1,8 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import ts from 'typescript'
+import {importTs} from './typescriptModule.mjs'
 
-async function importTypescriptModule(path) {
-  const source = readFileSync(path, 'utf8')
-  const { outputText } = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.ES2020,
-      target: ts.ScriptTarget.ES2022,
-    },
-  })
-  return import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`)
-}
-
-const { buildDailyScheduleState } = await importTypescriptModule('lib/schedule/engine.ts')
+const { buildDailyScheduleState } = await importTs('lib/schedule/engine.ts')
 
 function event(overrides = {}) {
   return {
@@ -86,7 +74,7 @@ test('next action chooses the current fixed event without moving it', () => {
   assert.equal(state.adjustments.some((item) => item.event_id === 'doctor'), false)
 })
 
-test('low capacity reduces only flexible workout duration', () => {
+test('low capacity suggests a shorter flexible workout without moving fixed obligations', () => {
   const state = buildDailyScheduleState({
     date: '2026-08-17',
     timezone: 'America/Chicago',
@@ -120,10 +108,10 @@ test('low capacity reduces only flexible workout duration', () => {
   const workoutAdjustment = state.adjustments.find((item) => item.event_id === 'workout')
   assert.equal(workoutAdjustment?.adjustment_type, 'reduce_duration')
   assert.equal(workoutAdjustment?.suggested_duration_minutes, 30)
-  assert.equal(workoutAdjustment?.automatic, true)
-  assert.equal(workoutAdjustment?.applied, true)
-  assert.equal(state.events.find((item) => item.id === 'workout')?.adjusted_duration_minutes, 30)
-  assert.equal(state.events.find((item) => item.id === 'workout')?.adjusted_end_at, '2026-08-17T15:30:00.000Z')
+  assert.equal(workoutAdjustment?.automatic, false)
+  assert.equal(workoutAdjustment?.applied, false)
+  assert.equal(state.events.find((item) => item.id === 'workout')?.adjusted_duration_minutes, null)
+  assert.equal(state.events.find((item) => item.id === 'workout')?.adjusted_end_at, null)
   assert.equal(state.adjustments.some((item) => item.event_id === 'school'), false)
 })
 

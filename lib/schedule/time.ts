@@ -1,4 +1,4 @@
-import { getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
+import { addLocalDays, getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
 
 export function getLocalParts(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -58,8 +58,7 @@ export function getClientDayRange(client: any, date?: string) {
   const timezone = getClientTimeZone(client)
   const localDate = date || getClientLocalDate(client)
   const start = zonedDateTimeToUtc(localDate, '00:00', timezone)
-  const nextStart = new Date(start)
-  nextStart.setUTCDate(nextStart.getUTCDate() + 1)
+  const nextStart = zonedDateTimeToUtc(addLocalDays(localDate, 1), '00:00', timezone)
 
   return {
     date: localDate,

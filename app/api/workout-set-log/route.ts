@@ -1,14 +1,9 @@
+import { getClientDayRange } from '@/lib/schedule/time'
+import { getClientLocalDate } from '@/lib/timezone'
+import { workoutCompletion } from '@/lib/workout/activity'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-
-function dayBounds(value: string) {
-  const date = new Date(value)
-  const start = new Date(date)
-  start.setHours(0, 0, 0, 0)
-  const end = new Date(start)
-  end.setDate(start.getDate() + 1)
-  return { start: start.toISOString(), end: end.toISOString() }
-}
 
 function exerciseId(exercise: any) {
   return String(
@@ -36,15 +31,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const {data:client} = await supabase.from('clients').select('*').eq('client_id',body.client_id).eq('auth_user_id',user.id).maybeSingle()
+    if(!client)return NextResponse.json({error:'Client not found.'},{status:404})
+    if(body.program !== client.program)return NextResponse.json({error:'Workout does not match your program.'},{status:403})
     const workoutDate = body.workout_date || new Date().toISOString()
-    const bounds = dayBounds(workoutDate)
+    if(!Number.isFinite(new Date(workoutDate).getTime()) || getClientLocalDate(client,new Date(workoutDate)) !== getClientLocalDate(client))return NextResponse.json({error:'Reload today’s session before saving.'},{status:400})
+    const day = getClientDayRange(client)
+    const bounds = {start:day.start.toISOString(),end:day.end.toISOString()}
     const sets = Array.isArray(body.sets) ? body.sets : []
     const exerciseLogs = Array.isArray(body.exercise_logs) ? body.exercise_logs : []
+    if(sets.length>100 || sets.some((set:any)=>!Number.isFinite(Number(set.weight)) || Number(set.weight)<0 || !Number.isFinite(Number(set.reps)) || Number(set.reps)<=0 || !['lb','kg'].includes(set.weight_unit || 'lb') || !set.completed_at))return NextResponse.json({error:'Review the confirmed sets before saving.'},{status:400})
+    for(const log of exerciseLogs)log.completed=Boolean(body.exercise_finished_at) && sets.length >= Math.max(1,Number(body.exercise?.sets || 1))
 
     const existingResult = await supabase
       .from('workout_logs')
       .select('id, exercise_logs')
       .eq('client_id', body.client_id)
+      .eq('auth_user_id',user.id)
       .eq('workout_source', 'manual')
       .gte('workout_date', bounds.start)
       .lt('workout_date', bounds.end)
@@ -74,7 +77,7 @@ export async function POST(req: Request) {
       workout_date: workoutDate,
       planned_exercises: Array.isArray(body.planned_exercises) ? body.planned_exercises : [],
       exercise_logs: nextLogs,
-      completed: body.completed ?? nextLogs.length > 0,
+      completed: Array.isArray(body.planned_exercises) && body.planned_exercises.length === nextLogs.length && workoutCompletion(nextLogs).completed,
       updated_at: new Date().toISOString(),
     }
 
@@ -118,34 +121,13 @@ export async function POST(req: Request) {
 
     const exerciseSessionId = sessionResult.data.id
 
-    const deleteResult = await supabase
-      .from('workout_exercise_sets')
-      .delete()
-      .eq('exercise_session_id', exerciseSessionId)
+    const deleteResult = await supabase.rpc('replace_workout_sets', {p_session_id:exerciseSessionId,p_sets:sets})
 
     if (deleteResult.error) {
       return NextResponse.json({ error: deleteResult.error.message }, { status: 500 })
     }
 
-    if (sets.length) {
-      const insertResult = await supabase
-        .from('workout_exercise_sets')
-        .insert(sets.map((set: any) => ({
-          workout_log_id: workoutLogId,
-          exercise_session_id: exerciseSessionId,
-          exercise_id: nextExerciseKey,
-          set_number: Number(set.set_number),
-          weight: Number(set.weight || 0),
-          weight_unit: set.weight_unit || 'lb',
-          reps: Number(set.reps || 0),
-          set_started_at: set.set_started_at || null,
-          completed_at: set.completed_at || new Date().toISOString(),
-        })))
-
-      if (insertResult.error) {
-        return NextResponse.json({ error: insertResult.error.message }, { status: 500 })
-      }
-    }
+    invalidateDailyPlan()
 
     return NextResponse.json({ success: true, workout_log_id: workoutLogId, exercise_session_id: exerciseSessionId })
   } catch (error) {
