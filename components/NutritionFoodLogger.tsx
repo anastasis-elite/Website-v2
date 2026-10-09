@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import * as styles from '@/app/styles/globalstyles'
 import { getMealPeriodForLocalDate, mealPeriods, type MealPeriod } from '@/lib/nutrition/mealPeriod'
 
@@ -156,6 +156,7 @@ function FoodInputLogger({
   active,
 }: Props & { method: InputMethod; active: boolean; revision: number; onMethodChange: (method: InputMethod) => void }) {
   const router = useRouter()
+  const inputId = useId()
   const submitLock = useRef(false)
   const requestId = useRef<string | null>(null)
   const [showCustom, setShowCustom] = useState(false)
@@ -706,8 +707,8 @@ function FoodInputLogger({
 
       <>
       {selectedFood ? <div style={styles.fieldWrap}>
-        <label style={styles.labelStyle} htmlFor="nutrition-meal-name">Meal</label>
-        <select id="nutrition-meal-name" style={styles.inputStyle} value={mealName} onChange={(e) => setMealName(e.target.value as MealPeriod)}>
+        <label style={styles.labelStyle} htmlFor={`${inputId}-meal-name`}>Meal</label>
+        <select id={`${inputId}-meal-name`} style={styles.inputStyle} value={mealName} onChange={(e) => setMealName(e.target.value as MealPeriod)}>
           {mealPeriods.map((period) => (
             <option key={period} value={period}>
               {period}
@@ -765,14 +766,14 @@ function FoodInputLogger({
       {loadingServingOptions ? <p style={{ ...styles.bodyStyle, marginTop: '12px' }}>Loading serving sizes...</p> : null}
 
       <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-        <label htmlFor="nutrition-serving-amount" style={styles.labelStyle}>Serving amount</label>
-        <input style={styles.inputStyle} id="nutrition-serving-amount" type="number" min="0.01" step="0.25" value={servingAmount} onChange={(e) => setServingAmount(e.target.value)} />
+        <label htmlFor={`${inputId}-serving-amount`} style={styles.labelStyle}>Serving amount</label>
+        <input style={styles.inputStyle} id={`${inputId}-serving-amount`} type="number" min="0.01" step="0.25" value={servingAmount} onChange={(e) => setServingAmount(e.target.value)} />
       </div>
 
       {servingOptions.length > 0 && (
         <div style={{ ...styles.fieldWrap, marginTop: '18px' }}>
-          <label htmlFor="nutrition-serving-size" style={styles.labelStyle}>Serving unit</label>
-          <select id="nutrition-serving-size" style={styles.inputStyle} value={selectedServingOptionId} onChange={(e) => setSelectedServingOptionId(e.target.value)}>
+          <label htmlFor={`${inputId}-serving-size`} style={styles.labelStyle}>Serving unit</label>
+          <select id={`${inputId}-serving-size`} style={styles.inputStyle} value={selectedServingOptionId} onChange={(e) => setSelectedServingOptionId(e.target.value)}>
             {servingOptions.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}
