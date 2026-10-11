@@ -37,12 +37,22 @@ function toMobileScheduleEvent(event: ScheduleEvent, schedule: DailyScheduleStat
     required: event.required,
     priority: event.priority,
     external: Boolean(event.external_event_id || event.external_calendar_source),
+    calendar_event_id: event.calendar_event_id,
+    source_label: event.source_label,
+    calendar_provider: event.calendar_provider,
+    provider_calendar_id: event.provider_calendar_id,
+    ical_uid: event.ical_uid,
+    provider_event_id: event.external_event_id,
+    all_day: event.all_day,
+    timezone: event.timezone,
+    busy: event.busy !== false,
+    suggested: event.suggested === true,
     can_complete:
-      !event.virtual &&
+      !event.virtual && !event.calendar_event_id &&
       !['completed', 'cancelled', 'skipped'].includes(event.status) &&
       !(event.flexibility_type === 'fixed' && Boolean(event.external_event_id || event.external_calendar_source)),
     can_defer:
-      !event.virtual &&
+      !event.virtual && !event.calendar_event_id &&
       event.flexibility_type === 'flexible' &&
       event.movable &&
       !event.approval_required &&
@@ -51,7 +61,7 @@ function toMobileScheduleEvent(event: ScheduleEvent, schedule: DailyScheduleStat
       !event.external_calendar_source,
     adjusted: Boolean(adjustment?.applied),
     adjustment_reason: adjustment?.applied ? adjustment.reason : null,
-    href: mobileRoutes[event.event_type] || '/today',
+    href: event.calendar_event_id ? '/calendar' : mobileRoutes[event.event_type] || '/today',
   }
 }
 
@@ -74,7 +84,8 @@ export async function GET(request: Request) {
     })
     const dailyState = buildMobileDailyState(logic)
     const scheduleAction = schedule.nextAction
-    const nextActionId = mobileActionId(scheduleAction.category)
+    const calendarAction = schedule.events.some((event) => event.id === scheduleAction.id && event.calendar_event_id)
+    const nextActionId = calendarAction ? 'calendar' : mobileActionId(scheduleAction.category)
     const nextAction = {
       ...(dailyState.actions.find((action) => action.id === nextActionId) || dailyState.nextAction),
       id: nextActionId,
@@ -88,7 +99,7 @@ export async function GET(request: Request) {
               ? 'active'
               : 'upcoming',
       detail: scheduleAction.short_reason,
-      href: mobileRoutes[scheduleAction.category] || '/today',
+      href: calendarAction ? '/calendar' : mobileRoutes[scheduleAction.category] || '/today',
       primary: true,
       scheduleEventId: scheduleAction.id !== 'none' ? scheduleAction.id : null,
       urgency: scheduleAction.urgency,

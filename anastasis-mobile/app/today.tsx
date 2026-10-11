@@ -1,8 +1,9 @@
-import { router } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   Pressable,
   StyleSheet,
   Text,
@@ -24,6 +25,9 @@ import {
   type MobileScheduleEvent,
 } from '../lib/dashboard'
 import { colors } from '../lib/theme'
+import { useDeviceCalendar } from '../lib/calendar/useDeviceCalendar'
+import { shouldSuppressDeviceCalendar } from '../lib/calendar/logic'
+import type { DeviceEvent } from '../lib/calendar/device'
 
 const icons: Record<MobileDailyAction['id'], string> = {
   water: '◈',
@@ -31,6 +35,7 @@ const icons: Record<MobileDailyAction['id'], string> = {
   'check-in': '✓',
   workout: '↟',
   recovery: '♡',
+  calendar: '▦',
 }
 
 function programLabel(program: MobileDailyState['user']['program']) {
@@ -62,10 +67,17 @@ function urgencyCopy(action: MobileDailyAction) {
 }
 
 export default function TodayScreen() {
+  const deviceCalendar = useDeviceCalendar()
   const [state, setState] = useState<MobileDailyState | null>(null)
   const [loading, setLoading] = useState(true)
   const [workingAction, setWorkingAction] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000)
+    const subscription = AppState.addEventListener('change', next => { if (next === 'active') setNow(Date.now()) })
+    return () => { clearInterval(timer); subscription.remove() }
+  }, [])
 
   const loadState = useCallback(async () => {
     try {
@@ -85,6 +97,11 @@ export default function TodayScreen() {
 
   useEffect(() => {
     Promise.resolve().then(loadState)
+  }, [loadState])
+  useFocusEffect(useCallback(() => { void loadState() }, [loadState]))
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (next) => { if (next === 'active') void loadState() })
+    return () => subscription.remove()
   }, [loadState])
 
   async function handleAction(action: MobileDailyAction) {
@@ -187,8 +204,19 @@ export default function TodayScreen() {
   }
 
   const completed = state.actions.filter((action) => action.status === 'complete')
-  const nextAction = state.nextAction
   const remainingEvents = state.scheduleEvents || []
+  const cloudCalendars = remainingEvents.filter((event) => event.calendar_provider && event.provider_calendar_id)
+    .map((event) => `${event.calendar_provider}:${event.provider_calendar_id}`)
+  const deviceEvents = (deviceCalendar.snapshot?.events || []).filter((event) => !shouldSuppressDeviceCalendar(
+    event.calendarId, deviceCalendar.snapshot?.preferences.cloudMappings || {}, cloudCalendars,
+  ))
+  const combined: (MobileScheduleEvent | DeviceEvent)[] = [...remainingEvents, ...deviceEvents]
+    .sort((a, b) => a.start_at.localeCompare(b.start_at))
+  const deviceCommitment = deviceEvents.find((event) => !event.allDay && event.busy && Date.parse(event.start_at) <= now && Date.parse(event.end_at) > now)
+  const nextAction: MobileDailyAction = deviceCommitment && state.nextAction.status !== 'urgent' && !state.summary.alert
+    ? { id: 'calendar', label: deviceCommitment.title, status: 'active', progress: 0, detail: deviceCommitment.source_label,
+      href: '/calendar', kind: 'route', required: false, urgency: 'now', can_complete: false, can_defer: false }
+    : state.nextAction
 
   return (
     <AppShell active="today">
@@ -313,20 +341,22 @@ export default function TodayScreen() {
           <View>
             <Text style={styles.eyebrow}>Today</Text>
             <Text style={styles.sectionTitle}>
-              {remainingEvents.length
-                ? `${remainingEvents.length} remaining`
+              {combined.length
+                ? `${combined.length} commitments and activities`
                 : 'No remaining schedule actions'}
             </Text>
           </View>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/calendar')}><Text style={styles.eventButtonText}>Calendar</Text></Pressable>
         </View>
+        {deviceCalendar.error ? <Text style={styles.copy}>Device calendar: {deviceCalendar.error}</Text> : null}
 
         <View style={styles.scheduleList}>
-          {remainingEvents.slice(0, 6).map((event) => (
+          {combined.slice(0, 8).map((event) => (
             <View
-              key={event.id}
+              key={'key' in event ? event.key : event.id}
               style={[
                 styles.scheduleEvent,
-                event.priority === 'high' || event.priority === 'critical'
+                'priority' in event && (event.priority === 'high' || event.priority === 'critical')
                   ? styles.scheduleEventUrgent
                   : null,
               ]}
@@ -334,12 +364,13 @@ export default function TodayScreen() {
               <View style={styles.scheduleEventCopy}>
                 <Text style={styles.actionLabel}>{event.title}</Text>
                 <Text numberOfLines={2} style={styles.actionDetail}>
-                  {event.category.replace('_', ' ')}
-                  {event.adjusted ? ` · ${event.adjustment_reason}` : ''}
+                  {'allDay' in event && event.allDay ? 'All day' : new Date(event.start_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                  {'calendarId' in event ? ` · ${event.source_label}` : ` · ${event.source_label || (event.external ? 'Connected calendar' : 'Anastasis')}`}
+                  {'adjusted' in event && event.adjusted ? ` · ${event.adjustment_reason}` : ''}
                 </Text>
               </View>
               <View style={styles.eventButtons}>
-                {event.can_defer ? (
+                {'can_defer' in event && event.can_defer ? (
                   <Pressable
                     disabled={workingAction === `defer-${event.id}`}
                     onPress={() => deferEvent(event)}
@@ -348,7 +379,7 @@ export default function TodayScreen() {
                     <Text style={styles.eventButtonText}>Defer</Text>
                   </Pressable>
                 ) : null}
-                {event.can_complete ? (
+                {'can_complete' in event && event.can_complete ? (
                   <Pressable
                     disabled={workingAction === event.id}
                     onPress={() => completeEvent(event)}

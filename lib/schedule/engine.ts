@@ -67,7 +67,7 @@ export function getOpenWindows(
   transitionMinutes = 0,
 ): OpenWindow[] {
   const occupied = events
-    .filter((event) => !event.suggested && !['cancelled', 'skipped'].includes(event.status))
+    .filter((event) => !event.suggested && event.busy !== false && !['cancelled', 'skipped'].includes(event.status))
     .map((event) => [
       Math.max(dayStart.getTime(), eventStart(event).getTime() - transitionMinutes * 60000),
       Math.min(dayEnd.getTime(), eventEnd(event).getTime() + transitionMinutes * 60000),

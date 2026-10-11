@@ -161,7 +161,7 @@ function calendarState(event: ScheduleEvent | null): WhatsNextState {
   return {
     type: 'calendar_event',
     title: event.title,
-    subtitle: event.description || event.event_type.replaceAll('_', ' '),
+    subtitle: event.source_label || event.event_type.replaceAll('_', ' '),
     startTime: eventStart(event),
     endTime: eventEnd(event),
     priority: 10,

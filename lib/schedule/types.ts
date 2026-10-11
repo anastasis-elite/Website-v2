@@ -76,6 +76,12 @@ export type ScheduleEvent = {
   adjusted_duration_minutes: number | null
   created_at?: string
   updated_at?: string
+  calendar_event_id?: string
+  source_label?: string
+  calendar_provider?: string
+  provider_calendar_id?: string
+  ical_uid?: string
+  busy?: boolean
   virtual?: boolean
   suggested?: boolean
   action_route?: string | null

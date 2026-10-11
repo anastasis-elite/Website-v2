@@ -1,3 +1,4 @@
+import { importedScheduleEvents } from '@/lib/calendar/service'
 import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
@@ -60,6 +61,8 @@ export async function getDailyScheduleState({
 
   const { data: blocks, error: blocksError } = await supabase.from('client_schedule_blocks').select('*').eq('client_id', client.client_id).eq('user_id', user.id).eq('active', true)
   if (blocksError) throw new Error(blocksError.message)
+  const calendarEvents = await importedScheduleEvents(supabase, user.id, client.client_id, day.start.toISOString(), day.end.toISOString(), day.timezone)
+  persistedEvents.push(...calendarEvents)
   const commitments = recurringCommitmentsToEvents({ userId: user.id, client, date: day.date, timezone: day.timezone, blocks: blocks || [] })
   const dailyPlan = includeVirtualPlan
     ? await getDailyExecutionPlan({ supabase, client })

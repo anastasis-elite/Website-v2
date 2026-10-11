@@ -4,13 +4,14 @@ import Link from 'next/link'
 import DailyPlanCard from '@/components/DailyPlanCard'
 import DailyDisplayPreferences from '@/components/DailyDisplayPreferences'
 import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
-import { getLocalDaypart, getLocalMinutes } from '@/lib/timezone'
+import { addLocalDays, getLocalDaypart } from '@/lib/timezone'
 import type { CSSProperties } from 'react'
 import { useEffect,useMemo, useState } from 'react'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
-import { formatLocalTime } from '@/lib/schedule/time'
+import { formatLocalTime, zonedDateTimeToUtc } from '@/lib/schedule/time'
+import { useCalendarEvents } from '@/lib/calendar/client'
 import { getTierCapabilities, type ProgramTier } from '@/lib/entitlements'
 import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
 import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashboardData'
@@ -18,16 +19,19 @@ import {
   addDays,
   addMonths,
   buildCalendarItems,
+  calendarQueryDateRange,
   buildMonthGrid,
   buildWeekDays,
   itemsForDate,
   parseDateKey,
+  visibleEventDates,
   type CalendarDisplayItem,
 } from '@/lib/calendar/view'
 
 type CalendarMode = 'day' | 'week' | 'month'
 type PanelTab = 'progress' | 'assessments' | 'trends'
 type Daypart = 'morning' | 'midday' | 'evening'
+type ConnectedDisplayItem = CalendarDisplayItem & { source_label?: string; all_day?: boolean }
 type PlanBlock = {
   id: Daypart
   title: string
@@ -36,14 +40,15 @@ type PlanBlock = {
 }
 
 function eventRange(event: ScheduleEvent, timezone: string) {
+  if (event.all_day) return 'All day'
   return `${formatLocalTime(event.adjusted_start_at || event.start_at, timezone)}-${formatLocalTime(event.adjusted_end_at || event.end_at, timezone)}`
 }
 
-function itemDaypart(item: CalendarDisplayItem, timezone: string): Daypart {
-  const hour = getLocalMinutes(new Date(item.start_at), timezone) / 60
-  if (hour < 11) return 'morning'
-  if (hour < 17) return 'midday'
-  return 'evening'
+function overlapsDaypart(item: ConnectedDisplayItem, date: string, daypart: Daypart, timezone: string) {
+  if (item.all_day) return true
+  const starts = zonedDateTimeToUtc(date, daypart === 'morning' ? '00:00' : daypart === 'midday' ? '11:00' : '17:00', timezone)
+  const ends = zonedDateTimeToUtc(daypart === 'evening' ? addLocalDays(date, 1) : date, daypart === 'morning' ? '11:00' : daypart === 'midday' ? '17:00' : '00:00', timezone)
+  return Date.parse(item.start_at) < ends.getTime() && Date.parse(item.end_at) > starts.getTime()
 }
 
 function DashboardCalendar({
@@ -58,12 +63,24 @@ function DashboardCalendar({
   const [selectedDate, setSelectedDate] = useState(schedule.date)
   const [daypart, setDaypart] = useState<Daypart>(() => getLocalDaypart(new Date(schedule.now), schedule.timezone))
   useEffect(()=>{if(!dateExplicit)setSelectedDate(schedule.date);if(!segmentExplicit&&!dateExplicit)setDaypart(getLocalDaypart(new Date(schedule.now),schedule.timezone))},[schedule.date,schedule.now,schedule.timezone,dateExplicit,segmentExplicit])
-  const items = useMemo(() => buildCalendarItems(schedule.events, schedule.openWindows, schedule.timezone), [schedule.events, schedule.openWindows, schedule.timezone])
+  const dateRange = calendarQueryDateRange(selectedDate)
+  const rangeStartDate = dateRange.start
+  const rangeEndDate = dateRange.end
+  const rangeStart = zonedDateTimeToUtc(rangeStartDate, '00:00', schedule.timezone).toISOString()
+  const rangeEnd = zonedDateTimeToUtc(rangeEndDate, '00:00', schedule.timezone).toISOString()
+  const connected = useCalendarEvents(rangeStart, rangeEnd, schedule.timezone)
+  const items = useMemo<ConnectedDisplayItem[]>(() => {
+    const persistedKeys = new Set(connected.events.map(event => `${event.id}:${event.start_at}`))
+    const existing = schedule.events.filter(event => !['cancelled', 'skipped'].includes(event.status) && !persistedKeys.has(`${event.calendar_event_id || event.id}:${event.start_at}`))
+    const planItems = buildCalendarItems(existing, schedule.openWindows, schedule.timezone).map(item => ({ ...item, source_label: item.event?.source_label, all_day: item.event?.all_day }))
+    const accountItems: ConnectedDisplayItem[] = connected.events.flatMap(event => visibleEventDates(event, schedule.timezone, rangeStartDate, rangeEndDate).map(date => ({ id: `connected:${event.id}:${event.occurrence_start || event.start_at}:${date}`, title: event.title, date, start_at: event.start_at, end_at: event.end_at, source: event.calendar_id ? 'external_calendar' : 'user_created', event_type: event.event_type || 'personal', status: event.calendar_id ? 'Synced' : 'Saved', suggested: false, source_label: event.source_label, all_day: event.all_day } as ConnectedDisplayItem)))
+    return [...planItems, ...accountItems].sort((a, b) => a.start_at.localeCompare(b.start_at))
+  }, [schedule.events, schedule.openWindows, schedule.timezone, connected.events, rangeStartDate, rangeEndDate])
   const selectedItems = itemsForDate(items, selectedDate)
   const monthCells = buildMonthGrid({ selectedDate, items, today: schedule.date })
   const weekDays = buildWeekDays(selectedDate, items)
   const selectedPlanBlock = planBlocks.find((block) => block.id === daypart)
-  const daypartItems = selectedItems.filter((item) => itemDaypart(item, schedule.timezone) === daypart)
+  const daypartItems = selectedItems.filter(item => overlapsDaypart(item, selectedDate, daypart, schedule.timezone))
   const showTodayPlan = selectedDate === schedule.date && Boolean(selectedPlanBlock)
   const itemTitles = new Set(daypartItems.map((item) => item.title.trim().toLowerCase()))
   const planTasks = showTodayPlan
@@ -116,7 +133,10 @@ function DashboardCalendar({
         <button type="button" onClick={() => go(-1)}>Previous</button>
         <button type="button" onClick={today}>Today</button>
         <button type="button" onClick={() => go(1)}>Next</button>
+        <Link href="/dashboard/settings/calendars">Connected calendars</Link>
+        <Link href="/dashboard/schedule#connected-calendar">Add or manage events</Link>
       </div>
+      {connected.error ? <p role="alert" className="tier-calendar-empty">{connected.error} <Link href="/dashboard/settings/calendars">Review connection</Link></p> : null}
 
       {mode === 'month' ? (
         <div className="tier-month-calendar" data-testid="calendar-month-grid">
@@ -382,24 +402,24 @@ function CalendarPill({
   timezone,
   detailed = false,
 }: {
-  item: CalendarDisplayItem
+  item: ConnectedDisplayItem
   timezone: string
   detailed?: boolean
 }) {
   return (
     <article className={`tier-calendar-pill source-${item.source}${item.suggested ? ' is-suggestion' : ''}`}>
-      <time>{formatLocalTime(item.start_at, timezone)}</time>
+      <time>{item.all_day ? 'All day' : formatLocalTime(item.start_at, timezone)}</time>
       <strong>{item.title}</strong>
       {detailed ? (
         <>
-          <small>{item.event_type.replaceAll('_', ' ')} · {item.source.replaceAll('_', ' ')}</small>
+          <small>{item.event_type.replaceAll('_', ' ')} · {item.source_label || item.source.replaceAll('_', ' ')}</small>
           {item.suggested ? (
             <div className="tier-suggestion-actions">
               <Link href="/dashboard/schedule">Review suggestion</Link>
             </div>
           ) : item.event ? (
             <small>{eventRange(item.event, timezone)} · {item.status}</small>
-          ) : null}
+          ) : <Link href="/dashboard/schedule#connected-calendar">{item.status} · View event</Link>}
         </>
       ) : null}
     </article>
@@ -445,7 +465,7 @@ export default function TierAwareDashboardWorkspace({
 function SchedulePreview({ preview, flexible, schedule, logic, plan }: { preview: ScheduleEvent[]; flexible: boolean; schedule: DailyScheduleState; logic: ProgramLogicOutput; plan: ReturnType<typeof buildDailyRecommendation> }) {
     return <div className="daily-preview">
       <section aria-label="Schedule preview"><div className="tier-panel-heading"><h2>{flexible ? 'Room for your day' : 'Coming up'}</h2><Link href="/dashboard/schedule">Schedule</Link></div>
-        {preview.length ? preview.map(event => <Link key={event.id} href={event.suggested ? `/dashboard/schedule#event-${event.id}` : event.action_route || `/dashboard/schedule#event-${event.id}`}><time>{eventRange(event, schedule.timezone)}</time><strong>{event.title}</strong><small>{event.status === 'completed' ? 'Done' : event.suggested ? 'Suggested time · choose in Schedule' : event.flexibility_type === 'fixed' ? 'Fixed commitment' : 'Flexible'}</small></Link>) : <p>No more scheduled items. Leave this space open.</p>}
+        {preview.length ? preview.map(event => <Link key={event.id} href={event.calendar_event_id ? '/dashboard/schedule#connected-calendar' : event.suggested ? `/dashboard/schedule#event-${event.id}` : event.action_route || `/dashboard/schedule#event-${event.id}`}><time>{eventRange(event, schedule.timezone)}</time><strong>{event.title}</strong><small>{event.source_label || (event.source === 'external_calendar' ? event.external_calendar_source || 'Connected calendar' : 'Anastasis')} · {event.status === 'completed' ? 'Done' : event.suggested ? 'Suggested time · choose in Schedule' : event.flexibility_type === 'fixed' ? 'Fixed commitment' : 'Flexible'}</small></Link>) : <p>No more scheduled items. Leave this space open.</p>}
       </section>
       <section aria-label="Progress summary"><h2>Your recorded progress</h2><p>{logic.assessments.dailyCompleted ? 'Check-in saved.' : 'Check-in available.'} {logic.execution.workoutComplete ? `Completed workout recorded${logic.execution.completedWorkoutTitle ? `: ${logic.execution.completedWorkoutTitle}` : ' today'}.` : logic.execution.workoutInProgress ? 'A partial workout is saved. Continue when ready.' : 'No completed workout recorded today.'}</p><p>{plan.evidence.food === 'not_logged' ? 'Food not logged yet.' : plan.evidence.food === 'partial' ? 'Food partly logged.' : 'Food logged today.'} {plan.evidence.water === 'not_logged' ? 'Water not logged yet.' : `${Math.round(logic.hydration.consumed)} oz water logged.`}</p></section>
     </div>

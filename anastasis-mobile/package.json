@@ -4,6 +4,7 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
+    "test:calendar": "node --test tests/calendar.test.cjs",
     "start": "expo start",
     "web": "expo start --web",
     "android": "expo start --android",
@@ -20,6 +21,7 @@
     "@supabase/supabase-js": "^2.105.4",
     "expo": "~57.0.22",
     "expo-build-properties": "~57.0.17",
+    "expo-calendar": "~57.0.3",
     "expo-constants": "~57.0.18",
     "expo-dev-client": "~57.0.19",
     "expo-linking": "~57.0.10",

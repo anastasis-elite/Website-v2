@@ -14,7 +14,7 @@ export type MacroProgress = {
 }
 
 export type MobileDailyAction = {
-  id: 'water' | 'nutrition' | 'check-in' | 'workout' | 'recovery'
+  id: 'water' | 'nutrition' | 'check-in' | 'workout' | 'recovery' | 'calendar'
   label: string
   status: 'complete' | 'urgent' | 'active' | 'upcoming'
   progress: number
@@ -41,6 +41,15 @@ export type MobileScheduleEvent = {
   required: boolean
   priority: string
   external: boolean
+  calendar_event_id?: string | null
+  calendar_provider?: 'google' | 'icloud' | null
+  provider_calendar_id?: string | null
+  ical_uid?: string | null
+  external_event_id?: string | null
+  source_label?: string | null
+  all_day?: boolean
+  busy?: boolean
+  suggested?: boolean
   can_complete: boolean
   can_defer: boolean
   adjusted: boolean
@@ -105,7 +114,7 @@ export type MobileDailyState = {
   recoveryAction: {
     completed: boolean
     target: number
-    actions: Array<{ id: string; label: string; minutes?: number }>
+    actions: { id: string; label: string; minutes?: number }[]
   }
   execution: {
     score: number

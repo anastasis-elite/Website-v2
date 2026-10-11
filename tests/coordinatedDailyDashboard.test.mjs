@@ -15,6 +15,7 @@ const {getOpenWindows,buildScheduleAdjustments}=await importTs('lib/schedule/eng
 const { scheduleConflict } = await importTs('lib/schedule/actions.ts')
 const { mergeDailySymptoms } = await importTs('lib/dashboard/dailySignals.ts')
 const {loadScheduleEventsForDay}=await importTs('lib/schedule/service.ts', {
+ '@/lib/calendar/service':'export const importedScheduleEvents = async () => []',
  '@/lib/day/getDailyExecutionPlan':'export const getDailyExecutionPlan = async () => null',
  '@/lib/dashboard/logic/getProgramLogicForClient':'export const getProgramLogicForClient = async () => null',
 })
@@ -39,6 +40,14 @@ test('DST days have correct bounds; calendar uses user timezone', () => {
  assert.equal(calendar.buildMonthGrid({selectedDate:'2026-03-08',items:[],today:'2026-03-08'}).filter(c=>c.isToday).length,1)
  const nonexistent = scheduleTime.zonedDateTimeToUtc('2026-03-08','02:30',zone)
  assert.notEqual(time.getLocalMinutes(nonexistent,zone),150)
+})
+test('civil day boundaries advance through midnight gaps and folds use the first occurrence', () => {
+ const havana=scheduleTime.getClientDayRange({timezone:'America/Havana'},'2026-03-08')
+ assert.equal(havana.start.toISOString(),'2026-03-08T05:00:00.000Z')
+ assert.equal(time.localDateKey(havana.start,'America/Havana'),'2026-03-08')
+ assert.equal((havana.end-havana.start)/3600000,23)
+ assert.equal(scheduleTime.zonedDateTimeToUtc('2026-10-25','01:30','Europe/London').toISOString(),'2026-10-25T00:30:00.000Z')
+ assert.equal(scheduleTime.zonedDateTimeToUtc('2026-03-08','02:30',zone).toISOString(),'2026-03-08T08:30:00.000Z')
 })
 test('rescheduled events appear on their new local day while retaining original times',async()=>{
  const event={id:'moved',start_at:'2026-10-08T18:00:00Z',end_at:'2026-10-08T18:30:00Z',adjusted_start_at:'2026-10-09T19:00:00Z',adjusted_end_at:'2026-10-09T19:30:00Z'}
@@ -128,4 +137,15 @@ test('shared symptom answers deduplicate names without fabricating severity or c
  const logs=[{id:'a',symptom_types:{name:'Headache'},severity:4,created_at:'2026-10-08T19:00Z'},{id:'b',symptom_types:{name:'Headache'},severity:2,created_at:'2026-10-08T18:00Z'}]
  const saved=structuredClone(logs),result=mergeDailySymptoms(logs,{headache:true,fatigue:true,created_at:'2026-10-08T18:00Z'})
  assert.equal(result.length,2);assert.equal(result.find(r=>r.id==='a').severity,4);assert.equal(result.find(r=>r.symptom_name==='fatigue').severity,null);assert.deepEqual(logs,saved)
+})
+
+test('current calendar commitments lead What’s Next while urgent recovery keeps priority',()=>{
+ const logic=fixture(),state=schedule()
+ state.events=[{id:'calendar-current',title:'School pickup',source:'external_calendar',source_label:'Google · Family',event_type:'personal',flexibility_type:'fixed',status:'scheduled',start_at:'2026-10-08T20:00:00Z',end_at:'2026-10-08T21:00:00Z',adjusted_start_at:null,adjusted_end_at:null}]
+ state.dailyRecommendation=buildDailyRecommendation(logic,state)
+ assert.equal(state.dailyRecommendation.primary.id,'calendar-current')
+ const next=buildWhatsNextState({tier:'ignite',capabilities:getTierCapabilities('ignite'),logic,schedule:state})
+ assert.equal(next.type,'calendar_event');assert.match(next.subtitle,/Google · Family/)
+ logic.symptoms.redFlag=true
+ assert.equal(buildDailyRecommendation(logic,state).primary.id,'safety')
 })

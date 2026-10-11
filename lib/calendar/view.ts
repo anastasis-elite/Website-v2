@@ -1,4 +1,4 @@
-import { localDateKey } from '@/lib/timezone'
+import { addLocalDays, localDateKey } from '@/lib/timezone'
 import type { OpenWindow, ScheduleEvent } from '@/lib/schedule/types'
 
 export type CalendarViewMode = 'day' | 'week' | 'month'
@@ -54,7 +54,11 @@ export function addDays(date: string, days: number) {
 
 export function addMonths(date: string, months: number) {
   const next = parseDateKey(date)
+  const day = next.getDate()
+  next.setDate(1)
   next.setMonth(next.getMonth() + months)
+  const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate()
+  next.setDate(Math.min(day, lastDay))
   return toDateKey(next)
 }
 
@@ -86,7 +90,7 @@ export function buildCalendarItems(events: ScheduleEvent[], windows: OpenWindow[
     source: calendarItemSource(event),
     event_type: event.event_type,
     status: event.status,
-    suggested: false,
+    suggested: Boolean(event.suggested),
     event,
   }))
 
@@ -149,4 +153,22 @@ export function buildWeekDays(selectedDate: string, items: CalendarDisplayItem[]
 
 export function itemsForDate(items: CalendarDisplayItem[], date: string) {
   return items.filter((item) => item.date === date)
+}
+
+/** Include the complete selected week even when its Monday precedes a Sunday month-grid start. */
+export function calendarQueryDateRange(selectedDate: string) {
+  const grid = buildMonthGrid({ selectedDate, items: [] })
+  const week = buildWeekDays(selectedDate, [])
+  const gridEnd = addLocalDays(grid[grid.length - 1].date, 1)
+  const weekEnd = addLocalDays(week[week.length - 1].date, 1)
+  return { start: grid[0].date < week[0].date ? grid[0].date : week[0].date, end: gridEnd > weekEnd ? gridEnd : weekEnd }
+}
+
+/** Project spanning appointments onto visible local dates; end instants and all-day end dates are exclusive. */
+export function visibleEventDates(event: { start_at: string; end_at: string; all_day: boolean; start_date?: string | null; end_date?: string | null }, timezone: string, rangeStart: string, rangeEnd: string) {
+  const first = event.all_day && event.start_date ? event.start_date : localDateKey(new Date(event.start_at), timezone)
+  const last = event.all_day && event.end_date ? addLocalDays(event.end_date, -1) : localDateKey(new Date(new Date(event.end_at).getTime() - 1), timezone)
+  const dates: string[] = []
+  for (let date = first < rangeStart ? rangeStart : first; date <= last && date < rangeEnd; date = addLocalDays(date, 1)) dates.push(date)
+  return dates
 }
