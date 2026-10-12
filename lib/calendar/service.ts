@@ -111,7 +111,8 @@ export function eventInstants(event:ProviderEvent, displayTimezone=event.timeZon
  return event.allDay?{start_at:zonedDateTimeToUtc(event.start,'00:00',displayTimezone).toISOString(),end_at:zonedDateTimeToUtc(event.end,'00:00',displayTimezone).toISOString()}:{start_at:new Date(event.start).toISOString(),end_at:new Date(event.end).toISOString()}
 }
 export async function listUnifiedEvents(db:any,userId:string,start:string,end:string,displayTimezone='America/Chicago') {
- const [cached,calendars,connections,internal]=await Promise.all([allRows(()=>db.from('calendar_events').select('*').eq('user_id',userId)),db.from('connected_calendars').select('*').eq('user_id',userId).eq('selected',true),db.from('calendar_connections').select('id,provider,account_label').eq('user_id',userId),allRows(()=>db.from('anastasis_schedule_events').select('*').eq('user_id',userId).lt('start_at',end).gt('end_at',start))]);[calendars,connections].forEach(checkDb)
+ start=new Date(start).toISOString();end=new Date(end).toISOString()
+ const [cached,calendars,connections,internal]=await Promise.all([allRows(()=>db.from('calendar_events').select('*').eq('user_id',userId)),db.from('connected_calendars').select('*').eq('user_id',userId).eq('selected',true),db.from('calendar_connections').select('id,provider,account_label').eq('user_id',userId),allRows(()=>db.from('anastasis_schedule_events').select('*').eq('user_id',userId).or(`and(start_at.lt.${end},end_at.gt.${start}),and(adjusted_start_at.lt.${end},adjusted_end_at.gt.${start})`))]);[calendars,connections].forEach(checkDb)
  const events:any[]=[]
  const rows=cached
  for(const calendar of [null,...calendars.data||[]]) {
@@ -128,7 +129,11 @@ export async function listUnifiedEvents(db:any,userId:string,start:string,end:st
    events.push({id:row.id,calendar_id:calendar?.id??null,title:event.title,description:event.description||'',location:event.location||'',...instant,timezone:event.timeZone,all_day:event.allDay,start_date:event.allDay?event.start:null,end_date:event.allDay?event.end:null,recurrence:master.recurrence||[],reminders:(event.reminders||[]).map(r=>r.minutes),reminders_default:event.metadata?.remindersUseDefault===true,source_label:calendar?`${connection?.provider==='google'?'Google':'iCloud'} · ${calendar.name}`:'Anastasis',writable:!row.provider_payload.recurringEventId&&(calendar?calendar.writable:true),etag:row.etag,event_type:row.event_type,external_event_id:calendar?row.provider_event_id:null,provider_calendar_id:calendar?.provider_calendar_id,calendar_provider:connection?.provider,ical_uid:event.uid,busy:event.busy,recurring_event_id:event.recurringEventId||null,occurrence_start:event.originalStart||null,edit_scope:'series',series_start_at:series.start_at,series_end_at:series.end_at,series_start_date:master.allDay?master.start:null,series_end_date:master.allDay?master.end:null})
   }
  }
- for(const event of internal) if(!['cancelled','skipped'].includes(event.status)) events.push({...event,calendar_id:null,source_label:event.external_calendar_source||'Anastasis',writable:!event.external_event_id&&!event.external_calendar_source,etag:event.updated_at||event.created_at||'legacy',location:'',recurrence:[],reminders:[],legacy:true})
+ for(const event of internal) {
+  const effectiveStart=event.adjusted_start_at||event.start_at,effectiveEnd=event.adjusted_end_at||event.end_at
+  if(['cancelled','skipped'].includes(event.status)||Date.parse(effectiveStart)>=Date.parse(end)||Date.parse(effectiveEnd)<=Date.parse(start)) continue
+  events.push({...event,start_at:effectiveStart,end_at:effectiveEnd,calendar_id:null,source_label:event.external_calendar_source||'Anastasis',writable:!event.external_event_id&&!event.external_calendar_source,etag:event.updated_at||event.created_at||'legacy',location:'',recurrence:[],reminders:[],legacy:true})
+ }
  return {events:events.sort((a,b)=>a.start_at.localeCompare(b.start_at)),calendars:calendars.data||[]}
 }
 export async function importedScheduleEvents(db:any,userId:string,clientId:string,start:string,end:string,displayTimezone='America/Chicago'):Promise<ScheduleEvent[]> {

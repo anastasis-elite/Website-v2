@@ -1,6 +1,7 @@
 import type { ProgramLogicOutput } from './logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
 import { getActionRouteForEvent } from '@/lib/schedule/engine'
+import { getDailyTraining, type DailyTraining } from './dailyTraining'
 
 export type DataAvailability = 'not_logged' | 'partial' | 'confirmed' | 'completed'
 export type DailyRecommendationAction = {
@@ -10,6 +11,7 @@ export type DailyRecommendationAction = {
 export type DailyRecommendation = {
   date: string; timezone: string; generatedAt: string
   primary: DailyRecommendationAction; supporting: DailyRecommendationAction[]
+  training: DailyTraining
   evidence: { food: DataAvailability; water: DataAvailability; workout: DataAvailability; checkIn: DataAvailability }
 }
 
@@ -42,21 +44,22 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
     water === 'not_logged' ? 'Water intake is not logged yet. Add what you’ve had so the plan can use it.' : `${Math.round(logic.hydration.consumed)} oz logged. Keep drinking steadily; you do not need to catch up all at once.`, '/dashboard/nutrition#hydration', water)
   if (workout !== 'completed' && !schedule.events.some(e => e.event_type === 'workout' && e.status === 'skipped') && logic.workout.assigned && logic.workoutDecision.canTrain) {
     add('workout', 'workout', workout === 'partial' ? 'Resume today’s workout' : food === 'not_logged' ? 'Review today’s workout' : logic.workoutDecision.adjustmentLevel === 'level_0_full_plan' ? 'Open today’s workout' : 'A lighter workout fits today',
-      food === 'not_logged' ? 'Food is not logged yet. Review the workout options and choose what fits how you feel.' : food === 'partial' ? 'Food is partly logged. Check that the plan fits how you feel before starting.' : logic.workoutDecision.reasonForModification,
+      logic.program === 'ember' ? `${logic.workoutDecision.reasonForModification} Meal intake is not tracked in EMBER; use your meal guidance and how you feel.` : food === 'not_logged' ? 'Food is not logged yet. Review the workout options and choose what fits how you feel.' : food === 'partial' ? 'Food is partly logged. Check that the plan fits how you feel before starting.' : logic.workoutDecision.reasonForModification,
       `/dashboard/program/${logic.program}/workout`, workout)
   }
   if (workout === 'completed' && !logic.execution.recoveryComplete) add('recovery', 'recovery', 'Choose a recovery moment',
     `A completed workout is recorded${logic.execution.completedWorkoutTitle ? `: ${logic.execution.completedWorkoutTitle}` : ' today'}. Recovery options are available.`, '/dashboard/recovery', 'confirmed')
-  // A current actionable event can move ahead of optional supporting guidance once inputs are available.
+  // Commitments and overdue items remain actionable even when food is not logged.
   const next = schedule.nextActionableEvent
-  if (checkIn === 'completed' && food !== 'not_logged' && next && !next.suggested && !['hydration','meal'].includes(next.event_type) &&
-      new Date(next.adjusted_end_at || next.end_at) > new Date(schedule.now) && !candidates.some(c => c.eventId === next.id)) {
-    const action = { id: next.id, category: next.event_type, title: next.title, reason: 'This fits the next part of your schedule.',
+  if (next && !next.suggested && !['hydration','meal'].includes(next.event_type) && !candidates.some(c => c.eventId === next.id)) {
+    const overdue = new Date(next.adjusted_end_at || next.end_at) <= new Date(schedule.now)
+    const action = { id: next.id, category: next.event_type, title: next.title, reason: schedule.nextAction?.id === next.id ? schedule.nextAction.reason : overdue ? 'This item is overdue. Review it, reschedule it, or record its outcome.' : 'This fits the next part of your schedule.',
       href: getActionRouteForEvent(next, logic.program), availability: 'confirmed' as const, eventId: next.id, completed: false }
-    candidates.splice(candidates[0]?.id === 'safety' ? 1 : 0, 0, action)
+    const required = candidates.findIndex(candidate => !['safety', 'check-in'].includes(candidate.id) && !candidate.eventId)
+    candidates.splice(required < 0 ? candidates.length : required, 0, action)
   }
   const fallback: DailyRecommendationAction = { id: 'pause', category: 'none', title: 'Leave a little room for yourself',
     reason: 'There is no additional action in your recorded plan right now. Leave the rest flexible.', href: '/dashboard/schedule', availability: 'completed', completed: true }
   return { date: schedule.date, timezone: schedule.timezone, generatedAt: schedule.now,
-    primary: candidates[0] || fallback, supporting: candidates.slice(1, 4), evidence: { food, water, workout, checkIn } }
+    primary: candidates[0] || fallback, supporting: candidates.slice(1, 4), training: getDailyTraining(logic), evidence: { food, water, workout, checkIn } }
 }

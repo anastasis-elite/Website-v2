@@ -3,7 +3,7 @@ import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
 import { getClientDayRange, zonedDateTimeToUtc } from './time'
-import { buildDailyScheduleState } from './engine'
+import { buildDailyScheduleState, buildNextAction } from './engine'
 import { dailyPlanToScheduleEvents, recurringCommitmentsToEvents } from './dailyPlanAdapter'
 import type { DailyScheduleState, ScheduleEvent } from './types'
 
@@ -102,10 +102,16 @@ export async function getDailyScheduleState({
   if (effectiveLogic && dailyPlan?.date === day.date) {
     state.dailyRecommendation = buildDailyRecommendation(effectiveLogic, state)
     const primary = state.dailyRecommendation.primary
-    state.nextAction = { ...state.nextAction, id: primary.eventId || primary.id, title: primary.title,
+    const event = primary.eventId ? state.events.find(item => item.id === primary.eventId) || null : null
+    const eventAction = event ? buildNextAction({ nextActionableEvent: event, adjustments: state.adjustments,
+      now: new Date(state.now), program: state.program }) : null
+    state.nextAction = { ...(eventAction || state.nextAction), id: primary.eventId || primary.id, title: primary.title,
       category: (primary.category === 'nutrition' ? 'meal' : primary.category === 'none' ? 'custom' : primary.category) as any,
       reason: primary.reason, short_reason: primary.reason, action_route: primary.href,
-      start_at: null, overdue: false, urgency: 'now', can_complete: false, can_defer: Boolean(primary.eventId) }
+      start_at: eventAction?.start_at || null, overdue: eventAction?.overdue || false,
+      urgency: eventAction?.urgency || (primary.completed ? 'none' : 'now'),
+      automatically_adjusted: eventAction?.automatically_adjusted || false,
+      can_complete: eventAction?.can_complete || false, can_defer: eventAction?.can_defer || false }
   }
 
   return state

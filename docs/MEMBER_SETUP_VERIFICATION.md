@@ -1,0 +1,11 @@
+# Member setup verification
+
+The profile form completes account details. A fresh customer then completes the initial member assessment and strength baseline; the strength route stores the baseline and creates an owned `program_json` plan. A returning customer with assessments but no saved output is routed to `/dashboard/onboarding/plan`, where plan creation retries from existing records with the same ownership and safety checks. A failed strength-to-plan write also exposes this retry link without requiring another assessment submission.
+
+`tests/memberBaselineJourney.test.mjs` executes the real route handlers, repository templates, load generator, and nutrient formulas with isolated QA records and replaced authentication/database transport. It checks saved-record reload through a new transport, consistent daily/nutrition targets, zero added load, partial baselines, equipment filtering, validation, failed plan writes, retry, ownership rejection, and safety blocking. This is local integration evidence; it does not confirm production credentials or database persistence.
+
+`tests/programOutputsOwnerSql.test.mjs` executes [the additive SQL](sql/program_outputs_owner_writes.sql) in isolated PGlite Postgres. It verifies owned insert/update, historical output preservation, and rejected cross-account, tier, and revoked-access writes, including a simulated older permissive policy.
+
+The reviewed SQL and workout history function are packaged in `supabase/migrations/20261012173013_member_program_ownership_and_workout_history.sql`, created through the Supabase CLI. Local PostgreSQL tests pass. The migration has **not been applied to production**; inspect the target schema and apply it through the established reviewed process after the coordinated daily dashboard migration. No live DDL was performed.
+
+Equipment choices constrain the existing template catalog. Unsupported equipment variants are excluded, with `equipment_review_required`, `excluded_exercises`, and an equipment note recorded on the plan. This does not establish that the gym template contains a complete program for every home or bodyweight environment. Training availability is stored; the existing template's calendar days remain its defined structure.

@@ -27,6 +27,12 @@ class Query {
   gt(key, value) { this.filters.push(row => row[key] > value); return this }
   lt(key, value) { this.filters.push(row => row[key] < value); return this }
   lte(key, value) { this.filters.push(row => row[key] <= value); return this }
+  or(expression) {
+    const clauses = [...expression.matchAll(/and\((\w+)\.lt\.([^,]+),(\w+)\.gt\.([^)]+)\)/g)]
+    assert.ok(clauses.length, `Unsupported test query: ${expression}`)
+    this.filters.push(row => clauses.some(([, startKey, end, endKey, start]) => row[startKey] < end && row[endKey] > start))
+    return this
+  }
   order(key) { this.orderBy = key; return this }
   range(start, end) { this.bounds = [start, end + 1]; return this }
   limit(count) { this.bounds = [0, count]; return this }
@@ -68,7 +74,7 @@ class Query {
 function fixture() {
   const state = { user: { id: 'user-a', email: 'anastasis@example.test' }, calls: { create: 0, update: 0, updateWrites: 0, delete: 0, sync: 0, refresh: 0, revoke: 0, icloudDiscover: 0 }, cookies: new Map(), syncError: null, createError: null, fullReset: false }
   const db = {
-    tables: { clients: [{ auth_user_id: 'user-a', client_id: 'client-a' }, { auth_user_id: 'user-b', client_id: 'client-b' }] }, failNext: null, failWhen: null, mutations: {},
+    tables: { clients: [{ auth_user_id: 'user-a', client_id: 'client-a', program: 'ember', access: true, active: true }, { auth_user_id: 'user-b', client_id: 'client-b', program: 'ignite', access: true, active: true }] }, failNext: null, failWhen: null, mutations: {},
     from(table) { return new Query(this, table) }, auth: { getUser: async () => ({ data: { user: state.user }, error: null }) },
     async rpc(name, args) {
       const connection = this.tables.calendar_connections?.find(row => row.id === args.p_id && row.user_id === args.p_user)
@@ -97,7 +103,8 @@ function fixture() {
   const time = load('lib/schedule/time.ts', { '@/lib/timezone': timezone }, env)
   const types = load('lib/calendar/providers/types.ts', {}, env)
   const ical = load('lib/calendar/providers/ical.ts', { './types': types }, env)
-  const context = load('lib/calendar/server-context.ts', { 'next/server': next, '@/lib/supabase/server': { createClient: async () => db }, '@/lib/supabase/admin': { createAdminClient: () => db }, '@/lib/mobile/auth': {}, './providers/types': types }, env)
+  const access = load('lib/commerce/access.ts', {}, env)
+  const context = load('lib/calendar/server-context.ts', { 'next/server': next, '@/lib/supabase/server': { createClient: async () => db }, '@/lib/supabase/admin': { createAdminClient: () => db }, '@/lib/mobile/auth': {}, '@/lib/commerce/access': access, './providers/types': types }, env)
   const crypto = load('lib/calendar/crypto.ts', {}, env)
   const external = new Map([['existing-appointment', { id: 'existing-appointment', calendarId: 'google-primary', title: 'School pickup', start: '2030-06-18T20:00:00Z', end: '2030-06-18T20:30:00Z', timeZone: 'America/Chicago', allDay: false, status: 'confirmed', busy: true, etag: 'etag-v1' }]])
   const calendars = [{ id: 'google-primary', name: 'Personal', timeZone: 'America/Chicago', writable: true }, { id: 'google-readonly', name: 'Shared school', timeZone: 'America/Chicago', writable: false }]
@@ -147,6 +154,7 @@ function fixture() {
     '@/lib/supabase/admin': { createAdminClient: () => db }, './server-context': context, './crypto': crypto, './service': service,
     './providers/google': google, './providers/icloud': icloud, './providers/types': types, './providers/ical': ical,
     '@/lib/schedule/time': time, '@/lib/schedule/engine': {}, '@/lib/schedule/service': {}, '@/lib/timezone': timezone,
+    '@/lib/dashboard/invalidateDailyPlan': { invalidateDailyPlan: () => { state.invalidations = (state.invalidations || 0) + 1 } },
   }, env)
   const request = (path, method = 'GET', body) => new Request(`https://anastasis.test${path}`, { method, headers: { Origin: 'https://anastasis.test', 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
   const body = (overrides = {}) => ({ title: 'Anastasis activity', event_type: 'workout', start_at: '2030-06-18T14:00:00Z', end_at: '2030-06-18T14:30:00Z', timezone: 'America/Chicago', all_day: false, recurrence: [], reminders: [], idempotency_key: randomUUID(), ...overrides })
@@ -164,6 +172,16 @@ function fixture() {
   }
   return { state, db, external, calendars, icloudCalendars, icloudCredentials, handlers, service, context, crypto, types, request, body, connect }
 }
+
+test('inactive or missing member cannot reach external calendar providers', async () => {
+  const f = fixture()
+  f.db.tables.clients[0].access = false
+  const response = await f.handlers.googleConnect(f.request('/api/calendars/google/connect', 'POST'))
+  assert.equal(response.status, 403)
+  assert.equal(f.state.calls.create, 0)
+  f.db.tables.clients = []
+  assert.equal((await f.handlers.stateGET(f.request('/api/calendars'))).status, 403)
+})
 
 test('mocked Google authorization → selection → existing appointment → confirmed create → external change → edit/delete', async () => {
   const f = fixture(), { connection, calendar } = await f.connect()
@@ -508,4 +526,40 @@ test('failure to persist owned delete intent prevents any external deletion', as
   assert.equal(response.status, 503)
   assert.equal(f.state.calls.delete, 0)
   assert.equal(f.external.has(row.provider_event_id), true)
+})
+
+test('calendar reads and edits preserve original times while displaying rescheduled internal events on their effective day', async () => {
+  const f = fixture(), id = randomUUID()
+  const legacy = { id, user_id: f.state.user.id, client_id: 'QA-ONLY', title: 'Personal task', event_type: 'personal', status: 'scheduled',
+    source: 'manual', timezone: 'America/Chicago', all_day: false, start_at: '2030-06-17T14:00:00.000Z', end_at: '2030-06-17T14:30:00.000Z',
+    adjusted_start_at: '2030-06-18T15:00:00.000Z', adjusted_end_at: '2030-06-18T15:30:00.000Z', adjusted_duration_minutes: 30,
+    updated_at: '2026-10-11T12:00:00Z', created_at: '2026-10-11T12:00:00Z' }
+  f.db.tables.anastasis_schedule_events = [legacy]
+  const list = async day => (await f.service.listUnifiedEvents(f.db, f.state.user.id, `${day}T00:00:00-05:00`, `${day}T23:59:59-05:00`)).events
+  assert.equal((await list('2030-06-17')).length, 0)
+  const [moved] = await list('2030-06-18')
+  assert.equal(moved.start_at, legacy.adjusted_start_at)
+  assert.equal(moved.end_at, legacy.adjusted_end_at)
+  const updated = await f.handlers.eventsWrite(f.request(`/api/calendars/events/${id}`, 'PATCH', f.body({ title: 'Edited task', start_at: '2030-06-19T15:00:00.000Z', end_at: '2030-06-19T15:45:00.000Z', expected_etag: legacy.updated_at })), id)
+  assert.equal(updated.status, 200)
+  assert.equal(legacy.start_at, '2030-06-17T14:00:00.000Z')
+  assert.equal(legacy.end_at, '2030-06-17T14:30:00.000Z')
+  assert.equal(legacy.adjusted_start_at, '2030-06-19T15:00:00.000Z')
+  assert.equal(legacy.adjusted_duration_minutes, 45)
+  assert.equal((await list('2030-06-18')).length, 0)
+  assert.equal((await list('2030-06-19'))[0].title, 'Edited task')
+})
+
+test('calendar mutations invalidate dependent dashboard state; reads and rejected writes do not', async () => {
+  const f = fixture()
+  await f.handlers.stateGET(f.request('/api/calendars'))
+  assert.equal(f.state.invalidations || 0, 0)
+  const draft = f.body()
+  assert.equal((await f.handlers.eventsWrite(f.request('/api/calendars/events', 'POST', draft))).status, 200)
+  assert.equal(f.state.invalidations, 1)
+  await f.handlers.eventsGET(f.request('/api/calendars/events?start=2030-06-18T00:00:00Z&end=2030-06-20T00:00:00Z'))
+  assert.equal(f.state.invalidations, 1)
+  const denied = await f.handlers.eventsWrite(f.request('/api/calendars/events', 'POST', f.body({ calendar_id: randomUUID() })))
+  assert.equal(denied.status, 404)
+  assert.equal(f.state.invalidations, 1)
 })

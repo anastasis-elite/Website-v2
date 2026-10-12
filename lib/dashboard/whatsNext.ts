@@ -2,6 +2,7 @@ import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import type { ProgramTier, TierCapabilities } from '@/lib/entitlements'
+import { getActionRouteForEvent } from '@/lib/schedule/engine'
 
 export type WhatsNextType =
   | 'calendar_event'
@@ -45,15 +46,6 @@ function eventStart(event: ScheduleEvent) {
 
 function eventEnd(event: ScheduleEvent) {
   return event.adjusted_end_at || event.end_at
-}
-
-function eventIsActive(event: ScheduleEvent, now: string) {
-  const current = new Date(now).getTime()
-  return new Date(eventStart(event)).getTime() <= current && new Date(eventEnd(event)).getTime() >= current
-}
-
-function isCalendarCommitment(event: ScheduleEvent) {
-  return !['workout', 'meal', 'hydration', 'recovery', 'assessment', 'check_in', 'sleep'].includes(event.event_type)
 }
 
 function durationText(duration: any) {
@@ -148,7 +140,7 @@ function recoveryState({ capabilities, logic }: BuildWhatsNextInput): WhatsNextS
   }
 }
 
-function calendarState(event: ScheduleEvent | null): WhatsNextState {
+function calendarState(event: ScheduleEvent | null, tier: ProgramTier, reason?: string): WhatsNextState {
   if (!event) {
     return {
       type: 'none',
@@ -161,12 +153,12 @@ function calendarState(event: ScheduleEvent | null): WhatsNextState {
   return {
     type: 'calendar_event',
     title: event.title,
-    subtitle: event.source_label || event.event_type.replaceAll('_', ' '),
+    subtitle: reason || event.source_label || event.event_type.replaceAll('_', ' '),
     startTime: eventStart(event),
     endTime: eventEnd(event),
     priority: 10,
     data: { event },
-    primaryAction: event.action_route ? { label: 'Open', href: event.action_route } : undefined,
+    primaryAction: { label: 'View details', href: getActionRouteForEvent(event, tier) },
   }
 }
 
@@ -174,16 +166,14 @@ export function buildWhatsNextState(input: BuildWhatsNextInput): WhatsNextState 
   const { capabilities, logic, schedule } = input
   if (schedule.dailyRecommendation) {
     const action = schedule.dailyRecommendation.primary
+    const event = action.eventId ? schedule.events.find(item => item.id === action.eventId) : null
     return { type: (action.category === 'check_in' ? 'check_in' : ['workout','hydration','recovery','assessment','nutrition','none'].includes(action.category) ? action.category : 'calendar_event') as WhatsNextType,
-      title: action.title, subtitle: action.reason, priority: 80, primaryAction: { label: action.title, href: action.href }, data: action }
+      title: action.title, subtitle: action.reason, startTime: event ? eventStart(event) : undefined,
+      endTime: event ? eventEnd(event) : undefined, priority: 80, primaryAction: { label: action.title, href: action.href }, data: action }
   }
-  const activeEvent = schedule.events.find((event) => eventIsActive(event, schedule.now)) || null
-  const activeCalendarEvent = activeEvent && isCalendarCommitment(activeEvent) ? activeEvent : null
   const next = schedule.nextAction
-
-  if (activeCalendarEvent && !['critical', 'high'].includes(next.urgency)) {
-    return calendarState(activeCalendarEvent)
-  }
+  const nextEvent = schedule.nextActionableEvent || schedule.events.find(event => event.id === next.id) || null
+  if (nextEvent?.calendar_event_id) return calendarState(nextEvent, input.tier, next.reason)
 
   if (next.category === 'workout' && capabilities.workoutDisplay) {
     const data = workoutData(logic)
@@ -232,5 +222,5 @@ export function buildWhatsNextState(input: BuildWhatsNextInput): WhatsNextState 
     }
   }
 
-  return calendarState(activeEvent || schedule.nextEvent)
+  return calendarState(nextEvent, input.tier, next.reason)
 }

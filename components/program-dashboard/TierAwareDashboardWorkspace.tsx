@@ -4,6 +4,7 @@ import Link from 'next/link'
 import DailyPlanCard from '@/components/DailyPlanCard'
 import DailyDisplayPreferences from '@/components/DailyDisplayPreferences'
 import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
+import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
 import { addLocalDays, getLocalDaypart } from '@/lib/timezone'
 import type { CSSProperties } from 'react'
 import { useEffect,useMemo, useState } from 'react'
@@ -12,6 +13,8 @@ import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import { formatLocalTime, zonedDateTimeToUtc } from '@/lib/schedule/time'
 import { useCalendarEvents } from '@/lib/calendar/client'
+import { useDailyScheduleRefresh } from '@/lib/schedule/client'
+import { getActionRouteForEvent } from '@/lib/schedule/engine'
 import { getTierCapabilities, type ProgramTier } from '@/lib/entitlements'
 import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
 import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashboardData'
@@ -250,7 +253,7 @@ function buildPlanBlocks(tier: ProgramTier, logic: ProgramLogicOutput): PlanBloc
       title: 'Evening',
       focus: 'Training + recovery',
       tasks: [
-        { id: 'ember-evening-workout', label: logic.workout.assigned ? 'Complete workout' : 'Recovery day', href: '/dashboard/program/ember/workout', complete: logic.execution.workoutComplete },
+        { id: 'ember-evening-workout', label: getDailyTraining(logic).label, href: '/dashboard/program/ember/workout', complete: logic.execution.workoutComplete },
         { id: 'ember-evening-recovery', label: 'Recovery check', href: '/dashboard/recovery', complete: logic.execution.recoveryComplete },
       ],
     },
@@ -340,7 +343,7 @@ export function ProgressTab({ logic, tier }: { logic: ProgramLogicOutput; tier: 
       <div className="tier-metric-grid" data-testid="dashboard-daily-actions">
         <MetricRing label="Hydration" value={logic.hydration.percent} detail={`${Math.round(logic.hydration.consumed)} / ${Math.round(logic.hydration.target)} oz`} href="/dashboard/nutrition" tutorialId="dashboard-water-progress" />
         <MetricRing label={tier === 'ember' ? 'Macros' : 'Nutrition'} value={nutritionPercent} detail={logic.execution.nutritionLogged ? 'Logged today' : 'Ready to log'} href="/dashboard/nutrition" />
-        <MetricRing label="Workout" value={logic.execution.workoutComplete ? 100 : 0} detail={logic.execution.workoutInProgress ? 'Session saved · continue when ready' : logic.workout.assigned ? logic.workout.title : 'Recovery day'} href={`/dashboard/program/${tier}/workout`} />
+        <MetricRing label="Workout" value={logic.execution.workoutComplete ? 100 : 0} detail={logic.execution.workoutInProgress ? 'Session saved · continue when ready' : `${getDailyTraining(logic).label} · ${logic.workout.title}`} href={`/dashboard/program/${tier}/workout`} />
         <MetricRing label="Check-In" value={logic.assessments.dailyCompleted ? 100 : 0} detail={logic.assessments.dailyCompleted ? 'Complete' : 'Open'} href="/dashboard/check-in" tutorialId="dashboard-daily-checkin" />
         <MetricRing label="Recovery" value={logic.execution.recoveryComplete ? 100 : 0} detail={logic.execution.recoveryComplete ? 'Complete' : 'Available'} href="/dashboard/recovery" tone="recovery" />
         <CycleSummary logic={logic} />
@@ -437,13 +440,16 @@ export default function TierAwareDashboardWorkspace({
   recipes?: PhoenixRecipe[]
 }) {
   const [tab, setTab] = useState<PanelTab>('progress')
+  useDailyScheduleRefresh(schedule)
   const capabilities = getTierCapabilities(tier)
   const planBlocks = useMemo(() => buildPlanBlocks(tier, logic), [tier, logic])
 
   const plan = schedule.dailyRecommendation || buildDailyRecommendation(logic, schedule)
   const quiet = schedule.preferences?.carouselStyle === 'step'
   const flexible = schedule.preferences?.executionStyle === 'flow'
-  const preview = schedule.events.filter(event => !['cancelled','skipped'].includes(event.status) && new Date(event.adjusted_end_at || event.end_at) >= new Date(schedule.now)).slice(0, 3)
+  const overdueIds = new Set(schedule.overdueEvents.map(event => event.id))
+  const preview = schedule.events.filter(event => !['cancelled','skipped'].includes(event.status) &&
+    (new Date(event.adjusted_end_at || event.end_at) > new Date(schedule.now) || overdueIds.has(event.id))).slice(0, 3)
   return (
     <section className="tier-dashboard-workspace daily-home" data-tier={tier} data-quiet={quiet}>
       <DailyPlanCard plan={plan} />
@@ -465,8 +471,8 @@ export default function TierAwareDashboardWorkspace({
 function SchedulePreview({ preview, flexible, schedule, logic, plan }: { preview: ScheduleEvent[]; flexible: boolean; schedule: DailyScheduleState; logic: ProgramLogicOutput; plan: ReturnType<typeof buildDailyRecommendation> }) {
     return <div className="daily-preview">
       <section aria-label="Schedule preview"><div className="tier-panel-heading"><h2>{flexible ? 'Room for your day' : 'Coming up'}</h2><Link href="/dashboard/schedule">Schedule</Link></div>
-        {preview.length ? preview.map(event => <Link key={event.id} href={event.calendar_event_id ? '/dashboard/schedule#connected-calendar' : event.suggested ? `/dashboard/schedule#event-${event.id}` : event.action_route || `/dashboard/schedule#event-${event.id}`}><time>{eventRange(event, schedule.timezone)}</time><strong>{event.title}</strong><small>{event.source_label || (event.source === 'external_calendar' ? event.external_calendar_source || 'Connected calendar' : 'Anastasis')} · {event.status === 'completed' ? 'Done' : event.suggested ? 'Suggested time · choose in Schedule' : event.flexibility_type === 'fixed' ? 'Fixed commitment' : 'Flexible'}</small></Link>) : <p>No more scheduled items. Leave this space open.</p>}
+        {preview.length ? preview.map(event => <Link key={event.id} href={event.suggested ? `/dashboard/schedule#event-${event.id}` : getActionRouteForEvent(event, schedule.program || logic.program)}><time>{eventRange(event, schedule.timezone)}</time><strong>{event.title}</strong><small>{event.source_label || (event.source === 'external_calendar' ? event.external_calendar_source || 'Connected calendar' : 'Anastasis')} · {event.status === 'completed' ? 'Done' : schedule.overdueEvents.some(item => item.id === event.id) ? 'Overdue · review in Schedule' : event.suggested ? 'Suggested time · choose in Schedule' : event.flexibility_type === 'fixed' ? 'Fixed commitment' : 'Flexible'}</small></Link>) : <p>No more scheduled items. Leave this space open.</p>}
       </section>
-      <section aria-label="Progress summary"><h2>Your recorded progress</h2><p>{logic.assessments.dailyCompleted ? 'Check-in saved.' : 'Check-in available.'} {logic.execution.workoutComplete ? `Completed workout recorded${logic.execution.completedWorkoutTitle ? `: ${logic.execution.completedWorkoutTitle}` : ' today'}.` : logic.execution.workoutInProgress ? 'A partial workout is saved. Continue when ready.' : 'No completed workout recorded today.'}</p><p>{plan.evidence.food === 'not_logged' ? 'Food not logged yet.' : plan.evidence.food === 'partial' ? 'Food partly logged.' : 'Food logged today.'} {plan.evidence.water === 'not_logged' ? 'Water not logged yet.' : `${Math.round(logic.hydration.consumed)} oz water logged.`}</p></section>
+      <section aria-label="Progress summary"><h2>Your recorded progress</h2><p>{logic.assessments.dailyCompleted ? 'Check-in saved.' : 'Check-in available.'} {logic.execution.workoutComplete ? `Completed workout recorded${logic.execution.completedWorkoutTitle ? `: ${logic.execution.completedWorkoutTitle}` : ' today'}.` : logic.execution.workoutInProgress ? 'A partial workout is saved. Continue when ready.' : 'No completed workout recorded today.'}</p><p>{logic.program === 'ember' ? 'Nutrition guidance is available. Meal intake is not tracked in EMBER.' : plan.evidence.food === 'not_logged' ? 'Food not logged yet.' : plan.evidence.food === 'partial' ? 'Food partly logged.' : 'Food logged today.'} {plan.evidence.water === 'not_logged' ? 'Water not logged yet.' : `${Math.round(logic.hydration.consumed)} oz water logged.`}</p></section>
     </div>
   }

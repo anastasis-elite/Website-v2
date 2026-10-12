@@ -20,6 +20,13 @@ test('all-day calendar composer preserves local dates and exclusive ends across 
   assert.equal(event.end_date, '2026-03-09')
   assert.equal((Date.parse(event.end_at) - Date.parse(event.start_at)) / 3600000, 23)
 })
+test('Chicago fall daylight-saving fold uses the first occurrence and all-day dates span 25 hours', () => {
+  const timed = form.eventPayloadFromDraft(draft({ start_date: '2026-11-01', end_date: '2026-11-01', start_time: '01:30', end_time: '02:30' }))
+  assert.equal(timed.start_at, '2026-11-01T06:30:00.000Z')
+  assert.equal(timed.end_at, '2026-11-01T08:30:00.000Z')
+  const day = form.eventPayloadFromDraft(draft({ start_date: '2026-11-01', end_date: '2026-11-01', all_day: true }))
+  assert.equal((Date.parse(day.end_at) - Date.parse(day.start_at)) / 3600000, 25)
+})
 test('all-day date authoring remains available when daylight saving skips midnight', () => {
   const event = form.eventPayloadFromDraft(draft({ all_day: true, timezone: 'America/Havana' }))
   assert.equal(event.start_date, '2026-03-08')

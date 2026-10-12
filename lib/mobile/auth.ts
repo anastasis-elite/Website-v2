@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { hasMemberAccess } from '@/lib/commerce/access'
 
 function getBearerToken(request: Request) {
   const header = request.headers.get('authorization') || ''
@@ -61,6 +62,8 @@ export async function createMobileRequestContext(request: Request) {
   if (!client) {
     return { error: 'Client not found.' as const, status: 404 as const }
   }
+
+  if (!hasMemberAccess(client)) return { error: 'Membership access is inactive. Contact billing support.' as const, status: 403 as const }
 
   return { supabase, user, client, token }
 }

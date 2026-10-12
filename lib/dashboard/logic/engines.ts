@@ -254,6 +254,7 @@ export function runFuelReadinessEngine(inputs: ProgramLogicInputs, hydration: Hy
   const previous = getPreviousBlockCompletionStatus(nutrition.blockConsumed, nutrition.blockTargets, currentBlock)
   const blockCompletionPercent = Math.round(macroCompletion(consumedThroughCurrentBlock, expectedThroughCurrentBlock) * 100)
   const currentBlockOnTrack = blockCompletionPercent >= 70
+  if (inputs.program === 'ember') return { status: 'guidance_only', displayStatus: 'Guidance only', confidence: 'low', preWorkoutAction: 'Review your meal guidance and how you feel before training.', workoutAdjustment: 'Training uses your check-in and recovery signals; EMBER does not assess logged food intake.', postWorkoutPriority: nutrition.postWorkoutPriority, reasoning: 'Nutrition guidance is available. Meal intake is not tracked in EMBER, so fuel readiness is not confirmed.', currentBlock, timeZone, expectedThroughCurrentBlock, consumedThroughCurrentBlock, previousBlocksComplete: false, currentBlockOnTrack: false, blockCompletionPercent: 0 }
   if (nutrition.dataStatus === 'needs_input') return { status: 'unknown_needs_input', displayStatus: 'Not logged', confidence: 'low', preWorkoutAction: 'Log or eat a simple meal and drink water before deciding on intensity.', workoutAdjustment: 'Preserve movement; avoid max-effort work until fueling is known.', postWorkoutPriority: nutrition.postWorkoutPriority, reasoning: `Fuel readiness is based on ${currentBlock} intake expectations, but food intake is not sufficiently logged yet.`, currentBlock, timeZone, expectedThroughCurrentBlock, consumedThroughCurrentBlock, previousBlocksComplete: previous.complete, currentBlockOnTrack, blockCompletionPercent }
   const mealAgeHours = inputs.mealEntries[0]?.created_at ? (Date.now() - new Date(inputs.mealEntries[0].created_at).getTime()) / 3600000 : null
   const demand = inputs.plannedWorkout ? numeric(inputs.plannedWorkout.duration_minutes ?? inputs.plannedWorkout.estimated_duration, 45) : 0
@@ -356,7 +357,7 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, capacity:Ca
   else if (recovery.status === 'push_day' && fuel.status === 'well_fueled') modifications.push('Progress only if form and speed remain strong.')
   if (['too_much_today','not_feeling_workout'].includes(inputs.todayWorkoutFeedback?.response) && ['level_0_full_plan','level_1_slight_modify'].includes(adjustmentLevel)) { adjustmentLevel = 'level_2_moderate_modify'; modifications.unshift('Use the lighter version requested in today’s feedback.') }
   if (inputs.todayWorkoutFeedback?.response === 'too_easy' && adjustmentLevel === 'level_0_full_plan') modifications.unshift('Feedback noted; progress only with clean form and no grinding.')
-  if (inputs.missedDayCount >= 3 && adjustmentLevel !== 'level_4_rest_or_red_flag') { adjustmentLevel = 'level_3_recovery_training'; modifications.unshift('Use a gentle reset session to rebuild momentum without pressure.') }
+  if (inputs.executionHistory?.length > 0 && inputs.missedDayCount >= 3 && adjustmentLevel !== 'level_4_rest_or_red_flag') { adjustmentLevel = 'level_3_recovery_training'; modifications.unshift('Use a gentle reset session to rebuild momentum without pressure.') }
   modifications.push(...posture.correctivePriorities)
   const progression=nutritionProgressionSignals(inputs)
   const structural=buildStructuralFilter(inputs.photoRecord,inputs.initialAssessment)
@@ -377,11 +378,12 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, capacity:Ca
     assignedExercises,
   })
   if (workoutForToday.type !== 'planned') {
-    adjustmentLevel = workoutFallbackAdjustmentLevel(workoutForToday.type)
+    // A starter plan fills a missing program; it must retain the readiness dose.
+    if (workoutForToday.type !== 'starter') adjustmentLevel = workoutFallbackAdjustmentLevel(workoutForToday.type)
     modifications.unshift(workoutForToday.reason)
   }
   const assignedWorkout = { ...(inputs.plannedWorkout || {}), day_name: workoutForToday.title, workout_state: workoutForToday.type, exercises: workoutForToday.exercises }
-  return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, displayWorkout:true,canTrain:workoutForToday.completionEligible&&(workoutForToday.type!=='planned'||os.canTrain),adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: `${workoutForToday.type === 'planned' ? os.dose.rpe : 'Easy effort'} · Rest until HR is below 115 bpm.`, reasonForModification: modifications[0] || workoutForToday.reason, preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression,allowEnduranceProgression }
+  return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, displayWorkout:true,canTrain:workoutForToday.completionEligible&&os.canTrain,adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: `${workoutForToday.type === 'recovery' ? 'Recovery only' : workoutForToday.type === 'reduced' ? 'RPE 5–6' : os.dose.rpe} · Rest until breathing is comfortable.`, reasonForModification: modifications[0] || workoutForToday.reason, preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression,allowEnduranceProgression }
 }
 
 export function runFlameExecutionEngine({ inputs, hydration, nutrition, capacity }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult; capacity: CapacityResult }): FlameResult {

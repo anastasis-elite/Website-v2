@@ -5,6 +5,7 @@ import {
 } from '@/lib/nutrition/getNutritionBlockTargets'
 import { getClientDayRange } from '@/lib/schedule/time'
 import { getLocalDaypart, getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
+import { calculateClientNutritionTargets } from '@/lib/nutrition/targetService'
 
 type DailyCard = {
   id: string
@@ -130,25 +131,9 @@ export async function getDailyExecutionPlan({
   const middayMinutes = workStartMinutes || 12 * 60
   const eveningMinutes = bedMinutes !== null ? bedMinutes - 240 : 18 * 60
 
-  const { data: strengthAssessment } = await supabase
-    .from('assessments')
-    .select('*')
-    .eq('client_id', client.client_id)
-    .eq('assessment_type', 'strength')
-    .order('submitted_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  const assessmentData = strengthAssessment?.data || {}
-  const weight = Number(assessmentData.weight || 0)
-
-  const fallbackCalories = weight ? Math.round(weight * 12) : 2000
-  const fallbackProtein = weight ? Math.round(weight * 0.8) : 150
-  const fallbackFats = Math.round((fallbackCalories * 0.28) / 9)
-  const fallbackCarbs = Math.round(
-    (fallbackCalories - fallbackProtein * 4 - fallbackFats * 9) / 4
-  )
-  let water = weight ? Math.round(weight * 0.6) : 100
+  const nutritionTargets = await calculateClientNutritionTargets({ supabase, clientId: client.client_id, program: client.program })
+  const { target } = nutritionTargets
+  let water = nutritionTargets.water
 
   const { data: todayNutritionLog } = await supabase
     .from('nutrition_logs')
@@ -158,10 +143,10 @@ export async function getDailyExecutionPlan({
     .maybeSingle()
 
   water = Number(todayNutritionLog?.water_oz ?? water)
-  const calories = Number(todayNutritionLog?.calories || fallbackCalories)
-  const protein = Number(todayNutritionLog?.protein || fallbackProtein)
-  const carbs = Number(todayNutritionLog?.carbs || fallbackCarbs)
-  const fats = Number(todayNutritionLog?.fats || fallbackFats)
+  const calories = Number(todayNutritionLog?.calories || target.calories)
+  const protein = Number(todayNutritionLog?.protein || target.protein)
+  const carbs = Number(todayNutritionLog?.carbs || target.carbs)
+  const fats = Number(todayNutritionLog?.fats || target.fats)
 
   let blockRemaining: Record<NutritionBlockKey, any> | null = null
 
@@ -466,6 +451,7 @@ export async function getDailyExecutionPlan({
     timezone: timeZone,
     executionStyle,
     calories,
+    nutritionCalculationStatus: target.calculationStatus,
     dailyTargets: {
       protein,
       carbs,

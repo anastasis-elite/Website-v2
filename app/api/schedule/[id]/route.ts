@@ -40,9 +40,11 @@ export async function PATCH(
     const { data: existing, error: lookupError } = await supabase.from('anastasis_schedule_events').select('*').eq('id', id).eq('user_id', user.id).maybeSingle()
     if (lookupError) throw new Error(lookupError.message)
     if (!existing) return NextResponse.json({ error: 'Event not found.' }, { status: 404 })
+    if (body.event_type && body.event_type !== existing.event_type &&
+      (healthEventTypes.has(existing.event_type) || healthEventTypes.has(body.event_type))) return NextResponse.json({ error: 'Keep this activity’s type and record completion through its activity page.' }, { status: 409 })
     if ((body.status === 'completed' || body.completed_at) && healthEventTypes.has(existing.event_type)) return NextResponse.json({ error: 'Open this activity to record what you did.' }, { status: 409 })
     if (['start_at','end_at'].some(key => key in body)) return NextResponse.json({ error: 'Use Move to later so conflicts and approvals can be checked.' }, { status: 409 })
-    if (['skipped','cancelled'].includes(body.status) && existing.flexibility_type !== 'flexible') return NextResponse.json({ error: 'Edit this fixed commitment through its source.' }, { status: 409 })
+    if (['skipped','cancelled'].includes(body.status) && (existing.flexibility_type !== 'flexible' || existing.approval_required)) return NextResponse.json({ error: 'Edit this commitment through its source or approval process.' }, { status: 409 })
     if (body.status && !['scheduled','completed','skipped','cancelled'].includes(body.status)) return NextResponse.json({ error: 'Invalid event status.' }, { status: 400 })
     const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
 

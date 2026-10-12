@@ -8,6 +8,7 @@ import RecoveryLogger from '@/components/RecoveryLogger'
 import BreathingReset from '@/components/recovery/BreathingReset'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { SorenessRegionKey } from '@/lib/recovery/sorenessRegions'
+import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
 
 type ProgressTab = 'daily' | 'trends'
 type ActionTab = 'tools' | 'checkIn'
@@ -130,7 +131,8 @@ export default function RecoveryDashboardClient({
   const [actionTab, setActionTab] = useState<ActionTab>('tools')
   const [managementTab, setManagementTab] = useState<ManagementTab>('assessment')
 
-  const recoveryScore = progressPercent(logic.recoveryStatus.score)
+  const training = getDailyTraining(logic)
+  const recoveryScore = training.readiness === 'confirmed' ? progressPercent(logic.recoveryStatus.score) : null
   const sleepPercent = logic.sleep.quality !== null
     ? scoreFromHighIsGood(logic.sleep.quality)
     : logic.sleep.hours !== null
@@ -144,8 +146,8 @@ export default function RecoveryDashboardClient({
     {
       label: 'Recovery',
       percent: recoveryScore,
-      value: formatStatus(logic.recoveryStatus.status),
-      detail: logic.recoveryStatus.movementPreserved ? 'Movement can stay in the plan.' : 'Recovery should lead the day.',
+      value: training.label,
+      detail: training.readinessNote,
     },
     {
       label: 'Sleep',
@@ -204,15 +206,16 @@ export default function RecoveryDashboardClient({
           <article className="tier-daily-insight workout-objective recovery-objective" data-testid="recovery-objective">
             <p className="tier-dashboard-label">Recovery Status</p>
             <div>
-              <h1>{formatStatus(logic.recoveryStatus.status)}</h1>
+              <h1>{training.label}</h1>
               <BreathingReset clientId={clientId} />
             </div>
-            <p>{logic.recoveryStatus.reasoning}</p>
+            <p>{training.reason}</p>
+            <p>{training.readinessNote}</p>
             <small>Today&apos;s priority: {logic.recoveryActions[0]?.label || logic.symptoms.recoveryRecommendation}</small>
             <div className="recovery-objective-metrics">
-              <article><span>Recovery Score</span><strong>{recoveryScore}%</strong></article>
-              <article><span>Capacity</span><strong>{formatStatus(logic.capacityStatus.status)}</strong></article>
-              <article><span>Check-In</span><strong>{logic.assessments.dailyCompleted ? 'Complete' : 'Open'}</strong></article>
+              <article><span>Recovery Score</span><strong>{recoveryScore === null ? 'Needs check-in' : `${recoveryScore}%`}</strong></article>
+              <article><span>Capacity</span><strong>{logic.assessments.dailyCompleted ? formatStatus(logic.capacityStatus.status) : 'Not confirmed'}</strong></article>
+              <article><span>Check-In</span><strong>{logic.assessments.dailyCompleted ? 'Complete' : 'Not logged'}</strong></article>
             </div>
           </article>
 

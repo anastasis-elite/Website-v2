@@ -1,106 +1,17 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { TERMS_VERSION } from '@/lib/legal/config'
-import { safeErrorResponse } from '@/lib/security/http'
-
-export const runtime = 'nodejs'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-type RecommendedProgram = 'ember' | 'ignite' | 'phoenix'
-
-function normalizeRecommendedProgram(value: unknown): RecommendedProgram {
-  if (value === 'ember' || value === 'ignite' || value === 'phoenix') {
-    return value
-  }
-
-  return 'ignite'
-}
-
-export async function POST(req: Request) {
-  try {
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json(
-        { error: 'Missing Supabase server environment variables.' },
-        { status: 500 }
-      )
-    }
-
-    const body = await req.json()
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    const recommendedProgram = normalizeRecommendedProgram(
-      body.recommended_program
-    )
-
-    const capacityScore =
-      typeof body.capacity_score === 'number'
-        ? body.capacity_score
-        : Number(body.capacity_score || 0)
-
-    const payload = {
-      status: 'new',
-
-      full_name: body.fullName || body.full_name || null,
-      email: body.email || null,
-      phone: body.phone || null,
-
-      address_line_1: body.addressLine1 || body.address_line_1 || null,
-      address_line_2: body.addressLine2 || body.address_line_2 || null,
-      city: body.city || null,
-      state: body.state || null,
-      postal_code: body.postalCode || body.postal_code || null,
-      country: body.country || 'US',
-      address_verified: body.address_verified ?? false,
-
-      applicant_acknowledged_terms: Boolean(body.agreement),
-      terms_version: TERMS_VERSION,
-
-      capacity_score: capacityScore,
-      recommended_program: recommendedProgram,
-      audit_version: body.audit_version || 'capacity_snapshot_v1',
-
-      energy_level: body.energy_level || null,
-      overwhelm_level: body.overwhelm_level || null,
-      time_available: body.time_available || null,
-      support_level: body.support_level || null,
-      current_season: body.current_season || null,
-
-      email_consent: Boolean(body.email_consent),
-
-      submitted: body.submitted || 'capacity_audit',
-      submitted_at: body.timestamp || new Date().toISOString(),
-
-      application_data: body,
-    }
-
-    const { data, error } = await supabase
-      .from('applications')
-      .insert(payload)
-      .select('id, recommended_program')
-      .single()
-
-    if (error) {
-      console.error('APPLICATION SAVE ERROR:', error)
-
-      return NextResponse.json(
-  {
-    error: 'Capacity Audit save failed.',
-  },
-  { status: 500 }
-)
-    }
-
-    return NextResponse.json({
-      success: true,
-      auditId: data.id,
-      recommendedProgram: data.recommended_program || recommendedProgram,
-      redirect: `/audit/results/${data.id}`,
-    })
-  } catch (error) {
-    console.error('Apply API error:', error)
-
-    return safeErrorResponse('Application submission failed', 500, error)
-  }
+import { CAPACITY_AUDIT_VERSION, normalizeCapacityAudit } from '@/lib/capacityAudit'
+export const runtime='nodejs'
+export async function POST(req:Request){
+ let audit:ReturnType<typeof normalizeCapacityAudit>
+ try{audit=normalizeCapacityAudit(await req.json())}
+ catch(error){return NextResponse.json({error:error instanceof SyntaxError?'Enter a valid submission.':error instanceof Error?error.message:'Check your answers.'},{status:400})}
+ try{
+  const supabase=createAdminClient();const submittedAt=new Date().toISOString()
+  const payload={status:'new',full_name:audit.fullName,email:audit.email,applicant_acknowledged_terms:true,terms_version:TERMS_VERSION,capacity_score:audit.score,recommended_program:audit.recommendedProgram,audit_version:CAPACITY_AUDIT_VERSION,...audit.answers,email_consent:audit.emailConsent,submitted:'capacity_audit',submitted_at:submittedAt,application_data:{fullName:audit.fullName,email:audit.email,...audit.answers,email_consent:audit.emailConsent,agreement:true,capacity_score:audit.score,recommended_program:audit.recommendedProgram,audit_version:CAPACITY_AUDIT_VERSION,timestamp:submittedAt}}
+  const {data,error}=await supabase.from('applications').insert(payload).select('id, recommended_program').single()
+  if(error || !data?.id)return NextResponse.json({error:'Your Capacity Audit could not be saved. Please try again.'},{status:500})
+  return NextResponse.json({success:true,auditId:data.id,capacityScore:audit.score,recommendedProgram:audit.recommendedProgram,redirect:`/audit/results/${data.id}`})
+ }catch{return NextResponse.json({error:'The Capacity Audit is temporarily unavailable. Please try again.'},{status:503})}
 }

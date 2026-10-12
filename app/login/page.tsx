@@ -9,9 +9,8 @@ function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const redirect =
-    searchParams.get('redirect') ||
-    '/dashboard'
+  const requestedRedirect = searchParams.get('redirect') || '/dashboard'
+  const redirect = requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//') && !requestedRedirect.includes('\\') ? requestedRedirect : '/dashboard'
 
   const emailFromUrl =
     searchParams.get('email') || ''

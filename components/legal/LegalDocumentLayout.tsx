@@ -8,5 +8,3 @@ export default function LegalDocumentLayout({ title, version, children }: { titl
 export function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {
   return <section style={{ ...styles.sectionStyle, marginBottom: '34px' }}><h2 style={styles.h2Style}>{title}</h2><div style={styles.bodyStyle}>{children}</div></section>
 }
-
-const draftStyle = { ...styles.bodyStyle, padding: '14px 18px', borderRadius: '18px', background: 'rgba(181,110,67,.12)', border: '1px solid rgba(181,110,67,.3)' } as const

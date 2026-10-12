@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
 import { isAOSAdmin } from '@/lib/aos/isAOSAdmin'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
+    const body = await req.json().catch(() => null)
     const supabase = await createClient()
 
     const {
@@ -33,6 +34,19 @@ export async function POST(req: Request) {
         { error: 'Client profile not found.' },
         { status: 404 }
       )
+    }
+
+    if (!body || typeof body !== 'object' || Array.isArray(body)
+      || !Number.isInteger(Number(body.trainingDays)) || Number(body.trainingDays) < 1 || Number(body.trainingDays) > 7
+      || !['commercial-gym', 'home-gym', 'dumbbells-bands', 'bodyweight'].includes(body.equipmentAccess)
+      || !['beginner', 'some-experience', 'consistent', 'advanced'].includes(body.experienceLevel)
+      || !['recomposition', 'fat-loss', 'muscle-building', 'strength', 'glutes-shape', 'stage-prep', 'energy-regulation'].includes(body.primaryFocus)
+      || typeof body.currentLimitations !== 'string' || !body.currentLimitations.trim()
+      || !['low', 'moderate', 'high'].includes(body.recoveryCapacity)
+      || !['poor', 'inconsistent', 'decent', 'strong'].includes(body.sleepQuality)
+      || !['low', 'moderate', 'high', 'very-high'].includes(body.stressLevel)
+      || !['walking', 'incline-walk', 'stair-stepper', 'bike', 'running', 'minimal'].includes(body.cardioPreference)) {
+      return NextResponse.json({ error: 'Complete the required member assessment fields before continuing.' }, { status: 400 })
     }
 
     const payload = {
@@ -74,6 +88,25 @@ if (assessmentInsertError) {
     { status: 500 }
   )
 }
+
+    const equipment: Record<string, string[]> = {
+      'commercial-gym': ['commercial gym'],
+      'home-gym': ['home gym'],
+      'dumbbells-bands': ['dumbbell', 'band'],
+      bodyweight: ['bodyweight'],
+    }
+    const limitation = String(body.currentLimitations).trim()
+    const { error: profileError } = await supabase.from('client_current_profiles').upsert({
+      user_id: user.id,
+      client_id: client.client_id,
+      equipment_access: equipment[body.equipmentAccess],
+      limitations: /^(none|no limitations|n\/a)$/i.test(limitation) ? [] : [limitation],
+      primary_goal: String(body.primaryFocus).trim(),
+      workout_days_available: Number(body.trainingDays),
+      updated_at: payload.submittedAt,
+    }, { onConflict: 'client_id' })
+    if (profileError) return NextResponse.json({ error: 'Your assessment was saved, but the current training profile could not be updated. Please try again.' }, { status: 503 })
+    invalidateDailyPlan()
 
     return NextResponse.json({
       success: true,

@@ -5,7 +5,7 @@ import type {
   ScheduleAdjustment,
   ScheduleEvent,
 } from './types'
-import { scheduleConflict } from './actions'
+import { healthEventTypes, scheduleConflict } from './actions'
 
 export const ACTION_ROUTES: Record<string, string> = {
   workout: '/dashboard/program/ignite/workout',
@@ -38,7 +38,7 @@ function canMove(event: ScheduleEvent) {
     event.flexibility_type === 'flexible' &&
     event.movable &&
     !event.approval_required &&
-    event.status === 'scheduled'
+    ['scheduled', 'deferred'].includes(event.status)
   )
 }
 
@@ -131,6 +131,8 @@ export function firstValidWindow(
 }
 
 export function getActionRouteForEvent(event: ScheduleEvent, program = 'ignite') {
+  if (event.calendar_event_id) return `/dashboard/schedule#calendar-event-${event.calendar_event_id}`
+  if (event.event_type === 'meal' && program === 'ember') return '/dashboard/nutrition'
   if (event.action_route) return event.action_route
   if (event.event_type === 'workout') return `/dashboard/program/${program}/workout`
   return ACTION_ROUTES[event.event_type] || `/dashboard/schedule#event-${event.id}`
@@ -210,7 +212,7 @@ export function buildScheduleAdjustments({
   for (const event of events) {
     if (!canMove(event)) continue
     const conflictingSuggestion = event.suggested && scheduleConflict(events.filter(item => !item.suggested), event.id, eventStart(event), eventEnd(event), transitionMinutes)
-    if ((eventEnd(event) >= now && !conflictingSuggestion) || event.status !== 'scheduled') continue
+    if (eventEnd(event) > now && !conflictingSuggestion) continue
 
     const duration =
       event.estimated_duration_minutes ||
@@ -308,7 +310,7 @@ export function buildNextAction({
 
   const start = eventStart(nextActionableEvent)
   const end = eventEnd(nextActionableEvent)
-  const overdue = end < now
+  const overdue = end <= now
   const minutesUntil = Math.round((start.getTime() - now.getTime()) / 60000)
   const urgency = overdue
     ? 'overdue'
@@ -330,8 +332,9 @@ export function buildNextAction({
     action_route: getActionRouteForEvent(nextActionableEvent, program),
     overdue,
     automatically_adjusted: Boolean(adjustment?.automatic && adjustment.applied),
-    can_complete: !nextActionableEvent.virtual && isActionable(nextActionableEvent),
-    can_defer: !nextActionableEvent.virtual && canAutoApply(nextActionableEvent),
+    can_complete: !nextActionableEvent.virtual && !nextActionableEvent.calendar_event_id &&
+      !healthEventTypes.has(nextActionableEvent.event_type) && isActionable(nextActionableEvent),
+    can_defer: canMove(nextActionableEvent),
     short_reason: reason.length > 96 ? `${reason.slice(0, 93)}...` : reason,
   }
 }
@@ -372,15 +375,20 @@ export function buildDailyScheduleState({
     .sort((a, b) => eventStart(a).getTime() - eventStart(b).getTime())
   const completedEvents = sorted.filter((event) => event.status === 'completed')
   const remainingEvents = sorted.filter(isActionable)
-  const upcomingEvents = remainingEvents.filter((event) => eventEnd(event) >= now)
-  const overdueEvents = remainingEvents.filter((event) => eventEnd(event) < now)
+  const upcomingEvents = remainingEvents.filter((event) => eventEnd(event) > now)
+  const overdueEvents = remainingEvents.filter((event) => eventEnd(event) <= now)
   const fixedEvents = sorted.filter((event) => event.flexibility_type === 'fixed')
   const flexibleEvents = sorted.filter((event) => event.flexibility_type === 'flexible')
   const approvalRequiredEvents = sorted.filter((event) => event.flexibility_type === 'approval_required' || event.approval_required)
   const openWindows = getOpenWindows(sorted, dayStart, dayEnd, 10, transitionMinutes)
   const nextEvent = upcomingEvents[0] || null
-  const nextActionableEvent = upcomingEvents
-    .sort((a, b) => priorityRank(b) - priorityRank(a) || eventStart(a).getTime() - eventStart(b).getTime())[0] || null
+  // Current commitments take precedence over later plans. Retain overdue actions
+  // for review rather than silently dropping them after their time has passed.
+  const activeEvents = upcomingEvents.filter(event => eventStart(event) <= now)
+    .sort((a, b) => Number(b.flexibility_type === 'fixed') - Number(a.flexibility_type === 'fixed') ||
+      priorityRank(b) - priorityRank(a) || eventStart(a).getTime() - eventStart(b).getTime())
+  const overdueActions = [...overdueEvents].sort((a, b) => priorityRank(b) - priorityRank(a) || eventStart(a).getTime() - eventStart(b).getTime())
+  const nextActionableEvent = activeEvents[0] || overdueActions[0] || upcomingEvents[0] || null
 
   return {
     date,

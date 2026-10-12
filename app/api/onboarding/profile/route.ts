@@ -33,7 +33,24 @@ export async function POST(req: Request) {
       )
     }
 
-    const { data: existing } = await supabase.from('clients').select('*').eq('auth_user_id', user.id).maybeSingle()
+    const { data: existing, error: clientError } = await supabase.from('clients').select('*').eq('auth_user_id', user.id).maybeSingle()
+    if (clientError) return NextResponse.json({ error: 'Your profile could not be loaded.' }, { status: 503 })
+    if (!existing) return NextResponse.json({ error: 'Client profile was not found.' }, { status: 404 })
+    const [programResult, initialResult, strengthResult] = await Promise.all([
+      supabase.from('program_outputs').select('id').eq('client_id', existing.client_id).eq('program', existing.program).limit(1).maybeSingle(),
+      supabase.from('assessments').select('id').eq('client_id', existing.client_id).eq('assessment_type', 'initial').limit(1).maybeSingle(),
+      supabase.from('assessments').select('id').eq('client_id', existing.client_id).eq('assessment_type', 'strength').limit(1).maybeSingle(),
+    ])
+    if (programResult.error || initialResult.error || strengthResult.error) {
+      return NextResponse.json({ error: 'Your saved setup progress could not be loaded. Please try again.' }, { status: 503 })
+    }
+    // Profile completion opens the member assessment; it is not a completed training baseline.
+    // Existing plans or strength baselines remain usable without repeating earlier assessments.
+    const setupStep = programResult.data ? 'dashboard' : strengthResult.data ? 'plan_generation' : initialResult.data ? 'strength_assessment' : 'initial_assessment'
+    const nextRoute = setupStep === 'initial_assessment' ? '/dashboard/assessment/start'
+      : setupStep === 'strength_assessment' ? '/dashboard/assessment/start2'
+      : setupStep === 'plan_generation' ? '/dashboard/onboarding/plan'
+      : `/dashboard/program/${existing.program || 'ignite'}`
     const timezone = existing?.timezone || getTimezoneFromState(body.state)
     const completedAt = new Date().toISOString()
     const accountabilityPreferences = {
@@ -150,7 +167,10 @@ export async function POST(req: Request) {
       success: true,
       clientId: updatedClient.client_id,
       onboardingCompleted: updatedClient.onboarding_completed,
-      redirect: `/dashboard/program/${updatedClient.program || 'ignite'}`,
+      profileCompleted: true,
+      baselineCompleted: Boolean(strengthResult.data),
+      setupStep,
+      redirect: nextRoute,
     })
   } catch (error) {
     console.error('ONBOARDING PROFILE ERROR:', error)

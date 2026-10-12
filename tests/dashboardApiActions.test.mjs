@@ -14,6 +14,7 @@ const {dashboardApiError}=await importTs('lib/dashboard/apiError.ts',mocks)
 const preferences=await importTs('app/api/dashboard/preferences/route.ts',mocks)
 const schedulePatch=await importTs('app/api/schedule/[id]/route.ts',mocks)
 const scheduleComplete=await importTs('app/api/schedule/[id]/complete/route.ts',mocks)
+const scheduleDefer=await importTs('app/api/schedule/[id]/defer/route.ts',mocks)
 const schedulePlan=await importTs('app/api/schedule/plan/route.ts',mocks)
 const owner='qa-user',clientId='QA-ONLY'
 function database({signedIn=true, eventType='workout',fixed=false}={}) {
@@ -91,4 +92,31 @@ test('virtual move records a suggested time separately and refuses overlap; skip
  // Run time can fall near midnight; valid windows must remain on the selected day.
  if(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit'}).format(start)===date) {assert.equal(moved.status,200);assert.equal(db.writes.at(-1).mutation.onboarding_data.scheduleOverrides[event.id].adjusted_start_at,start.toISOString())}
  else assert.equal(moved.status,400)
+})
+
+test('schedule activity types cannot be relabeled to bypass real completion logging',async()=>{
+ const params={params:Promise.resolve({id:'qa-event'})}
+ let db=database({eventType:'workout'})
+ assert.equal((await schedulePatch.PATCH(req({event_type:'custom'}),params)).status,409)
+ assert.equal(db.writes.length,0)
+ db=database({eventType:'custom'})
+ assert.equal((await schedulePatch.PATCH(req({event_type:'workout',status:'completed'}),params)).status,409)
+ assert.equal(db.writes.length,0)
+})
+
+test('approved commitments and finished events reject unsupported skip/move/completion transitions',async()=>{
+ const params={params:Promise.resolve({id:'qa-event'})}
+ let db=database({eventType:'personal'});db.event.approval_required=true
+ assert.equal((await schedulePatch.PATCH(req({status:'skipped'}),params)).status,409)
+ assert.equal(db.writes.length,0)
+ db=database({eventType:'personal'});db.event.status='cancelled'
+ assert.equal((await scheduleComplete.POST(req({}),params)).status,409)
+ assert.equal((await scheduleDefer.POST(req({start_at:'2030-06-18T14:00:00Z',end_at:'2030-06-18T14:30:00Z'}),params)).status,409)
+ assert.equal(db.writes.length,0)
+ db.event.status='completed'
+ assert.equal((await scheduleComplete.POST(req({}),params)).status,200)
+ assert.equal(db.writes.length,0)
+ globalThis.dashboardTestSchedule={events:[{id:'virtual-done',virtual:true,status:'completed'}]}
+ assert.equal((await schedulePlan.POST(req({eventId:'virtual-done',action:'skip'}))).status,409)
+ assert.equal(db.writes.length,0)
 })

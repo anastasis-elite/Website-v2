@@ -15,6 +15,8 @@ export async function POST(
     const { data: existing } = await supabase.from('anastasis_schedule_events').select('*').eq('id', id).eq('user_id', user.id).maybeSingle()
     if (!existing) return NextResponse.json({ error: 'Event not found.' }, { status: 404 })
     if (healthEventTypes.has(existing.event_type)) return NextResponse.json({ error: 'Open this activity and save what you did to complete it.', href: getActionRouteForEvent(existing, client.program) }, { status: 409 })
+    if (['skipped', 'cancelled'].includes(existing.status)) return NextResponse.json({ error: 'This event is already finished. Review its recorded outcome.' }, { status: 409 })
+    if (existing.status === 'completed') return NextResponse.json({ success: true, event: existing })
     const completedAt = new Date().toISOString()
     const { data, error } = await supabase
       .from('anastasis_schedule_events')

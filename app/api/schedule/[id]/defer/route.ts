@@ -26,6 +26,7 @@ export async function POST(
 
     if (lookupError) throw new Error(lookupError.message)
     if (!existing) return NextResponse.json({ error: 'Event not found.' }, { status: 404 })
+    if (['completed', 'skipped', 'cancelled'].includes(existing.status)) return NextResponse.json({ error: 'This event is already finished. Review its outcome before changing its time.' }, { status: 409 })
     if (existing.flexibility_type !== 'flexible' || !existing.movable || existing.approval_required) {
       return NextResponse.json({ error: 'Only movable flexible events can be deferred.' }, { status: 400 })
     }

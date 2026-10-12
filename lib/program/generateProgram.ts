@@ -86,20 +86,11 @@ function getVariantGroup(exerciseName: string) {
   })
 }
 
-function getDefaultVariant(group: any) {
-  if (!group) return null
-
-  return (
-    group.variants?.find(
-      (variant: any) => variant.id === group.default_variant
-    ) || group.variants?.[0]
-  )
-}
-
 function normalizeEquipment(value: unknown) {
   return String(value || '')
     .trim()
     .toLowerCase()
+    .replace(/-/g, ' ')
     .replace(/dumbbells/g, 'dumbbell')
     .replace(/kettlebells/g, 'kettlebell')
     .replace(/resistance bands|bands/g, 'band')
@@ -109,37 +100,35 @@ function normalizeEquipment(value: unknown) {
 }
 
 function getClientEquipment(client: any, initialAssessment: any) {
-  const raw = Array.isArray(client?.equipment_access)
-    ? client.equipment_access
-    : String(client?.equipment_access || initialAssessment?.data?.equipmentAccess || initialAssessment?.data?.equipment_access || '')
-      .split(',')
-  const normalized = raw.map(normalizeEquipment).filter(Boolean) as string[]
+  const assessment = initialAssessment?.data || initialAssessment || {}
+  const recorded = Array.isArray(client?.equipment_access) && client.equipment_access.length ? client.equipment_access
+    : client?.equipment_access || assessment.equipmentAccess || assessment.equipment_access || ''
+  const raw = Array.isArray(recorded) ? recorded : String(recorded).split(',')
+  const normalized = raw.map(normalizeEquipment).filter(Boolean).flatMap((item: string) => item === 'dumbbell band' ? ['dumbbell', 'band'] : [item]) as string[]
   if (normalized.some((item) => ['gym', 'full gym', 'commercial gym', 'all equipment'].includes(item))) return ['*']
   return normalized
 }
 
 function equipmentMatches(variant: any, equipment: string[]) {
-  if (!equipment.length || equipment.includes('*')) return true
+  if (equipment.includes('*')) return true
   const variantEquipment = normalizeEquipment(variant?.equipment)
-  return equipment.some((item) => variantEquipment.includes(item) || item.includes(variantEquipment))
+  return Boolean(variantEquipment) && equipment.some((item) => variantEquipment.includes(item) || item.includes(variantEquipment))
 }
 
 function getEquipmentCompatibleVariants(group: any, equipment: string[]) {
   if (!group?.variants?.length) return []
   const compatible = group.variants.filter((variant: any) => equipmentMatches(variant, equipment))
   if (compatible.length) return compatible
-  if (!equipment.length || equipment.includes('*')) return group.variants
   const bodyweight = group.variants.filter((variant: any) => normalizeEquipment(variant.equipment) === 'bodyweight')
   if (bodyweight.length) return bodyweight
-  const fallback = getDefaultVariant(group)
-  return fallback ? [fallback] : []
+  return []
 }
 
 function getDefaultVariantForEquipment(group: any, equipment: string[]) {
   if (!group) return null
   const compatible = getEquipmentCompatibleVariants(group, equipment)
   const preferred = compatible.find((variant: any) => variant.id === group.default_variant)
-  return preferred || compatible[0] || getDefaultVariant(group)
+  return preferred || compatible[0] || null
 }
 
 function getAssessmentLift(key: string, data: any) {
@@ -225,12 +214,20 @@ export function generateProgram({
   const template = getTemplate(client.program)
   const ifKey = getIfKey(client.program)
   const clientEquipment = getClientEquipment(client, initialAssessment)
+  const restrictedEquipment = !clientEquipment.includes('*')
+  const excludedExercises: Array<{ day: string; exercise: string; reason: string }> = []
 
   const generatedDays = template.days.map((day: any) => {
-    const exercises = day.exercises.map((exercise: any) => {
+    const exercises = day.exercises.flatMap((exercise: any) => {
       const variantGroup = getVariantGroup(exercise.exercise)
       const defaultVariant = getDefaultVariantForEquipment(variantGroup, clientEquipment)
       const availableVariants = getEquipmentCompatibleVariants(variantGroup, clientEquipment)
+      // Keep existing unloaded template movements, but never assign an unsupported gym variant.
+      const unloaded = !variantGroup && /^(?:side plank|single-leg glute bridge|walking lunge|reverse lunge|sumo squat|bulgarian split squat)$/i.test(exercise.exercise)
+      if (restrictedEquipment && !defaultVariant && !unloaded) {
+        excludedExercises.push({ day: day.day_name, exercise: exercise.exercise, reason: 'No supported variant for recorded equipment.' })
+        return []
+      }
 
       const keyRow = (masterKey as any[]).find((row) => {
         if (variantGroup?.assessment_key) {
@@ -248,6 +245,7 @@ export function generateProgram({
           selected_variant_id: defaultVariant?.id || null,
           selected_variant_name: defaultVariant?.name || exercise.exercise,
           selected_equipment: defaultVariant?.equipment || null,
+          load_type: unloaded ? 'bodyweight' : defaultVariant?.load_type || 'total_load',
           available_variants: availableVariants,
           calculated_weight: null,
           calculation_note: 'No master key match',
@@ -270,6 +268,7 @@ export function generateProgram({
           selected_variant_id: defaultVariant?.id || null,
           selected_variant_name: defaultVariant?.name || exercise.exercise,
           selected_equipment: defaultVariant?.equipment || null,
+          load_type: unloaded ? 'bodyweight' : defaultVariant?.load_type || 'total_load',
           available_variants: availableVariants,
           calculated_weight: null,
           calculation_note: 'No assessment key match',
@@ -288,7 +287,8 @@ export function generateProgram({
         estimated1RM * intensityFactor * repMultiplier
       )
 
-      const adjustedWeight = getEquipmentAdjustedLoad({
+      const bodyweight = unloaded || defaultVariant?.load_type === 'bodyweight' || defaultVariant?.equipment === 'bodyweight'
+      const adjustedWeight = bodyweight ? 0 : getEquipmentAdjustedLoad({
         baseWeight: baseCalculatedWeight,
         fromEquipment: variantGroup?.base_equipment || defaultVariant?.equipment,
         toEquipment: defaultVariant?.equipment,
@@ -303,8 +303,8 @@ export function generateProgram({
 
         selected_variant_id: defaultVariant?.id || null,
         selected_variant_name: defaultVariant?.name || exercise.exercise,
-        selected_equipment: defaultVariant?.equipment || null,
-        load_type: defaultVariant?.load_type || 'total_load',
+        selected_equipment: defaultVariant?.equipment || (unloaded ? 'bodyweight' : null),
+        load_type: bodyweight ? 'bodyweight' : defaultVariant?.load_type || 'total_load',
         available_variants: availableVariants,
 
         assessment_key: assessmentKey,
@@ -316,7 +316,7 @@ export function generateProgram({
         calculated_weight: adjustedWeight,
         recommended_weight: adjustedWeight,
 
-        calculation_note: defaultVariant
+        calculation_note: bodyweight ? 'Bodyweight movement; zero added load.' : defaultVariant
           ? `Adjusted for ${defaultVariant.equipment} loading.`
           : 'Standard loading calculation.',
       }
@@ -332,5 +332,8 @@ export function generateProgram({
     generated_at: new Date().toISOString(),
     program: client.program,
     days: generatedDays,
+    equipment_review_required: restrictedEquipment && excludedExercises.length > 0,
+    excluded_exercises: excludedExercises,
+    equipment_note: restrictedEquipment && excludedExercises.length > 0 ? 'Some template movements need equipment you have not recorded. Your plan contains only supported movements; review your available equipment before adding others.' : null,
   }
 }

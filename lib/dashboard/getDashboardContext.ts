@@ -1,11 +1,14 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { isClientOnboardingComplete } from '@/lib/dashboard/isClientOnboardingComplete'
+import { hasMemberAccess } from '@/lib/commerce/access'
 
 export async function getDashboardContext({
   allowIncompleteOnboarding = false,
+  allowInactiveAccess = false,
 }: {
   allowIncompleteOnboarding?: boolean
+  allowInactiveAccess?: boolean
 } = {}) {
   const supabase = await createClient()
 
@@ -31,6 +34,8 @@ export async function getDashboardContext({
   if (!client) {
     throw new Error(`No client found for auth user: ${user.id}`)
   }
+
+  if (!allowInactiveAccess && !hasMemberAccess(client)) redirect('/dashboard/payment-issue')
 
   const { data: currentProfile } = await supabase
     .from('client_current_profiles')

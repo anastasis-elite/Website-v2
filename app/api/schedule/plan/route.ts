@@ -12,12 +12,13 @@ export async function POST(request: Request) {
   const body = await request.json(); const state = await getDailyScheduleState({ supabase, user, client })
   const event = state.events.find(e => e.id === body.eventId && e.virtual)
   if (!event) return NextResponse.json({ error: 'Today’s plan item was not found.' }, { status: 404 })
+  if (['completed', 'skipped', 'cancelled'].includes(event.status)) return NextResponse.json({ error: 'This plan item is already finished for today.' }, { status: 409 })
   let override: Record<string, unknown>
   if (body.action === 'skip') {
-    if (event.flexibility_type === 'fixed') return NextResponse.json({ error: 'Edit fixed commitments in Daily Structure.' }, { status: 400 })
+    if (event.flexibility_type !== 'flexible' || event.approval_required) return NextResponse.json({ error: 'Edit commitments in Daily Structure or through their approval process.' }, { status: 400 })
     override = { status: 'skipped', completed_at: null }
   } else if (body.action === 'move') {
-    if (!event.movable || event.flexibility_type !== 'flexible') return NextResponse.json({ error: 'Edit fixed commitments in Daily Structure.' }, { status: 400 })
+    if (!event.movable || event.flexibility_type !== 'flexible' || event.approval_required) return NextResponse.json({ error: 'Edit commitments in Daily Structure or through their approval process.' }, { status: 400 })
     const start = new Date(body.start_at), end = new Date(body.end_at)
     const error = scheduleConflict(state.events, event.id, start, end, state.preferences?.transitionMinutes)
     if (error || getClientLocalDate(client, start) !== state.date || start < new Date()) return NextResponse.json({ error: error || 'Choose a later time today.' }, { status: 400 })

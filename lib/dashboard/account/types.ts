@@ -32,6 +32,7 @@ export type AccountData = {
     averageCompletionPercent: number
     metrics: JourneyMetric[]
   }
+  billing: { connected: boolean; billingType: string | null }
 }
 
 export type AccountProfileFormData = {

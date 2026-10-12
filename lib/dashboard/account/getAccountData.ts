@@ -55,6 +55,7 @@ function metric(key: JourneyMetric['key'], label: string, completed: number, tar
 }
 
 export async function getAccountData({ supabase, user, client }: { supabase: any; user: any; client: any }): Promise<AccountData> {
+  const { data: billing } = await supabase.from('client_billing').select('stripe_customer_id,billing_type').eq('client_id', client.client_id).maybeSingle()
   const weekStart = dateDaysAgo(6)
   const monthStart = dateDaysAgo(29)
   const [{ data: workouts }, { data: nutrition }, { data: recovery }, { data: assessments }, { data: strengthAssessments }, { data: recommendations }] = await Promise.all([
@@ -100,11 +101,12 @@ export async function getAccountData({ supabase, user, client }: { supabase: any
     if (number(row.recommendation_output?.flameState?.dailyScore) >= 75) completedDates.add(row.log_date)
   })
   if (!completedDates.size) workoutRows.forEach((row: any) => completedDates.add(String(row.workout_date).slice(0, 10)))
-  const program = supportedPrograms.has(client.program) ? client.program as AccountProgram : 'ignite'
+  const program = supportedPrograms.has(client.program) ? client.program as AccountProgram : 'ember'
   const score = averageCompletionPercent
   const flame = score >= 100 ? ['roaring_flame', 'Week complete'] : score >= 75 ? ['strong_flame', 'Almost complete'] : score >= 50 ? ['steady_flame', 'Momentum is building'] : score >= 25 ? ['small_flame', 'You’re moving'] : ['spark', 'Start small']
 
   return {
+    billing: { connected: Boolean(billing?.stripe_customer_id), billingType: billing?.billing_type || null },
     profile: {
       clientId: String(client.client_id),
       name: String(client.full_name || client.first_name || user.email?.split('@')[0] || 'Member'),

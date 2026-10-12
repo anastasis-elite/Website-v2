@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { announceCalendarChange, calendarRequest, type CalendarConnection, type CalendarPreferences, type CalendarSettings } from '@/lib/calendar/client'
 import styles from './calendar.module.css'
@@ -43,6 +44,7 @@ function ConnectionCard({ connection, onRefresh, onReconnect }: { connection: Ca
 }
 
 export default function ConnectedCalendars() {
+  const router = useRouter()
   const [settings, setSettings] = useState<CalendarSettings | null>(null)
   const [preferences, setPreferences] = useState(initialPreferences)
   const [loading, setLoading] = useState(true)
@@ -68,7 +70,7 @@ export default function ConnectedCalendars() {
   async function action(work: () => Promise<void>) {
     if (lock.current) return
     lock.current = true; setBusy(true); setError(''); setNotice('')
-    try { await work() }
+    try { await work(); router.refresh() }
     catch (caught) { setError(caught instanceof Error ? caught.message : 'The connection could not be completed.') }
     finally { lock.current = false; setBusy(false) }
   }
@@ -94,9 +96,9 @@ export default function ConnectedCalendars() {
         <label>App-specific password<input type="password" value={password} autoComplete="off" onChange={event => setPassword(event.target.value)} required disabled={busy} /></label>
         <div className={styles.actions}><button type="submit" className={styles.primary} disabled={busy}>{busy ? 'Connecting…' : 'Connect iCloud'}</button><button type="button" disabled={busy} onClick={() => { setPassword(''); setShowICloud(false) }}>Cancel</button></div>
       </form></div> : null}
-    {settings?.connections.map(connection => <ConnectionCard key={connection.id} connection={connection} onRefresh={refresh} onReconnect={reconnect} />)}
+    {settings?.connections.map(connection => <ConnectionCard key={connection.id} connection={connection} onRefresh={async () => { await refresh(); router.refresh() }} onReconnect={reconnect} />)}
     {settings && !settings.connections.length ? <p className={styles.muted}>No external accounts connected. New events can be saved to your Anastasis calendar.</p> : null}
-    <details className={styles.account}><summary>Device calendars on iOS and Android</summary><p className={styles.muted}>Browser pages cannot access calendars stored on a phone. In the native Anastasis app, enable calendar permission and select device calendars. On Android, Google-backed calendars can also connect here through Google. iCloud account access and Apple device permission are separate connections.</p></details>
+    <details className={styles.account}><summary>Device calendars on iOS and Android</summary><p className={styles.muted}>Android is a device platform. Check the account behind each calendar: Google, iCloud, Microsoft/Exchange, another provider, or a calendar stored only on the device. Google accounts can connect here, including those used on Android. iCloud uses the connection above. Other accounts currently use calendars available through the native Anastasis app’s device permission; a direct Microsoft/Exchange or other-provider cloud connection is not available here.</p><p className={styles.muted}>Browser pages cannot access calendars stored on a phone. In the native app, enable calendar permission and select the named account and calendar. Device-store saves rely on that account’s device sync for cloud delivery. iCloud account access and Apple device permission are separate connections.</p></details>
     {settings ? <div className={styles.account}><h3>Scheduling preferences</h3><form className={styles.form} onSubmit={event => { event.preventDefault(); void action(async () => { await calendarRequest('/api/calendars/preferences', { method: 'PATCH', body: JSON.stringify(preferences) }); await refresh(); announceCalendarChange(); setNotice('Calendar preferences saved.') }) }}>
       <label>Default destination for new events<select value={preferences.default_calendar_id || ''} onChange={event => setPreferences(current => ({ ...current, default_calendar_id: event.target.value || null }))}><option value="">Anastasis calendar</option>{writable.map(calendar => <option key={calendar.id} value={calendar.id}>{calendar.name}</option>)}</select></label>
       <label>Time zone<input value={preferences.timezone} required placeholder="America/Chicago" onChange={event => setPreferences(current => ({ ...current, timezone: event.target.value }))} /></label>

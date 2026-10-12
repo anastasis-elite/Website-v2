@@ -14,6 +14,7 @@ import { zonedDateTimeToUtc } from '@/lib/schedule/time'
 import { getOpenWindows } from '@/lib/schedule/engine'
 import { getDailyScheduleState } from '@/lib/schedule/service'
 import { getClientTimeZone } from '@/lib/timezone'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const datePattern = /^\d{4}-\d{2}-\d{2}$/
@@ -38,6 +39,7 @@ export function validatedDraft(body:any):EventDraft {
  return draft
 }
 const ok = (data:unknown) => NextResponse.json(data,{headers:{'Cache-Control':'no-store'}})
+const changed = (data:unknown) => { invalidateDailyPlan(); return ok(data) }
 export const stateGET = async(request:Request) => {try{const c=await calendarContext(request);return ok(await listCalendarState(c.admin,c.user.id))}catch(e){return calendarError(e)}}
 export async function googleConnect(request:Request) {
  try {
@@ -63,6 +65,7 @@ export async function googleCallback(request:Request) {
   const connection=await linkAccount(admin,user.id,'google',identity.id,identity.email,creds)
   await discoverCalendars(admin,connection,creds)
   await syncConnection(admin,user.id,connection.id)
+  invalidateDailyPlan()
   redirect.searchParams.set('calendar_connected','1')
  }catch {redirect.searchParams.set('calendar_error','Google Calendar was not connected. Try connecting again from this signed-in browser.')}
  return NextResponse.redirect(redirect)
@@ -77,7 +80,7 @@ export async function icloudConnect(request:Request) {
   const connection=await linkAccount(admin,user.id,'icloud',email,email,credentials)
   await discoverCalendars(admin,connection,credentials)
   await syncConnection(admin,user.id,connection.id)
-  return ok({success:true})
+  return changed({success:true})
  }catch(e){return calendarError(e)}
 }
 export async function connectionPATCH(request:Request,id:string) {
@@ -104,11 +107,11 @@ export async function connectionPATCH(request:Request,id:string) {
   checkDb(await admin.from('calendar_connections').update({lease_id:null,lease_until:null,next_sync_at:new Date().toISOString()}).eq('id',id).eq('user_id',user.id).eq('lease_id',leaseId))
   leaseContext=undefined
   await syncConnection(admin,user.id,id)
-  return ok({success:true})
+  return changed({success:true})
  }catch(e){return calendarError(e)}
  finally {if(leaseContext) await leaseContext.admin.from('calendar_connections').update({lease_id:null,lease_until:null}).eq('id',id).eq('user_id',leaseContext.userId).eq('lease_id',leaseContext.leaseId)}
 }
-export async function connectionSync(request:Request,id:string) {try{const c=await calendarContext(request);await syncConnection(c.admin,c.user.id,id);return ok({success:true})}catch(e){return calendarError(e)}}
+export async function connectionSync(request:Request,id:string) {try{const c=await calendarContext(request);await syncConnection(c.admin,c.user.id,id);return changed({success:true})}catch(e){return calendarError(e)}}
 export async function connectionDELETE(request:Request,id:string) {
  try {
   const {admin,user}=await calendarContext(request),connection=await ownedConnection(admin,user.id,id)
@@ -118,7 +121,7 @@ export async function connectionDELETE(request:Request,id:string) {
   if(connection.provider==='google'&&stored.data?.[0]) try{creds=unseal(stored.data[0].encrypted_value,`${user.id}:${id}`)}catch{}
   const deleted=await admin.rpc('disconnect_calendar',{p_id:id,p_user:user.id});checkDb(deleted)
   if(creds) try{await revokeGoogleCredentials(creds)}catch{/* Local access is stopped; Google account permissions can also be removed manually. */}
-  return ok({success:true})
+  return changed({success:true})
  }catch(e){return calendarError(e)}
 }
 async function savePreferences(admin:any,userId:string,body:any) {
@@ -137,7 +140,7 @@ async function savePreferences(admin:any,userId:string,body:any) {
  if(String(row.preferred_start||old.data?.preferred_start||'07:00')>=String(row.preferred_end||old.data?.preferred_end||'21:00')) throw new CalendarHttpError(400,'Preferred hours must end after they start.')
  checkDb(await admin.from('calendar_preferences').upsert({...old.data,...row}))
 }
-export async function preferencesPATCH(request:Request) {try{const c=await calendarContext(request);await savePreferences(c.admin,c.user.id,await request.json());return ok({success:true})}catch(e){return calendarError(e)}}
+export async function preferencesPATCH(request:Request) {try{const c=await calendarContext(request);await savePreferences(c.admin,c.user.id,await request.json());return changed({success:true})}catch(e){return calendarError(e)}}
 export async function eventsGET(request:Request) {
  try {const c=await calendarContext(request),url=new URL(request.url),start=url.searchParams.get('start')||new Date().toISOString(),end=url.searchParams.get('end')||new Date(Date.now()+31*86400000).toISOString()
   if(!Number.isFinite(Date.parse(start))||!Number.isFinite(Date.parse(end))||Date.parse(end)<=Date.parse(start)||Date.parse(end)-Date.parse(start)>400*86400000) throw new CalendarHttpError(400,'Choose a calendar range of up to 400 days.')
@@ -170,14 +173,14 @@ export async function eventsWrite(request:Request,id?:string) {
  try {
   const {admin,user}=await calendarContext(request),body=await request.json(),method=request.method
   const operation=await writeOperation(admin,user.id,body,method,id||'new')
-  if(operation.response) return ok(operation.response)
+  if(operation.response) return changed(operation.response)
   let row:any,calendar:any,connection:any,creds:GoogleCredentials|ICloudCredentials|undefined,reconstructedDelete=false
   if(id) {
    const lookup=await admin.from('calendar_events').select('*').eq('id',id).eq('user_id',user.id).maybeSingle();checkDb(lookup);row=lookup.data
    if(!row && method==='DELETE' && operation.deletion_confirmed && operation.target_event_id===id) {
     const response={success:true,id,synced:operation.target_external===true}
     checkDb(await admin.from('calendar_write_operations').update({response}).eq('user_id',user.id).eq('idempotency_key',body.idempotency_key))
-    return ok(response)
+    return changed(response)
    }
    if(!row&&method==='DELETE'&&operation.retried&&operation.target_event_id===id&&operation.target_external===true&&operation.target_calendar_id&&operation.target_provider_event_id&&operation.target_provider_etag===body.expected_etag&&operation.connection_id) {
     // Only a server-recorded owned intent can survive a sync removing the imported row.
@@ -190,7 +193,7 @@ export async function eventsWrite(request:Request,id?:string) {
    if(method==='PATCH'&&!row.calendar_id&&operation.retried&&row.provider_payload?.metadata?.anastasisUpdateOperation===updateKey) {
     const response={success:true,id,synced:Boolean(row.calendar_id)}
     checkDb(await admin.from('calendar_write_operations').update({response}).eq('user_id',user.id).eq('idempotency_key',body.idempotency_key))
-    return ok(response)
+    return changed(response)
    }
    if(!body.expected_etag||(body.expected_etag!==row.etag && !(method==='PATCH'&&operation.retried&&row.calendar_id))) throw new CalendarHttpError(409,'This event changed. Refresh and review it before editing.')
    if((row.provider_payload.recurrence?.length||row.provider_payload.recurringEventId)&&body.scope!=='series') throw new CalendarHttpError(400,'Confirm an edit to the entire recurring series.')
@@ -255,7 +258,7 @@ export async function eventsWrite(request:Request,id?:string) {
    if(id&&method==='PATCH'&&operation.retried&&event.etag&&event.etag===row.etag&&row.event_type===eventType) {
     const response={success:true,id,synced:Boolean(calendar)}
     checkDb(await admin.from('calendar_write_operations').update({response}).eq('user_id',user.id).eq('idempotency_key',body.idempotency_key))
-    return ok(response)
+    return changed(response)
    }
    if(!row) {
     let previous=admin.from('calendar_events').select('id').eq('user_id',user.id).eq('provider_event_id',event.id)
@@ -265,7 +268,7 @@ export async function eventsWrite(request:Request,id?:string) {
    if(!id && row) {
     const response={success:true,id:row.id,synced:Boolean(calendar)}
     checkDb(await admin.from('calendar_write_operations').update({response}).eq('user_id',user.id).eq('idempotency_key',body.idempotency_key))
-    return ok(response)
+    return changed(response)
    }
    const hash=digest(`${user.id}:${body.idempotency_key}`),scopedId=`${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-9${hash.slice(17,20)}-${hash.slice(20,32)}`
    const values={user_id:user.id,calendar_id:calendarId,provider_event_id:event.id,provider_payload:event,event_type:eventType,etag:event.etag||event.updatedAt||randomUUID(),synced_at:new Date().toISOString()}
@@ -275,7 +278,7 @@ export async function eventsWrite(request:Request,id?:string) {
   }
   const response={success:true,id:row?.id||id,synced:Boolean(calendar)}
   checkDb(await admin.from('calendar_write_operations').update({response}).eq('user_id',user.id).eq('idempotency_key',body.idempotency_key))
-  return ok(response)
+  return changed(response)
  }catch(e){
   if(leaseContext && e instanceof ProviderError && ['reconnect_required','permission_denied','rate_limited','temporary_failure'].includes(e.code)) await leaseContext.admin.from('calendar_connections').update({status:e.code==='reconnect_required'?'reconnect_required':'error',error_code:e.code,error_message:e.message,next_sync_at:new Date(Date.now()+(e.retryAfterSeconds||60)*1000).toISOString()}).eq('id',leaseContext.connectionId).eq('user_id',leaseContext.userId).eq('lease_id',leaseContext.leaseId)
   return calendarError(e)
@@ -295,12 +298,16 @@ async function legacyWrite(admin:any,userId:string,body:any,method:string,id:str
  else {
   const draft=validatedDraft(body)
   if(draft.recurrence?.length||draft.reminders?.length||draft.location) throw new CalendarHttpError(400,'Create a new calendar event for recurrence, reminders or location.')
-  const edited=await admin.from('anastasis_schedule_events').update({title:draft.title,description:draft.description,start_at:draft.allDay?zonedDateTimeToUtc(draft.start,'00:00',draft.timeZone).toISOString():draft.start,end_at:draft.allDay?zonedDateTimeToUtc(draft.end,'00:00',draft.timeZone).toISOString():draft.end,timezone:draft.timeZone,all_day:draft.allDay,updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',userId).eq('updated_at',row.updated_at).select('id').maybeSingle();checkDb(edited)
+  const startAt=draft.allDay?zonedDateTimeToUtc(draft.start,'00:00',draft.timeZone).toISOString():draft.start
+  const endAt=draft.allDay?zonedDateTimeToUtc(draft.end,'00:00',draft.timeZone).toISOString():draft.end
+  // Retain the original schedule time when editing an already-rescheduled item.
+  const timing=row.adjusted_start_at?{adjusted_start_at:startAt,adjusted_end_at:endAt,adjusted_duration_minutes:(Date.parse(endAt)-Date.parse(startAt))/60000}:{start_at:startAt,end_at:endAt}
+  const edited=await admin.from('anastasis_schedule_events').update({title:draft.title,description:draft.description,...timing,timezone:draft.timeZone,all_day:draft.allDay,updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',userId).eq('updated_at',row.updated_at).select('id').maybeSingle();checkDb(edited)
   if(!edited.data) throw new CalendarHttpError(409,'This event changed during editing. Refresh and review it.')
  }
  const response={success:true,id,synced:false}
  checkDb(await admin.from('calendar_write_operations').update({response}).eq('user_id',userId).eq('idempotency_key',body.idempotency_key))
- return ok(response)
+ return changed(response)
 }
 export async function cronGET(request:Request) {
  const secret=process.env.CRON_SECRET
@@ -310,6 +317,7 @@ export async function cronGET(request:Request) {
   let synced=0,failed=0
   for(const row of due.data||[]) {try{await syncConnection(admin,row.user_id,row.id);synced++}catch{failed++}}
   checkDb(await admin.from('calendar_oauth_states').delete().lt('expires_at',now))
+  if(synced) invalidateDailyPlan()
   return ok({synced,failed})
  }catch(e){return calendarError(e)}
 }

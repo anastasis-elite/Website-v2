@@ -42,7 +42,7 @@ const supportedProgramTiers = new Set(['ember', 'ignite', 'phoenix'])
 
 export function normalizeProgramTier(value: unknown): ProgramTier {
   const normalized = String(value || '').trim().toLowerCase()
-  return supportedProgramTiers.has(normalized) ? normalized as ProgramTier : 'ignite'
+  return supportedProgramTiers.has(normalized) ? normalized as ProgramTier : 'ember'
 }
 
 const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {

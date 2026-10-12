@@ -652,7 +652,7 @@ export async function getProgramLogicEngine(
 
     workout: {
       assigned: Boolean(
-        inputs.plannedWorkout,
+        workoutDecision.assignedWorkout?.exercises?.length,
       ),
 
       completed: Boolean(

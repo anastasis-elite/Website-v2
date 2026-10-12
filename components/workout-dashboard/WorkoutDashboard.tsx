@@ -15,6 +15,8 @@ import {
   type MuscleReadiness,
 } from '@/lib/workout/muscleReadiness'
 import type { ProgramTier, ProgramLogicOutput } from '@/lib/dashboard/logic/types'
+import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
+import { activityDose, summarizeActivityUnits } from '@/lib/workout/activity'
 
 type Tab = 'progress' | 'strength' | 'recovery' | 'history'
 
@@ -81,10 +83,9 @@ function exerciseName(exercise: AssignedExercise) {
 
 function exerciseDose(exercise: AssignedExercise) {
   if (exercise.duration_label) return exercise.duration_label
-  const sets = exercise.sets ?? '-'
-  const reps = exercise.recommended_reps ?? exercise.reps ?? exercise.target_reps ?? '-'
-  const weight = Number(exercise.recommended_weight ?? exercise.calculated_weight ?? 0)
-  return `${sets} sets · ${reps} reps${Number.isFinite(weight) && weight > 0 ? ` · ${Math.round(weight)} lb` : ''}`
+  const dose = activityDose(exercise)
+  if (dose.metric === 'completion') return 'Complete the movement comfortably'
+  return `${dose.kind === 'strength' ? `${dose.sets} sets · ` : ''}${dose.prescribed || 'Choose a comfortable amount'} ${dose.metric}${dose.weight > 0 ? ` · ${dose.weight} ${dose.unit}` : ''}`
 }
 
 function titleCaseMuscle(value: string) {
@@ -120,13 +121,13 @@ function WorkoutPreview({ exercises, previewTitle, previewMessage }: { exercises
 }
 
 function ProgressTab({ logic, exercises }: { logic: ProgramLogicOutput; exercises: AssignedExercise[] }) {
-  const totalSets = exercises.reduce((sum, exercise) => sum + Number(exercise.sets || 0), 0)
-  const totalReps = exercises.reduce((sum, exercise) => sum + Number(exercise.recommended_reps ?? exercise.reps ?? 0) * Number(exercise.sets || 1), 0)
+  const totals = summarizeActivityUnits(exercises)
 
   return (
     <div className="workout-tab-grid" data-testid="workout-progress-tab">
       <article><span>Completion</span><strong>{logic.execution.workoutComplete ? 'Complete' : 'Open'}</strong><small>{logic.workout.assigned ? logic.workout.title : 'Recovery movement'}</small></article>
-      <article><span>Session Volume</span><strong>{totalSets || '--'} sets</strong><small>{totalReps || '--'} prescribed repetitions</small></article>
+      <article><span>Strength Volume</span><strong>{totals.sets} sets</strong><small>{totals.reps} prescribed repetitions</small></article>
+      <article><span>Activity Dose</span><strong>{Math.round(totals.minutes * 10) / 10} min · {totals.breaths} breaths</strong><small>{totals.activities} completion-based movement{totals.activities === 1 ? '' : 's'}</small></article>
       <article><span>Duration</span><strong>{logic.workout.durationMinutes ? `${logic.workout.durationMinutes} min` : 'Not set'}</strong><small>From the current workout source</small></article>
       <article><span>Progression</span><strong>{logic.workoutDecision.allowLoadProgression ? 'Open' : 'Hold'}</strong><small>{logic.workoutDecision.intensityTarget}</small></article>
     </div>
@@ -183,12 +184,13 @@ export default function WorkoutDashboard(props: Props) {
   const [tab, setTab] = useState<Tab>('progress')
   const [workoutMode, setWorkoutMode] = useState<'recommended' | 'manual'>('recommended')
   const [highlightedMuscles, setHighlightedMuscles] = useState<MuscleId[]>([])
+  const training = getDailyTraining(props.logic)
   const focus = useMemo(() => summarizeWorkoutMuscleFocus(props.assignedExercises).slice(0, 3), [props.assignedExercises])
 
   return (
     <section className="workout-dashboard-workspace" data-tier={props.program}>
       <article className="tier-daily-insight workout-objective" data-testid="workout-objective">
-        <p className="tier-dashboard-label">Today&apos;s Training</p>
+        <p className="tier-dashboard-label">{training.label}</p>
         <div>
           <h1>{props.workoutTitle}</h1>
           <WorkoutFeedback
@@ -200,6 +202,7 @@ export default function WorkoutDashboard(props: Props) {
           />
         </div>
         <p>{props.logic.workoutDecision.intensityTarget}. {props.logic.workoutDecision.reasonForModification}</p>
+        <p>{training.readinessNote}</p>
         {focus.length ? <small>Primary emphasis: {focus.map(titleCaseMuscle).join(' + ')}</small> : null}
       </article>
 

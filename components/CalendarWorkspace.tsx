@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { announceCalendarChange, calendarRequest, useCalendarEvents, type CalendarSettings, type UnifiedCalendarEvent } from '@/lib/calendar/client'
 import { dateTimeInZone, eventPayloadFromDraft, type CalendarEventDraft } from '@/lib/calendar/form'
 import { addLocalDays } from '@/lib/timezone'
@@ -28,6 +28,11 @@ export default function CalendarWorkspace({ date: initialDate, timezone: initial
   const start = zonedDateTimeToUtc(date, '00:00', timezone).toISOString()
   const end = zonedDateTimeToUtc(addLocalDays(date, 1), '00:00', timezone).toISOString()
   const { events, calendars, loading, error: loadError, refresh } = useCalendarEvents(start, end, timezone)
+  const eventAnchors = useMemo(() => {
+    const anchors = new Map<string, string>()
+    for (const event of events) if (!anchors.has(event.id)) anchors.set(event.id, occurrenceKey(event))
+    return anchors
+  }, [events])
   const [draft, setDraft] = useState(() => newDraft(initialDate, initialTimezone))
   const [editing, setEditing] = useState<UnifiedCalendarEvent | null>(null)
   const [deleting, setDeleting] = useState<UnifiedCalendarEvent | null>(null)
@@ -148,7 +153,7 @@ export default function CalendarWorkspace({ date: initialDate, timezone: initial
     {notice ? <p role="status" className={styles.success}>{notice}</p> : null}
     <div className={styles.layout}><div>
       {loading ? <p role="status">Loading events…</p> : null}
-      <ul className={styles.events}>{events.map(event => <li key={occurrenceKey(event)} className={styles.event}>
+      <ul className={styles.events}>{events.map(event => <li key={occurrenceKey(event)} id={eventAnchors.get(event.id) === occurrenceKey(event) ? `calendar-event-${event.id}` : undefined} className={styles.event}>
         <span className={styles.badge}>{event.source_label || (event.calendar_id ? 'Connected calendar' : 'Anastasis')}</span>{!event.writable ? <> <span className={styles.badge}>Read only</span></> : null}
         <h3>{event.title}</h3><time>{rangeLabel(event, timezone)}</time>{event.location ? <p>{event.location}</p> : null}{isRecurring(event) ? <small>Repeating event · changes apply to the entire series</small> : null}
         {event.writable ? <div className={styles.actions}><button type="button" onClick={() => editEvent(event)} disabled={saving}>Edit{isRecurring(event) ? ' series' : ''}</button><button type="button" className={styles.danger} disabled={saving} onClick={() => { deletionKey.current = null; setDeleting(event); setError('') }}>Delete{isRecurring(event) ? ' series' : ''}</button></div> : null}

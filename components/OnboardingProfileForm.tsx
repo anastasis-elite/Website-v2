@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as styles from '@/app/styles/globalstyles'
 
-export default function OnboardingProfileForm({ client }: { client: any }) {
+export default function OnboardingProfileForm({ client, setupStep = 'dashboard' }: { client: any; setupStep?: 'initial_assessment' | 'strength_assessment' | 'plan_generation' | 'dashboard' }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -330,7 +330,7 @@ export default function OnboardingProfileForm({ client }: { client: any }) {
         disabled={loading}
         style={{ ...styles.primaryButtonStyle, marginTop: 24 }}
       >
-        {loading ? 'Saving...' : 'Complete Profile'}
+        {loading ? 'Saving...' : setupStep === 'dashboard' ? 'Save Profile & Open Dashboard' : setupStep === 'plan_generation' ? 'Save Profile & Create Plan' : 'Save Profile & Continue Assessment'}
       </button>
 
       {message ? <p style={styles.bodyStyle}>{message}</p> : null}

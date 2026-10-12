@@ -3,7 +3,7 @@ import { getAccountData } from '@/lib/dashboard/account/getAccountData'
 import AccountDashboard from '@/components/account/AccountDashboard'
 
 export default async function AccountPage() {
-  const { client, user, supabase } = await getDashboardContext()
+  const { client, user, supabase } = await getDashboardContext({ allowInactiveAccess: true, allowIncompleteOnboarding: true })
   const data = await getAccountData({ client, user, supabase })
   const profileFormData = {
     full_name: client.full_name || null,

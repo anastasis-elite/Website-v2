@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import * as styles from '../../../styles/globalstyles'
 
 type ClientData = {
@@ -43,6 +44,7 @@ export default function Start2Content({ client }: { client: ClientData }) {
 
   const [status, setStatus] = useState<'idle' | 'submitting' | 'error'>('idle')
   const [message, setMessage] = useState('')
+  const [retrySavedPlan, setRetrySavedPlan] = useState(false)
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -59,6 +61,7 @@ export default function Start2Content({ client }: { client: ClientData }) {
     e.preventDefault()
     setStatus('submitting')
     setMessage('')
+    setRetrySavedPlan(false)
 
     try {
       const res = await fetch('/api/assessment-strength', {
@@ -74,6 +77,7 @@ export default function Start2Content({ client }: { client: ClientData }) {
       const data = await res.json()
 
       if (!res.ok) {
+        setRetrySavedPlan(data.baselineSaved === true && data.retryRoute === '/dashboard/onboarding/plan')
         throw new Error(data.error || 'Assessment 2 submission failed')
       }
 
@@ -338,6 +342,7 @@ export default function Start2Content({ client }: { client: ClientData }) {
               {message}
             </p>
           ) : null}
+          {retrySavedPlan ? <Link href="/dashboard/onboarding/plan" style={styles.secondaryButtonStyle}>Create Plan From Saved Assessments</Link> : null}
         </form>
       </div>
     </main>

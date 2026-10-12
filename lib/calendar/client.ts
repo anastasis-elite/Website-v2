@@ -21,6 +21,7 @@ export type UnifiedCalendarEvent = {
   reminders_default?: boolean; calendar_provider?: string
 }
 export type CalendarEventsResponse = { events: UnifiedCalendarEvent[]; calendars: ConnectedCalendar[] }
+export const CALENDAR_CHANGE_STORAGE_KEY = 'anastasis:calendar-updated'
 
 export class CalendarRequestError extends Error {
   constructor(message: string, public status: number) { super(message); this.name = 'CalendarRequestError' }
@@ -55,11 +56,18 @@ export function useCalendarEvents(start: string, end: string, timezone?: string)
     setData({events:[],calendars:[]})
     void refresh()
     const onVisible = () => { if (document.visibilityState === 'visible') void refresh() }
+    const onStoredChange = (event: StorageEvent) => { if (event.key === CALENDAR_CHANGE_STORAGE_KEY) onVisible() }
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('calendar-events-updated', onVisible)
-    return () => { invalidate(); document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('calendar-events-updated', onVisible) }
+    window.addEventListener('focus', onVisible)
+    window.addEventListener('storage', onStoredChange)
+    return () => { invalidate(); document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('calendar-events-updated', onVisible); window.removeEventListener('focus', onVisible); window.removeEventListener('storage', onStoredChange) }
   }, [refresh, invalidate])
   return { ...data, loading, error, refresh }
 }
 
-export function announceCalendarChange() { window.dispatchEvent(new Event('calendar-events-updated')) }
+export function announceCalendarChange() {
+  window.dispatchEvent(new Event('calendar-events-updated'))
+  try { window.localStorage.setItem(CALENDAR_CHANGE_STORAGE_KEY, `${Date.now()}:${Math.random()}`) }
+  catch { /* Local refresh still works when browser storage is disabled. */ }
+}
