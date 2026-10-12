@@ -18,7 +18,7 @@ export default function ScheduleDashboardClient({ initialSchedule }: { initialSc
   useDailyScheduleRefresh(schedule)
   return <main className="schedule-page"><div className="schedule-shell">
     <header className="schedule-hero"><div><p className="schedule-label">{schedule.date} · {schedule.timezone}</p><h1>Your day, with room to breathe</h1><p>Keep appointments in view and choose time for what supports you.</p></div></header>
-    {schedule.dailyRecommendation ? <DailyPlanCard plan={schedule.dailyRecommendation} compact /> : null}
+    {schedule.dailyRecommendation ? <DailyPlanCard plan={schedule.dailyRecommendation} compact autoRefresh={false} /> : null}
     <CalendarWorkspace date={schedule.date} timezone={schedule.timezone} />
     <section className="schedule-panel" aria-label="Anastasis activities and daily structure">
       <div className="schedule-section-heading"><h2>Anastasis activities and daily structure</h2><span>{schedule.date}</span></div>

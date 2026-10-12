@@ -139,9 +139,13 @@ test('shared symptom answers deduplicate names without fabricating severity or c
  assert.equal(result.length,2);assert.equal(result.find(r=>r.id==='a').severity,4);assert.equal(result.find(r=>r.symptom_name==='fatigue').severity,null);assert.deepEqual(logs,saved)
 })
 
-test('current calendar commitments lead What’s Next while urgent recovery keeps priority',()=>{
+test('check-in leads before current commitments; saved check-in exposes commitments and urgent recovery keeps priority',()=>{
  const logic=fixture(),state=schedule()
  state.events=[{id:'calendar-current',title:'School pickup',source:'external_calendar',source_label:'Google · Family',event_type:'personal',flexibility_type:'fixed',status:'scheduled',start_at:'2026-10-08T20:00:00Z',end_at:'2026-10-08T21:00:00Z',adjusted_start_at:null,adjusted_end_at:null}]
+ state.dailyRecommendation=buildDailyRecommendation(logic,state)
+ assert.equal(state.dailyRecommendation.primary.id,'check-in')
+ assert.equal(state.dailyRecommendation.supporting[0].id,'calendar-current')
+ logic.assessments.dailyCompleted=true
  state.dailyRecommendation=buildDailyRecommendation(logic,state)
  assert.equal(state.dailyRecommendation.primary.id,'calendar-current')
  const next=buildWhatsNextState({tier:'ignite',capabilities:getTierCapabilities('ignite'),logic,schedule:state})

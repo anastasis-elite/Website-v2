@@ -6,7 +6,7 @@ const directory=resolve(root,'app/local-dashboard-qa')
 const mode=process.argv[2]
 if(!['--install','--remove'].includes(mode)) throw new Error('Use --install before local browser QA, then --remove before building.')
 if(process.env.NODE_ENV==='production') throw new Error('This fixture is only for isolated local development.')
-const names=['page.tsx','QAClient.tsx']
+const names=['page.tsx','QAClient.tsx','transport.ts']
 const content=await Promise.all(names.map(name=>readFile(resolve(root,'tests/fixtures/dashboard',name+'.fixture'),'utf8')))
 // Check everything before making a change. Preserve any user-created or edited files.
 const existing=await Promise.all(names.map(name=>readFile(resolve(directory,name),'utf8').catch(error=>{if(error.code==='ENOENT')return null;throw error})))

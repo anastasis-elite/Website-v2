@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import DailyPlanCard from '@/components/DailyPlanCard'
 import DailyDisplayPreferences from '@/components/DailyDisplayPreferences'
+import { useViewPreference } from '@/components/dashboard/useViewPreference'
 import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
 import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
 import { addLocalDays, getLocalDaypart } from '@/lib/timezone'
@@ -13,11 +14,11 @@ import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import { formatLocalTime, zonedDateTimeToUtc } from '@/lib/schedule/time'
 import { useCalendarEvents } from '@/lib/calendar/client'
-import { useDailyScheduleRefresh } from '@/lib/schedule/client'
 import { getActionRouteForEvent } from '@/lib/schedule/engine'
 import { getTierCapabilities, type ProgramTier } from '@/lib/entitlements'
 import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
 import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashboardData'
+import { calendarSuggestionKey, filterDismissedCalendarSuggestions, readCalendarDismissals, writeCalendarDismissals } from '@/lib/calendar/dismissals'
 import {
   addDays,
   addMonths,
@@ -28,6 +29,7 @@ import {
   itemsForDate,
   parseDateKey,
   visibleEventDates,
+  summarizeCalendarItems,
   type CalendarDisplayItem,
 } from '@/lib/calendar/view'
 
@@ -57,15 +59,25 @@ function overlapsDaypart(item: ConnectedDisplayItem, date: string, daypart: Dayp
 function DashboardCalendar({
   schedule,
   planBlocks,
+  clientId,
 }: {
   schedule: DailyScheduleState
   planBlocks: PlanBlock[]
+  clientId: string
 }) {
-  const [dateExplicit,setDateExplicit]=useState(false);const [segmentExplicit,setSegmentExplicit]=useState(false)
-  const [mode, setMode] = useState<CalendarMode>('day')
+  const [dateExplicit,setDateExplicit]=useState(false)
+  const [mode, setMode] = useViewPreference<CalendarMode>(clientId, 'calendar-mode', ['day', 'week', 'month'], 'day')
+  const [daypartPreference, setDaypartPreference] = useViewPreference<Daypart | 'auto'>(clientId, 'calendar-daypart', ['auto', 'morning', 'midday', 'evening'], 'auto')
   const [selectedDate, setSelectedDate] = useState(schedule.date)
-  const [daypart, setDaypart] = useState<Daypart>(() => getLocalDaypart(new Date(schedule.now), schedule.timezone))
-  useEffect(()=>{if(!dateExplicit)setSelectedDate(schedule.date);if(!segmentExplicit&&!dateExplicit)setDaypart(getLocalDaypart(new Date(schedule.now),schedule.timezone))},[schedule.date,schedule.now,schedule.timezone,dateExplicit,segmentExplicit])
+  const daypart = daypartPreference === 'auto' ? getLocalDaypart(new Date(schedule.now), schedule.timezone) : daypartPreference
+  const [dismissed, setDismissed] = useState<string[]>([])
+  const [dismissalNotice, setDismissalNotice] = useState('')
+  useEffect(()=>{if(!dateExplicit)setSelectedDate(schedule.date)},[schedule.date,dateExplicit])
+  useEffect(() => {
+    try { setDismissed(readCalendarDismissals(window.localStorage, clientId, schedule.date)) }
+    catch { setDismissed([]) }
+    setDismissalNotice('')
+  }, [clientId, schedule.date])
   const dateRange = calendarQueryDateRange(selectedDate)
   const rangeStartDate = dateRange.start
   const rangeEndDate = dateRange.end
@@ -77,8 +89,8 @@ function DashboardCalendar({
     const existing = schedule.events.filter(event => !['cancelled', 'skipped'].includes(event.status) && !persistedKeys.has(`${event.calendar_event_id || event.id}:${event.start_at}`))
     const planItems = buildCalendarItems(existing, schedule.openWindows, schedule.timezone).map(item => ({ ...item, source_label: item.event?.source_label, all_day: item.event?.all_day }))
     const accountItems: ConnectedDisplayItem[] = connected.events.flatMap(event => visibleEventDates(event, schedule.timezone, rangeStartDate, rangeEndDate).map(date => ({ id: `connected:${event.id}:${event.occurrence_start || event.start_at}:${date}`, title: event.title, date, start_at: event.start_at, end_at: event.end_at, source: event.calendar_id ? 'external_calendar' : 'user_created', event_type: event.event_type || 'personal', status: event.calendar_id ? 'Synced' : 'Saved', suggested: false, source_label: event.source_label, all_day: event.all_day } as ConnectedDisplayItem)))
-    return [...planItems, ...accountItems].sort((a, b) => a.start_at.localeCompare(b.start_at))
-  }, [schedule.events, schedule.openWindows, schedule.timezone, connected.events, rangeStartDate, rangeEndDate])
+    return filterDismissedCalendarSuggestions([...planItems, ...accountItems], dismissed).sort((a, b) => a.start_at.localeCompare(b.start_at))
+  }, [schedule.events, schedule.openWindows, schedule.timezone, connected.events, rangeStartDate, rangeEndDate, dismissed])
   const selectedItems = itemsForDate(items, selectedDate)
   const monthCells = buildMonthGrid({ selectedDate, items, today: schedule.date })
   const weekDays = buildWeekDays(selectedDate, items)
@@ -106,6 +118,15 @@ function DashboardCalendar({
   function today() {
     setDateExplicit(false)
     setSelectedDate(schedule.date)
+    setDaypartPreference('auto')
+  }
+
+  function saveDismissals(next: string[]) {
+    let saved = false
+    try { saved = writeCalendarDismissals(window.localStorage, clientId, schedule.date, next) }
+    catch { /* Browser storage itself may be unavailable. */ }
+    setDismissed(next)
+    setDismissalNotice(saved ? next.length ? 'Suggestion hidden in this browser. Your activities remain available in Schedule.' : 'Suggestions restored.' : 'Updated for this visit. Browser storage is unavailable, so this choice may return after reload.')
   }
 
   const selected = parseDateKey(selectedDate)
@@ -125,7 +146,7 @@ function DashboardCalendar({
         </div>
         <div className="tier-segmented-control" role="tablist" aria-label="Calendar view">
           {(['day', 'week', 'month'] as CalendarMode[]).map((item) => (
-            <button key={item} type="button" className={mode === item ? 'is-active' : ''} onClick={() => setMode(item)}>
+            <button key={item} type="button" role="tab" aria-selected={mode === item} className={mode === item ? 'is-active' : ''} onClick={() => setMode(item)}>
               {item}
             </button>
           ))}
@@ -138,25 +159,31 @@ function DashboardCalendar({
         <button type="button" onClick={() => go(1)}>Next</button>
         <Link href="/dashboard/settings/calendars">Connected calendars</Link>
         <Link href="/dashboard/schedule#connected-calendar">Add or manage events</Link>
+        {dismissed.length ? <button type="button" onClick={() => saveDismissals([])}>Restore dismissed suggestions</button> : null}
       </div>
+      {dismissalNotice ? <p role="status" className="tier-calendar-empty">{dismissalNotice}</p> : null}
       {connected.error ? <p role="alert" className="tier-calendar-empty">{connected.error} <Link href="/dashboard/settings/calendars">Review connection</Link></p> : null}
 
       {mode === 'month' ? (
         <div className="tier-month-calendar" data-testid="calendar-month-grid">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <span key={day} className="tier-month-weekday">{day}</span>)}
-          {monthCells.map((cell) => (
-            <button
-              key={cell.date}
-              type="button"
-              className={`tier-month-cell${cell.inMonth ? '' : ' is-muted'}${cell.isSelected ? ' is-selected' : ''}${cell.isToday ? ' is-today' : ''}`}
-              onClick={() => selectDate(cell.date)}
-              aria-label={`Open ${cell.date}`}
-            >
-              <span>{cell.day}</span>
-              {cell.items.length ? <strong>{cell.items.length}</strong> : null}
-              <div>{cell.items.slice(0, 2).map((item) => <i key={item.id} data-source={item.source}>{item.suggested ? 'Suggested' : item.title}</i>)}</div>
-            </button>
-          ))}
+          {monthCells.map((cell) => {
+            const counts = summarizeCalendarItems(cell.items)
+            const activities = cell.items.filter(item => item.source !== 'suggestion')
+            return (
+              <button
+                key={cell.date}
+                type="button"
+                className={`tier-month-cell${cell.inMonth ? '' : ' is-muted'}${cell.isSelected ? ' is-selected' : ''}${cell.isToday ? ' is-today' : ''}`}
+                onClick={() => selectDate(cell.date)}
+                aria-label={`Open ${cell.date}${counts.events ? `, ${counts.events} event${counts.events === 1 ? '' : 's'}` : ''}${counts.suggestions ? `, ${counts.suggestions} suggestion${counts.suggestions === 1 ? '' : 's'}` : ''}`}
+              >
+                <span>{cell.day}</span>
+                {counts.events ? <strong>{counts.events}</strong> : null}
+                <div>{activities.slice(0, 2).map((item) => <i key={item.id} data-source={item.source}>{item.suggested ? 'Suggested' : item.title}</i>)}{!activities.length && counts.available ? <i data-source="suggestion">Open time</i> : null}</div>
+              </button>
+            )
+          })}
         </div>
       ) : null}
 
@@ -186,13 +213,13 @@ function DashboardCalendar({
         <div className="tier-day-calendar" data-testid="calendar-day-view">
           <div className="tier-daypart-control" role="tablist" aria-label="Day plan time">
             {(['morning', 'midday', 'evening'] as Daypart[]).map((item) => (
-              <button key={item} type="button" className={daypart === item ? 'is-active' : ''} onClick={() => {setSegmentExplicit(true);setDaypart(item)}}>
+              <button key={item} type="button" role="tab" aria-selected={daypart === item} className={daypart === item ? 'is-active' : ''} onClick={() => setDaypartPreference(item)}>
                 {item}
               </button>
             ))}
           </div>
           {daypartItems.length ? daypartItems.map((item) => (
-            <CalendarPill key={item.id} item={item} timezone={schedule.timezone} detailed />
+            <CalendarPill key={item.id} item={item} timezone={schedule.timezone} detailed onDismiss={() => saveDismissals([...dismissed, calendarSuggestionKey(item)])} />
           )) : <p className="tier-calendar-empty">No scheduled items for this part of the day.</p>}
           {showTodayPlan ? (
             <div className="tier-daypart-plan" data-testid="calendar-daypart-plan">
@@ -404,10 +431,12 @@ function CalendarPill({
   item,
   timezone,
   detailed = false,
+  onDismiss,
 }: {
   item: ConnectedDisplayItem
   timezone: string
   detailed?: boolean
+  onDismiss?: () => void
 }) {
   return (
     <article className={`tier-calendar-pill source-${item.source}${item.suggested ? ' is-suggestion' : ''}`}>
@@ -418,7 +447,8 @@ function CalendarPill({
           <small>{item.event_type.replaceAll('_', ' ')} · {item.source_label || item.source.replaceAll('_', ' ')}</small>
           {item.suggested ? (
             <div className="tier-suggestion-actions">
-              <Link href="/dashboard/schedule">Review suggestion</Link>
+              <Link href={item.event ? `/dashboard/schedule#event-${item.event.id}` : '/dashboard/schedule#connected-calendar'}>Review suggestion</Link>
+              {onDismiss ? <button type="button" onClick={onDismiss}>Dismiss time</button> : null}
             </div>
           ) : item.event ? (
             <small>{eventRange(item.event, timezone)} · {item.status}</small>
@@ -439,8 +469,7 @@ export default function TierAwareDashboardWorkspace({
   schedule: DailyScheduleState
   recipes?: PhoenixRecipe[]
 }) {
-  const [tab, setTab] = useState<PanelTab>('progress')
-  useDailyScheduleRefresh(schedule)
+  const [tab, setTab] = useViewPreference<PanelTab>(logic.client.id, 'home-panel', ['progress', 'assessments', 'trends'], 'progress')
   const capabilities = getTierCapabilities(tier)
   const planBlocks = useMemo(() => buildPlanBlocks(tier, logic), [tier, logic])
 
@@ -452,18 +481,19 @@ export default function TierAwareDashboardWorkspace({
     (new Date(event.adjusted_end_at || event.end_at) > new Date(schedule.now) || overdueIds.has(event.id))).slice(0, 3)
   return (
     <section className="tier-dashboard-workspace daily-home" data-tier={tier} data-quiet={quiet}>
-      <DailyPlanCard plan={plan} />
+      <DailyPlanCard plan={plan} schedule={schedule} />
       <DailyDisplayPreferences {...schedule.preferences} />
-      {quiet ? <p className="daily-quiet-note">One step is enough for now. Your schedule and details are here whenever you need them.</p> : <section className="daily-essentials" aria-label="Daily essentials">
-        {plan.supporting.map(action => <Link key={action.id} href={action.href}><strong>{action.title}</strong><span>{action.reason}</span></Link>)}
-      </section>}
+      {quiet ? <p className="daily-quiet-note">One step is enough for now. Your other actions are available below.</p> : null}
+      <section className="daily-essentials" aria-label="Daily essentials">
+        {plan.supporting.map(action => <Link key={action.id} href={action.href}><strong>{action.title}</strong>{quiet ? null : <span>{action.reason}</span>}</Link>)}
+      </section>
       {quiet ? <details className="daily-disclosure"><summary>Schedule and progress</summary><SchedulePreview preview={preview} flexible={flexible} schedule={schedule} logic={logic} plan={plan} /></details> : <SchedulePreview preview={preview} flexible={flexible} schedule={schedule} logic={logic} plan={plan} />}
       <details className="daily-disclosure" id="progress"><summary>Progress, assessments, and details</summary>
         <div className="tier-tab-list" aria-label="Dashboard information">
           {(['progress', 'assessments', 'trends'] as PanelTab[]).map(item => <button key={item} type="button" aria-pressed={tab === item} className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>{item}</button>)}
         </div>
         {tab === 'progress' ? <ProgressTab logic={logic} tier={tier} /> : tab === 'assessments' ? <AssessmentsTab logic={logic} capabilities={capabilities} /> : <TrendsTab logic={logic} />}
-        <details><summary>Detailed calendar</summary><DashboardCalendar schedule={schedule} planBlocks={planBlocks} /></details>
+        <details><summary>Detailed calendar</summary><DashboardCalendar schedule={schedule} planBlocks={planBlocks} clientId={logic.client.id} /></details>
       </details>
     </section>
   )

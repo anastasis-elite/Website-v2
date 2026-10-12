@@ -129,6 +129,7 @@ function normalizeKey(value: unknown) {
 }
 
 export function normalizeEquipmentName(value: unknown) {
+  if (String(value || '').trim() === '*') return '*'
   const key = normalizeKey(value)
   return EQUIPMENT_ALIASES[key] || key
 }
@@ -257,7 +258,9 @@ export function filterManualExercises({
   search?: string
 }) {
   const query = search.trim().toLowerCase()
-  const selectedEquipment = normalizeEquipmentList(equipment)
+  // This is an explicit filter choice, rather than a member inventory. Do not
+  // inject bodyweight and return unrelated movements after choosing a dumbbell.
+  const selectedEquipment = equipment.map(normalizeEquipmentName).filter(Boolean)
 
   return getManualWorkoutLibrary().filter((exercise) => {
     const exerciseMuscles = new Set(normalizeExerciseMuscles(exercise))

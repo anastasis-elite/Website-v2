@@ -2,8 +2,10 @@
 
 import { useRef,useState } from 'react'
 import { getClientLocalDate } from '@/lib/timezone'
-import { activityDose } from '@/lib/workout/activity'
+import { activityDose, isBodyweightExercise, summarizeStrengthSets } from '@/lib/workout/activity'
+import { manualSetStorageKey, parseStrengthSetInput } from '@/lib/workout/logging'
 import ActivityWorkoutTracker from '@/components/ActivityWorkoutTracker'
+import WorkoutSetEditor from '@/components/workout-dashboard/WorkoutSetEditor'
 import { useRouter } from 'next/navigation'
 
 type ExerciseVariant = {
@@ -143,6 +145,7 @@ export default function WorkoutTracker(props: Props) {
   if (props.workoutSource === 'manual' && props.exercises.length === 1 && activityDose(props.exercises[0]).kind === 'strength') {
     return (
       <ManualSetLogger
+        key={manualSetStorageKey(props.clientId, props.program, props.exercises[0], getWorkoutSessionDate(props.timezone))}
         clientId={props.clientId}
         authUserId={props.authUserId}
         program={props.program}
@@ -242,9 +245,7 @@ function getWorkoutSessionDate(timezone = 'America/Chicago'): string { return ge
 
 function buildManualWorkoutLog(exercise: Exercise, sets: ManualSetLog[]): WorkoutLog {
   const totalReps = sets.reduce((sum, set) => sum + set.reps, 0)
-  const averageWeight = sets.length
-    ? Math.round(sets.reduce((sum, set) => sum + set.weight * (set.weight_unit === 'kg' ? 2.2046226218 : 1), 0) / sets.length)
-    : 0
+  const actuals = summarizeStrengthSets(sets)
   const selectedVariant = exercise.available_variants?.find((variant) => variant.id === exercise.selected_variant_id)
   const firstSet = sets[0]
 
@@ -268,8 +269,7 @@ function buildManualWorkoutLog(exercise: Exercise, sets: ManualSetLog[]): Workou
     planned_weight: getRecommendedWeight(exercise),
     baseline_reps: getBaselineReps(exercise),
     baseline_weight: getBaselineWeight(exercise),
-    actual_weight: averageWeight,
-    actual_reps: totalReps,
+    ...actuals,
     cycle_adjustment_label: exercise.cycle_adjustment_label || 'Manual training load',
     cycle_adjustment_note: exercise.cycle_adjustment_note || '',
     cycle_caution_active: Boolean(exercise.cycle_caution_active),
@@ -278,7 +278,7 @@ function buildManualWorkoutLog(exercise: Exercise, sets: ManualSetLog[]): Workou
     client_cues: (exercise.client_cues || []).slice(0, 3),
     rest_seconds: exercise.rest_seconds || null,
     rpe_target: exercise.rpe_target || '',
-    duration_label: sets.length ? `${sets.length} sets · ${totalReps} total reps · ${averageWeight} lb avg` : '',
+    duration_label: sets.length ? `${sets.length} sets · ${totalReps} total reps · ${Math.round(actuals.actual_weight * 10) / 10} lb avg` : '',
     started_at: firstSet?.set_started_at,
     finished_at: sets[sets.length - 1]?.completed_at,
     set_logs: sets,
@@ -313,11 +313,11 @@ function ManualSetLogger({
   const router = useRouter()
   const lock = useRef(false)
   const dose = activityDose(exercise, weightUnit)
-  const storageKey = `aos-manual-sets:${clientId}:${program}:${getExerciseName(exercise)}:${getWorkoutSessionDate(timezone)}`
+  const storageKey = manualSetStorageKey(clientId, program, exercise, getWorkoutSessionDate(timezone))
   const [exerciseStartedAt] = useState(() => new Date().toISOString())
   const [setStartedAt, setSetStartedAt] = useState(() => new Date().toISOString())
-  const [weight, setWeight] = useState(() => dose.weight)
-  const [reps, setReps] = useState(() => getRecommendedReps(exercise) || 10)
+  const [weight, setWeight] = useState(() => String(dose.weight))
+  const [reps, setReps] = useState(() => String(getRecommendedReps(exercise) || 10))
   const [sets, setSets] = useState<ManualSetLog[]>(() => {
     if (typeof window === 'undefined') return []
     try {
@@ -330,12 +330,14 @@ function ManualSetLogger({
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
-  const loadLabel = getLoadLabel(exercise.load_type || 'total_load')
+  const bodyweight = isBodyweightExercise(exercise)
+  const loadLabel = bodyweight ? 'no added load' : getLoadLabel(exercise.load_type || 'total_load')
   const nextSetNumber = sets.length + 1
 
   function persistDraft(nextSets: ManualSetLog[]) {
-    if (typeof window === 'undefined') return
-    window.localStorage.setItem(storageKey, JSON.stringify(nextSets))
+    if (typeof window === 'undefined') return true
+    try { window.localStorage.setItem(storageKey, JSON.stringify(nextSets)); return true }
+    catch { return false }
   }
 
   async function persistSets(nextSets: ManualSetLog[], finishedAt?: string) {
@@ -366,14 +368,15 @@ function ManualSetLogger({
   }
 
   async function completeSet() {
-    if(!Number.isFinite(weight)||weight<0||!Number.isFinite(reps)||reps<=0){setMessage('Enter a valid weight and the reps you completed.');return}
+    const values = parseStrengthSetInput(bodyweight ? 0 : weight, reps)
+    if(!values){setMessage('Enter a nonnegative weight and a positive whole number of reps.');return}
     const completedAt = new Date().toISOString()
     const nextSet: ManualSetLog = {
       id: `${Date.now()}-${nextSetNumber}`,
       set_number: nextSetNumber,
-      weight,
+      weight: values.weight,
       weight_unit: weightUnit,
-      reps,
+      reps: values.reps,
       set_started_at: setStartedAt,
       completed_at: completedAt,
     }
@@ -385,11 +388,11 @@ function ManualSetLogger({
       setSaving(true)
       await persistSets(nextSets)
       setSets(nextSets)
-      persistDraft(nextSets)
-      setWeight(nextSet.weight)
-      setReps(nextSet.reps)
+      const draftRetained = persistDraft(nextSets)
+      setWeight(String(nextSet.weight))
+      setReps(String(nextSet.reps))
       setSetStartedAt(new Date().toISOString())
-      setMessage(`Set ${nextSet.set_number} saved.`)
+      setMessage(`Set ${nextSet.set_number} saved.${draftRetained ? '' : ' This browser could not retain a draft; saved work remains in workout history.'}`)
       router.refresh()
     } catch (error) {
       console.error(error)
@@ -400,8 +403,8 @@ function ManualSetLogger({
     }
   }
 
-  async function updateSet(id: string, field: 'weight' | 'reps', value: number) {
-    const nextSets = sets.map((set) => (set.id === id ? { ...set, [field]: value } : set))
+  async function updateSet(id: string, values: { weight: number; reps: number }) {
+    const nextSets = sets.map((set) => (set.id === id ? { ...set, ...values } : set))
 
     try {
       if(lock.current)return
@@ -409,8 +412,8 @@ function ManualSetLogger({
       setSaving(true)
       await persistSets(nextSets)
       setSets(nextSets)
-      persistDraft(nextSets)
-      setMessage('Set updated.')
+      const draftRetained = persistDraft(nextSets)
+      setMessage(`Set updated.${draftRetained ? '' : ' This browser could not retain a draft; saved work remains in workout history.'}`)
       router.refresh()
     } catch (error) {
       console.error(error)
@@ -434,8 +437,8 @@ function ManualSetLogger({
       setSaving(true)
       await persistSets(nextSets)
       setSets(nextSets)
-      persistDraft(nextSets)
-      setMessage('Set deleted.')
+      const draftRetained = persistDraft(nextSets)
+      setMessage(`Set deleted.${draftRetained ? '' : ' This browser could not retain a draft; saved work remains in workout history.'}`)
       router.refresh()
     } catch (error) {
       console.error(error)
@@ -447,12 +450,13 @@ function ManualSetLogger({
   }
 
   async function finishExercise() {
+    if (!sets.length) { setMessage('Record at least one set before finishing this exercise.'); return }
     try {
       if(lock.current)return
       lock.current=true
       setSaving(true)
       await persistSets(sets, new Date().toISOString())
-      if (typeof window !== 'undefined') window.localStorage.removeItem(storageKey)
+      try { if (typeof window !== 'undefined') window.localStorage.removeItem(storageKey) } catch { /* Server completion succeeded; browser cleanup is optional. */ }
       onManualExerciseFinished?.(sets.length >= dose.sets)
       router.refresh()
     } catch (error) {
@@ -484,28 +488,8 @@ function ManualSetLogger({
           {sets.map((set) => (
             <article key={set.id}>
               <span>Set {set.set_number}</span>
-              <label>
-                Weight ({set.weight_unit}, {loadLabel})
-                <input
-                  inputMode="decimal"
-                  type="number"
-                  min="0"
-                  step={dose.increment}
-                  value={set.weight}
-                  onChange={(event) => updateSet(set.id, 'weight', Number(event.target.value))}
-                />
-              </label>
-              <label>
-                Reps
-                <input
-                  inputMode="numeric"
-                  type="number"
-                  min="0"
-                  value={set.reps}
-                  onChange={(event) => updateSet(set.id, 'reps', Number(event.target.value))}
-                />
-              </label>
-              <button type="button" onClick={() => deleteSet(set.id)}>Delete</button>
+              <WorkoutSetEditor key={`${set.weight}:${set.reps}`} set={set} increment={dose.increment} loadLabel={loadLabel} disabled={saving} bodyweight={bodyweight} onSave={values => void updateSet(set.id, values)} />
+              <button type="button" disabled={saving} onClick={() => deleteSet(set.id)}>Delete</button>
               <small>{new Date(set.completed_at).toLocaleTimeString([], { timeZone:timezone,hour: 'numeric', minute: '2-digit' })}</small>
             </article>
           ))}
@@ -515,7 +499,7 @@ function ManualSetLogger({
       <div className="manual-current-set">
         <strong>Set {nextSetNumber}</strong>
         <div>
-          <label>
+          {!bodyweight ? <label>
             Weight ({weightUnit}, {loadLabel})
             <input
               inputMode="decimal"
@@ -523,17 +507,20 @@ function ManualSetLogger({
               min="0"
               step={dose.increment}
               value={weight}
-              onChange={(event) => setWeight(Number(event.target.value))}
+              disabled={saving}
+              onChange={(event) => setWeight(event.target.value)}
             />
-          </label>
+          </label> : <p>Bodyweight · no added load</p>}
           <label>
             Reps
             <input
               inputMode="numeric"
               type="number"
-              min="0"
+              min="1"
+              step="1"
               value={reps}
-              onChange={(event) => setReps(Number(event.target.value))}
+              disabled={saving}
+              onChange={(event) => setReps(event.target.value)}
             />
           </label>
         </div>
@@ -542,10 +529,12 @@ function ManualSetLogger({
         </button>
       </div>
 
-      {message ? <p className="manual-set-message">{message}</p> : null}
+      {message ? <p className="manual-set-message" role="status">{message}</p> : null}
+
+      <p id="manual-finish-guidance">{sets.length === 0 ? 'Record at least one set before finishing this exercise.' : sets.length < dose.sets ? `${dose.sets - sets.length} prescribed set${dose.sets - sets.length === 1 ? '' : 's'} remain. Finish Exercise saves your partial work.` : 'All prescribed sets are recorded. Finish Exercise saves completion.'}</p>
 
       <div className="manual-session-actions">
-        <button type="button" className="manual-secondary-button" onClick={finishExercise} disabled={saving || sets.length === 0}>
+        <button type="button" className="manual-secondary-button" onClick={finishExercise} disabled={saving || sets.length === 0} aria-describedby="manual-finish-guidance">
           Finish Exercise
         </button>
       </div>

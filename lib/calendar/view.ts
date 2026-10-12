@@ -155,6 +155,16 @@ export function itemsForDate(items: CalendarDisplayItem[], date: string) {
   return items.filter((item) => item.date === date)
 }
 
+/** Open time and proposed activities are not confirmed calendar events. */
+export function summarizeCalendarItems(items: CalendarDisplayItem[]) {
+  return items.reduce((counts, item) => {
+    if (item.source === 'suggestion') counts.available++
+    else if (item.suggested) counts.suggestions++
+    else counts.events++
+    return counts
+  }, { events: 0, suggestions: 0, available: 0 })
+}
+
 /** Include the complete selected week even when its Monday precedes a Sunday month-grid start. */
 export function calendarQueryDateRange(selectedDate: string) {
   const grid = buildMonthGrid({ selectedDate, items: [] })

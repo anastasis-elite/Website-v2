@@ -22,5 +22,5 @@ export default async function NutritionPage() {
   }
   const recipes=getTierCapabilities(logic.program).nutritionRecommendedMeal?getPhoenixRecipeRecommendations({logic,client}):[]
   const schedule = await getDailyScheduleState({ supabase, user, client, logic })
-  return <><DailyPlanCard plan={schedule.dailyRecommendation!} compact /><NutritionDashboardClient logic={logic} recipes={recipes} /></>
+  return <><DailyPlanCard plan={schedule.dailyRecommendation!} schedule={schedule} compact /><NutritionDashboardClient logic={logic} recipes={recipes} /></>
 }

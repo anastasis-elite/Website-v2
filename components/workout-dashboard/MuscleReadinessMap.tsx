@@ -110,9 +110,11 @@ export default function MuscleReadinessMap({
 }) {
   const [internalSelectedId, setInternalSelectedId] = useState<MuscleId | null>(null)
   const [hoveredId, setHoveredId] = useState<MuscleId | null>(null)
+  const [view, setView] = useState<'front' | 'posterior'>(() => MUSCLE_REGIONS.find(region => region.id === selectedMuscleId)?.view || 'front')
   const byId = useMemo(() => new Map(readiness.map((item) => [item.muscleId, item])), [readiness])
   const selectedId = selectedMuscleId ?? internalSelectedId
-  const activeId = hoveredId || selectedId
+  const visibleSelectedId = MUSCLE_REGIONS.find(region => region.id === selectedId)?.view === view ? selectedId : null
+  const activeId = hoveredId || visibleSelectedId
   const active = activeId ? byId.get(activeId) : null
   const activeDefinition = activeId ? MUSCLE_REGIONS.find((region) => region.id === activeId) : null
   const highlighted = new Set(highlightedMuscleIds)
@@ -134,6 +136,11 @@ export default function MuscleReadinessMap({
           <p className="tier-dashboard-label">{eyebrow}</p>
           <h2>{heading}</h2>
         </div>
+        <div className="workout-mode-switch" role="group" aria-label="Muscle map view">
+          {(['front', 'posterior'] as const).map(side => <button key={side} type="button" aria-pressed={view === side} className={view === side ? 'is-active' : ''} onClick={() => { setView(side); setHoveredId(null) }}>
+            {side === 'front' ? 'Front' : 'Back'}
+          </button>)}
+        </div>
       </div>
 
       <div className="workout-body-map">
@@ -145,8 +152,8 @@ export default function MuscleReadinessMap({
           className="workout-body-image"
           priority={false}
         />
-        <svg className="workout-muscle-overlay" viewBox="0 0 100 100" role="img" aria-label="Interactive muscle readiness map" preserveAspectRatio="none">
-          {MUSCLE_REGIONS.map((region) => {
+        <svg className="workout-muscle-overlay" viewBox="0 0 100 100" role="img" aria-label={`Interactive muscle readiness map: ${view === 'front' ? 'front' : 'back'}`} preserveAspectRatio="none">
+          {MUSCLE_REGIONS.filter(region => region.view === view).map((region) => {
             const item = byId.get(region.id)
             const state = item?.state || 'unknown'
             const isActive = activeId === region.id
@@ -166,6 +173,7 @@ export default function MuscleReadinessMap({
                 onFocus={() => setHoveredId(region.id)}
                 onBlur={() => setHoveredId(null)}
                 onClick={() => selectMuscle(region.id)}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectMuscle(region.id) } }}
               />
             )
           })}

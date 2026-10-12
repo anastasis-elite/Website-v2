@@ -138,10 +138,11 @@ test('free calendar entries do not prevent a confirmed rescheduling window', () 
   assert.equal(scheduleConflict([free], 'new', new Date(free.start_at), new Date(free.end_at), 10), null)
 })
 
-test('screen refresh follows adjusted event times and Chicago local midnight across daylight saving', () => {
+test('screen refresh follows daypart, adjusted event and local midnight boundaries', () => {
   const eventState = { date: '2026-08-17', timezone: 'America/Chicago', events: [{ ...event(), adjusted_start_at: '2026-08-17T17:00:00Z', adjusted_end_at: '2026-08-17T17:30:00Z' }] }
   assert.equal(nextScheduleBoundary(eventState, Date.parse('2026-08-17T16:00:00Z')), Date.parse('2026-08-17T17:00:00Z'))
-  for (const [date, now, expected] of [['2026-03-08', '2026-03-08T06:00:00Z', '2026-03-09T05:00:00Z'], ['2026-11-01', '2026-11-01T05:00:00Z', '2026-11-02T06:00:00Z']]) {
+  assert.equal(nextScheduleBoundary(eventState, Date.parse('2026-08-17T16:59:59Z')), Date.parse('2026-08-17T17:00:00Z'))
+  for (const [date, now, expected] of [['2026-03-08', '2026-03-09T04:59:59Z', '2026-03-09T05:00:00Z'], ['2026-11-01', '2026-11-02T05:59:59Z', '2026-11-02T06:00:00Z']]) {
     assert.equal(nextScheduleBoundary({ date, timezone: 'America/Chicago', events: [] }, Date.parse(now)), Date.parse(expected))
   }
   const today = Date.parse('2026-08-18T15:00:00Z')

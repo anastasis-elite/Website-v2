@@ -63,7 +63,7 @@ export default async function RecoveryPage() {
 
   const schedule = await getDailyScheduleState({ supabase, user, client, logic })
   return (
-    <><DailyPlanCard plan={schedule.dailyRecommendation!} compact /><RecoveryDashboardClient
+    <><DailyPlanCard plan={schedule.dailyRecommendation!} schedule={schedule} compact /><RecoveryDashboardClient
       logic={logic}
       clientId={client.client_id}
       program={client.program || logic.program}

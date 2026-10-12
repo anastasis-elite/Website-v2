@@ -321,7 +321,7 @@ export default async function ProgramWorkoutPage({
   return (
     <main className="aos-workout-page">
       <div className="aos-workout-shell">
-        <DailyPlanCard plan={schedule.dailyRecommendation!} compact />
+        <DailyPlanCard plan={schedule.dailyRecommendation!} schedule={schedule} compact />
         <WorkoutDashboard
           timezone={getClientTimeZone(client)}
           weightUnit={client.weight_unit === 'kg' || client.unit_preference === 'metric' || client.onboarding_data?.unitPreference === 'metric' ? 'kg' : 'lb'}

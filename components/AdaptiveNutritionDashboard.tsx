@@ -14,6 +14,8 @@ import { getClientLocalDateOffset } from '@/lib/timezone'
 import { getTierCapabilities } from '@/lib/entitlements'
 import { getMealPeriodForLocalDate } from '@/lib/nutrition/mealPeriod'
 import { trackEvent } from '@/lib/analytics'
+import { useViewPreference } from '@/components/dashboard/useViewPreference'
+import { getNextFoodGuidance } from '@/lib/nutrition/nextFoodGuidance'
 
 type NutritionLog = {
   id: string
@@ -169,10 +171,6 @@ export default function AdaptiveNutritionDashboard({
 }) {
   const router=useRouter()
   const supabase = useMemo(() => createClient(), [])
-  useEffect(() => {
-    const followHash = () => { if (window.location.hash === '#hydration') setIntakeTab('water'); else if (window.location.hash === '#aos-food-logger') setIntakeTab('meal') }
-    followHash(); window.addEventListener('hashchange', followHash); return () => window.removeEventListener('hashchange', followHash)
-  }, [])
   const engineNutrition=useNutritionEngine(logic)
   const fuel=useFuelReadinessEngine(logic)
   const phoenixRecipes=usePhoenixRecipes(recipes)
@@ -202,16 +200,27 @@ export default function AdaptiveNutritionDashboard({
   })
   const [savingMacros, setSavingMacros] = useState(false)
 
-  const [progressTab, setProgressTab] = useState<ProgressTab>('daily')
-  const [intakeTab, setIntakeTab] = useState<IntakeTab>('meal')
-  const [managementTab, setManagementTab] = useState<ManagementTab>('goals')
+  const [progressTab, setProgressTab] = useViewPreference<ProgressTab>(logic.client.id, 'nutrition-progress', ['daily', 'trends'], 'daily')
+  const [intakeTab, setIntakeTab] = useViewPreference<IntakeTab>(logic.client.id, 'nutrition-intake', ['water', 'meal', 'suggested'], 'meal')
+  const [managementTab, setManagementTab] = useViewPreference<ManagementTab>(logic.client.id, `nutrition-management-${tier}`, isPhoenix ? ['goals', 'micros', 'recipes'] : isEmber ? ['goals'] : ['goals', 'micros'], 'goals')
   const [suggestedFoods, setSuggestedFoods] = useState<SuggestedFood[]>([])
-  const [suggestedFoodsState, setSuggestedFoodsState] = useState<'idle' | 'loading' | 'ready' | 'needs_logs' | 'complete' | 'error'>('idle')
+  const [suggestedFoodsState, setSuggestedFoodsState] = useState<'idle' | 'loading' | 'ready' | 'unavailable' | 'complete' | 'error'>('idle')
+  const [suggestedFoodsBasis, setSuggestedFoodsBasis] = useState<'remaining' | 'targets' | 'general'>('remaining')
   const [suggestedFoodsMessage, setSuggestedFoodsMessage] = useState('')
   const [nutrientInsights, setNutrientInsights] = useState<NutrientInsight[]>([])
   const [supplementRecommendation, setSupplementRecommendation] = useState<SupplementRecommendation | null>(null)
   const [supplementDismissed, setSupplementDismissed] = useState(false)
   const [supplementShownKey, setSupplementShownKey] = useState('')
+
+  useEffect(() => {
+    const followHash = () => {
+      if (window.location.hash === '#hydration') setIntakeTab('water')
+      else if (['#aos-food-logger', '#aos-macro-entry'].includes(window.location.hash)) setIntakeTab('meal')
+    }
+    followHash()
+    window.addEventListener('hashchange', followHash)
+    return () => window.removeEventListener('hashchange', followHash)
+  }, [setIntakeTab])
 
   const loadSuggestedFoods = useCallback(async () => {
     if (!nutritionLog?.id) return
@@ -229,6 +238,7 @@ export default function AdaptiveNutritionDashboard({
 
       setSuggestedFoods(payload?.suggestions || [])
       setSuggestedFoodsState(payload?.state || 'ready')
+      setSuggestedFoodsBasis(payload?.basis || 'remaining')
     } catch (error) {
       setSuggestedFoods([])
       setSuggestedFoodsState('error')
@@ -626,6 +636,11 @@ setNutritionLog(log)
     (nutritionLog?.calculation_status === 'manual_override'
       ? 'Manually overridden target'
       : 'Estimated nutrition target')
+  const nextFoodGuidance = getNextFoodGuidance({
+    dataStatus: engineNutrition.dataStatus,
+    mealSuggestions: engineNutrition.mealSuggestions,
+    suggestedFoods,
+  })
 
   return (
     <main className="aos-nutrition-page">
@@ -646,12 +661,20 @@ setNutritionLog(log)
                   }}
                   className="tier-primary-action"
                 >
-                  Add Food
+                  {foodLoggingEnabled ? 'Add Food' : 'Add Macros'}
                 </button>
               ) : null}
             </div>
             <p>{fuel.displayStatus}. {fuel.reasoning}</p>
-            <small>What to eat next: {engineNutrition.mealSuggestions[0]}</small>
+            <small>What to eat next: {nextFoodGuidance.copy}</small>
+            {nextFoodGuidance.showSuggestedAction ? <button
+              type="button"
+              className="tier-secondary-action"
+              onClick={() => {
+                setIntakeTab('suggested')
+                requestAnimationFrame(() => document.getElementById('nutrition-suggested-foods')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+              }}
+            >Explore Suggested Foods</button> : null}
             <div className="nutrition-objective-metrics">
               <article><span>Calories</span><strong>{roundValue(macroMetrics[0]?.consumed)} / {roundValue(macroMetrics[0]?.target)} cal</strong></article>
               <article><span>Remaining</span><strong>{roundValue(macroMetrics[0]?.remaining)} cal</strong></article>
@@ -796,12 +819,12 @@ setNutritionLog(log)
               <div className="tier-panel-heading">
                 <div>
                   <p className="tier-dashboard-label">Intake</p>
-                  <h2>{intakeTab === 'water' ? 'Water' : intakeTab === 'suggested' ? 'Suggested Foods' : 'Food Log'}</h2>
+                  <h2>{intakeTab === 'water' ? 'Water' : intakeTab === 'suggested' ? 'Suggested Foods' : foodLoggingEnabled ? 'Food Log' : 'Macro Entry'}</h2>
                 </div>
                 <div className="tier-tab-list nutrition-panel-tabs" role="tablist" aria-label="Intake controls">
                   {([
                     ['water', 'Water'],
-                    ['meal', 'Food Log'],
+                    ['meal', foodLoggingEnabled ? 'Food Log' : 'Macro Entry'],
                     ['suggested', 'Suggested Foods'],
                   ] as const).map(([key, label]) => (
                     <button key={key} type="button" className={intakeTab === key ? 'is-active' : ''} onClick={() => setIntakeTab(key)}>
@@ -912,13 +935,13 @@ setNutritionLog(log)
               ) : null}
 
               {intakeTab === 'suggested' ? (
-                <div className="nutrition-suggested-foods-panel" data-testid="nutrition-suggested-foods-tab">
+                <div id="nutrition-suggested-foods" className="nutrition-suggested-foods-panel" data-testid="nutrition-suggested-foods-tab">
                   {suggestedFoodsState === 'loading' ? (
                     <p className="tier-calendar-empty">Finding today’s best matches...</p>
                   ) : null}
 
-                  {suggestedFoodsState === 'needs_logs' ? (
-                    <p className="tier-calendar-empty">Log your meals and we’ll help you fill the gaps.</p>
+                  {suggestedFoodsState === 'unavailable' ? (
+                    <p className="tier-calendar-empty">No food matches are available for your current preferences. You can still choose foods in the {foodLoggingEnabled ? 'food log' : 'macro entry'}.</p>
                   ) : null}
 
                   {suggestedFoodsState === 'complete' ? (
@@ -931,12 +954,13 @@ setNutritionLog(log)
 
                   {suggestedFoodsState === 'ready' && suggestedFoods.length ? (
                     <div className="nutrition-suggested-foods-list">
+                      {suggestedFoodsBasis !== 'remaining' ? <p className="tier-calendar-empty">{suggestedFoodsBasis === 'targets' ? 'Starting options based on today’s targets. No prior meal logs needed.' : 'Starting food options. Log intake to personalize your remaining targets.'}</p> : null}
                       {suggestedFoods.map((food) => (
                         <article key={food.foodId} className="nutrition-suggested-food-card">
                           <div>
                             <span>{food.contribution}</span>
                             <strong>{food.name}</strong>
-                            <small>{food.serving || 'Serving available in food log'}</small>
+                            <small>{food.serving || (foodLoggingEnabled ? 'Serving available in food log' : 'Choose a serving for your macro entry')}</small>
                           </div>
                           <p>{food.reason}</p>
                         </article>

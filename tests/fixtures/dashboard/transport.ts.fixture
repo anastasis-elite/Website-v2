@@ -1,0 +1,47 @@
+// Disposable browser transport. Unknown requests fail closed; no real service is contacted.
+export function installQATransport(tier: string, date: string, onChange: (state: any) => void) {
+ const key=`local-qa-dashboard-v2:${tier}:${date}`
+ const initial={meals:[],session:null,checkIn:{},activities:[],water:0,waterIds:[],scheduleOverrides:{},preferences:null}
+ const state={...initial,...JSON.parse(localStorage.getItem(key)||'{}')}
+ const persist=()=>{localStorage.setItem(key,JSON.stringify(state));onChange(structuredClone(state))}
+ const original=window.fetch
+ const log=()=>({id:'10000000-0000-4000-8000-000000000001',client_id:'LOCAL-QA-ONLY',log_date:date,calories:1800,protein:110,carbs:200,fats:60,water_oz:111,water_consumed_oz:state.water})
+ const remaining=()=>({nutrition_log_id:log().id,calories_remaining:1800-state.meals.length*120,protein_remaining_g:110-state.meals.length*20,carbs_remaining_g:200-state.meals.length*6,fat_remaining_g:60})
+ window.fetch=async(input:any,options:any)=>{
+  const url=typeof input==='string'?input:input instanceof URL?input.href:input.url
+  const body=options?.body?JSON.parse(options.body):{}
+  if(url.startsWith('https://local-qa.invalid/')) {
+   if(url.includes('/auth/v1/user'))return Response.json({id:'local-qa',aud:'authenticated',role:'authenticated',email:'disposable@example.invalid',app_metadata:{},user_metadata:{}})
+   if(url.includes('/rest/v1/nutrition_logs'))return Response.json(log())
+   if(url.includes('/rest/v1/nutrition_log_remaining'))return Response.json(remaining())
+   return Response.json({error:'Unimplemented local QA database request.'},{status:501})
+  }
+  if(!url.startsWith('/api/'))return original(input,options)
+  let payload:any
+  if(url.startsWith('/api/calendars/events'))payload={events:[],calendars:[]}
+  else if(url.startsWith('/api/calendars'))payload={connections:[],preferences:{timezone:'America/Chicago',default_calendar_id:null,preferred_start:'07:00',preferred_end:'21:00',buffer_minutes:10},google_configured:false,icloud_configured:false}
+  else if(url.includes('search-foods'))payload={foods:[{id:'20000000-0000-4000-8000-000000000001',name:'Plain Greek yogurt',calories:120,protein_g:20,carbs_g:6,fat_g:0}]}
+  else if(url.includes('serving-options'))payload={servingOptions:[{id:'30000000-0000-4000-8000-000000000001',label:'Container',grams:170,unit:'container'}]}
+  else if(url.includes('today-meals'))payload={meals:state.meals,remaining:remaining()}
+  else if(url.includes('barcode'))payload={found:false,message:'No product found. Search manually instead.'}
+  else if(url.includes('photo-estimate'))payload={available:false,message:'Photo estimation is unavailable. Search / manual entry is still available.'}
+  else if(url.includes('recurring-foods'))payload={patterns:[],candidates:[]}
+  else if(url.includes('suggested-foods'))payload={state:'ready',suggestions:[{foodId:'20000000-0000-4000-8000-000000000001',name:'Plain Greek yogurt',serving:'1 container',contribution:'20g protein',reason:'A protein option for your next meal.'}],message:state.meals.length?'Based on your logged intake.':'No meals logged yet. These ideas use today’s targets; they do not assume what you have eaten.'}
+  else if(url.includes('nutrient-insights'))payload={insights:[]}
+  else if(url.includes('supplement-recommendation'))payload={recommendation:null}
+  else if(url.includes('add-meal')) {
+   if(tier==='ember')return Response.json({error:'Meal logging is unavailable in Ember.'},{status:403})
+   state.meals.push({...body,id:'qa-meal-'+state.meals.length,meal_name:body.mealName,meal_period:body.mealPeriod,serving_amount:body.servingAmount,serving_unit:body.servingUnit,entry_source:body.entrySource,foods:{id:body.foodId,name:'Plain Greek yogurt'},calories:120,protein_g:20,carbs_g:6,fat_g:0,created_at:new Date().toISOString()});persist();payload={success:true,mealEntry:state.meals.at(-1),remaining:remaining()}
+  } else if(url.includes('workout-log')) {
+   if(options?.method==='POST'){state.session={id:'local-qa-session',updated_at:new Date().toISOString(),exercise_logs:body.exercise_logs,completed:body.completed};persist()}
+   payload={success:true,session:state.session}
+  } else if(url==='/api/workout-set-log') {state.manualSets=body.sets;persist();payload={success:true}} else if(url==='/api/daily-check-in') {state.checkIn={...state.checkIn,...body};persist();payload={success:true}}
+  else if(url==='/api/nutrition/add-water') {if(!state.waterIds.includes(body.submissionId)){state.water+=body.ounces;state.waterIds.push(body.submissionId);persist()}payload={success:true,nutritionLog:log()}}
+  else if(url==='/api/recovery/activity') {state.activities.push({id:'qa-activity-'+state.activities.length,activity_type:body.activityType,duration_minutes:body.minutes,log_date:date});persist();payload={success:true}}
+  else if(url==='/api/dashboard/preferences') {state.preferences={...(state.preferences||{}),...body};persist();payload={success:true}}
+  else if(url==='/api/schedule/plan') {state.scheduleOverrides[body.eventId]=body.action==='skip'?{status:'skipped'}:{adjusted_start_at:body.start_at,adjusted_end_at:body.end_at,suggested:false};persist();payload={success:true}}
+  else return Response.json({error:`Unimplemented isolated QA request: ${url}`},{status:501})
+  return Response.json(payload)
+ }
+ return {state,restore:()=>{window.fetch=original}}
+}

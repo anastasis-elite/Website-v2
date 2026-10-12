@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import { formatLocalTime } from '@/lib/schedule/time'
+import { getActionRouteForEvent } from '@/lib/schedule/engine'
 
 function eventTime(event: ScheduleEvent, timezone: string) {
   return formatLocalTime(event.adjusted_start_at || event.start_at, timezone)
@@ -104,7 +105,7 @@ export default function AdaptiveTodayForYou({
         {incomplete.slice(0, 5).map((event) => (
           <Link
             key={event.id}
-            href={event.action_route || schedule.nextAction.action_route || '/dashboard/schedule'}
+            href={getActionRouteForEvent(event, schedule.program)}
             className={`adaptive-action-row adaptive-${event.priority}`}
           >
             <time>{eventTime(event, schedule.timezone)}</time>

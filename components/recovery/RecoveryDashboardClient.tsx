@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import DailyCheckInForm from '@/components/DailyCheckInForm'
@@ -9,6 +8,8 @@ import BreathingReset from '@/components/recovery/BreathingReset'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { SorenessRegionKey } from '@/lib/recovery/sorenessRegions'
 import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
+import { getRecoveryScoreExplanation } from '@/lib/recovery/scoreExplanation'
+import { useViewPreference } from '@/components/dashboard/useViewPreference'
 
 type ProgressTab = 'daily' | 'trends'
 type ActionTab = 'tools' | 'checkIn'
@@ -127,12 +128,13 @@ export default function RecoveryDashboardClient({
   trends: RecoveryTrend[]
   recentActivities: RecoveryActivity[]
 }) {
-  const [progressTab, setProgressTab] = useState<ProgressTab>('daily')
-  const [actionTab, setActionTab] = useState<ActionTab>('tools')
-  const [managementTab, setManagementTab] = useState<ManagementTab>('assessment')
+  const [progressTab, setProgressTab] = useViewPreference<ProgressTab>(clientId, 'recovery-progress', ['daily', 'trends'], 'daily')
+  const [actionTab, setActionTab] = useViewPreference<ActionTab>(clientId, 'recovery-actions', ['tools', 'checkIn'], logic.assessments.dailyCompleted ? 'tools' : 'checkIn')
+  const [managementTab, setManagementTab] = useViewPreference<ManagementTab>(clientId, 'recovery-management', ['assessment', 'history', 'insights'], 'assessment')
 
   const training = getDailyTraining(logic)
-  const recoveryScore = training.readiness === 'confirmed' ? progressPercent(logic.recoveryStatus.score) : null
+  const scoreExplanation = getRecoveryScoreExplanation(logic)
+  const recoveryScore = scoreExplanation.score
   const sleepPercent = logic.sleep.quality !== null
     ? scoreFromHighIsGood(logic.sleep.quality)
     : logic.sleep.hours !== null
@@ -147,7 +149,7 @@ export default function RecoveryDashboardClient({
       label: 'Recovery',
       percent: recoveryScore,
       value: training.label,
-      detail: training.readinessNote,
+      detail: scoreExplanation.summary,
     },
     {
       label: 'Sleep',
@@ -211,6 +213,14 @@ export default function RecoveryDashboardClient({
             </div>
             <p>{training.reason}</p>
             <p>{training.readinessNote}</p>
+            <details className="nutrient-why-panel" data-testid="recovery-score-explanation">
+              <summary>How is my recovery score determined?</summary>
+              <p>{scoreExplanation.summary}</p>
+              {scoreExplanation.missingInputs.length ? <p><strong>Missing:</strong> {scoreExplanation.missingInputs.join(', ')}. Open Check-In to add these.</p> : null}
+              {scoreExplanation.availableInputs.length ? <p><strong>Available:</strong> {scoreExplanation.availableInputs.join(', ')}.</p> : null}
+              {recoveryScore !== null ? <p>{logic.recoveryStatus.reasoning}</p> : null}
+              <p>Reported symptom and fatigue signals can also adjust today’s guidance.</p>
+            </details>
             <small>Today&apos;s priority: {logic.recoveryActions[0]?.label || logic.symptoms.recoveryRecommendation}</small>
             <div className="recovery-objective-metrics">
               <article><span>Recovery Score</span><strong>{recoveryScore === null ? 'Needs check-in' : `${recoveryScore}%`}</strong></article>

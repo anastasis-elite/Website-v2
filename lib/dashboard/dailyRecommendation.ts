@@ -26,15 +26,18 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   const candidates: DailyRecommendationAction[] = []
   const add = (id: string, category: string, title: string, reason: string, href: string, availability: DataAvailability, eventId?: string) =>
     candidates.push({ id, category, title, reason, href, availability, eventId, completed: availability === 'completed' })
-  if (!logic.workoutDecision.canTrain || logic.symptoms.redFlag) {
+  if (logic.symptoms.redFlag) {
+    add('safety', 'recovery', 'Review today’s recovery guidance', logic.recoveryStatus.reasoning, '/dashboard/recovery', 'confirmed')
+  }
+  if (checkIn !== 'completed') {
+    add('check-in', 'check_in', 'Daily check-in', 'Start with your energy. Your answers help today’s plan fit your actual capacity.', '/dashboard/check-in', 'not_logged')
+  }
+  if (!logic.workoutDecision.canTrain && !logic.symptoms.redFlag) {
     add('safety', 'recovery', 'Review today’s recovery guidance', logic.recoveryStatus.reasoning, '/dashboard/recovery', 'confirmed')
   }
   const active = schedule.events.find(e => e.flexibility_type === 'fixed' && e.status === 'scheduled' &&
     new Date(e.adjusted_start_at || e.start_at) <= new Date(schedule.now) && new Date(e.adjusted_end_at || e.end_at) > new Date(schedule.now))
   if (active) add(active.id, active.event_type, active.title, `${active.source_label ? active.source_label + '. ' : ''}This is your current commitment. Keep your other actions flexible.`, getActionRouteForEvent(active, logic.program), 'confirmed', active.id)
-  if (checkIn !== 'completed') {
-    add('check-in', 'check_in', 'Tell us how you feel', 'A quick energy check helps today’s plan fit your actual capacity.', '/dashboard/check-in', 'not_logged')
-  }
 
   if (food === 'not_logged') {
     add('food-input', 'nutrition', logic.program === 'ember' ? 'Review your next meal' : 'Log your latest meal',

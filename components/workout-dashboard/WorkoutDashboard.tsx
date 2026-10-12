@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 
 import WorkoutTracker from '@/components/WorkoutTracker'
@@ -17,6 +17,8 @@ import {
 import type { ProgramTier, ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
 import { activityDose, summarizeActivityUnits } from '@/lib/workout/activity'
+import { exerciseOccurrenceLabel, formatWorkoutHistoryDate } from '@/lib/workout/logging'
+import { parseWorkoutViewPreferences } from '@/lib/workout/viewPreferences'
 
 type Tab = 'progress' | 'strength' | 'recovery' | 'history'
 
@@ -106,10 +108,10 @@ function WorkoutPreview({ exercises, previewTitle, previewMessage }: { exercises
       {exercises.length ? (
         <div>
           {exercises.map((exercise, index) => (
-            <article key={exercise.id ? String(exercise.id) : `${exerciseName(exercise)}-${index}`}>
+            <article key={`${exercise.id || exerciseName(exercise)}:${index}`}>
               <span>{index + 1}</span>
               <div>
-                <strong>{exerciseName(exercise)}</strong>
+                <strong>{exerciseOccurrenceLabel(exercises, index)}</strong>
                 <small>{exerciseDose(exercise)}</small>
               </div>
             </article>
@@ -166,12 +168,12 @@ function RecoveryTab({ readiness, tier }: { readiness: MuscleReadiness[]; tier: 
   )
 }
 
-function HistoryTab({ history }: { history: WorkoutLogRow[] }) {
+function HistoryTab({ history, timezone }: { history: WorkoutLogRow[]; timezone?: string }) {
   return (
     <div className="workout-history-list" data-testid="workout-history-tab">
       {history.length ? history.slice(0, 8).map((row, index) => (
         <article key={row.id || `${row.workout_date}-${index}`}>
-          <time>{row.workout_date ? new Date(row.workout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Workout'}</time>
+          <time>{formatWorkoutHistoryDate(row.workout_date, timezone)}</time>
           <strong>{row.day_name || 'Completed workout'}</strong>
           <small>{row.completed ? 'Completed' : 'Not completed'} · {row.workout_source || 'recommended'} · {(row.exercise_logs || []).length} performed</small>
         </article>
@@ -183,7 +185,19 @@ function HistoryTab({ history }: { history: WorkoutLogRow[] }) {
 export default function WorkoutDashboard(props: Props) {
   const [tab, setTab] = useState<Tab>('progress')
   const [workoutMode, setWorkoutMode] = useState<'recommended' | 'manual'>('recommended')
+  const [restoredPreferenceKey, setRestoredPreferenceKey] = useState<string | null>(null)
   const [highlightedMuscles, setHighlightedMuscles] = useState<MuscleId[]>([])
+  const preferenceKey = `aos-workout-view:v1:${props.clientId}:${props.program}`
+  useEffect(() => {
+    let stored = null
+    try { stored = localStorage.getItem(preferenceKey) } catch { /* The workout remains available without browser preferences. */ }
+    const preferences = parseWorkoutViewPreferences(stored)
+    setTab(preferences.tab); setWorkoutMode(preferences.mode); setRestoredPreferenceKey(preferenceKey)
+  }, [preferenceKey])
+  useEffect(() => {
+    if (restoredPreferenceKey !== preferenceKey) return
+    try { localStorage.setItem(preferenceKey, JSON.stringify({ tab, mode: workoutMode })) } catch { /* Browser preferences are optional. */ }
+  }, [preferenceKey, restoredPreferenceKey, tab, workoutMode])
   const training = getDailyTraining(props.logic)
   const focus = useMemo(() => summarizeWorkoutMuscleFocus(props.assignedExercises).slice(0, 3), [props.assignedExercises])
 
@@ -271,15 +285,17 @@ export default function WorkoutDashboard(props: Props) {
       <section className="tier-info-panel workout-info-panel" data-testid="workout-toggle-panel">
         <div className="tier-tab-list" role="tablist" aria-label="Workout information">
           {(['progress', 'strength', 'recovery', 'history'] as Tab[]).map((item) => (
-            <button key={item} type="button" className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>
+            <button key={item} id={`workout-tab-${item}`} type="button" role="tab" aria-selected={tab === item} aria-controls="workout-information-panel" className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>
               {item[0].toUpperCase() + item.slice(1)}
             </button>
           ))}
         </div>
+        <div id="workout-information-panel" role="tabpanel" aria-labelledby={`workout-tab-${tab}`}>
         {tab === 'progress' ? <ProgressTab logic={props.logic} exercises={props.assignedExercises} /> : null}
         {tab === 'strength' ? <StrengthTab showOffer={props.showStrengthAssessmentOffer} endDate={props.strengthAssessmentWindowEndDate} logic={props.logic} /> : null}
         {tab === 'recovery' ? <RecoveryTab readiness={props.muscleReadiness} tier={props.program} /> : null}
-        {tab === 'history' ? <HistoryTab history={props.workoutHistory} /> : null}
+        {tab === 'history' ? <HistoryTab history={props.workoutHistory} timezone={props.timezone} /> : null}
+        </div>
       </section>
     </section>
   )

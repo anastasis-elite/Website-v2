@@ -1,5 +1,9 @@
 export type ActivityKind = 'strength' | 'cardio' | 'breathing' | 'mobility'
 export type ActivityDose = { kind: ActivityKind; metric: 'reps' | 'breaths' | 'minutes' | 'seconds' | 'completion'; prescribed: number; sets: number; weight: number; increment: number; unit: 'lb' | 'kg'; loadLabel: string }
+export function isBodyweightExercise(exercise: any) {
+  const selected = exercise.available_variants?.find((variant: any) => variant.id === exercise.selected_variant_id)
+  return selected ? selected.load_type === 'bodyweight' || selected.equipment === 'bodyweight' : exercise.load_type === 'bodyweight' || exercise.selected_equipment === 'bodyweight'
+}
 export function activityDose(exercise: any, preferredUnit: 'lb' | 'kg' = 'lb'): ActivityDose {
   const name = String(exercise.selected_variant_name || exercise.display_name || exercise.name || exercise.exercise || '').toLowerCase()
   const metadata = `${exercise.exercise_category || exercise.category || ''} ${exercise.movement_type || exercise.type || ''}`.toLowerCase()
@@ -14,8 +18,8 @@ export function activityDose(exercise: any, preferredUnit: 'lb' | 'kg' = 'lb'): 
   const unit = preferredUnit
   const sourceUnit = exercise.weight_unit === 'kg' ? 'kg' : 'lb'
   const factor = unit === sourceUnit ? 1 : unit === 'kg' ? 1/2.2046226218 : 2.2046226218
-  const weightLb = Number(exercise.recommended_weight ?? exercise.cycle_adjusted_weight ?? exercise.calculated_weight ?? 0)
-  const weight = exercise.load_type === 'bodyweight' || exercise.selected_equipment === 'bodyweight' ? 0 : Math.round(weightLb * factor * 10)/10
+  const weightLb = Number(exercise.recommended_weight ?? exercise.cycle_adjusted_weight ?? exercise.calculated_weight ?? exercise.baseline_weight ?? 0)
+  const weight = isBodyweightExercise(exercise) || !Number.isFinite(weightLb) ? 0 : Math.max(0, Math.round(weightLb * factor * 10)/10)
   const explicitIncrement = Number(exercise.weight_increment ?? exercise.equipment_increment)
   const increment = explicitIncrement > 0 ? Math.round(explicitIncrement * factor * 1000)/1000 : unit === 'kg' ? 0.5 : weight < 5 ? 0.5 : weight < 20 ? 1 : 5
   return { kind, metric, prescribed: Number.isFinite(prescribed) ? prescribed : Number(timeMatch?.[1] || 0), sets: kind === 'strength' ? Math.max(1, Number(exercise.sets || 1)) : 1,
