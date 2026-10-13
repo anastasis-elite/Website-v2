@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { updateOwnedOnboardingData } from '@/lib/dashboard/updateOnboardingData'
 export async function PATCH(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -19,10 +20,15 @@ export async function PATCH(request: Request) {
   }
   if (body.transitionMinutes !== undefined) {
     if (!Number.isInteger(body.transitionMinutes) || body.transitionMinutes < 0 || body.transitionMinutes > 120) return NextResponse.json({ error: 'Choose a transition buffer from 0 to 120 minutes.' }, { status: 400 })
-    update.onboarding_data = { ...client.onboarding_data, transitionMinutes: body.transitionMinutes }
   }
-  const { error } = await supabase.from('clients').update(update).eq('client_id', client.client_id).eq('auth_user_id', user.id)
-  if (error) return NextResponse.json({ error: 'Preferences could not be saved. Try again.' }, { status: 500 })
+  if (body.transitionMinutes !== undefined) {
+    const result = await updateOwnedOnboardingData({ supabase, userId: user.id, clientId: client.client_id,
+      fields: update, merge: current => ({ ...current, transitionMinutes: body.transitionMinutes }) })
+    if (!result.saved) return NextResponse.json({ error: 'Preferences could not be saved. Refresh and try again.' }, { status: result.status })
+  } else {
+    const { error } = await supabase.from('clients').update(update).eq('client_id', client.client_id).eq('auth_user_id', user.id)
+    if (error) return NextResponse.json({ error: 'Preferences could not be saved. Try again.' }, { status: 500 })
+  }
   invalidateDailyPlan()
   return NextResponse.json({ success: true })
 }

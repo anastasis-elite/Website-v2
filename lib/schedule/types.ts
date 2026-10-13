@@ -138,6 +138,8 @@ export type DailyScheduleState = {
   nextEvent: ScheduleEvent | null
   nextActionableEvent: ScheduleEvent | null
   dailyRecommendation?: import('@/lib/dashboard/dailyRecommendation').DailyRecommendation
+  dailyGuide?: import('@/lib/dashboard/todayActivities').DailyGuideState
+  todayActivities?: import('@/lib/dashboard/todayActivities').TodayActivities
   preferences?: { executionStyle: string; carouselStyle: string; transitionMinutes: number }
   nextAction: NextScheduleAction
 }

@@ -305,6 +305,9 @@ export default function RecoveryDashboardClient({
                   <DailyCheckInForm
                     clientId={clientId}
                     program={program}
+                    completed={logic.assessments.dailyCompleted}
+                    localDate={logic.flameState.requirements.date}
+                    timeZone={logic.client.timezone}
                     cycleTrackingEnabled={cycleTrackingEnabled}
                     initial={normalizedCheckInInitial}
                     stayOnSave

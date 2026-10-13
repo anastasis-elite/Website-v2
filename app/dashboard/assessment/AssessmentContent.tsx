@@ -8,7 +8,7 @@ export default async function AssessmentContent(){
   const actions=[
     {title:'Daily Check-In',body:'Log sleep, energy, stress, soreness, mood, hunger, cycle status, and symptoms.',href:'/dashboard/check-in',cta:'Check In Today',primary:true},
     ...(monthly.due?[{title:'Monthly Assessment Due',body:'It has been 30 days or this is your first monthly assessment.',href:'/dashboard/assessment/monthly',cta:'Open Monthly Assessment',primary:true}]:[]),
-    {title:'Strength Assessment',body:'Update strength and training baselines when your program needs recalibration.',href:'/dashboard/assessment/start',cta:'Open Strength Assessment',primary:false},
+    {title:'Strength Assessment',body:'Update strength and training baselines when your program needs recalibration.',href:'/dashboard/assessment/start2',cta:'Open Strength Assessment',primary:false},
     {title:'Measurements',body:'Record consistent physical measurements.',href:'/dashboard/assessment/measurements',cta:'Open Measurements',primary:false},
     {title:'Photos',body:'Upload private progress and assessment photos.',href:'/dashboard/assessment/photos',cta:'Open Photos',primary:false},
   ]

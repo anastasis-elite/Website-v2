@@ -1,0 +1,4823 @@
+{
+  "description": "Read-only production schema metadata captured 2026-10-13; no customer records, secrets, counts or credential material.",
+  "project_ref": "lcccpqgnpznhbtmkmytp",
+  "tables": [
+    {
+      "table_name": "assessment_photos",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "assessment_type",
+          "type": "text",
+          "notnull": false,
+          "default": "'monthly'::text"
+        },
+        {
+          "name": "front_photo_url",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "back_photo_url",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "left_photo_url",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "right_photo_url",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "analysis_status",
+          "type": "text",
+          "notnull": false,
+          "default": "'pending'::text"
+        },
+        {
+          "name": "analysis_notes",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "uploaded_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "posture_flags",
+          "type": "jsonb",
+          "notnull": false,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "analysis_type",
+          "type": "text",
+          "notnull": false,
+          "default": "'posture_assessment'::text"
+        },
+        {
+          "name": "analysis_completed_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "assessment_photos_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "assessment_windows",
+      "rls_enabled": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "window_type",
+          "type": "text",
+          "notnull": false,
+          "default": "'ovulatory'::text"
+        },
+        {
+          "name": "estimated_start_date",
+          "type": "date",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "estimated_end_date",
+          "type": "date",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "notnull": false,
+          "default": "'upcoming'::text"
+        },
+        {
+          "name": "assessment_data",
+          "type": "jsonb",
+          "notnull": false,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "completion_percent",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "finalized_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "assessment_windows_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "assessments",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "program",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "assessment_type",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "assessments_client_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (client_id) REFERENCES clients(client_id)"
+        },
+        {
+          "name": "assessments_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "client_billing",
+      "rls_enabled": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "stripe_customer_id",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "stripe_subscription_id",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "billing_type",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "billing_status",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "current_period_start",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "current_period_end",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "cancel_at_period_end",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "last_payment_date",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "next_payment_date",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "access_active",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "client_billing_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "client_weights",
+      "rls_enabled": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "weight",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "height_in",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "weight_goal",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "client_weights_client_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (client_id) REFERENCES clients(client_id)"
+        },
+        {
+          "name": "client_weights_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "clients",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "birthdate",
+          "type": "date",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "program",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "login_email",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "started_program_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "current_phase",
+          "type": "text",
+          "notnull": false,
+          "default": "'foundation'::text"
+        },
+        {
+          "name": "execution_score",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "recovery_profile",
+          "type": "text",
+          "notnull": false,
+          "default": "'baseline'::text"
+        },
+        {
+          "name": "recovery_risk_level",
+          "type": "text",
+          "notnull": false,
+          "default": "'low'::text"
+        },
+        {
+          "name": "recovery_notes",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "last_period_start",
+          "type": "date",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "average_cycle_length",
+          "type": "integer",
+          "notnull": false,
+          "default": "28"
+        },
+        {
+          "name": "cycle_tracking_enabled",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "execution_style",
+          "type": "text",
+          "notnull": false,
+          "default": "'flow'::text"
+        },
+        {
+          "name": "wake_time",
+          "type": "time without time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "bed_time",
+          "type": "time without time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "preferred_workout_time",
+          "type": "time without time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "work_start_time",
+          "type": "time without time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "carb_timing_preference",
+          "type": "text",
+          "notnull": false,
+          "default": "'training_or_work'::text"
+        },
+        {
+          "name": "carousel_style",
+          "type": "text",
+          "notnull": false,
+          "default": "'section'::text"
+        },
+        {
+          "name": "work_end_time",
+          "type": "time without time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "school_dropoff_time",
+          "type": "time without time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "school_pickup_time",
+          "type": "time without time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "lunch_window_time",
+          "type": "time without time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "dinner_window_time",
+          "type": "time without time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "daily_non_negotiables",
+          "type": "text[]",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "day_structure_notes",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "daily_structure_reviewed_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "timezone",
+          "type": "text",
+          "notnull": false,
+          "default": "'America/Chicago'::text"
+        },
+        {
+          "name": "address_line_1",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "address_line_2",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "city",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "postal_code",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "notnull": false,
+          "default": "'US'::text"
+        },
+        {
+          "name": "address_verified",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "subscription_status",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "verified_purchase",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "access",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "subscription_started_at",
+          "type": "date",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "subscription_ends_at",
+          "type": "date",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "onboarding_completed",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "onboarding_completed_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "reproductive_status",
+          "type": "text",
+          "notnull": false,
+          "default": "'cycling'::text"
+        },
+        {
+          "name": "six_month_cycle_status",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "last_six_cycle_starts",
+          "type": "date[]",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "onboarding_data",
+          "type": "jsonb",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "dashboard_phase",
+          "type": "integer",
+          "notnull": false,
+          "default": "1"
+        },
+        {
+          "name": "flame_score",
+          "type": "numeric",
+          "notnull": false,
+          "default": "10"
+        },
+        {
+          "name": "overwhelm_score",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "consistency_score",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "current_capacity",
+          "type": "text",
+          "notnull": false,
+          "default": "'stabilizing'::text"
+        },
+        {
+          "name": "last_checkin_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "adaptive_state",
+          "type": "jsonb",
+          "notnull": false,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "current_workout_days_per_week",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "current_workout_minutes_per_day",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "current_training_intensity",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "workout_schedule_preference",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "workout_days_available",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "current_workout_minutes_per_session",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "clients_client_id_key",
+          "type": "u",
+          "definition": "UNIQUE (client_id)"
+        },
+        {
+          "name": "clients_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "cycle_logs",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "cycle_day",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "cycle_phase",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "bleeding",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "cramps",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "headache",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "fatigue",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "mood_sensitivity",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "ovulation_test_taken",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "ovulation_test_result",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "pregnancy_test_taken",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "pregnancy_test_result",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "symptom_intensity",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "prominent_symptom",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "symptoms",
+          "type": "jsonb",
+          "notnull": false,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "period_started",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "period_ended",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "event_type",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "cycle_logs_client_id_log_date_unique",
+          "type": "u",
+          "definition": "UNIQUE (client_id, log_date)"
+        },
+        {
+          "name": "cycle_logs_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "cycle_logs_unique_daily",
+          "type": "u",
+          "definition": "UNIQUE (client_id, log_date)"
+        }
+      ]
+    },
+    {
+      "table_name": "daily_health_metrics",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "metric_date",
+          "type": "date",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "timezone",
+          "type": "text",
+          "notnull": true,
+          "default": "'America/Chicago'::text"
+        },
+        {
+          "name": "metric_type",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "value",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "notnull": true,
+          "default": "'unavailable'::text"
+        },
+        {
+          "name": "sample_count",
+          "type": "integer",
+          "notnull": true,
+          "default": "0"
+        },
+        {
+          "name": "provider_count",
+          "type": "integer",
+          "notnull": true,
+          "default": "0"
+        },
+        {
+          "name": "source_providers",
+          "type": "text[]",
+          "notnull": true,
+          "default": "'{}'::text[]"
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "notnull": true,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "computed_at",
+          "type": "timestamp with time zone",
+          "notnull": true,
+          "default": "now()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": true,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notnull": true,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "daily_health_metrics_client_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "daily_health_metrics_metric_type_check",
+          "type": "c",
+          "definition": "CHECK ((metric_type = ANY (ARRAY['sleep_duration'::text, 'sleep_stage'::text, 'resting_heart_rate'::text, 'heart_rate_variability'::text, 'respiratory_rate'::text, 'body_temperature'::text, 'steps'::text, 'active_energy'::text, 'workout'::text, 'walking_running_distance'::text, 'body_weight'::text, 'body_fat_percentage'::text])))"
+        },
+        {
+          "name": "daily_health_metrics_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "daily_health_metrics_provider_count_check",
+          "type": "c",
+          "definition": "CHECK ((provider_count >= 0))"
+        },
+        {
+          "name": "daily_health_metrics_sample_count_check",
+          "type": "c",
+          "definition": "CHECK ((sample_count >= 0))"
+        },
+        {
+          "name": "daily_health_metrics_status_check",
+          "type": "c",
+          "definition": "CHECK ((status = ANY (ARRAY['measured'::text, 'aggregated'::text, 'unavailable'::text])))"
+        },
+        {
+          "name": "daily_health_metrics_user_id_client_id_metric_date_metric_t_key",
+          "type": "u",
+          "definition": "UNIQUE (user_id, client_id, metric_date, metric_type)"
+        },
+        {
+          "name": "daily_health_metrics_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+        }
+      ]
+    },
+    {
+      "table_name": "food_log_items",
+      "rls_enabled": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "nutrition_log_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "client_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "food_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "quantity",
+          "type": "numeric",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "grams",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "logged_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "food_log_items_client_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "food_log_items_food_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (food_id) REFERENCES foods(id)"
+        },
+        {
+          "name": "food_log_items_nutrition_log_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (nutrition_log_id) REFERENCES nutrition_logs(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "food_log_items_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "food_nutrients",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "food_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "calories",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "protein_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "carbs_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "fat_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "fiber_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "sugar_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "sodium_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "potassium_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "magnesium_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "calcium_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "iron_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "zinc_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "selenium_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "iodine_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "cholesterol_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "choline_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "vitamin_a_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "vitamin_c_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "vitamin_d_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "vitamin_e_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "vitamin_k_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b1_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b2_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b3_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b5_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b6_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b9_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b12_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "water_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "soluble_fiber_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "insoluble_fiber_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "starch_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "phosphorus_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "copper_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "manganese_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "molybdenum_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "boron_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "thiamin_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "riboflavin_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "niacin_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "pantothenic_acid_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "vitamin_b6_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "biotin_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "folate_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "vitamin_a_rae_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "retinol_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "beta_carotene_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "alpha_carotene_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "lycopene_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "lutein_zeaxanthin_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "alpha_tocopherol_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "vitamin_d_iu",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "vitamin_d2_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "vitamin_d3_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "betaine_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "caffeine_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "taurine_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "beta_alanine_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "citrulline_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "tyrosine_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "acetyl_l_carnitine_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "alpha_gpc_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "coq10_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "carbonated",
+          "type": "boolean",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "artificial_sweeteners",
+          "type": "text[]",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "artificial_colors",
+          "type": "text[]",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "creatine_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "l_carnitine_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "l_theanine_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "agmatine_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "nitrates_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "electrolytes_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "saturated_fat_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "trans_fat_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "sugar_alcohol_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "added_sugar_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "food_nutrients_food_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "food_nutrients_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "food_serving_options",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "food_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "grams",
+          "type": "numeric",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "is_default",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "sort_order",
+          "type": "integer",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "food_serving_options_food_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "food_serving_options_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "foods",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "brand",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "default_serving_amount",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "default_serving_unit",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "grams_per_serving",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "usda_fdc_id",
+          "type": "bigint",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "normalized_name",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "data_source",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "notnull": false,
+          "default": "true"
+        },
+        {
+          "name": "product_line",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "product_form",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "servings_per_container",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "scoop_grams",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "barcode",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "barcode_format",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "notnull": true,
+          "default": "'catalog'::text"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "foods_auth_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "foods_client_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "foods_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "health_samples",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "metric_type",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "value",
+          "type": "numeric",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "start_at",
+          "type": "timestamp with time zone",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "end_at",
+          "type": "timestamp with time zone",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "source_name",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "source_device",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "source_record_id",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "dedupe_key",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "notnull": true,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "notnull": true,
+          "default": "now()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": true,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "health_samples_client_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "health_samples_end_after_start",
+          "type": "c",
+          "definition": "CHECK ((end_at >= start_at))"
+        },
+        {
+          "name": "health_samples_metric_type_check",
+          "type": "c",
+          "definition": "CHECK ((metric_type = ANY (ARRAY['sleep_duration'::text, 'sleep_stage'::text, 'resting_heart_rate'::text, 'heart_rate_variability'::text, 'respiratory_rate'::text, 'body_temperature'::text, 'steps'::text, 'active_energy'::text, 'workout'::text, 'walking_running_distance'::text, 'body_weight'::text, 'body_fat_percentage'::text])))"
+        },
+        {
+          "name": "health_samples_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "health_samples_provider_check",
+          "type": "c",
+          "definition": "CHECK ((provider = ANY (ARRAY['apple_health'::text, 'health_connect'::text])))"
+        },
+        {
+          "name": "health_samples_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "health_samples_user_id_provider_dedupe_key_key",
+          "type": "u",
+          "definition": "UNIQUE (user_id, provider, dedupe_key)"
+        }
+      ]
+    },
+    {
+      "table_name": "meal_entries",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "nutrition_log_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "food_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "meal_name",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "serving_amount",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "serving_unit",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "logged_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "symptoms_after",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "bloating",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "fatigue",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "headache",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "reflux",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "nausea",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "serving_option_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "grams",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "day_block",
+          "type": "text",
+          "notnull": false,
+          "default": "'other'::text"
+        },
+        {
+          "name": "entry_source",
+          "type": "text",
+          "notnull": true,
+          "default": "'manual'::text"
+        },
+        {
+          "name": "meal_period",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "entry_state",
+          "type": "text",
+          "notnull": true,
+          "default": "'confirmed'::text"
+        },
+        {
+          "name": "recurring_food_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "confirmed_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "skipped_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "meal_entries_entry_source_check",
+          "type": "c",
+          "definition": "CHECK ((entry_source = ANY (ARRAY['manual'::text, 'barcode'::text, 'recurring'::text, 'photo_estimate'::text])))"
+        },
+        {
+          "name": "meal_entries_entry_state_check",
+          "type": "c",
+          "definition": "CHECK ((entry_state = ANY (ARRAY['scheduled'::text, 'pre_logged'::text, 'confirmed'::text, 'skipped'::text])))"
+        },
+        {
+          "name": "meal_entries_food_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "meal_entries_meal_period_check",
+          "type": "c",
+          "definition": "CHECK (((meal_period IS NULL) OR (meal_period = ANY (ARRAY['Wake Up'::text, 'Breakfast'::text, 'Brunch'::text, 'Lunch'::text, 'Snack'::text, 'Dinner'::text, 'Pre-Bed'::text, 'Other'::text]))))"
+        },
+        {
+          "name": "meal_entries_nutrition_log_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (nutrition_log_id) REFERENCES nutrition_logs(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "meal_entries_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "meal_entries_serving_option_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (serving_option_id) REFERENCES food_serving_options(id)"
+        }
+      ]
+    },
+    {
+      "table_name": "measurement_logs",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "advanced_enabled",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "measurements",
+          "type": "jsonb",
+          "notnull": false,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "measurement_logs_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "measurement_logs_unique_client_date",
+          "type": "u",
+          "definition": "UNIQUE (client_id, log_date)"
+        }
+      ]
+    },
+    {
+      "table_name": "nutrition_logs",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "protein",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "carbs",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "fats",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "calories",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "water_oz",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "meals",
+          "type": "jsonb",
+          "notnull": false,
+          "default": "'[]'::jsonb"
+        },
+        {
+          "name": "completed",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "fiber_target_g",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "sodium_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "potassium_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "magnesium_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "calcium_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "iron_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "zinc_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "selenium_target_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "cholesterol_limit_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "choline_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "vitamin_a_target_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "vitamin_c_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "vitamin_d_target_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "vitamin_e_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "vitamin_k_target_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b1_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b2_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b3_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b5_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b6_target_mg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b9_target_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "b12_target_mcg",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        },
+        {
+          "name": "water_consumed_oz",
+          "type": "numeric",
+          "notnull": false,
+          "default": "0"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "nutrition_logs_client_id_log_date_key",
+          "type": "u",
+          "definition": "UNIQUE (client_id, log_date)"
+        },
+        {
+          "name": "nutrition_logs_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "program_outputs",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "output_id",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "job_id",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "program",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "notnull": false,
+          "default": "'complete'::text"
+        },
+        {
+          "name": "program_json",
+          "type": "jsonb",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "generated_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "last_updated",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "program_outputs_client_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (client_id) REFERENCES clients(client_id)"
+        },
+        {
+          "name": "program_outputs_output_id_key",
+          "type": "u",
+          "definition": "UNIQUE (output_id)"
+        },
+        {
+          "name": "program_outputs_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "recovery_logs",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "sleep_quality",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "soreness_level",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "stress_level",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "energy_level",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "hydration_level",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "sick",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "dizzy",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "cycle_symptoms",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "unusually_fatigued",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "recovery_focus",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "recommendation",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "completed",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "sleep_hours",
+          "type": "numeric",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "mood_level",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "hunger_level",
+          "type": "integer",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "daily_tasks",
+          "type": "jsonb",
+          "notnull": true,
+          "default": "'[]'::jsonb"
+        },
+        {
+          "name": "check_in_completed_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "soreness_regions",
+          "type": "text[]",
+          "notnull": true,
+          "default": "'{}'::text[]"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "recovery_logs_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "food_id",
+          "type": "uuid",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "serving_option_id",
+          "type": "uuid",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "serving_amount",
+          "type": "numeric",
+          "notnull": true,
+          "default": "1"
+        },
+        {
+          "name": "serving_unit",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "meal_period",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "day_block",
+          "type": "text",
+          "notnull": true,
+          "default": "'other'::text"
+        },
+        {
+          "name": "days_of_week",
+          "type": "smallint[]",
+          "notnull": true,
+          "default": "'{}'::smallint[]"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "notnull": true,
+          "default": "'suggested'::text"
+        },
+        {
+          "name": "detection_metadata",
+          "type": "jsonb",
+          "notnull": true,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "last_prompted_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": true,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notnull": true,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "recurring_food_patterns_auth_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "recurring_food_patterns_client_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "recurring_food_patterns_day_block_check",
+          "type": "c",
+          "definition": "CHECK ((day_block = ANY (ARRAY['morning'::text, 'midday'::text, 'evening'::text, 'other'::text])))"
+        },
+        {
+          "name": "recurring_food_patterns_food_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "recurring_food_patterns_meal_period_check",
+          "type": "c",
+          "definition": "CHECK ((meal_period = ANY (ARRAY['Wake Up'::text, 'Breakfast'::text, 'Brunch'::text, 'Lunch'::text, 'Snack'::text, 'Dinner'::text, 'Pre-Bed'::text, 'Other'::text])))"
+        },
+        {
+          "name": "recurring_food_patterns_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "recurring_food_patterns_serving_amount_check",
+          "type": "c",
+          "definition": "CHECK ((serving_amount > (0)::numeric))"
+        },
+        {
+          "name": "recurring_food_patterns_serving_option_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (serving_option_id) REFERENCES food_serving_options(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "recurring_food_patterns_status_check",
+          "type": "c",
+          "definition": "CHECK ((status = ANY (ARRAY['suggested'::text, 'active'::text, 'dismissed'::text, 'paused'::text])))"
+        }
+      ]
+    },
+    {
+      "table_name": "symptom_types",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "severity_scale",
+          "type": "boolean",
+          "notnull": false,
+          "default": "true"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "symptom_types_name_key",
+          "type": "u",
+          "definition": "UNIQUE (name)"
+        },
+        {
+          "name": "symptom_types_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "table_name": "workout_logs",
+      "rls_enabled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notnull": true,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "program",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "workout_date",
+          "type": "date",
+          "notnull": true,
+          "default": null
+        },
+        {
+          "name": "day_name",
+          "type": "text",
+          "notnull": false,
+          "default": null
+        },
+        {
+          "name": "exercise_logs",
+          "type": "jsonb",
+          "notnull": true,
+          "default": "'[]'::jsonb"
+        },
+        {
+          "name": "completed",
+          "type": "boolean",
+          "notnull": false,
+          "default": "false"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notnull": false,
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "workout_logs_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    }
+  ],
+  "policies": [
+    {
+      "tablename": "assessment_photos",
+      "policyname": "Users can insert their own assessment photos",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "assessment_photos",
+      "policyname": "Users can update their own assessment photos",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "assessment_photos",
+      "policyname": "Users can view their own assessment photos",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "assessments",
+      "policyname": "Clients can insert own assessments",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "assessments",
+      "policyname": "Clients can read own assessments",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "clients",
+      "policyname": "Clients can read own row",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "clients",
+      "policyname": "Clients can update own client row",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "clients",
+      "policyname": "Service role full access",
+      "permissive": "PERMISSIVE",
+      "roles": "{service_role}",
+      "cmd": "ALL",
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "tablename": "cycle_logs",
+      "policyname": "Clients can insert own cycle logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "cycle_logs",
+      "policyname": "Clients can read own cycle logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "cycle_logs",
+      "policyname": "Clients can update own cycle logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "daily_health_metrics",
+      "policyname": "Clients insert own daily health metrics",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((( SELECT auth.uid() AS uid) = user_id) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = daily_health_metrics.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+    },
+    {
+      "tablename": "daily_health_metrics",
+      "policyname": "Clients read own daily health metrics",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "daily_health_metrics",
+      "policyname": "Clients update own daily health metrics",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": "((( SELECT auth.uid() AS uid) = user_id) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = daily_health_metrics.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+    },
+    {
+      "tablename": "food_nutrients",
+      "policyname": "Anyone can read food nutrients",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "food_nutrients",
+      "policyname": "Authenticated users can read food nutrients",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "food_nutrients",
+      "policyname": "authenticated read catalog and own food nutrients",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE ((f.id = food_nutrients.food_id) AND ((f.source = 'catalog'::text) OR (f.auth_user_id = ( SELECT auth.uid() AS uid))))))",
+      "with_check": null
+    },
+    {
+      "tablename": "food_nutrients",
+      "policyname": "clients insert nutrients for own custom foods",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE ((f.id = food_nutrients.food_id) AND (f.auth_user_id = ( SELECT auth.uid() AS uid)) AND (f.source = ANY (ARRAY['custom'::text, 'barcode_custom'::text, 'photo_estimate'::text])))))"
+    },
+    {
+      "tablename": "food_nutrients",
+      "policyname": "food nutrient privacy boundary",
+      "permissive": "RESTRICTIVE",
+      "roles": "{public}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE (f.id = food_nutrients.food_id)))",
+      "with_check": null
+    },
+    {
+      "tablename": "food_serving_options",
+      "policyname": "Authenticated users can read food serving options",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "food_serving_options",
+      "policyname": "authenticated read catalog and own food servings",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE ((f.id = food_serving_options.food_id) AND ((f.source = 'catalog'::text) OR (f.auth_user_id = ( SELECT auth.uid() AS uid))))))",
+      "with_check": null
+    },
+    {
+      "tablename": "food_serving_options",
+      "policyname": "clients insert servings for own custom foods",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE ((f.id = food_serving_options.food_id) AND (f.auth_user_id = ( SELECT auth.uid() AS uid)) AND (f.source = ANY (ARRAY['custom'::text, 'barcode_custom'::text, 'photo_estimate'::text])))))"
+    },
+    {
+      "tablename": "food_serving_options",
+      "policyname": "food serving privacy boundary",
+      "permissive": "RESTRICTIVE",
+      "roles": "{public}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE (f.id = food_serving_options.food_id)))",
+      "with_check": null
+    },
+    {
+      "tablename": "foods",
+      "policyname": "Anyone can read foods",
+      "permissive": "PERMISSIVE",
+      "roles": "{public}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "foods",
+      "policyname": "Authenticated users can read foods",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "foods",
+      "policyname": "authenticated read catalog and own foods",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "((source = 'catalog'::text) OR (auth_user_id = ( SELECT auth.uid() AS uid)))",
+      "with_check": null
+    },
+    {
+      "tablename": "foods",
+      "policyname": "clients insert own custom foods",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((( SELECT auth.uid() AS uid) = auth_user_id) AND (source = ANY (ARRAY['custom'::text, 'barcode_custom'::text, 'photo_estimate'::text])) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = foods.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+    },
+    {
+      "tablename": "foods",
+      "policyname": "custom food tier boundary",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = foods.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid)) AND (lower(c.program) = ANY (ARRAY['ignite'::text, 'phoenix'::text])) AND ((foods.source <> 'photo_estimate'::text) OR (lower(c.program) = 'phoenix'::text)))))"
+    },
+    {
+      "tablename": "foods",
+      "policyname": "food catalog privacy boundary",
+      "permissive": "RESTRICTIVE",
+      "roles": "{public}",
+      "cmd": "SELECT",
+      "qual": "((source = 'catalog'::text) OR (auth_user_id = ( SELECT auth.uid() AS uid)))",
+      "with_check": null
+    },
+    {
+      "tablename": "health_samples",
+      "policyname": "Clients insert own health samples",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((( SELECT auth.uid() AS uid) = user_id) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = health_samples.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+    },
+    {
+      "tablename": "health_samples",
+      "policyname": "Clients read own health samples",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "health_samples",
+      "policyname": "Clients update own health samples",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": "((( SELECT auth.uid() AS uid) = user_id) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = health_samples.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+    },
+    {
+      "tablename": "meal_entries",
+      "policyname": "clients delete own meal entries",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM nutrition_logs nl\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))",
+      "with_check": null
+    },
+    {
+      "tablename": "meal_entries",
+      "policyname": "clients insert own meal entries",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM nutrition_logs nl\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))"
+    },
+    {
+      "tablename": "meal_entries",
+      "policyname": "clients read own meal entries",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM nutrition_logs nl\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))",
+      "with_check": null
+    },
+    {
+      "tablename": "meal_entries",
+      "policyname": "clients update own meal entries",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM nutrition_logs nl\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM nutrition_logs nl\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))"
+    },
+    {
+      "tablename": "meal_entries",
+      "policyname": "meal logging tier boundary",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (nutrition_logs nl\n     JOIN clients c ON ((c.client_id = nl.client_id)))\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)) AND (c.auth_user_id = ( SELECT auth.uid() AS uid)) AND (lower(c.program) = ANY (ARRAY['ignite'::text, 'phoenix'::text])))))",
+      "with_check": "((EXISTS ( SELECT 1\n   FROM (nutrition_logs nl\n     JOIN clients c ON ((c.client_id = nl.client_id)))\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)) AND (c.auth_user_id = ( SELECT auth.uid() AS uid)) AND (lower(c.program) = ANY (ARRAY['ignite'::text, 'phoenix'::text])) AND ((meal_entries.entry_source <> 'photo_estimate'::text) OR (lower(c.program) = 'phoenix'::text))))) AND (EXISTS ( SELECT 1\n   FROM foods f\n  WHERE (f.id = meal_entries.food_id))) AND ((serving_option_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM food_serving_options s\n  WHERE ((s.id = meal_entries.serving_option_id) AND (s.food_id = meal_entries.food_id))))) AND ((recurring_food_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM recurring_food_patterns r\n  WHERE ((r.id = meal_entries.recurring_food_id) AND (r.auth_user_id = ( SELECT auth.uid() AS uid)) AND (r.food_id = meal_entries.food_id))))) AND (serving_amount > (0)::numeric) AND (grams > (0)::numeric))"
+    },
+    {
+      "tablename": "measurement_logs",
+      "policyname": "clients insert own measurements",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(( SELECT auth.uid() AS uid) = auth_user_id)"
+    },
+    {
+      "tablename": "measurement_logs",
+      "policyname": "clients read own measurements",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "measurement_logs",
+      "policyname": "clients update own measurements",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": "(( SELECT auth.uid() AS uid) = auth_user_id)"
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "Clients can insert own nutrition logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "Clients can read own nutrition logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "Clients can update own nutrition logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "clients insert own nutrition logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((( SELECT auth.uid() AS uid) = auth_user_id) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = nutrition_logs.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "clients read own nutrition logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "clients update own nutrition logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": "(( SELECT auth.uid() AS uid) = auth_user_id)"
+    },
+    {
+      "tablename": "program_outputs",
+      "policyname": "Clients can insert own program outputs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "program_outputs",
+      "policyname": "Clients can read own program outputs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "recovery_logs",
+      "policyname": "Clients can insert own recovery logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "recovery_logs",
+      "policyname": "Clients can read own recovery logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "recovery_logs",
+      "policyname": "Clients can update own recovery logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "recurring_food_patterns",
+      "policyname": "clients insert own recurring food patterns",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(( SELECT auth.uid() AS uid) = auth_user_id)"
+    },
+    {
+      "tablename": "recurring_food_patterns",
+      "policyname": "clients read own recurring food patterns",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "recurring_food_patterns",
+      "policyname": "clients update own recurring food patterns",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": "(( SELECT auth.uid() AS uid) = auth_user_id)"
+    },
+    {
+      "tablename": "symptom_types",
+      "policyname": "Authenticated users can read symptom types",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "workout_logs",
+      "policyname": "Clients can insert own workout logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "workout_logs",
+      "policyname": "Clients can read own workout logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "workout_logs",
+      "policyname": "Clients can update own workout logs",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    }
+  ],
+  "grants": [
+    {
+      "table_name": "assessment_photos",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "assessment_photos",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "assessment_photos",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "assessment_photos",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "assessment_photos",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "assessment_photos",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "assessment_photos",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "assessment_photos",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "assessment_photos",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "assessment_photos",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "assessment_photos",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "assessment_photos",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "assessment_windows",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "assessment_windows",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "assessment_windows",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "assessment_windows",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "assessment_windows",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "assessment_windows",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "assessment_windows",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "assessment_windows",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "assessment_windows",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "assessments",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "client_billing",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "client_billing",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "client_billing",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "client_billing",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "client_billing",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "client_billing",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "client_billing",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "client_billing",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "client_billing",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "client_weights",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "client_weights",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "client_weights",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "client_weights",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "client_weights",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "client_weights",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "client_weights",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "client_weights",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "client_weights",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "service_role",
+      "privilege": "DELETE"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "service_role",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "service_role",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "clients",
+      "role_name": "service_role",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "cycle_logs",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "daily_health_metrics",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "daily_health_metrics",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "daily_health_metrics",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "daily_health_metrics",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "daily_health_metrics",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "daily_health_metrics",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "food_log_items",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "food_log_items",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "food_log_items",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "food_log_items",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "food_log_items",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "food_log_items",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "food_log_items",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "food_log_items",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "food_log_items",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "food_nutrients",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "food_nutrients",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "food_nutrients",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "food_nutrients",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "food_nutrients",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "food_nutrients",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "food_nutrients",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "food_nutrients",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "food_nutrients",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "food_nutrients",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "food_nutrients",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "food_serving_options",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "food_serving_options",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "food_serving_options",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "food_serving_options",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "food_serving_options",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "food_serving_options",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "food_serving_options",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "food_serving_options",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "food_serving_options",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "food_serving_options",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "food_serving_options",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "foods",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "foods",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "foods",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "foods",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "foods",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "foods",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "foods",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "foods",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "foods",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "foods",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "foods",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "health_samples",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "health_samples",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "health_samples",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "health_samples",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "health_samples",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "health_samples",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "authenticated",
+      "privilege": "DELETE"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "meal_entries",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "anon",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "authenticated",
+      "privilege": "DELETE"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "measurement_logs",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "nutrition_logs",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "program_outputs",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "recovery_logs",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "recurring_food_patterns",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "symptom_types",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "symptom_types",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "symptom_types",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "symptom_types",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "symptom_types",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "symptom_types",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "symptom_types",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "symptom_types",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "symptom_types",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "symptom_types",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "anon",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "anon",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "anon",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "authenticated",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "authenticated",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "authenticated",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table_name": "workout_logs",
+      "role_name": "service_role",
+      "privilege": "TRUNCATE"
+    }
+  ],
+  "views": [
+    {
+      "name": "nutrition_log_remaining",
+      "definition": " SELECT nl.id AS nutrition_log_id,\n    nl.client_id,\n    nl.calories - COALESCE(t.calories_eaten, 0::numeric) AS calories_remaining,\n    nl.protein - COALESCE(t.protein_eaten_g, 0::numeric) AS protein_remaining_g,\n    nl.carbs - COALESCE(t.carbs_eaten_g, 0::numeric) AS carbs_remaining_g,\n    nl.fats - COALESCE(t.fat_eaten_g, 0::numeric) AS fat_remaining_g,\n    nl.fiber_target_g - COALESCE(t.fiber_eaten_g, 0::numeric) AS fiber_remaining_g,\n    nl.sodium_target_mg - COALESCE(t.sodium_eaten_mg, 0::numeric) AS sodium_remaining_mg,\n    nl.potassium_target_mg - COALESCE(t.potassium_eaten_mg, 0::numeric) AS potassium_remaining_mg,\n    nl.magnesium_target_mg - COALESCE(t.magnesium_eaten_mg, 0::numeric) AS magnesium_remaining_mg,\n    nl.calcium_target_mg - COALESCE(t.calcium_eaten_mg, 0::numeric) AS calcium_remaining_mg,\n    nl.iron_target_mg - COALESCE(t.iron_eaten_mg, 0::numeric) AS iron_remaining_mg,\n    nl.zinc_target_mg - COALESCE(t.zinc_eaten_mg, 0::numeric) AS zinc_remaining_mg,\n    nl.selenium_target_mcg - COALESCE(t.selenium_eaten_mcg, 0::numeric) AS selenium_remaining_mcg,\n    nl.cholesterol_limit_mg - COALESCE(t.cholesterol_eaten_mg, 0::numeric) AS cholesterol_remaining_mg,\n    nl.choline_target_mg - COALESCE(t.choline_eaten_mg, 0::numeric) AS choline_remaining_mg,\n    nl.vitamin_a_target_mcg - COALESCE(t.vitamin_a_eaten_mcg, 0::numeric) AS vitamin_a_remaining_mcg,\n    nl.vitamin_c_target_mg - COALESCE(t.vitamin_c_eaten_mg, 0::numeric) AS vitamin_c_remaining_mg,\n    nl.vitamin_d_target_mcg - COALESCE(t.vitamin_d_eaten_mcg, 0::numeric) AS vitamin_d_remaining_mcg,\n    nl.vitamin_e_target_mg - COALESCE(t.vitamin_e_eaten_mg, 0::numeric) AS vitamin_e_remaining_mg,\n    nl.vitamin_k_target_mcg - COALESCE(t.vitamin_k_eaten_mcg, 0::numeric) AS vitamin_k_remaining_mcg,\n    nl.b1_target_mg - COALESCE(t.b1_eaten_mg, 0::numeric) AS b1_remaining_mg,\n    nl.b2_target_mg - COALESCE(t.b2_eaten_mg, 0::numeric) AS b2_remaining_mg,\n    nl.b3_target_mg - COALESCE(t.b3_eaten_mg, 0::numeric) AS b3_remaining_mg,\n    nl.b5_target_mg - COALESCE(t.b5_eaten_mg, 0::numeric) AS b5_remaining_mg,\n    nl.b6_target_mg - COALESCE(t.b6_eaten_mg, 0::numeric) AS b6_remaining_mg,\n    nl.b9_target_mcg - COALESCE(t.b9_eaten_mcg, 0::numeric) AS b9_remaining_mcg,\n    nl.b12_target_mcg - COALESCE(t.b12_eaten_mcg, 0::numeric) AS b12_remaining_mcg\n   FROM nutrition_logs nl\n     LEFT JOIN nutrition_log_totals t ON t.nutrition_log_id = nl.id;",
+      "options": [
+        "security_invoker=true"
+      ]
+    },
+    {
+      "name": "nutrition_log_totals",
+      "definition": " SELECT me.nutrition_log_id,\n    sum(fn.calories * COALESCE(me.grams, 0::numeric) / 100::numeric) AS calories_eaten,\n    sum(fn.protein_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS protein_eaten_g,\n    sum(fn.carbs_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS carbs_eaten_g,\n    sum(fn.fat_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS fat_eaten_g,\n    sum(fn.fiber_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS fiber_eaten_g,\n    sum(fn.sodium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS sodium_eaten_mg,\n    sum(fn.potassium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS potassium_eaten_mg,\n    sum(fn.magnesium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS magnesium_eaten_mg,\n    sum(fn.calcium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS calcium_eaten_mg,\n    sum(fn.iron_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS iron_eaten_mg,\n    sum(fn.zinc_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS zinc_eaten_mg,\n    sum(fn.selenium_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS selenium_eaten_mcg,\n    sum(fn.cholesterol_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS cholesterol_eaten_mg,\n    sum(fn.choline_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS choline_eaten_mg,\n    sum(fn.vitamin_a_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS vitamin_a_eaten_mcg,\n    sum(fn.vitamin_c_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS vitamin_c_eaten_mg,\n    sum(fn.vitamin_d_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS vitamin_d_eaten_mcg,\n    sum(fn.vitamin_e_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS vitamin_e_eaten_mg,\n    sum(fn.vitamin_k_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS vitamin_k_eaten_mcg,\n    sum(fn.b1_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b1_eaten_mg,\n    sum(fn.b2_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b2_eaten_mg,\n    sum(fn.b3_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b3_eaten_mg,\n    sum(fn.b5_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b5_eaten_mg,\n    sum(fn.b6_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b6_eaten_mg,\n    sum(fn.b9_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b9_eaten_mcg,\n    sum(fn.b12_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b12_eaten_mcg\n   FROM meal_entries me\n     JOIN food_nutrients fn ON fn.food_id = me.food_id\n  WHERE me.entry_state = 'confirmed'::text\n  GROUP BY me.nutrition_log_id;",
+      "options": [
+        "security_invoker=true"
+      ]
+    },
+    {
+      "name": "nutrition_log_totals_by_block",
+      "definition": " SELECT me.nutrition_log_id,\n    COALESCE(me.day_block, 'other'::text) AS day_block,\n    sum(fn.calories * COALESCE(me.grams, 0::numeric) / 100::numeric) AS calories_eaten,\n    sum(fn.protein_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS protein_eaten_g,\n    sum(fn.carbs_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS carbs_eaten_g,\n    sum(fn.fat_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS fat_eaten_g,\n    sum(fn.fiber_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS fiber_eaten_g,\n    sum(fn.sodium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS sodium_eaten_mg,\n    sum(fn.potassium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS potassium_eaten_mg,\n    sum(fn.magnesium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS magnesium_eaten_mg,\n    sum(fn.calcium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS calcium_eaten_mg,\n    sum(fn.iron_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS iron_eaten_mg,\n    sum(fn.choline_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS choline_eaten_mg\n   FROM meal_entries me\n     JOIN food_nutrients fn ON fn.food_id = me.food_id\n  WHERE me.entry_state = 'confirmed'::text\n  GROUP BY me.nutrition_log_id, (COALESCE(me.day_block, 'other'::text));",
+      "options": [
+        "security_invoker=true"
+      ]
+    }
+  ],
+  "storage": {
+    "buckets": [
+      {
+        "id": "assessment_photos",
+        "public": false
+      }
+    ],
+    "policies": [
+      {
+        "schemaname": "storage",
+        "tablename": "objects",
+        "policyname": "Authenticated users can update assessment photos",
+        "permissive": "PERMISSIVE",
+        "roles": "{authenticated}",
+        "cmd": "UPDATE",
+        "qual": "((bucket_id = 'assessment_photos'::text) AND (auth.role() = 'authenticated'::text))",
+        "with_check": "((bucket_id = 'assessment_photos'::text) AND (auth.role() = 'authenticated'::text))"
+      },
+      {
+        "schemaname": "storage",
+        "tablename": "objects",
+        "policyname": "Authenticated users can upload assessment photos",
+        "permissive": "PERMISSIVE",
+        "roles": "{authenticated}",
+        "cmd": "INSERT",
+        "qual": null,
+        "with_check": "((bucket_id = 'assessment_photos'::text) AND (auth.role() = 'authenticated'::text))"
+      },
+      {
+        "schemaname": "storage",
+        "tablename": "objects",
+        "policyname": "Authenticated users can view assessment photos",
+        "permissive": "PERMISSIVE",
+        "roles": "{authenticated}",
+        "cmd": "SELECT",
+        "qual": "((bucket_id = 'assessment_photos'::text) AND (auth.role() = 'authenticated'::text))",
+        "with_check": null
+      },
+      {
+        "schemaname": "storage",
+        "tablename": "objects",
+        "policyname": "clients update own assessment photos",
+        "permissive": "PERMISSIVE",
+        "roles": "{authenticated}",
+        "cmd": "UPDATE",
+        "qual": "((bucket_id = 'assessment_photos'::text) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = (storage.foldername(objects.name))[1]) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))",
+        "with_check": "((bucket_id = 'assessment_photos'::text) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = (storage.foldername(objects.name))[1]) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+      }
+    ]
+  }
+}

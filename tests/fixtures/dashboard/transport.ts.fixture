@@ -1,7 +1,7 @@
 // Disposable browser transport. Unknown requests fail closed; no real service is contacted.
 export function installQATransport(tier: string, date: string, onChange: (state: any) => void) {
  const key=`local-qa-dashboard-v2:${tier}:${date}`
- const initial={meals:[],session:null,checkIn:{},activities:[],water:0,waterIds:[],scheduleOverrides:{},preferences:null}
+ const initial={meals:[],session:null,checkIn:{},activities:[],water:0,waterIds:[],scheduleOverrides:{},preferences:null,dailyGuide:{date,activities:{}}}
  const state={...initial,...JSON.parse(localStorage.getItem(key)||'{}')}
  const persist=()=>{localStorage.setItem(key,JSON.stringify(state));onChange(structuredClone(state))}
  const original=window.fetch
@@ -35,7 +35,18 @@ export function installQATransport(tier: string, date: string, onChange: (state:
   } else if(url.includes('workout-log')) {
    if(options?.method==='POST'){state.session={id:'local-qa-session',updated_at:new Date().toISOString(),exercise_logs:body.exercise_logs,completed:body.completed};persist()}
    payload={success:true,session:state.session}
-  } else if(url==='/api/workout-set-log') {state.manualSets=body.sets;persist();payload={success:true}} else if(url==='/api/daily-check-in') {state.checkIn={...state.checkIn,...body};persist();payload={success:true}}
+  } else if(url==='/api/workout-set-log') {state.manualSets=body.sets;persist();payload={success:true}} else if(url==='/api/daily-check-in') {
+   if(state.failNextCheckIn){state.failNextCheckIn=false;persist();return Response.json({error:'Check-in could not be saved. Try again.'},{status:503})}
+   state.checkIn={...state.checkIn,...body};state.checkInWrites=(state.checkInWrites||0)+1;persist();payload={success:true}
+  }
+  else if(url==='/api/dashboard/activities') {
+   if(body.date!==date || !['check-in','water','schedule','nutrition','workout','recovery'].includes(body.activityId) || !['defer','skip','resume','review'].includes(body.action))return Response.json({error:'Invalid isolated QA daily activity.'},{status:400})
+   if(state.failNextActivity){state.failNextActivity=false;persist();return Response.json({error:'The activity could not be saved. Try again.'},{status:503})}
+   state.dailyGuide={date,activities:{...state.dailyGuide?.activities}}
+   if(body.action==='resume')delete state.dailyGuide.activities[body.activityId]
+   else state.dailyGuide.activities[body.activityId]=body.action==='defer'?{status:'deferred',until:new Date(Date.now()+2*60*60*1000).toISOString()}:{status:body.action==='skip'?'skipped':'reviewed'}
+   persist();payload={success:true,dailyGuide:state.dailyGuide}
+  }
   else if(url==='/api/nutrition/add-water') {if(!state.waterIds.includes(body.submissionId)){state.water+=body.ounces;state.waterIds.push(body.submissionId);persist()}payload={success:true,nutritionLog:log()}}
   else if(url==='/api/recovery/activity') {state.activities.push({id:'qa-activity-'+state.activities.length,activity_type:body.activityType,duration_minutes:body.minutes,log_date:date});persist();payload={success:true}}
   else if(url==='/api/dashboard/preferences') {state.preferences={...(state.preferences||{}),...body};persist();payload={success:true}}

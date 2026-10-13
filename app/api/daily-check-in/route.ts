@@ -234,6 +234,7 @@ export async function POST(
 
     const today =
       getClientLocalDate(client)
+    if (body.date !== undefined && body.date !== today) return NextResponse.json({ error: 'A new day has started. Open Today before saving your check-in.' }, { status: 409 })
 
     const updatedAt =
       new Date().toISOString()
@@ -256,6 +257,7 @@ export async function POST(
       answers.soreness_regions = regions
     }
     if (body.notes !== undefined) answers.notes = typeof body.notes === 'string' ? body.notes.trim() || null : null
+    if (getClientLocalDate(client) !== today) return NextResponse.json({ error: 'A new day has started. Open Today before saving your check-in.' }, { status: 409 })
     const { error: recoveryError } = await supabase.from('recovery_logs').upsert({ client_id: client.client_id, auth_user_id: user.id, log_date: today,
       ...answers, check_in_completed_at: previous?.check_in_completed_at || updatedAt, updated_at: updatedAt }, { onConflict: 'client_id,log_date' })
 

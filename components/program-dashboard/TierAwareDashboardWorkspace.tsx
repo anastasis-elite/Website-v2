@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import DailyPlanCard from '@/components/DailyPlanCard'
+import GuidedToday from '@/components/program-dashboard/GuidedToday'
 import DailyDisplayPreferences from '@/components/DailyDisplayPreferences'
 import { useViewPreference } from '@/components/dashboard/useViewPreference'
 import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
@@ -397,7 +397,7 @@ export function AssessmentsTab({ logic, capabilities }: { logic: ProgramLogicOut
       <Link href={bodyAssessment.href} title="Measurements" data-tutorial-id="dashboard-body-assessment"><span>Body Assessment</span><strong>{bodyAssessment.title}</strong><small>{bodyAssessmentDetail}</small></Link>
       <Link href="/dashboard/assessment/photos" data-tutorial-id="dashboard-progress-photos"><span>Progress Photos</span><strong>{logic.progress.photoUrls.length ? `${logic.progress.photoUrls.length} saved` : 'Available'}</strong><small>{logic.progress.photosDue ? 'Photo update available' : 'History available'}</small></Link>
       <Link href="/dashboard/assessment/photos"><span>Assessment Photos</span><strong>Available</strong><small>{postureCopy}</small></Link>
-      <Link href="/dashboard/assessment/start" data-tutorial-id="dashboard-strength-assessment"><span>Strength Assessment</span><strong>{logic.assessments.monthlyDueCount ? 'Due' : 'Current'}</strong><small>Functional progress history</small></Link>
+      <Link href="/dashboard/assessment/start2" data-tutorial-id="dashboard-strength-assessment"><span>Strength Assessment</span><strong>{logic.assessments.monthlyDueCount ? 'Due' : 'Current'}</strong><small>Functional progress history</small></Link>
       <Link href={capabilities.postureAssessment ? '/dashboard/assessment/photos?type=posture' : '/dashboard/assessment/photos'} aria-disabled={!capabilities.postureAssessment}><span>Posture Assessment</span><strong>{capabilities.postureAssessment ? 'Available' : 'Ignite/Phoenix'}</strong><small>{capabilities.postureAssessment ? 'Confirm landmarks before saving' : 'Not included in Ember'}</small></Link>
     </div>
   )
@@ -470,6 +470,7 @@ export default function TierAwareDashboardWorkspace({
   recipes?: PhoenixRecipe[]
 }) {
   const [tab, setTab] = useViewPreference<PanelTab>(logic.client.id, 'home-panel', ['progress', 'assessments', 'trends'], 'progress')
+  const [calendarExpanded, setCalendarExpanded] = useState(false)
   const capabilities = getTierCapabilities(tier)
   const planBlocks = useMemo(() => buildPlanBlocks(tier, logic), [tier, logic])
 
@@ -481,19 +482,15 @@ export default function TierAwareDashboardWorkspace({
     (new Date(event.adjusted_end_at || event.end_at) > new Date(schedule.now) || overdueIds.has(event.id))).slice(0, 3)
   return (
     <section className="tier-dashboard-workspace daily-home" data-tier={tier} data-quiet={quiet}>
-      <DailyPlanCard plan={plan} schedule={schedule} />
+      <GuidedToday key={`${logic.client.id}:${schedule.date}`} logic={logic} schedule={schedule} />
+      <details className="daily-disclosure" data-tutorial-id="dashboard-calendar"><summary>Your schedule at a glance</summary><SchedulePreview preview={preview} flexible={flexible} schedule={schedule} logic={logic} plan={plan} /></details>
       <DailyDisplayPreferences {...schedule.preferences} />
-      {quiet ? <p className="daily-quiet-note">One step is enough for now. Your other actions are available below.</p> : null}
-      <section className="daily-essentials" aria-label="Daily essentials">
-        {plan.supporting.map(action => <Link key={action.id} href={action.href}><strong>{action.title}</strong>{quiet ? null : <span>{action.reason}</span>}</Link>)}
-      </section>
-      {quiet ? <details className="daily-disclosure"><summary>Schedule and progress</summary><SchedulePreview preview={preview} flexible={flexible} schedule={schedule} logic={logic} plan={plan} /></details> : <SchedulePreview preview={preview} flexible={flexible} schedule={schedule} logic={logic} plan={plan} />}
       <details className="daily-disclosure" id="progress"><summary>Progress, assessments, and details</summary>
         <div className="tier-tab-list" aria-label="Dashboard information">
           {(['progress', 'assessments', 'trends'] as PanelTab[]).map(item => <button key={item} type="button" aria-pressed={tab === item} className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>{item}</button>)}
         </div>
         {tab === 'progress' ? <ProgressTab logic={logic} tier={tier} /> : tab === 'assessments' ? <AssessmentsTab logic={logic} capabilities={capabilities} /> : <TrendsTab logic={logic} />}
-        <details><summary>Detailed calendar</summary><DashboardCalendar schedule={schedule} planBlocks={planBlocks} clientId={logic.client.id} /></details>
+        <details onToggle={event => setCalendarExpanded(event.currentTarget.open)}><summary>Detailed calendar</summary>{calendarExpanded ? <DashboardCalendar schedule={schedule} planBlocks={planBlocks} clientId={logic.client.id} /> : null}</details>
       </details>
     </section>
   )

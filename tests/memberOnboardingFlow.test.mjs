@@ -13,7 +13,7 @@ const clientId = 'QA-EMBER-ONLY'
 const input = { birthdate: '1992-05-15', addressLine1: '1 Test Street', city: 'Chicago', state: 'IL', postalCode: '60601', reproductiveStatus: 'not_tracking', executionStyle: 'hybrid' }
 const request = (body = input) => new Request('http://qa.test/api/onboarding/profile', { method: 'POST', body: JSON.stringify(body) })
 
-function database({ signedIn = true, initial = false, strength = false, plan = false, failLookup = false, completedAt = null } = {}) {
+function database({ signedIn = true, initial = false, strength = false, plan = false, failLookup = false, completedAt = null, conflict = null } = {}) {
   const client = { client_id: clientId, auth_user_id: owner, program: 'ember', subscription_status: 'active', access: true, onboarding_completed: false, onboarding_completed_at: completedAt, onboarding_data: { kept: 'earlier revision' }, timezone: 'America/Chicago' }
   const tables = {
     clients: [client],
@@ -23,24 +23,56 @@ function database({ signedIn = true, initial = false, strength = false, plan = f
     client_current_profiles: [],
   }
   const writes = []
+  let updateAttempts = 0
   const db = { client, tables, writes, auth: { getUser: async () => ({ data: { user: signedIn ? { id: owner } : null } }) }, from(table) {
     const filters = []; let mutation = null; let upsert = false
-    const q = { select() { return q }, eq(key, value) { filters.push([key, value]); return q }, limit() { return q }, update(value) { mutation = value; return q }, upsert(value) { mutation = value; upsert = true; return q }, maybeSingle: async () => resolve(), then(done) { return Promise.resolve(resolve()).then(done) } }
+    const q = { select() { return q }, eq(key, value) { filters.push([key, value]); return q }, is(key, value) { filters.push([key, value]); return q }, limit() { return q }, update(value) { mutation = value; return q }, upsert(value) { mutation = value; upsert = true; return q }, maybeSingle: async () => resolve(), then(done) { return Promise.resolve(resolve()).then(done) } }
     function resolve() {
       if (failLookup && table === 'program_outputs') return { data: null, error: { message: 'temporary lookup failure' } }
-      let row = tables[table]?.find(candidate => filters.every(([key, value]) => candidate[key] === value)) || null
+      if (mutation && table === 'clients') { updateAttempts++; conflict?.(client, updateAttempts) }
+      let row = tables[table]?.find(candidate => filters.every(([key, value]) => key === 'onboarding_data'
+        ? value === null ? candidate[key] == null : JSON.stringify(candidate[key]) === value : candidate[key] === value)) || null
       if (mutation && (row || upsert)) {
-        writes.push({ table, value: mutation })
-        if (row) Object.assign(row, mutation)
-        else { row = { ...mutation }; tables[table].push(row) }
+        writes.push({ table, value: structuredClone(mutation) })
+        if (row) Object.assign(row, structuredClone(mutation))
+        else { row = structuredClone(mutation); tables[table].push(row) }
       }
-      return { data: row, error: null }
+      return { data: row ? structuredClone(row) : null, error: null }
     }
     return q
   } }
   globalThis.memberOnboardingDb = db
   return db
 }
+
+test('profile resubmission merges concurrent daily guide and preferences without touching another owner', async () => {
+  const dailyGuide = { date: '2026-10-13', activities: { water: { status: 'deferred', until: '2026-10-13T17:00:00Z' } } }
+  const db = database({ plan: true, conflict: (client, attempt) => {
+    if (attempt === 1) client.onboarding_data = { ...client.onboarding_data, dailyGuide,
+      transitionMinutes: 20, scheduleOverrides: { 'virtual-today': { status: 'skipped' } } }
+  } })
+  const other = { client_id: 'OTHER', auth_user_id: 'other-owner', onboarding_data: { untouched: true } }
+  db.tables.clients.push(other)
+  const response = await POST(request())
+  assert.equal(response.status, 200)
+  assert.equal((await response.json()).redirect, '/dashboard/program/ember')
+  assert.equal(db.writes.filter(write => write.table === 'clients').length, 1)
+  assert.deepEqual(db.client.onboarding_data.dailyGuide, dailyGuide)
+  assert.equal(db.client.onboarding_data.transitionMinutes, 20)
+  assert.equal(db.client.onboarding_data.scheduleOverrides['virtual-today'].status, 'skipped')
+  assert.equal(db.client.onboarding_data.kept, 'earlier revision')
+  assert.equal(db.client.onboarding_data.birthdate, input.birthdate)
+  assert.deepEqual(other.onboarding_data, { untouched: true })
+
+  const changing = database({ conflict: (client, attempt) => {
+    client.onboarding_data = { ...client.onboarding_data, concurrentVersion: attempt }
+  } })
+  const failed = await POST(request())
+  assert.equal(failed.status, 409)
+  assert.equal(changing.writes.length, 0, 'exhausted comparisons must not initialize a profile or overwrite JSON')
+  assert.equal(changing.client.onboarding_completed, false)
+  assert.equal(changing.client.onboarding_data.concurrentVersion, 3)
+})
 
 test('fresh EMBER profile persists separately from the baseline and opens the real initial assessment', async () => {
   const db = database()

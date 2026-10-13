@@ -68,19 +68,20 @@ export default async function ProgramPage({
     return <SafetyEscalationNotice flags={safetyFlags} />
   }
 
-  const dailyPlan = await getDailyExecutionPlan({ supabase, client })
   const cycleStatus = getCycleStatus(client)
-
-  const monthlyAssessment = await getMonthlyAssessmentStatus(supabase, client.client_id)
+  const [dailyPlan, monthlyAssessment, { data: output }] = await Promise.all([
+    getDailyExecutionPlan({ supabase, client }),
+    getMonthlyAssessmentStatus(supabase, client.client_id),
+    supabase
+      .from('program_outputs')
+      .select('*')
+      .eq('client_id', client.client_id)
+      .eq('program', program)
+      .order('generated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
   const monthlyAssessmentsDueCount = monthlyAssessment.due ? 1 : 0
-  const { data: output } = await supabase
-    .from('program_outputs')
-    .select('*')
-    .eq('client_id', client.client_id)
-    .eq('program', program)
-    .order('generated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
 
   const { programJson, todaysWorkout, cycleAdjustment, adjustedExercises } =
     getProgramWorkout({ client, output })

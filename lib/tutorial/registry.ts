@@ -65,15 +65,15 @@ export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): Tuto
       stepId: 'dashboard-workout-access',
       kind: 'reveal',
       title: 'Workout',
-      description: 'Workout is direct access to today’s training experience.',
-      revealTarget: { tutorialTargetId: 'dashboard-nav-workout' },
+      description: 'Open your assigned movement in Your day at a glance, or find Workout in You. A day without assigned training does not add an extra activity.',
+      revealTarget: { tutorialTargetId: 'dashboard-navigation' },
     },
     {
       stepId: 'dashboard-daily-insight',
       kind: 'reveal',
-      title: 'Daily Insight',
+      title: 'Your next step',
       description:
-        'Daily Insight changes with the context Anastasis actually has for today, such as schedule load, recovery, nutrition, and the next useful action.',
+        'This short explanation uses the context Anastasis actually has for today. Start here, or open any activity in Your day at a glance.',
       revealTarget: { tutorialTargetId: 'dashboard-daily-insight' },
     },
     {
@@ -94,15 +94,11 @@ export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): Tuto
     },
     {
       stepId: 'dashboard-water-quick-add',
-      kind: 'action',
-      title: 'Quick add water from the dashboard',
+      kind: 'reveal',
+      title: 'Log water',
       description:
-        'This circle shows today’s hydration progress. Tap it any time to quickly add water without leaving the dashboard.',
-      target: { tutorialTargetId: 'dashboard-water-progress' },
-      requiredAction: {
-        actionType: 'open-hydration-quick-add',
-        target: { tutorialTargetId: 'dashboard-water-progress' },
-      },
+        'Open Hydration to add the water you have had. Your saved intake updates Today when you return.',
+      revealTarget: { tutorialTargetId: 'dashboard-water-progress' },
     },
     {
       stepId: 'dashboard-nutrition-quick-add',
@@ -142,31 +138,31 @@ export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): Tuto
       kind: 'reveal',
       title: 'Progress, Assessments, and Trends',
       description:
-        'Use these tabs for current progress, assessment tools, progress photos, measurements, and weekly trend history.',
+        'Today counts saved applicable essentials. Open Progress in the bottom navigation for recorded history, assessment tools, photos, measurements, and trends.',
       revealTarget: { tutorialTargetId: 'dashboard-progress-area' },
     },
     {
       stepId: 'progress-photos',
       kind: 'reveal',
       title: capabilities.postureAssessment ? 'Progress and posture photos' : 'Progress photos',
-      description: assessmentDescription,
-      revealTarget: { tutorialTargetId: 'dashboard-progress-photos' },
+      description: `Open Progress, then expand Assessments and requirements for photos. ${assessmentDescription}`,
+      revealTarget: { tutorialTargetId: 'dashboard-progress-navigation' },
     },
     {
       stepId: 'progress-measurements',
       kind: 'reveal',
       title: 'Measurements',
       description:
-        'Measurements live here. Use this area to log and review objective body measurement progress over time.',
-      revealTarget: { tutorialTargetId: 'dashboard-measurements' },
+        'Open Progress, then expand Assessments and requirements to find Body Assessment. Your saved measurements remain available there over time.',
+      revealTarget: { tutorialTargetId: 'dashboard-progress-navigation' },
     },
     {
       stepId: 'progress-strength',
       kind: 'reveal',
       title: 'Strength assessments',
       description:
-        'Strength assessments live here. These track functional and performance progress separately from scale, photo, or body measurement changes.',
-      revealTarget: { tutorialTargetId: 'dashboard-strength-assessment' },
+        'Open Progress, then expand Assessments and requirements to find Strength Assessment. It records functional and performance progress alongside your other history.',
+      revealTarget: { tutorialTargetId: 'dashboard-progress-navigation' },
     },
   ],
   }

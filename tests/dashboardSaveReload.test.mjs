@@ -143,6 +143,36 @@ function assertExistingUntouched(before, after) {
   }
 }
 
+test('a stale local-day check-in is rejected without changing saved health records', async () => {
+  const db = database(), before = structuredClone(db.tables)
+  const response = await checkIn.POST(req({ clientId, date: yesterday, energy: 3 }))
+  assert.equal(response.status, 409)
+  assert.deepEqual(db.tables, before)
+  assert.equal(db.writes.length, 0)
+})
+
+test('check-in crossing member-local midnight before persistence remains unsaved for the new day', async t => {
+  mock.timers.setTime(Date.parse('2026-10-13T04:59:59.000Z'))
+  t.after(() => mock.timers.setTime(Date.parse('2026-10-12T20:40:00.000Z')))
+  const db = database(), before = structuredClone(db.tables), originalFrom = db.from
+  db.from = table => {
+    const query = originalFrom(table)
+    if (table === 'recovery_logs') {
+      const originalSingle = query.maybeSingle
+      query.maybeSingle = async () => {
+        const result = await originalSingle()
+        mock.timers.setTime(Date.parse('2026-10-13T05:00:00.000Z'))
+        return result
+      }
+    }
+    return query
+  }
+  const response = await checkIn.POST(req({ clientId, date: today, energy: 3 }))
+  assert.equal(response.status, 409)
+  assert.deepEqual(db.tables, before)
+  assert.equal(db.writes.length, 0)
+})
+
 test('daily check-in saves only answered inputs, survives reload/revisit, and updates the real dashboard decisions', async () => {
   const db = database(), before = structuredClone(db.tables)
   const initial = await refreshedLogic(db)

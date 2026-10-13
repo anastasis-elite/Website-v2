@@ -9,9 +9,9 @@ export default function DailyPlanCard({ plan, compact = false, schedule, autoRef
   useDailyScheduleRefresh(schedule || { date: plan.date, timezone: plan.timezone, events: [] }, autoRefresh)
   return <article className={`daily-plan-card${compact ? ' is-compact' : ''}`} data-testid="shared-daily-plan">
     <p className="tier-dashboard-label">{compact ? 'Today’s plan' : 'Your next step'}</p>
-    <p><strong>{plan.training.label}</strong> · {plan.training.readinessNote}</p>
     <h2>{plan.primary.title}</h2><p>{plan.primary.reason}</p>
     <Link className="tier-primary-action" href={plan.primary.href}>{plan.primary.title}</Link>
-    <small>Updated {formatLocalTime(plan.generatedAt, plan.timezone)} · {plan.date} · {plan.timezone}</small>
+    {compact ? <Link className="daily-return-today" href="/dashboard">Return to Today</Link> : null}
+    <details className="daily-plan-context"><summary>Plan details</summary><p><strong>{plan.training.label}</strong> · {plan.training.readinessNote}</p><small>Updated {formatLocalTime(plan.generatedAt, plan.timezone)} · {plan.date}</small></details>
   </article>
 }

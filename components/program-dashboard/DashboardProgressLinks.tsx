@@ -39,7 +39,7 @@ export default function DashboardProgressLinks({
         </Link>
 
         <Link
-          href="/dashboard/assessment/start"
+          href="/dashboard/assessment/start2"
           data-tutorial-id="dashboard-strength-assessment"
         >
           <span aria-hidden="true">↟</span>

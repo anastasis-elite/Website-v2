@@ -23,7 +23,7 @@ function database({signedIn=true, eventType='workout',fixed=false}={}) {
  const writes=[]
  const db={auth:{getUser:async()=>({data:{user:signedIn?{id:owner}:null}})},writes,client,event,
  from(table){const filters=[];let mutation=null;const q={select(){return q},eq(key,value){filters.push([key,value]);return q},gte(){return q},lt(){return q},order(){return q},limit(){return q},update(value){mutation=value;return q},insert(value){mutation=value;return q},maybeSingle:async()=>resolve(),single:async()=>resolve(),then(done){return Promise.resolve(resolve()).then(done)}}
- function resolve(){const row=table==='clients'?client:table==='anastasis_schedule_events'?event:null;const data=row&&filters.every(([key,value])=>row[key]===value)?row:null;if(mutation&&data)writes.push({table,mutation});return {data,error:null}}return q},
+ function resolve(){const row=table==='clients'?client:table==='anastasis_schedule_events'?event:null;const data=row&&filters.every(([key,value])=>key==='onboarding_data'?JSON.stringify(row[key])===value:row[key]===value)?row:null;if(mutation&&data)writes.push({table,mutation});return {data,error:null}}return q},
  rpc:async(name,args)=>{writes.push({rpc:name,args});return {data:{id:'qa-workout'},error:null}}}
  globalThis.dashboardTestDb=db;globalThis.dashboardTestContext={supabase:db,user:{id:owner},client}
  return db

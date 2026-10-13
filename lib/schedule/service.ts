@@ -1,5 +1,6 @@
 import { importedScheduleEvents } from '@/lib/calendar/service'
 import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
+import { buildTodayActivities, readDailyGuide } from '@/lib/dashboard/todayActivities'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
 import { getClientDayRange, zonedDateTimeToUtc } from './time'
@@ -99,7 +100,9 @@ export async function getDailyScheduleState({
   state.preferences = { executionStyle: client.execution_style || 'flow', carouselStyle: client.carousel_style || 'section',
     transitionMinutes: Number(client.onboarding_data?.transitionMinutes ?? 10) }
   state.program = client.program || 'ignite'
+  state.dailyGuide = readDailyGuide(client.onboarding_data?.dailyGuide, day.date)
   if (effectiveLogic && dailyPlan?.date === day.date) {
+    state.todayActivities = buildTodayActivities(effectiveLogic, state)
     state.dailyRecommendation = buildDailyRecommendation(effectiveLogic, state)
     const primary = state.dailyRecommendation.primary
     const event = primary.eventId ? state.events.find(item => item.id === primary.eventId) || null : null

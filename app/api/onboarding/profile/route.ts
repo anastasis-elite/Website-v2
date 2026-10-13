@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getTimezoneFromState } from '@/lib/timezone'
 import { applyExplicitPreferences, getDefaultCommunicationProfile } from '@/lib/accountability/communicationProfile'
 import { createPartnerPersona } from '@/lib/accountability/partnerPersona'
+import { updateOwnedOnboardingData } from '@/lib/dashboard/updateOnboardingData'
 
 export async function POST(req: Request) {
   try {
@@ -60,9 +61,11 @@ export async function POST(req: Request) {
           : 'encourage_without_pressure',
     }
 
-    const { data: updatedClient, error } = await supabase
-      .from('clients')
-      .update({
+    const updateResult = await updateOwnedOnboardingData({
+      supabase,
+      userId: user.id,
+      clientId: existing.client_id,
+      fields: {
         birthdate: body.birthdate,
         address_line_1: body.addressLine1,
         address_line_2: body.addressLine2 || null,
@@ -80,13 +83,6 @@ export async function POST(req: Request) {
 
         execution_style: ['schedule','flow','hybrid'].includes(body.executionStyle) ? body.executionStyle : existing?.execution_style || 'flow',
         carousel_style: ['section','step'].includes(body.carouselStyle) ? body.carouselStyle : existing?.carousel_style || 'section',
-        onboarding_data: {
-          ...existing?.onboarding_data,
-          ...body,
-          timezone,
-          accountabilityPreferences,
-        },
-
         cycle_tracking_enabled:
           body.reproductiveStatus === 'cycling' ||
           body.reproductiveStatus === 'irregular_cycles',
@@ -105,28 +101,14 @@ export async function POST(req: Request) {
               body.cycleStart6,
             ].filter(Boolean)
           : null,
-      })
-      .eq('auth_user_id', user.id)
-      .select('*')
-      .maybeSingle()
+      },
+      merge: current => ({ ...current, ...body, timezone, accountabilityPreferences }),
+    })
 
-    if (error) {
-      console.error('ONBOARDING CLIENT UPDATE ERROR:', error)
-
-      return NextResponse.json(
-        {
-          error: 'Unable to save onboarding.',
-          details: error.message,
-        },
-        { status: 500 }
-      )
-    }
-
-    if (!updatedClient) {
-      return NextResponse.json(
-        { error: 'Client profile was not found.' },
-        { status: 404 }
-      )
+    if (!updateResult.saved) {
+      return NextResponse.json({ error: updateResult.status === 404 ? 'Client profile was not found.'
+        : updateResult.status === 409 ? 'Another change was saved at the same time. Refresh and try again.'
+        : 'Unable to save onboarding. Please try again.' }, { status: updateResult.status })
     }
 
     const communicationProfile = applyExplicitPreferences(
@@ -135,7 +117,7 @@ export async function POST(req: Request) {
     )
     const partnerPersona = createPartnerPersona({
       userId: user.id,
-      clientId: updatedClient.client_id,
+      clientId: existing.client_id,
       profile: communicationProfile,
     })
 
@@ -144,7 +126,7 @@ export async function POST(req: Request) {
       .upsert(
         {
           user_id: user.id,
-          client_id: updatedClient.client_id,
+          client_id: existing.client_id,
           accountability_preferences: accountabilityPreferences,
           accountability_partner_persona: partnerPersona,
           accountability_communication_profile: communicationProfile,
@@ -165,8 +147,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      clientId: updatedClient.client_id,
-      onboardingCompleted: updatedClient.onboarding_completed,
+      clientId: existing.client_id,
+      onboardingCompleted: true,
       profileCompleted: true,
       baselineCompleted: Boolean(strengthResult.data),
       setupStep,
