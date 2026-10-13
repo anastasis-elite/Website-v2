@@ -37,4 +37,22 @@ Actual installed-device update/offline behavior is not established by the worker
 
 Production water additions, new workout/session/set saves and some recovery/cycle writes still depend on missing or incompatible schema/RPCs. Time changes are intentionally blocked while schedule sources are unavailable. Audit appends remain permission denied until the reviewed minimal grant is approved. Connected calendar/provider activation remains pending separately.
 
-The SQL files under `docs/sql/production-dashboard-*2026-10-13.sql` are review/inspection artifacts, not applied migration-history entries. No broad multi-feature schema repair is automatically authorized. Production database changes require the user's explicit approval of the exact operations and risks, followed by live catalog/readback checks.
+The [database review](production-outage-database-review-2026-10-13.md) contains exact [schedule repair](sql/production-outage-schedule-review-2026-10-13.sql) and [audit INSERT repair](sql/production-outage-audit-review-2026-10-13.sql) proposals. They are review artifacts, not applied migration-history entries. The read-only inventory is [compatibility SQL](sql/production-dashboard-compatibility-2026-10-13.sql). No broad multi-feature schema repair is automatically authorized. Production database changes require the user's explicit approval of the exact operations and risks, followed by live catalog/readback checks.
+
+## Released mitigation and final evidence
+
+- Pushed application commit: `f5d2a71578783855f9a1cef39a68f499547327a9` on `codex/coordinated-daily-dashboard`.
+- Production deployment: `dpl_H2y47KZPFwoYPfXgWtkzNQN77bVY`, READY, production target, exact SHA above. Fresh `anastasiselite.com` deployment lookup confirms the apex and `www` aliases belong to it. Subsequent documentation-only commits do not change that deployed application SHA.
+- Final full web suite: **475 passed, zero failures/skips**. Includes 10 worker/lifecycle regressions and 9 outage regressions. Build, lint (existing repository warnings), nonincremental TypeScript and whitespace checks passed.
+- Daily-dashboard migration and existing production-schema repair rehearsals passed locally. The new exact narrow schedule/audit SQL rehearsal also passed owner save/readback, invalid-input atomic rollback, cross-client INSERT/UPDATE/RPC denial, cross-user/anonymous denial, audit INSERT-only access and preserved synthetic history. No production SQL was executed.
+- The actual production `/sw.js` returns `200`, `application/javascript`, and `Cache-Control: no-store, max-age=0`; its bytes match the committed worker. `/offline.html` returns `200`. Anonymous dashboard, schedule, nutrition, workout and recovery requests redirect to login as expected. These do not verify authenticated page rendering.
+- The accessible Mac Safari window still displays login after the sign-in request; authenticated production dashboard loading remains **unverified**, and no actual installed-device/PWA acceptance was performed. Recent deployment error-log query returned no matching logs, which is not evidence of a successful authenticated journey.
+- Production database approval is pending for the named narrow artifacts. Hydration/workout/manual-set/cycle infrastructure and connected calendar activation remain outside those artifacts and require separate reviewed repairs. The installed PWA may need all old screens closed and reopened, or the explicit Apply update action, to activate the new worker; storage is retained.
+
+## Changed files
+
+Application: `lib/schedule/service.ts`, `lib/schedule/types.ts`, `lib/legal/logRecommendationAudit.ts`, `lib/dashboard/logic/getProgramLogicEngine.ts`, `lib/calendar/api-handlers.ts`; `app/api/schedule/route.ts`, `app/api/schedule/plan/route.ts`, `app/api/schedule/[id]/defer/route.ts`, `app/api/mobile/schedule/[id]/defer/route.ts`, `app/api/workout-log/route.ts`; `app/dashboard/program/[program]/workout/page.tsx`, `app/dashboard/schedule/ScheduleDashboardClient.tsx`; `components/ScheduleEventActions.tsx`, `components/program-dashboard/GuidedToday.tsx`.
+
+PWA: `public/sw.js`, `public/offline.html`, `components/PwaRegistration.tsx`, `next.config.js`.
+
+Tests: `tests/dashboardOutageCompatibility.test.mjs`, `tests/dashboardApiActions.test.mjs`, `tests/calendarFlow.test.mjs`, `tests/guidedTodayUI.test.mjs`, `tests/pwaRecovery.test.mjs`, `scripts/verify-production-outage-repairs.mjs`. Database SQL and reports are linked above. Pre-existing generated TypeScript state and Supabase temporary files are excluded.
