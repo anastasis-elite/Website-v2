@@ -18,6 +18,7 @@ export default function ScheduleDashboardClient({ initialSchedule }: { initialSc
   useDailyScheduleRefresh(schedule)
   return <main className="schedule-page"><div className="schedule-shell">
     <header className="schedule-hero"><div><p className="schedule-label">{schedule.date} · {schedule.timezone}</p><h1>Your day, with room to breathe</h1><p>Keep appointments in view and choose time for what supports you.</p></div></header>
+    {schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved events are still recorded. Time changes will be available when your full schedule loads.</p> : null}
     {schedule.dailyRecommendation ? <DailyPlanCard plan={schedule.dailyRecommendation} compact autoRefresh={false} /> : null}
     <CalendarWorkspace date={schedule.date} timezone={schedule.timezone} />
     <section className="schedule-panel" aria-label="Anastasis activities and daily structure">
@@ -26,7 +27,7 @@ export default function ScheduleDashboardClient({ initialSchedule }: { initialSc
       <div className="schedule-timeline">{schedule.events.filter(event => event.source !== 'external_calendar' && !event.calendar_event_id).map(event => <article id={`event-${event.id}`} className={`schedule-event schedule-${event.flexibility_type}`} key={event.id}>
         <time>{formatLocalTime(event.adjusted_start_at || event.start_at, schedule.timezone)}{event.adjusted_start_at ? <small>Originally {formatLocalTime(event.start_at, schedule.timezone)}</small> : null}</time>
         <div><h3>{event.title}</h3><p>{event.description || event.event_type.replaceAll('_', ' ')}</p><div><span>Anastasis</span><span>{eventLabel(event)}</span><span>{schedule.overdueEvents.some(item => item.id === event.id) ? 'Overdue · review or choose a new time' : event.suggested && event.status === 'scheduled' ? 'Suggested time' : event.status}</span></div></div>
-        <ScheduleEventActions event={event} program={schedule.program} timezone={schedule.timezone} suggestion={schedule.adjustments.find(item => item.event_id === event.id && !item.applied)} />
+        <ScheduleEventActions event={event} program={schedule.program} timezone={schedule.timezone} canChangeTime={!schedule.unavailableSources?.length} suggestion={schedule.adjustments.find(item => item.event_id === event.id && !item.applied)} />
       </article>)}</div>
     </section>
   </div></main>

@@ -52,17 +52,32 @@ export async function getDailyScheduleState({
   logic?: any
 }): Promise<DailyScheduleState> {
   const day = getClientDayRange(client, date)
-  const persistedEvents = await loadScheduleEventsForDay({
+  const unavailableSources: NonNullable<DailyScheduleState['unavailableSources']> = []
+  // Schedule integrations are optional to the daily health dashboard. Keep the
+  // available sources readable, but never treat an unread source as free time.
+  async function optionalSource<T>(source: typeof unavailableSources[number], load: () => Promise<T>, fallback: T): Promise<T> {
+    try {
+      return await load()
+    } catch (error) {
+      unavailableSources.push(source)
+      console.error(`Schedule source unavailable (${source}):`, error instanceof Error ? error.message : error)
+      return fallback
+    }
+  }
+  const persistedEvents = await optionalSource('saved_events', () => loadScheduleEventsForDay({
     supabase,
     userId: user.id,
     clientId: client.client_id,
     dayStart: day.start,
     dayEnd: day.end,
-  })
+  }), [])
 
-  const { data: blocks, error: blocksError } = await supabase.from('client_schedule_blocks').select('*').eq('client_id', client.client_id).eq('user_id', user.id).eq('active', true)
-  if (blocksError) throw new Error(blocksError.message)
-  const calendarEvents = await importedScheduleEvents(supabase, user.id, client.client_id, day.start.toISOString(), day.end.toISOString(), day.timezone)
+  const blocks = await optionalSource<any[]>('recurring_commitments', async () => {
+    const { data, error } = await supabase.from('client_schedule_blocks').select('*').eq('client_id', client.client_id).eq('user_id', user.id).eq('active', true)
+    if (error) throw new Error(error.message)
+    return data || []
+  }, [])
+  const calendarEvents = await optionalSource('calendar', () => importedScheduleEvents(supabase, user.id, client.client_id, day.start.toISOString(), day.end.toISOString(), day.timezone), [])
   persistedEvents.push(...calendarEvents)
   const commitments = recurringCommitmentsToEvents({ userId: user.id, client, date: day.date, timezone: day.timezone, blocks: blocks || [] })
   const dailyPlan = includeVirtualPlan
@@ -99,6 +114,7 @@ export async function getDailyScheduleState({
 
   state.preferences = { executionStyle: client.execution_style || 'flow', carouselStyle: client.carousel_style || 'section',
     transitionMinutes: Number(client.onboarding_data?.transitionMinutes ?? 10) }
+  state.unavailableSources = unavailableSources
   state.program = client.program || 'ignite'
   state.dailyGuide = readDailyGuide(client.onboarding_data?.dailyGuide, day.date)
   if (effectiveLogic && dailyPlan?.date === day.date) {
@@ -115,6 +131,14 @@ export async function getDailyScheduleState({
       urgency: eventAction?.urgency || (primary.completed ? 'none' : 'now'),
       automatically_adjusted: eventAction?.automatically_adjusted || false,
       can_complete: eventAction?.can_complete || false, can_defer: eventAction?.can_defer || false }
+  }
+
+  if (unavailableSources.length) {
+    // An incomplete calendar cannot establish conflict-free windows. Reads may
+    // continue; mutation routes must reject moves until every source is loaded.
+    state.openWindows = []
+    state.adjustments = []
+    state.nextAction.can_defer = false
   }
 
   return state

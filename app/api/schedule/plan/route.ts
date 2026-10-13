@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     if (event.flexibility_type !== 'flexible' || event.approval_required) return NextResponse.json({ error: 'Edit commitments in Daily Structure or through their approval process.' }, { status: 400 })
     override = { status: 'skipped', completed_at: null }
   } else if (body.action === 'move') {
+    if (state.unavailableSources?.length) return NextResponse.json({ error: 'Your full schedule could not be loaded. Try again before changing a time.' }, { status: 503 })
     if (!event.movable || event.flexibility_type !== 'flexible' || event.approval_required) return NextResponse.json({ error: 'Edit commitments in Daily Structure or through their approval process.' }, { status: 400 })
     const start = new Date(body.start_at), end = new Date(body.end_at)
     const error = scheduleConflict(state.events, event.id, start, end, state.preferences?.transitionMinutes)

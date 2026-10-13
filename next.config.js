@@ -26,10 +26,16 @@ const csp = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Next carries this identity in asset URLs and navigation requests across releases.
+  deploymentId: process.env.NEXT_DEPLOYMENT_ID || process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_GIT_COMMIT_SHA,
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
   async headers() {
     return [
+      {
+        source: '/sw.js',
+        headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0' }],
+      },
       {
         source: '/:path*',
         headers: [

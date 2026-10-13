@@ -59,6 +59,7 @@ export async function POST(
 
     if (!startAt || !endAt || !Number.isFinite(startAt.getTime()) || !Number.isFinite(endAt.getTime()) || endAt <= startAt) {
       const schedule = await getDailyScheduleState({supabase:context.supabase,user:context.user,client:context.client,date:body.date})
+      if (schedule.unavailableSources?.length) return NextResponse.json({ error: 'Your full schedule could not be loaded. Try again before changing a time.' }, { status: 503 })
       const duration =
         existing.estimated_duration_minutes ||
         existing.adjusted_duration_minutes ||
@@ -79,6 +80,7 @@ export async function POST(
 
     if(startAt < new Date()) return NextResponse.json({error:'Choose a later time.'},{status:400})
     const schedule = await getDailyScheduleState({supabase:context.supabase,user:context.user,client:context.client,date:getClientLocalDate(context.client,startAt)})
+    if (schedule.unavailableSources?.length) return NextResponse.json({ error: 'Your full schedule could not be loaded. Try again before changing a time.' }, { status: 503 })
     const conflict = scheduleConflict(schedule.events,id,startAt,endAt,schedule.preferences?.transitionMinutes)
     if(conflict) return NextResponse.json({error:conflict},{status:409})
     const { data, error } = await context.supabase

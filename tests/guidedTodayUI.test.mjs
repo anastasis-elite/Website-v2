@@ -91,3 +91,12 @@ test('header uses the member timezone for both greeting and date', () => {
   assert.match(html, /Tuesday, October 13/)
   assert.doesNotMatch(html, /Good Morning/)
 })
+
+test('partial schedule failure stays visible while core dashboard activities remain accessible', () => {
+  const state = schedule(); state.unavailableSources = ['recurring_commitments']
+  const html = render(fixture(), state)
+  assert.match(html, /role="status">Some schedule details are temporarily unavailable/)
+  assert.match(html, /Your saved activities are still recorded/)
+  assert.match(html, /Start daily check-in/)
+  assert.match(html, /href="\/dashboard\/nutrition#hydration"/)
+})

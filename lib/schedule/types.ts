@@ -122,6 +122,7 @@ export type NextScheduleAction = {
 }
 
 export type DailyScheduleState = {
+  unavailableSources?: Array<'saved_events' | 'recurring_commitments' | 'calendar'>
   program?: string
   date: string
   timezone: string

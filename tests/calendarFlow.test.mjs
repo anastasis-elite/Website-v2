@@ -101,6 +101,8 @@ function fixture() {
   const next = { NextResponse: { json, redirect: url => new Response(null, { status: 307, headers: { Location: String(url) } }) } }
   const timezone = load('lib/timezone.ts', {}, env)
   const time = load('lib/schedule/time.ts', { '@/lib/timezone': timezone }, env)
+  const actions = load('lib/schedule/actions.ts', {}, env)
+  const engine = load('lib/schedule/engine.ts', { './actions': actions }, env)
   const types = load('lib/calendar/providers/types.ts', {}, env)
   const ical = load('lib/calendar/providers/ical.ts', { './types': types }, env)
   const access = load('lib/commerce/access.ts', {}, env)
@@ -153,7 +155,8 @@ function fixture() {
     'next/server': next, 'next/headers': { cookies: async () => ({ set: (key, value) => state.cookies.set(key, value), get: key => state.cookies.has(key) ? { value: state.cookies.get(key) } : undefined, delete: key => state.cookies.delete(key) }) },
     '@/lib/supabase/admin': { createAdminClient: () => db }, './server-context': context, './crypto': crypto, './service': service,
     './providers/google': google, './providers/icloud': icloud, './providers/types': types, './providers/ical': ical,
-    '@/lib/schedule/time': time, '@/lib/schedule/engine': {}, '@/lib/schedule/service': {}, '@/lib/timezone': timezone,
+    '@/lib/schedule/time': time, '@/lib/schedule/engine': { getOpenWindows: (...args) => { state.windowChecks = (state.windowChecks || 0) + 1; return engine.getOpenWindows(...args) } },
+    '@/lib/schedule/service': { getDailyScheduleState: async () => state.dailySchedule || { fixedEvents: [], unavailableSources: [] } }, '@/lib/timezone': timezone,
     '@/lib/dashboard/invalidateDailyPlan': { invalidateDailyPlan: () => { state.invalidations = (state.invalidations || 0) + 1 } },
   }, env)
   const request = (path, method = 'GET', body) => new Request(`https://anastasis.test${path}`, { method, headers: { Origin: 'https://anastasis.test', 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
@@ -181,6 +184,28 @@ test('inactive or missing member cannot reach external calendar providers', asyn
   assert.equal(f.state.calls.create, 0)
   f.db.tables.clients = []
   assert.equal((await f.handlers.stateGET(f.request('/api/calendars'))).status, 403)
+})
+
+test('availability refuses incomplete schedule sources instead of advertising unverified free time', async () => {
+  const f = fixture(), path = '/api/calendars/availability?date=2030-06-18&duration=30'
+  f.state.dailySchedule = { fixedEvents: [], unavailableSources: ['recurring_commitments'] }
+  const unavailable = await f.handlers.availabilityGET(f.request(path))
+  assert.equal(unavailable.status, 503)
+  const error = await unavailable.json()
+  assert.match(error.error, /full schedule could not be loaded/)
+  assert.equal(error.windows, undefined)
+  assert.equal(f.state.windowChecks || 0, 0)
+  assert.deepEqual(f.db.mutations, {})
+
+  // Once every source loads, the real window calculation respects the commitment.
+  f.state.dailySchedule = { unavailableSources: [], fixedEvents: [{ id: 'saved-work', status: 'scheduled', flexibility_type: 'fixed', start_at: '2030-06-18T14:00:00Z', end_at: '2030-06-18T22:00:00Z' }] }
+  const complete = await f.handlers.availabilityGET(f.request(path))
+  assert.equal(complete.status, 200)
+  const result = await complete.json()
+  assert.equal(result.windows.length, 2)
+  assert.ok(result.windows.every(window => window.end_at <= '2030-06-18T13:50:00.000Z' || window.start_at >= '2030-06-18T22:10:00.000Z'))
+  assert.equal(f.state.windowChecks, 1)
+  assert.deepEqual(f.db.mutations, {})
 })
 
 test('mocked Google authorization → selection → existing appointment → confirmed create → external change → edit/delete', async () => {

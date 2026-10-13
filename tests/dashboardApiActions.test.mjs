@@ -120,3 +120,12 @@ test('approved commitments and finished events reject unsupported skip/move/comp
  assert.equal((await schedulePlan.POST(req({eventId:'virtual-done',action:'skip'}))).status,409)
  assert.equal(db.writes.length,0)
 })
+
+test('partial schedule reads cannot authorize virtual or saved event time changes', async () => {
+ const db=database({eventType:'personal'}),params={params:Promise.resolve({id:'qa-event'})}
+ const now=new Date(),start=new Date(now.getTime()+3600000),end=new Date(now.getTime()+5400000)
+ globalThis.dashboardTestSchedule={unavailableSources:['recurring_commitments'],events:[{id:'virtual-qa',virtual:true,status:'scheduled',flexibility_type:'flexible',movable:true}],preferences:{transitionMinutes:10}}
+ assert.equal((await scheduleDefer.POST(req({start_at:start.toISOString(),end_at:end.toISOString()}),params)).status,503)
+ assert.equal((await schedulePlan.POST(req({eventId:'virtual-qa',action:'move',start_at:start.toISOString(),end_at:end.toISOString()}))).status,503)
+ assert.equal(db.writes.length,0)
+})

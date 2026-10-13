@@ -35,6 +35,7 @@ export async function POST(
     }
 
     const schedule = await getDailyScheduleState({ supabase, user, client, date: getClientLocalDate(client, startAt) })
+    if (schedule.unavailableSources?.length) return NextResponse.json({ error: 'Your full schedule could not be loaded. Try again before changing a time.' }, { status: 503 })
     const conflict = scheduleConflict(schedule.events, id, startAt, endAt, schedule.preferences?.transitionMinutes)
     if (conflict) return NextResponse.json({ error: conflict }, { status: 409 })
     const { data, error } = await supabase

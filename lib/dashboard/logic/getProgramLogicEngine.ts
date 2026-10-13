@@ -834,124 +834,132 @@ export async function getProgramLogicEngine(
     },
   }
 
-  const { error } =
-    await args.supabase
-      .from(
+  try {
+    const { error } =
+      await args.supabase
+        .from(
+          'dashboard_daily_recommendations',
+        )
+        .upsert(
+          {
+            user_id: inputs.userId,
+
+            client_id:
+              inputs.client.client_id,
+
+            log_date: inputs.date,
+
+            program: inputs.program,
+
+            engine_version:
+              DASHBOARD_ENGINE_VERSION,
+
+            input_snapshot: {
+              capacity:
+                capacityStatus,
+
+              recovery:
+                recoveryStatus,
+
+              fuel:
+                fuelReadiness.status,
+
+              symptoms:
+                symptoms.severity,
+
+              cycle:
+                cycle.phase,
+            },
+
+            recommendation_output:
+              persistedOutput,
+
+            updated_at:
+              new Date().toISOString(),
+          },
+          {
+            onConflict:
+              'user_id,client_id,log_date',
+          },
+        )
+
+    if (
+      error &&
+      !String(error.message).includes(
         'dashboard_daily_recommendations',
       )
-      .upsert(
-        {
-          user_id: inputs.userId,
-
-          client_id:
-            inputs.client.client_id,
-
-          log_date: inputs.date,
-
-          program: inputs.program,
-
-          engine_version:
-            DASHBOARD_ENGINE_VERSION,
-
-          input_snapshot: {
-            capacity:
-              capacityStatus,
-
-            recovery:
-              recoveryStatus,
-
-            fuel:
-              fuelReadiness.status,
-
-            symptoms:
-              symptoms.severity,
-
-            cycle:
-              cycle.phase,
-          },
-
-          recommendation_output:
-            persistedOutput,
-
-          updated_at:
-            new Date().toISOString(),
-        },
-        {
-          onConflict:
-            'user_id,client_id,log_date',
-        },
+    ) {
+      console.error(
+        'Dashboard recommendation persistence failed:',
+        error.message,
       )
-
-  if (
-    error &&
-    !String(error.message).includes(
-      'dashboard_daily_recommendations',
-    )
-  ) {
-    console.error(
-      'Dashboard recommendation persistence failed:',
-      error.message,
-    )
+    }
+  } catch (error) {
+    console.error('Dashboard recommendation persistence failed:', error instanceof Error ? error.message : 'Persistence request failed.')
   }
 
   const requirements =
     flameState.requirements
 
-  const { error: executionError } =
-    await args.supabase
-      .from(
+  try {
+    const { error: executionError } =
+      await args.supabase
+        .from(
+          'daily_execution_status',
+        )
+        .upsert(
+          {
+            user_id: inputs.userId,
+
+            client_id:
+              inputs.client.client_id,
+
+            log_date: inputs.date,
+
+            program: inputs.program,
+
+            capacity_status:
+              capacityStatus.status,
+
+            missed_day_count:
+              requirements.missedDayCount,
+
+            required_items:
+              requirements.requiredItems,
+
+            completed_items:
+              requirements.completedItems,
+
+            completion_score:
+              requirements.completionScore,
+
+            streak_eligible:
+              requirements.streakEligible,
+
+            updated_at:
+              new Date().toISOString(),
+          },
+          {
+            onConflict:
+              'user_id,client_id,log_date',
+          },
+        )
+
+    if (
+      executionError &&
+      !String(
+        executionError.message,
+      ).includes(
         'daily_execution_status',
       )
-      .upsert(
-        {
-          user_id: inputs.userId,
-
-          client_id:
-            inputs.client.client_id,
-
-          log_date: inputs.date,
-
-          program: inputs.program,
-
-          capacity_status:
-            capacityStatus.status,
-
-          missed_day_count:
-            requirements.missedDayCount,
-
-          required_items:
-            requirements.requiredItems,
-
-          completed_items:
-            requirements.completedItems,
-
-          completion_score:
-            requirements.completionScore,
-
-          streak_eligible:
-            requirements.streakEligible,
-
-          updated_at:
-            new Date().toISOString(),
-        },
-        {
-          onConflict:
-            'user_id,client_id,log_date',
-        },
+    ) {
+      console.error(
+        'Daily execution persistence failed:',
+        executionError.message,
       )
-
-  if (
-    executionError &&
-    !String(
-      executionError.message,
-    ).includes(
-      'daily_execution_status',
-    )
-  ) {
-    console.error(
-      'Daily execution persistence failed:',
-      executionError.message,
-    )
+    }
+  } catch (error) {
+    console.error('Daily execution persistence failed:', error instanceof Error ? error.message : 'Persistence request failed.')
   }
 
   return output

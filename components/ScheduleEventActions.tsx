@@ -8,7 +8,7 @@ import { healthEventTypes } from '@/lib/schedule/actions'
 import { formatLocalTime, zonedDateTimeToUtc } from '@/lib/schedule/time'
 import { getLocalMinutes, localDateKey } from '@/lib/timezone'
 import { announceCalendarChange } from '@/lib/calendar/client'
-export default function ScheduleEventActions({ event, timezone, program = 'ignite', suggestion }: { event: ScheduleEvent; timezone: string; program?: string; suggestion?: ScheduleAdjustment }) {
+export default function ScheduleEventActions({ event, timezone, program = 'ignite', suggestion, canChangeTime = true }: { event: ScheduleEvent; timezone: string; program?: string; suggestion?: ScheduleAdjustment; canChangeTime?: boolean }) {
   const router = useRouter(); const lock = useRef(false); const [saving, setSaving] = useState(false); const [message, setMessage] = useState(''); const [moving, setMoving] = useState(false)
   const initial = suggestion?.suggested_start_at || event.adjusted_start_at || event.start_at
   const minute = getLocalMinutes(new Date(initial), timezone)
@@ -44,12 +44,12 @@ export default function ScheduleEventActions({ event, timezone, program = 'ignit
     {done ? <span>{event.status === 'completed' ? 'Done' : event.status === 'cancelled' ? 'Cancelled' : 'Skipped today'}</span> : <>
       <Link className="tier-secondary-action" href={getActionRouteForEvent(event, program)}>{commitment ? 'Edit commitment' : health ? 'Open activity' : 'View details'}</Link>
       {!health && !event.virtual ? <button disabled={saving} onClick={() => void mutate('complete')}>Complete</button> : null}
-      {event.flexibility_type === 'flexible' && event.movable && !event.approval_required ? <><button disabled={saving} onClick={() => setMoving(!moving)}>Move to later</button><button disabled={saving} onClick={() => void mutate('skip')}>Skip today</button></> : null}
+      {event.flexibility_type === 'flexible' && event.movable && !event.approval_required ? <>{canChangeTime ? <button disabled={saving} onClick={() => setMoving(!moving)}>Move to later</button> : null}<button disabled={saving} onClick={() => void mutate('skip')}>Skip today</button></> : null}
       {commitment ? <small>Fixed commitment. Edit its time in Daily Structure.</small> : health ? <small>Save through the activity above to record completion.</small> : null}
       {suggestion ? <small>{suggestion.reason}{!acceptedStart ? ' No time has been placed on your calendar.' : ''}</small> : null}
-      {acceptedStart && acceptedEnd && !suggestion?.applied ? <button disabled={saving} onClick={() => void mutate('move', acceptedStart, acceptedEnd)}>Accept {formatLocalTime(acceptedStart, timezone)} suggestion</button> : null}
+      {canChangeTime && acceptedStart && acceptedEnd && !suggestion?.applied ? <button disabled={saving} onClick={() => void mutate('move', acceptedStart, acceptedEnd)}>Accept {formatLocalTime(acceptedStart, timezone)} suggestion</button> : null}
     </>}
-    {moving ? <div><label>New time ({timezone})<input type="datetime-local" value={local} onChange={e => setLocal(e.target.value)}/></label><button disabled={saving} onClick={move}>Save new time</button></div> : null}
+    {moving && canChangeTime ? <div><label>New time ({timezone})<input type="datetime-local" value={local} onChange={e => setLocal(e.target.value)}/></label><button disabled={saving} onClick={move}>Save new time</button></div> : null}
     <p role="status">{saving ? 'Saving…' : message}</p>
   </div>
 }

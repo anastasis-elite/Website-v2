@@ -94,6 +94,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
   const quiet = schedule.preferences?.carouselStyle === 'step'
   const complete = today.total > 0 && today.completed === today.total
   return <div className="today-guide">
+    {schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved activities are still recorded; check your calendar before choosing a time.</p> : null}
     <section className="today-progress" data-testid="today-progress" aria-label={`Today's progress: ${today.completed} of ${today.total}`} data-tutorial-id="dashboard-progress-area">
       <div><h2>Today’s progress</h2><span>{today.total ? `${today.completed} of ${today.total}` : 'No essentials due'}</span></div>
       <div className="today-progress-segments" role="progressbar" aria-valuemin={0} aria-valuemax={Math.max(1,today.total)} aria-valuenow={today.completed} aria-valuetext={`${today.completed} of ${today.total} applicable activities completed`}>

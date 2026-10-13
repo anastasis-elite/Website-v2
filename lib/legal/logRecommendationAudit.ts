@@ -15,15 +15,20 @@ export async function logRecommendationAudit({
   confidenceLevel?: string
   safetyFlags?: SafetyFlag[]
 }) {
-  const { error } = await supabase.from('recommendation_audit_logs').insert({
-    user_id: userId,
-    recommendation_type: recommendationType,
-    input_snapshot: inputSnapshot || null,
-    input_reference: inputReference || null,
-    engine_version: engineVersion,
-    recommendation_output: recommendationOutput,
-    confidence_level: confidenceLevel || null,
-    safety_flags: safetyFlags,
-  })
-  if (error) console.error('Recommendation audit log failed:', error.message)
+  try {
+    const { error } = await supabase.from('recommendation_audit_logs').insert({
+      user_id: userId,
+      recommendation_type: recommendationType,
+      input_snapshot: inputSnapshot || null,
+      input_reference: inputReference || null,
+      engine_version: engineVersion,
+      recommendation_output: recommendationOutput,
+      confidence_level: confidenceLevel || null,
+      safety_flags: safetyFlags,
+    })
+    if (error) console.error('Recommendation audit log failed:', error.message)
+  } catch (error) {
+    // Audit transport failures must not prevent recommendations or safety notices.
+    console.error('Recommendation audit log failed:', error instanceof Error ? error.message : 'Audit request failed.')
+  }
 }

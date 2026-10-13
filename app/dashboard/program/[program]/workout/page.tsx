@@ -209,9 +209,7 @@ export default async function ProgramWorkoutPage({
 
     supabase
       .from('workout_logs')
-      .select(
-        'id,workout_date,day_name,completed,workout_source,planned_exercises,exercise_logs',
-      )
+      .select('*')
       .eq('client_id', client.client_id)
       .order('workout_date', {
         ascending: false,

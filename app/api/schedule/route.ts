@@ -44,6 +44,7 @@ export async function POST(request: Request) {
     const start = new Date(body.start_at), end = new Date(body.end_at)
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return NextResponse.json({ error: 'Choose a valid start and end.' }, { status: 400 })
     const schedule = await getDailyScheduleState({ supabase,user,client,date:getClientLocalDate(client,start) })
+    if (schedule.unavailableSources?.length) return NextResponse.json({ error: 'Your full schedule could not be loaded. Try again before adding a time.' }, { status: 503 })
     const conflict = scheduleConflict(schedule.events,'new',start,end,schedule.preferences?.transitionMinutes)
     if(conflict) return NextResponse.json({ error:conflict },{status:409})
     const eventType = eventTypes.has(body.event_type) ? body.event_type : 'custom'

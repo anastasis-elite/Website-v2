@@ -49,9 +49,13 @@ export async function GET(request: Request) {
     try { planKeys = JSON.parse(params.get('planKeys') || 'null') } catch { return NextResponse.json({ error: 'Invalid workout plan.' }, { status: 400 }) }
     if (!Array.isArray(planKeys) || planKeys.length > 100 || planKeys.some(key => typeof key !== 'string')) return NextResponse.json({ error: 'Invalid workout plan.' }, { status: 400 })
   }
-  const { data, error } = await supabase.from('workout_logs').select('id,exercise_logs,completed,updated_at').eq('client_id',client.client_id).eq('auth_user_id',user.id)
-    .eq('day_name',params.get('dayName') || 'Workout').eq('workout_source',params.get('source') === 'manual' ? 'manual' : 'recommended')
+  // Legacy saved sessions predate workout_source. Read optional columns without
+  // making the history depend on the new write-path migration.
+  const source = params.get('source') === 'manual' ? 'manual' : 'recommended'
+  const { data, error } = await supabase.from('workout_logs').select('*').eq('client_id',client.client_id).eq('auth_user_id',user.id)
+    .eq('day_name',params.get('dayName') || 'Workout')
     .gte('workout_date',day.start.toISOString()).lt('workout_date',day.end.toISOString()).order('workout_date',{ascending:false}).limit(100)
   if(error) return NextResponse.json({ error:'Saved progress could not be loaded.' }, { status:500 })
-  return NextResponse.json({ session: (data || []).find((row: any) => !planKeys || matchingWorkoutPlan(row.exercise_logs, planKeys)) || null }, { headers: { 'Cache-Control': 'private, no-store' } })
+  const session = (data || []).find((row: any) => (row.workout_source || 'recommended') === source && (!planKeys || matchingWorkoutPlan(row.exercise_logs, planKeys)))
+  return NextResponse.json({ session: session ? { id: session.id, exercise_logs: session.exercise_logs, completed: session.completed, updated_at: session.updated_at } : null }, { headers: { 'Cache-Control': 'private, no-store' } })
 }

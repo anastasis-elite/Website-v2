@@ -154,6 +154,7 @@ export async function availabilityGET(request:Request) {
   const state=await listCalendarState(c.admin,c.user.id),prefs=state.preferences,tz=prefs.timezone||getClientTimeZone(c.client),start=zonedDateTimeToUtc(date,prefs.preferred_start,tz),end=zonedDateTimeToUtc(date,prefs.preferred_end,tz)
   const result=await listUnifiedEvents(c.admin,c.user.id,start.toISOString(),end.toISOString(),tz)
   const daily=c.client?await getDailyScheduleState({supabase:c.supabase,user:c.user,client:c.client,date,includeVirtualPlan:false}):null
+  if(daily?.unavailableSources?.length) throw new CalendarHttpError(503,'Your full schedule could not be loaded. Try again before choosing an available time.')
   const busy=[...result.events.filter(e=>e.busy!==false),...(daily?.fixedEvents||[])]
   const windows=getOpenWindows(busy as any,start,end,duration,prefs.buffer_minutes).map(window=>{const usableStart=Math.ceil(Math.max(Date.parse(window.start_at),Date.now())/60000)*60000;return {...window,start_at:new Date(usableStart).toISOString(),minutes:Math.max(0,Math.floor((Date.parse(window.end_at)-usableStart)/60000))}}).filter(w=>Date.parse(w.end_at)-Date.parse(w.start_at)>=duration*60000)
   return ok({windows,timezone:tz})
