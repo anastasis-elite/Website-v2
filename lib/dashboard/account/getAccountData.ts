@@ -1,5 +1,7 @@
 import { calculatePercentageExecutionScore } from '@/lib/dashboard/logic/calculateExecutionScore'
 import type { AccountData, AccountProgram, JourneyMetric } from './types'
+import { getClientLocalDateOffset, getClientTimeZone } from '@/lib/timezone'
+import { workoutLocalDate } from '@/lib/workout/history'
 
 const supportedPrograms = new Set(['ember', 'ignite', 'phoenix'])
 
@@ -59,7 +61,7 @@ export async function getAccountData({ supabase, user, client }: { supabase: any
   const weekStart = dateDaysAgo(6)
   const monthStart = dateDaysAgo(29)
   const [{ data: workouts }, { data: nutrition }, { data: recovery }, { data: assessments }, { data: strengthAssessments }, { data: recommendations }] = await Promise.all([
-    supabase.from('workout_logs').select('workout_date,completed').eq('client_id', client.client_id).eq('completed', true),
+    supabase.from('workout_logs').select('*').eq('client_id', client.client_id).eq('completed', true),
     supabase.from('nutrition_logs').select('log_date,water_consumed_oz,water_oz').eq('client_id', client.client_id).gte('log_date', monthStart.slice(0, 10)),
     supabase.from('recovery_logs').select('log_date,energy_level,sleep_quality,stress_level,soreness_level').eq('client_id', client.client_id).gte('log_date', monthStart.slice(0, 10)),
     supabase.from('assessments').select('submitted_at,assessment_type').eq('client_id', client.client_id).gte('submitted_at', monthStart),
@@ -72,7 +74,7 @@ export async function getAccountData({ supabase, user, client }: { supabase: any
   const recoveryRows = recovery || []
   const assessmentRows = assessments || []
   const recommendationRows = recommendations || []
-  const weekWorkouts = workoutRows.filter((row: any) => String(row.workout_date) >= weekStart)
+  const weekWorkouts = workoutRows.filter((row: any) => workoutLocalDate(row, getClientTimeZone(client)) >= getClientLocalDateOffset(client, -6))
   const weekNutrition = nutritionRows.filter((row: any) => String(row.log_date) >= weekStart.slice(0, 10))
   const weekRecovery = recoveryRows.filter((row: any) => String(row.log_date) >= weekStart.slice(0, 10))
   const weekAssessments = assessmentRows.filter((row: any) => String(row.submitted_at) >= weekStart)
@@ -100,7 +102,7 @@ export async function getAccountData({ supabase, user, client }: { supabase: any
   recommendationRows.forEach((row: any) => {
     if (number(row.recommendation_output?.flameState?.dailyScore) >= 75) completedDates.add(row.log_date)
   })
-  if (!completedDates.size) workoutRows.forEach((row: any) => completedDates.add(String(row.workout_date).slice(0, 10)))
+  if (!completedDates.size) workoutRows.forEach((row: any) => completedDates.add(workoutLocalDate(row, getClientTimeZone(client))))
   const program = supportedPrograms.has(client.program) ? client.program as AccountProgram : 'ember'
   const score = averageCompletionPercent
   const flame = score >= 100 ? ['roaring_flame', 'Week complete'] : score >= 75 ? ['strong_flame', 'Almost complete'] : score >= 50 ? ['steady_flame', 'Momentum is building'] : score >= 25 ? ['small_flame', 'You’re moving'] : ['spark', 'Start small']

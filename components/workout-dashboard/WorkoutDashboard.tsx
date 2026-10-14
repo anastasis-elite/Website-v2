@@ -47,6 +47,7 @@ type AssignedExercise = {
 type WorkoutLogRow = {
   id?: string
   workout_date?: string
+  workout_started_at?: string | null
   day_name?: string
   completed?: boolean
   workout_source?: 'recommended' | 'manual'
@@ -173,7 +174,7 @@ function HistoryTab({ history, timezone }: { history: WorkoutLogRow[]; timezone?
     <div className="workout-history-list" data-testid="workout-history-tab">
       {history.length ? history.slice(0, 8).map((row, index) => (
         <article key={row.id || `${row.workout_date}-${index}`}>
-          <time>{formatWorkoutHistoryDate(row.workout_date, timezone)}</time>
+          <time>{formatWorkoutHistoryDate(row.workout_started_at || row.workout_date, timezone)}</time>
           <strong>{row.day_name || 'Completed workout'}</strong>
           <small>{row.completed ? 'Completed' : 'Not completed'} · {row.workout_source || 'recommended'} · {(row.exercise_logs || []).length} performed</small>
         </article>

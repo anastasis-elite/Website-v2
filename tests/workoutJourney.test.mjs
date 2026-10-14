@@ -26,7 +26,7 @@ function database() {
     },
     async rpc(name,args) {
       assert.equal(name,'save_daily_workout'); state.writes++
-      const payload=structuredClone(args.p_payload), keys=session.workoutSessionKeys(payload.exercise_logs)
+      const payload={...structuredClone(args.p_payload),workout_started_at:args.p_payload.workout_date,workout_date:args.p_payload.workout_local_date}, keys=session.workoutSessionKeys(args.p_payload.exercise_logs)
       let existing=state.rows.find(row=>row.day_name===payload.day_name&&row.workout_source===payload.workout_source&&session.matchingWorkoutPlan(row.exercise_logs,keys))
       if(existing) Object.assign(existing,payload)
       else {existing={id:`session-${state.rows.length+1}`,...payload};state.rows.push(existing)}

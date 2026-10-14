@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTierCapabilities } from '@/lib/entitlements'
 import { mealPeriodToDayBlock, normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
+import { loadRecordedNutrition, nutritionRemainingWithRecordedIntake } from '@/lib/nutrition/progress'
 
 function macroNumber(value: unknown) {
   const parsed = Number(value || 0)
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
 
   const { data: log, error: logError } = await supabase
     .from('nutrition_logs')
-    .select('id, client_id, auth_user_id')
+    .select('id, client_id, auth_user_id, calories, protein, carbs, fats')
     .eq('id', nutritionLogId)
     .maybeSingle()
 
@@ -137,7 +138,17 @@ export async function POST(request: Request) {
     refreshStatus = 'degraded'
   }
 
+  let recordedRemaining = null
+  if (!remainingError) {
+    try {
+      const recorded = await loadRecordedNutrition(supabase, log.id)
+      recordedRemaining = nutritionRemainingWithRecordedIntake(log, remaining, recorded)
+    } catch {
+      refreshStatus = 'degraded'
+    }
+  }
+
   invalidateDailyPlan()
 
-  return NextResponse.json({ success: true, entry, remaining: remainingError ? null : remaining, refreshStatus })
+  return NextResponse.json({ success: true, entry, remaining: recordedRemaining, refreshStatus })
 }

@@ -212,7 +212,7 @@ export async function calculateClientNutritionTargets({
       .eq('client_id', clientId)
       .maybeSingle(),
     table<Record<string, unknown>>(supabase, 'cycle_logs')
-      .select('phase')
+      .select('cycle_phase')
       .eq('client_id', clientId)
       .order('log_date', { ascending: false })
       .limit(1)
@@ -269,7 +269,7 @@ export async function calculateClientNutritionTargets({
   return {
     client_id: clientId,
     program: program || '',
-    phase: normalizeCyclePhase(cycleResult.data?.phase),
+    phase: normalizeCyclePhase(cycleResult.data?.cycle_phase),
     water,
     weightLbs,
     target,

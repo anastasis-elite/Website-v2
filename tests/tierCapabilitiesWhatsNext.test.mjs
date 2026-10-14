@@ -108,6 +108,7 @@ test('tier capabilities normalize casing and expose predictable matrix', () => {
   assert.equal(ember.postureAssessment, false)
 
   const ignite = getTierCapabilities('ignite')
+  assert.equal(ignite.nutritionMacroEntry, false)
   assert.equal(ignite.nutritionMealLogging, true)
   assert.equal(ignite.nutritionBarcodeScanning, true)
   assert.equal(ignite.nutritionRecurringFoodDetection, true)
@@ -119,6 +120,7 @@ test('tier capabilities normalize casing and expose predictable matrix', () => {
   assert.equal(ignite.postureAssessment, true)
 
   const phoenix = getTierCapabilities('phoenix')
+  assert.equal(phoenix.nutritionMacroEntry, false)
   assert.equal(phoenix.nutritionRecommendedMeal, true)
   assert.equal(phoenix.nutritionPhotoMacroEstimation, true)
   assert.equal(phoenix.recoveryDirectedNextAction, true)

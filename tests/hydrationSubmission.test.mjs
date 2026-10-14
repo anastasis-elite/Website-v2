@@ -1,0 +1,137 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import ts from 'typescript'
+
+// Exercise the actual browser controls with disposable React hooks, storage,
+// and a server that commits once even when its first response is lost.
+const require = createRequire(import.meta.url)
+function moduleUrl(path, cache = new Map()) {
+  path = resolve(path)
+  if (cache.has(path)) return cache.get(path)
+  const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ES2020, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } })
+  const output = outputText.replace(/from ['"]([^'"]+)['"]/g, (original, specifier) => {
+    const mock = specifier === 'react' ? 'export const useState=(...a)=>globalThis.waterHooks.useState(...a); export const useEffect=(...a)=>globalThis.waterHooks.useEffect(...a); export const useRef=(...a)=>globalThis.waterHooks.useRef(...a);'
+      : specifier === 'next/navigation' ? 'export const useRouter=()=>globalThis.waterRouter'
+      : specifier === 'next/link' ? "export default 'a'"
+      : ['@/components/CycleProgressOrb', '@/components/WaterCup'].includes(specifier) ? "export default 'span'" : null
+    if (mock) return `from 'data:text/javascript;base64,${Buffer.from(mock).toString('base64')}'`
+    const base = specifier.startsWith('@/') ? resolve(specifier.slice(2)) : specifier.startsWith('.') ? resolve(dirname(path), specifier) : null
+    if (base) return `from '${moduleUrl(base + '.ts', cache)}'`
+    return `from '${pathToFileURL(require.resolve(specifier)).href}'`
+  })
+  const url = `data:text/javascript;base64,${Buffer.from(output).toString('base64')}`
+  cache.set(path, url)
+  return url
+}
+const QuickAdd = (await import(moduleUrl('components/hydration/HydrationQuickAdd.tsx'))).default
+const Dock = (await import(moduleUrl('components/DashboardStatusDock.tsx'))).default
+const submissions = await import(moduleUrl('lib/hydration/waterSubmission.ts'))
+const clientId = 'QA-WATER-ONLY', logDate = '2026-10-13'
+const quickProps = { clientId, logDate, consumed: 36, target: 111, renderTrigger: () => null }
+const dockProps = { client: { client_id: clientId, timezone: 'America/Chicago' }, cycleStatus: {}, dailyPlan: { date: logDate, dailyTargets: { water: 111 }, dailyRemaining: { water: 75 } } }
+
+function mount(Component, props, storage, fetch) {
+  const slots = []; let cursor = 0, effects = [], tree, refreshes = 0
+  globalThis.window = { localStorage: storage }
+  globalThis.document = { addEventListener() {}, removeEventListener() {} }
+  globalThis.fetch = fetch
+  globalThis.waterRouter = { refresh() { refreshes++ } }
+  globalThis.waterHooks = {
+    useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], next => { slots[i] = typeof next === 'function' ? next(slots[i]) : next }] },
+    useRef(initial) { const i = cursor++; return slots[i] ||= { current: initial } },
+    useEffect(fn, deps) { const i = cursor++; if (!slots[i] || deps.some((value, n) => value !== slots[i][n])) { slots[i] = deps; effects.push(fn) } },
+  }
+  function render() { cursor = 0; tree = Component(props); for (const effect of effects.splice(0)) effect(); return tree }
+  async function flush() { await new Promise(setImmediate); render(); await new Promise(setImmediate); render() }
+  render(); render()
+  return { render, flush, get tree() { return tree }, get refreshes() { return refreshes } }
+}
+function nodes(tree, predicate) {
+  const found = []
+  function visit(node) {
+    if (Array.isArray(node)) return node.forEach(visit)
+    if (!node || typeof node !== 'object') return
+    if (predicate(node)) found.push(node)
+    visit(node.props?.children)
+  }
+  visit(tree); return found
+}
+const text = node => Array.isArray(node) ? node.map(text).join('') : node && typeof node === 'object' ? text(node.props?.children) : node == null ? '' : String(node)
+const button = (app, label) => nodes(app.tree, node => node.type === 'button' && text(node) === label)[0]
+function scenario() {
+  const values = new Map(), calls = [], ids = new Set(); let total = 36, loseResponse = true
+  const storage = { getItem: key => values.get(key) || null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) }
+  async function fetch(url, init) {
+    assert.equal(url, '/api/nutrition/add-water')
+    const body = JSON.parse(init.body); calls.push(body)
+    if (!ids.has(body.submissionId)) { ids.add(body.submissionId); total += body.ounces }
+    if (loseResponse) { loseResponse = false; throw new TypeError('Response lost after commit') }
+    return Response.json({ success: true, nutritionLog: { water_consumed_oz: total, water_oz: 111 } })
+  }
+  return { storage, fetch, values, calls, get total() { return total } }
+}
+
+test('quick add keeps one committed drink through response loss, double-click, reload, and retry', async () => {
+  const server = scenario(), first = mount(QuickAdd, quickProps, server.storage, server.fetch)
+  const save = button(first, 'Log 8 oz')
+  save.props.onClick(); save.props.onClick(); await first.flush()
+  assert.equal(server.calls.length, 1)
+  assert.equal(server.total, 44)
+  assert.equal(first.refreshes, 0)
+  assert.match(text(first.tree), /Response lost/)
+  const pendingId = server.calls[0].submissionId
+  assert.equal(nodes(first.tree, node => node.type === 'input')[0].props.disabled, true)
+  assert.throws(() => submissions.beginWaterSubmission(clientId, 12, logDate), /pending 8 oz/)
+  const reloaded = mount(QuickAdd, { ...quickProps, defaultOunces: 12 }, server.storage, server.fetch)
+  assert.equal(nodes(reloaded.tree, node => node.type === 'input')[0].props.value, '8')
+  button(reloaded, 'Retry 8 oz save').props.onClick(); await reloaded.flush()
+  assert.equal(server.calls[1].submissionId, pendingId)
+  assert.equal(server.calls[1].logDate, logDate)
+  assert.equal(server.total, 44)
+  assert.equal(reloaded.refreshes, 1)
+  assert.equal(server.values.size, 0)
+  button(reloaded, 'Log 8 oz').props.onClick(); await reloaded.flush()
+  assert.notEqual(server.calls[2].submissionId, pendingId)
+  assert.equal(server.total, 52)
+})
+
+test('status dock sends a durable ID and another hydration control can safely confirm its pending drink', async () => {
+  const server = scenario(), dock = mount(Dock, dockProps, server.storage, server.fetch)
+  nodes(dock.tree, node => node.props?.['aria-label'] === 'Quick add water')[0].props.onClick(); dock.render()
+  button(dock, '+12 oz').props.onClick(); button(dock, '+12 oz').props.onClick(); await dock.flush()
+  assert.equal(server.calls.length, 1)
+  assert.equal(server.total, 48)
+  assert.ok(server.calls[0].submissionId)
+  assert.equal(button(dock, 'Retry 12 oz save').props.disabled, false)
+  const quick = mount(QuickAdd, quickProps, server.storage, server.fetch)
+  button(quick, 'Retry 12 oz save').props.onClick(); await quick.flush()
+  assert.equal(server.calls[1].submissionId, server.calls[0].submissionId)
+  assert.equal(server.total, 48)
+  assert.equal(server.values.size, 0)
+})
+
+test('hydration sends no request when the retry identity cannot be persisted', async () => {
+  let calls = 0
+  const storage = { getItem() { return null }, setItem() { throw new Error('Quota exceeded') } }
+  const app = mount(QuickAdd, quickProps, storage, async () => { calls++; return Response.json({}) })
+  button(app, 'Log 8 oz').props.onClick(); await app.flush()
+  assert.equal(calls, 0)
+  assert.equal(app.refreshes, 0)
+  assert.match(text(app.tree), /Enable browser storage/)
+})
+
+test('prior-day ambiguous saves retain their identity and cannot become a new day drink', async () => {
+  const server = scenario(), first = mount(QuickAdd, quickProps, server.storage, server.fetch)
+  button(first, 'Log 8 oz').props.onClick(); await first.flush()
+  const saved = [...server.values.values()][0]
+  const nextDay = mount(QuickAdd, { ...quickProps, logDate: '2026-10-14' }, server.storage, server.fetch)
+  assert.equal(button(nextDay, 'Retry 8 oz save').props.disabled, true)
+  assert.match(text(nextDay.tree), /2026-10-13 could not be confirmed/)
+  assert.throws(() => submissions.beginWaterSubmission(clientId, 8, '2026-10-14'), /2026-10-13/)
+  assert.equal(server.calls.length, 1)
+  assert.equal([...server.values.values()][0], saved)
+})

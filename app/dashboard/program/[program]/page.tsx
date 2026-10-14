@@ -61,7 +61,7 @@ export default async function ProgramPage({
   const safetyFlags = await getRecentSafetyFlags(supabase, client.client_id)
   if (safetyFlags.length) {
     await logRecommendationAudit({
-      supabase, userId: user.id, recommendationType: 'dashboard_safety_escalation',
+      supabase, userId: user.id, clientId: client.client_id, recommendationType: 'dashboard_safety_escalation',
       inputReference: `client_symptom_logs:${client.client_id}`, engineVersion: 'safety_v1.0',
       recommendationOutput: { blocked: true }, safetyFlags,
     })
@@ -102,6 +102,7 @@ export default async function ProgramPage({
   await logRecommendationAudit({
     supabase,
     userId: user.id,
+    clientId: client.client_id,
     recommendationType: 'daily_program_logic',
     inputSnapshot: {
       program,

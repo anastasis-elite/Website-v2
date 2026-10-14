@@ -16,6 +16,7 @@ const schedulePatch=await importTs('app/api/schedule/[id]/route.ts',mocks)
 const scheduleComplete=await importTs('app/api/schedule/[id]/complete/route.ts',mocks)
 const scheduleDefer=await importTs('app/api/schedule/[id]/defer/route.ts',mocks)
 const schedulePlan=await importTs('app/api/schedule/plan/route.ts',mocks)
+const {getClientLocalDate}=await importTs('lib/timezone.ts')
 const owner='qa-user',clientId='QA-ONLY'
 function database({signedIn=true, eventType='workout',fixed=false}={}) {
  const client={client_id:clientId,auth_user_id:owner,program:'ignite',timezone:'America/Chicago',execution_style:'hybrid',carousel_style:'section',onboarding_data:{timezone:'America/Chicago',kept:'existing'}}
@@ -55,10 +56,26 @@ test('manual set API keeps one set partial and requires an explicit exercise fin
  assert.equal((await manualWorkout.POST(req(base))).status,200)
  assert.equal(writes.find(write=>write.table==='workout_logs').mutation.completed,false)
  assert.equal(writes.find(write=>write.table==='workout_logs').mutation.exercise_logs[0].completed,false)
+ assert.match(writes.find(write=>write.table==='workout_logs').mutation.workout_date,/^\d{4}-\d{2}-\d{2}$/)
+ assert.ok(Number.isFinite(Date.parse(writes.find(write=>write.table==='workout_logs').mutation.workout_started_at)))
  writes.length=0
  assert.equal((await manualWorkout.POST(req({...base,sets:[set,set],exercise_finished_at:new Date().toISOString()}))).status,200)
  assert.equal(writes.find(write=>write.table==='workout_logs').mutation.completed,true)
  assert.equal((await manualWorkout.POST(req({...base,sets:[{...set,reps:0}]}))).status,400)
+})
+test('manual logging resumes an owned legacy DATE row without inventing its historical start time',async()=>{
+ const db=database(),writes=[],legacy={id:'legacy-manual',client_id:clientId,auth_user_id:owner,workout_source:'manual',day_name:'Manual Workout',workout_date:getClientLocalDate(db.client),workout_started_at:null,exercise_logs:[]}
+ db.from=table=>{
+  let mutation=null;const filters=[]
+  const q={select(){return q},eq(key,value){filters.push(row=>row[key]===value);return q},gte(key,value){filters.push(row=>row[key]>=value);return q},lt(key,value){filters.push(row=>row[key]<value);return q},order(){return q},limit(){return q},update(value){mutation=value;return q},insert(value){mutation=value;return q},upsert(value){mutation=value;return q},maybeSingle:async()=>resolve(true),single:async()=>resolve(true),then(done){return Promise.resolve(resolve()).then(done)}}
+  function resolve(single=false){if(mutation)writes.push({table,mutation});const row=table==='clients'?db.client:table==='workout_logs'?legacy:{id:'manual-exercise-session'};const rows=(mutation||filters.every(filter=>filter(row)))?[row]:[];return {data:single?rows[0]||null:rows,error:null}}
+  return q
+ }
+ const response=await manualWorkout.POST(req({client_id:clientId,program:'ignite',exercise:{id:'squat',exercise:'Squat',sets:1},planned_exercises:[{exercise:'Squat',sets:1}],exercise_logs:[{id:'squat',exercise:'Squat',sets:1}],sets:[{weight:0,reps:8,weight_unit:'lb',completed_at:new Date().toISOString()}]}))
+ assert.equal(response.status,200)
+ const saved=writes.find(write=>write.table==='workout_logs').mutation
+ assert.equal(saved.workout_date,legacy.workout_date)
+ assert.equal(saved.workout_started_at,null)
 })
 test('dashboard API auth/setup redirects remain clear authorization errors',()=>{
  assert.equal(dashboardApiError({digest:'NEXT_REDIRECT;replace;/login;307;'},'Failed').status,401)

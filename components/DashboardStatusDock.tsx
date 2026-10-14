@@ -2,10 +2,13 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 import CycleProgressOrb from '@/components/CycleProgressOrb'
 import WaterCup from '@/components/WaterCup'
 import { getFlameVisualState } from '@/lib/dashboard/getFlameVisualState'
+import { getClientLocalDate } from '@/lib/timezone'
+import { beginWaterSubmission, confirmWaterSubmission, pendingWaterSubmission, type WaterSubmission } from '@/lib/hydration/waterSubmission'
 
 type Props = {
   client: any
@@ -42,6 +45,21 @@ export default function DashboardStatusDock(
 
   const [cycleOpen, setCycleOpen] = useState(false)
   const [waterOpen, setWaterOpen] = useState(false)
+  const [addingWater, setAddingWater] = useState(false)
+  const [waterMessage, setWaterMessage] = useState('')
+  const [pendingWater, setPendingWater] = useState<WaterSubmission | null>(null)
+  const waterLock = useRef(false)
+  const router = useRouter()
+  const clientId = String(client?.client_id || '')
+  const logDate = dailyPlan?.date || getClientLocalDate(client)
+
+  useEffect(() => {
+    try {
+      const pending = pendingWaterSubmission(clientId)
+      setPendingWater(pending)
+      if (pending) setWaterMessage(pending.logDate === logDate ? `Retry the pending ${pending.ounces} oz save to confirm your total.` : `The ${pending.ounces} oz save for ${pending.logDate} could not be confirmed. Review that day’s hydration before logging again.`)
+    } catch (error) { setWaterMessage(error instanceof Error ? error.message : 'Water retry storage is unavailable.') }
+  }, [clientId, logDate])
 
   const dockRef = useRef<HTMLDivElement | null>(null)
 
@@ -117,6 +135,32 @@ export default function DashboardStatusDock(
   ] = useState<number>(
     waterRemaining,
   )
+  useEffect(() => setLocalWaterRemaining(waterRemaining), [waterRemaining])
+
+  async function addWater(ounces: number) {
+    if (waterLock.current || !clientId) return
+    waterLock.current = true
+    setAddingWater(true)
+    setWaterMessage('')
+    try {
+      const submission = beginWaterSubmission(clientId, ounces, logDate)
+      setPendingWater(submission)
+      const response = await fetch('/api/nutrition/add-water', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, ...submission }),
+      })
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error || 'Water could not be saved.')
+      const total = Number(payload.nutritionLog?.water_consumed_oz)
+      if (!Number.isFinite(total) || total < 0) throw new Error('The saved water total could not be confirmed. Retry this same drink.')
+      confirmWaterSubmission(clientId, submission.submissionId)
+      setPendingWater(null)
+      setLocalWaterRemaining(Math.max(0, Number(payload.nutritionLog.water_oz || waterTarget) - total))
+      setWaterOpen(false)
+      router.refresh()
+    } catch (error) { setWaterMessage(error instanceof Error ? error.message : 'Water could not be saved. Retry this same drink.') }
+    finally { waterLock.current = false; setAddingWater(false) }
+  }
 
   const waterPercent = Math.max(
     0,
@@ -330,67 +374,21 @@ export default function DashboardStatusDock(
           </p>
 
           <div style={waterGridStyle}>
-            {[8, 12, 16, 24].map(
+            {(pendingWater ? [pendingWater.ounces] : [8, 12, 16, 24]).map(
               (ounces) => (
                 <button
                   key={ounces}
                   type="button"
                   style={buttonStyle}
-                  onClick={async () => {
-                    const response =
-                      await fetch(
-                        '/api/nutrition/add-water',
-                        {
-                          method:
-                            'POST',
-
-                          headers: {
-                            'Content-Type':
-                              'application/json',
-                          },
-
-                          body:
-                            JSON.stringify(
-                              {
-                                clientId:
-                                  client?.client_id,
-
-                                ounces,
-                              },
-                            ),
-                        },
-                      )
-
-                    if (
-                      !response.ok
-                    ) {
-                      console.error(
-                        'Water add failed:',
-                        await response.json(),
-                      )
-
-                      return
-                    }
-
-                    setLocalWaterRemaining(
-                      (
-                        previous,
-                      ) =>
-                        Math.max(
-                          0,
-                          previous -
-                            ounces,
-                        ),
-                    )
-
-                    setWaterOpen(false)
-                  }}
+                  disabled={addingWater || Boolean(pendingWater && pendingWater.logDate !== logDate)}
+                  onClick={() => void addWater(ounces)}
                 >
-                  +{ounces} oz
+                  {addingWater ? 'Saving…' : pendingWater ? `Retry ${ounces} oz save` : `+${ounces} oz`}
                 </button>
               ),
             )}
           </div>
+          <p role="status" style={bodyStyle}>{waterMessage}</p>
 
           <div style={popupButtonRowStyle}>
             <Link

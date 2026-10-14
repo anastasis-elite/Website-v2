@@ -6,6 +6,9 @@ export function typescriptModuleUrl(path, mocks = {}, cache = new Map()) {
   if (cache.has(path)) return cache.get(path)
   const source = readFileSync(path, 'utf8')
   let { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ES2020, target: ts.ScriptTarget.ES2022 } })
+  // Next's server-only marker is enforced by the application compiler; it has
+  // no runtime implementation in these disposable Node route tests.
+  outputText = outputText.replace(/^import ['"]server-only['"];?\s*$/gm, '')
   outputText = outputText.replace(/from ['"]([^'"]+)['"]/g, (match, specifier) => {
     const mocked = mocks[specifier]
     if (mocked !== undefined) return `from 'data:text/javascript;base64,${Buffer.from(mocked).toString('base64')}'`

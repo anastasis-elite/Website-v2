@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { clientId, ounces, submissionId } = await request.json()
+    const { clientId, ounces, submissionId, logDate } = await request.json()
 
     if (!clientId || typeof ounces !== 'number' || !Number.isFinite(ounces) || ounces <= 0) {
       return NextResponse.json(
@@ -25,8 +25,12 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
-
-
+    if (typeof submissionId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(submissionId)) {
+      return NextResponse.json({ error: 'A valid water submission identifier is required.' }, { status: 400 })
+    }
+    if (typeof logDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(logDate)) {
+      return NextResponse.json({ error: 'A water log date is required.' }, { status: 400 })
+    }
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('*')
@@ -42,9 +46,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
     }
 
-    if (submissionId && !/^[0-9a-f-]{36}$/i.test(submissionId)) return NextResponse.json({ error: 'Invalid water submission.' }, { status: 400 })
-    const requestId = submissionId || crypto.randomUUID()
     const today = getClientLocalDate(client)
+    const staleDate = () => NextResponse.json({ error: 'This water submission belongs to another local day. Review that day’s saved hydration before logging again.' }, { status: 409 })
+    if (logDate !== today) return staleDate()
     const { data: log, error: logError } = await supabase
       .from('nutrition_logs')
       .select('*')
@@ -55,6 +59,7 @@ export async function POST(request: Request) {
     if (logError) {
       return NextResponse.json({ error: logError.message }, { status: 500 })
     }
+    if (getClientLocalDate(client) !== today) return staleDate()
 
     if (!log) {
       const nutrition = await calculateClientNutritionTargets({
@@ -75,6 +80,8 @@ export async function POST(request: Request) {
         cyclePhase: normalizeCyclePhase(nutrition.phase),
         trainingLevel: 'general_fitness',
       })
+
+      if (getClientLocalDate(client) !== today) return staleDate()
 
       let { data: newLog, error: insertError } = await supabase
         .from('nutrition_logs')
@@ -106,16 +113,18 @@ export async function POST(request: Request) {
         )
       }
 
-      const { data: added, error: addError } = await supabase.rpc('add_daily_water', { p_log_id: newLog.id, p_ounces: ounces, p_submission_id: requestId })
-      if (addError) return NextResponse.json({ error: 'Water could not be saved. Your intake was not added; try again.' }, { status: 500 })
+      if (getClientLocalDate(client) !== today) return staleDate()
+      const { data: added, error: addError } = await supabase.rpc('add_daily_water', { p_log_id: newLog.id, p_ounces: ounces, p_submission_id: submissionId })
+      if (addError) return NextResponse.json({ error: addError.message, retryWithSameSubmission: true }, { status: 500 })
       invalidateDailyPlan()
       return NextResponse.json({ success: true, nutritionLog: added })
     }
 
-    const { data, error } = await supabase.rpc('add_daily_water', { p_log_id: log.id, p_ounces: ounces, p_submission_id: requestId })
+    if (getClientLocalDate(client) !== today) return staleDate()
+    const { data, error } = await supabase.rpc('add_daily_water', { p_log_id: log.id, p_ounces: ounces, p_submission_id: submissionId })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: error.message, retryWithSameSubmission: true }, { status: 500 })
     }
 
     invalidateDailyPlan()

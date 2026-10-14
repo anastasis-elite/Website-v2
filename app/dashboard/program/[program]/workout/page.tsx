@@ -14,6 +14,7 @@ import type { ProgramTier } from '@/lib/dashboard/logic/types'
 import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 import { buildMuscleReadiness } from '@/lib/workout/muscleReadiness'
+import { loadWorkoutHistory } from '@/lib/workout/history'
 
 const SUPPORTED_PROGRAMS: ProgramTier[] = [
   'ember',
@@ -207,14 +208,7 @@ export default async function ProgramWorkoutPage({
           error: null,
         }),
 
-    supabase
-      .from('workout_logs')
-      .select('*')
-      .eq('client_id', client.client_id)
-      .order('workout_date', {
-        ascending: false,
-      })
-      .limit(30),
+    loadWorkoutHistory({ supabase, client, authUserId: user.id, allHistory: true, limit: 30 }),
 
     supabase
       .from('recovery_logs')

@@ -1,5 +1,5 @@
 import { getClientLocalDate } from '@/lib/timezone'
-import { getClientDayRange } from '@/lib/schedule/time'
+import { loadWorkoutHistory } from '@/lib/workout/history'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
   
 export async function getRecoveryRecommendation({
@@ -12,7 +12,6 @@ export async function getRecoveryRecommendation({
   user: any
 }) {
   const today = getClientLocalDate(client)
-  const range = getClientDayRange(client, today)
 
   const cycleStatus = getCycleStatus(client)
   
@@ -23,15 +22,8 @@ export async function getRecoveryRecommendation({
     .eq('log_date', today)
     .maybeSingle()
 
-  const { data: todayWorkoutLog } = await supabase
-    .from('workout_logs')
-    .select('*')
-    .eq('client_id', client.client_id)
-    .gte('workout_date', range.start.toISOString())
-    .lt('workout_date', range.end.toISOString())
-    .eq('completed', true)
-    .limit(1)
-    .maybeSingle()
+  const { data: completedWorkouts } = await loadWorkoutHistory({ supabase, client, authUserId: user.id, startDate: today, completed: true, limit: 1 })
+  const todayWorkoutLog = completedWorkouts?.[0]
 
   const { data: todayNutritionLog } = await supabase
     .from('nutrition_logs')

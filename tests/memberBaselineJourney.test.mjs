@@ -9,6 +9,7 @@ const mocks = {
   'next/server': 'export const NextResponse = { json: (body, init) => Response.json(body, init) }',
   '@/lib/supabase/server': 'export const createClient = async () => globalThis.memberBaselineDb',
   '@/lib/dashboard/invalidateDailyPlan': 'export const invalidateDailyPlan = () => { globalThis.memberBaselineInvalidations = (globalThis.memberBaselineInvalidations || 0) + 1 }',
+  '@/lib/supabase/admin': 'export const createAdminClient = () => globalThis.memberBaselineDb',
 }
 for (const [, path] of readFileSync('lib/program/generateProgram.ts', 'utf8').matchAll(/from '(@\/[^']+\.json)'/g)) {
   mocks[path] = `export default ${readFileSync(path.slice(2), 'utf8')}`

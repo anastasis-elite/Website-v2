@@ -4,7 +4,8 @@ import { getSleepStatusForDashboard } from '@/lib/sleep/getSleepStatusForDashboa
 import { isSorenessRegionKey } from '@/lib/recovery/sorenessRegions'
 import type { HistoricalRecoverySignal } from '@/lib/workout-os/types'
 import { getClientDayRange } from '@/lib/schedule/time'
-import { getClientTimeZone, recordLocalDate, getClientLocalDateOffset } from '@/lib/timezone'
+import { getClientTimeZone, recordLocalDate, getClientLocalDateOffset, addLocalDays } from '@/lib/timezone'
+import { loadWorkoutHistory, workoutLocalDate } from '@/lib/workout/history'
 
 function nullableNumber(value: unknown) {
   if (value === null || value === undefined || value === '') return null
@@ -82,7 +83,7 @@ export async function loadProgramLogicInputs({
     supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).limit(1).maybeSingle(),
     supabase.from('client_symptom_logs').select('*, symptom_types(name,category)').eq('client_id', client.client_id).gte('created_at', `${ninetyDaysAgo}T00:00:00.000Z`).order('created_at', { ascending: false }).limit(100),
     supabase.from('nutrition_logs').select('*').eq('client_id', client.client_id).gte('log_date', fourteenDaysAgo).lte('log_date', today).order('log_date'),
-    supabase.from('workout_logs').select('*').eq('client_id', client.client_id).gte('workout_date', `${ninetyDaysAgo}T00:00:00.000Z`).lt('workout_date', end).order('workout_date', { ascending: false }).limit(100),
+    loadWorkoutHistory({ supabase, client, startDate: ninetyDaysAgo, endDateExclusive: addLocalDays(today, 1), authUserId: user.id, limit: 100 }),
     supabase.from('assessments').select('*').eq('client_id', client.client_id).eq('assessment_type', 'strength').order('submitted_at', { ascending: false }).limit(5),
     supabase.from('assessments').select('*').eq('client_id', client.client_id).eq('assessment_type', 'initial').order('submitted_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('measurement_logs').select('*').eq('client_id', client.client_id).order('log_date', { ascending: false }).limit(2),
@@ -283,7 +284,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
     return data?.signedUrl || null
   }))).filter((url): url is string => Boolean(url))
 
-  const yesterdayWorkout = (workoutHistory || []).find((row: any) => recordLocalDate(String(row.workout_date), timeZone) === yesterday)
+  const yesterdayWorkout = (workoutHistory || []).find((row: any) => workoutLocalDate(row, timeZone) === yesterday)
   const { data: todayCycle } = await supabase.from('cycle_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle()
   const todaySymptoms = mergeDailySymptoms((recentSymptoms || []).filter((row: any) => recordLocalDate(String(row.created_at), timeZone) === today), todayCycle)
   const automaticTaskIds = new Set<string>((phoenixTasks || []).map((row: any) => row.task_id))
@@ -303,7 +304,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
   for (const row of recentTasks || []) activityByDate.set(String(row.log_date), (activityByDate.get(String(row.log_date)) || 0) + 1)
   for (const row of rawRecentRecovery || []) if (row.check_in_completed_at || row.sleep_hours || row.sleep_quality) activityByDate.set(String(row.log_date), (activityByDate.get(String(row.log_date)) || 0) + 1)
   for (const row of nutritionLogs || []) if (String(row.log_date) < today) activityByDate.set(String(row.log_date), (activityByDate.get(String(row.log_date)) || 0) + 1)
-  for (const row of workoutHistory || []) { const logDate=recordLocalDate(String(row.workout_date), timeZone); if(row.completed&&logDate<today) activityByDate.set(logDate,(activityByDate.get(logDate)||0)+1) }
+  for (const row of workoutHistory || []) { const logDate=workoutLocalDate(row, timeZone); if(row.completed&&logDate<today) activityByDate.set(logDate,(activityByDate.get(logDate)||0)+1) }
   let missedDayCount=0
   for (let offset = 1; offset <= 4; offset++) {
   const date = getClientLocalDateOffset(client, -offset)

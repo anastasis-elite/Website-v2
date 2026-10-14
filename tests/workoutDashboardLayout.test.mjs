@@ -28,7 +28,7 @@ test('workout toggle panel contains workout-specific tab set', () => {
 test('route reuses existing workout engine and reads existing history and recovery data', () => {
   assert.match(route, /getProgramWorkout/)
   assert.match(route, /getProgramLogicEngine/)
-  assert.match(route, /\.from\('workout_logs'\)/)
+  assert.match(route, /loadWorkoutHistory\(\{ supabase, client, authUserId: user.id, allHistory: true/)
   assert.match(route, /\.from\('recovery_logs'\)/)
   assert.match(route, /buildMuscleReadiness/)
   assert.doesNotMatch(route, /insert\(|upsert\(/)

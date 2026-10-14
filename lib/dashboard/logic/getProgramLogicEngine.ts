@@ -1,5 +1,6 @@
-import { getClientTimeZone, getClientLocalDateOffset, recordLocalDate } from '@/lib/timezone'
+import { getClientTimeZone, getClientLocalDateOffset } from '@/lib/timezone'
 import { loadProgramLogicInputs } from './loadProgramLogicInputs'
+import { workoutLocalDate } from '@/lib/workout/history'
 
 import {
   numeric,
@@ -166,12 +167,7 @@ function buildTrends(
       .filter(
         (row: any) => row.completed,
       )
-      .map((row: any) =>
-        String(row.workout_date).slice(
-          0,
-          10,
-        ),
-      ),
+      .map((row: any) => workoutLocalDate(row, getClientTimeZone(inputs.client))),
   )
 
   const make = (
@@ -767,7 +763,7 @@ export async function getProgramLogicEngine(
     trends: buildTrends(inputs),
 
     execution: {
-      workoutInProgress: inputs.workoutHistory.some(row => recordLocalDate(String(row.workout_date), getClientTimeZone(inputs.client)) === inputs.date && !row.completed && Array.isArray(row.exercise_logs) && row.exercise_logs.some((log: any) => log.set_logs?.length || Number(log.actual_duration || log.actual_reps) > 0)),
+      workoutInProgress: inputs.workoutHistory.some(row => workoutLocalDate(row, getClientTimeZone(inputs.client)) === inputs.date && !row.completed && Array.isArray(row.exercise_logs) && row.exercise_logs.some((log: any) => log.set_logs?.length || Number(log.actual_duration || log.actual_reps) > 0)),
       completedWorkoutTitle: inputs.dailyPlan?.completedWorkoutTitle || null,
       completedWorkoutId: inputs.dailyPlan?.completedWorkoutId || null,
       completedWorkoutAt: inputs.dailyPlan?.completedWorkoutAt || null,

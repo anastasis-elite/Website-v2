@@ -4,6 +4,7 @@ import { workoutCompletion } from '@/lib/workout/activity'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { loadWorkoutHistory } from '@/lib/workout/history'
 
 function exerciseId(exercise: any) {
   return String(
@@ -37,23 +38,14 @@ export async function POST(req: Request) {
     const workoutDate = body.workout_date || new Date().toISOString()
     if(!Number.isFinite(new Date(workoutDate).getTime()) || getClientLocalDate(client,new Date(workoutDate)) !== getClientLocalDate(client))return NextResponse.json({error:'Reload today’s session before saving.'},{status:400})
     const day = getClientDayRange(client)
-    const bounds = {start:day.start.toISOString(),end:day.end.toISOString()}
     const sets = Array.isArray(body.sets) ? body.sets : []
     const exerciseLogs = Array.isArray(body.exercise_logs) ? body.exercise_logs : []
     if(sets.length>100 || sets.some((set:any)=>!Number.isFinite(Number(set.weight)) || Number(set.weight)<0 || !Number.isFinite(Number(set.reps)) || Number(set.reps)<=0 || !['lb','kg'].includes(set.weight_unit || 'lb') || !set.completed_at))return NextResponse.json({error:'Review the confirmed sets before saving.'},{status:400})
     for(const log of exerciseLogs)log.completed=Boolean(body.exercise_finished_at) && sets.length >= Math.max(1,Number(body.exercise?.sets || 1))
 
-    const existingResult = await supabase
-      .from('workout_logs')
-      .select('id, exercise_logs')
-      .eq('client_id', body.client_id)
-      .eq('auth_user_id',user.id)
-      .eq('workout_source', 'manual')
-      .gte('workout_date', bounds.start)
-      .lt('workout_date', bounds.end)
-      .order('workout_date', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    const dayName = String(body.day_name || 'Manual Workout')
+    const history = await loadWorkoutHistory({ supabase, client, authUserId: user.id, startDate: day.date, source: 'manual', dayName, limit: 1 })
+    const existingResult = { ...history, data: history.data?.[0] || null }
 
     if (existingResult.error) {
       return NextResponse.json({ error: existingResult.error.message }, { status: 500 })
@@ -72,9 +64,10 @@ export async function POST(req: Request) {
       client_id: body.client_id,
       auth_user_id: user.id,
       program: body.program,
-      day_name: body.day_name || 'Manual Workout',
+      day_name: dayName,
       workout_source: 'manual',
-      workout_date: workoutDate,
+      workout_date: day.date,
+      workout_started_at: existingResult.data ? existingResult.data.workout_started_at || null : new Date(workoutDate).toISOString(),
       planned_exercises: Array.isArray(body.planned_exercises) ? body.planned_exercises : [],
       exercise_logs: nextLogs,
       completed: Array.isArray(body.planned_exercises) && body.planned_exercises.length === nextLogs.length && workoutCompletion(nextLogs).completed,

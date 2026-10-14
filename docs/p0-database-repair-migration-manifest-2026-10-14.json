@@ -1,0 +1,26 @@
+{
+  "target": "lcccpqgnpznhbtmkmytp",
+  "status": "prepared_not_applied",
+  "order": [
+    {
+      "file": "supabase/migrations/20261013195246_p0_hydration_submission_integrity.sql",
+      "sha256": "c8864203b04c118a7c7b2b0248eff59dd1d27e0e177b2d9041cc7fcec11c8dce",
+      "lines": 43
+    },
+    {
+      "file": "supabase/migrations/20261014012428_p0_daily_save_foundation.sql",
+      "sha256": "65ace8441b6f91b4a1c6cb53e1d00d88026c3845fa9424b3eeaa3c453c197e6e",
+      "lines": 668
+    },
+    {
+      "file": "supabase/migrations/20261014023155_p0_connected_calendar_dependencies.sql",
+      "sha256": "8270006074fcfa0af7dcf33c6049d3584795d34537e6865c7e91980fae3cfa67",
+      "lines": 171
+    },
+    {
+      "file": "supabase/migrations/20261014023157_p0_daily_guidance_progress_metadata.sql",
+      "sha256": "37a9934d0a05c0f279a0dea22218c68512458b1333a50275d5218ea66c16e921",
+      "lines": 2170
+    }
+  ]
+}

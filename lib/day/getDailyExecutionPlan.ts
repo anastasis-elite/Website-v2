@@ -3,9 +3,10 @@ import {
   getNutritionBlockTargets,
   type NutritionBlockKey,
 } from '@/lib/nutrition/getNutritionBlockTargets'
-import { getClientDayRange } from '@/lib/schedule/time'
 import { getLocalDaypart, getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
 import { calculateClientNutritionTargets } from '@/lib/nutrition/targetService'
+import { loadWorkoutHistory } from '@/lib/workout/history'
+import { calculateRecordedNutrition, loadRecordedNutrition } from '@/lib/nutrition/progress'
 
 type DailyCard = {
   id: string
@@ -103,7 +104,6 @@ export async function getDailyExecutionPlan({
   const now = new Date()
   const timeZone = getClientTimeZone(client)
   const today = getClientLocalDate(client)
-  const dayRange = getClientDayRange(client, today)
   const localParts = new Intl.DateTimeFormat('en-US', {
     timeZone,
     hour: 'numeric',
@@ -149,6 +149,8 @@ export async function getDailyExecutionPlan({
   const fats = Number(todayNutritionLog?.fats || target.fats)
 
   let blockRemaining: Record<NutritionBlockKey, any> | null = null
+  let macroEntryCount = 0
+  let nutritionProgressAvailable = true
 
   let dailyRemaining = {
     calories,
@@ -173,32 +175,13 @@ export async function getDailyExecutionPlan({
       choline_target_mg: todayNutritionLog.choline_target_mg,
     })
 
-    const { data: eatenByBlock } = await supabase
-      .from('nutrition_log_totals_by_block')
-      .select('*')
-      .eq('nutrition_log_id', todayNutritionLog.id)
-
-    const totalEaten = (eatenByBlock || []).reduce(
-      (acc: any, row: any) => {
-        acc.calories += Number(row.calories_eaten || 0)
-        acc.protein += Number(row.protein_eaten_g || 0)
-        acc.carbs += Number(row.carbs_eaten_g || 0)
-        acc.fats += Number(row.fat_eaten_g || 0)
-        return acc
-      },
-      {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fats: 0,
-      }
-    )
-
-    const { data: macros } = await supabase.from('macro_entries').select('calories,protein_g,carbs_g,fat_g').eq('nutrition_log_id', todayNutritionLog.id)
-    for (const row of macros || []) {
-      totalEaten.calories += Number(row.calories || 0); totalEaten.protein += Number(row.protein_g || 0)
-      totalEaten.carbs += Number(row.carbs_g || 0); totalEaten.fats += Number(row.fat_g || 0)
-    }
+    const recorded = await loadRecordedNutrition(supabase, todayNutritionLog.id).catch(() => {
+      nutritionProgressAvailable = false
+      console.error('Saved nutrition progress could not be loaded.')
+      return calculateRecordedNutrition()
+    })
+    const totalEaten = recorded.total
+    macroEntryCount = recorded.macroEntryCount
     dailyRemaining = {
       calories: roundMacro(calories - totalEaten.calories),
       protein: roundMacro(protein - totalEaten.protein),
@@ -211,24 +194,22 @@ export async function getDailyExecutionPlan({
 
     blockRemaining = Object.fromEntries(
       Object.entries(blockTargets).map(([block, target]) => {
-        const eaten = eatenByBlock?.find(
-          (row: any) => row.day_block === block
-        )
+        const eaten = recorded.byBlock[block]
 
         return [
           block,
           {
             calories: roundMacro(
-              target.calories - Number(eaten?.calories_eaten || 0)
+              target.calories - Number(eaten?.calories || 0)
             ),
             protein: roundMacro(
-              target.protein_g - Number(eaten?.protein_eaten_g || 0)
+              target.protein_g - Number(eaten?.protein || 0)
             ),
             carbs: roundMacro(
-              target.carbs_g - Number(eaten?.carbs_eaten_g || 0)
+              target.carbs_g - Number(eaten?.carbs || 0)
             ),
             fats: roundMacro(
-              target.fat_g - Number(eaten?.fat_eaten_g || 0)
+              target.fat_g - Number(eaten?.fats || 0)
             ),
             water:
               block === 'morning'
@@ -244,16 +225,8 @@ export async function getDailyExecutionPlan({
     ) as Record<NutritionBlockKey, any>
   }
 
-  const { data: todayWorkoutLog } = await supabase
-    .from('workout_logs')
-    .select('*')
-    .eq('client_id', client.client_id)
-    .gte('workout_date', dayRange.start.toISOString())
-    .lt('workout_date', dayRange.end.toISOString())
-    .eq('completed', true)
-    .order('workout_date', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  const { data: completedWorkouts } = await loadWorkoutHistory({ supabase, client, startDate: today, completed: true, limit: 1 })
+  const todayWorkoutLog = completedWorkouts?.[0]
 
   const { data: todayRecoveryLog } = await supabase
     .from('recovery_logs')
@@ -270,7 +243,7 @@ export async function getDailyExecutionPlan({
   const { count: mealCount } = todayNutritionLog?.id
     ? await supabase.from('meal_entries').select('id', { count: 'exact', head: true }).eq('nutrition_log_id', todayNutritionLog.id).eq('entry_state', 'confirmed')
     : { count: 0 }
-  const nutritionLogged = Number(mealCount || 0) > 0
+  const nutritionLogged = Number(mealCount || 0) > 0 || macroEntryCount > 0
 
   const recoveryTools = getRecoveryTools({
     client,
@@ -363,6 +336,7 @@ export async function getDailyExecutionPlan({
   }
 
   const macroTargetsMet =
+    nutritionProgressAvailable &&
     !!todayNutritionLog &&
     dailyRemaining.protein <= protein * 0.1 &&
     dailyRemaining.carbs <= carbs * 0.15 &&
@@ -470,8 +444,9 @@ export async function getDailyExecutionPlan({
     workoutCompleted,
     completedWorkoutTitle: todayWorkoutLog?.day_name || null,
     completedWorkoutId: todayWorkoutLog?.id || null,
-    completedWorkoutAt: todayWorkoutLog?.workout_date || null,
+    completedWorkoutAt: todayWorkoutLog?.workout_started_at || todayWorkoutLog?.workout_date || null,
     nutritionLogged,
+    nutritionProgressAvailable,
     recoveryTools,
     dayFullyComplete,
     macroTargetsMet,

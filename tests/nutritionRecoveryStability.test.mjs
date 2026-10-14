@@ -33,6 +33,7 @@ const preference = await import(moduleUrl('lib/dashboard/viewPreferences.ts'))
 const { getRecoveryScoreExplanation } = await import(moduleUrl('lib/recovery/scoreExplanation.ts'))
 const tierHelpers = await import(moduleUrl('lib/nutrition/canLogFood.ts'))
 const nextFoodGuidance = await import(moduleUrl('lib/nutrition/nextFoodGuidance.ts'))
+const nutritionProgress = await import(moduleUrl('lib/nutrition/progress.ts'))
 const remaining = { calories_remaining: 1800, protein_remaining_g: 120, carbs_remaining_g: 200, fat_remaining_g: 60, fiber_remaining_g: 25 }
 const foods = [
   { id: 'beans', name: 'Black beans', food_nutrients: { calories: 132, protein_g: 9, carbs_g: 24, fat_g: 1, fiber_g: 8 }, food_serving_options: [{ label: '100 g', is_default: true }] },
@@ -251,6 +252,7 @@ test('zero-log nutrition hero provides an actionable food starting point across 
     '@/lib/analytics': { trackEvent() {} },
     '@/components/dashboard/useViewPreference': { useViewPreference: (_clientId, _scope, _allowed, fallback) => [fallback, () => {}] },
     '@/lib/nutrition/nextFoodGuidance': nextFoodGuidance,
+    '@/lib/nutrition/progress': nutritionProgress,
   }
   vm.runInNewContext(output, { module, exports: module.exports, require: specifier => mocks[specifier] || nativeRequire(specifier) })
   for (const program of ['ember', 'ignite', 'phoenix']) {

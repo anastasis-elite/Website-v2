@@ -14,11 +14,12 @@ const mocks = {
   '@/lib/dashboard/getDashboardContext': 'export const getDashboardContext = async () => ({ supabase: globalThis.outageDatabase, user: { id: "11111111-1111-4111-8111-111111111111" }, client: globalThis.outageDatabase.client })',
   '@/lib/dashboard/invalidateDailyPlan': 'export const invalidateDailyPlan = () => { globalThis.outageInvalidations++ }',
   '@/lib/calendar/service': 'export const importedScheduleEvents = async () => { if(globalThis.outageCalendarError) throw new Error("Calendar unavailable"); return [] }',
+  '@/lib/supabase/admin': 'export const createAdminClient = () => globalThis.outageAuditAdmin',
 }
 const { getDailyExecutionPlan } = await importTs('lib/day/getDailyExecutionPlan.ts')
 const { getProgramLogicForClient } = await importTs('lib/dashboard/logic/getProgramLogicForClient.ts')
 const { getDailyScheduleState } = await importTs('lib/schedule/service.ts', mocks)
-const { logRecommendationAudit } = await importTs('lib/legal/logRecommendationAudit.ts')
+const { logRecommendationAudit } = await importTs('lib/legal/logRecommendationAudit.ts', mocks)
 const checkIn = await importTs('app/api/daily-check-in/route.ts', mocks)
 const water = await importTs('app/api/nutrition/add-water/route.ts', mocks)
 const workout = await importTs('app/api/workout-log/route.ts', mocks)
@@ -36,7 +37,7 @@ function database(program = 'ignite', { throwDerivedWrites = false } = {}) {
     clients: [client], assessments: [], program_outputs: [],
     recovery_logs: [{ id: 'saved-check-in', client_id: clientId, auth_user_id: owner, log_date: '2026-10-13', energy_level: 7, sleep_hours: 8, stress_level: 3, soreness_level: 2, check_in_completed_at: '2026-10-13T13:00:00Z' }],
     nutrition_logs: [{ id: 'saved-water', client_id: clientId, auth_user_id: owner, log_date: '2026-10-13', calories: 1800, protein: 100, carbs: 200, fats: 60, water_oz: 96, water_consumed_oz: 24 }],
-    workout_logs: [{ id: 'saved-workout', client_id: clientId, auth_user_id: owner, program, day_name: 'Saved walk', workout_date: '2026-10-13T18:00:00Z', completed: true, updated_at: '2026-10-13T18:30:00Z', exercise_logs: [{ exercise: 'Walk', completed: true, actual_duration: 20 }] }],
+    workout_logs: [{ id: 'saved-workout', client_id: clientId, auth_user_id: owner, program, day_name: 'Saved walk', workout_date: '2026-10-13', completed: true, updated_at: '2026-10-13T18:30:00Z', exercise_logs: [{ exercise: 'Walk', completed: true, actual_duration: 20 }] }],
   }
   const db = { tables, writes, failures, client, auth: { getUser: async () => ({ data: { user: { id: owner } }, error: null }) }, from(table) {
     let columns = '*', mutation = null, mode = null, single = false, sorting = null, size = null
@@ -122,12 +123,15 @@ test('a calendar failure is isolated alongside recurring and persisted schedule 
 
 test('audit permission denial and rejected transport remain observable without rejecting the caller', async t => {
   const errors = []; t.mock.method(console, 'error', (...args) => errors.push(args))
-  const args = { userId: owner, recommendationType: 'daily_program_logic', engineVersion: 'qa', recommendationOutput: {} }
-  await logRecommendationAudit({ ...args, supabase: { from: () => ({ insert: async () => ({ error: { code: '42501', message: 'permission denied for table recommendation_audit_logs' } }) }) } })
-  await logRecommendationAudit({ ...args, supabase: { from: () => ({ insert: async () => { throw new Error('Audit transport unavailable') } }) } })
+  const args = { userId: owner, clientId, recommendationType: 'daily_program_logic', engineVersion: 'qa', recommendationOutput: {}, supabase: database() }
+  globalThis.outageAuditAdmin = { from: () => ({ insert: async () => ({ error: { code: '42501', message: 'permission denied for table recommendation_audit_logs' } }) }) }
+  assert.equal(await logRecommendationAudit(args), false)
+  globalThis.outageAuditAdmin = { from: () => ({ insert: async () => { throw new Error('Audit transport unavailable') } }) }
+  assert.equal(await logRecommendationAudit(args), false)
   assert.equal(errors.length, 2)
-  assert.match(errors[0][1], /permission denied/)
-  assert.match(errors[1][1], /Audit transport unavailable/)
+  assert.match(errors[0][1], /Database write rejected/)
+  assert.equal(errors[0][2].code, '42501')
+  assert.match(errors[1][1], /Audit operation unavailable/)
 })
 
 test('schedule API can read a partial day but rejects a new time without a full conflict check', async t => {
@@ -158,7 +162,7 @@ test('check-in saves supported answers; unavailable water/workout/recovery write
   assert.equal(db.tables.recovery_logs[0].energy_level, 8)
   assert.equal(db.tables.recovery_logs[0].check_in_completed_at, '2026-10-13T13:00:00Z')
   const before = structuredClone(db.tables), writes = db.writes.length, invalidations = globalThis.outageInvalidations
-  const drink = await water.POST(req({ clientId, ounces: 8, submissionId: '33333333-3333-4333-8333-333333333333' }))
+  const drink = await water.POST(req({ clientId, ounces: 8, submissionId: '33333333-3333-4333-8333-333333333333', logDate: '2026-10-13' }))
   assert.equal(drink.status, 500)
   const session = await workout.POST(req({ client_id: clientId, program: 'ignite', day_name: 'Walk', planned_exercises: [{ exercise: 'Walk' }], exercise_logs: [{ exercise: 'Walk', completed: true, actual_duration: 20, duration_unit: 'minutes', confirmed_at: '2026-10-13T20:30:00Z' }], completed: true }))
   assert.equal(session.status, 500)

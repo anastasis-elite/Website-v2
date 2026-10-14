@@ -78,6 +78,9 @@ function database({ store = initialStore(), signedIn = true, failTable = null, p
       let changed = []
       if (mutation) {
         for (const value of Array.isArray(mutation) ? mutation : [mutation]) {
+          if (mode === 'insert' && table === 'nutrition_logs' && tables[table].some(row => row.client_id === value.client_id && row.log_date === value.log_date)) {
+            return { data: null, error: { code: '23505', message: 'duplicate daily nutrition log' } }
+          }
           const existing = mode === 'update' ? tables[table].find(row => filters.every(filter => filter(row))) : mode === 'upsert' ? tables[table].find(row => conflictKeys.every(key => row[key] === value[key])) : null
           let row = existing
           if (existing) Object.assign(existing, structuredClone(value))
@@ -99,7 +102,7 @@ function database({ store = initialStore(), signedIn = true, failTable = null, p
     assert.ok(pg, 'Water requests must execute the actual SQL function in disposable PGlite')
     const row = tables.nutrition_logs.find(log => log.id === args.p_log_id)
     if (row) await pg.query(`insert into nutrition_logs(id,auth_user_id,client_id,log_date,water_consumed_oz,water_submission_ids)
-      values($1,$2,$3,$4,$5,$6) on conflict(id) do update set water_consumed_oz=excluded.water_consumed_oz,water_submission_ids=excluded.water_submission_ids`,
+      values($1,$2,$3,$4,$5,$6) on conflict(id) do nothing`,
     [row.id, row.auth_user_id, row.client_id, row.log_date, row.water_consumed_oz || 0, row.water_submission_ids || []])
     await pg.query("select set_config('request.jwt.claim.sub',$1,false)", [user?.id || ''])
     try {
@@ -214,7 +217,7 @@ test('daily check-in saves only answered inputs, survives reload/revisit, and up
 test('hydration opens a disposable daily log, executes real SQL retry deduplication, and reloads into dashboard pacing', async t => {
   const pg = await waterDatabase(); t.after(() => pg.close())
   const db = database({ pg }), before = structuredClone(db.tables)
-  const submissionId = randomUUID(), payload = { clientId, ounces: 12, submissionId }
+  const submissionId = randomUUID(), payload = { clientId, ounces: 12, submissionId, logDate: today }
   const response = await water.POST(req(payload))
   assert.equal(response.status, 200)
   const first = (await response.json()).nutritionLog
@@ -234,7 +237,7 @@ test('hydration opens a disposable daily log, executes real SQL retry deduplicat
   // Revisit/retry through a fresh authenticated transport still records the drink once.
   assert.equal((await water.POST(req(payload))).status, 200)
   assert.equal(reloaded.tables.nutrition_logs.find(row => row.id === first.id).water_consumed_oz, 12)
-  assert.equal((await water.POST(req({ clientId, ounces: 8, submissionId: randomUUID() }))).status, 200)
+  assert.equal((await water.POST(req({ clientId, ounces: 8, submissionId: randomUUID(), logDate: today }))).status, 200)
   const revisited = database({ store: reloaded.tables, pg })
   assert.equal((await refreshedLogic(revisited)).hydration.consumed, 20)
   assertExistingUntouched(before, revisited.tables)
@@ -263,7 +266,7 @@ test('recovery activity saves and reloads as recorded completion without fabrica
 })
 
 test('check-in, hydration and recovery reject unauthenticated/cross-owner saves without touching existing records', async () => {
-  for (const [route, body] of [[checkIn, { energy: 4 }], [water, { ounces: 8, submissionId: randomUUID() }], [recovery, { activityType: 'Full rest' }]]) {
+  for (const [route, body] of [[checkIn, { energy: 4 }], [water, { ounces: 8, submissionId: randomUUID(), logDate: today }], [recovery, { activityType: 'Full rest' }]]) {
     const anonymous = database({ signedIn: false }), beforeAnonymous = structuredClone(anonymous.tables)
     assert.equal((await route.POST(req({ clientId, ...body }))).status, 401)
     assert.equal(anonymous.writes.length, 0)
@@ -275,6 +278,76 @@ test('check-in, hydration and recovery reject unauthenticated/cross-owner saves 
     assert.equal(globalThis.dashboardPersistenceInvalidations, 0)
     assert.deepEqual(owned.tables, beforeOwned)
   }
+})
+
+test('concurrent first drinks open one daily row and preserve both distinct submissions', async t => {
+  const pg = await waterDatabase(); t.after(() => pg.close())
+  const db = database({ pg }), before = structuredClone(db.tables)
+  const drinks = [8, 12].map(ounces => ({ clientId, ounces, submissionId: randomUUID(), logDate: today }))
+  const responses = await Promise.all(drinks.map(drink => water.POST(req(drink))))
+  for (const response of responses) assert.equal(response.status, 200)
+  const logs = db.tables.nutrition_logs.filter(row => row.client_id === clientId && row.log_date === today)
+  assert.equal(logs.length, 1)
+  assert.equal(logs[0].water_consumed_oz, 20)
+  assert.equal(new Set(logs[0].water_submission_ids).size, 2)
+  for (const drink of drinks) assert.equal((await water.POST(req(drink))).status, 200)
+  assert.equal(logs[0].water_consumed_oz, 20)
+  assertExistingUntouched(before, db.tables)
+})
+
+test('a committed drink with a lost RPC response remains one drink on retry and reload', async t => {
+  const pg = await waterDatabase(); t.after(() => pg.close())
+  const db = database({ pg }), originalRpc = db.rpc
+  let dropResponse = true
+  db.rpc = async (...args) => {
+    const result = await originalRpc(...args)
+    if (dropResponse) { dropResponse = false; throw new Error('Response lost after commit') }
+    return result
+  }
+  const drink = { clientId, ounces: 8, submissionId: randomUUID(), logDate: today }
+  assert.equal((await water.POST(req(drink))).status, 500)
+  assert.equal(db.tables.nutrition_logs.find(row => row.log_date === today && row.client_id === clientId).water_consumed_oz, 8)
+  assert.equal((await water.POST(req(drink))).status, 200)
+  const reloaded = database({ store: db.tables, pg })
+  assert.equal((await refreshedLogic(reloaded)).hydration.consumed, 8)
+  assert.equal((await water.POST(req(drink))).status, 200)
+  assert.equal(reloaded.tables.nutrition_logs.find(row => row.log_date === today && row.client_id === clientId).water_consumed_oz, 8)
+})
+
+test('water requires a caller UUID and local date and rejects stale days before any write', async () => {
+  for (const payload of [
+    { clientId, ounces: 8, logDate: today },
+    { clientId, ounces: 8, submissionId: '------------------------------------', logDate: today },
+    { clientId, ounces: 8, submissionId: randomUUID() },
+    { clientId, ounces: 8, submissionId: randomUUID(), logDate: yesterday },
+  ]) {
+    const db = database(), before = structuredClone(db.tables)
+    const response = await water.POST(req(payload))
+    assert.equal(response.status, payload.logDate === yesterday ? 409 : 400)
+    assert.deepEqual(db.tables, before)
+    assert.equal(db.writes.length, 0)
+  }
+})
+
+test('water crossing member-local midnight before persistence rejects the old day without writes', async t => {
+  mock.timers.setTime(Date.parse('2026-10-13T04:59:59.000Z'))
+  t.after(() => mock.timers.setTime(Date.parse('2026-10-12T20:40:00.000Z')))
+  const db = database(), before = structuredClone(db.tables), originalFrom = db.from
+  db.from = table => {
+    const query = originalFrom(table)
+    if (table === 'nutrition_logs') {
+      const originalSingle = query.maybeSingle
+      query.maybeSingle = async () => {
+        const result = await originalSingle()
+        mock.timers.setTime(Date.parse('2026-10-13T05:00:00.000Z'))
+        return result
+      }
+    }
+    return query
+  }
+  assert.equal((await water.POST(req({ clientId, ounces: 8, submissionId: randomUUID(), logDate: today }))).status, 409)
+  assert.deepEqual(db.tables, before)
+  assert.equal(db.writes.length, 0)
 })
 
 test('invalid optional check-in answers and failed saves remain explicit failures, with no fabricated completion', async () => {

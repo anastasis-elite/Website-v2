@@ -16,6 +16,7 @@ import { getMealPeriodForLocalDate } from '@/lib/nutrition/mealPeriod'
 import { trackEvent } from '@/lib/analytics'
 import { useViewPreference } from '@/components/dashboard/useViewPreference'
 import { getNextFoodGuidance } from '@/lib/nutrition/nextFoodGuidance'
+import { loadRecordedNutrition, nutritionRemainingWithRecordedIntake } from '@/lib/nutrition/progress'
 
 type NutritionLog = {
   id: string
@@ -544,13 +545,17 @@ export default function AdaptiveNutritionDashboard({
 }
 
 setNutritionLog(log)
-    const { data: remainingData } = await supabase
+    const [{ data: remainingData, error: remainingError }, recorded] = await Promise.all([
+      supabase
       .from('nutrition_log_remaining')
       .select('*')
       .eq('nutrition_log_id', log.id)
-      .maybeSingle()
+      .maybeSingle(),
+      loadRecordedNutrition(supabase, log.id),
+    ])
+    if (remainingError) throw new Error('Saved nutrition progress could not be loaded.')
 
-    setRemaining(remainingData)
+    setRemaining(nutritionRemainingWithRecordedIntake(log, remainingData, recorded))
 
     const initialProtein = String(log.protein || remainingData?.protein_remaining_g || '')
     const initialCarbs = String(log.carbs || remainingData?.carbs_remaining_g || '')
@@ -847,7 +852,7 @@ setNutritionLog(log)
                     </div>
                   </div>
 
-                  <HydrationQuickAdd clientId={logic.client.id} consumed={logic.hydration.consumed} target={logic.hydration.target} renderTrigger={({ toggle, triggerRef }) => <button ref={triggerRef} type="button" className="tier-primary-action" onClick={toggle}>Log water</button>} />
+                  <HydrationQuickAdd clientId={logic.client.id} logDate={getClientLocalDateOffset(logic.client)} consumed={logic.hydration.consumed} target={logic.hydration.target} renderTrigger={({ toggle, triggerRef }) => <button ref={triggerRef} type="button" className="tier-primary-action" onClick={toggle}>Log water</button>} />
                 </div>
               ) : null}
 

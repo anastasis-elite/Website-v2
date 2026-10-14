@@ -4,6 +4,7 @@ import { getClientDayRange } from '@/lib/schedule/time'
 import { getClientLocalDate } from '@/lib/timezone'
 import { isConfirmedActivity, summarizeStrengthSets, workoutCompletion } from '@/lib/workout/activity'
 import { matchingWorkoutPlan } from '@/lib/workout/session'
+import { loadWorkoutHistory } from '@/lib/workout/history'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 export async function POST(req: Request) {
   try {
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
     const workoutDate = body.workout_date ? new Date(body.workout_date) : new Date()
     if (!Number.isFinite(workoutDate.getTime()) || getClientLocalDate(client, workoutDate) !== day.date) return NextResponse.json({ error: 'This session belongs to another day. Reload today’s workout.' }, { status: 400 })
     const payload = { client_id: client.client_id, auth_user_id: user.id, program: client.program, day_name: dayName, workout_source: source,
-      workout_date: workoutDate.toISOString(), planned_exercises: body.planned_exercises, exercise_logs: logs.map((log: any) => log.set_logs?.length ? { ...log, ...summarizeStrengthSets(log.set_logs) } : log),
+      workout_date: workoutDate.toISOString(), workout_local_date: day.date, planned_exercises: body.planned_exercises, exercise_logs: logs.map((log: any) => log.set_logs?.length ? { ...log, ...summarizeStrengthSets(log.set_logs) } : log),
       completed: body.completed === true && workoutCompletion(logs).completed && (source === 'manual' || logs.length === body.planned_exercises.length), updated_at: new Date().toISOString() }
     const result = await supabase.rpc('save_daily_workout', { p_client_id: client.client_id, p_day_start: day.start.toISOString(), p_day_end: day.end.toISOString(), p_payload: payload })
     if (result.error) throw result.error
@@ -52,9 +53,7 @@ export async function GET(request: Request) {
   // Legacy saved sessions predate workout_source. Read optional columns without
   // making the history depend on the new write-path migration.
   const source = params.get('source') === 'manual' ? 'manual' : 'recommended'
-  const { data, error } = await supabase.from('workout_logs').select('*').eq('client_id',client.client_id).eq('auth_user_id',user.id)
-    .eq('day_name',params.get('dayName') || 'Workout')
-    .gte('workout_date',day.start.toISOString()).lt('workout_date',day.end.toISOString()).order('workout_date',{ascending:false}).limit(100)
+  const { data, error } = await loadWorkoutHistory({ supabase, client, authUserId: user.id, startDate: day.date, dayName: params.get('dayName') || 'Workout', source })
   if(error) return NextResponse.json({ error:'Saved progress could not be loaded.' }, { status:500 })
   const session = (data || []).find((row: any) => (row.workout_source || 'recommended') === source && (!planKeys || matchingWorkoutPlan(row.exercise_logs, planKeys)))
   return NextResponse.json({ session: session ? { id: session.id, exercise_logs: session.exercise_logs, completed: session.completed, updated_at: session.updated_at } : null }, { headers: { 'Cache-Control': 'private, no-store' } })
