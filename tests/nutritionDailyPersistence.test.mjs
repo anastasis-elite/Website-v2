@@ -16,6 +16,11 @@ const mocks = {
   '@/lib/dashboard/invalidateDailyPlan': 'export const invalidateDailyPlan = () => {}',
 }
 const macrosRoute = await importTs('app/api/nutrition/add-macros/route.ts', mocks)
+const prepareRoute = await importTs('app/api/nutrition-log/route.ts', {
+  ...mocks,
+  '@/lib/nutrition/calculateMicronutrientTargets': 'export const calculateMicronutrientTargets=()=>({iron_target_mg:18})',
+  '@/lib/nutrition/targetService': 'export const nutritionLogAuditFields=()=>({})',
+})
 const progress = await importTs('lib/nutrition/progress.ts')
 const micronutrientProgress = await importTs('lib/nutrition/micronutrientProgress.ts')
 const entitlements = await importTs('lib/entitlements.ts')
@@ -45,7 +50,7 @@ function database({ program = 'ember', store, failTable } = {}) {
     auth: { getUser: async () => ({ data: { user: { id: client.auth_user_id } } }) },
     from(table) {
       const filters = []
-      let insert, update, countOnly = false, selection = '*'
+      let insert, update, upsert, upsertOptions, countOnly = false, selection = '*'
       const query = {
         select(columns = '*', options) { selection = columns; countOnly = Boolean(options?.head); return query },
         eq(key, value) { filters.push(row => row[key] === value); return query },
@@ -55,6 +60,7 @@ function database({ program = 'ember', store, failTable } = {}) {
         lt(key, value) { filters.push(row => row[key] < value); return query },
         order() { return query }, limit() { return query },
         insert(value) { insert = value; return query }, update(value) { update = value; return query },
+        upsert(value, options) { upsert = value; upsertOptions = options; return query },
         single() { return resolve(true) }, maybeSingle() { return resolve(true) },
         then(done, reject) { return resolve(false).then(done, reject) },
       }
@@ -63,6 +69,15 @@ function database({ program = 'ember', store, failTable } = {}) {
         if (table === failTable) return { data: null, error: { message: 'QA read failed' } }
         if (table === 'cycle_logs' && selection === 'phase') return { data: null, error: { message: 'column cycle_logs.phase does not exist' } }
         tables[table] ||= []
+        if (upsert) {
+          const existing = tables[table].find(row => row.client_id === upsert.client_id && row.log_date === upsert.log_date)
+          if (existing && upsertOptions?.ignoreDuplicates) return { data: null, error: null }
+          const value = existing || { id: 'qa-prepared-log' }
+          Object.assign(value, structuredClone(upsert))
+          if (!existing) tables[table].push(value)
+          writes.push({ table, value })
+          return { data: structuredClone(value), error: null }
+        }
         if (insert) {
           const value = { id: 'qa-macro-' + tables[table].length, ...structuredClone(insert) }
           tables[table].push(value); writes.push({ table, value })
@@ -77,7 +92,7 @@ function database({ program = 'ember', store, failTable } = {}) {
   }
 }
 
-function dashboard(db) {
+function dashboard(db, { request = fetch } = {}) {
   const states = [], callbacks = []
   let cursor = 0
   const nativeRequire = createRequire(import.meta.url)
@@ -112,7 +127,7 @@ function dashboard(db) {
   const compiled = ts.transpileModule(readFileSync('components/AdaptiveNutritionDashboard.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText
-  vm.runInNewContext(compiled, { module, exports: module.exports, Date, Error, Promise, console, process: { env: { NODE_ENV: 'test' } }, require: name => dependencies[name] || nativeRequire(name) })
+  vm.runInNewContext(compiled, { module, exports: module.exports, Date, Error, Promise, console, fetch: request, process: { env: { NODE_ENV: 'test' } }, require: name => dependencies[name] || nativeRequire(name) })
   const metric = { target: 100, remaining: 100 }
   const logic = { program: 'ember', client: { id: client.client_id, ...client }, trends: [],
     nutrition: { dataStatus: 'needs_input', mealSuggestions: ['Review your next meal.'], calories: { target: 2000, remaining: 2000 }, protein: metric, carbs: metric, fats: metric },
@@ -156,6 +171,38 @@ test('saved EMBER macros survive a fresh transport and update Nutrition, daily b
   const freshPage = dashboard(database({ store: db.tables }))
   await freshPage.load()
   assert.match(freshPage.render(), /500 \/ 2000 cal/)
+})
+
+test('general nutrition read failure cannot initialize or overwrite an existing saved day', async () => {
+  const db = database({ failTable: 'nutrition_logs' })
+  const before = structuredClone(db.tables.nutrition_logs)
+  const page = dashboard(db, { request() { throw new Error('A failed saved-day read must not fetch targets or prepare a log') } })
+  await assert.rejects(page.load(), /saved nutrition could not be loaded/)
+  assert.deepEqual(db.tables.nutrition_logs, before)
+  assert.equal(db.writes.length, 0)
+})
+
+test('general nutrition initialization preserves a daily row created while targets are loading', async () => {
+  const db = database()
+  db.tables.nutrition_logs = []
+  const saved = { ...log, calories: 2300, protein: 140, water_consumed_oz: 36, meals: ['Saved legacy meal'], completed: true, iron_target_mg: 21 }
+  const calls = []
+  globalThis.nutritionPersistenceDb = db
+  const page = dashboard(db, { async request(url, init) {
+    calls.push(url)
+    if (url.startsWith('/api/nutrition?')) {
+      db.tables.nutrition_logs.push(structuredClone(saved))
+      return Response.json({ calories: 1800, protein: 100, carbs: 200, fats: 60, water: 90 })
+    }
+    assert.equal(url, '/api/nutrition-log')
+    assert.equal(JSON.parse(init.body).createOnly, true)
+    return prepareRoute.POST(new Request('https://qa.invalid/api/nutrition-log', init))
+  } })
+  await page.load()
+  assert.equal(calls.length, 2)
+  assert.deepEqual(db.tables.nutrition_logs, [saved])
+  assert.equal(db.writes.length, 0)
+  assert.match(page.render(), /2300/)
 })
 
 test('confirmed meal totals and macro entries combine without counting tentative meals or re-subtracting a combined response', async () => {

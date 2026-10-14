@@ -36,6 +36,21 @@ export default function DirectNutritionEntry({
   const [waterTotal, setWaterTotal] = useState<number | null>(null)
 
   useEffect(() => {
+    setError(initialError || '')
+    // A same-day server refresh preserves this component and the food draft.
+    // Adopt its confirmed row without remounting the logger or retaining a
+    // previous local water total over the newly persisted total.
+    if (initialLog) {
+      setNutritionLog(initialLog)
+      setWaterTotal(null)
+      setLoading(false)
+    } else if (!initialError && water) {
+      setNutritionLog(null)
+      setWaterTotal(null)
+    }
+  }, [initialLog, initialError, water])
+
+  useEffect(() => {
     if ((water && !retry) || (!water && !capabilities.nutritionMealLogging) || (initialLog && !retry) || (initialError && !retry)) return
     const controller = new AbortController()
     let cancelled = false

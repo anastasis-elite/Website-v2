@@ -225,17 +225,19 @@ function FoodInputLogger({
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const scanningRef = useRef(false)
+  const todayMealsRequest = useRef(0)
 
   const loadTodayMeals = useCallback(async () => {
+    const attempt = ++todayMealsRequest.current
     try {
     const res = await fetch(`/api/today-meals?nutritionLogId=${nutritionLogId}`)
     const data = await res.json()
 
-    if (res.ok) {
+    if (res.ok && attempt === todayMealsRequest.current) {
       setTodayMeals(data.meals || [])
     }
     } catch {
-      setMessage("Today's logged food could not be loaded. Please try again.")
+      if (attempt === todayMealsRequest.current) setMessage("Today's logged food could not be loaded. Please try again.")
     }
   }, [nutritionLogId])
 
@@ -257,6 +259,13 @@ function FoodInputLogger({
     if (!active) return
     void loadTodayMeals()
     if (method === 'manual') void loadRecurringFoods()
+    // Revalidate recorded food after a PWA resume without replacing the search,
+    // selected food, serving amount or inactive method drafts.
+    const resume = () => {
+      if (document.visibilityState === 'visible') void loadTodayMeals()
+    }
+    document.addEventListener('visibilitychange', resume)
+    return () => document.removeEventListener('visibilitychange', resume)
   }, [loadTodayMeals, loadRecurringFoods, active, method])
 
   useEffect(() => {

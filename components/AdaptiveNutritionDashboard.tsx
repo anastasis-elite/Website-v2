@@ -428,12 +428,15 @@ export default function AdaptiveNutritionDashboard({
 
     const today = getClientLocalDateOffset(logic.client)
 
-    let { data: log } = await supabase
+    const { data: savedLog, error: logError } = await supabase
       .from('nutrition_logs')
       .select('*')
       .eq('client_id', clientId)
       .eq('log_date', today)
       .maybeSingle()
+
+    if (logError) throw new Error('Today’s saved nutrition could not be loaded. Try again before preparing a new log.')
+    let log = savedLog
 
    if (!log) {
   const targetResponse = await fetch(
@@ -500,6 +503,7 @@ export default function AdaptiveNutritionDashboard({
     body: JSON.stringify({
       client_id: clientId,
       log_date: today,
+      createOnly: true,
       protein,
       carbs,
       fats,
@@ -613,6 +617,15 @@ setNutritionLog(log)
     })
     return () => { cancelled = true }
   }, [supabase, nutritionLog?.id, managementTab, directEntry, foodLoggingEnabled, intakeRevision])
+
+  useEffect(() => {
+    if (managementTab !== 'micros' || directEntry || !nutritionLog?.id || !foodLoggingEnabled) return
+    const resume = () => {
+      if (document.visibilityState === 'visible') setIntakeRevision(current => current + 1)
+    }
+    document.addEventListener('visibilitychange', resume)
+    return () => document.removeEventListener('visibilitychange', resume)
+  }, [managementTab, directEntry, nutritionLog?.id, foodLoggingEnabled])
 
   const microRows = calculateMicronutrientProgress({
     targets: nutritionLog || {},
