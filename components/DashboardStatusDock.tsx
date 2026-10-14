@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import CycleProgressOrb from '@/components/CycleProgressOrb'
 import WaterCup from '@/components/WaterCup'
+import HydrationQuickAdd from '@/components/hydration/HydrationQuickAdd'
 import { getFlameVisualState } from '@/lib/dashboard/getFlameVisualState'
 import { getClientLocalDate } from '@/lib/timezone'
-import { beginWaterSubmission, confirmWaterSubmission, pendingWaterSubmission, type WaterSubmission } from '@/lib/hydration/waterSubmission'
+import { foodEntryHref } from '@/lib/nutrition/loggingRoutes'
+import { getTierCapabilities } from '@/lib/entitlements'
 
 type Props = {
   client: any
@@ -44,22 +45,9 @@ export default function DashboardStatusDock(
   } = props
 
   const [cycleOpen, setCycleOpen] = useState(false)
-  const [waterOpen, setWaterOpen] = useState(false)
-  const [addingWater, setAddingWater] = useState(false)
-  const [waterMessage, setWaterMessage] = useState('')
-  const [pendingWater, setPendingWater] = useState<WaterSubmission | null>(null)
-  const waterLock = useRef(false)
-  const router = useRouter()
   const clientId = String(client?.client_id || '')
   const logDate = dailyPlan?.date || getClientLocalDate(client)
-
-  useEffect(() => {
-    try {
-      const pending = pendingWaterSubmission(clientId)
-      setPendingWater(pending)
-      if (pending) setWaterMessage(pending.logDate === logDate ? `Retry the pending ${pending.ounces} oz save to confirm your total.` : `The ${pending.ounces} oz save for ${pending.logDate} could not be confirmed. Review that day’s hydration before logging again.`)
-    } catch (error) { setWaterMessage(error instanceof Error ? error.message : 'Water retry storage is unavailable.') }
-  }, [clientId, logDate])
+  const canLogFood = getTierCapabilities(client?.program).nutritionMealLogging
 
   const dockRef = useRef<HTMLDivElement | null>(null)
 
@@ -74,7 +62,6 @@ export default function DashboardStatusDock(
         )
       ) {
         setCycleOpen(false)
-        setWaterOpen(false)
       }
     }
 
@@ -129,38 +116,11 @@ export default function DashboardStatusDock(
   const waterTarget =
     dailyTargets.water || 1
 
-  const [
-    localWaterRemaining,
-    setLocalWaterRemaining,
-  ] = useState<number>(
-    waterRemaining,
-  )
-  useEffect(() => setLocalWaterRemaining(waterRemaining), [waterRemaining])
-
-  async function addWater(ounces: number) {
-    if (waterLock.current || !clientId) return
-    waterLock.current = true
-    setAddingWater(true)
-    setWaterMessage('')
-    try {
-      const submission = beginWaterSubmission(clientId, ounces, logDate)
-      setPendingWater(submission)
-      const response = await fetch('/api/nutrition/add-water', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId, ...submission }),
-      })
-      const payload = await response.json()
-      if (!response.ok) throw new Error(payload.error || 'Water could not be saved.')
-      const total = Number(payload.nutritionLog?.water_consumed_oz)
-      if (!Number.isFinite(total) || total < 0) throw new Error('The saved water total could not be confirmed. Retry this same drink.')
-      confirmWaterSubmission(clientId, submission.submissionId)
-      setPendingWater(null)
-      setLocalWaterRemaining(Math.max(0, Number(payload.nutritionLog.water_oz || waterTarget) - total))
-      setWaterOpen(false)
-      router.refresh()
-    } catch (error) { setWaterMessage(error instanceof Error ? error.message : 'Water could not be saved. Retry this same drink.') }
-    finally { waterLock.current = false; setAddingWater(false) }
-  }
+  const waterScope = `${clientId}:${logDate}`
+  const [confirmedWater, setConfirmedWater] = useState<{ scope: string; total: number } | null>(null)
+  useEffect(() => setConfirmedWater(null), [waterRemaining, waterScope])
+  const consumedWater = confirmedWater?.scope === waterScope ? confirmedWater.total : Math.max(0, waterTarget - waterRemaining)
+  const localWaterRemaining = Math.max(0, waterTarget - consumedWater)
 
   const waterPercent = Math.max(
     0,
@@ -216,7 +176,6 @@ export default function DashboardStatusDock(
               (current) => !current,
             )
 
-            setWaterOpen(false)
           }}
           style={orbButtonStyle}
         >
@@ -259,26 +218,15 @@ export default function DashboardStatusDock(
           <span>fats</span>
         </div>
 
-        <button
-          type="button"
-          aria-label="Quick add water"
-          title="Quick add water"
-          onClick={() => {
-            setWaterOpen(
-              (current) => !current,
-            )
-
-            setCycleOpen(false)
-          }}
-          style={orbButtonStyle}
-        >
-          <WaterCup
-            percentFull={waterPercent}
-            ouncesRemaining={
-              localWaterRemaining
-            }
-          />
-        </button>
+        <HydrationQuickAdd key={waterScope} clientId={clientId} logDate={logDate}
+          consumed={consumedWater} target={waterTarget}
+          onSaved={total => setConfirmedWater({ scope: waterScope, total })}
+          renderTrigger={({ open, triggerRef, toggle }) => <button ref={triggerRef}
+            type="button" aria-label="Quick add water" title="Log water"
+            aria-haspopup="dialog" aria-expanded={open}
+            onClick={() => { setCycleOpen(false); toggle() }} style={orbButtonStyle}>
+            <WaterCup percentFull={waterPercent} ouncesRemaining={localWaterRemaining} />
+          </button>} />
 
         <Link
           href="/dashboard/check-in"
@@ -292,9 +240,9 @@ export default function DashboardStatusDock(
         </Link>
 
         <Link
-          href="/dashboard/nutrition"
-          aria-label="Open Food Log"
-          title="Food Log"
+          href={foodEntryHref(client?.program)}
+          aria-label={canLogFood ? 'Open Food Log' : 'Open Nutrition Guidance'}
+          title={canLogFood ? 'Food Log' : 'Nutrition Guidance'}
           style={actionCircleStyle}
         >
           <span aria-hidden="true">
@@ -364,50 +312,14 @@ export default function DashboardStatusDock(
         </div>
       ) : null}
 
-      {waterOpen ? (
-        <div
-          data-water-popup="true"
-          style={waterPopupStyle}
-        >
-          <p style={bodyStyle}>
-            Quick Add Water
-          </p>
-
-          <div style={waterGridStyle}>
-            {(pendingWater ? [pendingWater.ounces] : [8, 12, 16, 24]).map(
-              (ounces) => (
-                <button
-                  key={ounces}
-                  type="button"
-                  style={buttonStyle}
-                  disabled={addingWater || Boolean(pendingWater && pendingWater.logDate !== logDate)}
-                  onClick={() => void addWater(ounces)}
-                >
-                  {addingWater ? 'Saving…' : pendingWater ? `Retry ${ounces} oz save` : `+${ounces} oz`}
-                </button>
-              ),
-            )}
-          </div>
-          <p role="status" style={bodyStyle}>{waterMessage}</p>
-
-          <div style={popupButtonRowStyle}>
-            <Link
-              href="/dashboard/nutrition"
-              style={buttonStyle}
-            >
-              Open Nutrition
-            </Link>
-          </div>
-        </div>
-      ) : null}
     </div>
   )
 }
 
 const actionCircleStyle = {
-  width: '38px',
-  height: '38px',
-  flex: '0 0 38px',
+  width: '44px',
+  height: '44px',
+  flex: '0 0 44px',
   borderRadius: '999px',
 
   border:
@@ -515,23 +427,9 @@ const cyclePopupStyle = {
   width: 'min(92vw, 420px)',
 } as const
 
-const waterPopupStyle = {
-  ...popupBaseStyle,
-  top: '180px',
-  width: '220px',
-} as const
-
 const popupButtonRowStyle = {
   display: 'flex',
   gap: '10px',
   flexWrap: 'wrap',
   marginTop: '18px',
-} as const
-
-const waterGridStyle = {
-  display: 'grid',
-  gridTemplateColumns:
-    '1fr 1fr',
-  gap: '10px',
-  marginTop: '12px',
 } as const

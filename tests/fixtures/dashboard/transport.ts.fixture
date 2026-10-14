@@ -5,14 +5,19 @@ export function installQATransport(tier: string, date: string, onChange: (state:
  const state={...initial,...JSON.parse(localStorage.getItem(key)||'{}')}
  const persist=()=>{localStorage.setItem(key,JSON.stringify(state));onChange(structuredClone(state))}
  const original=window.fetch
- const log=()=>({id:'10000000-0000-4000-8000-000000000001',client_id:'LOCAL-QA-ONLY',log_date:date,calories:1800,protein:110,carbs:200,fats:60,water_oz:111,water_consumed_oz:state.water})
+ const log=()=>({id:'10000000-0000-4000-8000-000000000001',client_id:'LOCAL-QA-ONLY',log_date:date,calories:1800,protein:110,carbs:200,fats:60,water_oz:111,water_consumed_oz:state.water,fiber_target_g:25,sodium_target_mg:1500,potassium_target_mg:2600,magnesium_target_mg:320,calcium_target_mg:150,iron_target_mg:18,zinc_target_mg:8,selenium_target_mcg:55,choline_target_mg:425,vitamin_a_target_mcg:700,vitamin_c_target_mg:75,vitamin_d_target_mcg:15,vitamin_e_target_mg:15,vitamin_k_target_mcg:90,b1_target_mg:1.1,b2_target_mg:1.1,b3_target_mg:14,b5_target_mg:5,b6_target_mg:1.3,b9_target_mcg:400,b12_target_mcg:2.4})
  const remaining=()=>({nutrition_log_id:log().id,calories_remaining:1800-state.meals.length*120,protein_remaining_g:110-state.meals.length*20,carbs_remaining_g:200-state.meals.length*6,fat_remaining_g:60})
  window.fetch=async(input:any,options:any)=>{
   const url=typeof input==='string'?input:input instanceof URL?input.href:input.url
   const body=options?.body?JSON.parse(options.body):{}
   if(url.startsWith('https://local-qa.invalid/')) {
    if(url.includes('/auth/v1/user'))return Response.json({id:'local-qa',aud:'authenticated',role:'authenticated',email:'disposable@example.invalid',app_metadata:{},user_metadata:{}})
+   if(url.includes('/auth/v1/token')) {const encode=(value:any)=>btoa(JSON.stringify(value)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');return Response.json({access_token:encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:'local-qa',aud:'authenticated',role:'authenticated',exp:Math.floor(Date.now()/1000)+3600})+'.local-qa',refresh_token:'local-qa-only',token_type:'bearer',expires_in:3600,user:{id:'local-qa',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{}}})}
    if(url.includes('/rest/v1/nutrition_logs'))return Response.json(log())
+   if(url.includes('/rest/v1/nutrition_log_totals_by_block'))return Response.json(state.meals.length?[{day_block:'morning',calories_eaten:state.meals.length*120,protein_eaten_g:state.meals.length*20,carbs_eaten_g:state.meals.length*6,fat_eaten_g:0}]:[])
+   if(url.includes('/rest/v1/macro_entries'))return Response.json([])
+   if(url.includes('/rest/v1/meal_entries'))return Response.json(state.meals.map((meal:any)=>({...meal,entry_state:'confirmed',grams:meal.grams||170,foods:{...meal.foods,food_nutrients:{fiber_g:0,sodium_mg:36,calcium_mg:110,iron_mg:0.1}}})))
+   if(url.includes('/rest/v1/nutrient_reference_values'))return Response.json([])
    if(url.includes('/rest/v1/nutrition_log_remaining'))return Response.json(remaining())
    return Response.json({error:'Unimplemented local QA database request.'},{status:501})
   }

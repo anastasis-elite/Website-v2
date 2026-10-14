@@ -8,8 +8,15 @@ import { hasMemberAccess } from '@/lib/commerce/access'
 import { TutorialProvider } from '@/components/tutorial/TutorialProvider'
 import TutorialDevPanel from '@/components/tutorial/TutorialDevPanel'
 import TutorialRenderer from '@/components/tutorial/TutorialRenderer'
+import { Suspense } from 'react'
+import DashboardLoadingShell from '@/components/program-dashboard/DashboardLoadingShell'
+import { getClientTimeZone } from '@/lib/timezone'
 
-export default async function DashboardLayout({
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<DashboardLoadingShell />}><AuthenticatedDashboardLayout>{children}</AuthenticatedDashboardLayout></Suspense>
+}
+
+async function AuthenticatedDashboardLayout({
   children,
 }: {
   children: React.ReactNode
@@ -27,7 +34,7 @@ export default async function DashboardLayout({
   return (
     <TutorialProvider tier={program}>
       <div className="dashboard-client-shell" data-tutorial-id="dashboard-shell">
-        <DailyPlanRefresh />
+        <DailyPlanRefresh timezone={getClientTimeZone(client)} />
         {children}
         <ClientDashboardNav program={program}/>
         <TutorialRenderer/>

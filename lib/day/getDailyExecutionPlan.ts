@@ -131,16 +131,14 @@ export async function getDailyExecutionPlan({
   const middayMinutes = workStartMinutes || 12 * 60
   const eveningMinutes = bedMinutes !== null ? bedMinutes - 240 : 18 * 60
 
-  const nutritionTargets = await calculateClientNutritionTargets({ supabase, clientId: client.client_id, program: client.program })
+  const [nutritionTargets, { data: todayNutritionLog }, { data: completedWorkouts }, { data: todayRecoveryLog }] = await Promise.all([
+    calculateClientNutritionTargets({ supabase, clientId: client.client_id, program: client.program }),
+    supabase.from('nutrition_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle(),
+    loadWorkoutHistory({ supabase, client, startDate: today, completed: true, limit: 1 }),
+    supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle(),
+  ])
   const { target } = nutritionTargets
   let water = nutritionTargets.water
-
-  const { data: todayNutritionLog } = await supabase
-    .from('nutrition_logs')
-    .select('*')
-    .eq('client_id', client.client_id)
-    .eq('log_date', today)
-    .maybeSingle()
 
   water = Number(todayNutritionLog?.water_oz ?? water)
   const calories = Number(todayNutritionLog?.calories || target.calories)
@@ -225,15 +223,7 @@ export async function getDailyExecutionPlan({
     ) as Record<NutritionBlockKey, any>
   }
 
-  const { data: completedWorkouts } = await loadWorkoutHistory({ supabase, client, startDate: today, completed: true, limit: 1 })
   const todayWorkoutLog = completedWorkouts?.[0]
-
-  const { data: todayRecoveryLog } = await supabase
-    .from('recovery_logs')
-    .select('*')
-    .eq('client_id', client.client_id)
-    .eq('log_date', today)
-    .maybeSingle()
   const completedDailyTasks = Array.isArray(todayRecoveryLog?.daily_tasks)
     ? todayRecoveryLog.daily_tasks
     : []

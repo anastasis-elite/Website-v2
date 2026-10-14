@@ -6,11 +6,12 @@ import type {
   ScheduleEvent,
 } from './types'
 import { healthEventTypes, scheduleConflict } from './actions'
+import { inferMealType, mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 
 export const ACTION_ROUTES: Record<string, string> = {
   workout: '/dashboard/program/ignite/workout',
-  meal: '/dashboard/nutrition#aos-food-logger',
-  hydration: '/dashboard/nutrition#hydration',
+  meal: '/dashboard/nutrition?log=meal',
+  hydration: WATER_ENTRY_HREF,
   recovery: '/dashboard/recovery',
   check_in: '/dashboard/check-in',
   assessment: '/dashboard/assessment/start',
@@ -133,6 +134,12 @@ export function firstValidWindow(
 export function getActionRouteForEvent(event: ScheduleEvent, program = 'ignite') {
   if (event.calendar_event_id) return `/dashboard/schedule#calendar-event-${event.calendar_event_id}`
   if (event.event_type === 'meal' && program === 'ember') return '/dashboard/nutrition'
+  const nutritionDestination = !event.action_route || event.action_route.split(/[?#]/)[0] === '/dashboard/nutrition'
+  if (nutritionDestination && event.event_type === 'meal') {
+    const query = new URLSearchParams(event.action_route?.split('?')[1]?.split('#')[0])
+    return mealEntryHref(program, inferMealType(query.get('meal')) || inferMealType(event.title), query.get('recipe'))
+  }
+  if (nutritionDestination && event.event_type === 'hydration') return WATER_ENTRY_HREF
   if (event.action_route) return event.action_route
   if (event.event_type === 'workout') return `/dashboard/program/${program}/workout`
   return ACTION_ROUTES[event.event_type] || `/dashboard/schedule#event-${event.id}`

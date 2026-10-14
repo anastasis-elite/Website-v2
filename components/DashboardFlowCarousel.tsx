@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { foodEntryHref } from '@/lib/nutrition/loggingRoutes'
+import { getTierCapabilities } from '@/lib/entitlements'
 import DailyInsightCard from './DailyInsightCard'
 import * as styles from '@/app/styles/globalstyles'
 
@@ -231,7 +233,7 @@ function CardActions({ cardId, program }: { cardId: string; program: string }) {
   const actions = cardId === 'morning'
     ? [{ href: `/dashboard/program/${program}/workout`, label: 'Start Workout', primary: true }, { href: '/dashboard/cycle', label: 'Cycle', primary: false }]
     : cardId === 'midday'
-      ? [{ href: '/dashboard/nutrition', label: 'Log Food', primary: true }, { href: '/dashboard/recovery', label: 'Movement', primary: false }]
+      ? [{ href: foodEntryHref(program), label: getTierCapabilities(program).nutritionMealLogging ? 'Log Food' : 'Nutrition Guidance', primary: true }, { href: '/dashboard/recovery', label: 'Movement', primary: false }]
       : [{ href: '/dashboard/recovery', label: 'Recovery', primary: true }, { href: '/dashboard/check-in', label: 'Body Signals', primary: false }, { href: '/dashboard/check-in', label: 'Check-In', primary: false }]
 
   return (

@@ -2,14 +2,11 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { isClientOnboardingComplete } from '@/lib/dashboard/isClientOnboardingComplete'
 import { hasMemberAccess } from '@/lib/commerce/access'
+import { cache } from 'react'
 
-export async function getDashboardContext({
-  allowIncompleteOnboarding = false,
-  allowInactiveAccess = false,
-}: {
-  allowIncompleteOnboarding?: boolean
-  allowInactiveAccess?: boolean
-} = {}) {
+// React's cache lasts for one server render request. Layouts and pages share the
+// verified identity without persisting member data across requests or accounts.
+const loadDashboardIdentity = cache(async () => {
   const supabase = await createClient()
 
   const {
@@ -34,8 +31,6 @@ export async function getDashboardContext({
   if (!client) {
     throw new Error(`No client found for auth user: ${user.id}`)
   }
-
-  if (!allowInactiveAccess && !hasMemberAccess(client)) redirect('/dashboard/payment-issue')
 
   const { data: currentProfile } = await supabase
     .from('client_current_profiles')
@@ -63,13 +58,26 @@ export async function getDashboardContext({
       }
     : client
 
-  if (!allowIncompleteOnboarding && !isClientOnboardingComplete(effectiveClient)) {
-    redirect('/dashboard/onboarding/profile')
-  }
-
   return {
     supabase,
     user,
     client: effectiveClient,
   }
+})
+
+export async function getDashboardContext({
+  allowIncompleteOnboarding = false,
+  allowInactiveAccess = false,
+}: {
+  allowIncompleteOnboarding?: boolean
+  allowInactiveAccess?: boolean
+} = {}) {
+  const context = await loadDashboardIdentity()
+  // Each caller still enforces its own gates, even when the layout permits
+  // account/billing pages or incomplete onboarding.
+  if (!allowInactiveAccess && !hasMemberAccess(context.client)) redirect('/dashboard/payment-issue')
+  if (!allowIncompleteOnboarding && !isClientOnboardingComplete(context.client)) {
+    redirect('/dashboard/onboarding/profile')
+  }
+  return context
 }

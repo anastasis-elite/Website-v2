@@ -17,6 +17,7 @@ const mocks = {
 }
 const macrosRoute = await importTs('app/api/nutrition/add-macros/route.ts', mocks)
 const progress = await importTs('lib/nutrition/progress.ts')
+const micronutrientProgress = await importTs('lib/nutrition/micronutrientProgress.ts')
 const entitlements = await importTs('lib/entitlements.ts')
 const tiers = await importTs('lib/nutrition/canLogFood.ts')
 const timezone = await importTs('lib/timezone.ts')
@@ -93,8 +94,9 @@ function dashboard(db) {
   const dependencies = {
     react: fakeReact,
     '@/lib/supabase/client': { createClient: () => db },
-    '@/components/hydration/HydrationQuickAdd': { default: () => null },
-    '@/components/NutritionFoodLogger': { default: () => null },
+    '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: () => null },
+    '@/components/NutritionFoodLogger': { __esModule: true, default: () => null },
+    '@/components/nutrition/MicronutrientProgressRing': { __esModule: true, default: () => null },
     'next/navigation': { useRouter: () => ({ refresh() {} }) },
     '@/components/nutrition/hooks': { useNutritionEngine: value => value.nutrition, useFuelReadinessEngine: value => value.fuelReadiness, usePhoenixRecipes: values => values },
     '@/lib/nutrition/canLogFood': tiers,
@@ -105,6 +107,7 @@ function dashboard(db) {
     '@/components/dashboard/useViewPreference': { useViewPreference: (_id, _scope, _allowed, fallback) => [fallback, () => {}] },
     '@/lib/nutrition/nextFoodGuidance': nextFood,
     '@/lib/nutrition/progress': progress,
+    '@/lib/nutrition/micronutrientProgress': micronutrientProgress,
   }
   const compiled = ts.transpileModule(readFileSync('components/AdaptiveNutritionDashboard.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },

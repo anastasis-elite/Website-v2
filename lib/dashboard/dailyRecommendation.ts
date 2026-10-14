@@ -4,6 +4,7 @@ import { getActionRouteForEvent } from '@/lib/schedule/engine'
 import { getDailyTraining, type DailyTraining } from './dailyTraining'
 import { buildTodayActivities, type TodayActivityId } from './todayActivities'
 import { getLocalDaypart } from '@/lib/timezone'
+import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 
 export type DataAvailability = 'not_logged' | 'partial' | 'confirmed' | 'completed'
 export type DailyRecommendationAction = {
@@ -61,10 +62,10 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
 
   if (food === 'not_logged') {
     add('food-input', 'nutrition', logic.program === 'ember' ? 'Review your next meal' : 'Log your latest meal',
-      logic.program === 'ember' ? 'Your nutrition guidance is ready when you need it.' : 'No food is logged today. That does not tell us what you’ve eaten.', '/dashboard/nutrition', 'not_logged')
+      logic.program === 'ember' ? 'Your nutrition guidance is ready when you need it.' : 'No food is logged today. That does not tell us what you’ve eaten.', mealEntryHref(logic.program), 'not_logged')
   }
   if (water !== 'completed' && !schedule.events.some(e => e.event_type === 'hydration' && e.status === 'skipped')) add('water', 'hydration', water === 'not_logged' ? 'Log the water you’ve had' : 'Have a little water when it suits you',
-    water === 'not_logged' ? 'Water intake is not logged yet. Add what you’ve had so the plan can use it.' : `${Math.round(logic.hydration.consumed)} oz logged. Keep drinking steadily; you do not need to catch up all at once.`, '/dashboard/nutrition#hydration', water)
+    water === 'not_logged' ? 'Water intake is not logged yet. Add what you’ve had so the plan can use it.' : `${Math.round(logic.hydration.consumed)} oz logged. Keep drinking steadily; you do not need to catch up all at once.`, WATER_ENTRY_HREF, water)
   const scheduleReview = today.activities.find(activity => activity.id === 'schedule')
   if (schedule.dailyGuide && scheduleReview?.status !== 'completed' && schedule.events.some(event => !event.suggested &&
     ['work', 'school', 'appointment', 'medical', 'dental', 'personal', 'household', 'custom'].includes(event.event_type) && !['cancelled', 'skipped'].includes(event.status))) {

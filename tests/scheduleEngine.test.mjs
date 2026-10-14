@@ -244,7 +244,7 @@ test('hydration and nutrition next action routes target execution surfaces', () 
     logic: {},
   })
 
-  assert.equal(hydrationState.nextAction.action_route, '/dashboard/nutrition#hydration')
+  assert.equal(hydrationState.nextAction.action_route, '/dashboard/nutrition?log=water')
 
   const mealState = buildDailyScheduleState({
     date: '2026-08-17',
@@ -264,7 +264,7 @@ test('hydration and nutrition next action routes target execution surfaces', () 
     logic: {},
   })
 
-  assert.equal(mealState.nextAction.action_route, '/dashboard/nutrition#aos-food-logger')
+  assert.equal(mealState.nextAction.action_route, '/dashboard/nutrition?log=meal&meal=lunch')
 })
 
 test('workout route respects current program', () => {

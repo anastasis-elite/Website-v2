@@ -116,7 +116,7 @@ test('a calendar failure is isolated alongside recurring and persisted schedule 
   t.mock.method(console, 'error', () => {})
   const db = database(); globalThis.outageCalendarError = true
   const state = await getDailyScheduleState({ supabase: db, user: { id: owner }, client: db.client })
-  assert.deepEqual(state.unavailableSources, ['saved_events', 'recurring_commitments', 'calendar'])
+  assert.deepEqual(new Set(state.unavailableSources), new Set(['saved_events', 'recurring_commitments', 'calendar']))
   assert.ok(state.events.some(event => event.event_type === 'work'))
   assert.deepEqual(db.writes, [])
 })

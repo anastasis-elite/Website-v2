@@ -1,0 +1,58 @@
+{
+  "kind": "Synthetic Node transport experiment. Not real mobile, browser, or installed-PWA startup performance.",
+  "capturedAt": "2026-10-14T13:09:29.964Z",
+  "baseline": "Schedule loader at baselineGitSha",
+  "baselineGitSha": "109501c96e0aaf7cd6a76b832c7219af42cd772f",
+  "artificialReadLatencyMs": 40,
+  "before": {
+    "samples": [
+      {
+        "durationMs": 169.4,
+        "reads": 4
+      },
+      {
+        "durationMs": 169.23,
+        "reads": 4
+      },
+      {
+        "durationMs": 169.49,
+        "reads": 4
+      },
+      {
+        "durationMs": 168.99,
+        "reads": 4
+      },
+      {
+        "durationMs": 167.38,
+        "reads": 4
+      }
+    ],
+    "medianMs": 169.23
+  },
+  "after": {
+    "samples": [
+      {
+        "durationMs": 42.36,
+        "reads": 3
+      },
+      {
+        "durationMs": 42.29,
+        "reads": 3
+      },
+      {
+        "durationMs": 42.22,
+        "reads": 3
+      },
+      {
+        "durationMs": 42.16,
+        "reads": 3
+      },
+      {
+        "durationMs": 40.57,
+        "reads": 3
+      }
+    ],
+    "medianMs": 42.22
+  },
+  "medianReductionPercent": 75.05
+}

@@ -3,6 +3,7 @@ import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import type { ProgramTier, TierCapabilities } from '@/lib/entitlements'
 import { getActionRouteForEvent } from '@/lib/schedule/engine'
+import { inferMealType, mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 
 export type WhatsNextType =
   | 'calendar_event'
@@ -68,7 +69,8 @@ function workoutData(logic: ProgramLogicOutput) {
   }
 }
 
-function nutritionState({ tier, capabilities, logic, recipes }: BuildWhatsNextInput): WhatsNextState {
+function nutritionState({ tier, capabilities, logic, recipes, schedule }: BuildWhatsNextInput): WhatsNextState {
+  const meal = inferMealType(schedule.nextActionableEvent?.title || schedule.nextAction.title)
   if (capabilities.nutrition === 'recommended_meal') {
     const recipe = recipes?.[0] || null
     return {
@@ -77,7 +79,7 @@ function nutritionState({ tier, capabilities, logic, recipes }: BuildWhatsNextIn
       subtitle: recipe ? `${recipe.macros.protein}g protein · ${recipe.macros.carbs}g carbs · ${recipe.macros.fats}g fat` : logic.nutrition.mealSuggestions[0],
       priority: 70,
       data: { mode: 'recommended_meal', recipe },
-      primaryAction: { label: recipe ? 'Log Meal' : 'Open Nutrition', href: '/dashboard/nutrition#phoenix-recipes' },
+      primaryAction: { label: 'Log Meal', href: mealEntryHref(tier, meal, recipe?.id) },
       secondaryActions: [{ label: 'Adjust', href: '/dashboard/nutrition' }],
     }
   }
@@ -89,7 +91,7 @@ function nutritionState({ tier, capabilities, logic, recipes }: BuildWhatsNextIn
       subtitle: logic.nutrition.mealSuggestions[0],
       priority: 60,
       data: { mode: 'meal_logging', tier },
-      primaryAction: { label: 'Add Meal', href: '/dashboard/nutrition#aos-food-logger' },
+      primaryAction: { label: 'Add Meal', href: mealEntryHref(tier, meal) },
     }
   }
 
@@ -197,7 +199,7 @@ export function buildWhatsNextState(input: BuildWhatsNextInput): WhatsNextState 
       startTime: next.start_at || undefined,
       priority: 55,
       data: { remaining: logic.hydration.remaining, target: logic.hydration.target },
-      primaryAction: { label: 'Add Water', href: '/dashboard/nutrition#hydration' },
+      primaryAction: { label: 'Log Water', href: WATER_ENTRY_HREF },
     }
   }
   if (next.category === 'recovery' || (logic.flameState.requirements.requiredItems.recovery && !logic.flameState.requirements.completedItems.recovery)) return recoveryState(input)

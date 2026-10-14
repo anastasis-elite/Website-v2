@@ -12,7 +12,7 @@ const copy = value => value === undefined ? undefined : JSON.parse(JSON.stringif
 function load(path, mocks, env) {
   const module = { exports: {} }
   const code = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText
-  vm.runInNewContext(code, { module, exports: module.exports, require: name => name === 'server-only' ? {} : mocks[name] ?? require(name), process: { env }, Buffer, Intl, Date, URL, Request, Response, Set, Map, AbortSignal }, { filename: path })
+  vm.runInNewContext(code, { module, exports: module.exports, require: name => name === 'server-only' ? {} : mocks[name] ?? require(name), process: { env }, Buffer, Intl, Date, URL, URLSearchParams, Request, Response, Set, Map, AbortSignal }, { filename: path })
   return module.exports
 }
 
@@ -102,7 +102,9 @@ function fixture() {
   const timezone = load('lib/timezone.ts', {}, env)
   const time = load('lib/schedule/time.ts', { '@/lib/timezone': timezone }, env)
   const actions = load('lib/schedule/actions.ts', {}, env)
-  const engine = load('lib/schedule/engine.ts', { './actions': actions }, env)
+  const entitlements = load('lib/entitlements.ts', {}, env)
+  const loggingRoutes = load('lib/nutrition/loggingRoutes.ts', { '@/lib/entitlements': entitlements }, env)
+  const engine = load('lib/schedule/engine.ts', { './actions': actions, '@/lib/nutrition/loggingRoutes': loggingRoutes }, env)
   const types = load('lib/calendar/providers/types.ts', {}, env)
   const ical = load('lib/calendar/providers/ical.ts', { './types': types }, env)
   const access = load('lib/commerce/access.ts', {}, env)

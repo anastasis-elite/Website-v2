@@ -49,7 +49,8 @@ test('fresh Today has one primary action, persisted progress, and directly acces
     assert.equal((html.match(/class="tier-primary-action"/g) || []).length, 1)
     assert.match(html, /aria-valuenow="0"/)
     assert.match(html, /Start daily check-in/)
-    for (const href of ['/dashboard/check-in', '/dashboard/nutrition#hydration', '/dashboard/schedule', `/dashboard/program/${tier}/workout`, '/dashboard/recovery']) assert.ok(html.includes(`href="${href}"`))
+    for (const href of ['/dashboard/check-in', '/dashboard/nutrition?log=water', '/dashboard/schedule', `/dashboard/program/${tier}/workout`, '/dashboard/recovery']) assert.ok(html.includes(`href="${href}"`))
+    assert.ok(html.includes(`href="/dashboard/nutrition${tier === 'ember' ? '' : '?log=meal'}"`))
     assert.doesNotMatch(html, /breakfast|supplements|streak/i)
   }
 })
@@ -98,5 +99,5 @@ test('partial schedule failure stays visible while core dashboard activities rem
   assert.match(html, /role="status">Some schedule details are temporarily unavailable/)
   assert.match(html, /Your saved activities are still recorded/)
   assert.match(html, /Start daily check-in/)
-  assert.match(html, /href="\/dashboard\/nutrition#hydration"/)
+  assert.match(html, /href="\/dashboard\/nutrition\?log=water"/)
 })

@@ -33,8 +33,10 @@ function loadCommonJsTypescript(path, localModules = {}) {
 
 const calendar = await importTs('lib/calendar/view.ts')
 const resilience = loadCommonJsTypescript('lib/dashboard/resilienceEngine.ts')
+const loggingRoutes = await importTs('lib/nutrition/loggingRoutes.ts')
 const insight = loadCommonJsTypescript('lib/dashboard/dailyInsight.ts', {
   './resilienceEngine': resilience,
+  '@/lib/nutrition/loggingRoutes': loggingRoutes,
 })
 const recipes = await importTypescriptModule('lib/nutrition/recipes/catalog.ts')
 

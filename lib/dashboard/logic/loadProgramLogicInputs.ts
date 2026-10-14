@@ -78,6 +78,7 @@ export async function loadProgramLogicInputs({
     { data: phoenixTasks }, { data: recentTasks }, { data: todayWorkoutFeedback },
     { data: recoveryActivities }, { data: rawRecentRecovery }, { data: executionHistory },
     { data: dailyHealthMetrics }, { data: latestBodySessions }, { data: activeBodySession },
+    sleepStatus, { data: todayCycle },
   ] = await Promise.all([
     supabase.from('assessments').select('*').eq('client_id', client.client_id).gte('submitted_at', start).lt('submitted_at', end).limit(1).maybeSingle(),
     supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).limit(1).maybeSingle(),
@@ -123,6 +124,8 @@ export async function loadProgramLogicInputs({
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    getSleepStatusForDashboard(supabase, client.client_id, today),
+    supabase.from('cycle_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle(),
   ])
 
   const nutritionIds = (nutritionLogs || []).map((row: any) => row.id)
@@ -130,17 +133,14 @@ export async function loadProgramLogicInputs({
     (dailyHealthMetrics || []).filter((row: any) => String(row.metric_date) === today && ['measured','aggregated'].includes(row.status) && Number(row.sample_count) > 0 && row.source_providers?.length && row.computed_at && recordLocalDate(String(row.computed_at), timeZone) === today),
   )
   const passiveSleepHours = metricValue(todayHealthMetrics, 'sleep_duration')
-  const sleepStatus=await getSleepStatusForDashboard(supabase,client.client_id,today)
   const todayRecovery=sleepStatus.logged?{...(rawTodayRecovery||{}),sleep_hours:sleepStatus.durationHours,sleep_quality:sleepStatus.quality,sleep_bedtime:sleepStatus.bedtime,sleep_wake_time:sleepStatus.wakeTime}:passiveSleepHours!==null?{...(rawTodayRecovery||{}),sleep_hours:passiveSleepHours,passive_source:'health_integration'}:rawTodayRecovery
-  const { data: nutritionTotals } = nutritionIds.length
-    ? await supabase.from('nutrition_log_totals_by_block').select('*').in('nutrition_log_id', nutritionIds)
-    : { data: [] }
-  const todayNutrition = (nutritionLogs || []).find(
-  (row: any) => String(row.log_date) === today
-)
-
-const { data: allMealEntries } = nutritionIds.length
-  ? await supabase
+  const paths = ['front_photo_url','back_photo_url','left_photo_url','right_photo_url'].map((key) => photoRecord?.[key]).filter(Boolean)
+  const [{ data: nutritionTotals }, { data: allMealEntries }, { data: allMacroEntries }, photoUrls] = await Promise.all([
+    nutritionIds.length
+    ? supabase.from('nutrition_log_totals_by_block').select('*').in('nutrition_log_id', nutritionIds)
+    : { data: [] },
+  nutritionIds.length
+  ? supabase
       .from('meal_entries')
       .select(
         'id,nutrition_log_id,meal_name,day_block,created_at,food_id'
@@ -148,15 +148,25 @@ const { data: allMealEntries } = nutritionIds.length
       .in('nutrition_log_id', nutritionIds)
       .eq('entry_state', 'confirmed')
       .order('created_at', { ascending: false })
-  : { data: [] }
-
-const { data: allMacroEntries } = nutritionIds.length
-  ? await supabase
+  : { data: [] },
+  nutritionIds.length
+  ? supabase
       .from('macro_entries')
       .select('id,nutrition_log_id,calories,protein_g,carbs_g,fat_g,day_block,created_at')
       .in('nutrition_log_id', nutritionIds)
       .order('created_at', { ascending: false })
-  : { data: [] }
+  : { data: [] },
+  Promise.all(paths.slice(0, 3).map(async (path: string) => {
+    try {
+      const { data } = await supabase.storage.from('assessment_photos').createSignedUrl(path, 1800)
+      return data?.signedUrl || null
+    } catch {
+      return null // Optional photo previews must not prevent daily logging.
+    }
+  })).then(urls => urls.filter((url): url is string => Boolean(url))),
+  ])
+
+  const todayNutrition = (nutritionLogs || []).find((row: any) => String(row.log_date) === today)
 
 const mealEntries = todayNutrition?.id
   ? (allMealEntries || []).filter(
@@ -278,14 +288,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
   }
 })
 
-  const paths = ['front_photo_url','back_photo_url','left_photo_url','right_photo_url'].map((key) => photoRecord?.[key]).filter(Boolean)
-  const photoUrls = (await Promise.all(paths.slice(0, 3).map(async (path: string) => {
-    const { data } = await supabase.storage.from('assessment_photos').createSignedUrl(path, 1800)
-    return data?.signedUrl || null
-  }))).filter((url): url is string => Boolean(url))
-
   const yesterdayWorkout = (workoutHistory || []).find((row: any) => workoutLocalDate(row, timeZone) === yesterday)
-  const { data: todayCycle } = await supabase.from('cycle_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle()
   const todaySymptoms = mergeDailySymptoms((recentSymptoms || []).filter((row: any) => recordLocalDate(String(row.created_at), timeZone) === today), todayCycle)
   const automaticTaskIds = new Set<string>((phoenixTasks || []).map((row: any) => row.task_id))
   const mealMatches = (terms: string[]) => (mealEntries || []).some((meal: any) => terms.some((term) => `${meal.meal_name || ''} ${meal.day_block || ''}`.toLowerCase().includes(term)))

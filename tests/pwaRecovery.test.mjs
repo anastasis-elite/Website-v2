@@ -96,6 +96,21 @@ test('immutable assets recover exact old chunks after a deploy and never return 
   assert.equal(await (await sw.emit('fetch', { request: legacy })).response.text(), 'retained legacy chunk')
 })
 
+test('repeat production chunk requests use exact cached assets without a network round trip', async () => {
+  const sw = workerHarness(); await sw.emit('install')
+  let requests = 0
+  const old = sw.request('/_next/static/chunks/app/page-a1b2c3d4.js?dpl=old', 'script')
+  sw.network = async () => { requests++; return asset('content addressed chunk') }
+  assert.equal(await (await sw.emit('fetch', { request: old })).response.text(), 'content addressed chunk')
+  assert.equal(await (await sw.emit('fetch', { request: old })).response.text(), 'content addressed chunk')
+  assert.equal(requests, 1)
+  await sw.emit('fetch', { request: sw.request('/_next/static/chunks/app/page-a1b2c3d4.js?dpl=new', 'script') })
+  assert.equal(requests, 2, 'new deployment identity requires its own verified response')
+  await sw.emit('fetch', { request: sw.request('/_next/static/chunks/app/page.js', 'script') })
+  await sw.emit('fetch', { request: sw.request('/_next/static/chunks/app/page.js', 'script') })
+  assert.equal(requests, 4, 'stable development filenames are never treated as immutable')
+})
+
 test('wrong asset MIME types and unavailable CSS never fall back to home HTML', async () => {
   const sw = workerHarness(); await sw.emit('install')
   const request = sw.request('/_next/static/chunks/new.js', 'script')

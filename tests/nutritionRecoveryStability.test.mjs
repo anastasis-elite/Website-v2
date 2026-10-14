@@ -34,6 +34,8 @@ const { getRecoveryScoreExplanation } = await import(moduleUrl('lib/recovery/sco
 const tierHelpers = await import(moduleUrl('lib/nutrition/canLogFood.ts'))
 const nextFoodGuidance = await import(moduleUrl('lib/nutrition/nextFoodGuidance.ts'))
 const nutritionProgress = await import(moduleUrl('lib/nutrition/progress.ts'))
+const micronutrientProgress = await import(moduleUrl('lib/nutrition/micronutrientProgress.ts'))
+const timezone = await import(moduleUrl('lib/timezone.ts'))
 const remaining = { calories_remaining: 1800, protein_remaining_g: 120, carbs_remaining_g: 200, fat_remaining_g: 60, fiber_remaining_g: 25 }
 const foods = [
   { id: 'beans', name: 'Black beans', food_nutrients: { calories: 132, protein_g: 9, carbs_g: 24, fat_g: 1, fiber_g: 8 }, food_serving_options: [{ label: '100 g', is_default: true }] },
@@ -241,18 +243,20 @@ test('zero-log nutrition hero provides an actionable food starting point across 
   }).outputText
   const mocks = {
     '@/lib/supabase/client': { createClient: () => ({}) },
-    '@/components/hydration/HydrationQuickAdd': { default: () => null },
-    '@/components/NutritionFoodLogger': { default: () => null },
+    '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: () => null },
+    '@/components/NutritionFoodLogger': { __esModule: true, default: () => null },
+    '@/components/nutrition/MicronutrientProgressRing': { __esModule: true, default: () => null },
     'next/navigation': { useRouter: () => ({ refresh() {} }) },
     '@/components/nutrition/hooks': { useNutritionEngine: logic => logic.nutrition, useFuelReadinessEngine: logic => logic.fuelReadiness, usePhoenixRecipes: recipes => recipes },
     '@/lib/nutrition/canLogFood': tierHelpers,
-    '@/lib/timezone': {},
+    '@/lib/timezone': timezone,
     '@/lib/entitlements': { getTierCapabilities },
     '@/lib/nutrition/mealPeriod': {},
     '@/lib/analytics': { trackEvent() {} },
     '@/components/dashboard/useViewPreference': { useViewPreference: (_clientId, _scope, _allowed, fallback) => [fallback, () => {}] },
     '@/lib/nutrition/nextFoodGuidance': nextFoodGuidance,
     '@/lib/nutrition/progress': nutritionProgress,
+    '@/lib/nutrition/micronutrientProgress': micronutrientProgress,
   }
   vm.runInNewContext(output, { module, exports: module.exports, require: specifier => mocks[specifier] || nativeRequire(specifier) })
   for (const program of ['ember', 'ignite', 'phoenix']) {

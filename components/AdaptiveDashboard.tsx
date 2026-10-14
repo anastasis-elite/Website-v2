@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { foodEntryHref } from '@/lib/nutrition/loggingRoutes'
 import * as styles from '@/app/styles/globalstyles'
 import DashboardFlowCarousel from '@/components/DashboardFlowCarousel'
 import DashboardStatusDock from '@/components/DashboardStatusDock'
@@ -36,7 +37,7 @@ function getFocusHref(focus: string, program?: string) {
     focus === 'Track nutrition' ||
     focus === 'Reduce friction'
   ) {
-    return '/dashboard/nutrition'
+    return focus === 'Macro targets' ? '/dashboard/nutrition' : foodEntryHref(tier)
   }
 
   if (

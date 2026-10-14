@@ -1,3 +1,4 @@
+import { mealEntryHref } from '@/lib/nutrition/loggingRoutes'
 import type { ScheduleEvent } from './types'
 import { zonedDateTimeToUtc } from './time'
 import { addLocalDays } from '@/lib/timezone'
@@ -163,7 +164,7 @@ export function dailyPlanToScheduleEvents({
   }
 
   for (const [key, label, time, route] of [
-    ['midday', 'Lunch and hydration', client.lunch_window_time, '/dashboard/nutrition#aos-food-logger'],
+    ['midday', 'Lunch and hydration', client.lunch_window_time, mealEntryHref(client.program, 'lunch')],
     ['evening', 'Dinner and recovery landing', client.dinner_window_time, '/dashboard/day/evening'],
   ] as const) {
     if (!time) continue

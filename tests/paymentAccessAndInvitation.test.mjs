@@ -17,6 +17,7 @@ test('canceled access redirects member content while shared dashboard layout per
   const client = { client_id: 'AN-CANCELED', program: 'ember', access: false, active: false, verified_purchase: true, subscription_ends_at: '2025-01-01T00:00:00Z', onboarding_completed: true, birthdate: '1990-01-01', address_line_1: '1 Test Way', city: 'Test', state: 'IL', postal_code: '60000' }
   const db = { auth: { getUser: async () => ({ data: { user: { id: 'owned-user' } }, error: null }) }, from: table => ({ select() { return this }, eq() { return this }, async maybeSingle() { return { data: table === 'clients' ? client : null, error: null } } }) }
   const context = load('lib/dashboard/getDashboardContext.ts', {
+    react: { ...require('react'), cache: fn => fn },
     'next/navigation': { redirect: path => { throw new Error('REDIRECT ' + path) } },
     '@/lib/supabase/server': { createClient: async () => db },
     '@/lib/commerce/access': load('lib/commerce/access.ts'),
@@ -35,8 +36,12 @@ test('canceled access redirects member content while shared dashboard layout per
     '@/components/tutorial/TutorialProvider': { TutorialProvider: () => null },
     '@/components/tutorial/TutorialDevPanel': () => null,
     '@/components/tutorial/TutorialRenderer': () => null,
+    '@/components/program-dashboard/DashboardLoadingShell': () => null,
+    '@/lib/timezone': { getClientTimeZone: () => 'America/Chicago' },
   }, { LEGAL_GATE_ENABLED: 'true' }).default
-  const rendered = await layout({ children: 'Billing remains reachable' })
+  const streamed = layout({ children: 'Billing remains reachable' })
+  const protectedLayout = streamed.props.children
+  const rendered = await protectedLayout.type(protectedLayout.props)
   assert.equal(options[0].allowInactiveAccess, true)
   assert.equal(options[0].allowIncompleteOnboarding, true)
   assert.equal(legalChecks, 0)

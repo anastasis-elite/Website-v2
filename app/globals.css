@@ -7,14 +7,14 @@
   --muted: #b7a58f;
   --copper: #b56e43;
   --copper-soft: rgba(181, 110, 67, 0.14);
-  --surface-primary: #070605;
-  --surface-secondary: #100d0b;
-  --surface-elevated: rgba(27, 20, 17, 0.86);
+  --surface-primary: #070707;
+  --surface-secondary: #101010;
+  --surface-elevated: rgba(20, 20, 20, 0.96);
   --text-primary: #f5efe7;
-  --text-secondary: #d9c7b9;
-  --text-muted: #a9988e;
-  --accent-action: #dd7549;
-  --accent-action-soft: rgba(221, 117, 73, 0.14);
+  --text-secondary: #ddd6cf;
+  --text-muted: #b6ada6;
+  --accent-action: #dba17e;
+  --accent-action-soft: rgba(181, 110, 67, 0.12);
   --accent-depth: #9f5a78;
   --accent-depth-soft: rgba(159, 90, 120, 0.16);
   --accent-recovery: #79a894;
@@ -2175,8 +2175,8 @@ main > *,
   }
 }
 
-/* Daily guidance: warm, readable, and deliberately quiet. */
-.daily-plan-card { width: min(1100px, calc(100% - 32px)); margin: 20px auto; padding: clamp(20px, 4vw, 32px); border: 1px solid #82533e; border-radius: 24px; background: linear-gradient(125deg, #30201a, #181310); color: #f6eee8; }
+/* Daily guidance shares Anastasis' black surfaces and restrained copper accents. */
+.daily-plan-card { width: min(1100px, calc(100% - 32px)); margin: 20px auto; padding: clamp(20px, 4vw, 32px); border: 1px solid rgba(181,110,67,.38); border-radius: 24px; background: linear-gradient(125deg, #121212, #090909); color: #f6eee8; }
 .daily-home .daily-plan-card { width: 100%; margin: 0; }
 .daily-plan-card h2 { font-size: clamp(1.45rem, 4vw, 2rem); line-height: 1.2; margin: 10px 0; }
 .daily-plan-card p { max-width: 65ch; line-height: 1.6; font-size: 1rem; color: #e6d5c8; }
@@ -2188,8 +2188,8 @@ main > *,
 .daily-return-today { display: inline-flex; min-height: 44px; align-items: center; margin: 8px 0 0 16px; color: #edc7a5; text-underline-offset: 4px; }
 .daily-plan-context { margin-top: 12px; }
 .daily-plan-context summary { min-height: 44px; align-content: center; color: #d4b69d; cursor: pointer; font-size: .875rem; }
-.today-loading-placeholder { height: 240px; border: 1px solid #6d4d36; border-radius: 24px; background: #281d16; }
-.today-dashboard { min-height: 80dvh; color: #f6eee8; background: radial-gradient(ellipse at 12% 0%, #38271d 0, #171310 55%); }
+.today-loading-placeholder { height: 240px; border: 1px solid rgba(181,110,67,.24); border-radius: 24px; background: #101010; }
+.today-dashboard { min-height: 80dvh; color: #f6eee8; background: radial-gradient(ellipse at 12% 0%, rgba(181,110,67,.055), transparent 34rem), #050505; }
 .today-shell { width: min(880px, calc(100% - 40px)); margin: 0 auto; padding: 28px 0 36px; }
 .today-header { margin-bottom: 28px; }
 .today-brand { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
@@ -2205,10 +2205,10 @@ main > *,
 .today-progress h2 { font: inherit; font-weight: 600; margin: 0; }
 .today-progress > div:first-child > span { color: #f0c49e; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .today-progress-segments { display: flex; gap: 6px; margin-top: 12px; }
-.today-progress-segments i { flex: 1; height: 6px; border-radius: 8px; background: #574334; }
+.today-progress-segments i { flex: 1; height: 6px; border-radius: 8px; background: #303030; }
 .today-progress-segments i.is-complete { background: #e9b584; }
 .today-progress > p { color: #d0baaa; font-size: .875rem; line-height: 1.5; margin: 10px 0 0; }
-.today-next { border: 1px solid #b07d56; border-radius: 24px; padding: clamp(22px, 4vw, 34px); background: linear-gradient(125deg, #3d291e, #241b15); box-shadow: 0 12px 36px #0003; }
+.today-next { border: 1px solid rgba(181,110,67,.55); border-radius: 24px; padding: clamp(22px, 4vw, 34px); background: linear-gradient(125deg, #141414, #090909); box-shadow: 0 12px 36px #0003; }
 .today-next-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .today-next-heading > p { margin: 0; color: #eac29f; font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; }
 .today-activity-icon { display: inline-flex; flex: 0 0 36px; height: 36px; width: 36px; align-items: center; justify-content: center; border: 1px solid #78543b; border-radius: 12px; color: #efc59e; font-size: 1.3rem; }
@@ -2238,7 +2238,7 @@ main > *,
 .today-row-options summary { min-height: 44px; align-content: center; color: #d8b79b; font-size: .875rem; cursor: pointer; width: fit-content; }
 .today-row-options p { color: #d2baaa; line-height: 1.5; font-size: .9rem; }
 .today-row-options > div { display: flex; flex-wrap: wrap; gap: 8px; }
-.today-row-options button, .today-activities li > button { min-height: 44px; padding: 8px 14px; margin-bottom: 8px; border: 1px solid #76543d; border-radius: 12px; background: #2a1d15; color: #ebcab0; font: inherit; font-size: .9rem; cursor: pointer; }
+.today-row-options button, .today-activities li > button { min-height: 44px; padding: 8px 14px; margin-bottom: 8px; border: 1px solid #76543d; border-radius: 12px; background: #171717; color: #ebcab0; font: inherit; font-size: .9rem; cursor: pointer; }
 .today-activities li > button { margin-left: 50px; }
 .today-activities li > a.today-change-time { min-height: 44px; margin-left: 50px; padding: 8px 0; color: #e7bf9c; font-size: .9rem; text-decoration: underline; }
 @media (max-width: 600px) {
@@ -2251,7 +2251,7 @@ main > *,
   .today-row-options, .today-activities li > button { margin-left: 46px; }
 }
 .daily-essentials { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.daily-essentials a, .daily-preview section, .daily-disclosure, .daily-preferences { color: #eee1d5; padding: 20px; border-radius: 20px; border: 1px solid #564033; background: #191411; }
+.daily-essentials a, .daily-preview section, .daily-disclosure, .daily-preferences { color: #eee1d5; padding: 20px; border-radius: 20px; border: 1px solid rgba(181,110,67,.24); background: #101010; }
 .daily-essentials a { text-decoration: none; }
 .daily-essentials strong, .daily-essentials span { display: block; line-height: 1.5; }
 .daily-essentials span { color: #d5bfab; margin-top: 8px; font-size: .95rem; }
@@ -2262,15 +2262,15 @@ main > *,
 .daily-disclosure summary, .daily-preferences summary, .activity-session summary, .schedule-panel summary { cursor: pointer; min-height: 44px; align-content: center; font-size: 1rem; color: #ead9c9; }
 .daily-preferences form { display: grid; gap: 14px; padding-top: 16px; }
 .daily-preferences label, .activity-session label, .daily-action-dialog label, .schedule-event-actions label { display: grid; gap: 8px; color: #f0ded0; font-size: .95rem; }
-.daily-preferences select, .daily-preferences input, .activity-session input, .activity-session select, .activity-number-control input, .daily-action-dialog input, .schedule-event-actions input { width: 100%; min-height: 48px; border: 1px solid #8b6750; border-radius: 12px; padding: 10px 12px; background: #211915; color: #f6ece3; font: inherit; }
-.daily-action-dialog { width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: auto; padding: 24px; border: 1px solid #a7704d; border-radius: 24px; background: #211711; color: #f4e6da; }
+.daily-preferences select, .daily-preferences input, .activity-session input, .activity-session select, .activity-number-control input, .daily-action-dialog input, .schedule-event-actions input { width: 100%; min-height: 48px; border: 1px solid #8b6750; border-radius: 12px; padding: 10px 12px; background: #0b0b0b; color: #f6ece3; font: inherit; }
+.daily-action-dialog { width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: auto; padding: 24px; border: 1px solid var(--copper); border-radius: 24px; background: #101010; color: #f4e6da; }
 .daily-action-dialog::backdrop { background: #000b; }
 .daily-action-dialog p { line-height: 1.6; color: #ddc6b4; }
 .daily-action-dialog label { margin: 18px 0; }
-.daily-action-dialog button, .activity-session button, .schedule-event-actions button { min-height: 44px; padding: 10px 16px; border: 1px solid #8d6047; border-radius: 12px; color: #f4dac7; background: #38251b; font: inherit; cursor: pointer; }
+.daily-action-dialog button, .activity-session button, .schedule-event-actions button { min-height: 44px; padding: 10px 16px; border: 1px solid #8d6047; border-radius: 12px; color: #f4dac7; background: #171717; font: inherit; cursor: pointer; }
 .activity-session { display: grid; gap: 18px; padding-bottom: 24px; }
 .activity-session > p { margin: 0; line-height: 1.6; color: #ddc8b6; }
-.activity-exercise { border: 1px solid #604535; border-radius: 20px; padding: 20px; background: #1b1511; }
+.activity-exercise { border: 1px solid #604535; border-radius: 20px; padding: 20px; background: #101010; }
 .activity-exercise h3 { font-size: 1.25rem; color: #f4e5d8; }
 .activity-exercise p { color: #dfcbb9; line-height: 1.5; }
 .activity-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
@@ -2313,3 +2313,66 @@ main > *,
   .dashboard-client-shell .client-dashboard-nav__item small {font-size:.72rem;text-transform:none;white-space:normal;overflow-wrap:anywhere;line-height:1.2;}
   .client-dashboard-nav__item {min-height:58px;grid-template-columns:minmax(0,1fr);}
 }
+
+/* Mobile logging and progress use the established black-and-copper palette. */
+.dashboard-client-shell { background: #050505; color: var(--text-primary); }
+.client-dashboard-nav { background: linear-gradient(180deg, #151515, #080808); }
+.client-dashboard-nav__dashboard-button,
+.client-dashboard-nav__item--dashboard.active .client-dashboard-nav__dashboard-button {
+  background: radial-gradient(circle at 42% 28%, rgba(181,110,67,.24), #181818 65%, #080808);
+}
+.tier-info-panel, .tier-whats-next-card, .tier-calendar-panel, .tier-metric-card,
+.nutrition-dashboard-panel, .nutrition-log-meal-panel, .ember-panel, .ember-execution-card {
+  background: linear-gradient(145deg, #141414, #090909);
+  color: var(--text-primary);
+}
+.nutrition-objective-metrics span, .nutrition-water-summary span,
+.nutrition-water-control span, .nutrition-micro-grid span { color: var(--accent-action); }
+.daily-plan-card .tier-primary-action, .today-next > .tier-primary-action,
+.water-save-action { background: linear-gradient(135deg, #d5a081, #b56e43); border-color: #d5a081; color: #090909; }
+.dashboard-client-shell :is(button, a, input, select, summary):focus-visible,
+.nutrition-direct-entry :is(button, a, input, select, summary):focus-visible {
+  outline: 2px solid #e0ad8d; outline-offset: 3px;
+}
+.water-entry-dialog { padding: 20px; }
+.water-entry-dialog .tier-panel-heading { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.water-entry-dialog .tier-panel-heading h2 { margin: 0; }
+.water-entry-dialog .tier-panel-heading button { flex: 0 0 auto; }
+.water-entry-summary { margin: 0 0 12px; }
+.water-entry-help, .water-slider-labels { color: var(--text-muted); font-size: .875rem; }
+.water-amount-control { display: grid; gap: 8px; }
+.daily-action-dialog .water-amount-slider, .water-amount-slider {
+  width: 100%; min-height: 44px; padding: 0; border: 0; background: transparent;
+  accent-color: var(--copper); touch-action: pan-y; cursor: pointer;
+}
+.water-slider-labels { display: flex; justify-content: space-between; }
+.water-presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+.water-presets button { min-height: 44px; padding: 8px 4px; background: #171717; color: var(--text-primary); }
+.water-presets button[aria-pressed="true"] { border-color: #dba17e; background: rgba(181,110,67,.18); }
+.water-manual-entry input { font-size: 16px; background: #080808; }
+.daily-action-dialog .water-save-action { min-height: 48px; width: 100%; font-weight: 700; background: linear-gradient(135deg, #d5a081, #b56e43); border-color: #d5a081; color: #090909; }
+.water-entry-status { min-height: 24px; font-size: .9rem; }
+.nutrition-direct-entry { max-width: 680px; margin: 0 auto; padding: 16px 12px 28px; }
+.nutrition-direct-entry-heading { align-items: center; margin-bottom: 16px; }
+.nutrition-direct-entry h1 { font-size: 1.55rem; margin: 0; }
+.focused-meal-entry :is(button, input, select) { min-height: 44px; }
+.focused-meal-entry :is(input, select) { font-size: 16px; }
+.nutrition-entry-fields { margin-bottom: 14px; }
+.nutrition-entry-recipe-context summary { min-height: 44px; align-content: center; }
+.nutrition-entry-secondary { margin-top: 16px; }
+.nutrition-entry-secondary summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: #dba17e; font-weight: 600; }
+.nutrition-micro-grid { grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 12px; }
+.nutrition-micro-grid .nutrition-micronutrient-card {
+  display: flex; gap: 12px; align-items: flex-start; background: #0b0b0b;
+  padding: 16px; border: 1px solid rgba(181,110,67,.25); border-radius: 14px;
+}
+.nutrition-micronutrient-ring { position: relative; flex: 0 0 76px; width: 76px; height: 76px; }
+.nutrition-micronutrient-ring svg { display: block; width: 100%; height: 100%; }
+.nutrition-micronutrient-ring > strong { position: absolute; inset: 0; display: grid; place-items: center; font-size: .9rem; }
+.nutrition-micronutrient-track { stroke: #303030; }
+.nutrition-micronutrient-fill { stroke: var(--copper); stroke-linecap: round; }
+.nutrition-micronutrient-copy { display: grid; gap: 5px; min-width: 0; }
+.nutrition-micronutrient-copy h3 { margin: 0; font-size: 1rem; }
+.nutrition-micronutrient-copy small { color: #c4bcb6; line-height: 1.4; }
+.nutrition-micronutrient-card[data-state="warning"] .nutrition-micronutrient-fill { stroke: #f08b72; }
+.nutrition-micronutrient-card[data-state="warning"] .nutrition-micronutrient-copy small:last-child { color: #f2b09d; }

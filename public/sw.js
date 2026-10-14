@@ -26,9 +26,19 @@ function isAssetResponse(response, destination) {
 
 async function cachedAsset(request) {
   for (const name of [CACHE_NAME, LEGACY_ASSET_CACHE]) {
-    const response = await caches.match(request, { cacheName: name })
-    if (isAssetResponse(response, request.destination)) return response
+    try {
+      const response = await caches.match(request, { cacheName: name })
+      if (isAssetResponse(response, request.destination)) return response
+    } catch { /* Browser cache failures still permit a network request. */ }
   }
+}
+
+function isImmutableAsset(url) {
+  if (!url.pathname.startsWith('/_next/static/')) return false
+  // Development chunks have stable names and must always be fetched. Production
+  // chunk, stylesheet and media filenames include their content hash.
+  const filename = url.pathname.split('/').pop() || ''
+  return /(?:^|[-.])[a-f0-9]{8,}(?:[-.]|$)/i.test(filename)
 }
 
 self.addEventListener('fetch', (event) => {
@@ -48,8 +58,7 @@ self.addEventListener('fetch', (event) => {
   if (!['script', 'style', 'image', 'font'].includes(request.destination)) return
   if (!url.pathname.startsWith('/_next/static/') && !SHELL_ASSETS.includes(url.pathname)) return
 
-  event.respondWith(
-    fetch(request).then(async (response) => {
+  const fromNetwork = () => fetch(request).then(async (response) => {
       if (isAssetResponse(response, request.destination)) {
         const copy = response.clone()
         event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {}))
@@ -63,5 +72,13 @@ self.addEventListener('fetch', (event) => {
       }
       return response
     }).catch(async () => (await cachedAsset(request)) || Response.error())
-  )
+  event.respondWith((async () => {
+    // Exact content-addressed assets are identical forever. Repeat launches can
+    // use them immediately; deployment query strings remain part of the key.
+    if (isImmutableAsset(url)) {
+      const cached = await cachedAsset(request)
+      if (cached) return cached
+    }
+    return fromNetwork()
+  })())
 })

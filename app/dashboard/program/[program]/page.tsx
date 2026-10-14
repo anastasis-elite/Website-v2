@@ -14,6 +14,10 @@ import type { ProgramTier } from '@/lib/dashboard/logic/types'
 import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
 import { getDailyScheduleState } from '@/lib/schedule/service'
 import { getPhoenixRecipeRecommendations } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
+import { Suspense } from 'react'
+import { after } from 'next/server'
+import DashboardReadyShell from '@/components/program-dashboard/DashboardReadyShell'
+import DashboardPerformance from '@/components/DashboardPerformance'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix'] as const
 
@@ -60,13 +64,22 @@ export default async function ProgramPage({
 
   const safetyFlags = await getRecentSafetyFlags(supabase, client.client_id)
   if (safetyFlags.length) {
-    await logRecommendationAudit({
+    after(() => logRecommendationAudit({
       supabase, userId: user.id, clientId: client.client_id, recommendationType: 'dashboard_safety_escalation',
       inputReference: `client_symptom_logs:${client.client_id}`, engineVersion: 'safety_v1.0',
       recommendationOutput: { blocked: true }, safetyFlags,
-    })
+    }))
     return <SafetyEscalationNotice flags={safetyFlags} />
   }
+
+  return <main><Suspense fallback={<DashboardReadyShell program={program as ProgramTier} />}>
+    <PersonalizedDashboard supabase={supabase} user={user} client={client} program={program as ProgramTier} />
+  </Suspense></main>
+}
+
+async function PersonalizedDashboard({ supabase, user, client, program }: {
+  supabase: any; user: any; client: any; program: ProgramTier
+}) {
 
   const cycleStatus = getCycleStatus(client)
   const [dailyPlan, monthlyAssessment, { data: output }] = await Promise.all([
@@ -99,7 +112,7 @@ export default async function ProgramPage({
     monthlyAssessmentsDueCount,
   })
 
-  await logRecommendationAudit({
+  after(() => logRecommendationAudit({
     supabase,
     userId: user.id,
     clientId: client.client_id,
@@ -121,18 +134,23 @@ export default async function ProgramPage({
       flameState: logic.flameState,
     },
     confidenceLevel: 'rules_based',
-  })
+  }))
 
   const schedule = await getDailyScheduleState({
     supabase,
     user,
     client,
     logic,
+    dailyPlan,
+    sourceTimeoutMs: 2000,
   })
   const phoenixRecipes = program === 'phoenix' ? getPhoenixRecipeRecommendations({ logic, client }) : []
 
   return (
-    <main>
+    <>
+      <DashboardPerformance stage="shell" />
+      <DashboardPerformance stage="primary" />
+      <DashboardPerformance stage="secondary" snapshot={schedule.now} />
       {program === 'ember' && (
         <EmberDashboard logic={logic} schedule={schedule} />
       )}
@@ -144,6 +162,6 @@ export default async function ProgramPage({
       {program === 'phoenix' && (
         <PhoenixDashboard logic={logic} schedule={schedule} trackLabel={getPhoenixTrackLabel({ client, programJson })} recipes={phoenixRecipes} />
       )}
-    </main>
+    </>
   )
 }

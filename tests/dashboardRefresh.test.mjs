@@ -8,9 +8,13 @@ const { useDailyScheduleRefresh } = await importTs('lib/schedule/client.ts', {
   'next/navigation': 'export const useRouter=()=>globalThis.dashboardRefreshRouter',
 })
 const { CALENDAR_CHANGE_STORAGE_KEY } = await importTs('lib/calendar/client.ts', { react: reactMock })
+const { default: DailyPlanRefresh } = await importTs('components/DailyPlanRefresh.tsx', {
+  react: reactMock,
+  'next/navigation': 'export const useRouter=()=>globalThis.dashboardRefreshRouter',
+})
 const NativeDate = Date
 
-function harness(date, timezone = 'America/Chicago', events = [], enabled = true) {
+function harness(date, timezone = 'America/Chicago', events = [], enabled = true, refreshSurface = 'schedule') {
   let now = new NativeDate(date).getTime(), nextTimerId = 0, cursor = 0
   const slots = [], timers = new Map(), windowListeners = new Map(), documentListeners = new Map()
   const registrations = [], removals = [], refreshes = []
@@ -39,7 +43,11 @@ function harness(date, timezone = 'America/Chicago', events = [], enabled = true
       }
     },
   }
-  function render(next = schedule, nextEnabled = enabled) { schedule = next; enabled = nextEnabled; cursor = 0; useDailyScheduleRefresh(schedule, enabled) }
+  function render(next = schedule, nextEnabled = enabled) {
+    schedule = next; enabled = nextEnabled; cursor = 0
+    if (refreshSurface === 'layout') DailyPlanRefresh({ timezone: schedule.timezone })
+    else useDailyScheduleRefresh(schedule, enabled)
+  }
   function emit(type, event = {}) {
     for (const listener of [...(windowListeners.get(type) || []), ...(documentListeners.get(type) || [])]) listener(event)
   }
@@ -73,8 +81,8 @@ test('morning guidance and local midnight are explicit refresh boundaries', t =>
   morning.restore()
   const midnight = harness('2026-10-13T04:59:00Z'); t.after(midnight.restore)
   midnight.advance('2026-10-13T05:00:00.100Z'); assert.equal(midnight.refreshes.length, 1)
-  midnight.render(); assert.equal(midnight.refreshes.length, 2, 'A stale local-day snapshot refreshes once on revisit')
-  midnight.render(); assert.equal(midnight.refreshes.length, 2)
+  midnight.render(); assert.equal(midnight.refreshes.length, 1, 'The just-requested midnight refresh also covers a stale snapshot')
+  midnight.render(); assert.equal(midnight.refreshes.length, 1)
 })
 
 test('midnight timers follow the member timezone through both daylight-saving boundaries', t => {
@@ -102,8 +110,8 @@ test('hidden boundary waits for visibility restore and listener mutations refres
   app.visible = false; app.advance('2026-10-12T17:00:00.100Z'); assert.equal(app.refreshes.length, 0)
   app.emit('focus'); app.emit('calendar-events-updated'); app.emit('storage', { key: CALENDAR_CHANGE_STORAGE_KEY }); assert.equal(app.refreshes.length, 0)
   app.visible = true; app.emit('visibilitychange'); assert.equal(app.refreshes.length, 1)
-  app.emit('focus'); app.emit('calendar-events-updated'); app.emit('storage', { key: 'unrelated-storage' }); assert.equal(app.refreshes.length, 3)
-  app.emit('storage', { key: CALENDAR_CHANGE_STORAGE_KEY }); assert.equal(app.refreshes.length, 4)
+  app.emit('focus'); app.emit('calendar-events-updated'); app.emit('storage', { key: 'unrelated-storage' }); assert.equal(app.refreshes.length, 2, 'Resume focus is coalesced; a confirmed calendar change still refreshes')
+  app.emit('storage', { key: CALENDAR_CHANGE_STORAGE_KEY }); assert.equal(app.refreshes.length, 3)
 })
 
 test('rerender leaves exactly one timer and listener per event, and cleanup removes their original callbacks', t => {
@@ -130,4 +138,34 @@ test('disabled embedded schedule hook does not duplicate parent listeners or ref
   app.emit('focus'); assert.equal(app.refreshes.length, 0)
   app.render(app.schedule, true); assert.equal(app.listeners, 4); assert.equal(app.timers.size, 1)
   app.render(app.schedule, false); assert.equal(app.listeners, 0); assert.equal(app.timers.size, 0)
+})
+
+test('every dashboard page refreshes at local midnight even immediately after a previous-day save', t => {
+  const app = harness('2026-10-14T04:58:00Z', 'America/Chicago', [], true, 'layout'); t.after(app.restore)
+  app.advance('2026-10-14T04:59:59.900Z'); assert.equal(app.refreshes.length, 0, 'There is no per-minute polling')
+  app.emit('anastasis:daily-plan-updated'); assert.equal(app.refreshes.length, 1)
+  app.advance('2026-10-14T05:00:00.100Z'); assert.equal(app.refreshes.length, 2, 'The new local date cannot be suppressed by the old-day save refresh')
+  app.advance('2026-10-15T05:00:00.100Z'); assert.equal(app.refreshes.length, 3, 'A persistent layout schedules the following midnight')
+  assert.equal(app.timers.size, 1)
+  app.unmount(); assert.equal(app.timers.size, 0)
+})
+
+test('universal midnight scheduling follows the 25-hour fall and 23-hour spring local days', t => {
+  const fall = harness('2026-11-01T04:59:00Z', 'America/Chicago', [], true, 'layout')
+  fall.advance('2026-11-01T05:00:00.100Z'); assert.equal(fall.refreshes.length, 1)
+  fall.advance('2026-11-02T05:00:00.100Z'); assert.equal(fall.refreshes.length, 1)
+  fall.advance('2026-11-02T06:00:00.100Z'); assert.equal(fall.refreshes.length, 2)
+  fall.restore()
+  const spring = harness('2027-03-14T05:59:00Z', 'America/Chicago', [], true, 'layout'); t.after(spring.restore)
+  spring.advance('2027-03-14T06:00:00.100Z'); assert.equal(spring.refreshes.length, 1)
+  spring.advance('2027-03-15T05:00:00.100Z'); assert.equal(spring.refreshes.length, 2)
+})
+
+test('a background dashboard keeps its next midnight timer and refreshes on visible resume', t => {
+  const app = harness('2026-10-14T04:59:00Z', 'America/Chicago', [], true, 'layout'); t.after(app.restore)
+  app.visible = false
+  app.advance('2026-10-14T05:00:00.100Z'); assert.equal(app.refreshes.length, 0)
+  assert.equal(app.timers.size, 1)
+  app.visible = true
+  app.emit('visibilitychange'); assert.equal(app.refreshes.length, 1)
 })

@@ -6,6 +6,7 @@ import { CALENDAR_CHANGE_STORAGE_KEY } from '@/lib/calendar/client'
 import { nextScheduleBoundary } from './refresh'
 import { localDateKey } from '@/lib/timezone'
 import type { DailyScheduleState } from './types'
+import { requestDashboardRefresh } from '@/lib/dashboard/requestRefresh'
 
 export function useDailyScheduleRefresh(schedule: Pick<DailyScheduleState, 'date' | 'timezone' | 'events'>, enabled = true) {
   const router = useRouter()
@@ -14,11 +15,12 @@ export function useDailyScheduleRefresh(schedule: Pick<DailyScheduleState, 'date
   const refreshedStaleDate = useRef<string | null>(null)
   useEffect(() => {
     if (!enabled) return
-    const refresh = () => { if (document.visibilityState === 'visible') router.refresh() }
-    const storedChange = (event: StorageEvent) => { if (event.key === CALENDAR_CHANGE_STORAGE_KEY) refresh() }
+    const refresh = () => { if (document.visibilityState === 'visible') requestDashboardRefresh(router) }
+    const saved = () => { if (document.visibilityState === 'visible') requestDashboardRefresh(router, 'saved') }
+    const storedChange = (event: StorageEvent) => { if (event.key === CALENDAR_CHANGE_STORAGE_KEY) saved() }
     document.addEventListener('visibilitychange', refresh)
     window.addEventListener('focus', refresh)
-    window.addEventListener('calendar-events-updated', refresh)
+    window.addEventListener('calendar-events-updated', saved)
     window.addEventListener('storage', storedChange)
     if (staleDate && refreshedStaleDate.current !== schedule.date) {
       refreshedStaleDate.current = schedule.date
@@ -30,7 +32,7 @@ export function useDailyScheduleRefresh(schedule: Pick<DailyScheduleState, 'date
       if (timer !== undefined) window.clearTimeout(timer)
       document.removeEventListener('visibilitychange', refresh)
       window.removeEventListener('focus', refresh)
-      window.removeEventListener('calendar-events-updated', refresh)
+      window.removeEventListener('calendar-events-updated', saved)
       window.removeEventListener('storage', storedChange)
     }
   }, [router, boundary, staleDate, schedule.date, enabled])

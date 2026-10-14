@@ -43,6 +43,8 @@ export async function getDailyScheduleState({
   date,
   includeVirtualPlan = true,
   logic,
+  dailyPlan: providedDailyPlan,
+  sourceTimeoutMs,
 }: {
   supabase: any
   user: any
@@ -50,49 +52,52 @@ export async function getDailyScheduleState({
   date?: string
   includeVirtualPlan?: boolean
   logic?: any
+  dailyPlan?: Awaited<ReturnType<typeof getDailyExecutionPlan>>
+  sourceTimeoutMs?: number
 }): Promise<DailyScheduleState> {
   const day = getClientDayRange(client, date)
   const unavailableSources: NonNullable<DailyScheduleState['unavailableSources']> = []
   // Schedule integrations are optional to the daily health dashboard. Keep the
   // available sources readable, but never treat an unread source as free time.
   async function optionalSource<T>(source: typeof unavailableSources[number], load: () => Promise<T>, fallback: T): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined
     try {
-      return await load()
+      return await (sourceTimeoutMs ? Promise.race([
+        load(),
+        new Promise<T>((_, reject) => { timer = setTimeout(() => reject(new Error('Schedule source timed out.')), sourceTimeoutMs) }),
+      ]) : load())
     } catch (error) {
       unavailableSources.push(source)
       console.error(`Schedule source unavailable (${source}):`, error instanceof Error ? error.message : error)
       return fallback
+    } finally {
+      if (timer) clearTimeout(timer)
     }
   }
-  const persistedEvents = await optionalSource('saved_events', () => loadScheduleEventsForDay({
+  const dailyPlanPromise = includeVirtualPlan ? Promise.resolve(providedDailyPlan || getDailyExecutionPlan({ supabase, client })) : Promise.resolve(null)
+  const [persistedEvents, blocks, calendarEvents, dailyPlan, effectiveLogic] = await Promise.all([
+    optionalSource('saved_events', () => loadScheduleEventsForDay({
     supabase,
     userId: user.id,
     clientId: client.client_id,
     dayStart: day.start,
     dayEnd: day.end,
-  }), [])
-
-  const blocks = await optionalSource<any[]>('recurring_commitments', async () => {
+  }), []),
+  optionalSource<any[]>('recurring_commitments', async () => {
     const { data, error } = await supabase.from('client_schedule_blocks').select('*').eq('client_id', client.client_id).eq('user_id', user.id).eq('active', true)
     if (error) throw new Error(error.message)
     return data || []
-  }, [])
-  const calendarEvents = await optionalSource('calendar', () => importedScheduleEvents(supabase, user.id, client.client_id, day.start.toISOString(), day.end.toISOString(), day.timezone), [])
+  }, []),
+  optionalSource('calendar', () => importedScheduleEvents(supabase, user.id, client.client_id, day.start.toISOString(), day.end.toISOString(), day.timezone), []),
+  dailyPlanPromise,
+  logic || (includeVirtualPlan ? dailyPlanPromise.then(dailyPlan => getProgramLogicForClient({ supabase, user, client, dailyPlan: dailyPlan || undefined })) : null),
+  ])
   persistedEvents.push(...calendarEvents)
   const commitments = recurringCommitmentsToEvents({ userId: user.id, client, date: day.date, timezone: day.timezone, blocks: blocks || [] })
-  const dailyPlan = includeVirtualPlan
-    ? await getDailyExecutionPlan({ supabase, client })
-    : null
   const virtualEvents =
     includeVirtualPlan && dailyPlan?.date === day.date
       ? dailyPlanToScheduleEvents({ userId: user.id, client, dailyPlan }).filter(event => !commitments.some(c => c.event_type === event.event_type && event.flexibility_type === 'fixed') && !persistedEvents.some(e => ['workout','hydration'].includes(event.event_type) && e.event_type === event.event_type && !['skipped','cancelled'].includes(e.status)))
       : []
-  const effectiveLogic =
-    logic ||
-    (includeVirtualPlan
-      ? await getProgramLogicForClient({ supabase, user, client })
-      : null)
-
   const state = buildDailyScheduleState({
     date: day.date,
     timezone: day.timezone,

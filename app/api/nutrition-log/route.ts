@@ -49,6 +49,7 @@ export async function POST(req: Request) {
       cyclePhase,
       trainingLevel,
       nutritionCalculation,
+      createOnly,
     } = body
 
     if (!client_id) {
@@ -111,7 +112,7 @@ export async function POST(req: Request) {
         ? nutritionLogAuditFields(nutritionCalculation)
         : {}
 
-    const { data: nutritionLog, error: nutritionLogError } = await supabase
+    const preparedLog = supabase
       .from('nutrition_logs')
       .upsert(
         {
@@ -131,18 +132,27 @@ export async function POST(req: Request) {
         },
         {
           onConflict: 'client_id,log_date',
+          ...(createOnly === true ? { ignoreDuplicates: true } : {}),
         }
       )
       .select('*')
-      .single()
+    let { data: nutritionLog, error: nutritionLogError } = await (createOnly === true ? preparedLog.maybeSingle() : preparedLog.single())
+    if (createOnly === true && !nutritionLogError && !nutritionLog) {
+      // A concurrent first log may have won the unique daily row. Never overwrite
+      // its targets, legacy meals or completion state while opening the logger.
+      const existing = await supabase.from('nutrition_logs').select('*')
+        .eq('client_id', client.client_id).eq('auth_user_id', user.id).eq('log_date', logDate).maybeSingle()
+      nutritionLog = existing.data
+      nutritionLogError = existing.error
+    }
 
-    if (nutritionLogError) {
+    if (nutritionLogError || !nutritionLog) {
       console.error('NUTRITION LOG UPSERT ERROR:', nutritionLogError)
 
       return NextResponse.json(
         {
           error: 'Unable to prepare today’s nutrition log.',
-          details: nutritionLogError.message,
+          details: nutritionLogError?.message,
         },
         { status: 500 }
       )

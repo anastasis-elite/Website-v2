@@ -1,3 +1,4 @@
+import { mealEntryHref } from '@/lib/nutrition/loggingRoutes'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
 import type { ProgramTier } from '@/lib/entitlements'
@@ -206,7 +207,7 @@ export function selectDailyInsight(context: DailyInsightContext): DailyInsight {
       message:
         'Your activity and recovery signals point to fueling as the priority. Eat enough to support adaptation before adding more intensity.',
       reason: resilience.recommendations[0],
-      action: { type: 'open_nutrition', label: context.tier === 'ember' ? 'Add macros' : 'Log meal', target: '/dashboard/nutrition' },
+      action: { type: 'open_nutrition', label: context.tier === 'ember' ? 'Add macros' : 'Log meal', target: mealEntryHref(context.tier) },
     }
   }
 
@@ -217,7 +218,7 @@ export function selectDailyInsight(context: DailyInsightContext): DailyInsight {
       message:
         'Hydration is the clearest support signal today. Stabilize water and electrolytes before asking your body for more output.',
       reason: resilience.recommendations[0],
-      action: { type: 'open_nutrition', label: context.tier === 'ember' ? 'Add macros' : 'Log meal', target: '/dashboard/nutrition' },
+      action: { type: 'open_nutrition', label: context.tier === 'ember' ? 'Add macros' : 'Log meal', target: mealEntryHref(context.tier) },
     }
   }
 
@@ -299,7 +300,7 @@ export function selectDailyInsight(context: DailyInsightContext): DailyInsight {
           ? 'Use macros as information today, not pressure. One protein-forward choice is enough to make the next log easier.'
           : 'Make the next meal simple and protein-forward. The goal is less decision weight, not a perfect plate.',
       reason: 'Nutrition is the next relevant system.',
-      action: { type: 'open_nutrition', label: context.tier === 'ember' ? 'Add macros' : 'Log meal', target: '/dashboard/nutrition' },
+      action: { type: 'open_nutrition', label: context.tier === 'ember' ? 'Add macros' : 'Log meal', target: mealEntryHref(context.tier) },
     }
   }
 
