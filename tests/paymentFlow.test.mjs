@@ -138,7 +138,7 @@ test('checkout rejects missing activation setup and forged client reference befo
   const route = load('app/api/checkout/route.ts', {
     'next/server': { NextResponse: { json: (body, init) => { const response = Response.json(body, init); response.cookies = { set: (...args) => cookies.push(args) }; return response } } },
     stripe: StripeMock, '@/lib/commerce/catalog': catalog, '@/lib/commerce/environment': environment, '@/lib/commerce/purchaseProof': proof,
-    '@/lib/supabase/admin': { createAdminClient: () => ({ rpc: async () => ({ data: ready, error: null }) }) },
+    '@/lib/supabase/admin': { createAdminClient: () => ({ rpc: async (name, args) => { assert.equal(name, 'commerce_configuration_ready'); assert.equal(args.p_contract_version, 2); return { data: ready, error: null } } }) },
     '@/lib/supabase/server': { createClient: async () => ({ auth: { getUser: async () => ({ data: { user: owner } }) }, from: table => ({ select: () => ({ eq: (_field, value) => ({ maybeSingle: async () => { assert.equal(value, table === 'clients' ? owner.id : 'AN-OWNED'); return { data: table === 'clients' ? { client_id: 'AN-OWNED' } : existingBilling, error: null } } }) }) }) }) },
   })
   const request = body => new Request('https://isolated-test.invalid/api/checkout', { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } })

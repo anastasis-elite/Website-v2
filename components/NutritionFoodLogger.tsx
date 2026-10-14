@@ -133,12 +133,35 @@ export default function NutritionFoodLogger(props: Props) {
   const [mealName, setMealName] = useState<MealPeriod>(() => props.initialMealPeriod || getMealPeriodForLocalDate(new Date(), props.timezone))
   const [method, setMethod] = useState<InputMethod>('manual')
   const [visitedMethods, setVisitedMethods] = useState<InputMethod[]>(['manual'])
+  const [photoAvailable, setPhotoAvailable] = useState<boolean | null>(null)
+  const [photoAvailabilityMessage, setPhotoAvailabilityMessage] = useState('')
   const methods: InputMethod[] = ['manual', ...(props.capabilities.nutritionBarcodeScanning ? ['barcode' as const] : []), ...(props.capabilities.nutritionPhotoMacroEstimation ? ['image' as const] : [])]
+  const enabledMethods = methods.filter(inputMethod => inputMethod !== 'image' || photoAvailable === true)
   const descriptions = { manual: 'Find or enter what I ate', barcode: 'Scan packaged food', image: 'Take or upload a picture' }
   function changeMethod(next: InputMethod) {
+    if (!enabledMethods.includes(next)) return
     setVisitedMethods(current => current.includes(next) ? current : [...current, next])
     setMethod(next)
   }
+  useEffect(() => {
+    if (!props.capabilities.nutritionPhotoMacroEstimation) return
+    let cancelled = false
+    setPhotoAvailable(null)
+    void fetch('/api/nutrition/photo-estimate', { cache: 'no-store' })
+      .then(async response => ({ ok: response.ok, data: await response.json() }))
+      .then(({ ok, data }) => {
+        if (cancelled) return
+        const available = ok && data.available === true
+        setPhotoAvailable(available)
+        setPhotoAvailabilityMessage(available ? '' : data.message || 'Photo estimation is unavailable. Search / manual and barcode entry are still available.')
+      })
+      .catch(() => {
+        if (cancelled) return
+        setPhotoAvailable(false)
+        setPhotoAvailabilityMessage('Photo estimation is unavailable. Search / manual and barcode entry are still available.')
+      })
+    return () => { cancelled = true }
+  }, [props.capabilities.nutritionPhotoMacroEstimation])
   useEffect(() => {
     if (props.initialMealPeriod) setMealName(props.initialMealPeriod)
   }, [props.initialMealPeriod])
@@ -150,18 +173,19 @@ export default function NutritionFoodLogger(props: Props) {
       </select>
     </div>
     <div className="tier-tab-list" role="tablist" aria-label="Meal logging method">
-      {methods.map(inputMethod => <button key={inputMethod} id={`meal-method-${inputMethod}`} role="tab" type="button" tabIndex={method === inputMethod ? 0 : -1} aria-selected={method === inputMethod} aria-controls={`meal-entry-panel-${inputMethod}`} className={method === inputMethod ? 'is-active' : ''} onClick={() => changeMethod(inputMethod)} onKeyDown={event => {
+      {methods.map(inputMethod => <button key={inputMethod} id={`meal-method-${inputMethod}`} role="tab" type="button" disabled={!enabledMethods.includes(inputMethod)} aria-describedby={inputMethod === 'image' && photoAvailable !== true ? `${mealId}-photo-status` : undefined} tabIndex={method === inputMethod ? 0 : -1} aria-selected={method === inputMethod} aria-controls={`meal-entry-panel-${inputMethod}`} className={method === inputMethod ? 'is-active' : ''} onClick={() => changeMethod(inputMethod)} onKeyDown={event => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
         event.preventDefault()
-        const index = methods.indexOf(inputMethod)
-        const next = event.key === 'Home' ? methods[0] : event.key === 'End' ? methods.at(-1)! : methods[(index + (event.key === 'ArrowRight' ? 1 : methods.length - 1)) % methods.length]
+        const index = enabledMethods.indexOf(inputMethod)
+        const next = event.key === 'Home' ? enabledMethods[0] : event.key === 'End' ? enabledMethods.at(-1)! : enabledMethods[(index + (event.key === 'ArrowRight' ? 1 : enabledMethods.length - 1)) % enabledMethods.length]
         changeMethod(next)
         document.getElementById(`meal-method-${next}`)?.focus()
-      }}>{inputMethod === 'manual' ? 'Search / manual' : inputMethod === 'barcode' ? 'Barcode' : 'Photo'}</button>)}
+      }}>{inputMethod === 'manual' ? 'Search / manual' : inputMethod === 'barcode' ? 'Barcode' : photoAvailable === true ? 'Photo' : 'Photo unavailable'}</button>)}
     </div>
+    {props.capabilities.nutritionPhotoMacroEstimation && photoAvailable !== true ? <p id={`${mealId}-photo-status`} role="status" style={{ ...styles.bodyStyle, marginTop: 12 }}>{photoAvailabilityMessage || 'Photo estimation is unavailable. Search / manual and barcode entry are still available.'}</p> : null}
     {methods.map(inputMethod => <div key={inputMethod} id={`meal-entry-panel-${inputMethod}`} role="tabpanel" aria-labelledby={`meal-method-${inputMethod}`} hidden={method !== inputMethod}>
       <p style={{ ...styles.bodyStyle, marginTop: 12 }}>{descriptions[inputMethod]}</p>
-      {visitedMethods.includes(inputMethod) ? <FoodInputLogger {...props} mealName={mealName} onMealChange={setMealName} method={inputMethod} active={method === inputMethod} onMethodChange={changeMethod}/> : null}
+      {visitedMethods.includes(inputMethod) ? <FoodInputLogger {...props} mealName={mealName} onMealChange={setMealName} method={inputMethod} active={method === inputMethod} onMethodChange={changeMethod} photoAvailable={photoAvailable}/> : null}
     </div>)}
   </div>
 }
@@ -176,7 +200,8 @@ function FoodInputLogger({
   active,
   mealName,
   onMealChange,
-}: Props & { method: InputMethod; active: boolean; onMethodChange: (method: InputMethod) => void; mealName: MealPeriod; onMealChange: (meal: MealPeriod) => void }) {
+  photoAvailable,
+}: Props & { method: InputMethod; active: boolean; onMethodChange: (method: InputMethod) => void; mealName: MealPeriod; onMealChange: (meal: MealPeriod) => void; photoAvailable: boolean | null }) {
   const router = useRouter()
   const inputId = useId()
   const submitLock = useRef(false)
@@ -203,8 +228,6 @@ function FoodInputLogger({
   const [scannedBarcode, setScannedBarcode] = useState('')
   const [barcodeBusy, setBarcodeBusy] = useState(false)
   const [barcodeMessage, setBarcodeMessage] = useState('')
-  const [photoAvailable,setPhotoAvailable]=useState<boolean | null>(null)
-  useEffect(()=>{if(method!=='image'||!active)return;let cancelled=false;void fetch('/api/nutrition/photo-estimate').then(res=>res.json()).then(data=>{if(!cancelled){setPhotoAvailable(data.available===true);if(!data.available)setPhotoMessage(data.message||'Photo estimation is unavailable. Search / manual entry is still available.')}}).catch(()=>{if(!cancelled){setPhotoAvailable(false);setPhotoMessage('Photo estimation could not be checked. Search / manual entry is still available.')}});return()=>{cancelled=true}},[method,active])
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoMessage, setPhotoMessage] = useState('')
   const [recurringCandidates, setRecurringCandidates] = useState<RecurringCandidate[]>([])
@@ -575,7 +598,7 @@ function FoodInputLogger({
   }
 
   async function handlePhotoSelected(file: File | null) {
-    if (!file || !capabilities.nutritionPhotoMacroEstimation) return
+    if (!file || !capabilities.nutritionPhotoMacroEstimation || photoAvailable !== true) return
 
     setPhotoBusy(true)
     setPhotoMessage('')

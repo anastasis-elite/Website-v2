@@ -51,8 +51,19 @@ test('the guest capability delivers a private login link to receipt email; verif
   const page = await returning.render()
   assert.equal(returning.state.claims[0].name, 'claim_checkout_purchase')
   assert.equal(returning.state.claims[0].args.p_user_id, 'existing-user')
+  assert.equal(returning.state.claims[0].args.p_verified_email, 'qa@example.test')
   assert.equal(returning.state.invitations.length, 0)
   assert.match(JSON.stringify(page), /connected to your private login/)
+})
+
+test('an unconfirmed metadata-bound login cannot claim a guest purchase', async () => {
+  const f = fixture()
+  f.state.user = { id: 'existing-user', email: 'qa@example.test' }
+  f.session.metadata.auth_user_id = 'existing-user'
+  const page = await f.render()
+  assert.equal(f.state.claims.length, 0)
+  assert.equal(f.state.invitations.length, 0)
+  assert.match(JSON.stringify(page), /verified purchase email/)
 })
 test('an existing login purchase requires sign-in and never creates a replacement invitation', async () => {
   const f = fixture(); f.state.cookie = f.token; f.state.existingLogin = { client_id: 'existing-owned' }

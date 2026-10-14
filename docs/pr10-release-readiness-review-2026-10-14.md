@@ -1,5 +1,7 @@
 # PR #10 release-readiness review — October 14, 2026
 
+Follow-up: the [blocker investigation and local repair report](pr10-blocker-resolution-2026-10-14.md) now explains the macro-flag history and adds tested nutrition/commerce repair proposals. Its final checks supersede the local counts below. Required production/preview/account gates remain on HOLD; this historical review does not authorize applying SQL or deploying.
+
 **Decision: HOLD; keep PR #10 draft.** The requested statement that no unresolved P0/P1 issues remain cannot be made. No merge, push, new deployment, production promotion, billing/subscription/entitlement update, or production database write was performed during this review. The Nutrition repair and this evidence are local only until publication is approved.
 
 ## Exact release identity and included scope

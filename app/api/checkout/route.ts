@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const environmentError = paymentEnvironmentError()
     if (environmentError) return NextResponse.json({ error: environmentError }, { status: 503 })
     if (!process.env.STRIPE_WEBHOOK_SECRET) return NextResponse.json({ error: 'Payment activation is not configured. Please contact support.' }, { status: 503 })
-    const { data: ready, error: readinessError } = await createAdminClient().rpc('commerce_configuration_ready')
+    const { data: ready, error: readinessError } = await createAdminClient().rpc('commerce_configuration_ready', { p_contract_version: 2 })
     if (readinessError || ready !== true) return NextResponse.json({ error: 'Payment activation needs administrator setup before checkout.' }, { status: 503 })
     const body = await req.json().catch(() => null)
     const program = parseProgram(body?.program), billing = parseBilling(body?.billing)

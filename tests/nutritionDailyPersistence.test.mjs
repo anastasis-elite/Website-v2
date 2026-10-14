@@ -225,6 +225,51 @@ test('confirmed meal totals and macro entries combine without counting tentative
   assert.equal((await getDailyExecutionPlan({ supabase: db, client })).nutritionLogged, false)
 })
 
+test('legacy meal preparation rejects EMBER food logging without touching saved guidance or history', async () => {
+  const db = database()
+  db.tables.nutrition_logs[0].meals = ['Historical intake']
+  const before = structuredClone(db.tables.nutrition_logs)
+  globalThis.nutritionPersistenceDb = db
+  const response = await prepareRoute.POST(new Request('https://qa.invalid/api/nutrition-log', {
+    method: 'POST', body: JSON.stringify({ client_id: client.client_id, program: 'phoenix', meals: ['Unauthorized food'] }),
+  }))
+  assert.equal(response.status, 403)
+  assert.deepEqual(db.tables.nutrition_logs, before)
+  assert.equal(db.writes.length, 0)
+})
+
+test('target edits preserve legacy history for every tier when meals are omitted, including EMBER empty input', async () => {
+  for (const program of ['ember', 'ignite', 'phoenix']) {
+    const db = database({ program })
+    db.tables.nutrition_logs[0].meals = ['Historical intake']
+    globalThis.nutritionPersistenceDb = db
+    const response = await prepareRoute.POST(new Request('https://qa.invalid/api/nutrition-log', {
+      method: 'POST', body: JSON.stringify({ client_id: client.client_id, calories: 2200, ...(program === 'ember' ? { meals: [] } : {}) }),
+    }))
+    assert.equal(response.status, 200)
+    assert.equal(db.tables.nutrition_logs[0].calories, 2200)
+    assert.deepEqual(db.tables.nutrition_logs[0].meals, ['Historical intake'])
+  }
+})
+
+test('owned IGNITE and PHOENIX may save explicit legacy meals; invalid meal payloads fail before writes', async () => {
+  for (const program of ['ignite', 'phoenix']) {
+    const db = database({ program })
+    globalThis.nutritionPersistenceDb = db
+    const response = await prepareRoute.POST(new Request('https://qa.invalid/api/nutrition-log', {
+      method: 'POST', body: JSON.stringify({ client_id: client.client_id, meals: ['Authorized food'] }),
+    }))
+    assert.equal(response.status, 200)
+    assert.deepEqual(db.tables.nutrition_logs[0].meals, ['Authorized food'])
+    const writes = db.writes.length
+    const invalid = await prepareRoute.POST(new Request('https://qa.invalid/api/nutrition-log', {
+      method: 'POST', body: JSON.stringify({ client_id: client.client_id, meals: 'Invalid' }),
+    }))
+    assert.equal(invalid.status, 400)
+    assert.equal(db.writes.length, writes)
+  }
+})
+
 test('cycle-aware nutrition reads the actual cycle_phase column', async () => {
   const db = database()
   const result = await calculateClientNutritionTargets({ supabase: db, clientId: client.client_id, program: 'ember' })

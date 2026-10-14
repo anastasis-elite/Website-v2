@@ -8,10 +8,10 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 const nativeRequire = createRequire(import.meta.url)
-function load(path, mocks = {}) {
+function load(path, mocks = {}, environment = {}) {
   const output = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText
   const module = { exports: {} }
-  vm.runInNewContext(output, { module, exports: module.exports, console, Intl, require: specifier => mocks[specifier] || nativeRequire(specifier) })
+  vm.runInNewContext(output, { module, exports: module.exports, console, Intl, ...environment, require: specifier => mocks[specifier] || nativeRequire(specifier) })
   return module.exports
 }
 const { parseNutritionLoggingIntent } = load('lib/nutrition/loggingIntent.ts')
@@ -40,7 +40,8 @@ test('food entry immediately exposes a changeable meal selector and tier-support
     assert.match(html, /<option value="Dinner">Dinner<\/option>/)
     assert.match(html, /Search \/ manual/)
     assert.match(html, /Barcode/)
-    assert.equal(/>Photo<\/button>/.test(html), tier === 'phoenix')
+    assert.equal(/>Photo unavailable<\/button>/.test(html), tier === 'phoenix')
+    if (tier === 'phoenix') assert.match(html, /id="meal-method-image"[^>]*disabled=""/)
     assert.match(html, /type="search"/)
     assert.match(html, /enterKeyHint="search"/)
   }
@@ -50,6 +51,53 @@ test('inactive food methods do not mount duplicate data loaders', () => {
   const html = renderToStaticMarkup(React.createElement(Logger, { nutritionLogId: 'own-log', initialMealPeriod: 'Breakfast', capabilities: entitlements.getTierCapabilities('phoenix') }))
   assert.equal((html.match(/Search food<\/label>/g) || []).length, 1)
   assert.doesNotMatch(html, /Or enter a barcode|Checking photo availability/)
+})
+
+test('unknown or unavailable photo service disables its entry while retaining Phoenix entitlement and usable manual/barcode methods', async () => {
+  for (const result of [Response.json({ available: false, message: 'Photo estimation is not available yet. Use search or barcode.' }), Response.json({ available: 'true' }), Response.json({ available: true }, { status: 401 }), new Error('Network unavailable')]) {
+    const states = [], effects = [], requests = [], focused = []
+    let cursor = 0, resolveAvailability, rejectAvailability
+    const hooks = {
+      useId: () => 'qa-photo',
+      useState(initial) { const index = cursor++; if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial; return [states[index], value => { states[index] = typeof value === 'function' ? value(states[index]) : value }] },
+      useEffect(callback, deps) { const index = cursor++; if (!states[index] || deps.some((value, position) => value !== states[index].deps[position])) { states[index] = { deps }; effects.push(callback) } },
+    }
+    const ControlledLogger = load('components/NutritionFoodLogger.tsx', { react: hooks, 'next/navigation': {}, '@/app/styles/globalstyles': {}, '@/lib/nutrition/mealPeriod': periods }, {
+      fetch: (url, options) => { requests.push({ url, options }); return new Promise((resolve, reject) => { resolveAvailability = resolve; rejectAvailability = reject }) },
+      document: { getElementById: id => ({ focus: () => focused.push(id) }) },
+    }).default
+    const nodes = element => !element || typeof element !== 'object' ? [] : [element, ...[element.props?.children].flat(Infinity).flatMap(nodes)]
+    const render = () => { cursor = 0; const tree = ControlledLogger({ nutritionLogId: 'own-log', initialMealPeriod: 'Lunch', capabilities: entitlements.getTierCapabilities('phoenix') }); for (const effect of effects.splice(0)) effect(); return tree }
+    const tab = (tree, method) => nodes(tree).find(node => node.props?.id === `meal-method-${method}`)
+    let tree = render()
+    assert.equal(entitlements.getTierCapabilities('phoenix').nutritionPhotoMacroEstimation, true)
+    assert.equal(tab(tree, 'image').props.disabled, true, 'Photo stays disabled until availability is confirmed')
+    assert.equal(tab(tree, 'manual').props.disabled, false)
+    assert.equal(tab(tree, 'barcode').props.disabled, false)
+    tab(tree, 'image').props.onClick()
+    tree = render()
+    assert.equal(nodes(tree).filter(node => typeof node.type === 'function').length, 1, 'An unavailable photo method does not mount an upload/logger')
+    tab(tree, 'manual').props.onKeyDown({ key: 'End', preventDefault() {} })
+    tree = render()
+    assert.equal(tab(tree, 'barcode').props['aria-selected'], true, 'Keyboard navigation skips disabled Photo')
+    assert.equal(focused.at(-1), 'meal-method-barcode')
+    if (result instanceof Error) rejectAvailability(result)
+    else resolveAvailability(result)
+    await new Promise(setImmediate)
+    tree = render()
+    assert.equal(tab(tree, 'image').props.disabled, true)
+    assert.equal(tab(tree, 'image').props.children, 'Photo unavailable')
+    const status = nodes(tree).find(node => node.props?.id === 'qa-photo-photo-status')
+    assert.equal(status.props.role, 'status')
+    assert.match(status.props.children, /not available|unavailable/)
+    assert.match(status.props.children, /manual|search/i)
+    assert.match(status.props.children, /barcode/i)
+    assert.equal(requests.length, 1)
+    assert.equal(requests[0].url, '/api/nutrition/photo-estimate')
+    assert.equal(requests[0].options.cache, 'no-store')
+    assert.equal(nodes(tree).filter(node => typeof node.type === 'function').some(node => node.props.method === 'image'), false)
+    assert.equal(nodes(tree).filter(node => typeof node.type === 'function').find(node => node.props.method === 'manual').props.mealName, 'Lunch')
+  }
 })
 
 test('meal selection stays editable and shared while switching distinct input methods', () => {

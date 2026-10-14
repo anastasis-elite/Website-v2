@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
 import { nutritionLogAuditFields } from '@/lib/nutrition/targetService'
 import { getClientLocalDate } from '@/lib/timezone'
+import { getTierCapabilities } from '@/lib/entitlements'
 
 function calculateAge(birthdate?: string | null) {
   if (!birthdate) return 35
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select(
-        'client_id, auth_user_id, birthdate, timezone, state, onboarding_data'
+        'client_id, auth_user_id, program, birthdate, timezone, state, onboarding_data'
       )
       .eq('client_id', client_id)
       .eq('auth_user_id', user.id)
@@ -83,6 +84,14 @@ export async function POST(req: Request) {
         { error: 'Client not found.' },
         { status: 404 }
       )
+    }
+
+    if (meals !== undefined && !Array.isArray(meals)) {
+      return NextResponse.json({ error: 'Meals must be an array.' }, { status: 400 })
+    }
+    const canLogMeals = getTierCapabilities(client.program).nutritionMealLogging
+    if (Array.isArray(meals) && meals.length > 0 && !canLogMeals) {
+      return NextResponse.json({ error: 'Food and meal logging require IGNITE or PHOENIX.' }, { status: 403 })
     }
 
     const logDate = getClientLocalDate(client)
@@ -124,7 +133,9 @@ export async function POST(req: Request) {
           fats: safeFats,
           calories: safeCalories,
           water_oz: safeWaterOz,
-          meals: Array.isArray(meals) ? meals : [],
+          // Target preparation must preserve existing legacy intake. EMBER
+          // cannot mutate meals, including erasing records from an older tier.
+          ...(canLogMeals && Array.isArray(meals) ? { meals } : {}),
           completed: completed ?? false,
           ...micronutrientTargets,
           ...auditFields,

@@ -32,7 +32,8 @@ export default async function VerifiedPage({ searchParams }: { searchParams?: Pr
     const admin = createAdminClient()
     result = await fulfillPurchase({ stripe, supabase: admin, sessionId })
     if (signedOwner && user && !result.authUserId) {
-      const { data, error } = await admin.rpc('claim_checkout_purchase', { p_session_id: sessionId, p_user_id: user.id })
+      if (!user.email_confirmed_at || !user.email) throw new Error('Sign in with your verified purchase email to connect this purchase.')
+      const { data, error } = await admin.rpc('claim_checkout_purchase', { p_session_id: sessionId, p_user_id: user.id, p_verified_email: user.email.trim().toLowerCase() })
       if (error || !data) throw new Error('This returning purchase could not be connected. If you have an existing recurring subscription, support must reconcile the purchases. Contact support with both receipts.')
       result = { clientId: data.client_id, email: data.email, program: data.program, authUserId: data.auth_user_id }
     }
