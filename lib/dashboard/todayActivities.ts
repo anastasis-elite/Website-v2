@@ -2,9 +2,10 @@ import { getTierCapabilities } from '@/lib/entitlements'
 import type { ProgramLogicOutput, StreakItem } from './logic/types'
 import type { DailyScheduleState, ScheduleEventType } from '@/lib/schedule/types'
 import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
+import { getScheduleStructureVersion, scheduleStructureTaskHref } from '@/lib/assessment/scheduleStructure'
 
 export const TODAY_ACTIVITY_IDS = ['check-in', 'water', 'schedule', 'nutrition', 'workout', 'recovery'] as const
-export type TodayActivityId = typeof TODAY_ACTIVITY_IDS[number]
+export type TodayActivityId = typeof TODAY_ACTIVITY_IDS[number] | `assessment:${string}`
 export type TodayActivityStatus = 'available' | 'upcoming' | 'in_progress' | 'completed' | 'deferred' | 'skipped'
 export type DailyGuidePreference = { status: 'deferred' | 'skipped' | 'reviewed'; until?: string }
 export type DailyGuideState = { date: string; activities: Partial<Record<TodayActivityId, DailyGuidePreference>> }
@@ -86,6 +87,14 @@ export function buildTodayActivities(logic: ProgramLogicOutput, schedule: Pick<D
     add('water', 'Hydration', complete ? 'Your recorded water meets today’s target.' : logic.hydration.consumed > 0 ? `${Math.round(logic.hydration.consumed)} oz saved. Add what you drink when it suits you.` : 'Add the water you have already had.', WATER_ENTRY_HREF, complete, logic.hydration.consumed > 0)
   }
   if (capabilities.calendar) add('schedule', 'Schedule review', 'See your commitments and leave room for the rest.', '/dashboard/schedule', guide.activities.schedule?.status === 'reviewed')
+  for (const event of schedule.events) {
+    if (getScheduleStructureVersion(event) === null || ['cancelled', 'skipped'].includes(event.status)) continue
+    const complete = event.status === 'completed'
+    activities.push({ id: `assessment:${event.id}`, category: 'assessment', title: event.title,
+      detail: complete ? 'Your assessment is submitted and saved.' : 'Submit your daily rhythm and training capacity to complete this assessment.',
+      href: scheduleStructureTaskHref(event)!, status: complete ? 'completed' : 'available',
+      countsTowardProgress: true, canSkip: false, canDefer: false, canResume: false })
+  }
   if (capabilities.nutritionTracking) add('nutrition', capabilities.nutritionMealLogging ? 'Meal logging' : 'Nutrition', logic.execution.nutritionLogged ? 'Today’s intake is saved. You can add more whenever you need.' : capabilities.nutritionMealLogging ? 'Log your next meal or reuse a saved entry.' : 'Your guidance and quick macro entry are available.', mealEntryHref(logic.program), logic.execution.nutritionLogged)
   if (capabilities.workoutDisplay && (logic.execution.workoutComplete || (logic.workout.assigned && logic.workoutDecision.canTrain))) {
     add('workout', 'Movement', logic.execution.workoutComplete ? 'Your completed workout is saved.' : logic.execution.workoutInProgress ? 'Your saved workout is ready to resume.' : logic.workoutDecision.reasonForModification,

@@ -10,7 +10,7 @@ export async function updateOwnedOnboardingData({
   userId: string
   clientId: string
   merge: (current: OnboardingData) => OnboardingData
-  fields?: Record<string, unknown>
+  fields?: Record<string, unknown> | ((current: OnboardingData, next: OnboardingData) => Record<string, unknown>)
 }): Promise<UpdateResult> {
   for (let attempt = 0; attempt < 3; attempt++) {
     const { data: client, error: readError } = await supabase.from('clients').select('onboarding_data')
@@ -20,7 +20,8 @@ export async function updateOwnedOnboardingData({
     const original = client.onboarding_data
     if (original != null && (typeof original !== 'object' || Array.isArray(original))) return { saved: false, status: 409 }
     const onboardingData = merge(original || {})
-    let update = supabase.from('clients').update({ ...fields, onboarding_data: onboardingData })
+    const updatedFields = typeof fields === 'function' ? fields(original || {}, onboardingData) : fields
+    let update = supabase.from('clients').update({ ...updatedFields, onboarding_data: onboardingData })
       .eq('client_id', clientId).eq('auth_user_id', userId)
     update = original == null ? update.is('onboarding_data', null) : update.eq('onboarding_data', JSON.stringify(original))
     const { data: saved, error: writeError } = await update.select('client_id').maybeSingle()

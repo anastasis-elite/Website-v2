@@ -1,11 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import * as styles from '@/app/styles/globalstyles'
+import { SCHEDULE_STRUCTURE_VERSION } from '@/lib/assessment/scheduleStructure'
+import { validateScheduleStructure } from '@/lib/assessment/validateScheduleStructure'
+import { announceCalendarChange } from '@/lib/calendar/client'
 
 type Props = {
   clientId: string
+  eventId?: string
+  assessmentVersion?: number
+  completedAt?: string
   currentExecutionStyle?: string | null
   currentCarouselStyle?: string | null
   wakeTime?: string | null
@@ -43,6 +50,9 @@ const nonNegotiableOptions = [
 
 export default function DailyStructureAssessment({
   clientId,
+  eventId,
+  assessmentVersion = SCHEDULE_STRUCTURE_VERSION,
+  completedAt,
   currentExecutionStyle,
   currentCarouselStyle,
   wakeTime,
@@ -62,12 +72,14 @@ export default function DailyStructureAssessment({
   currentTrainingIntensity,
   workoutSchedulePreference,
 }: Props) {
+  const router = useRouter()
+  const submitting = useRef(false)
   const [executionStyle, setExecutionStyle] = useState(
-    currentExecutionStyle || 'flow'
+    currentExecutionStyle || ''
   )
 
   const [carouselStyle, setCarouselStyle] = useState(
-    currentCarouselStyle || 'section'
+    currentCarouselStyle || ''
   )
 
   const [formData, setFormData] = useState({
@@ -99,8 +111,17 @@ export default function DailyStructureAssessment({
   >('idle')
 
   const [message, setMessage] = useState('')
+  const isCompleted = Boolean(completedAt) || status === 'success'
+
+  function clearFeedback() {
+    if (status === 'error') {
+      setStatus('idle')
+      setMessage('')
+    }
+  }
 
   function updateField(name: string, value: string) {
+    clearFeedback()
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -108,6 +129,7 @@ export default function DailyStructureAssessment({
   }
 
   function toggleNonNegotiable(value: string) {
+    clearFeedback()
     setSelectedNonNegotiables((prev) =>
       prev.includes(value)
         ? prev.filter((item) => item !== value)
@@ -115,7 +137,23 @@ export default function DailyStructureAssessment({
     )
   }
 
-  async function saveStructure() {
+  async function submitAssessment() {
+    if (isCompleted || submitting.current) return
+
+    const validation = validateScheduleStructure({
+      execution_style: executionStyle,
+      carousel_style: carouselStyle,
+      daily_non_negotiables: selectedNonNegotiables,
+      ...formData,
+    })
+
+    if ('error' in validation) {
+      setStatus('error')
+      setMessage(validation.error)
+      return
+    }
+
+    submitting.current = true
     try {
       setStatus('saving')
       setMessage('')
@@ -126,35 +164,72 @@ export default function DailyStructureAssessment({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'submit',
           client_id: clientId,
-          execution_style: executionStyle,
-          carousel_style:
-            carouselStyle,
-          daily_non_negotiables: selectedNonNegotiables,
-          ...formData,
+          assessmentVersion,
+          ...(eventId ? { eventId } : {}),
+          ...validation.answers,
         }),
       })
 
       const data = await response.json().catch(() => null)
 
-      if (!response.ok) {
-        throw new Error(data?.error || 'Daily structure save failed')
+      if (
+        !response.ok ||
+        data?.success !== true ||
+        !data.submission ||
+        typeof data.submission !== 'object' ||
+        Array.isArray(data.submission) ||
+        data.submission.assessmentVersion !== assessmentVersion ||
+        (eventId && data.submission.eventId !== eventId) ||
+        typeof data.submission.submittedAt !== 'string' ||
+        !Number.isFinite(Date.parse(data.submission.submittedAt))
+      ) {
+        throw new Error(data?.error || 'Your assessment could not be submitted. Please try again.')
       }
 
       setStatus('success')
-      setMessage('Rhythm and training preferences saved. Recurring commitments have their own save below.')
+      setMessage('Assessment completed. Returning to your next step…')
+      announceCalendarChange()
+      router.push('/dashboard')
+      router.refresh()
     } catch (error) {
+      submitting.current = false
       setStatus('error')
       setMessage(
         error instanceof Error
           ? error.message
-          : 'Daily structure save failed'
+          : 'Your assessment could not be submitted. Please try again.'
       )
     }
   }
 
   return (
-    <div style={{ display: 'grid', gap: '28px' }}>
+    <form
+      aria-label="Schedule Structure Assessment"
+      aria-describedby="schedule-structure-guidance"
+      aria-busy={status === 'saving'}
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault()
+        void submitAssessment()
+      }}
+      style={{ display: 'grid', gap: '28px' }}
+    >
+      <p id="schedule-structure-guidance" style={styles.bodyStyle}>
+        {isCompleted ? (
+          <><strong>Assessment completed.</strong> Your saved answers are shown below. You can return to your dashboard or Schedule to continue.</>
+        ) : (
+          <>Choose your guidance and dashboard styles, wake and bed times, and
+          training availability, then select Complete Assessment. If training fits
+          your week, complete the training questions too. Other time anchors and
+          notes are optional. Enter both work times when adding a work window.</>
+        )}
+      </p>
+      <fieldset
+        disabled={isCompleted || status === 'saving'}
+        style={{ display: 'grid', gap: '28px', border: 0, padding: 0, margin: 0, minWidth: 0 }}
+      >
       <section style={styles.cartBoxStyle}>
         <h2 style={styles.sectionTitleStyle}>
           How do you want the system to guide you?
@@ -172,6 +247,7 @@ export default function DailyStructureAssessment({
             title="Structured schedule"
             body="I feel best when things have target times and clear windows."
             onClick={() => {
+              clearFeedback()
               setExecutionStyle('schedule')
               setCarouselStyle('step')
             }}
@@ -181,14 +257,20 @@ export default function DailyStructureAssessment({
             active={executionStyle === 'flow'}
             title="Flexible rhythm"
             body="I need guidance, but I do not want my day to feel rigid."
-            onClick={() => setExecutionStyle('flow')}
+            onClick={() => {
+              clearFeedback()
+              setExecutionStyle('flow')
+            }}
           />
 
           <Choice
             active={executionStyle === 'hybrid'}
             title="Hybrid"
             body="Some things need times, but the rest needs room to breathe."
-            onClick={() => setExecutionStyle('hybrid')}
+            onClick={() => {
+              clearFeedback()
+              setExecutionStyle('hybrid')
+            }}
           />
         </div>
       </section>
@@ -205,14 +287,20 @@ export default function DailyStructureAssessment({
             active={carouselStyle === 'section'}
             title="Morning / Midday / Evening"
             body="Show me the day in larger sections so I can understand the rhythm."
-            onClick={() => setCarouselStyle('section')}
+            onClick={() => {
+              clearFeedback()
+              setCarouselStyle('section')
+            }}
           />
 
           <Choice
             active={carouselStyle === 'step'}
             title="One next step at a time"
             body="Only show me the next thing so I do not feel overloaded."
-            onClick={() => setCarouselStyle('step')}
+            onClick={() => {
+              clearFeedback()
+              setCarouselStyle('step')
+            }}
           />
         </div>
       </section>
@@ -228,12 +316,14 @@ export default function DailyStructureAssessment({
         <div style={styles.gridTwoCol}>
           <Field
             label="Wake time"
+            required
             value={formData.wake_time}
             onChange={(value) => updateField('wake_time', value)}
           />
 
           <Field
             label="Bed time"
+            required
             value={formData.bed_time}
             onChange={(value) => updateField('bed_time', value)}
           />
@@ -352,11 +442,13 @@ export default function DailyStructureAssessment({
 
   <div style={styles.gridTwoCol}>
     <div style={styles.fieldWrap}>
-      <label style={styles.labelStyle}>
+      <label htmlFor="workout-days-available" style={styles.labelStyle}>
         How many days per week could your life realistically hold training?
       </label>
 
       <select
+        id="workout-days-available"
+        required
         value={formData.workout_days_available}
         onChange={(e) =>
           updateField('workout_days_available', e.target.value)
@@ -377,11 +469,13 @@ export default function DailyStructureAssessment({
 
     {Number(formData.workout_days_available) > 0 ? (
       <div style={styles.fieldWrap}>
-        <label style={styles.labelStyle}>
+        <label htmlFor="current-workout-days-per-week" style={styles.labelStyle}>
           How many days are you currently working out?
         </label>
 
         <select
+          id="current-workout-days-per-week"
+          required
           value={formData.current_workout_days_per_week}
           onChange={(e) =>
             updateField('current_workout_days_per_week', e.target.value)
@@ -405,11 +499,13 @@ export default function DailyStructureAssessment({
   {Number(formData.workout_days_available) > 0 ? (
     <div style={styles.gridTwoCol}>
       <div style={styles.fieldWrap}>
-        <label style={styles.labelStyle}>
+        <label htmlFor="current-workout-minutes-per-session" style={styles.labelStyle}>
           How long are your workouts usually?
         </label>
 
         <select
+          id="current-workout-minutes-per-session"
+          required
           value={formData.current_workout_minutes_per_session}
           onChange={(e) =>
             updateField(
@@ -429,11 +525,13 @@ export default function DailyStructureAssessment({
       </div>
 
       <div style={styles.fieldWrap}>
-        <label style={styles.labelStyle}>
+        <label htmlFor="current-training-intensity" style={styles.labelStyle}>
           How intense do those workouts usually feel?
         </label>
 
         <select
+          id="current-training-intensity"
+          required
           value={formData.current_training_intensity}
           onChange={(e) =>
             updateField('current_training_intensity', e.target.value)
@@ -449,11 +547,13 @@ export default function DailyStructureAssessment({
       </div>
 
       <div style={styles.fieldWrap}>
-        <label style={styles.labelStyle}>
+        <label htmlFor="workout-schedule-preference" style={styles.labelStyle}>
           How do you want workouts to show up?
         </label>
 
         <select
+          id="workout-schedule-preference"
+          required
           value={formData.workout_schedule_preference}
           onChange={(e) =>
             updateField('workout_schedule_preference', e.target.value)
@@ -479,6 +579,7 @@ export default function DailyStructureAssessment({
         </h2>
 
         <textarea
+          aria-label="Anything else the system should know?"
           value={formData.day_structure_notes}
           onChange={(e) =>
             updateField('day_structure_notes', e.target.value)
@@ -495,25 +596,30 @@ export default function DailyStructureAssessment({
             marginTop: '24px',
           }}
         >
-          <button
-            type="button"
-            onClick={saveStructure}
-            disabled={status === 'saving'}
-            style={{
-              ...styles.primaryButtonStyle,
-              opacity: status === 'saving' ? 0.65 : 1,
-            }}
-          >
-            {status === 'saving' ? 'Saving...' : 'Save rhythm and training preferences'}
-          </button>
+          {!isCompleted ? (
+            <button
+              type="submit"
+              disabled={status === 'saving'}
+              style={{
+                ...styles.primaryButtonStyle,
+                opacity: status === 'saving' ? 0.65 : 1,
+              }}
+            >
+              {status === 'saving' ? 'Completing…' : 'Complete Assessment'}
+            </button>
+          ) : null}
 
           <Link href="/dashboard" style={styles.secondaryButtonStyle}>
             Back to Dashboard
+          </Link>
+          <Link href="/dashboard/schedule" style={styles.secondaryButtonStyle}>
+            Back to Schedule
           </Link>
         </div>
 
         {message ? (
           <p
+            role={status === 'error' ? 'alert' : 'status'}
             style={{
               ...styles.bodyStyle,
               marginTop: '18px',
@@ -524,7 +630,8 @@ export default function DailyStructureAssessment({
           </p>
         ) : null}
       </section>
-    </div>
+      </fieldset>
+    </form>
   )
 }
 
@@ -542,6 +649,7 @@ function Choice({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       style={{
         textAlign: 'left',
@@ -583,19 +691,22 @@ function Choice({
 
 function Field({
   label,
+  required = false,
   value,
   onChange,
 }: {
   label: string
+  required?: boolean
   value: string
   onChange: (value: string) => void
 }) {
   return (
-    <div style={styles.fieldWrap}>
-      <label style={styles.labelStyle}>{label}</label>
+    <label style={styles.fieldWrap}>
+      <span style={styles.labelStyle}>{label}{required ? ' (required)' : ''}</span>
 
       <input
         type="time"
+        required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{
@@ -604,6 +715,6 @@ function Field({
           appearance: 'none',
         }}
       />
-    </div>
+    </label>
   )
 }

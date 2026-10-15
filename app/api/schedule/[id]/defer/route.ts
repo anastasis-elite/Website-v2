@@ -5,6 +5,7 @@ import { getClientLocalDate } from '@/lib/timezone'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import { getScheduleStructureSubmission } from '@/lib/assessment/scheduleStructure'
 
 export async function POST(
   request: Request,
@@ -22,10 +23,12 @@ export async function POST(
       .select('*')
       .eq('id', id)
       .eq('user_id', user.id)
+      .eq('client_id', client.client_id)
       .maybeSingle()
 
     if (lookupError) throw new Error(lookupError.message)
     if (!existing) return NextResponse.json({ error: 'Event not found.' }, { status: 404 })
+    if (getScheduleStructureSubmission(client.onboarding_data, existing)) return NextResponse.json({ error: 'This assessment is already submitted. Its completion is saved.' }, { status: 409 })
     if (['completed', 'skipped', 'cancelled'].includes(existing.status)) return NextResponse.json({ error: 'This event is already finished. Review its outcome before changing its time.' }, { status: 409 })
     if (existing.flexibility_type !== 'flexible' || !existing.movable || existing.approval_required) {
       return NextResponse.json({ error: 'Only movable flexible events can be deferred.' }, { status: 400 })

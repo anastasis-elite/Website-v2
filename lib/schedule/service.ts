@@ -3,6 +3,8 @@ import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
 import { buildTodayActivities, readDailyGuide } from '@/lib/dashboard/todayActivities'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
+import { getScheduleStructureSubmission, getScheduleStructureVersion, scheduleStructureMonthlyTask, SCHEDULE_STRUCTURE_PATH } from '@/lib/assessment/scheduleStructure'
+import { getClientLocalDate } from '@/lib/timezone'
 import { getClientDayRange, zonedDateTimeToUtc } from './time'
 import { buildDailyScheduleState, buildNextAction } from './engine'
 import { dailyPlanToScheduleEvents, recurringCommitmentsToEvents } from './dailyPlanAdapter'
@@ -98,6 +100,32 @@ export async function getDailyScheduleState({
     includeVirtualPlan && dailyPlan?.date === day.date
       ? dailyPlanToScheduleEvents({ userId: user.id, client, dailyPlan }).filter(event => !commitments.some(c => c.event_type === event.event_type && event.flexibility_type === 'fixed') && !persistedEvents.some(e => ['workout','hydration'].includes(event.event_type) && e.event_type === event.event_type && !['skipped','cancelled'].includes(e.status)))
       : []
+  const month = day.date.slice(0, 7)
+  const monthlyTask = scheduleStructureMonthlyTask(month)
+  const monthlySubmission = getScheduleStructureSubmission(client.onboarding_data, monthlyTask)
+  const reviewedAt = typeof client.daily_structure_reviewed_at === 'string' ? new Date(client.daily_structure_reviewed_at) : null
+  const legacyReviewComplete = reviewedAt && Number.isFinite(reviewedAt.getTime()) &&
+    getClientLocalDate(client, reviewedAt).slice(0, 7) === month
+  // This is the existing monthly Daily Structure Review, projected into the
+  // shared schedule. Work and school commitments keep their own meaning.
+  // Historical reviewed-at evidence stays complete without requiring a repeat.
+  if (includeVirtualPlan && dailyPlan?.date === day.date && day.date === getClientLocalDate(client) &&
+    !persistedEvents.some(event => getScheduleStructureVersion(event) !== null) &&
+    (monthlySubmission || !legacyReviewComplete)) {
+    virtualEvents.push({
+      ...monthlyTask, user_id: user.id, client_id: client.client_id, title: monthlyTask.title!,
+      event_type: 'assessment', source: 'system', description: 'Review your daily rhythm and training availability for this month.',
+      start_at: day.start.toISOString(), end_at: day.end.toISOString(), timezone: day.timezone,
+      all_day: true, busy: false, status: 'scheduled', completed_at: null,
+      flexibility_type: 'flexible', priority: 'high', required: true, movable: false, approval_required: false,
+      earliest_start_at: null, latest_end_at: null, preferred_time: null, estimated_duration_minutes: 15,
+      external_provider_name: null, external_contact_type: null, external_contact_value: null,
+      external_event_id: null, external_calendar_source: null, reschedule_allowed: false,
+      reschedule_requires_approval: false, last_reschedule_requested_at: null, delegation_status: null,
+      delegation_notes: null, adaptive_reason: null, adjusted_start_at: null, adjusted_end_at: null,
+      adjusted_duration_minutes: null, virtual: true,
+    })
+  }
   const state = buildDailyScheduleState({
     date: day.date,
     timezone: day.timezone,
@@ -111,7 +139,16 @@ export async function getDailyScheduleState({
     }), ...virtualEvents.map(event => {
       const override = client.onboarding_data?.scheduleOverrides?.[event.id]
       return override ? { ...event, ...override } : event
-    })],
+    })].map(event => {
+      const submission = getScheduleStructureSubmission(client.onboarding_data, event)
+      if (!submission && getScheduleStructureVersion(event) === null) return event
+      // Persisted submission wins even if an older open screen finishes a
+      // skip/cancel request after the assessment has already been submitted.
+      if (submission) return { ...event, status: 'completed' as const, completed_at: submission.submittedAt,
+        action_route: `${SCHEDULE_STRUCTURE_PATH}?assessmentVersion=${submission.assessmentVersion}` }
+      // A task is complete only when its matching assessment version was saved.
+      return event.status === 'completed' ? { ...event, status: 'scheduled' as const, completed_at: null } : event
+    }),
     transitionMinutes: Number(client.onboarding_data?.transitionMinutes ?? 10),
     logic: effectiveLogic,
     program: client.program || 'ignite',
