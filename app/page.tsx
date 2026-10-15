@@ -1,3 +1,4 @@
+import { CAPACITY_AUDIT_TIME } from '@/lib/capacityAudit'
 import type { CSSProperties } from 'react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
@@ -369,7 +370,7 @@ export default function Home() {
             letterSpacing: '0.02em',
           }}
         >
-          <span>About 10 minutes</span>
+          <span>{CAPACITY_AUDIT_TIME}</span>
           <span>One clear starting point</span>
           <span>Next step today</span>
         </div>
@@ -393,10 +394,9 @@ export default function Home() {
               marginBottom: '56px',
             }}
           >
-            <p style={{ margin: 0 }}>Start with a 10-minute assessment.</p>
+            <p style={{ margin: 0 }}>Start with five brief questions.</p>
             <p style={{ margin: 0 }}>
-              We look at what’s going on with your energy, sleep, nutrition,
-              training, recovery, symptoms, stress, schedule, and goals.
+              Share your energy, overwhelm, available time, support, and current season. Get a suggested starting program to explore. Member onboarding separately collects the detail needed to create your plan.
             </p>
             <p style={{ margin: 0 }}>Then we help you understand:</p>
           </div>
@@ -776,7 +776,7 @@ export default function Home() {
               </p>
               <p style={{ margin: 0 }}>Start with the Capacity Audit.</p>
               <p style={{ margin: 0 }}>
-                In about 10 minutes, we’ll begin putting the pieces together.
+                {CAPACITY_AUDIT_TIME}. Answer five questions and receive a suggested starting program.
               </p>
             </div>
 
@@ -807,7 +807,7 @@ export default function Home() {
                 color: 'rgba(215,199,182,0.56)',
               }}
             >
-              About 10 minutes · Clear starting point · One next step
+              {CAPACITY_AUDIT_TIME} · Clear starting point · One next step
             </p>
           </div>
         </div>

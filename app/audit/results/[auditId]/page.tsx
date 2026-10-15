@@ -1,20 +1,17 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import * as styles from '@/app/styles/globalstyles'
 import TrackEvent from '@/components/TrackEvent'
 
 export const runtime = 'nodejs'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 type Program = 'ember' | 'ignite' | 'phoenix'
 
 type Application = {
   id: string
   full_name: string | null
-  email: string | null
   capacity_score: number | null
   recommended_program: Program | null
   energy_level: string | null
@@ -69,11 +66,8 @@ export default async function CapacityAuditResultsPage({
   params: Promise<{ auditId: string }>
 }) {
   const { auditId } = await params
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase server environment variables.')
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(auditId)) notFound()
+  const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('applications')
@@ -81,7 +75,6 @@ export default async function CapacityAuditResultsPage({
       `
       id,
       full_name,
-      email,
       capacity_score,
       recommended_program,
       energy_level,
@@ -120,8 +113,7 @@ export default async function CapacityAuditResultsPage({
 
           <p style={styles.heroTextStyle}>
             This is not a diagnosis, a label, or a final answer. This is a
-            starting point based on what your current capacity appears to need
-            most right now.
+            suggested starting program based on the five broad answers you saved. Members complete a separate assessment before their training and nutrition plan is created.
           </p>
         </section>
 

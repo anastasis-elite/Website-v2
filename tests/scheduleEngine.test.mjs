@@ -1,20 +1,10 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import ts from 'typescript'
+import {importTs} from './typescriptModule.mjs'
 
-async function importTypescriptModule(path) {
-  const source = readFileSync(path, 'utf8')
-  const { outputText } = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.ES2020,
-      target: ts.ScriptTarget.ES2022,
-    },
-  })
-  return import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`)
-}
-
-const { buildDailyScheduleState } = await importTypescriptModule('lib/schedule/engine.ts')
+const { buildDailyScheduleState, getActionRouteForEvent } = await importTs('lib/schedule/engine.ts')
+const { nextScheduleBoundary } = await importTs('lib/schedule/refresh.ts')
+const { scheduleConflict } = await importTs('lib/schedule/actions.ts')
 
 function event(overrides = {}) {
   return {
@@ -56,6 +46,8 @@ function event(overrides = {}) {
     adjusted_duration_minutes: null,
     action_route: overrides.action_route || null,
     virtual: Boolean(overrides.virtual),
+    calendar_event_id: overrides.calendar_event_id,
+    busy: overrides.busy,
   }
 }
 
@@ -86,7 +78,78 @@ test('next action chooses the current fixed event without moving it', () => {
   assert.equal(state.adjustments.some((item) => item.event_id === 'doctor'), false)
 })
 
-test('low capacity reduces only flexible workout duration', () => {
+const stateFor = (events, now = '2026-08-17T16:00:00Z') => buildDailyScheduleState({
+  date: '2026-08-17', timezone: 'America/Chicago', now: new Date(now),
+  dayStart: new Date('2026-08-17T05:00:00Z'), dayEnd: new Date('2026-08-18T05:00:00Z'), events, logic: {},
+})
+
+test('work, school, appointments and custom events route to details rather than hydration', () => {
+  for (const type of ['work', 'school', 'appointment', 'medical', 'dental', 'personal', 'household', 'custom']) {
+    assert.equal(getActionRouteForEvent(event({ id: type, event_type: type })), `/dashboard/schedule#event-${type}`)
+  }
+  assert.equal(getActionRouteForEvent(event({ event_type: 'work', virtual: true, action_route: '/dashboard/assessment/daily-structure' })), '/dashboard/assessment/daily-structure')
+  assert.equal(getActionRouteForEvent(event({ event_type: 'work', calendar_event_id: 'calendar-a' })), '/dashboard/schedule#calendar-event-calendar-a')
+  assert.equal(getActionRouteForEvent(event({ event_type: 'meal', action_route: '/dashboard/nutrition#aos-food-logger' }), 'ember'), '/dashboard/nutrition')
+})
+
+test('current commitments win over later high-priority actions without changing chronological upcoming order', () => {
+  const current = event({ id: 'work', event_type: 'work', flexibility_type: 'fixed', movable: false, priority: 'low', start_at: '2026-08-17T15:00:00Z', end_at: '2026-08-17T17:00:00Z' })
+  const later = event({ id: 'workout', event_type: 'workout', priority: 'critical', start_at: '2026-08-17T22:00:00Z', end_at: '2026-08-17T22:30:00Z' })
+  const state = stateFor([later, current])
+  assert.equal(state.nextAction.id, 'work')
+  assert.equal(state.nextAction.urgency, 'now')
+  assert.equal(state.nextAction.can_defer, false)
+  assert.deepEqual(state.upcomingEvents.map(item => item.id), ['work', 'workout'])
+})
+
+test('overdue flexible actions remain actionable with an unconfirmed rescheduling suggestion', () => {
+  const missed = event({ id: 'admin', source: 'manual', start_at: '2026-08-17T13:00:00Z', end_at: '2026-08-17T13:30:00Z' })
+  const state = stateFor([missed, event({ id: 'later', priority: 'critical', start_at: '2026-08-17T22:00:00Z', end_at: '2026-08-17T22:30:00Z' })])
+  assert.equal(state.nextAction.id, 'admin')
+  assert.equal(state.nextAction.urgency, 'overdue')
+  assert.equal(state.nextAction.overdue, true)
+  assert.equal(state.nextAction.can_complete, true)
+  assert.equal(state.nextAction.can_defer, true)
+  assert.equal(state.adjustments.find(item => item.event_id === 'admin').applied, false)
+  assert.equal(state.events.find(item => item.id === 'admin').adjusted_start_at, null)
+  const historicalDeferred = stateFor([{ ...missed, status: 'deferred' }])
+  assert.equal(historicalDeferred.nextAction.can_defer, true)
+  assert.equal(historicalDeferred.adjustments[0].event_id, 'admin')
+})
+
+test('completion and skipped/cancelled states remove actions; activity completion uses its logging surface', () => {
+  const finished = ['completed', 'skipped', 'cancelled'].map(status => event({ id: status, status }))
+  const state = stateFor(finished)
+  assert.equal(state.nextAction.id, 'none')
+  assert.deepEqual(state.overdueEvents, [])
+  assert.equal(stateFor([event({ event_type: 'workout' })]).nextAction.can_complete, false)
+  assert.equal(stateFor([event({ calendar_event_id: 'calendar-a', event_type: 'custom' })]).nextAction.can_complete, false)
+  assert.equal(stateFor([event({ event_type: 'custom', virtual: true })]).nextAction.can_defer, true)
+})
+
+test('future selection follows the soonest event and event end is an exclusive boundary', () => {
+  const state = stateFor([event({ id: 'soon', start_at: '2026-08-17T17:00:00Z', end_at: '2026-08-17T17:30:00Z', priority: 'low' }), event({ id: 'later', start_at: '2026-08-17T22:00:00Z', end_at: '2026-08-17T22:30:00Z', priority: 'critical' })])
+  assert.equal(state.nextAction.id, 'soon')
+  assert.equal(stateFor([event()], '2026-08-17T15:30:00Z').nextAction.urgency, 'overdue')
+})
+
+test('free calendar entries do not prevent a confirmed rescheduling window', () => {
+  const free = event({ id: 'free', busy: false })
+  assert.equal(scheduleConflict([free], 'new', new Date(free.start_at), new Date(free.end_at), 10), null)
+})
+
+test('screen refresh follows daypart, adjusted event and local midnight boundaries', () => {
+  const eventState = { date: '2026-08-17', timezone: 'America/Chicago', events: [{ ...event(), adjusted_start_at: '2026-08-17T17:00:00Z', adjusted_end_at: '2026-08-17T17:30:00Z' }] }
+  assert.equal(nextScheduleBoundary(eventState, Date.parse('2026-08-17T16:00:00Z')), Date.parse('2026-08-17T17:00:00Z'))
+  assert.equal(nextScheduleBoundary(eventState, Date.parse('2026-08-17T16:59:59Z')), Date.parse('2026-08-17T17:00:00Z'))
+  for (const [date, now, expected] of [['2026-03-08', '2026-03-09T04:59:59Z', '2026-03-09T05:00:00Z'], ['2026-11-01', '2026-11-02T05:59:59Z', '2026-11-02T06:00:00Z']]) {
+    assert.equal(nextScheduleBoundary({ date, timezone: 'America/Chicago', events: [] }, Date.parse(now)), Date.parse(expected))
+  }
+  const today = Date.parse('2026-08-18T15:00:00Z')
+  assert.equal(nextScheduleBoundary({ date: '2026-08-17', timezone: 'America/Chicago', events: [] }, today), today)
+})
+
+test('low capacity suggests a shorter flexible workout without moving fixed obligations', () => {
   const state = buildDailyScheduleState({
     date: '2026-08-17',
     timezone: 'America/Chicago',
@@ -120,10 +183,10 @@ test('low capacity reduces only flexible workout duration', () => {
   const workoutAdjustment = state.adjustments.find((item) => item.event_id === 'workout')
   assert.equal(workoutAdjustment?.adjustment_type, 'reduce_duration')
   assert.equal(workoutAdjustment?.suggested_duration_minutes, 30)
-  assert.equal(workoutAdjustment?.automatic, true)
-  assert.equal(workoutAdjustment?.applied, true)
-  assert.equal(state.events.find((item) => item.id === 'workout')?.adjusted_duration_minutes, 30)
-  assert.equal(state.events.find((item) => item.id === 'workout')?.adjusted_end_at, '2026-08-17T15:30:00.000Z')
+  assert.equal(workoutAdjustment?.automatic, false)
+  assert.equal(workoutAdjustment?.applied, false)
+  assert.equal(state.events.find((item) => item.id === 'workout')?.adjusted_duration_minutes, null)
+  assert.equal(state.events.find((item) => item.id === 'workout')?.adjusted_end_at, null)
   assert.equal(state.adjustments.some((item) => item.event_id === 'school'), false)
 })
 
@@ -181,7 +244,7 @@ test('hydration and nutrition next action routes target execution surfaces', () 
     logic: {},
   })
 
-  assert.equal(hydrationState.nextAction.action_route, '/dashboard/nutrition#hydration')
+  assert.equal(hydrationState.nextAction.action_route, '/dashboard/nutrition?log=water')
 
   const mealState = buildDailyScheduleState({
     date: '2026-08-17',
@@ -201,7 +264,7 @@ test('hydration and nutrition next action routes target execution surfaces', () 
     logic: {},
   })
 
-  assert.equal(mealState.nextAction.action_route, '/dashboard/nutrition#aos-food-logger')
+  assert.equal(mealState.nextAction.action_route, '/dashboard/nutrition?log=meal&meal=lunch')
 })
 
 test('workout route respects current program', () => {

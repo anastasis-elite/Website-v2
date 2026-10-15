@@ -42,9 +42,12 @@ const supportedProgramTiers = new Set(['ember', 'ignite', 'phoenix'])
 
 export function normalizeProgramTier(value: unknown): ProgramTier {
   const normalized = String(value || '').trim().toLowerCase()
-  return supportedProgramTiers.has(normalized) ? normalized as ProgramTier : 'ignite'
+  return supportedProgramTiers.has(normalized) ? normalized as ProgramTier : 'ember'
 }
 
+// Macro-only totals are EMBER's established input. IGNITE/PHOENIX record
+// foods/meals through their separate manual/barcode/photo capabilities.
+// Keep this aligned with the EMBER-only macro INSERT API and RLS.
 const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
   ember: {
     tier: 'ember',
@@ -77,7 +80,7 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     whatsNext: true,
     workoutDisplay: true,
     nutritionTracking: true,
-    nutritionMacroEntry: true,
+    nutritionMacroEntry: false,
     nutritionMealLogging: true,
     nutritionBarcodeScanning: true,
     nutritionRecurringFoodDetection: true,
@@ -102,7 +105,7 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     whatsNext: true,
     workoutDisplay: true,
     nutritionTracking: true,
-    nutritionMacroEntry: true,
+    nutritionMacroEntry: false,
     nutritionMealLogging: true,
     nutritionBarcodeScanning: true,
     nutritionRecurringFoodDetection: true,

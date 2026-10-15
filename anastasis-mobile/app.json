@@ -10,6 +10,14 @@
     "plugins": [
       "expo-router",
       [
+        "expo-calendar",
+        {
+          "calendarPermission": "Anastasis reads the calendars you select to show commitments and find available time, and saves events only when you confirm.",
+          "remindersPermission": false,
+          "writeOnlyAccess": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
@@ -58,6 +66,8 @@
       "package": "com.anastasiselite.mobile",
       "versionCode": 1,
       "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR",
         "android.permission.health.READ_SLEEP",
         "android.permission.health.READ_RESTING_HEART_RATE",
         "android.permission.health.READ_HEART_RATE_VARIABILITY",

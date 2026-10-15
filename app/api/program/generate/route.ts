@@ -3,6 +3,8 @@ import { generateProgram } from '@/lib/program/generateProgram'
 import { evaluateSafetyEscalation } from '@/lib/safety/evaluateSafetyEscalation'
 import { createClient } from '@/lib/supabase/server'
 import { parseJsonObject, safeErrorResponse } from '@/lib/security/http'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { logRecommendationAudit } from '@/lib/legal/logRecommendationAudit'
 
 export const runtime = 'nodejs'
 
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const { data: initialAssessment } = await supabase
+    const { data: initialAssessment, error: initialError } = await supabase
       .from('assessments')
       .select('*')
       .eq('client_id', clientId)
@@ -48,7 +50,7 @@ export async function POST(req: Request) {
       .limit(1)
       .maybeSingle()
 
-    const { data: strengthAssessment } = await supabase
+    const { data: strengthAssessment, error: strengthError } = await supabase
       .from('assessments')
       .select('*')
       .eq('client_id', clientId)
@@ -56,6 +58,10 @@ export async function POST(req: Request) {
       .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle()
+
+    const { data: profile, error: profileError } = await supabase.from('client_current_profiles').select('*').eq('client_id', client.client_id).eq('user_id', user.id).maybeSingle()
+    if (initialError || strengthError || profileError) return safeErrorResponse('Your saved assessments could not be loaded. Please try again.', 503)
+    const effectiveClient = profile ? { ...client, ...profile, auth_user_id: user.id } : client
 
     if (!strengthAssessment) {
       return NextResponse.json(
@@ -65,21 +71,23 @@ export async function POST(req: Request) {
     }
 
     const safetyFlags = evaluateSafetyEscalation({
-      client,
+      client: effectiveClient,
       initialAssessment: initialAssessment?.data || initialAssessment,
       strengthAssessment: strengthAssessment?.data || strengthAssessment,
     })
 
     if (safetyFlags.length) {
       if (client.auth_user_id) {
-        await supabase.from('recommendation_audit_logs').insert({
-          user_id: client.auth_user_id,
-          recommendation_type: 'program_generation_safety_escalation',
-          input_reference: `client:${clientId}`,
-          engine_version: 'safety_v1.0',
-          recommendation_output: { blocked: true },
-          confidence_level: 'keyword_safety_rule',
-          safety_flags: safetyFlags,
+        await logRecommendationAudit({
+          supabase,
+          userId: user.id,
+          clientId: client.client_id,
+          recommendationType: 'program_generation_safety_escalation',
+          inputReference: `client:${clientId}`,
+          engineVersion: 'safety_v1.0',
+          recommendationOutput: { blocked: true },
+          confidenceLevel: 'keyword_safety_rule',
+          safetyFlags,
         })
       }
       return NextResponse.json({
@@ -90,7 +98,7 @@ export async function POST(req: Request) {
     }
 
     const generatedProgram = generateProgram({
-      client,
+      client: effectiveClient,
       initialAssessment: initialAssessment?.data || initialAssessment,
       strengthAssessment: strengthAssessment?.data || strengthAssessment,
     })
@@ -99,8 +107,10 @@ export async function POST(req: Request) {
       .from('program_outputs')
       .insert({
         client_id: clientId,
+        auth_user_id: user.id,
         program: client.program,
-        output: generatedProgram,
+        status: 'generated',
+        program_json: generatedProgram,
         generated_at: new Date().toISOString(),
       })
       .select()
@@ -112,17 +122,20 @@ export async function POST(req: Request) {
         { status: 500 }
       )
     }
+    invalidateDailyPlan()
 
     if (client.auth_user_id) {
-      await supabase.from('recommendation_audit_logs').insert({
-        user_id: client.auth_user_id,
-        recommendation_type: 'program_generation',
-        input_reference: `assessments:${initialAssessment?.id || 'none'},${strengthAssessment.id}`,
-        input_snapshot: { client_id: clientId, program: client.program },
-        engine_version: 'program_generator_v1.0',
-        recommendation_output: generatedProgram,
-        confidence_level: 'rules_based',
-        safety_flags: [],
+      await logRecommendationAudit({
+        supabase,
+        userId: user.id,
+        clientId: client.client_id,
+        recommendationType: 'program_generation',
+        inputReference: `assessments:${initialAssessment?.id || 'none'},${strengthAssessment.id}`,
+        inputSnapshot: { client_id: clientId, program: client.program },
+        engineVersion: 'program_generator_v1.0',
+        recommendationOutput: generatedProgram,
+        confidenceLevel: 'rules_based',
+        safetyFlags: [],
       })
     }
 

@@ -1,3 +1,5 @@
+import { getClientLocalDate } from '@/lib/timezone'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 
 import { getCyclePrediction } from '@/lib/cycle/getCyclePrediction'
@@ -45,9 +47,7 @@ function getDateOnly(value: unknown): string | null {
   return parsedDate.toISOString().split('T')[0]
 }
 
-function getToday(): string {
-  return new Date().toISOString().split('T')[0]
-}
+
 
 function daysBetween(start: string, end: string): number {
   const startDate = new Date(`${start}T00:00:00Z`)
@@ -260,7 +260,8 @@ export async function POST(req: Request) {
           client_id,
           auth_user_id,
           last_period_start,
-          average_cycle_length
+          average_cycle_length,
+          timezone, state, onboarding_data
         `,
       )
       .eq('client_id', client_id)
@@ -284,7 +285,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const today = getToday()
+    const today = getClientLocalDate(client)
 
     const submittedCycleHistory: CycleHistoryItem[] =
       Array.isArray(cycle_history)
@@ -447,6 +448,10 @@ export async function POST(req: Request) {
      * period_started here, because doing so could erase or
      * fabricate period-start status on today's existing row.
      */
+    const { data: priorCycle } = await supabase.from('cycle_logs').select('answered_fields').eq('client_id', client_id).eq('log_date', today).maybeSingle()
+    const answers = { bleeding, cramps, headache, fatigue, mood_sensitivity }
+    const suppliedAnswers = Object.fromEntries(Object.entries(answers).filter(([, value]) => typeof value === 'boolean'))
+    const answeredFields = [...new Set([...(priorCycle?.answered_fields || []), ...Object.keys(suppliedAnswers)])]
     const { error: logError } =
       await supabase
         .from('cycle_logs')
@@ -457,13 +462,8 @@ export async function POST(req: Request) {
             log_date: today,
             cycle_day: cycleDay,
             cycle_phase: cyclePhase,
-            bleeding: Boolean(bleeding),
-            cramps: Boolean(cramps),
-            headache: Boolean(headache),
-            fatigue: Boolean(fatigue),
-            mood_sensitivity: Boolean(
-              mood_sensitivity,
-            ),
+            ...suppliedAnswers,
+            answered_fields: answeredFields,
             notes: notes || null,
             updated_at:
               new Date().toISOString(),
@@ -480,6 +480,8 @@ export async function POST(req: Request) {
         { status: 500 },
       )
     }
+
+    invalidateDailyPlan()
 
     return NextResponse.json({
       success: true,

@@ -7,13 +7,13 @@ import type {
 export type ProgramTier = 'ember' | 'ignite' | 'phoenix'
 export type CapacityStatus = 'low_capacity' | 'moderate_capacity' | 'high_capacity'
 export type RecoveryStatus = 'push_day' | 'normal_training_day' | 'modify_workout' | 'active_recovery' | 'full_recovery_or_red_flag'
-export type FuelStatus = 'well_fueled' | 'slightly_under_fueled' | 'under_fueled' | 'depleted' | 'unknown_needs_input'
+export type FuelStatus = 'well_fueled' | 'slightly_under_fueled' | 'under_fueled' | 'depleted' | 'unknown_needs_input' | 'guidance_only'
 export type WorkoutAdjustmentLevel = 'level_0_full_plan' | 'level_1_slight_modify' | 'level_2_moderate_modify' | 'level_3_recovery_training' | 'level_4_rest_or_red_flag'
 export type FlameState = 'spark' | 'ember' | 'small_flame' | 'steady_flame' | 'strong_flame' | 'roaring_flame'
 
 export type DailyMacro = { target: number; consumed: number; remaining: number; percent: number }
 export type DayBlock = 'morning' | 'midday' | 'evening'
-export type FuelReadinessDisplayStatus = 'On Track' | 'Needs Fuel' | 'Depleted' | 'Complete'
+export type FuelReadinessDisplayStatus = 'Not logged' | 'On Track' | 'Needs Fuel' | 'Depleted' | 'Complete' | 'Guidance only'
 export type MacroSnapshot = { calories: number; protein: number; carbs: number; fats: number }
 export type FuelingHistoryDay = {
   date: string
@@ -100,6 +100,7 @@ export type ProgramLogicOutput = {
   engineVersion: string
   generatedAt: string
   client: {
+    timezone?: string
     id: string
     name: string
     age: number | null
@@ -167,6 +168,6 @@ export type ProgramLogicOutput = {
     sources: string[]
   }
   trends: DashboardTrend[]
-  execution: { workoutComplete: boolean; nutritionLogged: boolean; assessmentComplete: boolean; recoveryComplete: boolean; phoenixTaskPercent: number }
+  execution: { workoutInProgress?: boolean; completedWorkoutTitle?: string | null; completedWorkoutId?: string | null; completedWorkoutAt?: string | null; workoutComplete: boolean; nutritionLogged: boolean; assessmentComplete: boolean; recoveryComplete: boolean; phoenixTaskPercent: number }
   presentation: { tier: ProgramTier; complexity: 'minimal' | 'guided' | 'direct'; maxTasksPerBlock: number; showTrends: boolean; showInsight: boolean }
 }

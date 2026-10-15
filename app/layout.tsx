@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import CookieBanner from '../components/CookieBanner'
 import AuthButton from '@/components/AuthButton'
-import '@/lib/posthog'
+import DeferredAnalytics from '@/components/DeferredAnalytics'
 import PwaRegistration from '@/components/PwaRegistration'
 import LegalFooter from '@/components/LegalFooter'
 import {
@@ -140,6 +140,7 @@ export default function RootLayout({
 
         <CookieBanner />
         <PwaRegistration />
+        <DeferredAnalytics />
       </body>
     </html>
   )

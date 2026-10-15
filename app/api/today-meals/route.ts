@@ -30,6 +30,7 @@ export async function GET(request: Request) {
     .from('meal_entries')
     .select(`
       id,
+      food_id,
       meal_name,
       serving_amount,
       serving_unit,
@@ -40,10 +41,11 @@ export async function GET(request: Request) {
       entry_state,
       created_at,
       foods (
-        name
+        id, name
       )
     `)
     .eq('nutrition_log_id', nutritionLogId)
+    .eq('entry_state', 'confirmed')
     .order('created_at', { ascending: false })
 
   if (error) {

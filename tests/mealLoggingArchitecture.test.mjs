@@ -41,7 +41,7 @@ const logId = '10000000-0000-4000-8000-000000000001'
 const foodId = '20000000-0000-4000-8000-000000000001'
 const servingId = '30000000-0000-4000-8000-000000000001'
 const userId = '40000000-0000-4000-8000-000000000001'
-const canonicalColumns = new Set(['nutrition_log_id', 'food_id', 'meal_name', 'serving_amount', 'serving_unit', 'serving_option_id', 'grams', 'day_block', 'meal_period', 'entry_source', 'entry_state', 'recurring_food_id', 'confirmed_at', 'skipped_at', 'symptoms_after', 'notes'])
+const canonicalColumns = new Set(['id','nutrition_log_id', 'food_id', 'meal_name', 'serving_amount', 'serving_unit', 'serving_option_id', 'grams', 'day_block', 'meal_period', 'entry_source', 'entry_state', 'recurring_food_id', 'confirmed_at', 'skipped_at', 'symptoms_after', 'notes'])
 const requestInput = { nutritionLogId: logId, foodId, servingOptionId: servingId, servingAmount: 1.5, mealPeriod: 'Lunch' }
 
 function database({ tier = 'ignite', owner = userId, failBarcode = false } = {}) {
@@ -79,7 +79,7 @@ function database({ tier = 'ignite', owner = userId, failBarcode = false } = {})
         if (mutation === 'insert') {
           if (table === 'meal_entries') for (const key of Object.keys(payload)) assert.ok(canonicalColumns.has(key), `Unexpected meal column: ${key}`)
           inserts.push({ table, payload })
-          const created = { ...payload, id: `entry-${inserts.length}`, created_at: new Date().toISOString(), foods: { name: 'QA food' } }
+          const created = { ...payload, id: payload.id || `entry-${inserts.length}`, created_at: new Date().toISOString(), foods: { name: 'QA food' } }
           rows[table].push(created)
           return { data: single ? created : [created], error: null }
         }
@@ -186,4 +186,19 @@ test('Ignite keeps manual/barcode access and rejects image while Phoenix allows 
   assert.equal((await createMealEntry(db, userId, normalizeMealInput({ ...requestInput, entrySource: 'photo_estimate' }).input)).status, 403)
   globalThis.mealTestClient = db
   assert.equal((await recurring.GET()).status, 200)
+})
+
+
+test('meal retries keep a single confirmed entry and recomputed totals', async () => {
+ const db=database();const requestId='88888888-8888-4888-8888-888888888888'
+ const input=normalizeMealInput({...requestInput,requestId}).input
+ const first=await createMealEntry(db,userId,input);const retry=await createMealEntry(db,userId,input)
+ assert.equal(first.status,200);assert.equal(retry.status,200);assert.equal((await retry.json()).replayed,true)
+ assert.equal(db.rows.meal_entries.length,1);assert.equal(db.rows.meal_entries[0].id,requestId)
+})
+
+test('photo availability is honest and remains restricted to Phoenix',async()=>{
+ globalThis.mealTestClient=database({tier:'ember'});assert.equal((await image.GET()).status,403)
+ globalThis.mealTestClient=database({tier:'ignite'});assert.equal((await image.GET()).status,403)
+ globalThis.mealTestClient=database({tier:'phoenix'});const response=await image.GET();assert.equal(response.status,200);assert.equal((await response.json()).available,false)
 })

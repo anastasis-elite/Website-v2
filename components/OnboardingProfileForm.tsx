@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as styles from '@/app/styles/globalstyles'
 
-export default function OnboardingProfileForm({ client }: { client: any }) {
+export default function OnboardingProfileForm({ client, setupStep = 'dashboard' }: { client: any; setupStep?: 'initial_assessment' | 'strength_assessment' | 'plan_generation' | 'dashboard' }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
   const [formData, setFormData] = useState({
+    executionStyle: client.execution_style || 'flow',
+    carouselStyle: client.carousel_style || 'section',
     birthdate: client.birthdate || '',
     addressLine1: client.address_line_1 || '',
     addressLine2: client.address_line_2 || '',
@@ -77,6 +79,9 @@ export default function OnboardingProfileForm({ client }: { client: any }) {
   return (
     <form onSubmit={handleSubmit} style={styles.cartBoxStyle}>
       <div style={{ display: 'grid', gap: 16 }}>
+        <label htmlFor="onboarding-structure">How would you like to see your day?</label><select id="onboarding-structure" name="executionStyle" value={formData.executionStyle} onChange={handleChange} style={styles.inputStyle}><option value="schedule">Structured schedule</option><option value="flow">Flexible rhythm</option><option value="hybrid">Hybrid</option></select>
+        <label htmlFor="onboarding-display">Amount of guidance</label><select id="onboarding-display" name="carouselStyle" value={formData.carouselStyle} onChange={handleChange} style={styles.inputStyle}><option value="section">Daily essentials</option><option value="step">One next step at a time</option></select>
+        <p>You can change these preferences from home at any time.</p>
         <label>Birthdate</label>
         <input
           name="birthdate"
@@ -325,7 +330,7 @@ export default function OnboardingProfileForm({ client }: { client: any }) {
         disabled={loading}
         style={{ ...styles.primaryButtonStyle, marginTop: 24 }}
       >
-        {loading ? 'Saving...' : 'Complete Profile'}
+        {loading ? 'Saving...' : setupStep === 'dashboard' ? 'Save Profile & Open Dashboard' : setupStep === 'plan_generation' ? 'Save Profile & Create Plan' : 'Save Profile & Continue Assessment'}
       </button>
 
       {message ? <p style={styles.bodyStyle}>{message}</p> : null}

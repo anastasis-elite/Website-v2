@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { AOSButton } from '@/components/aos-ui/AOSButton'
 import { AOSCard } from '@/components/aos-ui/AOSCard'
 import { AOSChip } from '@/components/aos-ui/AOSChip'
@@ -34,6 +35,10 @@ const symptomKeywords: Record<Area, string[]> = {
 }
 
 export default function SymptomLogger({ clientId }: { clientId: string }) {
+  const router = useRouter()
+  const submitLock = useRef(false)
+  const submissionId = useRef<string | null>(null)
+  const lastSubmission = useRef('')
   const [symptoms, setSymptoms] = useState<SymptomType[]>([])
   const [regions, setRegions] = useState<BodyRegion[]>([])
   const [area, setArea] = useState<Area | null>(null)
@@ -71,27 +76,26 @@ export default function SymptomLogger({ clientId }: { clientId: string }) {
   }, [area, regions])
 
   function closePopup() {
+    submissionId.current = null; lastSubmission.current = ''
     setArea(null)
     setSelectedSymptom(null)
     setMessage('')
   }
 
   async function logSymptom() {
-    if (!selectedSymptom) return
-    setLoading(true)
-    setMessage('')
-    const res = await fetch('/api/symptoms/log', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clientId, symptomTypeId: selectedSymptom.id, bodyRegionId,
-        severity, durationMinutes, startedMinutesAfterMeal: minutesAfterMeal,
-      }),
-    })
-    const data = await res.json()
-    setLoading(false)
-    if (!res.ok) return setMessage(data.error || 'Unable to log symptom.')
-    setMessage('Logged. The system can use this signal now.')
-    setTimeout(closePopup, 900)
+    if (!selectedSymptom || submitLock.current) return
+    const fingerprint = JSON.stringify([clientId, selectedSymptom.id, bodyRegionId, severity, durationMinutes, minutesAfterMeal])
+    if (lastSubmission.current !== fingerprint) submissionId.current = null
+    lastSubmission.current = fingerprint
+    submitLock.current = true; submissionId.current ||= crypto.randomUUID(); setLoading(true); setMessage('')
+    try {
+      const res = await fetch('/api/symptoms/log', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, requestId: submissionId.current, symptomTypeId: selectedSymptom.id, bodyRegionId, severity, durationMinutes, startedMinutesAfterMeal: minutesAfterMeal }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Unable to save your symptom. Try again.')
+      setMessage('Saved. Today’s guidance now includes this symptom.'); router.refresh()
+    } catch(e) { setMessage(e instanceof Error ? e.message : 'Your symptom could not be saved. Try again.') }
+    finally { submitLock.current = false; setLoading(false) }
   }
 
   return (

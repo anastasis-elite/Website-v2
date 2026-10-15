@@ -17,22 +17,22 @@ function EmberSuccessContent() {
     <><TrackEvent event="ember_success_page_viewed" properties={{ page: 'ember_success' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Ember • Confirmed</p>
+        <p style={styles.eyebrowStyle}>Ember</p>
 
-        <h1 style={styles.heroTitleStyle}>You’re in.</h1>
+        <h1 style={styles.heroTitleStyle}>Confirm your purchase to continue.</h1>
 
         <p style={styles.heroTextStyle}>
-          Your enrollment has been confirmed. Ember is your structure — clear,
-          precise, and ready for you to execute.
+          This page cannot confirm payment or account access. Use the secure
+          confirmation shown after Stripe Checkout, or sign in to your account.
         </p>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>What happens next</h2>
 
           <div style={styles.bodyStyle}>
-            <p>Your payment has been processed and your dashboard access is being prepared.</p>
+            <p>After your payment is verified, create your private login and complete your member profile.</p>
             <p>The next step is completing your assessment so your plan can be built around your current capacity, schedule, recovery, and equipment access.</p>
-            <p>You can complete it now, or explore your dashboard first and come back when you’re ready.</p>
+            <p>Your member assessment supplies the information used to build your starting plan.</p>
           </div>
         </section>
 

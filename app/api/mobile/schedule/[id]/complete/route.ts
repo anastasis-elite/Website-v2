@@ -1,3 +1,6 @@
+import { healthEventTypes } from '@/lib/schedule/actions'
+import { getActionRouteForEvent } from '@/lib/schedule/engine'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createMobileRequestContext } from '@/lib/mobile/auth'
 
@@ -32,6 +35,7 @@ export async function POST(
       )
     }
 
+    if (healthEventTypes.has(existing.event_type)) return NextResponse.json({ error: 'Complete this through its activity.', href: getActionRouteForEvent(existing, context.client.program) }, { status: 409 })
     const completedAt = new Date().toISOString()
     const { data, error } = await context.supabase
       .from('anastasis_schedule_events')
@@ -46,6 +50,7 @@ export async function POST(
       .single()
 
     if (error) throw new Error(error.message)
+    invalidateDailyPlan()
     return NextResponse.json({ success: true, event: data })
   } catch (error) {
     return NextResponse.json(

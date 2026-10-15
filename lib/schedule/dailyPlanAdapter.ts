@@ -1,5 +1,7 @@
+import { mealEntryHref } from '@/lib/nutrition/loggingRoutes'
 import type { ScheduleEvent } from './types'
 import { zonedDateTimeToUtc } from './time'
+import { addLocalDays } from '@/lib/timezone'
 
 function addMinutes(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60000)
@@ -65,7 +67,7 @@ function fixedEvent({
     adjusted_end_at: null,
     adjusted_duration_minutes: null,
     virtual: true,
-    action_route: null,
+    action_route: '/dashboard/assessment/daily-structure',
   }
 }
 
@@ -148,7 +150,8 @@ export function dailyPlanToScheduleEvents({
       }),
       source: 'program',
       status: dailyPlan.workoutCompleted ? 'completed' : 'scheduled',
-      completed_at: dailyPlan.workoutCompleted ? new Date().toISOString() : null,
+      completed_at: dailyPlan.completedWorkoutAt || null,
+      suggested: !dailyPlan.workoutCompleted,
       flexibility_type: 'flexible',
       priority: 'high',
       required: false,
@@ -160,46 +163,11 @@ export function dailyPlanToScheduleEvents({
     })
   }
 
-  const hydrationTime = client.wake_time || '08:00'
-  const hydrationStart = zonedDateTimeToUtc(date, String(hydrationTime).slice(0, 5), timezone)
-  const hydrationRemaining = Number(dailyPlan.dailyRemaining?.water ?? 1)
-  const hydrationTarget = Number(dailyPlan.dailyTargets?.water ?? hydrationRemaining)
-  events.push({
-    ...fixedEvent({
-      id: `virtual-hydration-${date}`,
-      userId,
-      clientId: client.client_id,
-      title: 'Hydration quick add',
-      eventType: 'hydration',
-      date,
-      time: String(hydrationTime).slice(0, 5),
-      timezone,
-      minutes: 10,
-    }),
-    source: 'program',
-    status:
-      hydrationTarget > 0 && hydrationRemaining <= hydrationTarget * 0.15
-        ? 'completed'
-        : 'scheduled',
-    completed_at:
-      hydrationTarget > 0 && hydrationRemaining <= hydrationTarget * 0.15
-        ? new Date().toISOString()
-        : null,
-    flexibility_type: 'flexible',
-    priority: 'high',
-    required: true,
-    movable: true,
-    approval_required: false,
-    earliest_start_at: addMinutes(hydrationStart, -60).toISOString(),
-    latest_end_at: zonedDateTimeToUtc(date, '21:00', timezone).toISOString(),
-    action_route: '/dashboard/nutrition#hydration',
-  })
-
   for (const [key, label, time, route] of [
-    ['morning', 'Morning fuel', client.wake_time || '08:00', '/dashboard/nutrition#aos-food-logger'],
-    ['midday', 'Lunch and hydration', client.lunch_window_time || '12:00', '/dashboard/nutrition#aos-food-logger'],
-    ['evening', 'Dinner and recovery landing', client.dinner_window_time || '18:00', '/dashboard/day/evening'],
+    ['midday', 'Lunch and hydration', client.lunch_window_time, mealEntryHref(client.program, 'lunch')],
+    ['evening', 'Dinner and recovery landing', client.dinner_window_time, '/dashboard/day/evening'],
   ] as const) {
+    if (!time) continue
     const complete = dailyPlan.completedDailyTasks?.includes(`${key}-complete`)
     const start = zonedDateTimeToUtc(date, String(time).slice(0, 5), timezone)
     events.push({
@@ -216,10 +184,11 @@ export function dailyPlanToScheduleEvents({
       }),
       source: 'program',
       status: complete ? 'completed' : 'scheduled',
-      completed_at: complete ? new Date().toISOString() : null,
+      completed_at: null,
+      suggested: !complete,
       flexibility_type: 'flexible',
-      priority: key === 'morning' ? 'high' : 'medium',
-      required: key !== 'evening',
+      priority: 'medium',
+      required: false,
       movable: true,
       approval_required: false,
       earliest_start_at: addMinutes(start, -120).toISOString(),
@@ -229,4 +198,23 @@ export function dailyPlanToScheduleEvents({
   }
 
   return events
+}
+
+export function recurringCommitmentsToEvents({ userId, client, date, timezone, blocks }: { userId: string; client: any; date: string; timezone: string; blocks: any[] }): ScheduleEvent[] {
+  const result: ScheduleEvent[] = []
+  for (const localDate of [addLocalDays(date, -1), date]) {
+    const weekday = new Date(`${localDate}T12:00:00Z`).getUTCDay()
+    for (const block of blocks) {
+      if (block.active === false || !block.days_of_week?.includes(weekday)) continue
+      const startTime = String(block.start_time).slice(0, 5), endTime = String(block.end_time).slice(0, 5)
+      const overnight = endTime <= startTime
+      if (localDate !== date && !overnight) continue
+      const endDate = overnight ? addLocalDays(localDate, 1) : localDate
+      const start = zonedDateTimeToUtc(localDate, startTime, timezone), end = zonedDateTimeToUtc(endDate, endTime, timezone)
+      const type = block.block_type === 'work' ? 'work' : block.block_type === 'sleep' ? 'sleep' : block.block_type.startsWith('school') ? 'school' : block.block_type === 'appointment' ? 'appointment' : 'personal'
+      result.push({ ...fixedEvent({ id: `commitment-${block.id || block.block_type}-${localDate}`, userId, clientId: client.client_id,
+        title: block.label || String(block.block_type).replaceAll('_', ' '), eventType: type, date: localDate, time: startTime, timezone, minutes: (end.getTime()-start.getTime())/60000 }), end_at: end.toISOString() })
+    }
+  }
+  return result
 }

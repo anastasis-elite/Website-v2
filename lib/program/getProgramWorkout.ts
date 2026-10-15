@@ -1,3 +1,4 @@
+import { getClientTimeZone } from '@/lib/timezone'
 import {
   applyCycleTrainingAdjustment,
   getCycleTrainingAdjustment,
@@ -6,7 +7,7 @@ import {
 export function getProgramWorkout({ client, output }: { client: any; output: any }) {
   const programJson = output?.program_json || output?.output || {}
   const days = Array.isArray(programJson.days) ? programJson.days : []
-  const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' })
+  const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long', timeZone: getClientTimeZone(client) })
   const todaysWorkout = days.find((day: any) => day.day_name === todayName)
   const cycleAdjustment = getCycleTrainingAdjustment(client)
   const adjustedExercises = todaysWorkout?.exercises?.length

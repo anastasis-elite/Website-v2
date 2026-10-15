@@ -7,7 +7,7 @@ import type {
 } from '@/lib/dashboard/logic/types'
 import { getClientLocalDate } from '@/lib/timezone'
 
-type WorkoutState = 'planned' | 'recovery' | 'starter'
+type WorkoutState = 'planned' | 'recovery' | 'starter' | 'reduced'
 
 type WorkoutForToday = {
   type: WorkoutState
@@ -468,7 +468,7 @@ function createLowCapacityWorkout(
       })
 
   return {
-    type: 'starter',
+    type: 'reduced',
     title: 'Low-Capacity Strength Workout',
     completionEligible: true,
     reason,
@@ -512,6 +512,7 @@ export function getWorkoutForToday({
   ) {
     return {
       ...getRecoveryWorkout(),
+      completionEligible: false,
 
       reason:
         'A recovery or safety red flag requires training to pause today.',
@@ -588,5 +589,5 @@ export function workoutFallbackAdjustmentLevel(
     return 'level_0_full_plan'
   }
 
-  return 'level_3_recovery_training'
+  return type === 'recovery' ? 'level_4_rest_or_red_flag' : type === 'reduced' ? 'level_3_recovery_training' : 'level_0_full_plan'
 }

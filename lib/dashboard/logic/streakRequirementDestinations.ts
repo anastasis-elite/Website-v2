@@ -1,3 +1,4 @@
+import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 import type {
   ProgramTier,
   StreakItem,
@@ -17,14 +18,14 @@ export function getStreakRequirementDestinations(
 ): Partial<Record<StreakItem, StreakRequirementDestination>> {
   return {
     nutrition: {
-      href: '/dashboard/nutrition',
+      href: mealEntryHref(programTier),
       ariaLabel:
-        "Open Nutrition to complete today's food logging streak requirement",
+        programTier === 'ember' ? "Open Nutrition Guidance" : "Open Meal Entry to complete today's food logging streak requirement",
     },
     hydration: {
-      href: '/dashboard/nutrition',
+      href: WATER_ENTRY_HREF,
       ariaLabel:
-        "Open Nutrition to complete today's hydration streak requirement",
+        "Log Water to complete today's hydration streak requirement",
     },
     workoutOrMovement: {
       href: getProgramWorkoutHref(programTier),

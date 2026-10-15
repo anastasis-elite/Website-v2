@@ -4,10 +4,11 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import * as styles from '@/app/styles/globalstyles'
+import { foodEntryHref } from '@/lib/nutrition/loggingRoutes'
 
 const primaryActions = [
   { label: 'Today', href: '/dashboard/program/phoenix' },
-  { label: 'Food', href: '/dashboard/nutrition' },
+  { label: 'Food', href: foodEntryHref('phoenix') },
   { label: 'Body', href: '/dashboard/check-in' },
   { label: 'Coach', href: 'mailto:Anastasis.elite@gmail.com?subject=Phoenix%20Coach%20Support' },
 ]
@@ -50,7 +51,7 @@ export default function PhoenixDock() {
 
       <nav className="phoenix-dock-inner">
         {primaryActions.map((action) => {
-          const active = action.href.startsWith('/') && pathname === action.href
+          const active = action.href.startsWith('/') && pathname === action.href.split('?')[0]
           return action.href.startsWith('mailto:') ? (
             <a key={action.label} href={action.href} style={dockActionStyle}>{action.label}</a>
           ) : (

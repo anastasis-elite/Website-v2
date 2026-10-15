@@ -1,4 +1,6 @@
+import { getClientTimeZone, getClientLocalDateOffset } from '@/lib/timezone'
 import { loadProgramLogicInputs } from './loadProgramLogicInputs'
+import { workoutLocalDate } from '@/lib/workout/history'
 
 import {
   numeric,
@@ -27,15 +29,6 @@ import { getBodyAssessmentScheduleStatus } from '@/lib/body-assessment/schedule'
 
 export const DASHBOARD_ENGINE_VERSION =
   'aos_daily_logic_v1.0.0'
-
-function day(offset: number) {
-  const date = new Date()
-
-  date.setUTCHours(0, 0, 0, 0)
-  date.setUTCDate(date.getUTCDate() + offset)
-
-  return date.toISOString().slice(0, 10)
-}
 
 function average(
   values: Array<number | null>,
@@ -106,12 +99,12 @@ function buildTrends(
 ): DashboardTrend[] {
   const currentDates = Array.from(
     { length: 7 },
-    (_, index) => day(index - 6),
+    (_, index) => getClientLocalDateOffset(inputs.client, index - 6),
   )
 
   const previousDates = Array.from(
     { length: 7 },
-    (_, index) => day(index - 13),
+    (_, index) => getClientLocalDateOffset(inputs.client, index - 13),
   )
 
   const totals =
@@ -174,12 +167,7 @@ function buildTrends(
       .filter(
         (row: any) => row.completed,
       )
-      .map((row: any) =>
-        String(row.workout_date).slice(
-          0,
-          10,
-        ),
-      ),
+      .map((row: any) => workoutLocalDate(row, getClientTimeZone(inputs.client))),
   )
 
   const make = (
@@ -355,7 +343,7 @@ function conciseInsight(
     output.fuelReadiness.status ===
     'unknown_needs_input'
   ) {
-    return 'Log or eat something simple before deciding how hard to train.'
+    return 'Food is not logged yet. Add your latest meal so today’s guidance can use it.'
   }
 
   if (
@@ -541,9 +529,6 @@ export async function getProgramLogicEngine(
         ?.check_in_completed_at,
     )
 
-  const passiveWorkoutComplete =
-    (passiveHealth.workoutMinutes || 0) >= 10
-
   const recoveryComplete =
     inputs.todayRecoveryActivities
       .length > 0
@@ -581,6 +566,7 @@ export async function getProgramLogicEngine(
       new Date().toISOString(),
 
     client: {
+      timezone: getClientTimeZone(inputs.client),
       id: String(
         inputs.client.client_id,
       ),
@@ -662,13 +648,11 @@ export async function getProgramLogicEngine(
 
     workout: {
       assigned: Boolean(
-        inputs.plannedWorkout,
+        workoutDecision.assignedWorkout?.exercises?.length,
       ),
 
       completed: Boolean(
-        inputs.dailyPlan
-          ?.workoutCompleted ||
-          passiveWorkoutComplete,
+        inputs.dailyPlan?.workoutCompleted,
       ),
 
       title:
@@ -779,10 +763,12 @@ export async function getProgramLogicEngine(
     trends: buildTrends(inputs),
 
     execution: {
+      workoutInProgress: inputs.workoutHistory.some(row => workoutLocalDate(row, getClientTimeZone(inputs.client)) === inputs.date && !row.completed && Array.isArray(row.exercise_logs) && row.exercise_logs.some((log: any) => log.set_logs?.length || Number(log.actual_duration || log.actual_reps) > 0)),
+      completedWorkoutTitle: inputs.dailyPlan?.completedWorkoutTitle || null,
+      completedWorkoutId: inputs.dailyPlan?.completedWorkoutId || null,
+      completedWorkoutAt: inputs.dailyPlan?.completedWorkoutAt || null,
       workoutComplete: Boolean(
-        inputs.dailyPlan
-          ?.workoutCompleted ||
-          passiveWorkoutComplete,
+        inputs.dailyPlan?.workoutCompleted,
       ),
 
       nutritionLogged:
@@ -844,124 +830,132 @@ export async function getProgramLogicEngine(
     },
   }
 
-  const { error } =
-    await args.supabase
-      .from(
+  try {
+    const { error } =
+      await args.supabase
+        .from(
+          'dashboard_daily_recommendations',
+        )
+        .upsert(
+          {
+            user_id: inputs.userId,
+
+            client_id:
+              inputs.client.client_id,
+
+            log_date: inputs.date,
+
+            program: inputs.program,
+
+            engine_version:
+              DASHBOARD_ENGINE_VERSION,
+
+            input_snapshot: {
+              capacity:
+                capacityStatus,
+
+              recovery:
+                recoveryStatus,
+
+              fuel:
+                fuelReadiness.status,
+
+              symptoms:
+                symptoms.severity,
+
+              cycle:
+                cycle.phase,
+            },
+
+            recommendation_output:
+              persistedOutput,
+
+            updated_at:
+              new Date().toISOString(),
+          },
+          {
+            onConflict:
+              'user_id,client_id,log_date',
+          },
+        )
+
+    if (
+      error &&
+      !String(error.message).includes(
         'dashboard_daily_recommendations',
       )
-      .upsert(
-        {
-          user_id: inputs.userId,
-
-          client_id:
-            inputs.client.client_id,
-
-          log_date: inputs.date,
-
-          program: inputs.program,
-
-          engine_version:
-            DASHBOARD_ENGINE_VERSION,
-
-          input_snapshot: {
-            capacity:
-              capacityStatus,
-
-            recovery:
-              recoveryStatus,
-
-            fuel:
-              fuelReadiness.status,
-
-            symptoms:
-              symptoms.severity,
-
-            cycle:
-              cycle.phase,
-          },
-
-          recommendation_output:
-            persistedOutput,
-
-          updated_at:
-            new Date().toISOString(),
-        },
-        {
-          onConflict:
-            'user_id,client_id,log_date',
-        },
+    ) {
+      console.error(
+        'Dashboard recommendation persistence failed:',
+        error.message,
       )
-
-  if (
-    error &&
-    !String(error.message).includes(
-      'dashboard_daily_recommendations',
-    )
-  ) {
-    console.error(
-      'Dashboard recommendation persistence failed:',
-      error.message,
-    )
+    }
+  } catch (error) {
+    console.error('Dashboard recommendation persistence failed:', error instanceof Error ? error.message : 'Persistence request failed.')
   }
 
   const requirements =
     flameState.requirements
 
-  const { error: executionError } =
-    await args.supabase
-      .from(
+  try {
+    const { error: executionError } =
+      await args.supabase
+        .from(
+          'daily_execution_status',
+        )
+        .upsert(
+          {
+            user_id: inputs.userId,
+
+            client_id:
+              inputs.client.client_id,
+
+            log_date: inputs.date,
+
+            program: inputs.program,
+
+            capacity_status:
+              capacityStatus.status,
+
+            missed_day_count:
+              requirements.missedDayCount,
+
+            required_items:
+              requirements.requiredItems,
+
+            completed_items:
+              requirements.completedItems,
+
+            completion_score:
+              requirements.completionScore,
+
+            streak_eligible:
+              requirements.streakEligible,
+
+            updated_at:
+              new Date().toISOString(),
+          },
+          {
+            onConflict:
+              'user_id,client_id,log_date',
+          },
+        )
+
+    if (
+      executionError &&
+      !String(
+        executionError.message,
+      ).includes(
         'daily_execution_status',
       )
-      .upsert(
-        {
-          user_id: inputs.userId,
-
-          client_id:
-            inputs.client.client_id,
-
-          log_date: inputs.date,
-
-          program: inputs.program,
-
-          capacity_status:
-            capacityStatus.status,
-
-          missed_day_count:
-            requirements.missedDayCount,
-
-          required_items:
-            requirements.requiredItems,
-
-          completed_items:
-            requirements.completedItems,
-
-          completion_score:
-            requirements.completionScore,
-
-          streak_eligible:
-            requirements.streakEligible,
-
-          updated_at:
-            new Date().toISOString(),
-        },
-        {
-          onConflict:
-            'user_id,client_id,log_date',
-        },
+    ) {
+      console.error(
+        'Daily execution persistence failed:',
+        executionError.message,
       )
-
-  if (
-    executionError &&
-    !String(
-      executionError.message,
-    ).includes(
-      'daily_execution_status',
-    )
-  ) {
-    console.error(
-      'Daily execution persistence failed:',
-      executionError.message,
-    )
+    }
+  } catch (error) {
+    console.error('Daily execution persistence failed:', error instanceof Error ? error.message : 'Persistence request failed.')
   }
 
   return output

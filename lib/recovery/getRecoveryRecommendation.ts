@@ -1,3 +1,5 @@
+import { getClientLocalDate } from '@/lib/timezone'
+import { loadWorkoutHistory } from '@/lib/workout/history'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
   
 export async function getRecoveryRecommendation({
@@ -9,7 +11,7 @@ export async function getRecoveryRecommendation({
   client: any
   user: any
 }) {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getClientLocalDate(client)
 
   const cycleStatus = getCycleStatus(client)
   
@@ -20,13 +22,8 @@ export async function getRecoveryRecommendation({
     .eq('log_date', today)
     .maybeSingle()
 
-  const { data: todayWorkoutLog } = await supabase
-    .from('workout_logs')
-    .select('*')
-    .eq('client_id', client.client_id)
-    .gte('workout_date', `${today}T00:00:00.000Z`)
-    .lte('workout_date', `${today}T23:59:59.999Z`)
-    .maybeSingle()
+  const { data: completedWorkouts } = await loadWorkoutHistory({ supabase, client, authUserId: user.id, startDate: today, completed: true, limit: 1 })
+  const todayWorkoutLog = completedWorkouts?.[0]
 
   const { data: todayNutritionLog } = await supabase
     .from('nutrition_logs')
@@ -60,14 +57,8 @@ export async function getRecoveryRecommendation({
     todayFlowBurden?.burden_band === 'high' ||
     todayFlowBurden?.burden_band === 'very_high'
 
-  const nutritionLogged =
-    !!todayNutritionLog &&
-    (
-      Number(todayNutritionLog.protein || 0) > 0 ||
-      Number(todayNutritionLog.carbs || 0) > 0 ||
-      Number(todayNutritionLog.fats || 0) > 0 ||
-      Number(todayNutritionLog.water_oz || 0) > 0
-    )
+  const { count: loggedMeals } = todayNutritionLog?.id ? await supabase.from('meal_entries').select('id', { count: 'exact', head: true }).eq('nutrition_log_id', todayNutritionLog.id).eq('entry_state', 'confirmed') : { count: 0 }
+  const nutritionLogged = Number(loggedMeals || 0) > 0
 
   let recoveryFocus = 'baseline'
   let title = 'Baseline recovery'

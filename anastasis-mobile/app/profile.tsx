@@ -13,6 +13,7 @@ import { colors } from '../lib/theme'
 import { supabase } from '../lib/supabase'
 
 const rows = [
+  ['Connected Calendars', '/calendar'],
   ['Health & Wearables', '/health'],
   ['Assessments', '/assessments'],
   ['Progress History', '/progress'],

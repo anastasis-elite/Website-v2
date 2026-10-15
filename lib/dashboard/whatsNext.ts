@@ -2,6 +2,8 @@ import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import type { ProgramTier, TierCapabilities } from '@/lib/entitlements'
+import { getActionRouteForEvent } from '@/lib/schedule/engine'
+import { inferMealType, mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 
 export type WhatsNextType =
   | 'calendar_event'
@@ -47,15 +49,6 @@ function eventEnd(event: ScheduleEvent) {
   return event.adjusted_end_at || event.end_at
 }
 
-function eventIsActive(event: ScheduleEvent, now: string) {
-  const current = new Date(now).getTime()
-  return new Date(eventStart(event)).getTime() <= current && new Date(eventEnd(event)).getTime() >= current
-}
-
-function isCalendarCommitment(event: ScheduleEvent) {
-  return !['workout', 'meal', 'hydration', 'recovery', 'assessment', 'check_in', 'sleep'].includes(event.event_type)
-}
-
 function durationText(duration: any) {
   if (!duration) return null
   if (typeof duration.minutes === 'number') return `${duration.minutes} minutes`
@@ -76,7 +69,8 @@ function workoutData(logic: ProgramLogicOutput) {
   }
 }
 
-function nutritionState({ tier, capabilities, logic, recipes }: BuildWhatsNextInput): WhatsNextState {
+function nutritionState({ tier, capabilities, logic, recipes, schedule }: BuildWhatsNextInput): WhatsNextState {
+  const meal = inferMealType(schedule.nextActionableEvent?.title || schedule.nextAction.title)
   if (capabilities.nutrition === 'recommended_meal') {
     const recipe = recipes?.[0] || null
     return {
@@ -85,7 +79,7 @@ function nutritionState({ tier, capabilities, logic, recipes }: BuildWhatsNextIn
       subtitle: recipe ? `${recipe.macros.protein}g protein · ${recipe.macros.carbs}g carbs · ${recipe.macros.fats}g fat` : logic.nutrition.mealSuggestions[0],
       priority: 70,
       data: { mode: 'recommended_meal', recipe },
-      primaryAction: { label: recipe ? 'Log Meal' : 'Open Nutrition', href: '/dashboard/nutrition#phoenix-recipes' },
+      primaryAction: { label: 'Log Meal', href: mealEntryHref(tier, meal, recipe?.id) },
       secondaryActions: [{ label: 'Adjust', href: '/dashboard/nutrition' }],
     }
   }
@@ -97,17 +91,17 @@ function nutritionState({ tier, capabilities, logic, recipes }: BuildWhatsNextIn
       subtitle: logic.nutrition.mealSuggestions[0],
       priority: 60,
       data: { mode: 'meal_logging', tier },
-      primaryAction: { label: 'Add Meal', href: '/dashboard/nutrition#aos-food-logger' },
+      primaryAction: { label: 'Add Meal', href: mealEntryHref(tier, meal) },
     }
   }
 
   return {
     type: 'nutrition',
-    title: 'Add Macros',
+    title: 'Review nutrition guidance',
     subtitle: `${logic.nutrition.protein.remaining}g protein · ${logic.nutrition.carbs.remaining}g carbs · ${logic.nutrition.fats.remaining}g fat remaining`,
     priority: 50,
     data: { mode: 'macro_entry', tier },
-    primaryAction: { label: 'Add Macros', href: '/dashboard/nutrition#aos-macro-entry' },
+    primaryAction: { label: 'Review guidance', href: '/dashboard/nutrition' },
   }
 }
 
@@ -148,7 +142,7 @@ function recoveryState({ capabilities, logic }: BuildWhatsNextInput): WhatsNextS
   }
 }
 
-function calendarState(event: ScheduleEvent | null): WhatsNextState {
+function calendarState(event: ScheduleEvent | null, tier: ProgramTier, reason?: string): WhatsNextState {
   if (!event) {
     return {
       type: 'none',
@@ -161,24 +155,27 @@ function calendarState(event: ScheduleEvent | null): WhatsNextState {
   return {
     type: 'calendar_event',
     title: event.title,
-    subtitle: event.description || event.event_type.replaceAll('_', ' '),
+    subtitle: reason || event.source_label || event.event_type.replaceAll('_', ' '),
     startTime: eventStart(event),
     endTime: eventEnd(event),
     priority: 10,
     data: { event },
-    primaryAction: event.action_route ? { label: 'Open', href: event.action_route } : undefined,
+    primaryAction: { label: 'View details', href: getActionRouteForEvent(event, tier) },
   }
 }
 
 export function buildWhatsNextState(input: BuildWhatsNextInput): WhatsNextState {
   const { capabilities, logic, schedule } = input
-  const activeEvent = schedule.events.find((event) => eventIsActive(event, schedule.now)) || null
-  const activeCalendarEvent = activeEvent && isCalendarCommitment(activeEvent) ? activeEvent : null
-  const next = schedule.nextAction
-
-  if (activeCalendarEvent && !['critical', 'high'].includes(next.urgency)) {
-    return calendarState(activeCalendarEvent)
+  if (schedule.dailyRecommendation) {
+    const action = schedule.dailyRecommendation.primary
+    const event = action.eventId ? schedule.events.find(item => item.id === action.eventId) : null
+    return { type: (action.category === 'check_in' ? 'check_in' : ['workout','hydration','recovery','assessment','nutrition','none'].includes(action.category) ? action.category : 'calendar_event') as WhatsNextType,
+      title: action.title, subtitle: action.reason, startTime: event ? eventStart(event) : undefined,
+      endTime: event ? eventEnd(event) : undefined, priority: 80, primaryAction: { label: action.title, href: action.href }, data: action }
   }
+  const next = schedule.nextAction
+  const nextEvent = schedule.nextActionableEvent || schedule.events.find(event => event.id === next.id) || null
+  if (nextEvent?.calendar_event_id) return calendarState(nextEvent, input.tier, next.reason)
 
   if (next.category === 'workout' && capabilities.workoutDisplay) {
     const data = workoutData(logic)
@@ -202,7 +199,7 @@ export function buildWhatsNextState(input: BuildWhatsNextInput): WhatsNextState 
       startTime: next.start_at || undefined,
       priority: 55,
       data: { remaining: logic.hydration.remaining, target: logic.hydration.target },
-      primaryAction: { label: 'Add Water', href: '/dashboard/nutrition#hydration' },
+      primaryAction: { label: 'Log Water', href: WATER_ENTRY_HREF },
     }
   }
   if (next.category === 'recovery' || (logic.flameState.requirements.requiredItems.recovery && !logic.flameState.requirements.completedItems.recovery)) return recoveryState(input)
@@ -227,5 +224,5 @@ export function buildWhatsNextState(input: BuildWhatsNextInput): WhatsNextState 
     }
   }
 
-  return calendarState(activeEvent || schedule.nextEvent)
+  return calendarState(nextEvent, input.tier, next.reason)
 }

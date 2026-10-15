@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 
 import WorkoutTracker from '@/components/WorkoutTracker'
@@ -15,6 +15,10 @@ import {
   type MuscleReadiness,
 } from '@/lib/workout/muscleReadiness'
 import type { ProgramTier, ProgramLogicOutput } from '@/lib/dashboard/logic/types'
+import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
+import { activityDose, summarizeActivityUnits } from '@/lib/workout/activity'
+import { exerciseOccurrenceLabel, formatWorkoutHistoryDate } from '@/lib/workout/logging'
+import { parseWorkoutViewPreferences } from '@/lib/workout/viewPreferences'
 
 type Tab = 'progress' | 'strength' | 'recovery' | 'history'
 
@@ -43,6 +47,7 @@ type AssignedExercise = {
 type WorkoutLogRow = {
   id?: string
   workout_date?: string
+  workout_started_at?: string | null
   day_name?: string
   completed?: boolean
   workout_source?: 'recommended' | 'manual'
@@ -68,6 +73,8 @@ type Props = {
   outputProgram?: string | null
   muscleReadiness: MuscleReadiness[]
   workoutHistory: WorkoutLogRow[]
+  timezone?: string
+  weightUnit?: 'lb' | 'kg'
   memberEquipment: string[]
   showStrengthAssessmentOffer: boolean
   strengthAssessmentWindowEndDate?: string | null
@@ -79,10 +86,9 @@ function exerciseName(exercise: AssignedExercise) {
 
 function exerciseDose(exercise: AssignedExercise) {
   if (exercise.duration_label) return exercise.duration_label
-  const sets = exercise.sets ?? '-'
-  const reps = exercise.recommended_reps ?? exercise.reps ?? exercise.target_reps ?? '-'
-  const weight = Number(exercise.recommended_weight ?? exercise.calculated_weight ?? 0)
-  return `${sets} sets · ${reps} reps${Number.isFinite(weight) && weight > 0 ? ` · ${Math.round(weight)} lb` : ''}`
+  const dose = activityDose(exercise)
+  if (dose.metric === 'completion') return 'Complete the movement comfortably'
+  return `${dose.kind === 'strength' ? `${dose.sets} sets · ` : ''}${dose.prescribed || 'Choose a comfortable amount'} ${dose.metric}${dose.weight > 0 ? ` · ${dose.weight} ${dose.unit}` : ''}`
 }
 
 function titleCaseMuscle(value: string) {
@@ -103,10 +109,10 @@ function WorkoutPreview({ exercises, previewTitle, previewMessage }: { exercises
       {exercises.length ? (
         <div>
           {exercises.map((exercise, index) => (
-            <article key={exercise.id ? String(exercise.id) : `${exerciseName(exercise)}-${index}`}>
+            <article key={`${exercise.id || exerciseName(exercise)}:${index}`}>
               <span>{index + 1}</span>
               <div>
-                <strong>{exerciseName(exercise)}</strong>
+                <strong>{exerciseOccurrenceLabel(exercises, index)}</strong>
                 <small>{exerciseDose(exercise)}</small>
               </div>
             </article>
@@ -118,13 +124,13 @@ function WorkoutPreview({ exercises, previewTitle, previewMessage }: { exercises
 }
 
 function ProgressTab({ logic, exercises }: { logic: ProgramLogicOutput; exercises: AssignedExercise[] }) {
-  const totalSets = exercises.reduce((sum, exercise) => sum + Number(exercise.sets || 0), 0)
-  const totalReps = exercises.reduce((sum, exercise) => sum + Number(exercise.recommended_reps ?? exercise.reps ?? 0) * Number(exercise.sets || 1), 0)
+  const totals = summarizeActivityUnits(exercises)
 
   return (
     <div className="workout-tab-grid" data-testid="workout-progress-tab">
       <article><span>Completion</span><strong>{logic.execution.workoutComplete ? 'Complete' : 'Open'}</strong><small>{logic.workout.assigned ? logic.workout.title : 'Recovery movement'}</small></article>
-      <article><span>Session Volume</span><strong>{totalSets || '--'} sets</strong><small>{totalReps || '--'} prescribed repetitions</small></article>
+      <article><span>Strength Volume</span><strong>{totals.sets} sets</strong><small>{totals.reps} prescribed repetitions</small></article>
+      <article><span>Activity Dose</span><strong>{Math.round(totals.minutes * 10) / 10} min · {totals.breaths} breaths</strong><small>{totals.activities} completion-based movement{totals.activities === 1 ? '' : 's'}</small></article>
       <article><span>Duration</span><strong>{logic.workout.durationMinutes ? `${logic.workout.durationMinutes} min` : 'Not set'}</strong><small>From the current workout source</small></article>
       <article><span>Progression</span><strong>{logic.workoutDecision.allowLoadProgression ? 'Open' : 'Hold'}</strong><small>{logic.workoutDecision.intensityTarget}</small></article>
     </div>
@@ -163,12 +169,12 @@ function RecoveryTab({ readiness, tier }: { readiness: MuscleReadiness[]; tier: 
   )
 }
 
-function HistoryTab({ history }: { history: WorkoutLogRow[] }) {
+function HistoryTab({ history, timezone }: { history: WorkoutLogRow[]; timezone?: string }) {
   return (
     <div className="workout-history-list" data-testid="workout-history-tab">
       {history.length ? history.slice(0, 8).map((row, index) => (
         <article key={row.id || `${row.workout_date}-${index}`}>
-          <time>{row.workout_date ? new Date(row.workout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Workout'}</time>
+          <time>{formatWorkoutHistoryDate(row.workout_started_at || row.workout_date, timezone)}</time>
           <strong>{row.day_name || 'Completed workout'}</strong>
           <small>{row.completed ? 'Completed' : 'Not completed'} · {row.workout_source || 'recommended'} · {(row.exercise_logs || []).length} performed</small>
         </article>
@@ -180,13 +186,26 @@ function HistoryTab({ history }: { history: WorkoutLogRow[] }) {
 export default function WorkoutDashboard(props: Props) {
   const [tab, setTab] = useState<Tab>('progress')
   const [workoutMode, setWorkoutMode] = useState<'recommended' | 'manual'>('recommended')
+  const [restoredPreferenceKey, setRestoredPreferenceKey] = useState<string | null>(null)
   const [highlightedMuscles, setHighlightedMuscles] = useState<MuscleId[]>([])
+  const preferenceKey = `aos-workout-view:v1:${props.clientId}:${props.program}`
+  useEffect(() => {
+    let stored = null
+    try { stored = localStorage.getItem(preferenceKey) } catch { /* The workout remains available without browser preferences. */ }
+    const preferences = parseWorkoutViewPreferences(stored)
+    setTab(preferences.tab); setWorkoutMode(preferences.mode); setRestoredPreferenceKey(preferenceKey)
+  }, [preferenceKey])
+  useEffect(() => {
+    if (restoredPreferenceKey !== preferenceKey) return
+    try { localStorage.setItem(preferenceKey, JSON.stringify({ tab, mode: workoutMode })) } catch { /* Browser preferences are optional. */ }
+  }, [preferenceKey, restoredPreferenceKey, tab, workoutMode])
+  const training = getDailyTraining(props.logic)
   const focus = useMemo(() => summarizeWorkoutMuscleFocus(props.assignedExercises).slice(0, 3), [props.assignedExercises])
 
   return (
     <section className="workout-dashboard-workspace" data-tier={props.program}>
       <article className="tier-daily-insight workout-objective" data-testid="workout-objective">
-        <p className="tier-dashboard-label">Today&apos;s Training</p>
+        <p className="tier-dashboard-label">{training.label}</p>
         <div>
           <h1>{props.workoutTitle}</h1>
           <WorkoutFeedback
@@ -198,13 +217,14 @@ export default function WorkoutDashboard(props: Props) {
           />
         </div>
         <p>{props.logic.workoutDecision.intensityTarget}. {props.logic.workoutDecision.reasonForModification}</p>
+        <p>{training.readinessNote}</p>
         {focus.length ? <small>Primary emphasis: {focus.map(titleCaseMuscle).join(' + ')}</small> : null}
       </article>
 
       {props.hasSafetyFlags ? <SafetyEscalationNotice flags={props.safetyFlags} embedded /> : null}
 
       <div className="workout-dashboard-row">
-        <MuscleReadinessMap readiness={props.muscleReadiness} highlightedMuscleIds={highlightedMuscles} />
+        <details className="daily-disclosure"><summary>Muscle readiness details</summary><MuscleReadinessMap readiness={props.muscleReadiness} highlightedMuscleIds={highlightedMuscles} /></details>
 
         <section className="workout-current-panel" data-testid="today-workout-panel">
           <div className="tier-panel-heading">
@@ -227,12 +247,14 @@ export default function WorkoutDashboard(props: Props) {
               ))}
             </div>
           </div>
-          <div className="workout-scroll-region">
+          <div className="workout-session-region">
             {workoutMode === 'manual' ? (
               <ManualWorkoutBuilder
                 clientId={props.clientId}
                 authUserId={props.authUserId}
                 program={props.outputProgram || props.program}
+                timezone={props.timezone}
+                weightUnit={props.weightUnit}
                 recommendedDayName={props.assignedDayName}
                 recommendedExercises={props.assignedExercises}
                 memberEquipment={props.memberEquipment}
@@ -242,6 +264,8 @@ export default function WorkoutDashboard(props: Props) {
               />
             ) : props.showInteractiveWorkout ? (
               <WorkoutTracker
+                timezone={props.timezone}
+                weightUnit={props.weightUnit}
                 clientId={props.clientId}
                 authUserId={props.authUserId}
                 program={props.outputProgram || props.program}
@@ -262,15 +286,17 @@ export default function WorkoutDashboard(props: Props) {
       <section className="tier-info-panel workout-info-panel" data-testid="workout-toggle-panel">
         <div className="tier-tab-list" role="tablist" aria-label="Workout information">
           {(['progress', 'strength', 'recovery', 'history'] as Tab[]).map((item) => (
-            <button key={item} type="button" className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>
+            <button key={item} id={`workout-tab-${item}`} type="button" role="tab" aria-selected={tab === item} aria-controls="workout-information-panel" className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>
               {item[0].toUpperCase() + item.slice(1)}
             </button>
           ))}
         </div>
+        <div id="workout-information-panel" role="tabpanel" aria-labelledby={`workout-tab-${tab}`}>
         {tab === 'progress' ? <ProgressTab logic={props.logic} exercises={props.assignedExercises} /> : null}
         {tab === 'strength' ? <StrengthTab showOffer={props.showStrengthAssessmentOffer} endDate={props.strengthAssessmentWindowEndDate} logic={props.logic} /> : null}
         {tab === 'recovery' ? <RecoveryTab readiness={props.muscleReadiness} tier={props.program} /> : null}
-        {tab === 'history' ? <HistoryTab history={props.workoutHistory} /> : null}
+        {tab === 'history' ? <HistoryTab history={props.workoutHistory} timezone={props.timezone} /> : null}
+        </div>
       </section>
     </section>
   )

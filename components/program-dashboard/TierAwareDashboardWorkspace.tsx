@@ -1,234 +1,34 @@
 'use client'
 
 import Link from 'next/link'
+import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
+import GuidedToday from '@/components/program-dashboard/GuidedToday'
+import DailyDisplayPreferences from '@/components/DailyDisplayPreferences'
+import { useViewPreference } from '@/components/dashboard/useViewPreference'
+import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
+import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
 import type { CSSProperties } from 'react'
 import { useMemo, useState } from 'react'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import { formatLocalTime } from '@/lib/schedule/time'
+import { getActionRouteForEvent } from '@/lib/schedule/engine'
 import { getTierCapabilities, type ProgramTier } from '@/lib/entitlements'
-import { buildWhatsNextState, type WhatsNextState } from '@/lib/dashboard/whatsNext'
-import { buildDailyInsight, type DailyInsight } from '@/lib/dashboard/dailyInsight'
 import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
 import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashboardData'
-import {
-  addDays,
-  addMonths,
-  buildCalendarItems,
-  buildMonthGrid,
-  buildWeekDays,
-  itemsForDate,
-  parseDateKey,
-  toDateKey,
-  type CalendarDisplayItem,
-} from '@/lib/calendar/view'
+import dynamic from 'next/dynamic'
+import OptionalDashboardModule from '@/components/OptionalDashboardModule'
+import type { PlanBlock } from './dashboardWorkspaceTypes'
 
-type CalendarMode = 'day' | 'week' | 'month'
+const DashboardCalendar = dynamic(() => import('./DashboardCalendar'), {
+  loading: () => <p role="status">Loading calendar details…</p>,
+})
 type PanelTab = 'progress' | 'assessments' | 'trends'
-type Daypart = 'morning' | 'midday' | 'evening'
-type PlanBlock = {
-  id: Daypart
-  title: string
-  focus: string
-  tasks: Array<{ id: string; label: string; href: string; complete: boolean; detail?: string }>
-}
 
 function eventRange(event: ScheduleEvent, timezone: string) {
+  if (event.all_day) return 'All day'
   return `${formatLocalTime(event.adjusted_start_at || event.start_at, timezone)}-${formatLocalTime(event.adjusted_end_at || event.end_at, timezone)}`
-}
-
-function itemDaypart(item: CalendarDisplayItem): Daypart {
-  const hour = new Date(item.start_at).getHours()
-  if (hour < 11) return 'morning'
-  if (hour < 17) return 'midday'
-  return 'evening'
-}
-
-function WhatsNextCard({ state, timezone }: { state: WhatsNextState; timezone: string }) {
-  const data = state.data as any
-  return (
-    <article className={`tier-whats-next-card tier-whats-next-${state.type}`} data-tutorial-id="dashboard-whats-next">
-      <p className="tier-dashboard-label">What&apos;s Next</p>
-      {state.startTime ? <span className="tier-dashboard-time">{formatLocalTime(state.startTime, timezone)}</span> : null}
-      <h2>{state.title}</h2>
-      {state.subtitle ? <p>{state.subtitle}</p> : null}
-
-      {state.type === 'workout' && data?.exercises?.length ? (
-        <ul className="tier-mini-list">
-          {data.exercises.map((exercise: string) => <li key={exercise}>{exercise}</li>)}
-        </ul>
-      ) : null}
-
-      {state.primaryAction ? (
-        <div className="tier-action-row">
-          <Link className="tier-primary-action" href={state.primaryAction.href}>{state.primaryAction.label}</Link>
-          {state.secondaryActions?.map((action) => (
-            <Link key={`${action.label}-${action.href}`} className="tier-secondary-action" href={action.href}>{action.label}</Link>
-          ))}
-        </div>
-      ) : null}
-    </article>
-  )
-}
-
-function DailyInsightCard({ insight }: { insight: DailyInsight }) {
-  return (
-    <article className={`tier-daily-insight tier-insight-${insight.category}`} data-tutorial-id="dashboard-daily-insight">
-      <p className="tier-dashboard-label">Today&apos;s Insight</p>
-      <p>{insight.message}</p>
-      {insight.accountability ? (
-        <div className="tier-accountability-message">
-          <p className="tier-dashboard-label">From {insight.accountability.partner.name}</p>
-          <p>{insight.accountability.message}</p>
-        </div>
-      ) : null}
-      {insight.action ? (
-        <Link href={insight.action.target} className="tier-secondary-action">{insight.action.label}</Link>
-      ) : null}
-    </article>
-  )
-}
-
-function DashboardCalendar({
-  schedule,
-  planBlocks,
-}: {
-  schedule: DailyScheduleState
-  planBlocks: PlanBlock[]
-}) {
-  const [mode, setMode] = useState<CalendarMode>('day')
-  const [selectedDate, setSelectedDate] = useState(schedule.date)
-  const [daypart, setDaypart] = useState<Daypart>('morning')
-  const items = useMemo(() => buildCalendarItems(schedule.events, schedule.openWindows), [schedule.events, schedule.openWindows])
-  const selectedItems = itemsForDate(items, selectedDate)
-  const monthCells = buildMonthGrid({ selectedDate, items })
-  const weekDays = buildWeekDays(selectedDate, items)
-  const selectedPlanBlock = planBlocks.find((block) => block.id === daypart)
-  const daypartItems = selectedItems.filter((item) => itemDaypart(item) === daypart)
-  const showTodayPlan = selectedDate === schedule.date && Boolean(selectedPlanBlock)
-  const itemTitles = new Set(daypartItems.map((item) => item.title.trim().toLowerCase()))
-  const planTasks = showTodayPlan
-    ? selectedPlanBlock!.tasks.filter((task) => !itemTitles.has(task.label.trim().toLowerCase()))
-    : []
-
-  function selectDate(date: string) {
-    setSelectedDate(date)
-    setMode('day')
-  }
-
-  function go(delta: number) {
-    if (mode === 'month') setSelectedDate((current) => addMonths(current, delta))
-    else if (mode === 'week') setSelectedDate((current) => addDays(current, delta * 7))
-    else setSelectedDate((current) => addDays(current, delta))
-  }
-
-  function today() {
-    setSelectedDate(toDateKey(new Date()))
-  }
-
-  const selected = parseDateKey(selectedDate)
-  const heading =
-    mode === 'month'
-      ? selected.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
-      : mode === 'week'
-        ? `Week of ${parseDateKey(weekDays[0].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
-        : selected.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
-
-  return (
-    <section className="tier-calendar-panel" aria-label="Calendar" data-tutorial-id="dashboard-calendar">
-      <div className="tier-panel-heading">
-        <div>
-          <p className="tier-dashboard-label">Calendar</p>
-          <h2>{heading}</h2>
-        </div>
-        <div className="tier-segmented-control" role="tablist" aria-label="Calendar view">
-          {(['day', 'week', 'month'] as CalendarMode[]).map((item) => (
-            <button key={item} type="button" className={mode === item ? 'is-active' : ''} onClick={() => setMode(item)}>
-              {item}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="tier-calendar-nav" aria-label="Calendar navigation">
-        <button type="button" onClick={() => go(-1)}>Previous</button>
-        <button type="button" onClick={today}>Today</button>
-        <button type="button" onClick={() => go(1)}>Next</button>
-      </div>
-
-      {mode === 'month' ? (
-        <div className="tier-month-calendar" data-testid="calendar-month-grid">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <span key={day} className="tier-month-weekday">{day}</span>)}
-          {monthCells.map((cell) => (
-            <button
-              key={cell.date}
-              type="button"
-              className={`tier-month-cell${cell.inMonth ? '' : ' is-muted'}${cell.isSelected ? ' is-selected' : ''}${cell.isToday ? ' is-today' : ''}`}
-              onClick={() => selectDate(cell.date)}
-              aria-label={`Open ${cell.date}`}
-            >
-              <span>{cell.day}</span>
-              {cell.items.length ? <strong>{cell.items.length}</strong> : null}
-              <div>{cell.items.slice(0, 2).map((item) => <i key={item.id} data-source={item.source}>{item.suggested ? 'Suggested' : item.title}</i>)}</div>
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      {mode === 'week' ? (
-        <div className="tier-week-calendar" data-testid="calendar-week-grid">
-          {weekDays.map((day) => (
-            <button
-              key={day.date}
-              type="button"
-              className={`tier-week-day${day.date === selectedDate ? ' is-selected' : ''}${day.date === schedule.date ? ' is-today' : ''}`}
-              onClick={() => selectDate(day.date)}
-              aria-pressed={day.date === selectedDate}
-            >
-              <span>{day.label}</span>
-              <strong>{parseDateKey(day.date).getDate()}</strong>
-              <div>
-                {day.items.length ? day.items.slice(0, 4).map((item) => (
-                  <CalendarPill key={item.id} item={item} timezone={schedule.timezone} />
-                )) : <small>Open</small>}
-              </div>
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      {mode === 'day' ? (
-        <div className="tier-day-calendar" data-testid="calendar-day-view">
-          <div className="tier-daypart-control" role="tablist" aria-label="Day plan time">
-            {(['morning', 'midday', 'evening'] as Daypart[]).map((item) => (
-              <button key={item} type="button" className={daypart === item ? 'is-active' : ''} onClick={() => setDaypart(item)}>
-                {item}
-              </button>
-            ))}
-          </div>
-          {daypartItems.length ? daypartItems.map((item) => (
-            <CalendarPill key={item.id} item={item} timezone={schedule.timezone} detailed />
-          )) : <p className="tier-calendar-empty">No scheduled items for this part of the day.</p>}
-          {showTodayPlan ? (
-            <div className="tier-daypart-plan" data-testid="calendar-daypart-plan">
-              <div>
-                <strong>{selectedPlanBlock!.title}</strong>
-                <small>{selectedPlanBlock!.focus}</small>
-              </div>
-              {planTasks.length ? planTasks.map((task) => (
-                <Link key={task.id} href={task.href} className={`tier-plan-task${task.complete ? ' is-complete' : ''}`}>
-                  <span>{task.complete ? 'Done' : 'Planned'}</span>
-                  <strong>{task.label}</strong>
-                  {task.detail ? <small>{task.detail}</small> : null}
-                </Link>
-              )) : <p className="tier-calendar-empty">This part of the plan is already represented on the calendar.</p>}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </section>
-  )
 }
 
 function progressPercent(value: number) {
@@ -250,7 +50,7 @@ function buildPlanBlocks(tier: ProgramTier, logic: ProgramLogicOutput): PlanBloc
       title: 'Morning',
       focus: 'Hydrate + fuel',
       tasks: [
-        { id: 'ember-morning-water', label: 'Build hydration momentum', href: '/dashboard/nutrition', complete: logic.hydration.percent >= 35 },
+        { id: 'ember-morning-water', label: 'Build hydration momentum', href: WATER_ENTRY_HREF, complete: logic.hydration.percent >= 35 },
         { id: 'ember-morning-macros', label: 'Add macros', href: '/dashboard/nutrition', complete: logic.execution.nutritionLogged },
         { id: 'ember-morning-checkin', label: 'Daily check-in', href: '/dashboard/check-in', complete: logic.assessments.dailyCompleted },
       ],
@@ -261,7 +61,7 @@ function buildPlanBlocks(tier: ProgramTier, logic: ProgramLogicOutput): PlanBloc
       focus: 'Stay steady',
       tasks: [
         { id: 'ember-midday-protein', label: 'Review protein target', href: '/dashboard/nutrition', complete: logic.nutrition.protein.percent >= 60 },
-        { id: 'ember-midday-water', label: 'Add water', href: '/dashboard/nutrition', complete: logic.hydration.percent >= 65 },
+        { id: 'ember-midday-water', label: 'Add water', href: WATER_ENTRY_HREF, complete: logic.hydration.percent >= 65 },
       ],
     },
     {
@@ -269,7 +69,7 @@ function buildPlanBlocks(tier: ProgramTier, logic: ProgramLogicOutput): PlanBloc
       title: 'Evening',
       focus: 'Training + recovery',
       tasks: [
-        { id: 'ember-evening-workout', label: logic.workout.assigned ? 'Complete workout' : 'Recovery day', href: '/dashboard/program/ember/workout', complete: logic.execution.workoutComplete },
+        { id: 'ember-evening-workout', label: getDailyTraining(logic).label, href: '/dashboard/program/ember/workout', complete: logic.execution.workoutComplete },
         { id: 'ember-evening-recovery', label: 'Recovery check', href: '/dashboard/recovery', complete: logic.execution.recoveryComplete },
       ],
     },
@@ -340,7 +140,7 @@ function MacroRows({ logic, tier }: { logic: ProgramLogicOutput; tier: ProgramTi
   const labels = ['Protein', 'Carbs', 'Fats', 'Calories']
   return (
     <div className="tier-macro-compact" data-tutorial-id="dashboard-nutrition-progress">
-      <div className="tier-compact-heading"><span>Macro Targets</span><Link href="/dashboard/nutrition">{tier === 'ember' ? 'Add macros' : 'Log meal'}</Link></div>
+      <div className="tier-compact-heading"><span>Macro Targets</span><Link href={mealEntryHref(tier)}>{tier === 'ember' ? 'Add macros' : 'Log meal'}</Link></div>
       {rows.map((macro, index) => (
         <div className="tier-macro-row" key={labels[index]}>
           <span>{labels[index]}</span>
@@ -352,14 +152,14 @@ function MacroRows({ logic, tier }: { logic: ProgramLogicOutput; tier: ProgramTi
   )
 }
 
-function ProgressTab({ logic, tier }: { logic: ProgramLogicOutput; tier: ProgramTier }) {
+export function ProgressTab({ logic, tier }: { logic: ProgramLogicOutput; tier: ProgramTier }) {
   const nutritionPercent = Math.round((logic.nutrition.protein.percent + logic.nutrition.carbs.percent + logic.nutrition.fats.percent) / 3)
   return (
     <div className="tier-progress-layout">
       <div className="tier-metric-grid" data-testid="dashboard-daily-actions">
-        <MetricRing label="Hydration" value={logic.hydration.percent} detail={`${Math.round(logic.hydration.consumed)} / ${Math.round(logic.hydration.target)} oz`} href="/dashboard/nutrition" tutorialId="dashboard-water-progress" />
-        <MetricRing label={tier === 'ember' ? 'Macros' : 'Nutrition'} value={nutritionPercent} detail={logic.execution.nutritionLogged ? 'Logged today' : 'Ready to log'} href="/dashboard/nutrition" />
-        <MetricRing label="Workout" value={logic.execution.workoutComplete ? 100 : 0} detail={logic.workout.assigned ? logic.workout.title : 'Recovery day'} href={`/dashboard/program/${tier}/workout`} />
+        <MetricRing label="Hydration" value={logic.hydration.percent} detail={`${Math.round(logic.hydration.consumed)} / ${Math.round(logic.hydration.target)} oz`} href={WATER_ENTRY_HREF} tutorialId="dashboard-water-progress" />
+        <MetricRing label={tier === 'ember' ? 'Macros' : 'Nutrition'} value={nutritionPercent} detail={logic.execution.nutritionLogged ? 'Logged today' : 'Ready to log'} href={mealEntryHref(tier)} />
+        <MetricRing label="Workout" value={logic.execution.workoutComplete ? 100 : 0} detail={logic.execution.workoutInProgress ? 'Session saved · continue when ready' : `${getDailyTraining(logic).label} · ${logic.workout.title}`} href={`/dashboard/program/${tier}/workout`} />
         <MetricRing label="Check-In" value={logic.assessments.dailyCompleted ? 100 : 0} detail={logic.assessments.dailyCompleted ? 'Complete' : 'Open'} href="/dashboard/check-in" tutorialId="dashboard-daily-checkin" />
         <MetricRing label="Recovery" value={logic.execution.recoveryComplete ? 100 : 0} detail={logic.execution.recoveryComplete ? 'Complete' : 'Available'} href="/dashboard/recovery" tone="recovery" />
         <CycleSummary logic={logic} />
@@ -369,7 +169,7 @@ function ProgressTab({ logic, tier }: { logic: ProgramLogicOutput; tier: Program
   )
 }
 
-function AssessmentsTab({ logic, capabilities }: { logic: ProgramLogicOutput; capabilities: ReturnType<typeof getTierCapabilities> }) {
+export function AssessmentsTab({ logic, capabilities }: { logic: ProgramLogicOutput; capabilities: ReturnType<typeof getTierCapabilities> }) {
   const postureCopy = capabilities.postureAssessment
     ? 'Posture landmark assessment available'
     : 'Progress photos available'
@@ -386,7 +186,7 @@ function AssessmentsTab({ logic, capabilities }: { logic: ProgramLogicOutput; ca
       <Link href={bodyAssessment.href} title="Measurements" data-tutorial-id="dashboard-body-assessment"><span>Body Assessment</span><strong>{bodyAssessment.title}</strong><small>{bodyAssessmentDetail}</small></Link>
       <Link href="/dashboard/assessment/photos" data-tutorial-id="dashboard-progress-photos"><span>Progress Photos</span><strong>{logic.progress.photoUrls.length ? `${logic.progress.photoUrls.length} saved` : 'Available'}</strong><small>{logic.progress.photosDue ? 'Photo update available' : 'History available'}</small></Link>
       <Link href="/dashboard/assessment/photos"><span>Assessment Photos</span><strong>Available</strong><small>{postureCopy}</small></Link>
-      <Link href="/dashboard/assessment/start" data-tutorial-id="dashboard-strength-assessment"><span>Strength Assessment</span><strong>{logic.assessments.monthlyDueCount ? 'Due' : 'Current'}</strong><small>Functional progress history</small></Link>
+      <Link href="/dashboard/assessment/start2" data-tutorial-id="dashboard-strength-assessment"><span>Strength Assessment</span><strong>{logic.assessments.monthlyDueCount ? 'Due' : 'Current'}</strong><small>Functional progress history</small></Link>
       <Link href={capabilities.postureAssessment ? '/dashboard/assessment/photos?type=posture' : '/dashboard/assessment/photos'} aria-disabled={!capabilities.postureAssessment}><span>Posture Assessment</span><strong>{capabilities.postureAssessment ? 'Available' : 'Ignite/Phoenix'}</strong><small>{capabilities.postureAssessment ? 'Confirm landmarks before saving' : 'Not included in Ember'}</small></Link>
     </div>
   )
@@ -402,7 +202,7 @@ function TrendLine({ values }: { values: Array<number | null> }) {
   return <svg className="tier-trend-line" viewBox="0 0 100 48" role="img"><polyline points={coordinates} /></svg>
 }
 
-function TrendsTab({ logic }: { logic: ProgramLogicOutput }) {
+export function TrendsTab({ logic }: { logic: ProgramLogicOutput }) {
   return (
     <div className="tier-trends-layout" data-testid="dashboard-trends-tab">
       {logic.trends.map((trend) => (
@@ -416,88 +216,54 @@ function TrendsTab({ logic }: { logic: ProgramLogicOutput }) {
   )
 }
 
-function CalendarPill({
-  item,
-  timezone,
-  detailed = false,
-}: {
-  item: CalendarDisplayItem
-  timezone: string
-  detailed?: boolean
-}) {
-  return (
-    <article className={`tier-calendar-pill source-${item.source}${item.suggested ? ' is-suggestion' : ''}`}>
-      <time>{formatLocalTime(item.start_at, timezone)}</time>
-      <strong>{item.title}</strong>
-      {detailed ? (
-        <>
-          <small>{item.event_type.replaceAll('_', ' ')} · {item.source.replaceAll('_', ' ')}</small>
-          {item.suggested ? (
-            <div className="tier-suggestion-actions">
-              <Link href="/dashboard/schedule">Schedule</Link>
-              <Link href="/dashboard/schedule">Dismiss</Link>
-            </div>
-          ) : item.event ? (
-            <small>{eventRange(item.event, timezone)} · {item.status}</small>
-          ) : null}
-        </>
-      ) : null}
-    </article>
-  )
-}
-
 export default function TierAwareDashboardWorkspace({
   tier,
   logic,
   schedule,
-  recipes = [],
 }: {
   tier: ProgramTier
   logic: ProgramLogicOutput
   schedule: DailyScheduleState
   recipes?: PhoenixRecipe[]
 }) {
-  const [tab, setTab] = useState<PanelTab>('progress')
+  const [tab, setTab] = useViewPreference<PanelTab>(logic.client.id, 'home-panel', ['progress', 'assessments', 'trends'], 'progress')
+  const [calendarExpanded, setCalendarExpanded] = useState(false)
+  const [detailsExpanded, setDetailsExpanded] = useState(false)
   const capabilities = getTierCapabilities(tier)
-  const whatsNext = useMemo(
-    () => buildWhatsNextState({ tier, capabilities, logic, schedule, recipes }),
-    [tier, capabilities, logic, schedule, recipes],
-  )
-  const dailyInsight = useMemo(
-    () => buildDailyInsight({ tier, logic, schedule }),
-    [tier, logic, schedule],
-  )
   const planBlocks = useMemo(() => buildPlanBlocks(tier, logic), [tier, logic])
 
+  const plan = schedule.dailyRecommendation || buildDailyRecommendation(logic, schedule)
+  const quiet = schedule.preferences?.carouselStyle === 'step'
+  const flexible = schedule.preferences?.executionStyle === 'flow'
+  const overdueIds = new Set(schedule.overdueEvents.map(event => event.id))
+  const preview = schedule.events.filter(event => !['cancelled','skipped'].includes(event.status) &&
+    (new Date(event.adjusted_end_at || event.end_at) > new Date(schedule.now) || overdueIds.has(event.id))).slice(0, 3)
   return (
-    <section className="tier-dashboard-workspace" data-tier={tier}>
-      <DailyInsightCard insight={dailyInsight} />
-      <div className="tier-dashboard-row">
-        <DashboardCalendar schedule={schedule} planBlocks={planBlocks} />
-        <WhatsNextCard state={whatsNext} timezone={schedule.timezone} />
-      </div>
-
-      <section className="tier-info-panel" data-tutorial-id="dashboard-progress-area">
-        <div className="tier-tab-list" role="tablist" aria-label="Dashboard information">
-          {(['progress', 'assessments', 'trends'] as PanelTab[]).map((item) => (
-            <button key={item} type="button" className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>
-              {item[0].toUpperCase() + item.slice(1)}
-            </button>
-          ))}
+    <section className="tier-dashboard-workspace daily-home" data-tier={tier} data-quiet={quiet}>
+      <GuidedToday key={`${logic.client.id}:${schedule.date}`} logic={logic} schedule={schedule} />
+      <details className="daily-disclosure" data-tutorial-id="dashboard-calendar"><summary>Your schedule at a glance</summary><SchedulePreview preview={preview} flexible={flexible} schedule={schedule} logic={logic} plan={plan} /></details>
+      <DailyDisplayPreferences {...schedule.preferences} />
+      <details className="daily-disclosure" id="progress" onToggle={event => {
+        const open = event.currentTarget.open
+        setDetailsExpanded(open)
+        if (!open) setCalendarExpanded(false)
+      }}><summary>Progress, assessments, and details</summary>
+        {detailsExpanded ? <>
+        <div className="tier-tab-list" aria-label="Dashboard information">
+          {(['progress', 'assessments', 'trends'] as PanelTab[]).map(item => <button key={item} type="button" aria-pressed={tab === item} className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>{item}</button>)}
         </div>
-
-        {tab === 'progress' ? (
-          <ProgressTab logic={logic} tier={tier} />
-        ) : null}
-
-        {tab === 'assessments' ? (
-          <AssessmentsTab logic={logic} capabilities={capabilities} />
-        ) : null}
-
-        {tab === 'trends' ? (
-          <TrendsTab logic={logic} />
-        ) : null}
-      </section>
+        {tab === 'progress' ? <ProgressTab logic={logic} tier={tier} /> : tab === 'assessments' ? <AssessmentsTab logic={logic} capabilities={capabilities} /> : <TrendsTab logic={logic} />}
+        <details onToggle={event => setCalendarExpanded(event.currentTarget.open)}><summary>Detailed calendar</summary>{calendarExpanded ? <OptionalDashboardModule name="Calendar preview" href="/dashboard/schedule"><DashboardCalendar schedule={schedule} planBlocks={planBlocks} clientId={logic.client.id} /></OptionalDashboardModule> : null}</details>
+        </> : null}
+      </details>
     </section>
   )
 }
+function SchedulePreview({ preview, flexible, schedule, logic, plan }: { preview: ScheduleEvent[]; flexible: boolean; schedule: DailyScheduleState; logic: ProgramLogicOutput; plan: ReturnType<typeof buildDailyRecommendation> }) {
+    return <div className="daily-preview">
+      <section aria-label="Schedule preview"><div className="tier-panel-heading"><h2>{flexible ? 'Room for your day' : 'Coming up'}</h2><Link href="/dashboard/schedule">Schedule</Link></div>
+        {preview.length ? preview.map(event => <Link key={event.id} href={event.suggested ? `/dashboard/schedule#event-${event.id}` : getActionRouteForEvent(event, schedule.program || logic.program)}><time>{eventRange(event, schedule.timezone)}</time><strong>{event.title}</strong><small>{event.source_label || (event.source === 'external_calendar' ? event.external_calendar_source || 'Connected calendar' : 'Anastasis')} · {event.status === 'completed' ? 'Done' : schedule.overdueEvents.some(item => item.id === event.id) ? 'Overdue · review in Schedule' : event.suggested ? 'Suggested time · choose in Schedule' : event.flexibility_type === 'fixed' ? 'Fixed commitment' : 'Flexible'}</small></Link>) : <p>No more scheduled items. Leave this space open.</p>}
+      </section>
+      <section aria-label="Progress summary"><h2>Your recorded progress</h2><p>{logic.assessments.dailyCompleted ? 'Check-in saved.' : 'Check-in available.'} {logic.execution.workoutComplete ? `Completed workout recorded${logic.execution.completedWorkoutTitle ? `: ${logic.execution.completedWorkoutTitle}` : ' today'}.` : logic.execution.workoutInProgress ? 'A partial workout is saved. Continue when ready.' : 'No completed workout recorded today.'}</p><p>{logic.program === 'ember' ? 'Nutrition guidance is available. Meal intake is not tracked in EMBER.' : plan.evidence.food === 'not_logged' ? 'Food not logged yet.' : plan.evidence.food === 'partial' ? 'Food partly logged.' : 'Food logged today.'} {plan.evidence.water === 'not_logged' ? 'Water not logged yet.' : `${Math.round(logic.hydration.consumed)} oz water logged.`}</p></section>
+    </div>
+  }

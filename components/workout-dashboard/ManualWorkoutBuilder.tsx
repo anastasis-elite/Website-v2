@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import WorkoutTracker from '@/components/WorkoutTracker'
 import MuscleReadinessMap from '@/components/workout-dashboard/MuscleReadinessMap'
@@ -20,11 +20,14 @@ import {
   type MuscleReadiness,
 } from '@/lib/workout/muscleReadiness'
 import type { CanonicalMuscle } from '@/lib/workout-os/types'
+import { getClientLocalDate } from '@/lib/timezone'
 
 type Props = {
   clientId: string
   authUserId: string
   program: string
+  timezone?: string
+  weightUnit?: 'lb' | 'kg'
   recommendedDayName: string
   recommendedExercises: unknown[]
   memberEquipment: string[]
@@ -65,6 +68,8 @@ export default function ManualWorkoutBuilder({
   clientId,
   authUserId,
   program,
+  timezone,
+  weightUnit,
   recommendedDayName,
   recommendedExercises,
   memberEquipment,
@@ -77,7 +82,31 @@ export default function ManualWorkoutBuilder({
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null)
   const [selectedMovementFamily, setSelectedMovementFamily] = useState<string | null>(null)
   const [activeExercise, setActiveExercise] = useState<ManualWorkoutExercise | null>(null)
-  const [completedExercises, setCompletedExercises] = useState<ManualWorkoutExercise[]>([])
+  const [completedExercises, setCompletedExercises] = useState<Array<ManualWorkoutExercise & { completion_status?: string }>>([])
+  const [restoredDraftKey, setRestoredDraftKey] = useState<string | null>(null)
+  const [draftMessage, setDraftMessage] = useState('')
+  const draftKey = `aos-manual-builder:v1:${clientId}:${program}:${getClientLocalDate({ timezone })}`
+  const draftLoaded = restoredDraftKey === draftKey
+  useEffect(() => {
+    setStep('muscle'); setActiveExercise(null); setCompletedExercises([])
+    setSelectedRegionId(null); setSelectedEquipment(null); setSelectedMovementFamily(null); setDraftMessage('')
+    try {
+      const saved = JSON.parse(localStorage.getItem(draftKey) || 'null')
+      if (saved?.version === 1) {
+        const active = saved.activeExercise
+        const validActive = active && typeof active.id === 'string' && typeof active.exercise === 'string' && Array.isArray(active.available_variants)
+        setCompletedExercises(Array.isArray(saved.completedExercises) ? saved.completedExercises.slice(0, 100).filter((exercise: any) => exercise && typeof exercise.exercise === 'string') : [])
+        if (validActive) { setActiveExercise(active); setStep('logging') }
+        else setStep(saved.completedExercises?.length ? 'complete' : 'muscle')
+      }
+    } catch { /* A damaged local draft must not prevent a new manual workout. */ }
+    setRestoredDraftKey(draftKey)
+  }, [draftKey])
+  useEffect(() => {
+    if (!draftLoaded) return
+    try { localStorage.setItem(draftKey, JSON.stringify({ version: 1, activeExercise, completedExercises })) }
+    catch { setDraftMessage('This browser could not retain the manual workout view. Your saved sets remain in workout history.') }
+  }, [draftKey, draftLoaded, activeExercise, completedExercises])
 
   const selectedMuscles = useMemo(() => regionToMuscles(selectedRegionId), [selectedRegionId])
   const primaryMuscle = selectedMuscles[0]
@@ -143,16 +172,22 @@ export default function ManualWorkoutBuilder({
   }
 
   function chooseExercise(exercise: ManualWorkoutExercise) {
+    const selectedVariant = exercise.available_variants.find(variant => variant.equipment === selectedEquipment) || exercise.available_variants[0]
     setActiveExercise({
       ...exercise,
       id: `${exercise.id}-${Date.now()}`,
+      selected_variant_id: selectedVariant.id,
+      selected_variant_name: selectedVariant.name,
+      selected_equipment: selectedVariant.equipment,
+      equipment: selectedVariant.equipment,
+      load_type: selectedVariant.load_type,
     })
     setStep('logging')
   }
 
-  function finishExercise() {
+  function finishExercise(completed = true) {
     if (activeExercise) {
-      setCompletedExercises((previous) => [...previous, activeExercise])
+      setCompletedExercises((previous) => [...previous, { ...activeExercise, completion_status: completed ? 'Complete' : 'Partial exercise saved' }])
     }
     setActiveExercise(null)
     setStep('complete')
@@ -163,14 +198,19 @@ export default function ManualWorkoutBuilder({
     resetSelection('complete')
   }
 
+  if (!draftLoaded) return <p role="status">Loading your manual workout view…</p>
+
   if (step === 'logging' && activeExercise) {
     return (
       <div className="manual-workout-builder manual-workout-builder--logging" data-testid="manual-workout-builder">
+        {draftMessage ? <p role="status">{draftMessage}</p> : null}
         <WorkoutTracker
-          key={exerciseKey(activeExercise, completedExercises.length)}
+          key={`${draftKey}:${exerciseKey(activeExercise, completedExercises.length)}`}
           clientId={clientId}
           authUserId={authUserId}
           program={program}
+          timezone={timezone}
+          weightUnit={weightUnit}
           dayName="Manual Workout"
           workoutSource="manual"
           plannedExercises={recommendedExercises}
@@ -185,6 +225,7 @@ export default function ManualWorkoutBuilder({
 
   return (
     <div className="manual-workout-builder" data-testid="manual-workout-builder">
+      {draftMessage ? <p role="status">{draftMessage}</p> : null}
       <div className="manual-workout-summary">
         <div>
           <p className="tier-dashboard-label">Manual Workout</p>
@@ -200,7 +241,7 @@ export default function ManualWorkoutBuilder({
               <span>{index + 1}</span>
               <div>
                 <strong>{exercise.display_name}</strong>
-                <small>{summarizeExercise(exercise)}</small>
+                <small>{String(exercise.completion_status || 'Saved')} · {summarizeExercise(exercise)}</small>
               </div>
             </li>
           ))}

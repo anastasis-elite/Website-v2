@@ -49,3 +49,12 @@ export async function POST(request: Request) {
     { status: 501 },
   )
 }
+
+export async function GET() {
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser()
+ if(!user)return NextResponse.json({error:'Unauthorized'},{status:401})
+ const {data:client}=await supabase.from('clients').select('client_id,program').eq('auth_user_id',user.id).maybeSingle()
+ if(!client)return NextResponse.json({error:'Client not found.'},{status:404})
+ if(!getTierCapabilities(client.program).nutritionPhotoMacroEstimation)return NextResponse.json({error:'Photo estimation is only available for Phoenix.'},{status:403})
+ return NextResponse.json({available:false,message:'Photo estimation is not available yet. Search for your food or use a barcode to log this meal.'})
+}

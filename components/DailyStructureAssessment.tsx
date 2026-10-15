@@ -129,7 +129,7 @@ export default function DailyStructureAssessment({
           client_id: clientId,
           execution_style: executionStyle,
           carousel_style:
-            executionStyle === 'schedule' ? 'step' : carouselStyle,
+            carouselStyle,
           daily_non_negotiables: selectedNonNegotiables,
           ...formData,
         }),
@@ -142,7 +142,7 @@ export default function DailyStructureAssessment({
       }
 
       setStatus('success')
-      setMessage('Your daily structure has been saved.')
+      setMessage('Rhythm and training preferences saved. Recurring commitments have their own save below.')
     } catch (error) {
       setStatus('error')
       setMessage(
@@ -504,7 +504,7 @@ export default function DailyStructureAssessment({
               opacity: status === 'saving' ? 0.65 : 1,
             }}
           >
-            {status === 'saving' ? 'Saving...' : 'Save Daily Structure'}
+            {status === 'saving' ? 'Saving...' : 'Save rhythm and training preferences'}
           </button>
 
           <Link href="/dashboard" style={styles.secondaryButtonStyle}>

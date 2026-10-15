@@ -5,7 +5,11 @@ import { useEffect, useRef, useState } from 'react'
 
 import CycleProgressOrb from '@/components/CycleProgressOrb'
 import WaterCup from '@/components/WaterCup'
+import HydrationQuickAdd from '@/components/hydration/HydrationQuickAdd'
 import { getFlameVisualState } from '@/lib/dashboard/getFlameVisualState'
+import { getClientLocalDate } from '@/lib/timezone'
+import { foodEntryHref } from '@/lib/nutrition/loggingRoutes'
+import { getTierCapabilities } from '@/lib/entitlements'
 
 type Props = {
   client: any
@@ -41,7 +45,9 @@ export default function DashboardStatusDock(
   } = props
 
   const [cycleOpen, setCycleOpen] = useState(false)
-  const [waterOpen, setWaterOpen] = useState(false)
+  const clientId = String(client?.client_id || '')
+  const logDate = dailyPlan?.date || getClientLocalDate(client)
+  const canLogFood = getTierCapabilities(client?.program).nutritionMealLogging
 
   const dockRef = useRef<HTMLDivElement | null>(null)
 
@@ -56,7 +62,6 @@ export default function DashboardStatusDock(
         )
       ) {
         setCycleOpen(false)
-        setWaterOpen(false)
       }
     }
 
@@ -111,12 +116,11 @@ export default function DashboardStatusDock(
   const waterTarget =
     dailyTargets.water || 1
 
-  const [
-    localWaterRemaining,
-    setLocalWaterRemaining,
-  ] = useState<number>(
-    waterRemaining,
-  )
+  const waterScope = `${clientId}:${logDate}`
+  const [confirmedWater, setConfirmedWater] = useState<{ scope: string; total: number } | null>(null)
+  useEffect(() => setConfirmedWater(null), [waterRemaining, waterScope])
+  const consumedWater = confirmedWater?.scope === waterScope ? confirmedWater.total : Math.max(0, waterTarget - waterRemaining)
+  const localWaterRemaining = Math.max(0, waterTarget - consumedWater)
 
   const waterPercent = Math.max(
     0,
@@ -172,7 +176,6 @@ export default function DashboardStatusDock(
               (current) => !current,
             )
 
-            setWaterOpen(false)
           }}
           style={orbButtonStyle}
         >
@@ -215,26 +218,15 @@ export default function DashboardStatusDock(
           <span>fats</span>
         </div>
 
-        <button
-          type="button"
-          aria-label="Quick add water"
-          title="Quick add water"
-          onClick={() => {
-            setWaterOpen(
-              (current) => !current,
-            )
-
-            setCycleOpen(false)
-          }}
-          style={orbButtonStyle}
-        >
-          <WaterCup
-            percentFull={waterPercent}
-            ouncesRemaining={
-              localWaterRemaining
-            }
-          />
-        </button>
+        <HydrationQuickAdd key={waterScope} clientId={clientId} logDate={logDate}
+          consumed={consumedWater} target={waterTarget}
+          onSaved={total => setConfirmedWater({ scope: waterScope, total })}
+          renderTrigger={({ open, triggerRef, toggle }) => <button ref={triggerRef}
+            type="button" aria-label="Quick add water" title="Log water"
+            aria-haspopup="dialog" aria-expanded={open}
+            onClick={() => { setCycleOpen(false); toggle() }} style={orbButtonStyle}>
+            <WaterCup percentFull={waterPercent} ouncesRemaining={localWaterRemaining} />
+          </button>} />
 
         <Link
           href="/dashboard/check-in"
@@ -248,9 +240,9 @@ export default function DashboardStatusDock(
         </Link>
 
         <Link
-          href="/dashboard/nutrition"
-          aria-label="Open Food Log"
-          title="Food Log"
+          href={foodEntryHref(client?.program)}
+          aria-label={canLogFood ? 'Open Food Log' : 'Open Nutrition Guidance'}
+          title={canLogFood ? 'Food Log' : 'Nutrition Guidance'}
           style={actionCircleStyle}
         >
           <span aria-hidden="true">
@@ -320,96 +312,14 @@ export default function DashboardStatusDock(
         </div>
       ) : null}
 
-      {waterOpen ? (
-        <div
-          data-water-popup="true"
-          style={waterPopupStyle}
-        >
-          <p style={bodyStyle}>
-            Quick Add Water
-          </p>
-
-          <div style={waterGridStyle}>
-            {[8, 12, 16, 24].map(
-              (ounces) => (
-                <button
-                  key={ounces}
-                  type="button"
-                  style={buttonStyle}
-                  onClick={async () => {
-                    const response =
-                      await fetch(
-                        '/api/nutrition/add-water',
-                        {
-                          method:
-                            'POST',
-
-                          headers: {
-                            'Content-Type':
-                              'application/json',
-                          },
-
-                          body:
-                            JSON.stringify(
-                              {
-                                clientId:
-                                  client?.client_id,
-
-                                ounces,
-                              },
-                            ),
-                        },
-                      )
-
-                    if (
-                      !response.ok
-                    ) {
-                      console.error(
-                        'Water add failed:',
-                        await response.json(),
-                      )
-
-                      return
-                    }
-
-                    setLocalWaterRemaining(
-                      (
-                        previous,
-                      ) =>
-                        Math.max(
-                          0,
-                          previous -
-                            ounces,
-                        ),
-                    )
-
-                    setWaterOpen(false)
-                  }}
-                >
-                  +{ounces} oz
-                </button>
-              ),
-            )}
-          </div>
-
-          <div style={popupButtonRowStyle}>
-            <Link
-              href="/dashboard/nutrition"
-              style={buttonStyle}
-            >
-              Open Nutrition
-            </Link>
-          </div>
-        </div>
-      ) : null}
     </div>
   )
 }
 
 const actionCircleStyle = {
-  width: '38px',
-  height: '38px',
-  flex: '0 0 38px',
+  width: '44px',
+  height: '44px',
+  flex: '0 0 44px',
   borderRadius: '999px',
 
   border:
@@ -517,23 +427,9 @@ const cyclePopupStyle = {
   width: 'min(92vw, 420px)',
 } as const
 
-const waterPopupStyle = {
-  ...popupBaseStyle,
-  top: '180px',
-  width: '220px',
-} as const
-
 const popupButtonRowStyle = {
   display: 'flex',
   gap: '10px',
   flexWrap: 'wrap',
   marginTop: '18px',
-} as const
-
-const waterGridStyle = {
-  display: 'grid',
-  gridTemplateColumns:
-    '1fr 1fr',
-  gap: '10px',
-  marginTop: '12px',
 } as const

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getTimezoneFromState } from '@/lib/timezone'
 import { applyExplicitPreferences, getDefaultCommunicationProfile } from '@/lib/accountability/communicationProfile'
 import { createPartnerPersona } from '@/lib/accountability/partnerPersona'
+import { updateOwnedOnboardingData } from '@/lib/dashboard/updateOnboardingData'
 
 export async function POST(req: Request) {
   try {
@@ -33,7 +34,25 @@ export async function POST(req: Request) {
       )
     }
 
-    const timezone = getTimezoneFromState(body.state)
+    const { data: existing, error: clientError } = await supabase.from('clients').select('*').eq('auth_user_id', user.id).maybeSingle()
+    if (clientError) return NextResponse.json({ error: 'Your profile could not be loaded.' }, { status: 503 })
+    if (!existing) return NextResponse.json({ error: 'Client profile was not found.' }, { status: 404 })
+    const [programResult, initialResult, strengthResult] = await Promise.all([
+      supabase.from('program_outputs').select('id').eq('client_id', existing.client_id).eq('program', existing.program).limit(1).maybeSingle(),
+      supabase.from('assessments').select('id').eq('client_id', existing.client_id).eq('assessment_type', 'initial').limit(1).maybeSingle(),
+      supabase.from('assessments').select('id').eq('client_id', existing.client_id).eq('assessment_type', 'strength').limit(1).maybeSingle(),
+    ])
+    if (programResult.error || initialResult.error || strengthResult.error) {
+      return NextResponse.json({ error: 'Your saved setup progress could not be loaded. Please try again.' }, { status: 503 })
+    }
+    // Profile completion opens the member assessment; it is not a completed training baseline.
+    // Existing plans or strength baselines remain usable without repeating earlier assessments.
+    const setupStep = programResult.data ? 'dashboard' : strengthResult.data ? 'plan_generation' : initialResult.data ? 'strength_assessment' : 'initial_assessment'
+    const nextRoute = setupStep === 'initial_assessment' ? '/dashboard/assessment/start'
+      : setupStep === 'strength_assessment' ? '/dashboard/assessment/start2'
+      : setupStep === 'plan_generation' ? '/dashboard/onboarding/plan'
+      : `/dashboard/program/${existing.program || 'ignite'}`
+    const timezone = existing?.timezone || getTimezoneFromState(body.state)
     const completedAt = new Date().toISOString()
     const accountabilityPreferences = {
       supportPreference:
@@ -42,9 +61,11 @@ export async function POST(req: Request) {
           : 'encourage_without_pressure',
     }
 
-    const { data: updatedClient, error } = await supabase
-      .from('clients')
-      .update({
+    const updateResult = await updateOwnedOnboardingData({
+      supabase,
+      userId: user.id,
+      clientId: existing.client_id,
+      fields: {
         birthdate: body.birthdate,
         address_line_1: body.addressLine1,
         address_line_2: body.addressLine2 || null,
@@ -60,18 +81,14 @@ export async function POST(req: Request) {
         last_period_start: body.lastPeriodStart || null,
         average_cycle_length: Number(body.averageCycleLength || 28),
 
-        onboarding_data: {
-          ...body,
-          timezone,
-          accountabilityPreferences,
-        },
-
+        execution_style: ['schedule','flow','hybrid'].includes(body.executionStyle) ? body.executionStyle : existing?.execution_style || 'flow',
+        carousel_style: ['section','step'].includes(body.carouselStyle) ? body.carouselStyle : existing?.carousel_style || 'section',
         cycle_tracking_enabled:
           body.reproductiveStatus === 'cycling' ||
           body.reproductiveStatus === 'irregular_cycles',
 
         onboarding_completed: true,
-        onboarding_completed_at: completedAt,
+        onboarding_completed_at: existing?.onboarding_completed_at || completedAt,
         updated_at: completedAt,
 
         last_six_cycle_starts: body.knowsLastSixCycles
@@ -84,28 +101,14 @@ export async function POST(req: Request) {
               body.cycleStart6,
             ].filter(Boolean)
           : null,
-      })
-      .eq('auth_user_id', user.id)
-      .select('*')
-      .maybeSingle()
+      },
+      merge: current => ({ ...current, ...body, timezone, accountabilityPreferences }),
+    })
 
-    if (error) {
-      console.error('ONBOARDING CLIENT UPDATE ERROR:', error)
-
-      return NextResponse.json(
-        {
-          error: 'Unable to save onboarding.',
-          details: error.message,
-        },
-        { status: 500 }
-      )
-    }
-
-    if (!updatedClient) {
-      return NextResponse.json(
-        { error: 'Client profile was not found.' },
-        { status: 404 }
-      )
+    if (!updateResult.saved) {
+      return NextResponse.json({ error: updateResult.status === 404 ? 'Client profile was not found.'
+        : updateResult.status === 409 ? 'Another change was saved at the same time. Refresh and try again.'
+        : 'Unable to save onboarding. Please try again.' }, { status: updateResult.status })
     }
 
     const communicationProfile = applyExplicitPreferences(
@@ -114,7 +117,7 @@ export async function POST(req: Request) {
     )
     const partnerPersona = createPartnerPersona({
       userId: user.id,
-      clientId: updatedClient.client_id,
+      clientId: existing.client_id,
       profile: communicationProfile,
     })
 
@@ -123,7 +126,7 @@ export async function POST(req: Request) {
       .upsert(
         {
           user_id: user.id,
-          client_id: updatedClient.client_id,
+          client_id: existing.client_id,
           accountability_preferences: accountabilityPreferences,
           accountability_partner_persona: partnerPersona,
           accountability_communication_profile: communicationProfile,
@@ -144,9 +147,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      clientId: updatedClient.client_id,
-      onboardingCompleted: updatedClient.onboarding_completed,
-      redirect: `/dashboard/program/${updatedClient.program || 'ignite'}`,
+      clientId: existing.client_id,
+      onboardingCompleted: true,
+      profileCompleted: true,
+      baselineCompleted: Boolean(strengthResult.data),
+      setupStep,
+      redirect: nextRoute,
     })
   } catch (error) {
     console.error('ONBOARDING PROFILE ERROR:', error)

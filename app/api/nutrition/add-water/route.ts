@@ -1,3 +1,5 @@
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { getClientLocalDate } from '@/lib/timezone'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
@@ -15,17 +17,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { clientId, ounces } = await request.json()
+    const { clientId, ounces, submissionId, logDate } = await request.json()
 
-    if (!clientId || !ounces) {
+    if (!clientId || typeof ounces !== 'number' || !Number.isFinite(ounces) || ounces <= 0) {
       return NextResponse.json(
         { error: 'Missing client or ounces.' },
         { status: 400 }
       )
     }
-
-    const today = new Date().toISOString().split('T')[0]
-
+    if (typeof submissionId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(submissionId)) {
+      return NextResponse.json({ error: 'A valid water submission identifier is required.' }, { status: 400 })
+    }
+    if (typeof logDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(logDate)) {
+      return NextResponse.json({ error: 'A water log date is required.' }, { status: 400 })
+    }
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('*')
@@ -41,6 +46,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
     }
 
+    const today = getClientLocalDate(client)
+    const staleDate = () => NextResponse.json({ error: 'This water submission belongs to another local day. Review that day’s saved hydration before logging again.' }, { status: 409 })
+    if (logDate !== today) return staleDate()
     const { data: log, error: logError } = await supabase
       .from('nutrition_logs')
       .select('*')
@@ -51,6 +59,7 @@ export async function POST(request: Request) {
     if (logError) {
       return NextResponse.json({ error: logError.message }, { status: 500 })
     }
+    if (getClientLocalDate(client) !== today) return staleDate()
 
     if (!log) {
       const nutrition = await calculateClientNutritionTargets({
@@ -72,7 +81,9 @@ export async function POST(request: Request) {
         trainingLevel: 'general_fitness',
       })
 
-      const { data: newLog, error: insertError } = await supabase
+      if (getClientLocalDate(client) !== today) return staleDate()
+
+      let { data: newLog, error: insertError } = await supabase
         .from('nutrition_logs')
         .insert({
           client_id: clientId,
@@ -83,7 +94,7 @@ export async function POST(request: Request) {
           carbs: target.carbs,
           fats: target.fats,
           water_oz: water,
-          water_consumed_oz: Number(ounces),
+          water_consumed_oz: 0,
           ...micronutrientTargets,
           ...nutritionLogAuditFields(target),
           updated_at: new Date().toISOString(),
@@ -91,36 +102,32 @@ export async function POST(request: Request) {
         .select('*')
         .single()
 
-      if (insertError) {
+      if (insertError?.code === '23505') {
+        const retry = await supabase.from('nutrition_logs').select('*').eq('client_id', clientId).eq('log_date', today).single()
+        newLog = retry.data; insertError = retry.error
+      }
+      if (insertError || !newLog) {
         return NextResponse.json(
-          { error: insertError.message },
+          { error: insertError?.message || 'Today’s water log could not be opened.' },
           { status: 500 }
         )
       }
 
-      return NextResponse.json({
-        success: true,
-        nutritionLog: newLog,
-      })
+      if (getClientLocalDate(client) !== today) return staleDate()
+      const { data: added, error: addError } = await supabase.rpc('add_daily_water', { p_log_id: newLog.id, p_ounces: ounces, p_submission_id: submissionId })
+      if (addError) return NextResponse.json({ error: addError.message, retryWithSameSubmission: true }, { status: 500 })
+      invalidateDailyPlan()
+      return NextResponse.json({ success: true, nutritionLog: added })
     }
 
-    const newWaterTotal =
-      Number(log.water_consumed_oz || 0) + Number(ounces)
-
-    const { data, error } = await supabase
-      .from('nutrition_logs')
-      .update({
-        water_consumed_oz: newWaterTotal,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', log.id)
-      .eq('auth_user_id', user.id)
-      .select('*')
-      .single()
+    if (getClientLocalDate(client) !== today) return staleDate()
+    const { data, error } = await supabase.rpc('add_daily_water', { p_log_id: log.id, p_ounces: ounces, p_submission_id: submissionId })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: error.message, retryWithSameSubmission: true }, { status: 500 })
     }
+
+    invalidateDailyPlan()
 
     return NextResponse.json({
       success: true,

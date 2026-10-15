@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import DailyCheckInForm from '@/components/DailyCheckInForm'
@@ -8,6 +7,9 @@ import RecoveryLogger from '@/components/RecoveryLogger'
 import BreathingReset from '@/components/recovery/BreathingReset'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { SorenessRegionKey } from '@/lib/recovery/sorenessRegions'
+import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
+import { getRecoveryScoreExplanation } from '@/lib/recovery/scoreExplanation'
+import { useViewPreference } from '@/components/dashboard/useViewPreference'
 
 type ProgressTab = 'daily' | 'trends'
 type ActionTab = 'tools' | 'checkIn'
@@ -57,7 +59,7 @@ function scoreFromHighIsGood(value: number | null | undefined) {
 }
 
 function formatStatus(value: string) {
-  return value.replaceAll('_', ' ')
+  return value === 'modify_workout' ? 'A lighter workout fits today' : value.replaceAll('_', ' ')
 }
 
 function formatDuration(action: ProgramLogicOutput['recoveryActions'][number]) {
@@ -126,11 +128,13 @@ export default function RecoveryDashboardClient({
   trends: RecoveryTrend[]
   recentActivities: RecoveryActivity[]
 }) {
-  const [progressTab, setProgressTab] = useState<ProgressTab>('daily')
-  const [actionTab, setActionTab] = useState<ActionTab>('tools')
-  const [managementTab, setManagementTab] = useState<ManagementTab>('assessment')
+  const [progressTab, setProgressTab] = useViewPreference<ProgressTab>(clientId, 'recovery-progress', ['daily', 'trends'], 'daily')
+  const [actionTab, setActionTab] = useViewPreference<ActionTab>(clientId, 'recovery-actions', ['tools', 'checkIn'], logic.assessments.dailyCompleted ? 'tools' : 'checkIn')
+  const [managementTab, setManagementTab] = useViewPreference<ManagementTab>(clientId, 'recovery-management', ['assessment', 'history', 'insights'], 'assessment')
 
-  const recoveryScore = progressPercent(logic.recoveryStatus.score)
+  const training = getDailyTraining(logic)
+  const scoreExplanation = getRecoveryScoreExplanation(logic)
+  const recoveryScore = scoreExplanation.score
   const sleepPercent = logic.sleep.quality !== null
     ? scoreFromHighIsGood(logic.sleep.quality)
     : logic.sleep.hours !== null
@@ -144,8 +148,8 @@ export default function RecoveryDashboardClient({
     {
       label: 'Recovery',
       percent: recoveryScore,
-      value: formatStatus(logic.recoveryStatus.status),
-      detail: logic.recoveryStatus.movementPreserved ? 'Movement can stay in the plan.' : 'Recovery should lead the day.',
+      value: training.label,
+      detail: scoreExplanation.summary,
     },
     {
       label: 'Sleep',
@@ -204,15 +208,24 @@ export default function RecoveryDashboardClient({
           <article className="tier-daily-insight workout-objective recovery-objective" data-testid="recovery-objective">
             <p className="tier-dashboard-label">Recovery Status</p>
             <div>
-              <h1>{formatStatus(logic.recoveryStatus.status)}</h1>
+              <h1>{training.label}</h1>
               <BreathingReset clientId={clientId} />
             </div>
-            <p>{logic.recoveryStatus.reasoning}</p>
+            <p>{training.reason}</p>
+            <p>{training.readinessNote}</p>
+            <details className="nutrient-why-panel" data-testid="recovery-score-explanation">
+              <summary>How is my recovery score determined?</summary>
+              <p>{scoreExplanation.summary}</p>
+              {scoreExplanation.missingInputs.length ? <p><strong>Missing:</strong> {scoreExplanation.missingInputs.join(', ')}. Open Check-In to add these.</p> : null}
+              {scoreExplanation.availableInputs.length ? <p><strong>Available:</strong> {scoreExplanation.availableInputs.join(', ')}.</p> : null}
+              {recoveryScore !== null ? <p>{logic.recoveryStatus.reasoning}</p> : null}
+              <p>Reported symptom and fatigue signals can also adjust today’s guidance.</p>
+            </details>
             <small>Today&apos;s priority: {logic.recoveryActions[0]?.label || logic.symptoms.recoveryRecommendation}</small>
             <div className="recovery-objective-metrics">
-              <article><span>Recovery Score</span><strong>{recoveryScore}%</strong></article>
-              <article><span>Capacity</span><strong>{formatStatus(logic.capacityStatus.status)}</strong></article>
-              <article><span>Check-In</span><strong>{logic.assessments.dailyCompleted ? 'Complete' : 'Open'}</strong></article>
+              <article><span>Recovery Score</span><strong>{recoveryScore === null ? 'Needs check-in' : `${recoveryScore}%`}</strong></article>
+              <article><span>Capacity</span><strong>{logic.assessments.dailyCompleted ? formatStatus(logic.capacityStatus.status) : 'Not confirmed'}</strong></article>
+              <article><span>Check-In</span><strong>{logic.assessments.dailyCompleted ? 'Complete' : 'Not logged'}</strong></article>
             </div>
           </article>
 
@@ -279,7 +292,7 @@ export default function RecoveryDashboardClient({
                       <article key={action.id}>
                         <span>{formatDuration(action)}</span>
                         <strong>{action.label}</strong>
-                        <small>Suggested by the existing recovery engine.</small>
+                        <small>An option for today. Choose what fits your capacity.</small>
                       </article>
                     )) : <p className="tier-calendar-empty">{logic.symptoms.recoveryRecommendation}</p>}
                   </div>
@@ -292,6 +305,9 @@ export default function RecoveryDashboardClient({
                   <DailyCheckInForm
                     clientId={clientId}
                     program={program}
+                    completed={logic.assessments.dailyCompleted}
+                    localDate={logic.flameState.requirements.date}
+                    timeZone={logic.client.timezone}
                     cycleTrackingEnabled={cycleTrackingEnabled}
                     initial={normalizedCheckInInitial}
                     stayOnSave
@@ -340,7 +356,7 @@ export default function RecoveryDashboardClient({
             {managementTab === 'insights' ? (
               <div className="tier-info-grid recovery-insights-grid" data-testid="recovery-insights-tab">
                 <article><span>Readiness</span><strong>{logic.workoutDecision.intensityTarget}</strong><small>{logic.workoutDecision.reasonForModification}</small></article>
-                <article><span>Capacity Drivers</span><strong>{logic.capacityStatus.drivers.length ? logic.capacityStatus.drivers.join(', ') : 'Stable'}</strong><small>Existing capacity engine output.</small></article>
+                <article><span>Capacity Drivers</span><strong>{logic.capacityStatus.drivers.length ? logic.capacityStatus.drivers.join(', ') : 'Stable'}</strong><small>Based on the inputs available today.</small></article>
                 <article><span>Sleep Support</span><strong>{logic.sleep.logged ? 'Logged' : 'Needs input'}</strong><small>{logic.sleep.logged ? 'Sleep is informing today’s guidance.' : 'Check in to add sleep context.'}</small></article>
                 <article><span>Hydration</span><strong>{logic.hydration.status.replaceAll('_', ' ')}</strong><small>{logic.hydration.prompt}</small></article>
                 {passiveMetrics.map(([label, value, unit]) => (

@@ -1,3 +1,4 @@
+import { loadDailySignals } from '@/lib/dashboard/dailySignals'
 import Link from 'next/link'
 
 import CycleTracker from '@/components/CycleTracker'
@@ -72,6 +73,7 @@ export default async function CyclePage() {
   const { supabase, client } =
     await getDashboardContext()
 
+  const shared = await loadDailySignals(supabase, client)
   const today =
     getClientLocalDate(client)
 
@@ -386,7 +388,8 @@ export default async function CyclePage() {
           )}
         </section>
 
-        <CycleTracker
+        <section className="daily-plan-card"><h2>Today’s shared check-in</h2><p>{shared.recovery?.energy_level != null ? `Energy: ${shared.recovery.energy_level}/10, saved today.` : 'Energy has not been answered today.'}</p><p>{shared.symptoms.length ? `Reported today: ${shared.symptoms.map((item: any) => item.symptom_types?.name || item.symptom_name).join(', ')}.` : 'No symptoms logged today. That does not mean you have none.'}</p><Link href="/dashboard/check-in" className="tier-secondary-action">Update shared answers</Link></section>
+      <CycleTracker
           clientId={client.client_id}
           cycleStatus={cycleStatus}
           lastPeriodStart={
@@ -398,7 +401,8 @@ export default async function CyclePage() {
           cycleTrackingEnabled={
             client.cycle_tracking_enabled
           }
-          todayLog={todayLog}
+          todayLog={shared.cycle || todayLog}
+          sharedSymptomNames={shared.symptoms.map((item: any) => String(item.symptom_types?.name || item.symptom_name || '').toLowerCase())}
         />
 
         {latestTrend?.observations?.length ||

@@ -9,7 +9,6 @@ export default async function SchedulePage() {
   return (
     <ScheduleDashboardClient
       initialSchedule={schedule}
-      clientId={client.client_id}
     />
   )
 }

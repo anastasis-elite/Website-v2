@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getClientLocalDate } from '@/lib/timezone'
 
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -93,15 +94,7 @@ export async function GET(request: Request) {
     .map((meal: MealRow) => meal.food_id)
     .filter((id): id is string => Boolean(id))
 
-  if (!loggedFoodIds.length) {
-    return NextResponse.json({
-      state: 'needs_logs',
-      suggestions: [],
-      remaining,
-    })
-  }
-
-  if (!hasMeaningfulNutritionGaps(remaining as NutritionRemainingSnapshot | null)) {
+  if (remaining && !hasMeaningfulNutritionGaps(remaining as NutritionRemainingSnapshot)) {
     return NextResponse.json({
       state: 'complete',
       suggestions: [],
@@ -114,6 +107,7 @@ export async function GET(request: Request) {
     .select(
       `
         ${foodWithNutritionSelect},
+        allergens,
         food_serving_options (
           label,
           grams,
@@ -189,11 +183,11 @@ export async function GET(request: Request) {
     await supabase.from('pattern_recommendation_events').insert({
       user_id: user.id,
       client_id: log.client_id,
-      recommendation_date: new Date().toISOString().split('T')[0],
+      recommendation_date: getClientLocalDate(client),
       recommendation_area: 'nutrition',
       affected_item: 'suggested_foods',
       recommendation: {
-        state: suggestions.length ? 'ready' : 'complete',
+        state: suggestions.length ? 'ready' : 'unavailable',
         suggestions: suggestions.map((suggestion) => ({
           foodId: suggestion.foodId,
           name: suggestion.name,
@@ -214,7 +208,8 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    state: suggestions.length ? 'ready' : 'complete',
+    state: suggestions.length ? 'ready' : 'unavailable',
+    basis: remaining ? loggedFoodIds.length ? 'remaining' : 'targets' : 'general',
     suggestions,
     remaining,
     physiologySupportActive: physiologyEffects.effects.length > 0,

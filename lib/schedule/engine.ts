@@ -5,11 +5,13 @@ import type {
   ScheduleAdjustment,
   ScheduleEvent,
 } from './types'
+import { healthEventTypes, scheduleConflict } from './actions'
+import { inferMealType, mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 
 export const ACTION_ROUTES: Record<string, string> = {
   workout: '/dashboard/program/ignite/workout',
-  meal: '/dashboard/nutrition#aos-food-logger',
-  hydration: '/dashboard/nutrition#hydration',
+  meal: '/dashboard/nutrition?log=meal',
+  hydration: WATER_ENTRY_HREF,
   recovery: '/dashboard/recovery',
   check_in: '/dashboard/check-in',
   assessment: '/dashboard/assessment/start',
@@ -37,7 +39,7 @@ function canMove(event: ScheduleEvent) {
     event.flexibility_type === 'flexible' &&
     event.movable &&
     !event.approval_required &&
-    event.status === 'scheduled'
+    ['scheduled', 'deferred'].includes(event.status)
   )
 }
 
@@ -63,12 +65,13 @@ export function getOpenWindows(
   dayStart: Date,
   dayEnd: Date,
   minimumMinutes = 10,
+  transitionMinutes = 0,
 ): OpenWindow[] {
   const occupied = events
-    .filter((event) => event.status !== 'cancelled')
+    .filter((event) => !event.suggested && event.busy !== false && !['cancelled', 'skipped'].includes(event.status))
     .map((event) => [
-      Math.max(dayStart.getTime(), eventStart(event).getTime()),
-      Math.min(dayEnd.getTime(), eventEnd(event).getTime()),
+      Math.max(dayStart.getTime(), eventStart(event).getTime() - transitionMinutes * 60000),
+      Math.min(dayEnd.getTime(), eventEnd(event).getTime() + transitionMinutes * 60000),
     ] as const)
     .filter(([start, end]) => end > start)
     .sort((a, b) => a[0] - b[0])
@@ -129,9 +132,17 @@ export function firstValidWindow(
 }
 
 export function getActionRouteForEvent(event: ScheduleEvent, program = 'ignite') {
+  if (event.calendar_event_id) return `/dashboard/schedule#calendar-event-${event.calendar_event_id}`
+  if (event.event_type === 'meal' && program === 'ember') return '/dashboard/nutrition'
+  const nutritionDestination = !event.action_route || event.action_route.split(/[?#]/)[0] === '/dashboard/nutrition'
+  if (nutritionDestination && event.event_type === 'meal') {
+    const query = new URLSearchParams(event.action_route?.split('?')[1]?.split('#')[0])
+    return mealEntryHref(program, inferMealType(query.get('meal')) || inferMealType(event.title), query.get('recipe'))
+  }
+  if (nutritionDestination && event.event_type === 'hydration') return WATER_ENTRY_HREF
   if (event.action_route) return event.action_route
   if (event.event_type === 'workout') return `/dashboard/program/${program}/workout`
-  return ACTION_ROUTES[event.event_type] || '/dashboard/schedule'
+  return ACTION_ROUTES[event.event_type] || `/dashboard/schedule#event-${event.id}`
 }
 
 export function buildScheduleAdjustments({
@@ -141,6 +152,7 @@ export function buildScheduleAdjustments({
   capacity,
   recovery,
   symptoms,
+  transitionMinutes = 0,
 }: {
   events: ScheduleEvent[]
   openWindows: OpenWindow[]
@@ -148,6 +160,7 @@ export function buildScheduleAdjustments({
   capacity?: any
   recovery?: any
   symptoms?: any
+  transitionMinutes?: number
 }): ScheduleAdjustment[] {
   const lowCapacity =
     capacity?.status === 'low_capacity' ||
@@ -160,42 +173,41 @@ export function buildScheduleAdjustments({
 
   if (lowCapacity) {
     const workout = events.find(
-      (event) => event.event_type === 'workout' && canAutoApply(event),
+      (event) => event.event_type === 'workout' && canAutoApply(event) && eventStart(event) >= now,
     )
     if (workout) {
       const currentDuration =
         workout.estimated_duration_minutes ||
         minutesBetween(new Date(workout.start_at), new Date(workout.end_at))
       const suggestedDuration = Math.max(10, Math.min(currentDuration, 30))
+      const conflicts = scheduleConflict(events, workout.id, eventStart(workout), eventEnd(workout), transitionMinutes)
+      const proposed = conflicts ? firstValidWindow(openWindows, workout, now, suggestedDuration) : {start:eventStart(workout),end:new Date(eventStart(workout).getTime()+suggestedDuration*60000)}
       adjustments.push({
         event_id: workout.id,
         title: workout.title,
         adjustment_type: 'reduce_duration',
         reason:
           'Low recovery or capacity signals reduce flexible training load while preserving fixed obligations.',
-        suggested_start_at: workout.start_at,
-        suggested_end_at: new Date(
-          new Date(workout.start_at).getTime() + suggestedDuration * 60000,
-        ).toISOString(),
+        suggested_start_at: proposed?.start.toISOString() || null,
+        suggested_end_at: proposed?.end.toISOString() || null,
         suggested_duration_minutes: suggestedDuration,
         requires_approval: false,
-        automatic: true,
-        applied: true,
+        automatic: false,
+        applied: false,
       })
     }
 
     if (!events.some((event) => event.event_type === 'recovery' && isActionable(event))) {
-      const window = openWindows.find((item) => item.minutes >= 10)
-      adjustments.push({
+      const window = openWindows.find((item) => new Date(item.end_at).getTime() - Math.max(new Date(item.start_at).getTime(),now.getTime()) >= 10*60000)
+      const recoveryStart = window ? new Date(Math.max(new Date(window.start_at).getTime(),now.getTime())) : null
+      if (recoveryStart) adjustments.push({
         event_id: 'suggested-recovery-block',
         title: 'Recovery buffer',
         adjustment_type: 'suggest_recovery',
         reason:
           'Low capacity signals call for a short recovery block before adding more output.',
-        suggested_start_at: window?.start_at || now.toISOString(),
-        suggested_end_at: window
-          ? new Date(new Date(window.start_at).getTime() + 10 * 60000).toISOString()
-          : new Date(now.getTime() + 10 * 60000).toISOString(),
+        suggested_start_at: recoveryStart.toISOString(),
+        suggested_end_at: new Date(recoveryStart.getTime()+10*60000).toISOString(),
         suggested_duration_minutes: 10,
         requires_approval: false,
         automatic: false,
@@ -206,7 +218,8 @@ export function buildScheduleAdjustments({
 
   for (const event of events) {
     if (!canMove(event)) continue
-    if (eventEnd(event) >= now || event.status !== 'scheduled') continue
+    const conflictingSuggestion = event.suggested && scheduleConflict(events.filter(item => !item.suggested), event.id, eventStart(event), eventEnd(event), transitionMinutes)
+    if (eventEnd(event) > now && !conflictingSuggestion) continue
 
     const duration =
       event.estimated_duration_minutes ||
@@ -216,7 +229,7 @@ export function buildScheduleAdjustments({
       event_id: event.id,
       title: event.title,
       adjustment_type: 'suggest_move',
-      reason: 'This flexible item was missed; the next valid open window is suggested.',
+      reason: conflictingSuggestion ? 'The preferred time conflicts with a commitment or transition buffer. Choose a time that fits.' : 'Still available today. You can move this to a later window or skip it.',
       suggested_start_at: window?.start.toISOString() || null,
       suggested_end_at: window?.end.toISOString() || null,
       suggested_duration_minutes: duration,
@@ -304,7 +317,7 @@ export function buildNextAction({
 
   const start = eventStart(nextActionableEvent)
   const end = eventEnd(nextActionableEvent)
-  const overdue = end < now
+  const overdue = end <= now
   const minutesUntil = Math.round((start.getTime() - now.getTime()) / 60000)
   const urgency = overdue
     ? 'overdue'
@@ -326,8 +339,9 @@ export function buildNextAction({
     action_route: getActionRouteForEvent(nextActionableEvent, program),
     overdue,
     automatically_adjusted: Boolean(adjustment?.automatic && adjustment.applied),
-    can_complete: !nextActionableEvent.virtual && isActionable(nextActionableEvent),
-    can_defer: !nextActionableEvent.virtual && canAutoApply(nextActionableEvent),
+    can_complete: !nextActionableEvent.virtual && !nextActionableEvent.calendar_event_id &&
+      !healthEventTypes.has(nextActionableEvent.event_type) && isActionable(nextActionableEvent),
+    can_defer: canMove(nextActionableEvent),
     short_reason: reason.length > 96 ? `${reason.slice(0, 93)}...` : reason,
   }
 }
@@ -341,6 +355,7 @@ export function buildDailyScheduleState({
   events,
   logic,
   program,
+  transitionMinutes = 0,
 }: {
   date: string
   timezone: string
@@ -350,9 +365,10 @@ export function buildDailyScheduleState({
   events: ScheduleEvent[]
   logic?: any
   program?: string
+  transitionMinutes?: number
 }): DailyScheduleState {
   const initiallySorted = [...events].sort((a, b) => eventStart(a).getTime() - eventStart(b).getTime())
-  const initialOpenWindows = getOpenWindows(initiallySorted, dayStart, dayEnd, 10)
+  const initialOpenWindows = getOpenWindows(initiallySorted, dayStart, dayEnd, 10, transitionMinutes)
   const adjustments = buildScheduleAdjustments({
     events: initiallySorted,
     openWindows: initialOpenWindows,
@@ -360,25 +376,26 @@ export function buildDailyScheduleState({
     capacity: logic?.capacityStatus,
     recovery: logic?.recoveryStatus,
     symptoms: logic?.symptoms,
+    transitionMinutes,
   })
   const sorted = applyAutomaticAdjustments(initiallySorted, adjustments)
     .sort((a, b) => eventStart(a).getTime() - eventStart(b).getTime())
   const completedEvents = sorted.filter((event) => event.status === 'completed')
   const remainingEvents = sorted.filter(isActionable)
-  const upcomingEvents = remainingEvents.filter((event) => eventEnd(event) >= now)
-  const overdueEvents = remainingEvents.filter((event) => eventEnd(event) < now)
+  const upcomingEvents = remainingEvents.filter((event) => eventEnd(event) > now)
+  const overdueEvents = remainingEvents.filter((event) => eventEnd(event) <= now)
   const fixedEvents = sorted.filter((event) => event.flexibility_type === 'fixed')
   const flexibleEvents = sorted.filter((event) => event.flexibility_type === 'flexible')
   const approvalRequiredEvents = sorted.filter((event) => event.flexibility_type === 'approval_required' || event.approval_required)
-  const openWindows = getOpenWindows(sorted, dayStart, dayEnd, 10)
+  const openWindows = getOpenWindows(sorted, dayStart, dayEnd, 10, transitionMinutes)
   const nextEvent = upcomingEvents[0] || null
-  const nextActionableEvent =
-    [...overdueEvents, ...upcomingEvents]
-      .sort((a, b) => {
-        if (eventEnd(a) < now && eventEnd(b) >= now) return -1
-        if (eventEnd(a) >= now && eventEnd(b) < now) return 1
-        return priorityRank(b) - priorityRank(a) || eventStart(a).getTime() - eventStart(b).getTime()
-      })[0] || null
+  // Current commitments take precedence over later plans. Retain overdue actions
+  // for review rather than silently dropping them after their time has passed.
+  const activeEvents = upcomingEvents.filter(event => eventStart(event) <= now)
+    .sort((a, b) => Number(b.flexibility_type === 'fixed') - Number(a.flexibility_type === 'fixed') ||
+      priorityRank(b) - priorityRank(a) || eventStart(a).getTime() - eventStart(b).getTime())
+  const overdueActions = [...overdueEvents].sort((a, b) => priorityRank(b) - priorityRank(a) || eventStart(a).getTime() - eventStart(b).getTime())
+  const nextActionableEvent = activeEvents[0] || overdueActions[0] || upcomingEvents[0] || null
 
   return {
     date,

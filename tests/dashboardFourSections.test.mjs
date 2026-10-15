@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const workspace = readFileSync('components/program-dashboard/TierAwareDashboardWorkspace.tsx', 'utf8')
+const calendar = readFileSync('components/program-dashboard/DashboardCalendar.tsx', 'utf8')
 const ember = readFileSync('components/program-dashboard/EmberDashboard.tsx', 'utf8')
 const ignite = readFileSync('components/program-dashboard/IgniteDashboard.tsx', 'utf8')
 const phoenix = readFileSync('components/program-dashboard/PhoenixDashboard.tsx', 'utf8')
@@ -24,19 +25,26 @@ test('tier dashboards no longer render standalone removed dashboard sections', (
   }
 })
 
-test('shared dashboard owns the final four-section structure', () => {
-  assert.match(workspace, /Today&apos;s Insight/)
-  assert.match(workspace, /data-tutorial-id="dashboard-calendar"/)
-  assert.match(workspace, /data-tutorial-id="dashboard-whats-next"/)
-  assert.match(workspace, /dashboard-progress-area/)
-  assert.match(workspace, /'progress', 'assessments', 'trends'/)
+test('shared home puts guided Today before secondary schedule and collapsed details', () => {
+  const today = readFileSync('components/program-dashboard/GuidedToday.tsx', 'utf8')
+  assert.match(workspace, /<GuidedToday[^\n]*logic=\{logic\} schedule=\{schedule\}/)
+  assert.match(today, /aria-label="Your day at a glance"/)
+  assert.match(today, /data-testid="today-progress"/)
+  assert.match(today, /data-testid="guided-next-step"/)
+  assert.ok(today.indexOf('data-testid="today-progress"') < today.indexOf('data-testid="guided-next-step"'))
+  assert.ok(today.indexOf('data-testid="guided-next-step"') < today.indexOf('data-testid="today-activities"'))
+  assert.ok(workspace.indexOf('<GuidedToday') < workspace.indexOf('<summary>Your schedule at a glance'))
+  assert.match(workspace, /aria-label="Schedule preview"/)
+  assert.match(workspace, /aria-label="Progress summary"/)
+  assert.match(workspace, /data-quiet=\{quiet\}/)
+  assert.match(workspace, /Progress, assessments, and details/)
 })
 
 test('calendar day view contains Today plan daypart switching', () => {
-  assert.match(workspace, /type Daypart = 'morning' \| 'midday' \| 'evening'/)
-  assert.match(workspace, /tier-daypart-control/)
-  assert.match(workspace, /calendar-daypart-plan/)
-  assert.match(workspace, /setSelectedDate\(date\)/)
+  assert.match(calendar, /type Daypart = 'morning' \| 'midday' \| 'evening'/)
+  assert.match(calendar, /tier-daypart-control/)
+  assert.match(calendar, /calendar-daypart-plan/)
+  assert.match(calendar, /setSelectedDate\(date\)/)
 })
 
 test('progress tab consolidates daily actions, macro targets, and cycle tracker', () => {

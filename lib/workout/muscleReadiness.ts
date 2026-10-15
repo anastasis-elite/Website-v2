@@ -89,6 +89,7 @@ type ExerciseLike = {
 
 type WorkoutHistoryRow = {
   workout_date?: string
+  workout_started_at?: string | null
   completed?: boolean
   exercise_logs?: ExerciseLike[]
 }
@@ -306,7 +307,7 @@ export function buildMuscleReadiness({
   const lastByMuscle = new Map<MuscleId, string>()
 
   workoutHistory.filter((row) => row.completed !== false).forEach((row) => {
-    const date = String(row.workout_date || '')
+    const date = String(row.workout_started_at || row.workout_date || '')
     const ageDays = daysBetween(date, now)
     if (ageDays === null) return
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AOSButton } from '@/components/aos-ui/AOSButton'
 import { AOSCard } from '@/components/aos-ui/AOSCard'
@@ -17,14 +17,21 @@ export default function RecoveryLogger({ clientId }: { clientId: string }) {
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const completionHintId = useId()
 
   async function save() {
-    if (!selected) return
+    if (!selected || saving) return
     setSaving(true);setError('')
-    const response=await fetch('/api/recovery/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,activityType:selected,minutes})})
-    const payload=await response.json();setSaving(false)
-    if(!response.ok){setError(payload.error||'Recovery could not be saved.');return}
-    setSaved(true);router.refresh()
+    try {
+      const response=await fetch('/api/recovery/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,activityType:selected,minutes})})
+      const payload=await response.json().catch(() => null)
+      if(!response.ok) throw new Error(payload?.error||'Recovery could not be saved.')
+      setSaved(true);router.refresh()
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Recovery could not be saved. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -38,7 +45,8 @@ export default function RecoveryLogger({ clientId }: { clientId: string }) {
       {selected && selected !== 'Full rest' ? (
         <AOSSlider label="Duration" value={minutes} min={5} max={90} step={5} suffix=" minutes" onChange={(value)=>{setMinutes(value);setSaved(false)}}/>
       ) : null}
-      <AOSButton type="button" disabled={!selected||saving} onClick={save}>{saving?'Saving…':'Complete Recovery Action'}</AOSButton>
+      <AOSButton type="button" disabled={!selected||saving} aria-describedby={!selected ? completionHintId : undefined} onClick={save}>{saving?'Saving…':'Complete Recovery Action'}</AOSButton>
+      {!selected ? <p id={completionHintId} className="aos-status">Choose a recovery action above to enable completion.</p> : null}
       {saved ? <p className="aos-status">Recovery saved for today.</p> : null}
       {error ? <p className="aos-status" role="alert">{error}</p> : null}
     </AOSCard>

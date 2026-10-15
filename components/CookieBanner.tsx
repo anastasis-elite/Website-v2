@@ -64,7 +64,7 @@ export default function CookieBanner() {
         background: '#000',
         color: '#fff',
         padding: '20px',
-        zIndex: 1000,
+        zIndex: 1400,
         borderTop: '1px solid rgba(197,139,87,0.4)',
       }}
     >

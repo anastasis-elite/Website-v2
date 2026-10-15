@@ -76,7 +76,14 @@ export type ScheduleEvent = {
   adjusted_duration_minutes: number | null
   created_at?: string
   updated_at?: string
+  calendar_event_id?: string
+  source_label?: string
+  calendar_provider?: string
+  provider_calendar_id?: string
+  ical_uid?: string
+  busy?: boolean
   virtual?: boolean
+  suggested?: boolean
   action_route?: string | null
 }
 
@@ -115,6 +122,8 @@ export type NextScheduleAction = {
 }
 
 export type DailyScheduleState = {
+  unavailableSources?: Array<'saved_events' | 'recurring_commitments' | 'calendar'>
+  program?: string
   date: string
   timezone: string
   now: string
@@ -129,5 +138,9 @@ export type DailyScheduleState = {
   adjustments: ScheduleAdjustment[]
   nextEvent: ScheduleEvent | null
   nextActionableEvent: ScheduleEvent | null
+  dailyRecommendation?: import('@/lib/dashboard/dailyRecommendation').DailyRecommendation
+  dailyGuide?: import('@/lib/dashboard/todayActivities').DailyGuideState
+  todayActivities?: import('@/lib/dashboard/todayActivities').TodayActivities
+  preferences?: { executionStyle: string; carouselStyle: string; transitionMinutes: number }
   nextAction: NextScheduleAction
 }

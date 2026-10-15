@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import {getClientLocalDate} from '@/lib/timezone'
+import {getClientDayRange} from '@/lib/schedule/time'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
 import { AOSCard } from '@/components/aos-ui/AOSCard'
@@ -7,10 +9,8 @@ export default async function MonthlyAssessmentsPage() {
   const { supabase, client } = await getDashboardContext()
 
   const program = client.program || 'ignite'
-  const monthStart = new Date()
-  monthStart.setDate(1)
-  monthStart.setHours(0, 0, 0, 0)
-  const monthStartDate = monthStart.toISOString().split('T')[0]
+  const monthStartDate = getClientLocalDate(client).slice(0,7)+'-01'
+  const monthStart = getClientDayRange(client,monthStartDate).start
 
   const monthlyAssessment = await getMonthlyAssessmentStatus(supabase, client.client_id)
 

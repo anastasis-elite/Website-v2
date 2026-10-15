@@ -1,9 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import HydrationQuickAdd from '@/components/hydration/HydrationQuickAdd'
 import NutritionFoodLogger from '@/components/NutritionFoodLogger'
+import MicronutrientProgressRing from '@/components/nutrition/MicronutrientProgressRing'
 import { useRouter } from 'next/navigation'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
@@ -11,8 +13,13 @@ import { useFuelReadinessEngine, useNutritionEngine, usePhoenixRecipes } from '@
 import { canLogFood, normalizeProgramTier } from '@/lib/nutrition/canLogFood'
 import { getClientLocalDateOffset } from '@/lib/timezone'
 import { getTierCapabilities } from '@/lib/entitlements'
-import { getMealPeriodForLocalDate } from '@/lib/nutrition/mealPeriod'
+import { getMealPeriodForLocalDate, normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
 import { trackEvent } from '@/lib/analytics'
+import { useViewPreference } from '@/components/dashboard/useViewPreference'
+import { getNextFoodGuidance } from '@/lib/nutrition/nextFoodGuidance'
+import { loadRecordedNutrition, nutritionRemainingWithRecordedIntake } from '@/lib/nutrition/progress'
+import { calculateMicronutrientProgress, confirmedToxicityWarning, loadMicronutrientProgress } from '@/lib/nutrition/micronutrientProgress'
+import type { NutritionLoggingIntent } from '@/lib/nutrition/loggingIntent'
 
 type NutritionLog = {
   id: string
@@ -161,13 +168,15 @@ export default function AdaptiveNutritionDashboard({
   program,
   logic,
   recipes,
+  loggingIntent,
 }: {
   program: string
   logic: ProgramLogicOutput
   recipes: PhoenixRecipe[]
+  loggingIntent?: NutritionLoggingIntent
 }) {
   const router=useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const engineNutrition=useNutritionEngine(logic)
   const fuel=useFuelReadinessEngine(logic)
   const phoenixRecipes=usePhoenixRecipes(recipes)
@@ -182,6 +191,12 @@ export default function AdaptiveNutritionDashboard({
   const [loading, setLoading] = useState(true)
   const [nutritionLog, setNutritionLog] = useState<NutritionLog | null>(null)
   const [remaining, setRemaining] = useState<Remaining | null>(null)
+  const [micronutrientIntake, setMicronutrientIntake] = useState<Awaited<ReturnType<typeof loadMicronutrientProgress>> | null>(null)
+  const [micronutrientState, setMicronutrientState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [intakeRevision, setIntakeRevision] = useState(0)
+  const [waterConsumed, setWaterConsumed] = useState(logic.hydration.consumed)
+  const directEntry = Boolean(loggingIntent?.action)
+  const directRecipe = isPhoenix ? recipes.find(recipe => recipe.id === loggingIntent?.recipeId) : undefined
 
   const [calorieTarget, setCalorieTarget] = useState(0)
   const [proteinTarget, setProteinTarget] = useState('')
@@ -197,18 +212,34 @@ export default function AdaptiveNutritionDashboard({
   })
   const [savingMacros, setSavingMacros] = useState(false)
 
-  const [waterOunces, setWaterOunces] = useState(8);
-  const [addingWater, setAddingWater] = useState(false);
-  const [progressTab, setProgressTab] = useState<ProgressTab>('daily')
-  const [intakeTab, setIntakeTab] = useState<IntakeTab>('water')
-  const [managementTab, setManagementTab] = useState<ManagementTab>('goals')
+  const [progressTab, setProgressTab] = useViewPreference<ProgressTab>(logic.client.id, 'nutrition-progress', ['daily', 'trends'], 'daily')
+  const [intakeTab, setIntakeTab] = useViewPreference<IntakeTab>(logic.client.id, 'nutrition-intake', ['water', 'meal', 'suggested'], 'meal')
+  const [managementTab, setManagementTab] = useViewPreference<ManagementTab>(logic.client.id, `nutrition-management-${tier}`, isPhoenix ? ['goals', 'micros', 'recipes'] : isEmber ? ['goals'] : ['goals', 'micros'], 'goals')
   const [suggestedFoods, setSuggestedFoods] = useState<SuggestedFood[]>([])
-  const [suggestedFoodsState, setSuggestedFoodsState] = useState<'idle' | 'loading' | 'ready' | 'needs_logs' | 'complete' | 'error'>('idle')
+  const [suggestedFoodsState, setSuggestedFoodsState] = useState<'idle' | 'loading' | 'ready' | 'unavailable' | 'complete' | 'error'>('idle')
+  const [suggestedFoodsBasis, setSuggestedFoodsBasis] = useState<'remaining' | 'targets' | 'general'>('remaining')
   const [suggestedFoodsMessage, setSuggestedFoodsMessage] = useState('')
   const [nutrientInsights, setNutrientInsights] = useState<NutrientInsight[]>([])
   const [supplementRecommendation, setSupplementRecommendation] = useState<SupplementRecommendation | null>(null)
   const [supplementDismissed, setSupplementDismissed] = useState(false)
   const [supplementShownKey, setSupplementShownKey] = useState('')
+
+  useEffect(() => setWaterConsumed(logic.hydration.consumed), [logic.hydration.consumed])
+
+  useEffect(() => {
+    if (!loggingIntent?.action) return
+    setIntakeTab(loggingIntent.action === 'water' ? 'water' : 'meal')
+  }, [loggingIntent?.action, setIntakeTab])
+
+  useEffect(() => {
+    const followHash = () => {
+      if (window.location.hash === '#hydration') setIntakeTab('water')
+      else if (['#aos-food-logger', '#aos-macro-entry'].includes(window.location.hash)) setIntakeTab('meal')
+    }
+    followHash()
+    window.addEventListener('hashchange', followHash)
+    return () => window.removeEventListener('hashchange', followHash)
+  }, [setIntakeTab])
 
   const loadSuggestedFoods = useCallback(async () => {
     if (!nutritionLog?.id) return
@@ -226,6 +257,7 @@ export default function AdaptiveNutritionDashboard({
 
       setSuggestedFoods(payload?.suggestions || [])
       setSuggestedFoodsState(payload?.state || 'ready')
+      setSuggestedFoodsBasis(payload?.basis || 'remaining')
     } catch (error) {
       setSuggestedFoods([])
       setSuggestedFoodsState('error')
@@ -268,48 +300,23 @@ export default function AdaptiveNutritionDashboard({
     }
   }, [logic.client.id])
   
-  async function addWater() {
-  setAddingWater(true);
-  setMessage('');
-
-  try {
-    const response = await fetch('/api/nutrition/add-water', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        clientId: logic.client.id,
-        ounces: waterOunces,
-      }),
-    });
-
-    const payload = await response.json();
-
-    if (!response.ok) {
-      setMessage(payload.error || 'Water could not be saved.');
-      return;
-    }
-
-    router.refresh();
-  } catch {
-    setMessage('Water could not be saved.');
-  } finally {
-    setAddingWater(false);
-  }
-}
-  
   async function handleFoodUpdated(updatedRemaining?: Remaining | null, action: 'added' | 'removed' = 'added') {
     if (updatedRemaining) {
       setRemaining(updatedRemaining)
     }
 
-    await loadToday()
-    setMessage(
-      action === 'removed'
-        ? 'Food removed — today’s calories, macros, and micronutrients are updated.'
-        : 'Food logged — today’s calories, macros, and micronutrients are updated.'
-    )
+    setIntakeRevision(current => current + 1)
+    try {
+      await loadToday()
+      setMessage(
+        action === 'removed'
+          ? 'Food removed — today’s calories, macros, and micronutrients are updated.'
+          : 'Food logged — today’s calories, macros, and micronutrients are updated.'
+      )
+    } catch {
+      setMessage(action === 'removed' ? 'Food removed. Saved totals could not be refreshed yet.' : 'Food saved. Saved totals could not be refreshed yet.')
+      setLoading(false)
+    }
     router.refresh()
   }
 
@@ -330,7 +337,7 @@ export default function AdaptiveNutritionDashboard({
           protein: Number(macroEntry.protein || 0),
           carbs: Number(macroEntry.carbs || 0),
           fats: Number(macroEntry.fats || 0),
-          mealPeriod: getMealPeriodForLocalDate(),
+          mealPeriod: getMealPeriodForLocalDate(new Date(), logic.client.timezone),
         }),
       })
       const payload = await response.json().catch(() => null)
@@ -349,21 +356,18 @@ export default function AdaptiveNutritionDashboard({
     }
   }
 
-  useEffect(() => {
-    loadToday()
-  }, [])
 
   useEffect(() => {
-    void loadSuggestedFoods()
-  }, [loadSuggestedFoods, remaining])
+    if (!directEntry) void loadSuggestedFoods()
+  }, [loadSuggestedFoods, remaining, directEntry])
 
   useEffect(() => {
-    void loadNutrientInsights()
-  }, [loadNutrientInsights, remaining])
+    if (!directEntry) void loadNutrientInsights()
+  }, [loadNutrientInsights, remaining, directEntry])
 
   useEffect(() => {
-    void loadSupplementRecommendation()
-  }, [loadSupplementRecommendation, remaining])
+    if (!directEntry) void loadSupplementRecommendation()
+  }, [loadSupplementRecommendation, remaining, directEntry])
 
   useEffect(() => {
     if (!supplementRecommendation || supplementDismissed) return
@@ -400,7 +404,7 @@ export default function AdaptiveNutritionDashboard({
     )
   }
 
-  async function loadToday() {
+  const loadToday = useCallback(async () => {
     setLoading(true)
     setMessage('')
 
@@ -424,12 +428,15 @@ export default function AdaptiveNutritionDashboard({
 
     const today = getClientLocalDateOffset(logic.client)
 
-    let { data: log } = await supabase
+    const { data: savedLog, error: logError } = await supabase
       .from('nutrition_logs')
       .select('*')
       .eq('client_id', clientId)
       .eq('log_date', today)
       .maybeSingle()
+
+    if (logError) throw new Error('Today’s saved nutrition could not be loaded. Try again before preparing a new log.')
+    let log = savedLog
 
    if (!log) {
   const targetResponse = await fetch(
@@ -496,6 +503,7 @@ export default function AdaptiveNutritionDashboard({
     body: JSON.stringify({
       client_id: clientId,
       log_date: today,
+      createOnly: true,
       protein,
       carbs,
       fats,
@@ -565,13 +573,17 @@ export default function AdaptiveNutritionDashboard({
 }
 
 setNutritionLog(log)
-    const { data: remainingData } = await supabase
+    const [{ data: remainingData, error: remainingError }, recorded] = await Promise.all([
+      supabase
       .from('nutrition_log_remaining')
       .select('*')
       .eq('nutrition_log_id', log.id)
-      .maybeSingle()
+      .maybeSingle(),
+      loadRecordedNutrition(supabase, log.id),
+    ])
+    if (remainingError) throw new Error('Saved nutrition progress could not be loaded.')
 
-    setRemaining(remainingData)
+    setRemaining(nutritionRemainingWithRecordedIntake(log, remainingData, recorded))
 
     const initialProtein = String(log.protein || remainingData?.protein_remaining_g || '')
     const initialCarbs = String(log.carbs || remainingData?.carbs_remaining_g || '')
@@ -583,31 +595,45 @@ setNutritionLog(log)
     setCalorieTarget(Number(log.calories || calculateCalories(initialProtein, initialCarbs, initialFat)))
 
     setLoading(false)
-  }
+  }, [supabase, logic.client, tier])
 
-  const microRows = [
-    ['Fiber', nutritionLog?.fiber_target_g, remaining?.fiber_remaining_g, 'g'],
-    ['Sodium', nutritionLog?.sodium_target_mg, remaining?.sodium_remaining_mg, 'mg'],
-    ['Potassium', nutritionLog?.potassium_target_mg, remaining?.potassium_remaining_mg, 'mg'],
-    ['Magnesium', nutritionLog?.magnesium_target_mg, remaining?.magnesium_remaining_mg, 'mg'],
-    ['Calcium', nutritionLog?.calcium_target_mg, remaining?.calcium_remaining_mg, 'mg'],
-    ['Iron', nutritionLog?.iron_target_mg, remaining?.iron_remaining_mg, 'mg'],
-    ['Zinc', nutritionLog?.zinc_target_mg, remaining?.zinc_remaining_mg, 'mg'],
-    ['Selenium', nutritionLog?.selenium_target_mcg, remaining?.selenium_remaining_mcg, 'mcg'],
-    ['Choline', nutritionLog?.choline_target_mg, remaining?.choline_remaining_mg, 'mg'],
-    ['Vitamin A', nutritionLog?.vitamin_a_target_mcg, remaining?.vitamin_a_remaining_mcg, 'mcg'],
-    ['Vitamin C', nutritionLog?.vitamin_c_target_mg, remaining?.vitamin_c_remaining_mg, 'mg'],
-    ['Vitamin D', nutritionLog?.vitamin_d_target_mcg, remaining?.vitamin_d_remaining_mcg, 'mcg'],
-    ['Vitamin E', nutritionLog?.vitamin_e_target_mg, remaining?.vitamin_e_remaining_mg, 'mg'],
-    ['Vitamin K', nutritionLog?.vitamin_k_target_mcg, remaining?.vitamin_k_remaining_mcg, 'mcg'],
-    ['B1', nutritionLog?.b1_target_mg, remaining?.b1_remaining_mg, 'mg'],
-    ['B2', nutritionLog?.b2_target_mg, remaining?.b2_remaining_mg, 'mg'],
-    ['B3', nutritionLog?.b3_target_mg, remaining?.b3_remaining_mg, 'mg'],
-    ['B5', nutritionLog?.b5_target_mg, remaining?.b5_remaining_mg, 'mg'],
-    ['B6', nutritionLog?.b6_target_mg, remaining?.b6_remaining_mg, 'mg'],
-    ['B9', nutritionLog?.b9_target_mcg, remaining?.b9_remaining_mcg, 'mcg'],
-    ['B12', nutritionLog?.b12_target_mcg, remaining?.b12_remaining_mcg, 'mcg'],
-  ]
+  useEffect(() => {
+    if (loggingIntent?.action === 'water') return
+    void loadToday().catch(() => { setLoading(false); setMessage('Today’s nutrition could not be loaded. Refresh to try again.') })
+  }, [loadToday, loggingIntent?.action])
+
+  useEffect(() => {
+    if (managementTab !== 'micros' || directEntry || !nutritionLog?.id || !foodLoggingEnabled) return
+    let cancelled = false
+    setMicronutrientState('loading')
+    void loadMicronutrientProgress(supabase, nutritionLog.id).then(intake => {
+      if (cancelled) return
+      setMicronutrientIntake(intake)
+      setMicronutrientState('ready')
+    }).catch(() => {
+      if (cancelled) return
+      setMicronutrientIntake(null)
+      setMicronutrientState('error')
+    })
+    return () => { cancelled = true }
+  }, [supabase, nutritionLog?.id, managementTab, directEntry, foodLoggingEnabled, intakeRevision])
+
+  useEffect(() => {
+    if (managementTab !== 'micros' || directEntry || !nutritionLog?.id || !foodLoggingEnabled) return
+    const resume = () => {
+      if (document.visibilityState === 'visible') setIntakeRevision(current => current + 1)
+    }
+    document.addEventListener('visibilitychange', resume)
+    return () => document.removeEventListener('visibilitychange', resume)
+  }, [managementTab, directEntry, nutritionLog?.id, foodLoggingEnabled])
+
+  const microRows = calculateMicronutrientProgress({
+    targets: nutritionLog || {},
+    meals: micronutrientIntake?.meals || [],
+    macroEntryCount: micronutrientIntake?.macroEntryCount || 0,
+    upperLimits: micronutrientIntake?.upperLimits || [],
+    age: logic.client.age ?? null,
+  })
 
   const macroMetrics = [
     {
@@ -655,6 +681,130 @@ setNutritionLog(log)
     (nutritionLog?.calculation_status === 'manual_override'
       ? 'Manually overridden target'
       : 'Estimated nutrition target')
+  const nextFoodGuidance = getNextFoodGuidance({
+    dataStatus: engineNutrition.dataStatus,
+    mealSuggestions: engineNutrition.mealSuggestions,
+    suggestedFoods,
+  })
+
+  const waterEntry = (
+                <div id="hydration" className="nutrition-water-panel">
+                  <div className="nutrition-water-summary">
+                    <div className="tier-metric-ring" style={{ '--tier-progress': `${progressPercent(logic.hydration.target > 0 ? waterConsumed / logic.hydration.target * 100 : 0) * 3.6}deg` } as CSSProperties}>
+                      <strong>{progressPercent(logic.hydration.target > 0 ? waterConsumed / logic.hydration.target * 100 : 0)}%</strong>
+                    </div>
+                    <div>
+                      <span>Current Water</span>
+                      <strong>{roundValue(waterConsumed)} / {roundValue(logic.hydration.target)} oz</strong>
+                      <small>{logic.hydration.prompt}</small>
+                    </div>
+                  </div>
+
+                  <HydrationQuickAdd initiallyOpen={loggingIntent?.action === 'water'} clientId={logic.client.id} logDate={getClientLocalDateOffset(logic.client)} consumed={waterConsumed} target={logic.hydration.target} onSaved={setWaterConsumed} renderTrigger={({ toggle, triggerRef }) => <button ref={triggerRef} type="button" className="tier-primary-action" onClick={toggle}>Log water</button>} />
+                </div>
+
+  )
+
+  const foodEntry = (
+                <div id={foodLoggingEnabled ? 'aos-food-logger' : 'aos-macro-entry'} className="nutrition-log-meal-panel">
+                  {foodLoggingEnabled && nutritionLog?.id ? (
+                    <NutritionFoodLogger
+                      timezone={logic.fuelReadiness.timeZone}
+                      initialMealPeriod={loggingIntent?.meal || (directRecipe ? normalizeMealPeriod(directRecipe.meal_type) : undefined)}
+                      nutritionLogId={nutritionLog.id}
+                      capabilities={{
+                        nutritionBarcodeScanning: capabilities.nutritionBarcodeScanning,
+                        nutritionRecurringFoodDetection: capabilities.nutritionRecurringFoodDetection,
+                        nutritionAutomaticPreLogging: capabilities.nutritionAutomaticPreLogging,
+                        nutritionPhotoMacroEstimation: capabilities.nutritionPhotoMacroEstimation,
+                      }}
+                      initialRemaining={
+                        remaining
+                          ? {
+                              calories_remaining: remaining.calories_remaining ?? null,
+                              protein_remaining_g: remaining.protein_remaining_g ?? null,
+                              carbs_remaining_g: remaining.carbs_remaining_g ?? null,
+                              fat_remaining_g: remaining.fat_remaining_g ?? null,
+                              fiber_remaining_g: remaining.fiber_remaining_g ?? null,
+                              sodium_remaining_mg: remaining.sodium_remaining_mg ?? null,
+                              potassium_remaining_mg: remaining.potassium_remaining_mg ?? null,
+                              magnesium_remaining_mg: remaining.magnesium_remaining_mg ?? null,
+                              calcium_remaining_mg: remaining.calcium_remaining_mg ?? null,
+                              iron_remaining_mg: remaining.iron_remaining_mg ?? null,
+                              zinc_remaining_mg: remaining.zinc_remaining_mg ?? null,
+                              selenium_remaining_mcg: remaining.selenium_remaining_mcg ?? null,
+                              choline_remaining_mg: remaining.choline_remaining_mg ?? null,
+                              vitamin_a_remaining_mcg: remaining.vitamin_a_remaining_mcg ?? null,
+                              vitamin_c_remaining_mg: remaining.vitamin_c_remaining_mg ?? null,
+                              vitamin_d_remaining_mcg: remaining.vitamin_d_remaining_mcg ?? null,
+                              vitamin_e_remaining_mg: remaining.vitamin_e_remaining_mg ?? null,
+                              vitamin_k_remaining_mcg: remaining.vitamin_k_remaining_mcg ?? null,
+                              b1_remaining_mg: remaining.b1_remaining_mg ?? null,
+                              b2_remaining_mg: remaining.b2_remaining_mg ?? null,
+                              b3_remaining_mg: remaining.b3_remaining_mg ?? null,
+                              b5_remaining_mg: remaining.b5_remaining_mg ?? null,
+                              b6_remaining_mg: remaining.b6_remaining_mg ?? null,
+                              b9_remaining_mcg: remaining.b9_remaining_mcg ?? null,
+                              b12_remaining_mcg: remaining.b12_remaining_mcg ?? null,
+                            }
+                          : null
+                      }
+                      onUpdated={handleFoodUpdated}
+                    />
+                  ) : null}
+
+                  {isEmber && nutritionLog ? (
+                    <form onSubmit={handleMacroSubmit} className="nutrition-macro-form">
+                      <p>Enter the totals you want to record for this meal or block.</p>
+                      <div className="nutrition-macro-entry-grid">
+                        {([
+                          ['calories', 'Calories'],
+                          ['protein', 'Protein (g)'],
+                          ['carbs', 'Carbs (g)'],
+                          ['fats', 'Fat (g)'],
+                        ] as const).map(([key, label]) => (
+                          <label key={key}>
+                            <span>{label}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={macroEntry[key]}
+                              onChange={(event) => setMacroEntry((current) => ({ ...current, [key]: event.target.value }))}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <button type="submit" disabled={savingMacros} className="tier-primary-action">
+                        {savingMacros ? 'Saving Macros...' : 'Add Macros'}
+                      </button>
+                    </form>
+                  ) : null}
+
+                  {!nutritionLog?.id ? (
+                    <p className="tier-calendar-empty">
+                      {loading ? 'Preparing food logging...' : message || 'Food logging could not be prepared yet.'}
+                    </p>
+                  ) : null}
+                </div>
+
+  )
+
+  if (directEntry) return (
+    <main className="aos-nutrition-page nutrition-direct-entry">
+      <section className="nutrition-dashboard-panel" data-tier={tier} aria-labelledby="nutrition-entry-title">
+        <div className="nutrition-direct-entry-heading tier-panel-heading">
+          <h1 id="nutrition-entry-title">{loggingIntent?.action === 'water' ? 'Log Water' : isEmber ? 'Nutrition Guidance' : loggingIntent?.action === 'meal' ? 'Log Meal' : 'Log Food'}</h1>
+          <a href="/dashboard" className="tier-secondary-action">Done</a>
+        </div>
+        {loggingIntent?.action !== 'water' && isEmber ? <p>Your EMBER plan includes nutrition guidance and macro entry. Food and meal logging require IGNITE or PHOENIX.</p> : null}
+        {loggingIntent?.action !== 'water' && directRecipe ? <details className="nutrition-entry-recipe-context"><summary>Recipe: {directRecipe.title}</summary><p>Log the foods and portions you ate from this recipe.</p><ul>{directRecipe.ingredientLines.map(ingredient => <li key={ingredient}>{ingredient}</li>)}</ul></details> : null}
+        {loggingIntent?.action === 'water' ? waterEntry : foodEntry}
+        {message ? <p className="nutrition-status" role="status">{message}</p> : null}
+        {!loading && !nutritionLog && loggingIntent?.action !== 'water' ? <button className="tier-secondary-action" type="button" onClick={() => void loadToday().catch(() => setMessage('Today’s nutrition could not be loaded. Try again.'))}>Retry loading food entry</button> : null}
+      </section>
+    </main>
+  )
 
   return (
     <main className="aos-nutrition-page">
@@ -670,21 +820,30 @@ setNutritionLog(log)
                 <button
                   type="button"
                   onClick={() => {
+                    if (foodLoggingEnabled) { router.push('/dashboard/nutrition?log=food'); return }
                     setIntakeTab('meal')
                     requestAnimationFrame(() => document.getElementById(foodLoggingEnabled ? 'aos-food-logger' : 'aos-macro-entry')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
                   }}
                   className="tier-primary-action"
                 >
-                  Add Food
+              {foodLoggingEnabled ? 'Log Food' : 'Add Macros'}
                 </button>
               ) : null}
             </div>
             <p>{fuel.displayStatus}. {fuel.reasoning}</p>
-            <small>What to eat next: {engineNutrition.mealSuggestions[0]}</small>
+            <small>What to eat next: {nextFoodGuidance.copy}</small>
+            {nextFoodGuidance.showSuggestedAction ? <button
+              type="button"
+              className="tier-secondary-action"
+              onClick={() => {
+                setIntakeTab('suggested')
+                requestAnimationFrame(() => document.getElementById('nutrition-suggested-foods')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+              }}
+            >Explore Suggested Foods</button> : null}
             <div className="nutrition-objective-metrics">
               <article><span>Calories</span><strong>{roundValue(macroMetrics[0]?.consumed)} / {roundValue(macroMetrics[0]?.target)} cal</strong></article>
               <article><span>Remaining</span><strong>{roundValue(macroMetrics[0]?.remaining)} cal</strong></article>
-              <article><span>Water</span><strong>{roundValue(logic.hydration.consumed)} / {roundValue(logic.hydration.target)} oz</strong></article>
+              <article><span>Water</span><strong>{roundValue(waterConsumed)} / {roundValue(logic.hydration.target)} oz</strong></article>
             </div>
           </article>
 
@@ -825,12 +984,12 @@ setNutritionLog(log)
               <div className="tier-panel-heading">
                 <div>
                   <p className="tier-dashboard-label">Intake</p>
-                  <h2>{intakeTab === 'water' ? 'Water' : intakeTab === 'suggested' ? 'Suggested Foods' : 'Food Log'}</h2>
+                  <h2>{intakeTab === 'water' ? 'Water' : intakeTab === 'suggested' ? 'Suggested Foods' : foodLoggingEnabled ? 'Food Log' : 'Macro Entry'}</h2>
                 </div>
                 <div className="tier-tab-list nutrition-panel-tabs" role="tablist" aria-label="Intake controls">
                   {([
                     ['water', 'Water'],
-                    ['meal', 'Food Log'],
+                    ['meal', foodLoggingEnabled ? 'Food Log' : 'Macro Entry'],
                     ['suggested', 'Suggested Foods'],
                   ] as const).map(([key, label]) => (
                     <button key={key} type="button" className={intakeTab === key ? 'is-active' : ''} onClick={() => setIntakeTab(key)}>
@@ -840,133 +999,18 @@ setNutritionLog(log)
                 </div>
               </div>
 
-              {intakeTab === 'water' ? (
-                <div id="hydration" className="nutrition-water-panel">
-                  <div className="nutrition-water-summary">
-                    <div className="tier-metric-ring" style={{ '--tier-progress': `${progressPercent(logic.hydration.percent) * 3.6}deg` } as CSSProperties}>
-                      <strong>{progressPercent(logic.hydration.percent)}%</strong>
-                    </div>
-                    <div>
-                      <span>Current Water</span>
-                      <strong>{roundValue(logic.hydration.consumed)} / {roundValue(logic.hydration.target)} oz</strong>
-                      <small>{logic.hydration.prompt}</small>
-                    </div>
-                  </div>
+              {intakeTab === 'water' ? waterEntry : null}
 
-                  <div className="nutrition-water-control">
-                    <div>
-                      <span>Add Water</span>
-                      <strong>{waterOunces} oz</strong>
-                    </div>
-                    <input
-                      id="water-ounces"
-                      type="range"
-                      min="4"
-                      max="64"
-                      step="4"
-                      value={waterOunces}
-                      onChange={(event) => setWaterOunces(Number(event.target.value))}
-                      disabled={addingWater}
-                      aria-label="Water amount to add"
-                    />
-                    <div><small>4 oz</small><small>64 oz</small></div>
-                    <button type="button" onClick={addWater} disabled={addingWater} className="tier-primary-action">
-                      {addingWater ? 'Adding Water...' : `Add ${waterOunces} oz`}
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              {intakeTab === 'meal' ? (
-                <div id={foodLoggingEnabled ? 'aos-food-logger' : 'aos-macro-entry'} className="nutrition-log-meal-panel">
-                  {foodLoggingEnabled && nutritionLog?.id ? (
-                    <NutritionFoodLogger
-                      nutritionLogId={nutritionLog.id}
-                      capabilities={{
-                        nutritionBarcodeScanning: capabilities.nutritionBarcodeScanning,
-                        nutritionRecurringFoodDetection: capabilities.nutritionRecurringFoodDetection,
-                        nutritionAutomaticPreLogging: capabilities.nutritionAutomaticPreLogging,
-                        nutritionPhotoMacroEstimation: capabilities.nutritionPhotoMacroEstimation,
-                      }}
-                      initialRemaining={
-                        remaining
-                          ? {
-                              calories_remaining: remaining.calories_remaining ?? null,
-                              protein_remaining_g: remaining.protein_remaining_g ?? null,
-                              carbs_remaining_g: remaining.carbs_remaining_g ?? null,
-                              fat_remaining_g: remaining.fat_remaining_g ?? null,
-                              fiber_remaining_g: remaining.fiber_remaining_g ?? null,
-                              sodium_remaining_mg: remaining.sodium_remaining_mg ?? null,
-                              potassium_remaining_mg: remaining.potassium_remaining_mg ?? null,
-                              magnesium_remaining_mg: remaining.magnesium_remaining_mg ?? null,
-                              calcium_remaining_mg: remaining.calcium_remaining_mg ?? null,
-                              iron_remaining_mg: remaining.iron_remaining_mg ?? null,
-                              zinc_remaining_mg: remaining.zinc_remaining_mg ?? null,
-                              selenium_remaining_mcg: remaining.selenium_remaining_mcg ?? null,
-                              choline_remaining_mg: remaining.choline_remaining_mg ?? null,
-                              vitamin_a_remaining_mcg: remaining.vitamin_a_remaining_mcg ?? null,
-                              vitamin_c_remaining_mg: remaining.vitamin_c_remaining_mg ?? null,
-                              vitamin_d_remaining_mcg: remaining.vitamin_d_remaining_mcg ?? null,
-                              vitamin_e_remaining_mg: remaining.vitamin_e_remaining_mg ?? null,
-                              vitamin_k_remaining_mcg: remaining.vitamin_k_remaining_mcg ?? null,
-                              b1_remaining_mg: remaining.b1_remaining_mg ?? null,
-                              b2_remaining_mg: remaining.b2_remaining_mg ?? null,
-                              b3_remaining_mg: remaining.b3_remaining_mg ?? null,
-                              b5_remaining_mg: remaining.b5_remaining_mg ?? null,
-                              b6_remaining_mg: remaining.b6_remaining_mg ?? null,
-                              b9_remaining_mcg: remaining.b9_remaining_mcg ?? null,
-                              b12_remaining_mcg: remaining.b12_remaining_mcg ?? null,
-                            }
-                          : null
-                      }
-                      onUpdated={handleFoodUpdated}
-                    />
-                  ) : null}
-
-                  {isEmber && nutritionLog ? (
-                    <form onSubmit={handleMacroSubmit} className="nutrition-macro-form">
-                      <p>Enter the totals you want to record for this meal or block.</p>
-                      <div className="nutrition-macro-entry-grid">
-                        {([
-                          ['calories', 'Calories'],
-                          ['protein', 'Protein (g)'],
-                          ['carbs', 'Carbs (g)'],
-                          ['fats', 'Fat (g)'],
-                        ] as const).map(([key, label]) => (
-                          <label key={key}>
-                            <span>{label}</span>
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={macroEntry[key]}
-                              onChange={(event) => setMacroEntry((current) => ({ ...current, [key]: event.target.value }))}
-                            />
-                          </label>
-                        ))}
-                      </div>
-                      <button type="submit" disabled={savingMacros} className="tier-primary-action">
-                        {savingMacros ? 'Saving Macros...' : 'Add Macros'}
-                      </button>
-                    </form>
-                  ) : null}
-
-                  {!nutritionLog?.id ? (
-                    <p className="tier-calendar-empty">
-                      {loading ? 'Preparing food logging...' : message || 'Food logging could not be prepared yet.'}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
+              {intakeTab === 'meal' ? foodEntry : null}
 
               {intakeTab === 'suggested' ? (
-                <div className="nutrition-suggested-foods-panel" data-testid="nutrition-suggested-foods-tab">
+                <div id="nutrition-suggested-foods" className="nutrition-suggested-foods-panel" data-testid="nutrition-suggested-foods-tab">
                   {suggestedFoodsState === 'loading' ? (
                     <p className="tier-calendar-empty">Finding today’s best matches...</p>
                   ) : null}
 
-                  {suggestedFoodsState === 'needs_logs' ? (
-                    <p className="tier-calendar-empty">Log your meals and we’ll help you fill the gaps.</p>
+                  {suggestedFoodsState === 'unavailable' ? (
+                    <p className="tier-calendar-empty">No food matches are available for your current preferences. You can still choose foods in the {foodLoggingEnabled ? 'food log' : 'macro entry'}.</p>
                   ) : null}
 
                   {suggestedFoodsState === 'complete' ? (
@@ -979,12 +1023,13 @@ setNutritionLog(log)
 
                   {suggestedFoodsState === 'ready' && suggestedFoods.length ? (
                     <div className="nutrition-suggested-foods-list">
+                      {suggestedFoodsBasis !== 'remaining' ? <p className="tier-calendar-empty">{suggestedFoodsBasis === 'targets' ? 'Starting options based on today’s targets. No prior meal logs needed.' : 'Starting food options. Log intake to personalize your remaining targets.'}</p> : null}
                       {suggestedFoods.map((food) => (
                         <article key={food.foodId} className="nutrition-suggested-food-card">
                           <div>
                             <span>{food.contribution}</span>
                             <strong>{food.name}</strong>
-                            <small>{food.serving || 'Serving available in food log'}</small>
+                            <small>{food.serving || (foodLoggingEnabled ? 'Serving available in food log' : 'Choose a serving for your macro entry')}</small>
                           </div>
                           <p>{food.reason}</p>
                         </article>
@@ -1023,19 +1068,16 @@ setNutritionLog(log)
             ) : null}
 
             {managementTab === 'micros' ? (
-              <div className="nutrition-micro-grid" data-testid="nutrition-micronutrients-tab">
-                {microRows.map(([label, target, remainingValue, unit]) => {
-                  const targetValue = Number(target || 0)
-                  const leftValue = Number(remainingValue || 0)
-                  const currentValue = targetValue ? Math.max(0, Math.round((targetValue - leftValue) * 10) / 10) : 0
-                  return (
-                    <article key={String(label)}>
-                      <span>{label}</span>
-                      <strong>{currentValue}{unit}</strong>
-                      <small>Target: {targetValue}{unit} · Remaining: {leftValue}{unit}</small>
-                    </article>
-                  )
-                })}
+              <div data-testid="nutrition-micronutrients-tab">
+                {micronutrientState === 'loading' ? <p role="status" className="nutrition-status">Loading saved micronutrient intake…</p> : null}
+                {micronutrientState === 'error' ? <div><p role="status">Saved micronutrient intake could not be loaded.</p><button type="button" className="tier-secondary-action" onClick={() => setIntakeRevision(current => current + 1)}>Retry micronutrients</button></div> : null}
+                {micronutrientState === 'ready' ? <>
+                  <p className="nutrition-status">Daily targets are individualized when available. A daily target is not an upper limit. Food totals exclude supplements.</p>
+                  {micronutrientIntake && !micronutrientIntake.upperLimitsAvailable ? <p className="nutrition-status">Upper-limit reference data could not be loaded.</p> : null}
+                  <div className="nutrition-micro-grid">
+                    {microRows.map(progress => <MicronutrientProgressRing key={progress.key} progress={progress} safetyWarning={confirmedToxicityWarning(progress.key, nutrientInsights)} />)}
+                  </div>
+                </> : null}
               </div>
             ) : null}
 
@@ -1065,7 +1107,7 @@ function Recipe({ recipe }: { recipe: PhoenixRecipe }) {
       <h4>Simple steps</h4>
       <ol>{recipe.steps.map((step)=><li key={step}>{step}</li>)}</ol>
       <p>Servings: {recipe.servings} · {recipe.meal_type} · {recipe.tags.join(', ')}</p>
-      <a href={`/dashboard/nutrition#aos-food-logger?recipe=${recipe.id}`} className="tier-primary-action">Log this recipe</a>
+      <a href={`/dashboard/nutrition?log=meal&meal=${recipe.meal_type}&recipe=${encodeURIComponent(recipe.id)}`} className="tier-primary-action">Log this recipe</a>
     </details>
   )
 }

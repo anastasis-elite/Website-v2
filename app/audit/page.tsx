@@ -5,8 +5,7 @@ import * as styles from '../styles/globalstyles'
 import Button from '../../components/Button'
 import TrackEvent from '@/components/TrackEvent'
 import { trackEvent } from '@/lib/analytics'
-
-type Program = 'ember' | 'ignite' | 'phoenix'
+import { capacityQuestions, CAPACITY_AUDIT_TIME } from '@/lib/capacityAudit'
 
 type Option = {
   value: string
@@ -26,64 +25,7 @@ type FormData = {
   agreement: boolean
 }
 
-const questionOptions: Record<string, Option[]> = {
-  energyLevel: [
-    { value: 'exhausted', label: 'Exhausted', score: 5 },
-    { value: 'drained', label: 'Drained', score: 4 },
-    { value: 'managing', label: 'Managing', score: 3 },
-    { value: 'good', label: 'Good', score: 2 },
-    { value: 'thriving', label: 'Thriving', score: 1 },
-  ],
-  overwhelmLevel: [
-    { value: 'constantly', label: 'Constantly', score: 5 },
-    { value: 'most_days', label: 'Most Days', score: 4 },
-    { value: 'sometimes', label: 'Sometimes', score: 3 },
-    { value: 'rarely', label: 'Rarely', score: 2 },
-    { value: 'almost_never', label: 'Almost Never', score: 1 },
-  ],
-  timeAvailable: [
-    { value: 'almost_none', label: 'Almost None', score: 5 },
-    { value: '15_minutes', label: '15 Minutes', score: 4 },
-    { value: '30_minutes', label: '30 Minutes', score: 3 },
-    { value: '1_hour', label: '1 Hour', score: 2 },
-    { value: 'more_than_1_hour', label: 'More Than 1 Hour', score: 1 },
-  ],
-  supportLevel: [
-    { value: 'alone', label: 'Completely Alone', score: 5 },
-    { value: 'limited', label: 'Limited Support', score: 4 },
-    { value: 'some', label: 'Some Support', score: 3 },
-    { value: 'good', label: 'Good Support', score: 2 },
-    { value: 'strong', label: 'Strong Support', score: 1 },
-  ],
-  currentSeason: [
-    { value: 'surviving', label: 'Surviving', score: 5 },
-    { value: 'regaining_consistency', label: 'Regaining Consistency', score: 4 },
-    { value: 'building_momentum', label: 'Building Momentum', score: 3 },
-    { value: 'optimizing', label: 'Optimizing', score: 2 },
-    { value: 'performing', label: 'Performing Higher', score: 1 },
-  ],
-}
-
-function getOptionScore(field: keyof typeof questionOptions, value: string) {
-  return questionOptions[field].find((option) => option.value === value)?.score || 0
-}
-
-function scoreCapacityAudit(data: FormData): {
-  score: number
-  recommendedProgram: Program
-} {
-  const score =
-    getOptionScore('energyLevel', data.energyLevel) +
-    getOptionScore('overwhelmLevel', data.overwhelmLevel) +
-    getOptionScore('timeAvailable', data.timeAvailable) +
-    getOptionScore('supportLevel', data.supportLevel) +
-    getOptionScore('currentSeason', data.currentSeason)
-
-  if (score <= 10) return { score, recommendedProgram: 'ember' }
-  if (score <= 17) return { score, recommendedProgram: 'ignite' }
-
-  return { score, recommendedProgram: 'phoenix' }
-}
+const questionOptions = capacityQuestions
 
 function ScrollChoice({
   name,
@@ -222,8 +164,6 @@ export default function ApplyPage() {
   setMessage('')
 
   try {
-    const auditResult = scoreCapacityAudit(formData)
-
     const response = await fetch('/api/apply', {
       method: 'POST',
       headers: {
@@ -239,8 +179,6 @@ export default function ApplyPage() {
         current_season: formData.currentSeason,
         email_consent: formData.emailConsent,
         agreement: formData.agreement,
-        capacity_score: auditResult.score,
-        recommended_program: auditResult.recommendedProgram,
         audit_version: 'capacity_snapshot_v1',
         submitted: 'capacity_audit',
         timestamp: new Date().toISOString(),
@@ -265,8 +203,8 @@ export default function ApplyPage() {
 
     trackEvent('audit_page_completed', {
       page: 'audit',
-      recommended_program: auditResult.recommendedProgram,
-      capacity_score: auditResult.score,
+      recommended_program: data.recommendedProgram,
+      capacity_score: data.capacityScore,
       audit_id: data.auditId,
     })
 
@@ -299,9 +237,7 @@ export default function ApplyPage() {
           </h1>
 
           <p style={styles.heroTextStyle}>
-            This takes less than one minute. No long application. No perfect
-            answers. Just enough information to help Anastasis recommend the
-            starting path that fits your current season.
+            {CAPACITY_AUDIT_TIME}. Five questions about energy, overwhelm, available time, support, and your current season. Your answers suggest a starting program to explore.
           </p>
 
           <div style={styles.cartBoxStyle}>
@@ -310,9 +246,7 @@ export default function ApplyPage() {
             </h2>
 
             <p style={styles.bodyStyle}>
-              Answer from where you are today. The goal is not to judge your
-              capacity. The goal is to understand what level of support would
-              help you move forward without adding more pressure.
+              Answer from where you are today. This brief public audit does not collect detailed nutrition, movement, symptoms, or a daily schedule. Members complete a separate, fuller onboarding assessment before their plan is created.
             </p>
           </div>
         </section>

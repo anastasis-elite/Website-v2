@@ -1,0 +1,5296 @@
+{
+  "capturedAt": "2026-10-13",
+  "project": "lcccpqgnpznhbtmkmytp",
+  "readOnly": true,
+  "inventory": [
+    {
+      "name": "anastasis_schedule_events",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "event_type",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "start_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "end_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "timezone",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "all_day",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "flexibility_type",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "priority",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "required",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "movable",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "approval_required",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "earliest_start_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "latest_end_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "preferred_time",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "estimated_duration_minutes",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "external_provider_name",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "external_contact_type",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "external_contact_value",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "external_event_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "external_calendar_source",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "reschedule_allowed",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "reschedule_requires_approval",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "last_reschedule_requested_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "delegation_status",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "delegation_notes",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "adaptive_reason",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "adjusted_start_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "adjusted_end_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "adjusted_duration_minutes",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": true
+    },
+    {
+      "name": "assessment_photos",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "assessment_type",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "front_photo_url",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "back_photo_url",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "left_photo_url",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "right_photo_url",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "analysis_status",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "analysis_notes",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "uploaded_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "posture_flags",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "analysis_type",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "analysis_completed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "assessment_windows",
+      "relkind": "r",
+      "relrowsecurity": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "window_type",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "estimated_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "estimated_end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "assessment_data",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "completion_percent",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "finalized_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": false,
+      "authenticated_insert": false,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "assessments",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "program",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "assessment_type",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "body_assessment_composition_results",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "body_assessment_measurements",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "body_assessment_regional_results",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "body_assessment_sessions",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "body_regions",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "sort_order",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": false,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "calendar_connections",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "calendar_credentials",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "calendar_events",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "calendar_oauth_states",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "calendar_preferences",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "calendar_write_operations",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_anastasis_supplement_recommendation_debug",
+      "relkind": null,
+      "relrowsecurity": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_anastasis_supplement_recommendations",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_current_profiles",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_lesson_progress",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "lesson_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "viewed",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "completed",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "viewed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "client_nutrient_clinical_records",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_nutrient_intake_exposures",
+      "relkind": null,
+      "relrowsecurity": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_nutrient_recommendations",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_recipe_favorites",
+      "relkind": null,
+      "relrowsecurity": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_schedule_blocks",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_supplement_intake_logs",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_supplement_product_nutrients",
+      "relkind": null,
+      "relrowsecurity": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_supplement_products",
+      "relkind": null,
+      "relrowsecurity": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "client_symptom_logs",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "symptom_type_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "body_region_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "severity",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "started_minutes_after_meal",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "duration_minutes",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "likely_cycle_related",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "likely_food_related",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "likely_caffeine_related",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "likely_load_related",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "confidence_score",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "analysis_note",
+          "type": "text",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "clients",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "birthdate",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "program",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "login_email",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "started_program_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "current_phase",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "execution_score",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "recovery_profile",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "recovery_risk_level",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "recovery_notes",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "last_period_start",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "average_cycle_length",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cycle_tracking_enabled",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "execution_style",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "wake_time",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "bed_time",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "preferred_workout_time",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "work_start_time",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "carb_timing_preference",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "carousel_style",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "work_end_time",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "school_dropoff_time",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "school_pickup_time",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "lunch_window_time",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "dinner_window_time",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "daily_non_negotiables",
+          "type": "text[]",
+          "nullable": true
+        },
+        {
+          "name": "day_structure_notes",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "daily_structure_reviewed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "timezone",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "address_line_1",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "address_line_2",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "city",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "postal_code",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "address_verified",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "subscription_status",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "verified_purchase",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "access",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "subscription_started_at",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "subscription_ends_at",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "onboarding_completed",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "onboarding_completed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "reproductive_status",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "six_month_cycle_status",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "last_six_cycle_starts",
+          "type": "date[]",
+          "nullable": true
+        },
+        {
+          "name": "onboarding_data",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "dashboard_phase",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "flame_score",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "overwhelm_score",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "consistency_score",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "current_capacity",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "last_checkin_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "adaptive_state",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "current_workout_days_per_week",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "current_workout_minutes_per_day",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "current_training_intensity",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "workout_schedule_preference",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "workout_days_available",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "current_workout_minutes_per_session",
+          "type": "integer",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": false,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "clinical_follow_up_events",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "clinical_observation_records",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "connected_calendars",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "cycle_burden_scores",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "cycle_burden_trends",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "cycle_daily_symptoms",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "cycle_logs",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "cycle_day",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cycle_phase",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "bleeding",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "cramps",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "headache",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "fatigue",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "mood_sensitivity",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "ovulation_test_taken",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "ovulation_test_result",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "pregnancy_test_taken",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "pregnancy_test_result",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "symptom_intensity",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "prominent_symptom",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "symptoms",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "period_started",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "period_ended",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "event_type",
+          "type": "text",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "daily_execution_status",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "program",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "capacity_status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "missed_day_count",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "required_items",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "completed_items",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "completion_score",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "streak_eligible",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "daily_health_metrics",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "metric_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "timezone",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "metric_type",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "value",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "sample_count",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "provider_count",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "source_providers",
+          "type": "text[]",
+          "nullable": false
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "computed_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "dashboard_daily_recommendations",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "program",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "engine_version",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "input_snapshot",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "recommendation_output",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "education_lessons",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "unlock_day",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "min_execution_score",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "phase",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "program",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": false,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "exercise_metadata",
+      "relkind": null,
+      "relrowsecurity": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "feature_consent_events",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "consent_type",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "granted",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "consent_version",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "recorded_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "ip_address",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "user_agent",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "acceptance_source",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": false,
+      "authenticated_insert": false,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "food_nutrients",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "food_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "calories",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "protein_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "carbs_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "fat_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "fiber_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "sugar_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "sodium_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "potassium_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "magnesium_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "calcium_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "iron_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "zinc_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "selenium_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "iodine_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "cholesterol_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "choline_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_a_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_c_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_d_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_e_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_k_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b1_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b2_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b3_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b5_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b6_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b9_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b12_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "water_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "soluble_fiber_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "insoluble_fiber_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "starch_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "phosphorus_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "copper_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "manganese_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "molybdenum_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "boron_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "thiamin_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "riboflavin_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "niacin_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "pantothenic_acid_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_b6_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "biotin_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "folate_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_a_rae_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "retinol_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "beta_carotene_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "alpha_carotene_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "lycopene_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "lutein_zeaxanthin_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "alpha_tocopherol_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_d_iu",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_d2_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_d3_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "betaine_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "caffeine_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "taurine_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "beta_alanine_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "citrulline_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "tyrosine_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "acetyl_l_carnitine_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "alpha_gpc_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "coq10_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "carbonated",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "artificial_sweeteners",
+          "type": "text[]",
+          "nullable": true
+        },
+        {
+          "name": "artificial_colors",
+          "type": "text[]",
+          "nullable": true
+        },
+        {
+          "name": "creatine_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "l_carnitine_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "l_theanine_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "agmatine_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "nitrates_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "electrolytes_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "saturated_fat_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "trans_fat_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "sugar_alcohol_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "added_sugar_g",
+          "type": "numeric",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "food_serving_options",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "food_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "grams",
+          "type": "numeric",
+          "nullable": false
+        },
+        {
+          "name": "is_default",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "sort_order",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "foods",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "brand",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "default_serving_amount",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "default_serving_unit",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "grams_per_serving",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "usda_fdc_id",
+          "type": "bigint",
+          "nullable": true
+        },
+        {
+          "name": "normalized_name",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "data_source",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "product_line",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "product_form",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "servings_per_container",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "scoop_grams",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "barcode",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "barcode_format",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "health_integrations",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "platform",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "connection_status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "permission_status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "sync_status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "last_sync_started_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "last_sync_completed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "last_successful_sync_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "last_error",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "provider_sync_state",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "health_provenance_records",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "health_samples",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "metric_type",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "value",
+          "type": "numeric",
+          "nullable": false
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "start_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "end_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "source_name",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "source_device",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "source_record_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "dedupe_key",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "ingredient_nutrients",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "macro_entries",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "nutrition_log_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "calories",
+          "type": "numeric",
+          "nullable": false
+        },
+        {
+          "name": "protein_g",
+          "type": "numeric",
+          "nullable": false
+        },
+        {
+          "name": "carbs_g",
+          "type": "numeric",
+          "nullable": false
+        },
+        {
+          "name": "fat_g",
+          "type": "numeric",
+          "nullable": false
+        },
+        {
+          "name": "day_block",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "entry_source",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "meal_period",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "verified",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "estimated",
+          "type": "boolean",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "meal_entries",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "nutrition_log_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "food_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "meal_name",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "serving_amount",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "serving_unit",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "logged_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "symptoms_after",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "bloating",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "fatigue",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "headache",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "reflux",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "nausea",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "serving_option_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "grams",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "day_block",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "entry_source",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "meal_period",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "entry_state",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "recurring_food_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "confirmed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "skipped_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": true
+    },
+    {
+      "name": "meal_symptoms",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "meal_entry_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "symptom_type_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "severity",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "started_minutes_after",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "duration_minutes",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": false,
+      "authenticated_delete": true
+    },
+    {
+      "name": "measurement_logs",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "advanced_enabled",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "measurements",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": true
+    },
+    {
+      "name": "menstrual_flow_logs",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "menstrual_product_logs",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "nutrient_function_map",
+      "relkind": null,
+      "relrowsecurity": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "nutrient_interactions",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "nutrient_reference_sources",
+      "relkind": null,
+      "relrowsecurity": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "nutrient_reference_values",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "nutrient_symptom_relationships",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "nutrients",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "nutrition_log_remaining",
+      "relkind": "v",
+      "relrowsecurity": false,
+      "reloptions": [
+        "security_invoker=true"
+      ],
+      "columns": [
+        {
+          "name": "nutrition_log_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "calories_remaining",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "protein_remaining_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "carbs_remaining_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "fat_remaining_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "fiber_remaining_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "sodium_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "potassium_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "magnesium_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "calcium_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "iron_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "zinc_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "selenium_remaining_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "cholesterol_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "choline_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_a_remaining_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_c_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_d_remaining_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_e_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_k_remaining_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b1_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b2_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b3_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b5_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b6_remaining_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b9_remaining_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b12_remaining_mcg",
+          "type": "numeric",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": false,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "nutrition_log_totals_by_block",
+      "relkind": "v",
+      "relrowsecurity": false,
+      "reloptions": [
+        "security_invoker=true"
+      ],
+      "columns": [
+        {
+          "name": "nutrition_log_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "day_block",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "calories_eaten",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "protein_eaten_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "carbs_eaten_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "fat_eaten_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "fiber_eaten_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "sodium_eaten_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "potassium_eaten_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "magnesium_eaten_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "calcium_eaten_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "iron_eaten_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "choline_eaten_mg",
+          "type": "numeric",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": false,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "nutrition_logs",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "protein",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "carbs",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "fats",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "calories",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "water_oz",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "meals",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "completed",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "fiber_target_g",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "sodium_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "potassium_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "magnesium_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "calcium_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "iron_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "zinc_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "selenium_target_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "cholesterol_limit_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "choline_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_a_target_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_c_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_d_target_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_e_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "vitamin_k_target_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b1_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b2_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b3_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b5_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b6_target_mg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b9_target_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "b12_target_mcg",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "water_consumed_oz",
+          "type": "numeric",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "pattern_recommendation_events",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "phoenix_daily_task_completions",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "task_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": true
+    },
+    {
+      "name": "physiology_pattern_evidence",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "physiology_pattern_flags",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "program_outputs",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "output_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "job_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "program",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "program_json",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "generated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "last_updated",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "recipes",
+      "relkind": null,
+      "relrowsecurity": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "recommendation_audit_logs",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "recommendation_type",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "input_snapshot",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "input_reference",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "engine_version",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "recommendation_output",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "confidence_level",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "safety_flags",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": false,
+      "authenticated_insert": false,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "recovery_activity_logs",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "activity_type",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "duration_minutes",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "recovery_logs",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "sleep_quality",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "soreness_level",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "stress_level",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "energy_level",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "hydration_level",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "sick",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "dizzy",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "cycle_symptoms",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "unusually_fatigued",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "recovery_focus",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "recommendation",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "completed",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "sleep_hours",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "mood_level",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "hunger_level",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "daily_tasks",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "check_in_completed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "soreness_regions",
+          "type": "text[]",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "recurring_food_patterns",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "food_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "serving_option_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "serving_amount",
+          "type": "numeric",
+          "nullable": false
+        },
+        {
+          "name": "serving_unit",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "meal_period",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "day_block",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "days_of_week",
+          "type": "smallint[]",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "detection_metadata",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "last_prompted_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "sleep_logs",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "log_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "duration_hours",
+          "type": "numeric",
+          "nullable": false
+        },
+        {
+          "name": "quality",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "bedtime",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "wake_time",
+          "type": "time without time zone",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "supplement_ingredients",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "supplement_recommendation_engine_config",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "supplement_supported_functions",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "supplements",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "symptom_types",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "severity_scale",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": false,
+      "authenticated_update": false,
+      "authenticated_delete": false
+    },
+    {
+      "name": "tutorial_progress",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "tutorial_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "current_step_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "workout_exercise_sessions",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "workout_exercise_sets",
+      "relkind": null,
+      "relrowsecurity": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    },
+    {
+      "name": "workout_logs",
+      "relkind": "r",
+      "relrowsecurity": true,
+      "reloptions": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "program",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "workout_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "day_name",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "exercise_logs",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "completed",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "authenticated_select": true,
+      "authenticated_insert": true,
+      "authenticated_update": true,
+      "authenticated_delete": false
+    },
+    {
+      "name": "workout_plan_feedback",
+      "relkind": null,
+      "relrowsecurity": null,
+      "reloptions": null,
+      "columns": [],
+      "authenticated_select": null,
+      "authenticated_insert": null,
+      "authenticated_update": null,
+      "authenticated_delete": null
+    }
+  ],
+  "functions": [
+    {
+      "args": "p_name text, p_brand text, p_default_serving_amount numeric, p_default_serving_unit text, p_grams_per_serving numeric, p_barcode text, p_barcode_format text, p_source text, p_client_id text, p_calories numeric, p_protein_g numeric, p_carbs_g numeric, p_fat_g numeric, p_fiber_g numeric, p_serving_label text",
+      "name": "create_custom_food_with_nutrition",
+      "signature": "p_name text, p_brand text, p_default_serving_amount numeric, p_default_serving_unit text, p_grams_per_serving numeric, p_barcode text, p_barcode_format text, p_source text, p_client_id text, p_calories numeric, p_protein_g numeric, p_carbs_g numeric, p_fat_g numeric, p_fiber_g numeric, p_serving_label text",
+      "anon_execute": false,
+      "security_definer": false,
+      "authenticated_execute": true
+    }
+  ],
+  "absentFunctions": [
+    "save_daily_workout(text,timestamptz,timestamptz,jsonb)",
+    "replace_workout_sets(uuid,jsonb)",
+    "replace_daily_commitments(text,jsonb)",
+    "claim_calendar_sync(uuid,uuid,uuid)",
+    "disconnect_calendar(uuid,uuid)"
+  ],
+  "policies": [
+    {
+      "tablename": "anastasis_schedule_events",
+      "policyname": "Clients delete own schedule events",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "anastasis_schedule_events",
+      "policyname": "Clients insert own schedule events",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((( SELECT auth.uid() AS uid) = user_id) AND ((client_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = anastasis_schedule_events.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid)))))))"
+    },
+    {
+      "tablename": "anastasis_schedule_events",
+      "policyname": "Clients read own schedule events",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "anastasis_schedule_events",
+      "policyname": "Clients update own schedule events",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": "((( SELECT auth.uid() AS uid) = user_id) AND ((client_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = anastasis_schedule_events.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid)))))))"
+    },
+    {
+      "tablename": "assessment_photos",
+      "policyname": "Users can insert their own assessment photos",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "assessment_photos",
+      "policyname": "Users can update their own assessment photos",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "assessment_photos",
+      "policyname": "Users can view their own assessment photos",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "assessments",
+      "policyname": "Clients can insert own assessments",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "assessments",
+      "policyname": "Clients can read own assessments",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "client_symptom_logs",
+      "policyname": "Users can insert their own symptom logs",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth_user_id = auth.uid())"
+    },
+    {
+      "tablename": "client_symptom_logs",
+      "policyname": "Users can read their own symptom logs",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth_user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "tablename": "clients",
+      "policyname": "Clients can read own row",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "clients",
+      "policyname": "Clients can update own client row",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "clients",
+      "policyname": "Service role full access",
+      "roles": "{service_role}",
+      "cmd": "ALL",
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "tablename": "cycle_logs",
+      "policyname": "Clients can insert own cycle logs",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "cycle_logs",
+      "policyname": "Clients can read own cycle logs",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "cycle_logs",
+      "policyname": "Clients can update own cycle logs",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "daily_execution_status",
+      "policyname": "Clients insert own daily execution",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(( SELECT auth.uid() AS uid) = user_id)"
+    },
+    {
+      "tablename": "daily_execution_status",
+      "policyname": "Clients read own daily execution",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "daily_execution_status",
+      "policyname": "Clients update own daily execution",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": "(( SELECT auth.uid() AS uid) = user_id)"
+    },
+    {
+      "tablename": "daily_health_metrics",
+      "policyname": "Clients insert own daily health metrics",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((( SELECT auth.uid() AS uid) = user_id) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = daily_health_metrics.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+    },
+    {
+      "tablename": "daily_health_metrics",
+      "policyname": "Clients read own daily health metrics",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "daily_health_metrics",
+      "policyname": "Clients update own daily health metrics",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": "((( SELECT auth.uid() AS uid) = user_id) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = daily_health_metrics.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+    },
+    {
+      "tablename": "dashboard_daily_recommendations",
+      "policyname": "Clients insert own dashboard recommendations",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(( SELECT auth.uid() AS uid) = user_id)"
+    },
+    {
+      "tablename": "dashboard_daily_recommendations",
+      "policyname": "Clients read own dashboard recommendations",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "dashboard_daily_recommendations",
+      "policyname": "Clients update own dashboard recommendations",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": "(( SELECT auth.uid() AS uid) = user_id)"
+    },
+    {
+      "tablename": "feature_consent_events",
+      "policyname": "users insert own feature consents",
+      "roles": "{public}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "tablename": "feature_consent_events",
+      "policyname": "users read own feature consents",
+      "roles": "{public}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "food_serving_options",
+      "policyname": "Authenticated users can read food serving options",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "food_serving_options",
+      "policyname": "authenticated read catalog and own food servings",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE ((f.id = food_serving_options.food_id) AND ((f.source = 'catalog'::text) OR (f.auth_user_id = ( SELECT auth.uid() AS uid))))))",
+      "with_check": null
+    },
+    {
+      "tablename": "food_serving_options",
+      "policyname": "clients insert servings for own custom foods",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE ((f.id = food_serving_options.food_id) AND (f.auth_user_id = ( SELECT auth.uid() AS uid)) AND (f.source = ANY (ARRAY['custom'::text, 'barcode_custom'::text, 'photo_estimate'::text])))))"
+    },
+    {
+      "tablename": "food_serving_options",
+      "policyname": "food serving privacy boundary",
+      "roles": "{public}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE (f.id = food_serving_options.food_id)))",
+      "with_check": null
+    },
+    {
+      "tablename": "foods",
+      "policyname": "Anyone can read foods",
+      "roles": "{public}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "foods",
+      "policyname": "Authenticated users can read foods",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "foods",
+      "policyname": "authenticated read catalog and own foods",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "((source = 'catalog'::text) OR (auth_user_id = ( SELECT auth.uid() AS uid)))",
+      "with_check": null
+    },
+    {
+      "tablename": "foods",
+      "policyname": "clients insert own custom foods",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((( SELECT auth.uid() AS uid) = auth_user_id) AND (source = ANY (ARRAY['custom'::text, 'barcode_custom'::text, 'photo_estimate'::text])) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = foods.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+    },
+    {
+      "tablename": "foods",
+      "policyname": "custom food tier boundary",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = foods.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid)) AND (lower(c.program) = ANY (ARRAY['ignite'::text, 'phoenix'::text])) AND ((foods.source <> 'photo_estimate'::text) OR (lower(c.program) = 'phoenix'::text)))))"
+    },
+    {
+      "tablename": "foods",
+      "policyname": "food catalog privacy boundary",
+      "roles": "{public}",
+      "cmd": "SELECT",
+      "qual": "((source = 'catalog'::text) OR (auth_user_id = ( SELECT auth.uid() AS uid)))",
+      "with_check": null
+    },
+    {
+      "tablename": "health_integrations",
+      "policyname": "Clients insert own health integrations",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((( SELECT auth.uid() AS uid) = user_id) AND ((client_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = health_integrations.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid)))))))"
+    },
+    {
+      "tablename": "health_integrations",
+      "policyname": "Clients read own health integrations",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "health_integrations",
+      "policyname": "Clients update own health integrations",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": "((( SELECT auth.uid() AS uid) = user_id) AND ((client_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = health_integrations.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid)))))))"
+    },
+    {
+      "tablename": "macro_entries",
+      "policyname": "clients insert own macro entries",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((( SELECT auth.uid() AS uid) = auth_user_id) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = macro_entries.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid)) AND (lower(COALESCE(c.program, 'ignite'::text)) = 'ember'::text)))) AND (EXISTS ( SELECT 1\n   FROM nutrition_logs nl\n  WHERE ((nl.id = macro_entries.nutrition_log_id) AND (nl.client_id = macro_entries.client_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+    },
+    {
+      "tablename": "macro_entries",
+      "policyname": "clients read own macro entries",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "meal_entries",
+      "policyname": "clients delete own meal entries",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM nutrition_logs nl\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))",
+      "with_check": null
+    },
+    {
+      "tablename": "meal_entries",
+      "policyname": "clients insert own meal entries",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM nutrition_logs nl\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))"
+    },
+    {
+      "tablename": "meal_entries",
+      "policyname": "clients read own meal entries",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM nutrition_logs nl\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))",
+      "with_check": null
+    },
+    {
+      "tablename": "meal_entries",
+      "policyname": "clients update own meal entries",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM nutrition_logs nl\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM nutrition_logs nl\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))"
+    },
+    {
+      "tablename": "meal_entries",
+      "policyname": "meal logging tier boundary",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (nutrition_logs nl\n     JOIN clients c ON ((c.client_id = nl.client_id)))\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)) AND (c.auth_user_id = ( SELECT auth.uid() AS uid)) AND (lower(c.program) = ANY (ARRAY['ignite'::text, 'phoenix'::text])))))",
+      "with_check": "((EXISTS ( SELECT 1\n   FROM (nutrition_logs nl\n     JOIN clients c ON ((c.client_id = nl.client_id)))\n  WHERE ((nl.id = meal_entries.nutrition_log_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)) AND (c.auth_user_id = ( SELECT auth.uid() AS uid)) AND (lower(c.program) = ANY (ARRAY['ignite'::text, 'phoenix'::text])) AND ((meal_entries.entry_source <> 'photo_estimate'::text) OR (lower(c.program) = 'phoenix'::text))))) AND (EXISTS ( SELECT 1\n   FROM foods f\n  WHERE (f.id = meal_entries.food_id))) AND ((serving_option_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM food_serving_options s\n  WHERE ((s.id = meal_entries.serving_option_id) AND (s.food_id = meal_entries.food_id))))) AND ((recurring_food_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM recurring_food_patterns r\n  WHERE ((r.id = meal_entries.recurring_food_id) AND (r.auth_user_id = ( SELECT auth.uid() AS uid)) AND (r.food_id = meal_entries.food_id))))) AND (serving_amount > (0)::numeric) AND (grams > (0)::numeric))"
+    },
+    {
+      "tablename": "meal_symptoms",
+      "policyname": "Authenticated users can insert meal symptoms",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "true"
+    },
+    {
+      "tablename": "meal_symptoms",
+      "policyname": "Authenticated users can read meal symptoms",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "meal_symptoms",
+      "policyname": "clients delete own meal symptoms",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (meal_entries me\n     JOIN nutrition_logs nl ON ((nl.id = me.nutrition_log_id)))\n  WHERE ((me.id = meal_symptoms.meal_entry_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))",
+      "with_check": null
+    },
+    {
+      "tablename": "meal_symptoms",
+      "policyname": "clients insert own meal symptoms",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(EXISTS ( SELECT 1\n   FROM (meal_entries me\n     JOIN nutrition_logs nl ON ((nl.id = me.nutrition_log_id)))\n  WHERE ((me.id = meal_symptoms.meal_entry_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))"
+    },
+    {
+      "tablename": "meal_symptoms",
+      "policyname": "clients read own meal symptoms",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (meal_entries me\n     JOIN nutrition_logs nl ON ((nl.id = me.nutrition_log_id)))\n  WHERE ((me.id = meal_symptoms.meal_entry_id) AND (nl.auth_user_id = ( SELECT auth.uid() AS uid)))))",
+      "with_check": null
+    },
+    {
+      "tablename": "measurement_logs",
+      "policyname": "clients insert own measurements",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(( SELECT auth.uid() AS uid) = auth_user_id)"
+    },
+    {
+      "tablename": "measurement_logs",
+      "policyname": "clients read own measurements",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "measurement_logs",
+      "policyname": "clients update own measurements",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": "(( SELECT auth.uid() AS uid) = auth_user_id)"
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "Clients can insert own nutrition logs",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "Clients can read own nutrition logs",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "Clients can update own nutrition logs",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "clients insert own nutrition logs",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((( SELECT auth.uid() AS uid) = auth_user_id) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = nutrition_logs.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))"
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "clients read own nutrition logs",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "nutrition_logs",
+      "policyname": "clients update own nutrition logs",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": "(( SELECT auth.uid() AS uid) = auth_user_id)"
+    },
+    {
+      "tablename": "phoenix_daily_task_completions",
+      "policyname": "Clients can delete their Phoenix task completions",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "phoenix_daily_task_completions",
+      "policyname": "Clients can insert their Phoenix task completions",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(( SELECT auth.uid() AS uid) = user_id)"
+    },
+    {
+      "tablename": "phoenix_daily_task_completions",
+      "policyname": "Clients can read their Phoenix task completions",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "phoenix_daily_task_completions",
+      "policyname": "Clients can update their Phoenix task completions",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": "(( SELECT auth.uid() AS uid) = user_id)"
+    },
+    {
+      "tablename": "program_outputs",
+      "policyname": "Clients can insert own program outputs",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "program_outputs",
+      "policyname": "Clients can read own program outputs",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "recommendation_audit_logs",
+      "policyname": "users insert own recommendation logs",
+      "roles": "{public}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "tablename": "recommendation_audit_logs",
+      "policyname": "users read own recommendation logs",
+      "roles": "{public}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "recovery_activity_logs",
+      "policyname": "Clients insert own recovery activities",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(( SELECT auth.uid() AS uid) = user_id)"
+    },
+    {
+      "tablename": "recovery_activity_logs",
+      "policyname": "Clients read own recovery activities",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "recovery_logs",
+      "policyname": "Clients can insert own recovery logs",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "recovery_logs",
+      "policyname": "Clients can read own recovery logs",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "recovery_logs",
+      "policyname": "Clients can update own recovery logs",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "recurring_food_patterns",
+      "policyname": "clients insert own recurring food patterns",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(( SELECT auth.uid() AS uid) = auth_user_id)"
+    },
+    {
+      "tablename": "recurring_food_patterns",
+      "policyname": "clients read own recurring food patterns",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "recurring_food_patterns",
+      "policyname": "clients update own recurring food patterns",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = auth_user_id)",
+      "with_check": "(( SELECT auth.uid() AS uid) = auth_user_id)"
+    },
+    {
+      "tablename": "sleep_logs",
+      "policyname": "Clients insert own sleep logs",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(( SELECT auth.uid() AS uid) = user_id)"
+    },
+    {
+      "tablename": "sleep_logs",
+      "policyname": "Clients read own sleep logs",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "sleep_logs",
+      "policyname": "Clients update own sleep logs",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(( SELECT auth.uid() AS uid) = user_id)",
+      "with_check": "(( SELECT auth.uid() AS uid) = user_id)"
+    },
+    {
+      "tablename": "symptom_types",
+      "policyname": "Authenticated users can read symptom types",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "workout_logs",
+      "policyname": "Clients can insert own workout logs",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = auth_user_id)"
+    },
+    {
+      "tablename": "workout_logs",
+      "policyname": "Clients can read own workout logs",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "workout_logs",
+      "policyname": "Clients can update own workout logs",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_user_id)",
+      "with_check": "(auth.uid() = auth_user_id)"
+    }
+  ],
+  "extraPolicies": [
+    {
+      "mode": "PERMISSIVE",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "body_regions",
+      "using": "true",
+      "policy": "Authenticated users can read body regions",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "check": null,
+      "roles": [
+        "public"
+      ],
+      "table": "food_nutrients",
+      "using": "true",
+      "policy": "Anyone can read food nutrients",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "food_nutrients",
+      "using": "true",
+      "policy": "Authenticated users can read food nutrients",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "food_nutrients",
+      "using": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE ((f.id = food_nutrients.food_id) AND ((f.source = 'catalog'::text) OR (f.auth_user_id = ( SELECT auth.uid() AS uid))))))",
+      "policy": "authenticated read catalog and own food nutrients",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "check": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE ((f.id = food_nutrients.food_id) AND (f.auth_user_id = ( SELECT auth.uid() AS uid)) AND (f.source = ANY (ARRAY['custom'::text, 'barcode_custom'::text, 'photo_estimate'::text])))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "food_nutrients",
+      "using": null,
+      "policy": "clients insert nutrients for own custom foods",
+      "command": "INSERT"
+    },
+    {
+      "mode": "RESTRICTIVE",
+      "check": null,
+      "roles": [
+        "public"
+      ],
+      "table": "food_nutrients",
+      "using": "(EXISTS ( SELECT 1\n   FROM foods f\n  WHERE (f.id = food_nutrients.food_id)))",
+      "policy": "food nutrient privacy boundary",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "check": "((( SELECT auth.uid() AS uid) = user_id) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = health_samples.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "health_samples",
+      "using": null,
+      "policy": "Clients insert own health samples",
+      "command": "INSERT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "health_samples",
+      "using": "(( SELECT auth.uid() AS uid) = user_id)",
+      "policy": "Clients read own health samples",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "check": "((( SELECT auth.uid() AS uid) = user_id) AND (EXISTS ( SELECT 1\n   FROM clients c\n  WHERE ((c.client_id = health_samples.client_id) AND (c.auth_user_id = ( SELECT auth.uid() AS uid))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "health_samples",
+      "using": "(( SELECT auth.uid() AS uid) = user_id)",
+      "policy": "Clients update own health samples",
+      "command": "UPDATE"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "check": "(( SELECT auth.uid() AS uid) = user_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "tutorial_progress",
+      "using": null,
+      "policy": "Users can create their own tutorial progress",
+      "command": "INSERT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "check": "(( SELECT auth.uid() AS uid) = user_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "tutorial_progress",
+      "using": "(( SELECT auth.uid() AS uid) = user_id)",
+      "policy": "Users can update their own tutorial progress",
+      "command": "UPDATE"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "tutorial_progress",
+      "using": "(( SELECT auth.uid() AS uid) = user_id)",
+      "policy": "Users can view their own tutorial progress",
+      "command": "SELECT"
+    }
+  ],
+  "policyModes": [
+    {
+      "mode": "PERMISSIVE",
+      "table": "food_serving_options",
+      "policy": "Authenticated users can read food serving options",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "food_serving_options",
+      "policy": "authenticated read catalog and own food servings",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "food_serving_options",
+      "policy": "clients insert servings for own custom foods",
+      "command": "INSERT"
+    },
+    {
+      "mode": "RESTRICTIVE",
+      "table": "food_serving_options",
+      "policy": "food serving privacy boundary",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "foods",
+      "policy": "Anyone can read foods",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "foods",
+      "policy": "Authenticated users can read foods",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "foods",
+      "policy": "authenticated read catalog and own foods",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "foods",
+      "policy": "clients insert own custom foods",
+      "command": "INSERT"
+    },
+    {
+      "mode": "RESTRICTIVE",
+      "table": "foods",
+      "policy": "custom food tier boundary",
+      "command": "INSERT"
+    },
+    {
+      "mode": "RESTRICTIVE",
+      "table": "foods",
+      "policy": "food catalog privacy boundary",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "macro_entries",
+      "policy": "clients insert own macro entries",
+      "command": "INSERT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "macro_entries",
+      "policy": "clients read own macro entries",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "meal_entries",
+      "policy": "clients delete own meal entries",
+      "command": "DELETE"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "meal_entries",
+      "policy": "clients insert own meal entries",
+      "command": "INSERT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "meal_entries",
+      "policy": "clients read own meal entries",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "meal_entries",
+      "policy": "clients update own meal entries",
+      "command": "UPDATE"
+    },
+    {
+      "mode": "RESTRICTIVE",
+      "table": "meal_entries",
+      "policy": "meal logging tier boundary",
+      "command": "ALL"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "meal_symptoms",
+      "policy": "Authenticated users can insert meal symptoms",
+      "command": "INSERT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "meal_symptoms",
+      "policy": "Authenticated users can read meal symptoms",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "meal_symptoms",
+      "policy": "clients delete own meal symptoms",
+      "command": "DELETE"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "meal_symptoms",
+      "policy": "clients insert own meal symptoms",
+      "command": "INSERT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "meal_symptoms",
+      "policy": "clients read own meal symptoms",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "nutrition_logs",
+      "policy": "Clients can insert own nutrition logs",
+      "command": "INSERT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "nutrition_logs",
+      "policy": "Clients can read own nutrition logs",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "nutrition_logs",
+      "policy": "Clients can update own nutrition logs",
+      "command": "UPDATE"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "nutrition_logs",
+      "policy": "clients insert own nutrition logs",
+      "command": "INSERT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "nutrition_logs",
+      "policy": "clients read own nutrition logs",
+      "command": "SELECT"
+    },
+    {
+      "mode": "PERMISSIVE",
+      "table": "nutrition_logs",
+      "policy": "clients update own nutrition logs",
+      "command": "UPDATE"
+    }
+  ],
+  "uniqueKeys": [
+    {
+      "table": "cycle_logs",
+      "constraint": "cycle_logs_client_id_log_date_unique",
+      "definition": "UNIQUE (client_id, log_date)"
+    },
+    {
+      "table": "cycle_logs",
+      "constraint": "cycle_logs_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "cycle_logs",
+      "constraint": "cycle_logs_unique_daily",
+      "definition": "UNIQUE (client_id, log_date)"
+    },
+    {
+      "table": "daily_execution_status",
+      "constraint": "daily_execution_status_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "daily_execution_status",
+      "constraint": "daily_execution_status_user_id_client_id_log_date_key",
+      "definition": "UNIQUE (user_id, client_id, log_date)"
+    },
+    {
+      "table": "dashboard_daily_recommendations",
+      "constraint": "dashboard_daily_recommendations_key",
+      "definition": "UNIQUE (user_id, client_id, log_date)"
+    },
+    {
+      "table": "dashboard_daily_recommendations",
+      "constraint": "dashboard_daily_recommendations_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "nutrition_logs",
+      "constraint": "nutrition_logs_client_id_log_date_key",
+      "definition": "UNIQUE (client_id, log_date)"
+    },
+    {
+      "table": "nutrition_logs",
+      "constraint": "nutrition_logs_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "phoenix_daily_task_completions",
+      "constraint": "phoenix_daily_task_completion_key",
+      "definition": "UNIQUE (user_id, client_id, log_date, task_id)"
+    },
+    {
+      "table": "phoenix_daily_task_completions",
+      "constraint": "phoenix_daily_task_completions_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "recovery_logs",
+      "constraint": "recovery_logs_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "sleep_logs",
+      "constraint": "sleep_logs_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "sleep_logs",
+      "constraint": "sleep_logs_user_id_client_id_log_date_key",
+      "definition": "UNIQUE (user_id, client_id, log_date)"
+    },
+    {
+      "table": "workout_logs",
+      "constraint": "workout_logs_pkey",
+      "definition": "PRIMARY KEY (id)"
+    }
+  ],
+  "indexes": [
+    {
+      "name": "cycle_logs_pkey",
+      "table": "cycle_logs",
+      "definition": "CREATE UNIQUE INDEX cycle_logs_pkey ON public.cycle_logs USING btree (id)"
+    },
+    {
+      "name": "cycle_logs_client_id_log_date_unique",
+      "table": "cycle_logs",
+      "definition": "CREATE UNIQUE INDEX cycle_logs_client_id_log_date_unique ON public.cycle_logs USING btree (client_id, log_date)"
+    },
+    {
+      "name": "cycle_logs_unique_daily",
+      "table": "cycle_logs",
+      "definition": "CREATE UNIQUE INDEX cycle_logs_unique_daily ON public.cycle_logs USING btree (client_id, log_date)"
+    },
+    {
+      "name": "nutrition_logs_pkey",
+      "table": "nutrition_logs",
+      "definition": "CREATE UNIQUE INDEX nutrition_logs_pkey ON public.nutrition_logs USING btree (id)"
+    },
+    {
+      "name": "nutrition_logs_client_id_log_date_key",
+      "table": "nutrition_logs",
+      "definition": "CREATE UNIQUE INDEX nutrition_logs_client_id_log_date_key ON public.nutrition_logs USING btree (client_id, log_date)"
+    },
+    {
+      "name": "recovery_logs_pkey",
+      "table": "recovery_logs",
+      "definition": "CREATE UNIQUE INDEX recovery_logs_pkey ON public.recovery_logs USING btree (id)"
+    },
+    {
+      "name": "recovery_logs_client_date_key",
+      "table": "recovery_logs",
+      "definition": "CREATE UNIQUE INDEX recovery_logs_client_date_key ON public.recovery_logs USING btree (client_id, log_date)"
+    },
+    {
+      "name": "sleep_logs_pkey",
+      "table": "sleep_logs",
+      "definition": "CREATE UNIQUE INDEX sleep_logs_pkey ON public.sleep_logs USING btree (id)"
+    },
+    {
+      "name": "sleep_logs_user_id_client_id_log_date_key",
+      "table": "sleep_logs",
+      "definition": "CREATE UNIQUE INDEX sleep_logs_user_id_client_id_log_date_key ON public.sleep_logs USING btree (user_id, client_id, log_date)"
+    },
+    {
+      "name": "sleep_logs_client_date_idx",
+      "table": "sleep_logs",
+      "definition": "CREATE INDEX sleep_logs_client_date_idx ON public.sleep_logs USING btree (client_id, log_date DESC)"
+    },
+    {
+      "name": "workout_logs_pkey",
+      "table": "workout_logs",
+      "definition": "CREATE UNIQUE INDEX workout_logs_pkey ON public.workout_logs USING btree (id)"
+    }
+  ],
+  "triggers": null,
+  "viewDefinitions": [
+    {
+      "name": "nutrition_log_remaining",
+      "definition": " SELECT nl.id AS nutrition_log_id,\n    nl.client_id,\n    nl.calories - COALESCE(t.calories_eaten, 0::numeric) AS calories_remaining,\n    nl.protein - COALESCE(t.protein_eaten_g, 0::numeric) AS protein_remaining_g,\n    nl.carbs - COALESCE(t.carbs_eaten_g, 0::numeric) AS carbs_remaining_g,\n    nl.fats - COALESCE(t.fat_eaten_g, 0::numeric) AS fat_remaining_g,\n    nl.fiber_target_g - COALESCE(t.fiber_eaten_g, 0::numeric) AS fiber_remaining_g,\n    nl.sodium_target_mg - COALESCE(t.sodium_eaten_mg, 0::numeric) AS sodium_remaining_mg,\n    nl.potassium_target_mg - COALESCE(t.potassium_eaten_mg, 0::numeric) AS potassium_remaining_mg,\n    nl.magnesium_target_mg - COALESCE(t.magnesium_eaten_mg, 0::numeric) AS magnesium_remaining_mg,\n    nl.calcium_target_mg - COALESCE(t.calcium_eaten_mg, 0::numeric) AS calcium_remaining_mg,\n    nl.iron_target_mg - COALESCE(t.iron_eaten_mg, 0::numeric) AS iron_remaining_mg,\n    nl.zinc_target_mg - COALESCE(t.zinc_eaten_mg, 0::numeric) AS zinc_remaining_mg,\n    nl.selenium_target_mcg - COALESCE(t.selenium_eaten_mcg, 0::numeric) AS selenium_remaining_mcg,\n    nl.cholesterol_limit_mg - COALESCE(t.cholesterol_eaten_mg, 0::numeric) AS cholesterol_remaining_mg,\n    nl.choline_target_mg - COALESCE(t.choline_eaten_mg, 0::numeric) AS choline_remaining_mg,\n    nl.vitamin_a_target_mcg - COALESCE(t.vitamin_a_eaten_mcg, 0::numeric) AS vitamin_a_remaining_mcg,\n    nl.vitamin_c_target_mg - COALESCE(t.vitamin_c_eaten_mg, 0::numeric) AS vitamin_c_remaining_mg,\n    nl.vitamin_d_target_mcg - COALESCE(t.vitamin_d_eaten_mcg, 0::numeric) AS vitamin_d_remaining_mcg,\n    nl.vitamin_e_target_mg - COALESCE(t.vitamin_e_eaten_mg, 0::numeric) AS vitamin_e_remaining_mg,\n    nl.vitamin_k_target_mcg - COALESCE(t.vitamin_k_eaten_mcg, 0::numeric) AS vitamin_k_remaining_mcg,\n    nl.b1_target_mg - COALESCE(t.b1_eaten_mg, 0::numeric) AS b1_remaining_mg,\n    nl.b2_target_mg - COALESCE(t.b2_eaten_mg, 0::numeric) AS b2_remaining_mg,\n    nl.b3_target_mg - COALESCE(t.b3_eaten_mg, 0::numeric) AS b3_remaining_mg,\n    nl.b5_target_mg - COALESCE(t.b5_eaten_mg, 0::numeric) AS b5_remaining_mg,\n    nl.b6_target_mg - COALESCE(t.b6_eaten_mg, 0::numeric) AS b6_remaining_mg,\n    nl.b9_target_mcg - COALESCE(t.b9_eaten_mcg, 0::numeric) AS b9_remaining_mcg,\n    nl.b12_target_mcg - COALESCE(t.b12_eaten_mcg, 0::numeric) AS b12_remaining_mcg\n   FROM nutrition_logs nl\n     LEFT JOIN nutrition_log_totals t ON t.nutrition_log_id = nl.id;"
+    },
+    {
+      "name": "nutrition_log_totals_by_block",
+      "definition": " SELECT me.nutrition_log_id,\n    COALESCE(me.day_block, 'other'::text) AS day_block,\n    sum(fn.calories * COALESCE(me.grams, 0::numeric) / 100::numeric) AS calories_eaten,\n    sum(fn.protein_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS protein_eaten_g,\n    sum(fn.carbs_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS carbs_eaten_g,\n    sum(fn.fat_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS fat_eaten_g,\n    sum(fn.fiber_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS fiber_eaten_g,\n    sum(fn.sodium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS sodium_eaten_mg,\n    sum(fn.potassium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS potassium_eaten_mg,\n    sum(fn.magnesium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS magnesium_eaten_mg,\n    sum(fn.calcium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS calcium_eaten_mg,\n    sum(fn.iron_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS iron_eaten_mg,\n    sum(fn.choline_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS choline_eaten_mg\n   FROM meal_entries me\n     JOIN food_nutrients fn ON fn.food_id = me.food_id\n  WHERE me.entry_state = 'confirmed'::text\n  GROUP BY me.nutrition_log_id, (COALESCE(me.day_block, 'other'::text));"
+    },
+    {
+      "relname": "nutrition_log_totals",
+      "reloptions": [
+        "security_invoker=true"
+      ],
+      "authenticated_select": true,
+      "definition": " SELECT me.nutrition_log_id,\n    sum(fn.calories * COALESCE(me.grams, 0::numeric) / 100::numeric) AS calories_eaten,\n    sum(fn.protein_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS protein_eaten_g,\n    sum(fn.carbs_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS carbs_eaten_g,\n    sum(fn.fat_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS fat_eaten_g,\n    sum(fn.fiber_g * COALESCE(me.grams, 0::numeric) / 100::numeric) AS fiber_eaten_g,\n    sum(fn.sodium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS sodium_eaten_mg,\n    sum(fn.potassium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS potassium_eaten_mg,\n    sum(fn.magnesium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS magnesium_eaten_mg,\n    sum(fn.calcium_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS calcium_eaten_mg,\n    sum(fn.iron_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS iron_eaten_mg,\n    sum(fn.zinc_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS zinc_eaten_mg,\n    sum(fn.selenium_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS selenium_eaten_mcg,\n    sum(fn.cholesterol_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS cholesterol_eaten_mg,\n    sum(fn.choline_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS choline_eaten_mg,\n    sum(fn.vitamin_a_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS vitamin_a_eaten_mcg,\n    sum(fn.vitamin_c_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS vitamin_c_eaten_mg,\n    sum(fn.vitamin_d_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS vitamin_d_eaten_mcg,\n    sum(fn.vitamin_e_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS vitamin_e_eaten_mg,\n    sum(fn.vitamin_k_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS vitamin_k_eaten_mcg,\n    sum(fn.b1_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b1_eaten_mg,\n    sum(fn.b2_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b2_eaten_mg,\n    sum(fn.b3_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b3_eaten_mg,\n    sum(fn.b5_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b5_eaten_mg,\n    sum(fn.b6_mg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b6_eaten_mg,\n    sum(fn.b9_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b9_eaten_mcg,\n    sum(fn.b12_mcg * COALESCE(me.grams, 0::numeric) / 100::numeric) AS b12_eaten_mcg\n   FROM meal_entries me\n     JOIN food_nutrients fn ON fn.food_id = me.food_id\n  WHERE me.entry_state = 'confirmed'::text\n  GROUP BY me.nutrition_log_id;"
+    }
+  ]
+}

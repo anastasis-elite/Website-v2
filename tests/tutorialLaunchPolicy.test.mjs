@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import ts from 'typescript'
+import { importTs } from './typescriptModule.mjs'
 
 async function importTypescriptModule(path) {
   const source = readFileSync(path, 'utf8')
@@ -19,6 +20,8 @@ const { getTutorialHydrationDecision } = await importTypescriptModule(
 )
 
 const registrySource = readFileSync('lib/tutorial/registry.ts', 'utf8')
+const navigationSource = readFileSync('components/navigation/ClientDashboardNav.tsx', 'utf8')
+const { buildCoreOnboardingTutorial } = await importTs('lib/tutorial/registry.ts')
 
 test('existing authenticated user with no core tutorial progress starts automatically', () => {
   assert.equal(getTutorialHydrationDecision(null), 'start')
@@ -63,10 +66,23 @@ test('core onboarding extension registers daily dashboard targets', () => {
     'dashboard-nav-nutrition',
     'dashboard-daily-checkin',
     'dashboard-progress-area',
-    'dashboard-progress-photos',
-    'dashboard-measurements',
-    'dashboard-strength-assessment',
+    'dashboard-progress-navigation',
   ]) {
     assert.match(registrySource, new RegExp(targetId))
+  }
+})
+
+test('assessment guidance highlights visible Progress navigation without requiring hidden panels or route changes', () => {
+  assert.match(navigationSource, /id: 'progress'.*href: '\/dashboard\/progress'.*tutorialId: 'dashboard-progress-navigation'/)
+  for (const tier of ['ember', 'ignite', 'phoenix']) {
+    const tutorial = buildCoreOnboardingTutorial(tier)
+    for (const id of ['progress-photos', 'progress-measurements', 'progress-strength']) {
+      const step = tutorial.steps.find(step => step.stepId === id)
+      assert.ok(step)
+      assert.equal(step.kind, 'reveal')
+      assert.equal(step.revealTarget.tutorialTargetId, 'dashboard-progress-navigation')
+      assert.match(step.description, /Open Progress, then expand Assessments and requirements/)
+      assert.equal(step.requiredAction, undefined)
+    }
   }
 })

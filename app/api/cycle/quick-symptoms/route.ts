@@ -1,3 +1,5 @@
+import { getClientLocalDate } from '@/lib/timezone'
+import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
@@ -55,7 +57,7 @@ export async function POST(req: Request) {
     }
 
     const cycleStatus = getCycleStatus(client)
-    const today = new Date().toISOString().split('T')[0]
+    const today = getClientLocalDate(client)
 
     const cleanSymptoms =
       symptoms && typeof symptoms === 'object' && !Array.isArray(symptoms)
@@ -130,6 +132,8 @@ export async function POST(req: Request) {
         { status: 500 }
       )
     }
+
+    invalidateDailyPlan()
 
     return NextResponse.json({
       success: true,

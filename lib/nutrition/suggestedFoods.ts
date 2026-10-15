@@ -190,16 +190,14 @@ export function buildSuggestedFoods({
   avoidTerms?: string[]
   recommendationEffects?: SuggestedFoodRecommendationEffect[]
 }): SuggestedFood[] {
-  if (!remaining) return []
-
   const logged = new Set(loggedFoodIds || [])
   const avoid = (avoidTerms || [])
     .map((term) => term.trim().toLowerCase())
     .filter(Boolean)
-  const caloriesRemaining = numeric(remaining.calories_remaining)
-  const proteinRemaining = numeric(remaining.protein_remaining_g)
-  const carbsRemaining = numeric(remaining.carbs_remaining_g)
-  const fatsRemaining = numeric(remaining.fat_remaining_g)
+  const caloriesRemaining = numeric(remaining?.calories_remaining)
+  const proteinRemaining = numeric(remaining?.protein_remaining_g)
+  const carbsRemaining = numeric(remaining?.carbs_remaining_g)
+  const fatsRemaining = numeric(remaining?.fat_remaining_g)
 
   const scored = candidates
     .filter((food) => {
@@ -218,6 +216,22 @@ export function buildSuggestedFoods({
       const carbs = numeric(food.carbs_g)
       const fats = numeric(food.fat_g)
       if (calories <= 0) return null
+
+      if (!remaining) {
+        const fiber = numeric(food.fiber_g)
+        return {
+          foodId: food.id,
+          name: food.name,
+          serving: bestServing(food),
+          contribution: protein >= 10 ? 'Protein option' : fiber >= 3 ? 'Fiber option' : 'Food option',
+          reason: 'A starting option. Log intake to tailor suggestions to your remaining targets.',
+          calories,
+          protein,
+          carbs,
+          fats,
+          score: Math.min(30, protein) * 1.8 + Math.min(12, fiber) * 3 + 1,
+        }
+      }
 
       let score = 0
       const contributions: Array<{ label: string; value: number; unit: string; score: number }> = []

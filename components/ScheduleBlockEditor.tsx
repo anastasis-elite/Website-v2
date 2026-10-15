@@ -16,11 +16,11 @@ export default function ScheduleBlockEditor({ clientId, initialBlocks }: { clien
     setSaving(true); setStatus('')
     const response = await fetch('/api/daily-structure/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId, blocks }) })
     const data = await response.json(); setSaving(false)
-    setStatus(response.ok ? 'Schedule saved. Open time is now available to your daily plan.' : data.error || 'Schedule could not be saved.')
+    setStatus(response.ok ? 'Recurring commitments saved. Potential windows will respect your transition buffer.' : data.error || 'Schedule could not be saved.')
   }
   return <section style={styles.cartBoxStyle}>
     <h2 style={styles.sectionTitleStyle}>Blocked time and available capacity</h2>
-    <p style={styles.bodyStyle}>Add recurring obligations. Everything outside these blocks remains available for training, walking, nourishment, mobility, or recovery.</p>
+    <p style={styles.bodyStyle}>Add recurring obligations. Time outside these commitments is potentially available. It also includes transitions, rest, care, and the unexpected; your plan will leave space unfilled.</p>
     <div style={{ display: 'grid', gap: 16 }}>
       {blocks.map((block, index) => <div key={block.id || index} style={styles.compactCardStyle}>
         <div style={styles.gridTwoCol}>
@@ -33,7 +33,7 @@ export default function ScheduleBlockEditor({ clientId, initialBlocks }: { clien
         <button type="button" onClick={() => setBlocks((current) => current.filter((_, position) => position !== index))} style={{ ...styles.secondaryButtonStyle, marginTop: 12 }}>Remove</button>
       </div>)}
     </div>
-    <div style={{ ...styles.buttonRowStyle, marginTop: 20 }}><button type="button" onClick={() => setBlocks((current) => [...current, emptyBlock()])} style={styles.secondaryButtonStyle}>Add blocked time</button><button type="button" onClick={save} disabled={saving} style={styles.primaryButtonStyle}>{saving ? 'Saving…' : 'Save schedule'}</button></div>
+    <div style={{ ...styles.buttonRowStyle, marginTop: 20 }}><button type="button" onClick={() => setBlocks((current) => [...current, emptyBlock()])} style={styles.secondaryButtonStyle}>Add blocked time</button><button type="button" onClick={save} disabled={saving} style={styles.primaryButtonStyle}>{saving ? 'Saving…' : 'Save recurring commitments'}</button></div>
     {status ? <p role="status" style={styles.bodyStyle}>{status}</p> : null}
   </section>
 }

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import ts from 'typescript'
+import { importTs } from './typescriptModule.mjs'
 
 async function importTypescriptModule(path) {
   const source = readFileSync(path, 'utf8')
@@ -15,7 +16,7 @@ async function importTypescriptModule(path) {
 }
 
 const { getTierCapabilities, normalizeProgramTier } = await importTypescriptModule('lib/entitlements.ts')
-const { buildWhatsNextState } = await importTypescriptModule('lib/dashboard/whatsNext.ts')
+const { buildWhatsNextState } = await importTs('lib/dashboard/whatsNext.ts')
 
 function logic(program = 'ignite') {
   return {
@@ -87,7 +88,9 @@ function schedule(category, overrides = {}) {
 
 test('tier capabilities normalize casing and expose predictable matrix', () => {
   assert.equal(normalizeProgramTier('Phoenix'), 'phoenix')
-  assert.equal(normalizeProgramTier('bad-value'), 'ignite')
+  assert.equal(normalizeProgramTier('bad-value'), 'ember')
+  assert.equal(getTierCapabilities(null).nutritionMealLogging, false)
+  assert.equal(getTierCapabilities('bad-value').nutritionPhotoMacroEstimation, false)
 
   const ember = getTierCapabilities('EMBER')
   assert.equal(ember.nutritionTracking, true)
@@ -105,6 +108,7 @@ test('tier capabilities normalize casing and expose predictable matrix', () => {
   assert.equal(ember.postureAssessment, false)
 
   const ignite = getTierCapabilities('ignite')
+  assert.equal(ignite.nutritionMacroEntry, false)
   assert.equal(ignite.nutritionMealLogging, true)
   assert.equal(ignite.nutritionBarcodeScanning, true)
   assert.equal(ignite.nutritionRecurringFoodDetection, true)
@@ -116,6 +120,7 @@ test('tier capabilities normalize casing and expose predictable matrix', () => {
   assert.equal(ignite.postureAssessment, true)
 
   const phoenix = getTierCapabilities('phoenix')
+  assert.equal(phoenix.nutritionMacroEntry, false)
   assert.equal(phoenix.nutritionRecommendedMeal, true)
   assert.equal(phoenix.nutritionPhotoMacroEstimation, true)
   assert.equal(phoenix.recoveryDirectedNextAction, true)
@@ -131,9 +136,9 @@ test('nutrition What’s Next respects Ember, Ignite, and Phoenix render modes',
     logic: logic('ember'),
     schedule: schedule('meal'),
   })
-  assert.equal(ember.title, 'Add Macros')
+  assert.equal(ember.title, 'Review nutrition guidance')
   assert.equal(ember.data.mode, 'macro_entry')
-  assert.equal(ember.primaryAction.label, 'Add Macros')
+  assert.equal(ember.primaryAction.label, 'Review guidance')
 
   const ignite = buildWhatsNextState({
     tier: 'ignite',
