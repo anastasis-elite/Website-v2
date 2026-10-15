@@ -6,6 +6,7 @@ import { getDailyScheduleState } from '@/lib/schedule/service'
 import { getClientLocalDate } from '@/lib/timezone'
 import { scheduleConflict } from '@/lib/schedule/actions'
 import type { ScheduleEvent } from '@/lib/schedule/types'
+import { getScheduleStructureSubmission } from '@/lib/assessment/scheduleStructure'
 
 function minutesBetween(start: string, end: string) {
   return Math.max(
@@ -43,10 +44,12 @@ export async function POST(
       .select('*')
       .eq('id', id)
       .eq('user_id', context.user.id)
+      .eq('client_id', context.client.client_id)
       .maybeSingle()
 
     if (lookupError) throw new Error(lookupError.message)
     if (!existing) return NextResponse.json({ error: 'Event not found.' }, { status: 404 })
+    if (getScheduleStructureSubmission(context.client.onboarding_data, existing)) return NextResponse.json({ error: 'This assessment is already submitted. Its completion is saved.' }, { status: 409 })
     if (!canMobileDefer(existing as ScheduleEvent)) {
       return NextResponse.json(
         { error: 'Only internal flexible events can be deferred from mobile.' },

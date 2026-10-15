@@ -7,6 +7,7 @@ import type {
 } from './types'
 import { healthEventTypes, scheduleConflict } from './actions'
 import { inferMealType, mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
+import { scheduleStructureTaskHref } from '@/lib/assessment/scheduleStructure'
 
 export const ACTION_ROUTES: Record<string, string> = {
   workout: '/dashboard/program/ignite/workout',
@@ -133,6 +134,8 @@ export function firstValidWindow(
 
 export function getActionRouteForEvent(event: ScheduleEvent, program = 'ignite') {
   if (event.calendar_event_id) return `/dashboard/schedule#calendar-event-${event.calendar_event_id}`
+  const assessmentHref = scheduleStructureTaskHref(event)
+  if (assessmentHref) return assessmentHref
   if (event.event_type === 'meal' && program === 'ember') return '/dashboard/nutrition'
   const nutritionDestination = !event.action_route || event.action_route.split(/[?#]/)[0] === '/dashboard/nutrition'
   if (nutritionDestination && event.event_type === 'meal') {

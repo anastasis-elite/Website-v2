@@ -3,6 +3,7 @@ import { healthEventTypes } from '@/lib/schedule/actions'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import { getScheduleStructureSubmission } from '@/lib/assessment/scheduleStructure'
 
 const editable = new Set([
   'title',
@@ -35,11 +36,12 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const { supabase, user } = await getDashboardContext()
+    const { supabase, user, client } = await getDashboardContext()
     const body = await request.json()
-    const { data: existing, error: lookupError } = await supabase.from('anastasis_schedule_events').select('*').eq('id', id).eq('user_id', user.id).maybeSingle()
+    const { data: existing, error: lookupError } = await supabase.from('anastasis_schedule_events').select('*').eq('id', id).eq('user_id', user.id).eq('client_id', client.client_id).maybeSingle()
     if (lookupError) throw new Error(lookupError.message)
     if (!existing) return NextResponse.json({ error: 'Event not found.' }, { status: 404 })
+    if (getScheduleStructureSubmission(client.onboarding_data, existing)) return NextResponse.json({ error: 'This assessment is already submitted. Its completion is saved.' }, { status: 409 })
     if (body.event_type && body.event_type !== existing.event_type &&
       (healthEventTypes.has(existing.event_type) || healthEventTypes.has(body.event_type))) return NextResponse.json({ error: 'Keep this activity’s type and record completion through its activity page.' }, { status: 409 })
     if ((body.status === 'completed' || body.completed_at) && healthEventTypes.has(existing.event_type)) return NextResponse.json({ error: 'Open this activity to record what you did.' }, { status: 409 })

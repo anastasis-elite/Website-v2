@@ -8,6 +8,7 @@ import { healthEventTypes } from '@/lib/schedule/actions'
 import { formatLocalTime, zonedDateTimeToUtc } from '@/lib/schedule/time'
 import { getLocalMinutes, localDateKey } from '@/lib/timezone'
 import { announceCalendarChange } from '@/lib/calendar/client'
+import { scheduleStructureTaskHref } from '@/lib/assessment/scheduleStructure'
 export default function ScheduleEventActions({ event, timezone, program = 'ignite', suggestion, canChangeTime = true }: { event: ScheduleEvent; timezone: string; program?: string; suggestion?: ScheduleAdjustment; canChangeTime?: boolean }) {
   const router = useRouter(); const lock = useRef(false); const [saving, setSaving] = useState(false); const [message, setMessage] = useState(''); const [moving, setMoving] = useState(false)
   const initial = suggestion?.suggested_start_at || event.adjusted_start_at || event.start_at
@@ -40,8 +41,12 @@ export default function ScheduleEventActions({ event, timezone, program = 'ignit
   const acceptedStart = suggestion ? suggestion.suggested_start_at : event.suggested ? event.start_at : null, acceptedEnd = suggestion ? suggestion.suggested_end_at : event.suggested ? event.end_at : null
   const commitment = event.virtual && event.flexibility_type === 'fixed'
   const done = ['completed','skipped','cancelled'].includes(event.status); const health = healthEventTypes.has(event.event_type)
+  const reviewHref = event.status === 'completed' ? scheduleStructureTaskHref(event) : null
   return <div className="schedule-event-actions">
-    {done ? <span>{event.status === 'completed' ? 'Done' : event.status === 'cancelled' ? 'Cancelled' : 'Skipped today'}</span> : <>
+    {done ? <>
+      <span>{event.status === 'completed' ? 'Done' : event.status === 'cancelled' ? 'Cancelled' : 'Skipped today'}</span>
+      {reviewHref ? <Link className="tier-secondary-action" href={reviewHref}>Review assessment</Link> : null}
+    </> : <>
       <Link className="tier-secondary-action" href={getActionRouteForEvent(event, program)}>{commitment ? 'Edit commitment' : health ? 'Open activity' : 'View details'}</Link>
       {!health && !event.virtual ? <button disabled={saving} onClick={() => void mutate('complete')}>Complete</button> : null}
       {event.flexibility_type === 'flexible' && event.movable && !event.approval_required ? <>{canChangeTime ? <button disabled={saving} onClick={() => setMoving(!moving)}>Move to later</button> : null}<button disabled={saving} onClick={() => void mutate('skip')}>Skip today</button></> : null}

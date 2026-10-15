@@ -13,6 +13,7 @@ const require = createRequire(import.meta.url)
 const view = await importTs('lib/calendar/view.ts')
 const engine = await importTs('lib/schedule/engine.ts')
 const actions = await importTs('lib/schedule/actions.ts')
+const assessment = await importTs('lib/assessment/scheduleStructure.ts')
 const time = await importTs('lib/schedule/time.ts')
 const timezone = await importTs('lib/timezone.ts')
 const adapters = await importTs('lib/schedule/dailyPlanAdapter.ts')
@@ -30,6 +31,7 @@ function loadComponent(path, mocks = {}) {
     'next/navigation': { useRouter: () => ({ refresh() {} }) },
     '@/lib/schedule/engine': engine,
     '@/lib/schedule/actions': actions,
+    '@/lib/assessment/scheduleStructure': assessment,
     '@/lib/schedule/time': time,
     '@/lib/timezone': timezone,
     '@/lib/calendar/client': { announceCalendarChange() {} },
