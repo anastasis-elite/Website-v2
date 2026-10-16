@@ -4,6 +4,7 @@ import {getClientDayRange} from '@/lib/schedule/time'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
 import { AOSCard } from '@/components/aos-ui/AOSCard'
+import { getStrengthAssessmentStatus, getStrengthAssessmentDetail, formatStrengthAssessmentTimestamp } from '@/lib/assessment/getStrengthAssessmentStatus'
 
 export default async function MonthlyAssessmentsPage() {
   const { supabase, client } = await getDashboardContext()
@@ -12,7 +13,10 @@ export default async function MonthlyAssessmentsPage() {
   const monthStartDate = getClientLocalDate(client).slice(0,7)+'-01'
   const monthStart = getClientDayRange(client,monthStartDate).start
 
-  const monthlyAssessment = await getMonthlyAssessmentStatus(supabase, client.client_id)
+  const [monthlyAssessment, strengthAssessment] = await Promise.all([
+    getMonthlyAssessmentStatus(supabase, client.client_id),
+    getStrengthAssessmentStatus(supabase, client),
+  ])
 
   const { data: monthlyMeasurements } = await supabase
     .from('measurement_logs')
@@ -30,12 +34,24 @@ export default async function MonthlyAssessmentsPage() {
 
   const assessments = [
     {
+      id: 'strength-assessment',
+      title: 'Strength Assessment',
+      body: getStrengthAssessmentDetail(strengthAssessment, client),
+      complete: strengthAssessment.state === 'completed',
+      href: strengthAssessment.href,
+      buttonLabel: strengthAssessment.actionLabel,
+      statusLabel: strengthAssessment.label,
+      completedAt: strengthAssessment.completedAt,
+    },
+    {
       id: 'monthly-check-in',
       title: 'Monthly Check-In',
       body: 'Update current body, strength, recovery, goals, and readiness so your program can stay aligned.',
       complete: assessmentCompletedThisMonth,
       href: `/dashboard/assessment/start?program=${program}&assessmentType=monthly`,
       buttonLabel: 'Start Check-In',
+      statusLabel: assessmentCompletedThisMonth ? 'Completed' : 'Due',
+      completedAt: monthlyAssessment.lastCompletedAt,
     },
     {
       id: 'daily-structure',
@@ -44,6 +60,8 @@ export default async function MonthlyAssessmentsPage() {
       complete: dailyStructureReviewedThisMonth,
       href: '/dashboard/assessment/daily-structure',
       buttonLabel: 'Review Structure',
+      statusLabel: dailyStructureReviewedThisMonth ? 'Completed' : 'Due',
+      completedAt: client.daily_structure_reviewed_at || null,
     },
     {
       id: 'measurements',
@@ -52,11 +70,14 @@ export default async function MonthlyAssessmentsPage() {
       complete: measurementsCompletedThisMonth,
       href: '/dashboard/assessment/measurements',
       buttonLabel: 'Start Measurements',
+      statusLabel: measurementsCompletedThisMonth ? 'Completed' : 'Due',
+      completedAt: null,
     },
   ]
 
-  const dueAssessments = assessments.filter((assessment) => !assessment.complete)
+  const dueAssessments = assessments.filter((assessment) => !assessment.complete && assessment.statusLabel !== 'Status unavailable')
   const completedAssessments = assessments.filter((assessment) => assessment.complete)
+  const unavailableAssessments = assessments.filter((assessment) => assessment.statusLabel === 'Status unavailable')
 
   return (
     <main className="aos-flow-page">
@@ -77,7 +98,7 @@ export default async function MonthlyAssessmentsPage() {
             <p>
               {dueAssessments.length
                 ? 'Complete only what is due. Daily check-ins remain separate.'
-                : 'All monthly assessment items are complete for this cycle.'}
+                : unavailableAssessments.length ? 'An assessment status could not be loaded. Retry before relying on this count.' : 'All monthly assessment items are complete for this cycle.'}
             </p>
           </AOSCard>
 
@@ -88,11 +109,13 @@ export default async function MonthlyAssessmentsPage() {
           </AOSCard>
         </section>
 
+        {unavailableAssessments.map((assessment) => <AOSCard key={assessment.id}><AssessmentRow {...assessment} /></AOSCard>)}
+
         <section className="aos-card aos-assessment-panel">
           <div className="aos-section-header">
             <div>
               <p className="aos-eyebrow">Required this month</p>
-              <h2>{dueAssessments.length ? 'Due This Month' : 'Nothing due right now'}</h2>
+              <h2>{dueAssessments.length ? 'Due This Month' : unavailableAssessments.length ? 'Check assessment status' : 'Nothing due right now'}</h2>
             </div>
             <Link href="/dashboard" className="aos-secondary-link">
               Dashboard
@@ -107,7 +130,7 @@ export default async function MonthlyAssessmentsPage() {
             </div>
           ) : (
             <p className="aos-muted-copy">
-              Your dashboard has what it needs for this month.
+              {unavailableAssessments.length ? 'Retry the unavailable assessment above to confirm its status.' : 'Your dashboard has what it needs for this month.'}
             </p>
           )}
         </section>
@@ -122,7 +145,10 @@ export default async function MonthlyAssessmentsPage() {
             </div>
             <div className="aos-completed-list">
               {completedAssessments.map((assessment) => (
-                <p key={assessment.id}>✓ {assessment.title}</p>
+                <article key={assessment.id}>
+                  <p>✓ {assessment.title} — Completed{assessment.completedAt ? ` ${formatStrengthAssessmentTimestamp(assessment.completedAt, client)}` : ''}</p>
+                  {assessment.id === 'strength-assessment' ? <Link href={assessment.href} className="aos-secondary-link">View Saved Results</Link> : null}
+                </article>
               ))}
             </div>
           </section>
@@ -137,16 +163,19 @@ function AssessmentRow({
   body,
   href,
   buttonLabel,
+  statusLabel,
 }: {
   title: string
   body: string
   href: string
   buttonLabel: string
+  statusLabel: string
 }) {
   return (
     <article className="aos-assessment-row">
       <div>
         <h3>{title}</h3>
+        <p>{statusLabel}</p>
         <p>{body}</p>
       </div>
       <Link href={href} className="aos-primary-link">

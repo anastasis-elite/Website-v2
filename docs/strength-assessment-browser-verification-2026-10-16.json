@@ -1,0 +1,78 @@
+{
+  "origin": "http://127.0.0.1:3107",
+  "environment": "Isolated localhost; real UI, synthetic intercepted account persistence; all external requests blocked",
+  "checks": [
+    {
+      "name": "Debounced cloud autosave preserves partial decimal strings and confirms its timestamp",
+      "result": "PASS"
+    },
+    {
+      "name": "Closing the browser context and reopening a fresh simulated authenticated session restores every saved value",
+      "result": "PASS"
+    },
+    {
+      "name": "Offline values stay in memory; canceled Next link, Back, and real menu logout preserve the form",
+      "result": "PASS"
+    },
+    {
+      "name": "Reconnect and failed-save retry persist retained values without false saved states",
+      "result": "PASS"
+    },
+    {
+      "name": "Rapid final submissions commit once, show immutable results in the account timezone, and refresh Progress to Completed",
+      "result": "PASS"
+    },
+    {
+      "name": "Actual menu sign-out and simulated sign-in navigation restore the completed result and every saved value",
+      "result": "PASS"
+    },
+    {
+      "name": "Client-side login entry keeps the early Back guard; confirming departure permits navigation",
+      "result": "PASS"
+    },
+    {
+      "name": "Prior-month Resume URL opens its original period and preserves its partial measurements",
+      "result": "PASS"
+    },
+    {
+      "name": "Separate synthetic account transport restores no other account measurements",
+      "result": "PASS"
+    },
+    {
+      "name": "Both same-month historical records retain separately viewable original values",
+      "result": "PASS"
+    },
+    {
+      "name": "320px, 390px, and 1440px viewports render with no horizontal overflow",
+      "result": "PASS"
+    }
+  ],
+  "browserExceptions": [],
+  "externalOrigins": [],
+  "notTested": [
+    "Live Supabase persistence and RLS",
+    "Real account authentication",
+    "Production deployment"
+  ],
+  "baselineCommit": "6f89a5f0c90bda87f305795cee50eadb08ae4d7d",
+  "fullSuitesRerun": false,
+  "affectedAutomatedTests": {
+    "passed": 22,
+    "failed": 0
+  },
+  "typescript": "PASS",
+  "localProductionBuildRerun": false,
+  "guardFix": "Early application-shell history listener prevents Next from unmounting a dirty form before the Back guard runs. Native history restoration retains values.",
+  "migration": {
+    "sha256": "b233f4eed1cf5a7c92afc490c3b1eafaa77a2a96632e459be24ecdaf2177ee2b",
+    "liveApplied": false,
+    "rollback": "Restore READY application artifact dpl_6zgWx3hHhjMrQqUUuaq54T3zxFvL (c873fbe); retain additive schema and all assessment history."
+  },
+  "qaAvailability": {
+    "existingLegacySyntheticAccounts": 3,
+    "dedicatedStrengthAccounts": 0,
+    "usablePrivateLoginFixture": false
+  },
+  "productionPromoted": false,
+  "requiredUserAction": "Supply only the path to a private outside-Git mode-0600 dedicated synthetic QA fixture; do not paste credentials."
+}

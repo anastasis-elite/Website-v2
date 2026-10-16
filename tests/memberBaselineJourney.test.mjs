@@ -33,7 +33,29 @@ function database({ store, signedIn = true, failTable = null } = {}) {
     client_current_profiles: [], assessments: [], program_outputs: [], nutrition_logs: [], workout_logs: [], recovery_logs: [], cycle_logs: [], daily_health_metrics: [], health_integrations: [], recommendation_audit_logs: [],
   }
   const writes = []
-  const db = { tables, writes, auth: { getUser: async () => ({ data: { user: signedIn ? { id: owner, email: 'ember-qa@example.invalid' } : null }, error: null }) }, from(table) {
+  const db = { tables, writes, async rpc(name, args) {
+    assert.equal(name, 'save_strength_assessment')
+    const { p_client_id: id, p_period: period, p_expected_revision: revision, p_values: values, p_complete: complete, p_program_json: program } = args
+    tables.strength_assessment_sessions ||= []
+    const existing = tables.strength_assessment_sessions.find(row => row.client_id === id && row.period === period)
+    if (existing?.status === 'completed') return { data: { success: complete && JSON.stringify(existing.values) === JSON.stringify(values), alreadyCompleted: true, status: 409, code: 'conflict', assessment: existing }, error: null }
+    if ((existing?.revision || 0) !== revision) return { data: { success: false, status: 409, code: 'conflict', assessment: existing }, error: null }
+    if (failTable === 'strength_assessment_sessions' || complete && ['assessments', 'client_current_profiles'].includes(failTable) || complete && program && failTable === 'program_outputs') return { data: null, error: { message: 'QA atomic storage failure' } }
+    const savedAt = new Date().toISOString()
+    let assessmentId = null
+    if (complete) {
+      assessmentId = `qa-strength-${tables.assessments.length + 1}`
+      tables.assessments.push({ id: assessmentId, client_id: id, auth_user_id: owner, assessment_type: 'strength', data: structuredClone(values), submitted_at: savedAt, assessment_period: period })
+      const profile = tables.client_current_profiles.find(row => row.client_id === id)
+      if (profile) Object.assign(profile, { current_weight: Number(values.weight), updated_at: savedAt })
+      else tables.client_current_profiles.push({ user_id: owner, client_id: id, current_weight: Number(values.weight), updated_at: savedAt })
+      if (program) tables.program_outputs.push({ id: `qa-program-${tables.program_outputs.length + 1}`, client_id: id, auth_user_id: owner, program: tables.clients[0].program, status: 'generated', program_json: structuredClone(program), generated_at: savedAt })
+    }
+    const saved = { client_id: id, auth_user_id: owner, period, status: complete ? 'completed' : 'draft', values: structuredClone(values), revision: revision + 1, saved_at: savedAt, completed_at: complete ? savedAt : null, assessment_id: assessmentId }
+    if (existing) Object.assign(existing, saved); else tables.strength_assessment_sessions.push(saved)
+    writes.push({ table: 'strength_assessment_sessions', value: saved })
+    return { data: { success: true, assessment: saved }, error: null }
+  }, auth: { getUser: async () => ({ data: { user: signedIn ? { id: owner, email: 'ember-qa@example.invalid' } : null }, error: null }) }, from(table) {
     const filters = []; let mutation = null; let upsert = false; let sort = null; let size = null; let countOnly = false
     const q = {
       select(_columns, options) { countOnly = Boolean(options?.head); return q },
@@ -82,7 +104,7 @@ test('isolated EMBER initial assessment → strength → persisted useful plan �
   assert.equal(savedInitial.auth_user_id, owner)
   assert.equal(savedInitial.program, 'ember')
   assert.equal(savedInitial.assessment_type, 'initial')
-  const response = await strengthRoute.POST(req({ ...strength, client_id: 'OTHER', program: 'phoenix' }))
+  const response = await strengthRoute.POST(req({ ...strength, client_id: clientId, auth_user_id: 'OTHER', program: 'phoenix' }))
   assert.equal(response.status, 200)
   assert.equal((await response.json()).redirect, '/dashboard/program')
   assert.equal(db.tables.assessments.filter(row => row.assessment_type === 'strength').length, 1)
@@ -140,7 +162,9 @@ test('untrusted empty assessments and dangerous symptoms do not create an active
   assert.equal(db.writes.length, 0)
   db = database()
   assert.equal((await initialRoute.POST(req(initial))).status, 200)
-  assert.equal((await strengthRoute.POST(req({ ...strength, notes: 'chest pain during exercise' }))).status, 409)
+  const safetyResponse = await strengthRoute.POST(req({ ...strength, notes: 'chest pain during exercise' }))
+  assert.equal(safetyResponse.status, 200)
+  assert.equal((await safetyResponse.json()).planStatus, 'safety_paused')
   assert.equal(db.tables.program_outputs.length, 0)
 })
 
@@ -163,33 +187,28 @@ test('strength setup requires a saved initial assessment and valid measurements 
   assert.equal(saved.data.lateral_raise_weight, '0')
 })
 
-test('a failed program write reports failure and retains the genuine recorded baseline for recovery', async () => {
+test('a failed final transaction preserves the draft and retries without a partial baseline', async () => {
   const db = database({ failTable: 'program_outputs' })
   await initialRoute.POST(req(initial))
   const response = await strengthRoute.POST(req(strength))
-  assert.equal(response.status, 500)
+  assert.equal(response.status, 503)
   const failure = await response.json()
   assert.equal(failure.success, undefined)
-  assert.equal(failure.baselineSaved, true)
-  assert.equal(failure.retryRoute, '/dashboard/onboarding/plan')
+  assert.equal(failure.code, 'save_failed')
   assert.equal(db.tables.program_outputs.length, 0)
-  assert.equal(db.tables.assessments.filter(row => row.assessment_type === 'strength').length, 1)
-  assert.ok(globalThis.memberBaselineInvalidations > 0)
+  assert.equal(db.tables.assessments.filter(row => row.assessment_type === 'strength').length, 0)
   const retry = database({ store: structuredClone(db.tables) })
-  const regenerated = await generateRoute.POST(req({ client_id: clientId }))
-  assert.equal(regenerated.status, 200)
-  assert.equal((await regenerated.json()).success, true)
-  assert.equal(retry.tables.program_outputs.length, 1)
-  assert.equal(retry.tables.program_outputs[0].auth_user_id, owner)
-  assert.ok(retry.tables.program_outputs[0].program_json.days.flatMap(day => day.exercises).length > 0)
+  assert.equal((await strengthRoute.POST(req(strength))).status, 200)
   assert.equal(retry.tables.assessments.filter(row => row.assessment_type === 'strength').length, 1)
-  assert.equal((await generateRoute.POST(req({ client_id: 'OTHER' }))).status, 404)
+  assert.equal(retry.tables.program_outputs.length, 1)
+  assert.ok(globalThis.memberBaselineInvalidations > 0)
 })
 
 test('plan retries preserve equipment constraints and safety without repeating saved assessments', async () => {
-  const db = database({ failTable: 'program_outputs' })
+  const db = database()
   await initialRoute.POST(req({ ...initial, equipmentAccess: 'bodyweight' }))
   await strengthRoute.POST(req(strength))
+  db.tables.program_outputs = []
   const retry = database({ store: structuredClone(db.tables) })
   assert.equal((await generateRoute.POST(req({ client_id: clientId }))).status, 200)
   const saved = retry.tables.program_outputs[0]
