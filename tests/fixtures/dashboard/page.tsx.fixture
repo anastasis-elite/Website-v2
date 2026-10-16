@@ -6,7 +6,9 @@ import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
 import { dailyPlanToScheduleEvents } from '@/lib/schedule/dailyPlanAdapter'
 import QAClient from './QAClient'
 import { parseNutritionLoggingIntent } from '@/lib/nutrition/loggingIntent'
-export default async function QAPage({searchParams}:{searchParams:Promise<{view?:string;tier?:string;quiet?:string;log?:string;meal?:string;recipe?:string}>}) {
+import { zonedDateTimeToUtc } from '@/lib/schedule/time'
+import type { ScheduleEvent } from '@/lib/schedule/types'
+export default async function QAPage({searchParams}:{searchParams:Promise<{view?:string;tier?:string;quiet?:string;log?:string;meal?:string;recipe?:string;scenario?:string}>}) {
  if(process.env.NODE_ENV !== 'development' || process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://local-qa.invalid') notFound()
  const params=await searchParams;const program=params.tier || 'ignite';const date=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
  const client={client_id:'LOCAL-QA-ONLY',auth_user_id:'local-qa',full_name:'Maya (QA)',program,timezone:'America/Chicago',wake_time:'07:00',bed_time:'22:00',preferred_workout_time:'18:00',work_start_time:'09:00',work_end_time:'17:00',current_workout_minutes_per_session:30,execution_style:'hybrid',carousel_style:params.quiet==='true'?'step':'section',onboarding_data:{transitionMinutes:10},cycle_tracking_enabled:false}
@@ -14,7 +16,16 @@ export default async function QAPage({searchParams}:{searchParams:Promise<{view?
  const dailyPlan={date,timezone:client.timezone,calories:1800,dailyTargets:{protein:110,carbs:200,fats:60,water:111},dailyRemaining:{calories:1800,protein:110,carbs:200,fats:60,water:111},timing:{timezone:client.timezone,workoutTime:'18:00'},completedDailyTasks:[],workoutCompleted:false}
  const supabase={from:()=>{const single=null;const query:any={then:(resolve:any)=>resolve({data:[],error:null})};for(const name of ['select','eq','gte','gt','lte','lt','order','limit','in','or','not','upsert','insert','update'])query[name]=()=>query;query.maybeSingle=query.single=async()=>({data:single,error:null});return query}}
  const logic=await getProgramLogicEngine({supabase,user:{id:'local-qa'},client,program:program as any,dailyPlan,cycleStatus:{enabled:false,phase:null,label:'Not tracked',cycleDay:null},cycleAdjustment:{multiplier:1},plannedWorkout:{day_name:'Strength and movement',title:'Strength and movement'},plannedExercises:exercises,monthlyAssessmentsDueCount:0})
- const schedule=buildDailyScheduleState({date,timezone:client.timezone,now:new Date(),dayStart:new Date(date+'T12:00Z'),dayEnd:new Date(new Date(date+'T03:00Z').getTime()+86400000),events:dailyPlanToScheduleEvents({userId:'local-qa',client,dailyPlan}),logic,program,transitionMinutes:10})
+ const at=(time:string)=>zonedDateTimeToUtc(date,time,client.timezone).toISOString()
+ const event=(id:string,title:string,start:string,end:string,changes:Partial<ScheduleEvent>={}):ScheduleEvent=>({id,user_id:'local-qa',client_id:'LOCAL-QA-ONLY',title,description:'Disposable synthetic schedule fixture',event_type:'personal',source:'manual',start_at:at(start),end_at:at(end),timezone:client.timezone,all_day:false,status:'scheduled',completed_at:null,flexibility_type:'flexible',priority:'medium',required:true,movable:true,approval_required:false,earliest_start_at:null,latest_end_at:null,preferred_time:null,estimated_duration_minutes:15,external_provider_name:null,external_contact_type:null,external_contact_value:null,external_event_id:null,external_calendar_source:null,reschedule_allowed:true,reschedule_requires_approval:false,last_reschedule_requested_at:null,delegation_status:null,delegation_notes:null,adaptive_reason:null,adjusted_start_at:null,adjusted_end_at:null,adjusted_duration_minutes:null,updated_at:at('06:00'),...changes})
+ const scheduleEvents=params.scenario==='schedule'?[
+  event('qa-school-drop-off','School drop-off','08:00','08:15',{event_type:'school',source:'anastasis',virtual:true,flexibility_type:'fixed',movable:false,priority:'critical'}),
+  event('qa-school-pick-up','School pick-up preparation','08:30','08:45',{event_type:'school',source:'anastasis',virtual:true,flexibility_type:'fixed',movable:false,priority:'high'}),
+  event('qa-household','Household reset','09:00','09:15',{event_type:'household'}),
+  event('qa-reschedule','Collect library books','09:30','09:45',{required:false,priority:'low'}),
+  event('qa-external','Community calendar meeting','10:00','10:30',{event_type:'appointment',source:'external_calendar',required:false,flexibility_type:'fixed',movable:false,calendar_event_id:'qa-calendar-meeting',external_event_id:'provider-event-kept-unchanged',external_calendar_source:'google',calendar_provider:'google',source_label:'Google Calendar'}),
+ ]:dailyPlanToScheduleEvents({userId:'local-qa',client,dailyPlan})
+ const schedule=buildDailyScheduleState({date,timezone:client.timezone,now:params.scenario==='schedule'?new Date(at('14:51')):new Date(),dayStart:new Date(date+'T12:00Z'),dayEnd:new Date(new Date(date+'T03:00Z').getTime()+86400000),events:scheduleEvents,logic,program,transitionMinutes:10})
  schedule.preferences={executionStyle:'hybrid',carouselStyle:client.carousel_style,transitionMinutes:10};schedule.dailyRecommendation=buildDailyRecommendation(logic,schedule)
- return <QAClient loggingIntent={parseNutritionLoggingIntent(params)} view={params.view || 'home'} logic={logic} schedule={schedule} exercises={exercises}/>
+ return <QAClient scenario={params.scenario} loggingIntent={parseNutritionLoggingIntent(params)} view={params.view || 'home'} logic={logic} schedule={schedule} exercises={exercises}/>
 }

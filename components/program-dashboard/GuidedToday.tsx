@@ -11,6 +11,8 @@ import { trackEvent } from '@/lib/analytics'
 import { recordTodayActionOpened, recordTodayActionCompletions } from '@/lib/analytics/todayJourney'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
+import ScheduleEventActions from '@/components/ScheduleEventActions'
+import { applyScheduleResolution } from '@/lib/schedule/resolution'
 
 const icons: Record<string, string> = { check_in: '☀', hydration: '◒', schedule: '▦', nutrition: '◡', workout: '↟', recovery: '♡', none: '✦' }
 const statusLabels: Record<string, string> = { available: 'Available', upcoming: 'Upcoming', in_progress: 'In progress', completed: 'Completed', deferred: 'Deferred', skipped: 'Skipped' }
@@ -40,6 +42,8 @@ function ActivityOptions({ activity, busy, onAction }: { activity: TodayActivity
 
 export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOutput; schedule: DailyScheduleState }) {
   const router = useRouter()
+  const [liveSchedule, setLiveSchedule] = useState(schedule)
+  useEffect(() => { setLiveSchedule(schedule) }, [schedule])
   const [savedGuide, setSavedGuide] = useState<{ date: string; value?: DailyGuideState }>(() => ({ date: schedule.date, value: schedule.dailyGuide }))
   const [busy, setBusy] = useState<TodayActivityId | null>(null)
   const [message, setMessage] = useState('')
@@ -48,11 +52,16 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
   const previousCompleted = useRef<{ date: string; ids: string[] } | null>(null)
   useEffect(() => { setSavedGuide({ date: schedule.date, value: schedule.dailyGuide }) }, [schedule.date, schedule.dailyGuide])
   useEffect(() => { setMessage('') }, [schedule.date])
-  const activeSchedule = { ...schedule, dailyGuide: savedGuide.date === schedule.date ? savedGuide.value : schedule.dailyGuide }
+  const activeSchedule = { ...liveSchedule, dailyGuide: savedGuide.date === schedule.date ? savedGuide.value : schedule.dailyGuide }
   const today = buildTodayActivities(logic, activeSchedule)
   const plan = buildDailyRecommendation(logic, activeSchedule)
   const primaryId = plan.primary.id === 'food-input' ? 'nutrition' : plan.primary.id
   const primary = plan.primary.id === 'safety' ? undefined : today.activities.find(activity => activity.id === primaryId)
+  const primaryEvent = plan.primary.eventId ? activeSchedule.events.find(event => event.id === plan.primary.eventId) : undefined
+  const savedEvent = (event: import('@/lib/schedule/types').ScheduleEvent, state?: DailyScheduleState) => {
+    setLiveSchedule(current => state || applyScheduleResolution(current, event))
+    setMessage(event.dismissed_from_today ? 'Dismissed from Today. Your calendar is unchanged.' : event.status === 'completed' ? 'Completion saved. Your next step is ready.' : event.status === 'skipped' ? 'Skipped. Your next step is ready.' : 'New time saved. Your next step is ready.')
+  }
   useDailyScheduleRefresh(activeSchedule)
 
   // A held action becomes available at its explicit return time, including idle tabs.
@@ -107,7 +116,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
       <div className="today-next-heading"><p className="tier-dashboard-label">Your next step</p><span className="today-activity-icon" aria-hidden="true">{icons[plan.primary.category] || '▦'}</span></div>
       <h2>{plan.primary.id === 'check-in' ? 'Let’s start with you.' : plan.primary.title}</h2>
       <p data-tutorial-id="dashboard-daily-insight">{plan.primary.id === 'check-in' ? 'How’s your energy today? A quick check-in is enough to begin.' : plan.primary.reason}</p>
-      <Link className="tier-primary-action" href={plan.primary.href} onClick={() => openActivity(plan.primary.id, plan.primary.completed)}>{plan.primary.id === 'check-in' ? 'Start daily check-in' : plan.primary.id === 'water' ? 'Log water' : plan.primary.id === 'workout' ? logic.execution.workoutInProgress ? 'Resume workout' : 'Open workout' : plan.primary.id === 'recovery' ? 'Open recovery' : plan.primary.category === 'assessment' ? 'Open assessment' : plan.primary.category === 'nutrition' ? logic.program === 'ember' ? 'Open nutrition guidance' : 'Log meal' : 'Open schedule'}</Link>
+      {primaryEvent ? <ScheduleEventActions key={primaryEvent.id} event={primaryEvent} timezone={schedule.timezone} program={logic.program} date={schedule.date} canChangeTime={!schedule.unavailableSources?.length} onSaved={savedEvent} /> : <Link className="tier-primary-action" href={plan.primary.href} onClick={() => openActivity(plan.primary.id, plan.primary.completed)}>{plan.primary.id === 'check-in' ? 'Start daily check-in' : plan.primary.id === 'water' ? 'Log water' : plan.primary.id === 'workout' ? logic.execution.workoutInProgress ? 'Resume workout' : 'Open workout' : plan.primary.id === 'recovery' ? 'Open recovery' : plan.primary.category === 'assessment' ? 'Open assessment' : plan.primary.category === 'nutrition' ? logic.program === 'ember' ? 'Open nutrition guidance' : 'Log meal' : 'Open schedule'}</Link>}
       {primary?.canDefer ? <button className="today-later" type="button" disabled={busy !== null} onClick={() => updateActivity(primary.id, 'defer')}>{busy === primary.id ? 'Saving…' : 'Later today'}</button> : null}
     </article>
     <p className="today-feedback" role="status" aria-live="polite">{message}</p>
@@ -120,8 +129,11 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
           <span className="today-activity-copy"><strong>{activity.title}{!activity.countsTowardProgress ? <span className="today-optional-label">Optional</span> : null}</strong>{quiet ? null : <small>{activity.detail}</small>}</span>
           <span className="today-activity-state">{statusLabels[activity.status] || 'Available'}{activity.deferredUntil ? <small>Until {formatLocalTime(activity.deferredUntil, schedule.timezone)}</small> : null}</span>
         </Link>
-        <ActivityOptions activity={activity} busy={busy !== null} onAction={updateActivity} />
+        {activity.id.startsWith('schedule-event:') ? <ScheduleEventActions event={activeSchedule.events.find(event => `schedule-event:${event.id}` === activity.id)!} timezone={schedule.timezone} program={logic.program} date={schedule.date} canChangeTime={!schedule.unavailableSources?.length} onSaved={savedEvent} /> : <ActivityOptions activity={activity} busy={busy !== null} onAction={updateActivity} />}
       </li>)}</ul>
     </section>
+    {(activeSchedule.overdueEvents || []).some(event => event.id !== primaryEvent?.id && !today.activities.some(activity => activity.id === `schedule-event:${event.id}`)) ? <section className="today-activities" aria-label="Earlier activities"><h2>Earlier activities</h2><p>Record an outcome or dismiss calendar information when you have a moment.</p>
+      {(activeSchedule.overdueEvents || []).filter(event => event.id !== primaryEvent?.id && !today.activities.some(activity => activity.id === `schedule-event:${event.id}`)).map(event => <article className="today-earlier-item" key={event.id}><h3>{event.title}</h3><ScheduleEventActions event={event} timezone={schedule.timezone} program={logic.program} date={schedule.date} canChangeTime={!schedule.unavailableSources?.length} onSaved={savedEvent} /></article>)}
+    </section> : null}
   </div>
 }

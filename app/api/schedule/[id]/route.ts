@@ -4,6 +4,8 @@ import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getScheduleStructureSubmission } from '@/lib/assessment/scheduleStructure'
+import { compareScheduleRow, mutatePersistedScheduleEvent, ScheduleMutationError, refreshedScheduleAfterMutation } from '@/lib/schedule/mutations'
+import { isInformationalScheduleEvent } from '@/lib/schedule/actions'
 
 const editable = new Set([
   'title',
@@ -38,9 +40,19 @@ export async function PATCH(
     const { id } = await params
     const { supabase, user, client } = await getDashboardContext()
     const body = await request.json()
+    if (body.status === 'completed' || body.status === 'skipped') {
+      if (body.event_type) return NextResponse.json({ error: 'Record the outcome separately from activity type changes.' }, { status: 409 })
+      const event = await mutatePersistedScheduleEvent({ supabase, user, client }, id, body.status === 'completed' ? 'complete' : 'skip', body)
+      invalidateDailyPlan()
+      const schedule = await refreshedScheduleAfterMutation({ supabase, user, client }).catch(() => undefined)
+      return NextResponse.json({ success: true, event, schedule })
+    }
     const { data: existing, error: lookupError } = await supabase.from('anastasis_schedule_events').select('*').eq('id', id).eq('user_id', user.id).eq('client_id', client.client_id).maybeSingle()
     if (lookupError) throw new Error(lookupError.message)
     if (!existing) return NextResponse.json({ error: 'Event not found.' }, { status: 404 })
+    if (isInformationalScheduleEvent(existing)) return NextResponse.json({ error: 'Manage this event through its calendar.' }, { status: 409 })
+    if (['completed','skipped','cancelled'].includes(existing.status)) return NextResponse.json({ error: 'This event already has a saved outcome.' }, { status: 409 })
+    if ('completed_at' in body) return NextResponse.json({ error: 'Use Complete to record an activity outcome.' }, { status: 409 })
     if (getScheduleStructureSubmission(client.onboarding_data, existing)) return NextResponse.json({ error: 'This assessment is already submitted. Its completion is saved.' }, { status: 409 })
     if (body.event_type && body.event_type !== existing.event_type &&
       (healthEventTypes.has(existing.event_type) || healthEventTypes.has(body.event_type))) return NextResponse.json({ error: 'Keep this activity’s type and record completion through its activity page.' }, { status: 409 })
@@ -69,11 +81,12 @@ export async function PATCH(
       update.completed_at = new Date().toISOString()
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await compareScheduleRow(supabase
       .from('anastasis_schedule_events')
       .update(update)
       .eq('id', id)
       .eq('user_id', user.id)
+      .eq('client_id', client.client_id), existing)
       .select('*')
       .maybeSingle()
 
@@ -84,6 +97,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, event: data })
   } catch (error) {
+    if (error instanceof ScheduleMutationError) return NextResponse.json({ error: error.message }, { status: error.status })
     return dashboardApiError(error, 'Schedule event could not be updated.')
   }
 }

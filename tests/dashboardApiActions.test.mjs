@@ -20,7 +20,7 @@ const {getClientLocalDate}=await importTs('lib/timezone.ts')
 const owner='qa-user',clientId='QA-ONLY'
 function database({signedIn=true, eventType='workout',fixed=false}={}) {
  const client={client_id:clientId,auth_user_id:owner,program:'ignite',timezone:'America/Chicago',execution_style:'hybrid',carousel_style:'section',onboarding_data:{timezone:'America/Chicago',kept:'existing'}}
- const event={id:'qa-event',client_id:clientId,user_id:owner,event_type:eventType,status:'scheduled',flexibility_type:fixed?'fixed':'flexible',movable:!fixed,approval_required:fixed}
+ const event={id:'qa-event',client_id:clientId,user_id:owner,event_type:eventType,status:'scheduled',updated_at:'2026-10-12T12:00:00Z',flexibility_type:fixed?'fixed':'flexible',movable:!fixed,approval_required:fixed}
  const writes=[]
  const db={auth:{getUser:async()=>({data:{user:signedIn?{id:owner}:null}})},writes,client,event,
  from(table){const filters=[];let mutation=null;const q={select(){return q},eq(key,value){filters.push([key,value]);return q},gte(){return q},lt(){return q},order(){return q},limit(){return q},update(value){mutation=value;return q},insert(value){mutation=value;return q},maybeSingle:async()=>resolve(),single:async()=>resolve(),then(done){return Promise.resolve(resolve()).then(done)}}
@@ -93,10 +93,10 @@ test('both schedule endpoints reject fabricated health completion; personal acti
  assert.equal((await scheduleComplete.POST(req({}),params)).status,409);assert.equal(db.writes.length,0)
  db=database({eventType:'personal'});assert.equal((await scheduleComplete.POST(req({}),params)).status,200);assert.equal(db.writes[0].mutation.status,'completed')
 })
-test('skip dismisses without completion and cannot change a fixed commitment',async()=>{
+test('skip saves a separate outcome without changing a fixed commitment time',async()=>{
  let db=database({eventType:'personal'});const params={params:Promise.resolve({id:'qa-event'})}
- assert.equal((await schedulePatch.PATCH(req({status:'skipped'}),params)).status,200);assert.equal(db.writes[0].mutation.status,'skipped');assert.equal(db.writes[0].mutation.completed_at,undefined)
- db=database({eventType:'work',fixed:true});assert.equal((await schedulePatch.PATCH(req({status:'skipped'}),params)).status,409);assert.equal(db.writes.length,0)
+ assert.equal((await schedulePatch.PATCH(req({status:'skipped'}),params)).status,200);assert.equal(db.writes[0].mutation.status,'skipped');assert.equal(db.writes[0].mutation.completed_at,null)
+ db=database({eventType:'work',fixed:true});assert.equal((await schedulePatch.PATCH(req({status:'skipped'}),params)).status,200);assert.equal(db.writes[0].mutation.status,'skipped');assert.equal(db.writes[0].mutation.start_at,undefined)
 })
 test('virtual move records a suggested time separately and refuses overlap; skip persists',async()=>{
  const db=database(),now=new Date(),date=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit'}).format(now)
@@ -121,11 +121,11 @@ test('schedule activity types cannot be relabeled to bypass real completion logg
  assert.equal(db.writes.length,0)
 })
 
-test('approved commitments and finished events reject unsupported skip/move/completion transitions',async()=>{
+test('approval requirements protect time edits while recorded outcomes and terminal states stay distinct',async()=>{
  const params={params:Promise.resolve({id:'qa-event'})}
  let db=database({eventType:'personal'});db.event.approval_required=true
- assert.equal((await schedulePatch.PATCH(req({status:'skipped'}),params)).status,409)
- assert.equal(db.writes.length,0)
+ assert.equal((await schedulePatch.PATCH(req({status:'skipped'}),params)).status,200)
+ assert.equal(db.writes[0].mutation.status,'skipped')
  db=database({eventType:'personal'});db.event.status='cancelled'
  assert.equal((await scheduleComplete.POST(req({}),params)).status,409)
  assert.equal((await scheduleDefer.POST(req({start_at:'2030-06-18T14:00:00Z',end_at:'2030-06-18T14:30:00Z'}),params)).status,409)

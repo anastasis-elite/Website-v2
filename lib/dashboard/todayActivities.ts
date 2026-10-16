@@ -3,9 +3,11 @@ import type { ProgramLogicOutput, StreakItem } from './logic/types'
 import type { DailyScheduleState, ScheduleEventType } from '@/lib/schedule/types'
 import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 import { getScheduleStructureVersion, scheduleStructureTaskHref } from '@/lib/assessment/scheduleStructure'
+import { getScheduleEventCapabilities, healthEventTypes, isInformationalScheduleEvent } from '@/lib/schedule/actions'
+import { getActionRouteForEvent } from '@/lib/schedule/engine'
 
 export const TODAY_ACTIVITY_IDS = ['check-in', 'water', 'schedule', 'nutrition', 'workout', 'recovery'] as const
-export type TodayActivityId = typeof TODAY_ACTIVITY_IDS[number] | `assessment:${string}`
+export type TodayActivityId = typeof TODAY_ACTIVITY_IDS[number] | `assessment:${string}` | `schedule-event:${string}`
 export type TodayActivityStatus = 'available' | 'upcoming' | 'in_progress' | 'completed' | 'deferred' | 'skipped'
 export type DailyGuidePreference = { status: 'deferred' | 'skipped' | 'reviewed'; until?: string }
 export type DailyGuideState = { date: string; activities: Partial<Record<TodayActivityId, DailyGuidePreference>> }
@@ -94,6 +96,16 @@ export function buildTodayActivities(logic: ProgramLogicOutput, schedule: Pick<D
       detail: complete ? 'Your assessment is submitted and saved.' : 'Submit your daily rhythm and training capacity to complete this assessment.',
       href: scheduleStructureTaskHref(event)!, status: complete ? 'completed' : 'available',
       countsTowardProgress: true, canSkip: false, canDefer: false, canResume: false })
+  }
+  for (const event of schedule.events) {
+    if (!event.required || event.suggested || event.status === 'cancelled' || healthEventTypes.has(event.event_type) || isInformationalScheduleEvent(event)) continue
+    const capabilities = getScheduleEventCapabilities(event)
+    const complete = event.status === 'completed'
+    const later = Date.parse(event.adjusted_start_at || event.start_at) > now
+    activities.push({ id: `schedule-event:${event.id}`, category: event.event_type, title: event.title,
+      detail: complete ? 'Your completion is saved.' : event.status === 'skipped' ? 'Skipped; this does not count as completed.' : later ? 'Saved for its scheduled time.' : 'Record what happened or choose a supported new time.',
+      href: getActionRouteForEvent(event, logic.program), status: complete ? 'completed' : event.status === 'skipped' ? 'skipped' : later ? 'upcoming' : 'available',
+      countsTowardProgress: true, canSkip: capabilities.canSkip, canDefer: capabilities.canReschedule, canResume: false })
   }
   if (capabilities.nutritionTracking) add('nutrition', capabilities.nutritionMealLogging ? 'Meal logging' : 'Nutrition', logic.execution.nutritionLogged ? 'Today’s intake is saved. You can add more whenever you need.' : capabilities.nutritionMealLogging ? 'Log your next meal or reuse a saved entry.' : 'Your guidance and quick macro entry are available.', mealEntryHref(logic.program), logic.execution.nutritionLogged)
   if (capabilities.workoutDisplay && (logic.execution.workoutComplete || (logic.workout.assigned && logic.workoutDecision.canTrain))) {

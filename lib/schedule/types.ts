@@ -84,6 +84,8 @@ export type ScheduleEvent = {
   busy?: boolean
   virtual?: boolean
   suggested?: boolean
+  /** Local Today dismissal only; the calendar event and its status are unchanged. */
+  dismissed_from_today?: string
   action_route?: string | null
 }
 

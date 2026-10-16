@@ -2279,6 +2279,13 @@ main > *,
 .schedule-event-actions small, .schedule-event-actions p { width: 100%; font-size: .9rem; color: #d4bdaa; margin: 0; line-height: 1.5; }
 .schedule-event time small { display: block; font-size: .875rem; color: #ccb19b; }
 .schedule-event-actions > div { width: 100%; display: grid; gap: 12px; }
+.schedule-event-actions .tier-primary-action { background: #edbf95; color: #251810; font-weight: 650; }
+.schedule-event-actions a { min-height: 44px; display: inline-flex; align-items: center; padding: 10px 14px; }
+.schedule-confirmation { padding: 14px; border: 1px solid #8d6047; border-radius: 12px; }
+.today-earlier-item { padding: 16px 0; border-top: 1px solid #8d604755; }
+.schedule-date-selector { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 20px 0; }
+.schedule-date-selector label { display: grid; gap: 8px; }
+.schedule-date-selector input, .schedule-date-selector button, .schedule-date-selector a { min-height: 44px; padding: 10px 14px; border-radius: 12px; border: 1px solid #8d6047; background: #171717; color: #f4dac7; font: inherit; }
 .focused-meal-entry { min-width: 0; }
 .focused-meal-entry button, .focused-meal-entry input, .focused-meal-entry select { min-height: 44px; }
 .focused-meal-entry .tier-tab-list { flex-wrap: wrap; }

@@ -9,6 +9,7 @@ import { getClientDayRange, zonedDateTimeToUtc } from './time'
 import { buildDailyScheduleState, buildNextAction } from './engine'
 import { dailyPlanToScheduleEvents, recurringCommitmentsToEvents } from './dailyPlanAdapter'
 import type { DailyScheduleState, ScheduleEvent } from './types'
+import { applyScheduleEventOverride, healthEventTypes, isInformationalScheduleEvent } from './actions'
 
 export async function loadScheduleEventsForDay({
   supabase,
@@ -126,6 +127,18 @@ export async function getDailyScheduleState({
       adjusted_duration_minutes: null, virtual: true,
     })
   }
+  const savedSnapshots = Object.entries(client.onboarding_data?.scheduleOverrides || {}).flatMap(([id, value]) => {
+    const snapshot = (value as any)?.event_snapshot as ScheduleEvent | undefined
+    if (!snapshot || snapshot.id !== id || !snapshot.virtual || snapshot.user_id !== user.id || snapshot.client_id !== client.client_id ||
+      !Number.isFinite(Date.parse(snapshot.start_at)) || !Number.isFinite(Date.parse(snapshot.end_at))) return []
+    const effective = applyScheduleEventOverride(snapshot, value)
+    return new Date(effective.adjusted_start_at || effective.start_at) < day.end &&
+      new Date(effective.adjusted_end_at || effective.end_at) > day.start ? [snapshot] : []
+  })
+  const snapshotById = new Map(savedSnapshots.map(event => [event.id, event]))
+  const projectedIds = new Set([...commitments, ...persistedEvents, ...virtualEvents].map(event => event.id))
+  const historicalEvents = savedSnapshots.filter(event => !projectedIds.has(event.id) &&
+    (!healthEventTypes.has(event.event_type) || client.onboarding_data?.scheduleOverrides?.[event.id]?.status === 'skipped'))
   const state = buildDailyScheduleState({
     date: day.date,
     timezone: day.timezone,
@@ -133,13 +146,17 @@ export async function getDailyScheduleState({
     dayStart: client.wake_time && (!client.bed_time || client.wake_time < client.bed_time) ? zonedDateTimeToUtc(day.date, client.wake_time, day.timezone) : day.start,
     dayEnd: client.bed_time && (!client.wake_time || client.wake_time < client.bed_time) ? zonedDateTimeToUtc(day.date, client.bed_time, day.timezone) : day.end,
     events: [...commitments, ...persistedEvents.map(event => {
-      if (event.status !== 'scheduled' || !effectiveLogic || dailyPlan?.date !== day.date) return event
+      if (event.status !== 'scheduled' || isInformationalScheduleEvent(event) || !effectiveLogic || dailyPlan?.date !== day.date) return event
       const confirmed = event.event_type === 'workout' ? effectiveLogic.execution.workoutComplete : event.event_type === 'check_in' ? effectiveLogic.assessments.dailyCompleted : event.event_type === 'hydration' ? effectiveLogic.hydration.status !== 'needs_input' && effectiveLogic.hydration.remaining <= 0 : false
       return confirmed ? { ...event, status: 'completed' as const } : event
-    }), ...virtualEvents.map(event => {
-      const override = client.onboarding_data?.scheduleOverrides?.[event.id]
-      return override ? { ...event, ...override } : event
-    })].map(event => {
+    }), ...virtualEvents, ...historicalEvents].map(event => {
+      // Both recurring commitments and daily suggestions are per-occurrence
+      // virtual records. Apply saved outcomes without editing their template.
+      const override = event.virtual ? client.onboarding_data?.scheduleOverrides?.[event.id] : null
+      const dismissal = client.onboarding_data?.scheduleDismissals?.[day.date]?.[event.id]
+      return { ...applyScheduleEventOverride(event.virtual && !healthEventTypes.has(event.event_type) ? snapshotById.get(event.id) || event : event, override),
+        ...(typeof dismissal === 'string' ? { dismissed_from_today: day.date } : {}) }
+    }).map(event => {
       const submission = getScheduleStructureSubmission(client.onboarding_data, event)
       if (!submission && getScheduleStructureVersion(event) === null) return event
       // Persisted submission wins even if an older open screen finishes a

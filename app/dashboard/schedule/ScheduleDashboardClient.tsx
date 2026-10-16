@@ -6,6 +6,9 @@ import DailyPlanCard from '@/components/DailyPlanCard'
 import ScheduleEventActions from '@/components/ScheduleEventActions'
 import CalendarWorkspace from '@/components/CalendarWorkspace'
 import { useDailyScheduleRefresh } from '@/lib/schedule/client'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { applyScheduleResolution } from '@/lib/schedule/resolution'
 
 function eventLabel(event: ScheduleEvent) {
   if (event.flexibility_type === 'fixed') return 'Fixed'
@@ -14,12 +17,16 @@ function eventLabel(event: ScheduleEvent) {
 }
 
 export default function ScheduleDashboardClient({ initialSchedule }: { initialSchedule: DailyScheduleState }) {
-  const schedule = initialSchedule
+  const [schedule, setSchedule] = useState(initialSchedule)
+  useEffect(() => { setSchedule(initialSchedule) }, [initialSchedule])
+  const savedEvent = (event: ScheduleEvent, state?: DailyScheduleState) => setSchedule(current => state || applyScheduleResolution(current, event))
   useDailyScheduleRefresh(schedule)
   return <main className="schedule-page"><div className="schedule-shell">
     <header className="schedule-hero"><div><p className="schedule-label">{schedule.date} · {schedule.timezone}</p><h1>Your day, with room to breathe</h1><p>Keep appointments in view and choose time for what supports you.</p></div></header>
+    <form className="schedule-date-selector" method="get" action="/dashboard/schedule"><label>Schedule date<input name="date" type="date" defaultValue={schedule.date} required /></label><button type="submit">View day</button><Link href="/dashboard/schedule">Today</Link></form>
+    {schedule.todayActivities ? <p>{schedule.todayActivities.completed} of {schedule.todayActivities.total} required activities completed. Skipped activities are not completed.</p> : null}
     {schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved events are still recorded. Time changes will be available when your full schedule loads.</p> : null}
-    {schedule.dailyRecommendation ? <DailyPlanCard plan={schedule.dailyRecommendation} compact autoRefresh={false} /> : null}
+    {schedule.dailyRecommendation ? <DailyPlanCard plan={schedule.dailyRecommendation} schedule={schedule} compact autoRefresh={false} onSaved={savedEvent} /> : null}
     <CalendarWorkspace date={schedule.date} timezone={schedule.timezone} />
     <section className="schedule-panel" aria-label="Anastasis activities and daily structure">
       <div className="schedule-section-heading"><h2>Anastasis activities and daily structure</h2><span>{schedule.date}</span></div>
@@ -27,8 +34,9 @@ export default function ScheduleDashboardClient({ initialSchedule }: { initialSc
       <div className="schedule-timeline">{schedule.events.filter(event => event.source !== 'external_calendar' && !event.calendar_event_id).map(event => <article id={`event-${event.id}`} className={`schedule-event schedule-${event.flexibility_type}`} key={event.id}>
         <time>{formatLocalTime(event.adjusted_start_at || event.start_at, schedule.timezone)}{event.adjusted_start_at ? <small>Originally {formatLocalTime(event.start_at, schedule.timezone)}</small> : null}</time>
         <div><h3>{event.title}</h3><p>{event.description || event.event_type.replaceAll('_', ' ')}</p><div><span>Anastasis</span><span>{eventLabel(event)}</span><span>{schedule.overdueEvents.some(item => item.id === event.id) ? 'Overdue · review or choose a new time' : event.suggested && event.status === 'scheduled' ? 'Suggested time' : event.status}</span></div></div>
-        <ScheduleEventActions event={event} program={schedule.program} timezone={schedule.timezone} canChangeTime={!schedule.unavailableSources?.length} suggestion={schedule.adjustments.find(item => item.event_id === event.id && !item.applied)} />
+        <ScheduleEventActions event={event} program={schedule.program} timezone={schedule.timezone} date={schedule.date} onSaved={savedEvent} canChangeTime={!schedule.unavailableSources?.length} suggestion={schedule.adjustments.find(item => item.event_id === event.id && !item.applied)} />
       </article>)}</div>
     </section>
+    {schedule.events.some(event => event.dismissed_from_today) ? <section className="schedule-panel" aria-label="Dismissed calendar events"><h2>Dismissed from Today</h2><p>These events remain on your calendar.</p>{schedule.events.filter(event => event.dismissed_from_today).map(event => <article key={event.id}><h3>{event.title}</h3><ScheduleEventActions event={event} timezone={schedule.timezone} program={schedule.program} date={schedule.date} /></article>)}</section> : null}
   </div></main>
 }

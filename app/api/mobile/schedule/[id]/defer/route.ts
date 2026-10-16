@@ -7,6 +7,8 @@ import { getClientLocalDate } from '@/lib/timezone'
 import { scheduleConflict } from '@/lib/schedule/actions'
 import type { ScheduleEvent } from '@/lib/schedule/types'
 import { getScheduleStructureSubmission } from '@/lib/assessment/scheduleStructure'
+import { getScheduleEventCapabilities } from '@/lib/schedule/actions'
+import { mutatePersistedScheduleEvent, ScheduleMutationError } from '@/lib/schedule/mutations'
 
 function minutesBetween(start: string, end: string) {
   return Math.max(
@@ -16,14 +18,7 @@ function minutesBetween(start: string, end: string) {
 }
 
 function canMobileDefer(event: ScheduleEvent) {
-  return (
-    event.flexibility_type === 'flexible' &&
-    event.movable &&
-    !event.approval_required &&
-    ['anastasis', 'program', 'system', 'mobile'].includes(event.source) &&
-    !event.external_event_id &&
-    !event.external_calendar_source
-  )
+  return getScheduleEventCapabilities(event).canReschedule
 }
 
 export async function POST(
@@ -86,28 +81,13 @@ export async function POST(
     if (schedule.unavailableSources?.length) return NextResponse.json({ error: 'Your full schedule could not be loaded. Try again before changing a time.' }, { status: 503 })
     const conflict = scheduleConflict(schedule.events,id,startAt,endAt,schedule.preferences?.transitionMinutes)
     if(conflict) return NextResponse.json({error:conflict},{status:409})
-    const { data, error } = await context.supabase
-      .from('anastasis_schedule_events')
-      .update({
-        adjusted_start_at: startAt.toISOString(),
-        adjusted_end_at: endAt.toISOString(),
-        adjusted_duration_minutes: Math.round((endAt.getTime()-startAt.getTime())/60000),
-        status: 'scheduled',
-        adaptive_reason: 'Deferred by user from the mobile command layer.',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .eq('user_id', context.user.id)
-      .select('*')
-      .single()
-
-    if (error) throw new Error(error.message)
+    const data = await mutatePersistedScheduleEvent(context, id, 'move', { ...body, start_at: startAt.toISOString(), end_at: endAt.toISOString() })
     invalidateDailyPlan()
     return NextResponse.json({ success: true, event: data })
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Event could not be deferred.' },
-      { status: 500 },
+        { error: error instanceof ScheduleMutationError ? error.message : 'Event could not be deferred.' },
+        { status: error instanceof ScheduleMutationError ? error.status : 500 },
     )
   }
 }

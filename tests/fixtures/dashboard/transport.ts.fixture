@@ -1,7 +1,9 @@
 // Disposable browser transport. Unknown requests fail closed; no real service is contacted.
-export function installQATransport(tier: string, date: string, onChange: (state: any) => void) {
- const key=`local-qa-dashboard-v2:${tier}:${date}`
- const initial={meals:[],session:null,checkIn:{},activities:[],water:0,waterIds:[],scheduleOverrides:{},preferences:null,dailyGuide:{date,activities:{}}}
+import {getScheduleEventCapabilities,scheduleEventVersion} from '@/lib/schedule/actions'
+import type {ScheduleEvent} from '@/lib/schedule/types'
+export function installQATransport(tier: string, date: string, onChange: (state: any) => void, scheduleEvents?: ScheduleEvent[]) {
+ const key=`local-qa-dashboard-v2:${tier}:${date}${scheduleEvents?':schedule':''}`
+ const initial={meals:[],session:null,checkIn:{},activities:[],water:0,waterIds:[],scheduleOverrides:{},preferences:null,dailyGuide:{date,activities:{}},...(scheduleEvents?{checkIn:{energy:3},water:111,session:{id:'qa-existing-session',completed:true,exercise_logs:[]},activities:[{id:'qa-existing-recovery',activity_type:'breathing',duration_minutes:5,log_date:date}],dailyGuide:{date,activities:{schedule:{status:'reviewed'}}},scheduleWrites:0,scheduleRequests:[]}: {})}
  const state={...initial,...JSON.parse(localStorage.getItem(key)||'{}')}
  const persist=()=>{localStorage.setItem(key,JSON.stringify(state));onChange(structuredClone(state))}
  const original=window.fetch
@@ -55,6 +57,29 @@ export function installQATransport(tier: string, date: string, onChange: (state:
   else if(url==='/api/nutrition/add-water') {if(!state.waterIds.includes(body.submissionId)){state.water+=body.ounces;state.waterIds.push(body.submissionId);persist()}payload={success:true,nutritionLog:log()}}
   else if(url==='/api/recovery/activity') {state.activities.push({id:'qa-activity-'+state.activities.length,activity_type:body.activityType,duration_minutes:body.minutes,log_date:date});persist();payload={success:true}}
   else if(url==='/api/dashboard/preferences') {state.preferences={...(state.preferences||{}),...body};persist();payload={success:true}}
+  else if(scheduleEvents && url.startsWith('/api/schedule/')) {
+   const match=url.match(/^\/api\/schedule\/([^/]+)(?:\/(complete|defer))?$/)
+   const id=body.eventId || (match?decodeURIComponent(match[1]):null)
+   const action=url==='/api/schedule/dismiss'?'dismiss':body.action || (match?.[2]==='complete'?'complete':match?.[2]==='defer'?'move':body.status==='skipped'?'skip':null)
+   state.scheduleRequests.push({id,action,url,method:options?.method});persist()
+   if(state.scheduleDelayMs)await new Promise(resolve=>setTimeout(resolve,state.scheduleDelayMs))
+   if(state.failNextSchedule){state.failNextSchedule=false;persist();return Response.json({error:'Schedule change could not be saved. Try again.'},{status:503})}
+   const base=scheduleEvents.find(event=>event.id===id)
+   if(!base || body.date!==date)return Response.json({error:'Synthetic schedule item was not found for today.'},{status:404})
+   const current={...base,...state.scheduleOverrides[id]},capabilities=getScheduleEventCapabilities(current)
+   if(body.expected_version && body.expected_version!==scheduleEventVersion(current))return Response.json({error:'This activity changed. Refresh to review its saved outcome.'},{status:409})
+   if(!(action==='complete'?capabilities.canComplete:action==='skip'?capabilities.canSkip:action==='move'?capabilities.canReschedule:action==='dismiss'?capabilities.canDismiss:false))return Response.json({error:'This schedule change is unavailable.'},{status:409})
+   let fields:any
+   const updated_at=new Date(Date.now()+state.scheduleWrites).toISOString()
+   if(action==='complete')fields={status:'completed',completed_at:updated_at,updated_at}
+   else if(action==='skip')fields={status:'skipped',completed_at:null,updated_at}
+   else if(action==='dismiss')fields={dismissed_from_today:date}
+   else {
+    if(!Number.isFinite(Date.parse(body.start_at)) || Date.parse(body.end_at)<=Date.parse(body.start_at))return Response.json({error:'Choose a valid new time.'},{status:400})
+    fields={status:'scheduled',adjusted_start_at:body.start_at,adjusted_end_at:body.end_at,adjusted_duration_minutes:(Date.parse(body.end_at)-Date.parse(body.start_at))/60000,completed_at:null,suggested:false,updated_at}
+   }
+   state.scheduleOverrides[id]={...state.scheduleOverrides[id],...fields};state.scheduleWrites++;persist();payload={success:true,event:{...current,...fields}}
+  }
   else if(url==='/api/schedule/plan') {state.scheduleOverrides[body.eventId]=body.action==='skip'?{status:'skipped'}:{adjusted_start_at:body.start_at,adjusted_end_at:body.end_at,suggested:false};persist();payload={success:true}}
   else return Response.json({error:`Unimplemented isolated QA request: ${url}`},{status:501})
   return Response.json(payload)

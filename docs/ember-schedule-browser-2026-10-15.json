@@ -1,0 +1,81 @@
+{
+  "environment": "Isolated localhost fixture, real components, simulated persistence and auth; no customer account",
+  "method": "Manual Codex in-app browser interaction",
+  "automated_browser_script": "NOT RUN: duplicate server-start approval remained pending and was canceled",
+  "observed_checks": [
+    {
+      "scenario": "EMBER overdue School drop-off completion",
+      "result": "PASS",
+      "before_progress": "3 of 6",
+      "after_progress": "4 of 6",
+      "next": "School pick-up preparation"
+    },
+    {
+      "scenario": "Confirmed overdue skip",
+      "result": "PASS",
+      "progress": "4 of 6",
+      "history_status": "Skipped",
+      "next": "Household reset"
+    },
+    {
+      "scenario": "Eligible reschedule",
+      "result": "PASS",
+      "selected_local_time": "21:00 America/Chicago",
+      "status": "Upcoming",
+      "original_local_time": "09:00"
+    },
+    {
+      "scenario": "Informational dismissal and refresh",
+      "result": "PASS",
+      "dismiss_action_removed_from_today": true,
+      "history_link": "Open Event",
+      "progress": "4 of 6"
+    },
+    {
+      "scenario": "Schedule matches Today",
+      "result": "PASS",
+      "completed": "School drop-off",
+      "skipped": "School pick-up preparation",
+      "moved": "Household reset",
+      "dismissed": "Community calendar meeting"
+    },
+    {
+      "scenario": "Mobile Schedule",
+      "result": "PASS",
+      "viewport_width": 390,
+      "horizontal_overflow": false
+    },
+    {
+      "scenario": "Mobile Today",
+      "result": "PASS",
+      "viewport_width": 320,
+      "horizontal_overflow": false,
+      "action_button_min_height": 44,
+      "button_widths": [
+        140.109375,
+        65.375,
+        114.890625
+      ]
+    },
+    {
+      "scenario": "IGNITE complete and next-step advance",
+      "result": "PASS"
+    },
+    {
+      "scenario": "PHOENIX complete and next-step advance",
+      "result": "PASS"
+    }
+  ],
+  "not_tested": [
+    "Live EMBER account and real Supabase writes",
+    "Real logout/login",
+    "Actual provider synchronization",
+    "Automated browser error/retry and rapid-click scenarios; API/CAS equivalents tested separately"
+  ],
+  "cleanup": {
+    "temporary_browser_tab": "closed",
+    "viewport_override": "reset",
+    "fixture_route": "removed",
+    "test_server": "stopped"
+  }
+}

@@ -16,7 +16,7 @@ const owner = 'qa-assessment-owner', clientId = 'QA-STRUCTURE-MUTATIONS'
 const answers = { execution_style: 'flow', carousel_style: 'section', wake_time: '07:00', bed_time: '22:00', workout_days_available: 0 }
 const event = { id: 'qa-structure', client_id: clientId, user_id: owner,
   event_type: 'assessment', title: 'Schedule Structure Assessment', source: 'anastasis',
-  status: 'scheduled', flexibility_type: 'flexible', movable: true, approval_required: false,
+  status: 'scheduled', updated_at: '2026-10-12T12:00:00Z', flexibility_type: 'flexible', movable: true, approval_required: false,
   start_at: '2026-10-12T14:00:00Z', end_at: '2026-10-12T14:15:00Z' }
 const submission = { assessmentVersion: 1, eventId: event.id, submittedAt: '2026-10-12T14:10:00Z', answers }
 const params = { params: Promise.resolve({ id: event.id }) }
