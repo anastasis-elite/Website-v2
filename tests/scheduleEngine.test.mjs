@@ -35,8 +35,8 @@ function event(overrides = {}) {
     external_contact_value: null,
     external_event_id: overrides.external_event_id || null,
     external_calendar_source: overrides.external_calendar_source || null,
-    reschedule_allowed: false,
-    reschedule_requires_approval: true,
+    reschedule_allowed: overrides.reschedule_allowed ?? true,
+    reschedule_requires_approval: overrides.reschedule_requires_approval ?? false,
     last_reschedule_requested_at: null,
     delegation_status: null,
     delegation_notes: null,
@@ -104,7 +104,7 @@ test('current commitments win over later high-priority actions without changing 
 
 test('overdue flexible actions remain actionable with an unconfirmed rescheduling suggestion', () => {
   const missed = event({ id: 'admin', source: 'manual', start_at: '2026-08-17T13:00:00Z', end_at: '2026-08-17T13:30:00Z' })
-  const state = stateFor([missed, event({ id: 'later', priority: 'critical', start_at: '2026-08-17T22:00:00Z', end_at: '2026-08-17T22:30:00Z' })])
+  const state = stateFor([missed, event({ id: 'later', priority: 'low', start_at: '2026-08-17T22:00:00Z', end_at: '2026-08-17T22:30:00Z' })])
   assert.equal(state.nextAction.id, 'admin')
   assert.equal(state.nextAction.urgency, 'overdue')
   assert.equal(state.nextAction.overdue, true)
@@ -115,6 +115,29 @@ test('overdue flexible actions remain actionable with an unconfirmed reschedulin
   const historicalDeferred = stateFor([{ ...missed, status: 'deferred' }])
   assert.equal(historicalDeferred.nextAction.can_defer, true)
   assert.equal(historicalDeferred.adjustments[0].event_id, 'admin')
+})
+
+test('important upcoming activities precede overdue items while overdue outcomes remain accessible', () => {
+  const overdue = event({ id: 'dropoff', event_type: 'school', virtual: true, required: true,
+    flexibility_type: 'fixed', movable: false, start_at: '2026-08-17T13:00:00Z', end_at: '2026-08-17T13:30:00Z' })
+  const pickup = event({ id: 'pickup', event_type: 'school', required: true,
+    start_at: '2026-08-17T20:00:00Z', end_at: '2026-08-17T20:30:00Z' })
+  const state = stateFor([overdue, pickup])
+  assert.equal(state.nextAction.id, 'pickup')
+  assert.deepEqual(state.overdueEvents.map(item => item.id), ['dropoff'])
+  const resolution = stateFor([overdue])
+  assert.equal(resolution.nextAction.id, 'dropoff')
+  assert.equal(resolution.nextAction.can_complete, true)
+  assert.equal(resolution.nextAction.can_defer, false)
+})
+
+test('calendar dismissals stay in history without completion or changing occupied time', () => {
+  const info = event({ id: 'info', source: 'external_calendar', calendar_event_id: 'provider-event' })
+  const state = stateFor([{ ...info, dismissed_from_today: '2026-08-17' }])
+  assert.equal(state.nextAction.id, 'none')
+  assert.equal(state.events[0].status, 'scheduled')
+  assert.equal(state.completedEvents.length, 0)
+  assert.equal(state.openWindows.some(window => Date.parse(window.start_at) < Date.parse(info.end_at) && Date.parse(window.end_at) > Date.parse(info.start_at)), false)
 })
 
 test('completion and skipped/cancelled states remove actions; activity completion uses its logging surface', () => {

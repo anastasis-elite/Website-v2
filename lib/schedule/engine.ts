@@ -5,7 +5,7 @@ import type {
   ScheduleAdjustment,
   ScheduleEvent,
 } from './types'
-import { healthEventTypes, scheduleConflict } from './actions'
+import { getScheduleEventCapabilities, scheduleConflict } from './actions'
 import { inferMealType, mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 import { scheduleStructureTaskHref } from '@/lib/assessment/scheduleStructure'
 
@@ -32,16 +32,11 @@ function eventEnd(event: ScheduleEvent) {
 }
 
 function isActionable(event: ScheduleEvent) {
-  return !['cancelled', 'completed', 'skipped'].includes(event.status)
+  return !['cancelled', 'completed', 'skipped'].includes(event.status) && !event.dismissed_from_today
 }
 
 function canMove(event: ScheduleEvent) {
-  return (
-    event.flexibility_type === 'flexible' &&
-    event.movable &&
-    !event.approval_required &&
-    ['scheduled', 'deferred'].includes(event.status)
-  )
+  return getScheduleEventCapabilities(event).canReschedule
 }
 
 function isInternalControlled(event: ScheduleEvent) {
@@ -342,11 +337,23 @@ export function buildNextAction({
     action_route: getActionRouteForEvent(nextActionableEvent, program),
     overdue,
     automatically_adjusted: Boolean(adjustment?.automatic && adjustment.applied),
-    can_complete: !nextActionableEvent.virtual && !nextActionableEvent.calendar_event_id &&
-      !healthEventTypes.has(nextActionableEvent.event_type) && isActionable(nextActionableEvent),
+    can_complete: getScheduleEventCapabilities(nextActionableEvent).canComplete,
     can_defer: canMove(nextActionableEvent),
     short_reason: reason.length > 96 ? `${reason.slice(0, 93)}...` : reason,
   }
+}
+
+export function selectNextScheduleEvent(events: ScheduleEvent[], now: Date) {
+  const remaining = events.filter(isActionable).sort((a, b) => eventStart(a).getTime() - eventStart(b).getTime())
+  const active = remaining.filter(event => eventStart(event) <= now && eventEnd(event) > now)
+    .sort((a, b) => Number(b.flexibility_type === 'fixed') - Number(a.flexibility_type === 'fixed') ||
+      priorityRank(b) - priorityRank(a) || eventStart(a).getTime() - eventStart(b).getTime())
+  const future = remaining.filter(event => eventStart(event) > now)
+  const important = future.find(event => !event.suggested &&
+    (event.required || priorityRank(event) >= 3 || eventStart(event).getTime() - now.getTime() <= 60 * 60000))
+  const overdue = remaining.filter(event => eventEnd(event) <= now)
+    .sort((a, b) => priorityRank(b) - priorityRank(a) || eventStart(a).getTime() - eventStart(b).getTime())
+  return active[0] || important || overdue[0] || future[0] || null
 }
 
 export function buildDailyScheduleState({
@@ -392,13 +399,7 @@ export function buildDailyScheduleState({
   const approvalRequiredEvents = sorted.filter((event) => event.flexibility_type === 'approval_required' || event.approval_required)
   const openWindows = getOpenWindows(sorted, dayStart, dayEnd, 10, transitionMinutes)
   const nextEvent = upcomingEvents[0] || null
-  // Current commitments take precedence over later plans. Retain overdue actions
-  // for review rather than silently dropping them after their time has passed.
-  const activeEvents = upcomingEvents.filter(event => eventStart(event) <= now)
-    .sort((a, b) => Number(b.flexibility_type === 'fixed') - Number(a.flexibility_type === 'fixed') ||
-      priorityRank(b) - priorityRank(a) || eventStart(a).getTime() - eventStart(b).getTime())
-  const overdueActions = [...overdueEvents].sort((a, b) => priorityRank(b) - priorityRank(a) || eventStart(a).getTime() - eventStart(b).getTime())
-  const nextActionableEvent = activeEvents[0] || overdueActions[0] || upcomingEvents[0] || null
+  const nextActionableEvent = selectNextScheduleEvent(sorted, now)
 
   return {
     date,

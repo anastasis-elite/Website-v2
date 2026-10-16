@@ -13,6 +13,10 @@ const activities = await importTs('lib/dashboard/todayActivities.ts')
 const recommendations = await importTs('lib/dashboard/dailyRecommendation.ts')
 const timezone = await importTs('lib/timezone.ts')
 const scheduleTime = await importTs('lib/schedule/time.ts')
+const scheduleActions = await importTs('lib/schedule/actions.ts')
+const scheduleEngine = await importTs('lib/schedule/engine.ts')
+const scheduleResolution = await importTs('lib/schedule/resolution.ts')
+const assessment = await importTs('lib/assessment/scheduleStructure.ts')
 const Link = ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children)
 function component(path, extra = {}) {
   const module = { exports: {} }
@@ -24,13 +28,18 @@ function component(path, extra = {}) {
     '@/lib/dashboard/dailyRecommendation': recommendations,
     '@/lib/schedule/client': { useDailyScheduleRefresh() {} },
     '@/lib/schedule/time': scheduleTime,
+    '@/lib/schedule/actions': scheduleActions,
+    '@/lib/schedule/engine': scheduleEngine,
+    '@/lib/schedule/resolution': scheduleResolution,
+    '@/lib/assessment/scheduleStructure': assessment,
+    '@/lib/calendar/client': { announceCalendarChange() {} },
     '@/lib/analytics': { trackEvent() {} },
     '@/lib/analytics/todayJourney': { recordTodayActionOpened() {}, recordTodayActionCompletions() {} },
     '@/lib/timezone': timezone,
   }[name] || require(name)) })
   return module.exports.default
 }
-const Today = component('components/program-dashboard/GuidedToday.tsx')
+const Today = component('components/program-dashboard/GuidedToday.tsx', { '@/components/ScheduleEventActions': component('components/ScheduleEventActions.tsx') })
 const Header = component('components/program-dashboard/TodayDashboardHeader.tsx')
 const fixture = (tier = 'ignite') => ({ program: tier, client: { id: 'QA-ONLY', name: 'Maya' },
   capacityStatus: { status: 'moderate_capacity' }, assessments: { dailyCompleted: false },

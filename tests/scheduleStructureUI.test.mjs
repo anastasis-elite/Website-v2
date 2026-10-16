@@ -10,6 +10,7 @@ const require = createRequire(import.meta.url)
 const assessment = await importTs('lib/assessment/scheduleStructure.ts')
 const validation = await importTs('lib/assessment/validateScheduleStructure.ts')
 const timezone = await importTs('lib/timezone.ts')
+const scheduleActions = await importTs('lib/schedule/actions.ts')
 function load(path, mocks, globals = {}) {
   const module = { exports: {} }
   const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: {
@@ -301,7 +302,7 @@ test('completed Schedule Structure assessments retain Done and provide a read-on
     'next/link': () => null,
     'next/navigation': { useRouter: () => ({ refresh() { refreshes.push(true) } }) },
     '@/lib/schedule/engine': { getActionRouteForEvent() { throw new Error('Completed activities must not resolve a new activity action.') } },
-    '@/lib/schedule/actions': { healthEventTypes: new Set(['assessment', 'workout', 'meal']) },
+    '@/lib/schedule/actions': scheduleActions,
     '@/lib/schedule/time': {},
     '@/lib/timezone': timezone,
     '@/lib/calendar/client': { announceCalendarChange() { throw new Error('Review navigation must not announce a new completion.') } },

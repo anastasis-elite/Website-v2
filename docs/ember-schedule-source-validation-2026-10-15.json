@@ -1,0 +1,179 @@
+{
+  "folder": "/var/folders/7p/s9nplnxx4rn5pv3zhr_dkcrc0000gn/T/anastasis-ember-source-sxx0svdt",
+  "base": "ef7a64a3a426fd214b08d99c98f3a4fbce2e8882",
+  "excluded": [
+    "components/recovery/RecoveryDashboardClient.tsx",
+    "lib/calendar/api-handlers.ts",
+    "lib/calendar/service.ts",
+    "lib/dashboard/logic/getProgramLogicEngine.ts",
+    "lib/mobile/dailyState.ts",
+    "tests/calendarFlow.test.mjs",
+    "tsconfig.tsbuildinfo"
+  ],
+  "files": [
+    {
+      "path": "app/api/mobile/schedule/[id]/complete/route.ts",
+      "sha256": "d423b4818344c85907e7b800a1002c087dd9da33c7a57a4f7c7a8419a6c447eb"
+    },
+    {
+      "path": "app/api/mobile/schedule/[id]/defer/route.ts",
+      "sha256": "3b0dc86023894a36b3d65a6b1beec8d65cd67ae2d41f690ed24864058afda4f8"
+    },
+    {
+      "path": "app/api/schedule/[id]/complete/route.ts",
+      "sha256": "211bd4995b62ea970030747f16769fcbdd1a4e1055c6b35bb198c68dec580462"
+    },
+    {
+      "path": "app/api/schedule/[id]/defer/route.ts",
+      "sha256": "17533e7157097cf0260b0fae0938cc3ae1facbeca45ebbed72a6e6787fcb3eec"
+    },
+    {
+      "path": "app/api/schedule/[id]/route.ts",
+      "sha256": "6730088021c4d9d6b7e3646af43ededbdb76c77d7fa82996f5e289e47ba5cb4f"
+    },
+    {
+      "path": "app/api/schedule/dismiss/route.ts",
+      "sha256": "05df9f74b1ccb31303fd5abd9a468c645cb2404c2933880b8109a0c6ddf34ec5"
+    },
+    {
+      "path": "app/api/schedule/plan/route.ts",
+      "sha256": "89a36925a02a244fe0f20156a621909bfb13d97c09d950c5aa8e7f9c24ae3496"
+    },
+    {
+      "path": "app/dashboard/progress/page.tsx",
+      "sha256": "b1fadb36e7870fd7bbc07128ff6c27eca3e8172229ce478af9fa0ba28c1d4cf6"
+    },
+    {
+      "path": "app/dashboard/schedule/ScheduleDashboardClient.tsx",
+      "sha256": "12ee55227868c5c2b24ebe5996a5e28a37c0f528446c6cce0582f551f0e62cd1"
+    },
+    {
+      "path": "app/dashboard/schedule/page.tsx",
+      "sha256": "d3a8338a238c4afb272eedfa8ca3142d7fda76591ec5d20dd186213b8101beec"
+    },
+    {
+      "path": "app/globals.css",
+      "sha256": "12d148d276abe9e5a933f912d7e79b5c8c7795cfb28269c06773a6fb6ea584c8"
+    },
+    {
+      "path": "components/DailyPlanCard.tsx",
+      "sha256": "97e398a14cbcec0cdb8848de3a82eabc8830e36d413349b20eec1f2a973b2d90"
+    },
+    {
+      "path": "components/ScheduleEventActions.tsx",
+      "sha256": "be9b2b6f11b2392a085a807cf394a5d172228a46e5e10e7a89ced0f74946d4d2"
+    },
+    {
+      "path": "components/program-dashboard/GuidedToday.tsx",
+      "sha256": "57daffee0af51be8182fe3a6b5ac5bfe0a5e8c9f9178628994f00e997aa83ee2"
+    },
+    {
+      "path": "lib/dashboard/dailyRecommendation.ts",
+      "sha256": "097dfe7084dcd52bd16634a542917691b4550171b9dc155fc5244dfec590846e"
+    },
+    {
+      "path": "lib/dashboard/todayActivities.ts",
+      "sha256": "3ab12752a9f79e1d686c33962c145af5b9c7e827051b3fbdfecf8c3514be77ad"
+    },
+    {
+      "path": "lib/schedule/actions.ts",
+      "sha256": "d2efad905834b1c3f087ea6cc0c1c96beabbc8eb559ea36409927fbd38b82c00"
+    },
+    {
+      "path": "lib/schedule/dailyPlanAdapter.ts",
+      "sha256": "4a8a06d245234abac51e25766622243be3534926162a882cf87900b53765ec50"
+    },
+    {
+      "path": "lib/schedule/engine.ts",
+      "sha256": "4aea87e079eb4eb0dec01c35174aa83a8a8cdabb64d74bb082e39d9f48753915"
+    },
+    {
+      "path": "lib/schedule/mutations.ts",
+      "sha256": "1938ee19456eb377e9960b9319bcf4eaa00e5b60a88392d6a4bb22cc33561df0"
+    },
+    {
+      "path": "lib/schedule/resolution.ts",
+      "sha256": "4d7a709582f75ef8cc0595f2dfae0a28ddff20742dcb74e561c4c395fc13ab69"
+    },
+    {
+      "path": "lib/schedule/service.ts",
+      "sha256": "99bc7a8ff715e1e0cb68c9db2fb468e1cce8ef5f19283b9265f56430a97479ba"
+    },
+    {
+      "path": "lib/schedule/types.ts",
+      "sha256": "c1758d070dca7065097eefaf8c507e074019c953f3c5a95ad7542f5526d18f5f"
+    },
+    {
+      "path": "scripts/verify-schedule-resolution-browser.cjs",
+      "sha256": "8e816fb00a314516ca22ab3cae573ab7a7cea19afee947d28373fa4eaf964f5a"
+    },
+    {
+      "path": "tests/calendarStability.test.mjs",
+      "sha256": "11289b9a2ee06b30795774acd9d37b3c13d7b82115eec462ef29e46cd3526e01"
+    },
+    {
+      "path": "tests/dashboardApiActions.test.mjs",
+      "sha256": "bc8183e2017c7dfb048d7aee6631ab1cadb7fe4c5a19cdd13ef763f6c1ce8663"
+    },
+    {
+      "path": "tests/fixtures/dashboard/QAClient.tsx.fixture",
+      "sha256": "42b1e81418313d9d64b6893cb58d348cdbd251e311f707173f2bce0490566e1d"
+    },
+    {
+      "path": "tests/fixtures/dashboard/page.tsx.fixture",
+      "sha256": "4dffb6d448d24ea217eb9472eee2a651ac7f3841ab98616bce81f97213389e9d"
+    },
+    {
+      "path": "tests/fixtures/dashboard/transport.ts.fixture",
+      "sha256": "25dd6e90cc44d17f3150c18ed0342228642b6054591464fb9c9ffac2de8277ce"
+    },
+    {
+      "path": "tests/guidedTodayUI.test.mjs",
+      "sha256": "2ecd506d453a6d3dbc4015762f2f6e85f6e6e3ac9efde241aa1e32d48007dd6a"
+    },
+    {
+      "path": "tests/healthIntegration.test.mjs",
+      "sha256": "2e566bc3285d9085600281b93dd4809078f20fa756ccd2d5119fd25cc3681b08"
+    },
+    {
+      "path": "tests/scheduleEngine.test.mjs",
+      "sha256": "fcc1dbc2548c2f5a8fda18a96e6b0d3e7e1ed2c0b81782e617a5cde40ac5c6b7"
+    },
+    {
+      "path": "tests/scheduleResolutionIntegration.test.mjs",
+      "sha256": "4de57189166d2e89ae15e25ab041c0bc9aca6e597b5d64d2983e7bcd324b2e2c"
+    },
+    {
+      "path": "tests/scheduleResolutionSecurity.test.mjs",
+      "sha256": "c48617f6be702f0489a2d312834decb817567f8292339542a9ee0ad19bccf173"
+    },
+    {
+      "path": "tests/scheduleStructureCompletion.test.mjs",
+      "sha256": "e0654d7c0d2948e3c049d4512425ff4ed643fa9536615c096e8388e3ce0106fb"
+    },
+    {
+      "path": "tests/scheduleStructureMutations.test.mjs",
+      "sha256": "d628622c30078f9ae3e9bea39f2ffb27074739d71df2a28dc2e4d9a869eea51a"
+    },
+    {
+      "path": "tests/scheduleStructureUI.test.mjs",
+      "sha256": "4db13b3701f5d9f34b43f424d6895c56c4211cb3b610e0144fdd050e7ec403ce"
+    }
+  ],
+  "validation": {
+    "full_scoped_tests": {
+      "passed": 611,
+      "failed": 0,
+      "skipped": 0
+    },
+    "final_ui_tests": {
+      "passed": 23,
+      "failed": 0
+    },
+    "typecheck": "PASS",
+    "lint": "PASS with existing unrelated warnings",
+    "production_build": "PASS",
+    "no_real_env_files": true,
+    "temporary_qa_runtime_excluded": true
+  }
+}

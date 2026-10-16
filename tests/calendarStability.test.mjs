@@ -139,7 +139,9 @@ test('schedule completion has a clear activity route or commitment explanation r
   }
   const fixed = render({ event_type: 'work', virtual: true, flexibility_type: 'fixed', movable: false, action_route: '/dashboard/assessment/daily-structure' })
   assert.match(fixed, /Fixed commitment. Edit its time in Daily Structure/)
-  assert.doesNotMatch(fixed, />Complete<\/button>/)
+  assert.match(fixed, />Complete<\/button>/)
+  assert.match(fixed, />Skip<\/button>/)
+  assert.doesNotMatch(fixed, />Reschedule<\/button>/)
   assert.match(render({}), />Complete<\/button>/)
   assert.match(render({ status: 'completed' }), />Done<\/span>/)
 })
