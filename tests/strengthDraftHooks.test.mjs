@@ -3,6 +3,7 @@ import test from 'node:test'
 import { importTs } from './typescriptModule.mjs'
 
 const { StrengthDraftSession } = await importTs('lib/assessments/strengthDraftSession.ts')
+const historyGuards = await importTs('lib/assessments/strengthHistoryGuard.ts')
 const { useStrengthDraftAutosave, useUnsavedAssessmentGuard } = await importTs('lib/assessments/useStrengthDraft.ts', {
   react: 'export const useEffect=(...args)=>globalThis.strengthDraftHooks.useEffect(...args)',
 })
@@ -11,7 +12,7 @@ const savedAt = '2026-10-16T15:00:00.000Z'
 const response = assessment => ({ success: true, period, currentPeriod: period, assessment })
 const flush = () => new Promise(resolve => setImmediate(resolve))
 
-function harness(session) {
+function harness(session, earlyRouter = false) {
   const previous = { window: globalThis.window, document: globalThis.document, Element: globalThis.Element, strengthDraftHooks: globalThis.strengthDraftHooks }
   let now = 0, nextId = 0, cursor = 0, offline = false
   const slots = [], timers = new Map(), listeners = new Map(), confirmations = [], historyWrites = []
@@ -23,13 +24,18 @@ function harness(session) {
   globalThis.window = {
     ...surface('window'),
     location: { href: 'https://qa.invalid/dashboard/assessment/start2' },
-    history: { state: { __NA: true, synthetic: 'router-state' }, pushState(state, title, href) { historyWrites.push({ state, href }); window.location.href = href } },
+    history: { state: { __NA: true, synthetic: 'router-state' }, pushState() { throw new Error('Next patched pushState must not restore canceled traversal') } },
+    History: { prototype: { pushState(state, title, href) { historyWrites.push({ state, href }); window.location.href = href } } },
     confirm(message) { confirmations.push(message); return allowLeave },
     setTimeout(callback, delay) { const id = ++nextId; timers.set(id, { callback, at: now + delay }); return id },
     clearTimeout(id) { timers.delete(id) },
   }
   globalThis.document = surface('document')
   globalThis.Element = class { constructor(anchor) { this.anchor = anchor } closest() { return this.anchor } }
+  const releaseEarlyGuard = earlyRouter ? historyGuards.acquireStrengthHistoryGuard() : null
+  let routerNavigations = 0
+  const routerListener = () => { routerNavigations++; unmount() }
+  if (earlyRouter) window.addEventListener('popstate', routerListener)
   globalThis.strengthDraftHooks = {
     useEffect(callback, dependencies) {
       const index = cursor++, prior = slots[index]
@@ -54,12 +60,13 @@ function harness(session) {
   function emit(surfaceName, type, extra = {}) {
     const event = { button: 0, defaultPrevented: false, prevented: false, stopped: false,
       preventDefault() { this.defaultPrevented = true; this.prevented = true }, stopPropagation() { this.stopped = true }, stopImmediatePropagation() { this.stopped = true }, ...extra }
-    for (const listener of listeners.get(`${surfaceName}:${type}`) || []) listener(event)
+    for (const listener of listeners.get(`${surfaceName}:${type}`) || []) { listener(event); if (event.stopped) break }
     return event
   }
   function unmount() { unsubscribe(); for (const slot of slots) slot?.cleanup?.() }
-  function restore() { unmount(); Object.assign(globalThis, previous) }
+  function restore() { unmount(); releaseEarlyGuard?.(); window.removeEventListener('popstate', routerListener); Object.assign(globalThis, previous) }
   return { advance, emit, restore, unmount, timers, confirmations, historyWrites,
+    get routerNavigations() { return routerNavigations },
     get listenerCount() { return [...listeners.values()].reduce((count, set) => count + set.size, 0) },
     set offline(value) { offline = value; render() }, set allowLeave(value) { allowLeave = value },
     anchor(href, extra = {}) { return new Element({ href, getAttribute: () => href, ...extra }) },
@@ -148,4 +155,15 @@ test('unmount cancels pending autosave and removes the exact navigation listener
   ui.unmount()
   assert.equal(ui.timers.size, 0)
   assert.equal(ui.listenerCount, 0)
+})
+
+test('dashboard guard blocks Back before an existing router listener can unmount the dirty form', async t => {
+  const session = new StrengthDraftSession({ weight: '' }, async () => response(null))
+  const ui = harness(session, true); t.after(ui.restore)
+  await session.load(); session.change('weight', '150.')
+  window.location.href = 'https://qa.invalid/dashboard'
+  assert.equal(ui.emit('window', 'popstate').stopped, true)
+  assert.equal(ui.routerNavigations, 0)
+  assert.equal(window.location.href, 'https://qa.invalid/dashboard/assessment/start2')
+  assert.equal(session.getSnapshot().values.weight, '150.')
 })

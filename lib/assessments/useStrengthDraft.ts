@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { StrengthDraftSession, type StrengthSessionSnapshot } from './strengthDraftSession'
+import { registerStrengthHistoryGuard } from './strengthHistoryGuard'
 
 export const ASSESSMENT_BEFORE_NAVIGATION_EVENT = 'anastasis:before-assessment-navigation'
 
@@ -35,19 +36,19 @@ export function useUnsavedAssessmentGuard(session: StrengthDraftSession) {
       // Capture runs before the app router can unmount the form. Restore the
       // original history state and URL while keeping all measurements in memory.
       event.stopImmediatePropagation()
-      window.history.pushState(stateBeforeNavigation, '', locationBeforeNavigation)
+      window.History.prototype.pushState.call(window.history, stateBeforeNavigation, '', locationBeforeNavigation)
     }
     const programmaticNavigation = (event: Event) => {
       if (hasUnsavedWork() && !confirmLeaving()) event.preventDefault()
     }
     window.addEventListener('beforeunload', beforeUnload)
     document.addEventListener('click', click, true)
-    window.addEventListener('popstate', backOrForward, true)
+    const releaseHistoryGuard = registerStrengthHistoryGuard(backOrForward)
     window.addEventListener(ASSESSMENT_BEFORE_NAVIGATION_EVENT, programmaticNavigation)
     return () => {
       window.removeEventListener('beforeunload', beforeUnload)
       document.removeEventListener('click', click, true)
-      window.removeEventListener('popstate', backOrForward, true)
+      releaseHistoryGuard()
       window.removeEventListener(ASSESSMENT_BEFORE_NAVIGATION_EVENT, programmaticNavigation)
     }
   }, [session])
