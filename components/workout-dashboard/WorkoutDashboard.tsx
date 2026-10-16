@@ -1,5 +1,7 @@
 'use client'
 
+import { getStrengthAssessmentDetail } from '@/lib/assessment/getStrengthAssessmentStatus'
+
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 
@@ -138,13 +140,15 @@ function ProgressTab({ logic, exercises }: { logic: ProgramLogicOutput; exercise
 }
 
 function StrengthTab({ showOffer, endDate, logic }: { showOffer: boolean; endDate?: string | null; logic: ProgramLogicOutput }) {
+  const strength = logic.assessments.strength
   return (
     <div className="workout-tab-grid" data-testid="workout-strength-tab">
       <article>
         <span>Strength Assessment</span>
-        <strong>{showOffer ? 'Window open' : logic.assessments.monthlyDueCount ? 'Due' : 'Current'}</strong>
-        <small>{showOffer && formatAssessmentEnd(endDate) ? `Available through ${formatAssessmentEnd(endDate)}` : 'Baselines stay connected to the existing assessment system.'}</small>
-        <Link href="/dashboard/assessment/start2" className="tier-secondary-action">Begin Assessment</Link>
+        <strong>{strength.label}</strong>
+        <small>{getStrengthAssessmentDetail(strength, logic.client)}</small>
+        {strength.state === 'due' && showOffer && formatAssessmentEnd(endDate) ? <small>Available through {formatAssessmentEnd(endDate)}</small> : null}
+        <Link href={strength.href} className="tier-secondary-action">{strength.actionLabel}</Link>
       </article>
       <article><span>Load Direction</span><strong>{logic.workoutDecision.allowLoadProgression ? 'Progress allowed' : 'Conservative'}</strong><small>{logic.workoutDecision.reasonForModification}</small></article>
     </div>

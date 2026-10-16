@@ -26,6 +26,7 @@ import type {
 import { evaluateCapacityHistory } from '@/lib/workout-os/evaluateCapacityHistory'
 import { buildRecoveryActions } from '@/lib/workout-os/buildRecoveryActions'
 import { getBodyAssessmentScheduleStatus } from '@/lib/body-assessment/schedule'
+import { getStrengthAssessmentPeriod, strengthAssessmentStatusFromRecords } from '@/lib/assessment/getStrengthAssessmentStatus'
 
 export const DASHBOARD_ENGINE_VERSION =
   'aos_daily_logic_v1.0.0'
@@ -688,6 +689,9 @@ export async function getProgramLogicEngine(
     },
 
     assessments: {
+      strength: inputs.strengthAssessment || strengthAssessmentStatusFromRecords({
+        period: getStrengthAssessmentPeriod(inputs.client), unavailable: true,
+      }),
       dailyCompleted:
         assessmentComplete,
 

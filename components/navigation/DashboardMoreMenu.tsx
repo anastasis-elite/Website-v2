@@ -53,6 +53,9 @@ export default function DashboardMoreMenu({ program }: { program: 'ember' | 'ign
   }, [open])
 
   async function logout() {
+    const navigation = new Event('anastasis:before-assessment-navigation', { cancelable: true })
+    window.dispatchEvent(navigation)
+    if (navigation.defaultPrevented) return
     setLoggingOut(true)
     setMessage('')
     try {

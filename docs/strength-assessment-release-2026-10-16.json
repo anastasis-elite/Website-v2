@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-16",
+  "scope": "Strength assessment P1; metadata-only owner inspection; no production writes",
+  "baseCommit": "c873fbedaab62ceb318e45c6d4bb6ca65bfad581",
+  "branch": "codex/strength-assessment-drafts-20261016",
+  "ownerOctober": {
+    "strengthRecords": 2,
+    "monthlyCheckins": 0,
+    "measurementFieldsDifferentBetweenSubmissions": 4,
+    "savedPayloadsPresent": true,
+    "assessmentInsertHttpStatus": [
+      201,
+      201
+    ],
+    "planInsertHttpStatus": [
+      201,
+      201
+    ],
+    "valuesExposed": false
+  },
+  "checks": {
+    "workspace": {
+      "tests": 696,
+      "pass": 696,
+      "fail": 0,
+      "skipped": 0
+    },
+    "isolated": {
+      "tests": 641,
+      "pass": 641,
+      "fail": 0,
+      "skipped": 0
+    },
+    "build": "PASS",
+    "typescript": "PASS",
+    "browser": "NOT TESTED",
+    "liveAuthApi": "NOT TESTED",
+    "missingFixtureGuard": "PASS (exit 2, zero network/writes)"
+  },
+  "production": {
+    "url": "https://anastasiselite.com",
+    "deploymentId": "dpl_6zgWx3hHhjMrQqUUuaq54T3zxFvL",
+    "commit": "c873fbedaab62ceb318e45c6d4bb6ca65bfad581",
+    "migrationApplied": false,
+    "applicationPromoted": false,
+    "authenticatedSmoke": "NOT TESTED",
+    "reason": "Dedicated synthetic credentials unavailable; local browser server approval aborted"
+  },
+  "migration": {
+    "file": "supabase/migrations/20261016142645_strength_assessment_drafts_atomic.sql",
+    "sha256": "b233f4eed1cf5a7c92afc490c3b1eafaa77a2a96632e459be24ecdaf2177ee2b"
+  }
+}

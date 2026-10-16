@@ -6,6 +6,7 @@ import type { HistoricalRecoverySignal } from '@/lib/workout-os/types'
 import { getClientDayRange } from '@/lib/schedule/time'
 import { getClientTimeZone, recordLocalDate, getClientLocalDateOffset, addLocalDays } from '@/lib/timezone'
 import { loadWorkoutHistory, workoutLocalDate } from '@/lib/workout/history'
+import { getStrengthAssessmentStatus } from '@/lib/assessment/getStrengthAssessmentStatus'
 
 function nullableNumber(value: unknown) {
   if (value === null || value === undefined || value === '') return null
@@ -78,7 +79,7 @@ export async function loadProgramLogicInputs({
     { data: phoenixTasks }, { data: recentTasks }, { data: todayWorkoutFeedback },
     { data: recoveryActivities }, { data: rawRecentRecovery }, { data: executionHistory },
     { data: dailyHealthMetrics }, { data: latestBodySessions }, { data: activeBodySession },
-    sleepStatus, { data: todayCycle },
+    sleepStatus, { data: todayCycle }, strengthAssessment,
   ] = await Promise.all([
     supabase.from('assessments').select('*').eq('client_id', client.client_id).gte('submitted_at', start).lt('submitted_at', end).limit(1).maybeSingle(),
     supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).limit(1).maybeSingle(),
@@ -126,6 +127,7 @@ export async function loadProgramLogicInputs({
       .maybeSingle(),
     getSleepStatusForDashboard(supabase, client.client_id, today),
     supabase.from('cycle_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle(),
+    getStrengthAssessmentStatus(supabase, client),
   ])
 
   const nutritionIds = (nutritionLogs || []).map((row: any) => row.id)
@@ -354,6 +356,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
   taskCount: activityByDate.get(yesterday) || 0,
 },
     monthlyAssessmentsDueCount,
+    strengthAssessment,
     bodyAssessment: {
       latestMonthlyCompletedAt: latestMonthlySession?.completed_at || null,
       latestStructuralCompletedAt: latestStructuralSession?.completed_at || null,
