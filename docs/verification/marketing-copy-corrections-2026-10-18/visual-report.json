@@ -1,0 +1,4080 @@
+{
+  "priorCandidate": "4b049d530a45e296dbbd8afeadd3b5d97ffc97a0",
+  "scope": "Actual corrected production build; synthetic price/API failures and blocked external requests; no member/Auth/payment/provider acceptance",
+  "started": "2026-10-18T13:49:11.356Z",
+  "viewports": [
+    {
+      "device": "mobile",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "pages": [
+        {
+          "url": "http://127.0.0.1:3161/",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "h1": [
+            {
+              "text": "You carry enough. Your health shouldn’t be one more thing you have to figure out.",
+              "box": {
+                "x": 24,
+                "y": 560.96875,
+                "width": 342,
+                "height": 232.890625
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Find My Starting Point",
+              "href": "/audit",
+              "disabled": false,
+              "box": {
+                "x": 85,
+                "y": 1363.421875,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "See How It Works",
+              "href": "#how-it-works",
+              "disabled": false,
+              "box": {
+                "x": 85,
+                "y": 1430.421875,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "What is Anastasis?",
+              "href": "/what-is-anastasis",
+              "disabled": false,
+              "box": {
+                "x": 85,
+                "y": 1501.421875,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Find My Starting Point",
+              "href": "/audit",
+              "disabled": false,
+              "box": {
+                "x": 85,
+                "y": 2956.296875,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "See How It Works",
+              "href": "#how-it-works",
+              "disabled": false,
+              "box": {
+                "x": 85,
+                "y": 4209.578125,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Show Me Where to Start",
+              "href": "/audit",
+              "disabled": false,
+              "box": {
+                "x": 82.765625,
+                "y": 8966.5625,
+                "width": 224.453125,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Compare support levels",
+              "href": "/program",
+              "disabled": false,
+              "box": {
+                "x": 85,
+                "y": 9033.5625,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "HEALTH & PERFORMANCE CONCIERGE\n\nTraining, nutrition targets, recovery guidance, and progress together.\n\nYou carry enough. Your health shouldn’t be one more thing you have to figure out.\n\nYour goals and check-ins inform training, nutrition targets, and recovery guidance.\n\nWhat fits my energy today?\nWould recovery be useful?\nWhere does nutrition fit?\nWhat deserves my attention?\nWhat can wait?\n\nA clear starting point. Room to continue.\n\nFind My Starting Point\nSee How It Works\nWhat is Anastasis?\nAbout 1–2 minutes\nA suggested starting program\nExplore at your own pace\n\nCAPACITY AUDIT\n\nYou can begin with the room you have.\n\nStart with five brief questions.\n\nShare your energy, available time, support, and current season. The Capacity Audit suggests a program to explore. Member onboarding then gathers the detail used for your starting plan.\n\nUse it to find:\n\nA suggested program to explore\n\nThe support level that may fit your current season\n\nWhat each program includes\n\nA starting point you can review in your own time\n\nFind My Starting Point\n\nWHEN LIFE IS FULL\n\nMaking room for your health takes thought.\n\nYou have learned what matters to you.\n\nYou know how much a good night’s rest can change a day.\n\nMaking space for movement, food, water, and recovery still takes thought alongside everything else you do.\n\nSome days have more room than others.\n\nEnergy, soreness, sleep, cycle context, and a changing schedule can all affect the choices in front of you.\n\nIt helps to have your plan and what you have recorded in view.\n\nAnastasis helps you review what makes sense for today.\n\nSee How It Works\n\nHOW IT WORKS\n\nHow Anastasis works\nShare your goals and circumstances.\nReview guidance with context.\nChoose a manageable next step.\n\nCONTEXT\n\n1. Start with your life\n\nYour profile and assessments record your goals, equipment, training experience, and circumstances. Daily check-ins add how you feel, so guidance has context.\n\nCLARITY\n\n2. Review your next step\n\nReview your training plan, nutrition targets, and recovery guidance. Saved inputs and check-ins help inform the options you see; you choose what fits today.\n\nCONTINUITY\n\n3. Continue with context\n\nRecord what you do and return to your saved progress. A check-in, a drink of water, or the next part of your workout can be enough to begin.\n\nKeep your plan and recorded progress together.\nReturn to one place for training, nutrition targets, and recovery guidance.\nTake the next useful step with the room you have today.\n\nYour next step can fit the day you are having.\n\nWHO IT IS FOR\n\nBuilt for women who already carry a lot.\n\nRunning a business.\n\nLeading a team.\n\nRaising kids.\n\nManaging a household.\n\nChasing a big goal.\n\nDoing several of those at the same time.\n\nYou want to feel strong, energized, healthy, and at home in your body.\n\nYou just don’t want taking care of yourself to become another full-time job.\n\nAnastasis is designed to make those choices more manageable.\n\nYOUR STARTING POINT\n\nMake room for a starting point that fits.\n\nYou can start without having every detail worked out.\n\nExplore a self-led foundation, compare the support levels, or use five brief questions to find a suggested place to begin.\n\nStart with the Capacity Audit.\n\nAbout 1–2 minutes. Answer five questions and receive a suggested starting program.\n\nShow Me Where to Start\nCompare support levels\n\nAbout 1–2 minutes · Clear starting point · One next step\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/mobile-home-viewport.png",
+          "fullScreenshot": "screenshots/mobile-home-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/program",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "h1": [
+            {
+              "text": "Find the starting point that fits your life right now.",
+              "box": {
+                "x": 18,
+                "y": 134,
+                "width": 354,
+                "height": 48
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Explore the Paths",
+              "href": "#paths",
+              "disabled": false,
+              "box": {
+                "x": 106.484375,
+                "y": 341.3125,
+                "width": 177.03125,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Help Me Find Mine",
+              "href": "/audit",
+              "disabled": false,
+              "box": {
+                "x": 100.859375,
+                "y": 406.3125,
+                "width": 188.265625,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "how Anastasis works",
+              "href": "/what-is-anastasis",
+              "disabled": false,
+              "box": {
+                "x": 146.734375,
+                "y": 1020.171875,
+                "width": 132.46875,
+                "height": 16
+              },
+              "clipped": false
+            },
+            {
+              "text": "Explore Ember",
+              "href": "/program/ember",
+              "disabled": false,
+              "box": {
+                "x": 37,
+                "y": 2843.90625,
+                "width": 316,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Explore Ignite",
+              "href": "/program/ignite",
+              "disabled": false,
+              "box": {
+                "x": 37,
+                "y": 3743.03125,
+                "width": 316,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Explore Phoenix",
+              "href": "/program/phoenix",
+              "disabled": false,
+              "box": {
+                "x": 37,
+                "y": 4680.609375,
+                "width": 316,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Help Me Find My Path",
+              "href": "/audit",
+              "disabled": false,
+              "box": {
+                "x": 88.609375,
+                "y": 6734.9375,
+                "width": 212.78125,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Return Home",
+              "href": "/",
+              "disabled": false,
+              "box": {
+                "x": 121.46875,
+                "y": 6799.9375,
+                "width": 147.046875,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "CHOOSE YOUR PATH\n\nFind the starting point that fits your life right now.\n\nStart with the tools that fit your current capacity, time, and resources. Compare what each path includes, then choose the amount of tracking and daily direction that would be useful to you now.\n\nExplore the Paths\nHelp Me Find Mine\n\nONE DESTINATION. THREE STARTING POINTS.\n\nThe goal is not to push harder forever.\nThe goal is refined resilience.\n\nEvery path includes assessed training, daily check-ins, recovery guidance, and progress history. Nutrition tools and the way next actions are presented differ by path. Your recorded inputs provide context for the guidance you see.\n\nAnastasis brings training, nutrition tools, and recovery guidance into one member dashboard. Learn more about how Anastasis works.\n\nReview your training plan\n\nRecord how you feel\n\nReview recovery guidance\n\nKeep your history together\n\nSee your next step\n\nReturn when you have capacity\n\nTHE PATHS\n\nWhich season sounds most like you?\n\nEMBER\n\nRebuild Consistency\n\nFor the woman who knows what she wants, but needs a sustainable structure she can actually follow.\n\nEmber brings your assessed training plan, macro targets, water tracking, and recorded progress into one place. Start with what you can manage and keep a record you can return to.\n\nINSIDE EMBER\n\n• Training based on member assessments\n\n• Macro targets and daily macro totals\n\n• Water tracking\n\n• Basic recovery guidance\n\n• Recorded progress and cycle context\n\n• Foundational assessments\n\nBEST FOR\n\nWomen who want a self-led foundation with a clear next step.\n\nExplore Ember\n\nIGNITE\n\nOptimize What Is Working\n\nFor the woman who has built some consistency and is ready to refine the details.\n\nIgnite adds food logging and more detail from your recorded nutrition and recovery inputs. Review those details alongside your training plan, with room for the realities of your day.\n\nINSIDE IGNITE\n\n• Assessed training and progress history\n\n• Manual food and barcode logging\n\n• Nutrient detail from recorded foods\n\n• Recovery recommendations\n\n• Progress photo uploads\n\n• User-confirmed posture landmarks\n\nBEST FOR\n\nWomen who want food logging and more context for daily decisions.\n\nExplore Ignite\n\nPHOENIX\n\nRemove Friction\n\nFor the woman who wants meal recommendations and a more directed daily view.\n\nPhoenix brings the food logging, recovery detail, and photo tools available in Ignite together with meal recommendations and directed next actions. Use your recorded inputs to review a manageable next step.\n\nINSIDE PHOENIX\n\n• Assessed training and progress history\n\n• Manual food and barcode logging\n\n• Meal recommendations\n\n• Directed nutrition and recovery next actions\n\n• User-confirmed posture landmarks\n\n• Recorded nutrition and recovery context\n\nBEST FOR\n\nWomen who want a suggested next action alongside their recorded context.\n\nExplore Phoenix\n\nWHAT LIFE LOOKS LIKE INSIDE ANASTASIS\n\nNot another plan to force.\nA system to build from.\nYour starting point\n\nEnter your profile, equipment, goals, training availability, and member assessments. These inputs help establish your starting plan.\n\nYour daily view\n\nReview your assigned workout, nutrition tools, and recovery guidance. Record what you do and how you feel, at a pace that fits your day.\n\nYour recorded history\n\nReturn to saved workouts, check-ins, measurements, and photos to review change over time. Your history reflects what you have recorded.\n\nYour next review\n\nUpdate assessments when they are due and review your current inputs as your circumstances change. Continue from the information available rather than starting over.\n\nNOT SURE WHERE TO BEGIN?\n\nTake the Capacity Assessment.\n\nThe Capacity Assessment asks five broad questions about your energy, overwhelm, time, support, and current season to suggest a starting path. Detailed member assessments follow after enrollment. Review the options and decide what fits your life now.\n\nHelp Me Find My Path\nReturn Home\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/mobile-program-viewport.png",
+          "fullScreenshot": "screenshots/mobile-program-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/program/ignite",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "h1": [
+            {
+              "text": "Guidance with more context.",
+              "box": {
+                "x": 18,
+                "y": 134,
+                "width": 354,
+                "height": 24
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Choose Monthly",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 37,
+                "y": 1762.328125,
+                "width": 167.546875,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Pay in Full",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 220.546875,
+                "y": 1762.328125,
+                "width": 127.5,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Prefer simplicity? Explore Ember",
+              "href": "/program/ember",
+              "disabled": false,
+              "box": {
+                "x": 18,
+                "y": 1890.328125,
+                "width": 285.1875,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Want meal recommendations? Explore Phoenix",
+              "href": "/program/phoenix",
+              "disabled": false,
+              "box": {
+                "x": 18,
+                "y": 1955.328125,
+                "width": 354,
+                "height": 68
+              },
+              "clipped": false
+            },
+            {
+              "text": "Return to Program",
+              "href": "/program",
+              "disabled": false,
+              "box": {
+                "x": 18,
+                "y": 2039.328125,
+                "width": 183.359375,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "IGNITE\n\nGuidance with more context.\n\nIgnite brings food logging and recovery detail alongside your assessed training plan. See what you have recorded, review the guidance, and choose a manageable next step.\n\nWho Ignite is for\n\nIgnite may fit if you want more context around your daily decisions. Manual food entry, barcode tools, and recovery recommendations bring your recorded inputs together without requiring every day to look the same.\n\nWhat it offers\nStructured guidance\n\nReview your assigned training, daily check-in, and recovery recommendations in one place.\n\nFood logging and context\n\nEnter foods manually or use barcode tools, then review the nutrition detail available from those records.\n\nEnvironmental alignment\n\nKeep your training, check-ins, and progress history together. Progress photos and user-confirmed posture landmarks add a visual record.\n\nIf this is you…\n\nIf you want to see your food records alongside your training…\n\nIf recovery recommendations would help you plan your day…\n\nIf you want to review more detail without turning every decision into another task…\n\nIgnite is a path to consider.\n\nBegin Ignite\n\nChoose how you want to enter Ignite.\n\nChoose Monthly\nPay in Full\nWant a different level of support?\nPrefer simplicity? Explore Ember\nWant meal recommendations? Explore Phoenix\nReturn to Program\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/mobile-program_ignite-viewport.png",
+          "fullScreenshot": "screenshots/mobile-program_ignite-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/guide",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "h1": [
+            {
+              "text": "Make a little room for yourself.",
+              "box": {
+                "x": 18,
+                "y": 134,
+                "width": 354,
+                "height": 24
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Join The Waitlist",
+              "href": "https://checkout.anastasiselite.com/b/fZu3cu7rdgQvc5T8D74ko02",
+              "disabled": false,
+              "box": {
+                "x": 18,
+                "y": 2147.859375,
+                "width": 173.296875,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Return to Application",
+              "href": "/apply",
+              "disabled": false,
+              "box": {
+                "x": 18,
+                "y": 2212.859375,
+                "width": 203.46875,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "THE ANASTASIS SHIFT\n\nMake a little room for yourself.\n\nA forthcoming reflection guide about noticing what works for you, making space in a full life, and choosing manageable next steps.\n\nCOMING SOON\nBegin with what fits your life.\n\nYou already make decisions for a full day. The Anastasis Shift is being developed as a place to pause, consider your own priorities, and think about the routines you want to make room for.\n\nThe planned guide explores:\nYour priorities\nNoticing your patterns\nDaily structure\nMaking room for yourself\nManageable routines\nChoosing what comes next\nWritten with a full life in mind.\n\nYou may be balancing work, relationships, family, or a changing schedule. The guide is intended for women who want time to reflect on what is practical and meaningful for them.\n\nThe guide is in development.\n\nThe Anastasis Shift is not available yet. You can explore the current programs while the guide is being prepared, and decide whether one fits what you want now.\n\nJoin The Waitlist\nReturn to Application\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/mobile-guide-viewport.png",
+          "fullScreenshot": "screenshots/mobile-guide-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/program/phoenix/support",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "h1": [
+            {
+              "text": "Take time to choose your starting point.",
+              "box": {
+                "x": 18,
+                "y": 84,
+                "width": 354,
+                "height": 48
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Continue",
+              "href": "/program/phoenix/support/apply",
+              "disabled": false,
+              "box": {
+                "x": 18,
+                "y": 459.40625,
+                "width": 116.953125,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "Take time to choose your starting point.\n\nCost, timing, and available capacity are part of the decision.\n\nReview the current program options and billing details before choosing. You can decide which tools would be useful and whether this is the right time to begin.\n\nThis page does not confirm an alternative payment arrangement or place on a program. Any available terms need to be confirmed before enrollment.\n\nContinue\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/mobile-program_phoenix_support-viewport.png",
+          "fullScreenshot": "screenshots/mobile-program_phoenix_support-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/support",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "h1": [
+            {
+              "text": "Help with your account or billing.",
+              "box": {
+                "x": 18,
+                "y": 134,
+                "width": 354,
+                "height": 24
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Anastasis.elite@gmail.com",
+              "href": "mailto:Anastasis.elite@gmail.com?subject=Account%20Support",
+              "disabled": false,
+              "box": {
+                "x": 37,
+                "y": 289.25,
+                "width": 171.515625,
+                "height": 16
+              },
+              "clipped": false
+            },
+            {
+              "text": "Account billing",
+              "href": "/dashboard/account#billing",
+              "disabled": false,
+              "box": {
+                "x": 37,
+                "y": 764.546875,
+                "width": 159.03125,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Billing and refund policy",
+              "href": "/refund-policy",
+              "disabled": false,
+              "box": {
+                "x": 37,
+                "y": 829.546875,
+                "width": 224.390625,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "CUSTOMER SUPPORT\n\nHelp with your account or billing.\nContact support\n\nFor a question about your account or something that is not working as expected, email Anastasis.elite@gmail.com. Include your account email, program, the page where it happened, and any error message. Tell us what you tried, any confirmation you saw, and what still needs checking. A screenshot can help. Keep passwords, payment card details, and private health information out of your email.\n\nBilling help or cancellation\n\nOpen Billing & Subscriptions in your account to manage an eligible paid subscription. If billing management is unavailable or you need help with a charge or cancellation, email the same address with “Billing support” or “Cancellation request” in the subject. Include your account email and the date or receipt reference for the purchase. Gifted access has no paid subscription to cancel.\n\nAccount billing\nBilling and refund policy\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/mobile-support-viewport.png",
+          "fullScreenshot": "screenshots/mobile-support-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/audit",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "h1": [
+            {
+              "text": "Find your currentcapacity.",
+              "box": {
+                "x": 18,
+                "y": 134,
+                "width": 354,
+                "height": 48
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Exhausted",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 70,
+                "y": 1207.703125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Drained",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 252,
+                "y": 1207.703125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Managing",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 434,
+                "y": 1207.703125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Good",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 616,
+                "y": 1207.703125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Thriving",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 798,
+                "y": 1207.703125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Constantly",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 70,
+                "y": 1383.765625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Most Days",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 252,
+                "y": 1383.765625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Sometimes",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 434,
+                "y": 1383.765625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Rarely",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 616,
+                "y": 1383.765625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Almost Never",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 798,
+                "y": 1383.765625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Almost None",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 70,
+                "y": 1559.828125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "15 Minutes",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 252,
+                "y": 1559.828125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "30 Minutes",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 434,
+                "y": 1559.828125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "1 Hour",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 616,
+                "y": 1559.828125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "More Than 1 Hour",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 798,
+                "y": 1559.828125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Completely Alone",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 70,
+                "y": 1735.890625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Limited Support",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 252,
+                "y": 1735.890625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Some Support",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 434,
+                "y": 1735.890625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Good Support",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 616,
+                "y": 1735.890625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Strong Support",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 798,
+                "y": 1735.890625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Surviving",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 70,
+                "y": 1911.953125,
+                "width": 170,
+                "height": 81.90625
+              },
+              "clipped": false
+            },
+            {
+              "text": "Regaining Consistency",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 252,
+                "y": 1911.953125,
+                "width": 170,
+                "height": 81.90625
+              },
+              "clipped": false
+            },
+            {
+              "text": "Building Momentum",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 434,
+                "y": 1911.953125,
+                "width": 170,
+                "height": 81.90625
+              },
+              "clipped": false
+            },
+            {
+              "text": "Optimizing",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 616,
+                "y": 1911.953125,
+                "width": 170,
+                "height": 81.90625
+              },
+              "clipped": false
+            },
+            {
+              "text": "Performing Higher",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 798,
+                "y": 1911.953125,
+                "width": 170,
+                "height": 81.90625
+              },
+              "clipped": false
+            },
+            {
+              "text": "Terms of Use",
+              "href": "/terms",
+              "disabled": false,
+              "box": {
+                "x": 132.921875,
+                "y": 2173.828125,
+                "width": 84.15625,
+                "height": 24.484375
+              },
+              "clipped": false
+            },
+            {
+              "text": "Health Disclaimer & Liability Waiver",
+              "href": "/conditions",
+              "disabled": false,
+              "box": {
+                "x": 107,
+                "y": 2207.484375,
+                "width": 213,
+                "height": 48.96875
+              },
+              "clipped": false
+            },
+            {
+              "text": "See My Recommended Path",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 51,
+                "y": 2347.28125,
+                "width": 249.734375,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Return to Program",
+              "href": "/program",
+              "disabled": false,
+              "box": {
+                "x": 51,
+                "y": 2412.28125,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "CAPACITY AUDIT\n\nFind your current\ncapacity.\n\nAbout 1–2 minutes. Five questions about energy, overwhelm, available time, support, and your current season. Your answers suggest a starting program to explore.\n\nYou do not need to have everything figured out.\n\nAnswer from where you are today. This brief public audit does not collect detailed nutrition, movement, symptoms, or a daily schedule. Members complete a separate, fuller onboarding assessment before their plan is created.\n\nYOUR INFORMATION\n\nName\nEmail Address\nYes, send me personalized insights, resources, and support based on my Capacity Audit results.\n\nCAPACITY SNAPSHOT\n\nHow does your energy feel most days?\nExhausted\nDrained\nManaging\nGood\nThriving\nHow often do you feel overwhelmed?\nConstantly\nMost Days\nSometimes\nRarely\nAlmost Never\nHow much uninterrupted time do you have for yourself most days?\nAlmost None\n15 Minutes\n30 Minutes\n1 Hour\nMore Than 1 Hour\nHow supported do you currently feel?\nCompletely Alone\nLimited Support\nSome Support\nGood Support\nStrong Support\nWhich statement feels most true today?\nSurviving\nRegaining Consistency\nBuilding Momentum\nOptimizing\nPerforming Higher\nBy submitting this Capacity Audit, I confirm that I have read, understand, and agree to the Terms of Use and Health Disclaimer & Liability Waiver.\nSee My Recommended Path\nReturn to Program\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/mobile-audit-viewport.png",
+          "fullScreenshot": "screenshots/mobile-audit-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/program/phoenix/support/apply",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "h1": [
+            {
+              "text": "404",
+              "box": {
+                "x": 54,
+                "y": 397.5,
+                "width": 69.3125,
+                "height": 49
+              }
+            }
+          ],
+          "actions": [],
+          "bodyText": "404\nThis page could not be found.\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/mobile-program_phoenix_support_apply-viewport.png",
+          "fullScreenshot": "screenshots/mobile-program_phoenix_support_apply-full.png",
+          "status": 404
+        },
+        {
+          "url": "http://127.0.0.1:3161/apply",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "h1": [
+            {
+              "text": "404",
+              "box": {
+                "x": 54,
+                "y": 397.5,
+                "width": 69.3125,
+                "height": 49
+              }
+            }
+          ],
+          "actions": [],
+          "bodyText": "404\nThis page could not be found.\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/mobile-apply-viewport.png",
+          "fullScreenshot": "screenshots/mobile-apply-full.png",
+          "status": 404
+        }
+      ],
+      "assertions": [],
+      "homeCta": {
+        "text": "Find My Starting Point",
+        "href": "/audit",
+        "y": 1363.421875,
+        "priorCandidateY": 1537.5,
+        "baselineY": 1484.3125,
+        "improvementFromPriorPx": 174.078125,
+        "deltaFromBaselinePx": -120.890625,
+        "aboveFold": false
+      }
+    },
+    {
+      "device": "desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "pages": [
+        {
+          "url": "http://127.0.0.1:3161/",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "scrollWidth": 1440,
+          "h1": [
+            {
+              "text": "You carry enough. Your health shouldn’t be one more thing you have to figure out.",
+              "box": {
+                "x": 254,
+                "y": 450.484375,
+                "width": 932,
+                "height": 344
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Find My Starting Point",
+              "href": "/audit",
+              "disabled": false,
+              "box": {
+                "x": 491,
+                "y": 1117.421875,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "See How It Works",
+              "href": "#how-it-works",
+              "disabled": false,
+              "box": {
+                "x": 729,
+                "y": 1117.421875,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "What is Anastasis?",
+              "href": "/what-is-anastasis",
+              "disabled": false,
+              "box": {
+                "x": 610,
+                "y": 1188.421875,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Find My Starting Point",
+              "href": "/audit",
+              "disabled": false,
+              "box": {
+                "x": 610,
+                "y": 2399.953125,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "See How It Works",
+              "href": "#how-it-works",
+              "disabled": false,
+              "box": {
+                "x": 610,
+                "y": 3513.515625,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Show Me Where to Start",
+              "href": "/audit",
+              "disabled": false,
+              "box": {
+                "x": 488.765625,
+                "y": 6809.3125,
+                "width": 224.453125,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Compare support levels",
+              "href": "/program",
+              "disabled": false,
+              "box": {
+                "x": 731.21875,
+                "y": 6809.3125,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "HEALTH & PERFORMANCE CONCIERGE\n\nTraining, nutrition targets, recovery guidance, and progress together.\n\nYou carry enough. Your health shouldn’t be one more thing you have to figure out.\n\nYour goals and check-ins inform training, nutrition targets, and recovery guidance.\n\nWhat fits my energy today?\nWould recovery be useful?\nWhere does nutrition fit?\nWhat deserves my attention?\nWhat can wait?\n\nA clear starting point. Room to continue.\n\nFind My Starting Point\nSee How It Works\nWhat is Anastasis?\nAbout 1–2 minutes\nA suggested starting program\nExplore at your own pace\n\nCAPACITY AUDIT\n\nYou can begin with the room you have.\n\nStart with five brief questions.\n\nShare your energy, available time, support, and current season. The Capacity Audit suggests a program to explore. Member onboarding then gathers the detail used for your starting plan.\n\nUse it to find:\n\nA suggested program to explore\n\nThe support level that may fit your current season\n\nWhat each program includes\n\nA starting point you can review in your own time\n\nFind My Starting Point\n\nWHEN LIFE IS FULL\n\nMaking room for your health takes thought.\n\nYou have learned what matters to you.\n\nYou know how much a good night’s rest can change a day.\n\nMaking space for movement, food, water, and recovery still takes thought alongside everything else you do.\n\nSome days have more room than others.\n\nEnergy, soreness, sleep, cycle context, and a changing schedule can all affect the choices in front of you.\n\nIt helps to have your plan and what you have recorded in view.\n\nAnastasis helps you review what makes sense for today.\n\nSee How It Works\n\nHOW IT WORKS\n\nHow Anastasis works\nShare your goals and circumstances.\nReview guidance with context.\nChoose a manageable next step.\n\nCONTEXT\n\n1. Start with your life\n\nYour profile and assessments record your goals, equipment, training experience, and circumstances. Daily check-ins add how you feel, so guidance has context.\n\nCLARITY\n\n2. Review your next step\n\nReview your training plan, nutrition targets, and recovery guidance. Saved inputs and check-ins help inform the options you see; you choose what fits today.\n\nCONTINUITY\n\n3. Continue with context\n\nRecord what you do and return to your saved progress. A check-in, a drink of water, or the next part of your workout can be enough to begin.\n\nKeep your plan and recorded progress together.\nReturn to one place for training, nutrition targets, and recovery guidance.\nTake the next useful step with the room you have today.\n\nYour next step can fit the day you are having.\n\nWHO IT IS FOR\n\nBuilt for women who already carry a lot.\n\nRunning a business.\n\nLeading a team.\n\nRaising kids.\n\nManaging a household.\n\nChasing a big goal.\n\nDoing several of those at the same time.\n\nYou want to feel strong, energized, healthy, and at home in your body.\n\nYou just don’t want taking care of yourself to become another full-time job.\n\nAnastasis is designed to make those choices more manageable.\n\nYOUR STARTING POINT\n\nMake room for a starting point that fits.\n\nYou can start without having every detail worked out.\n\nExplore a self-led foundation, compare the support levels, or use five brief questions to find a suggested place to begin.\n\nStart with the Capacity Audit.\n\nAbout 1–2 minutes. Answer five questions and receive a suggested starting program.\n\nShow Me Where to Start\nCompare support levels\n\nAbout 1–2 minutes · Clear starting point · One next step\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/desktop-home-viewport.png",
+          "fullScreenshot": "screenshots/desktop-home-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/program",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "scrollWidth": 1440,
+          "h1": [
+            {
+              "text": "Find the starting point that fits your life right now.",
+              "box": {
+                "x": 230,
+                "y": 134,
+                "width": 980,
+                "height": 36.484375
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Explore the Paths",
+              "href": "#paths",
+              "disabled": false,
+              "box": {
+                "x": 529.34375,
+                "y": 285.140625,
+                "width": 177.03125,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Help Me Find Mine",
+              "href": "/audit",
+              "disabled": false,
+              "box": {
+                "x": 722.375,
+                "y": 285.140625,
+                "width": 188.265625,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "how Anastasis works",
+              "href": "/what-is-anastasis",
+              "disabled": false,
+              "box": {
+                "x": 666.9375,
+                "y": 827.125,
+                "width": 424.234375,
+                "height": 38.328125
+              },
+              "clipped": false
+            },
+            {
+              "text": "Explore Ember",
+              "href": "/program/ember",
+              "disabled": false,
+              "box": {
+                "x": 185,
+                "y": 2322.96875,
+                "width": 304.65625,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Explore Ignite",
+              "href": "/program/ignite",
+              "disabled": false,
+              "box": {
+                "x": 567.65625,
+                "y": 2322.96875,
+                "width": 304.671875,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Explore Phoenix",
+              "href": "/program/phoenix",
+              "disabled": false,
+              "box": {
+                "x": 950.328125,
+                "y": 2322.96875,
+                "width": 304.65625,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Help Me Find My Path",
+              "href": "/audit",
+              "disabled": false,
+              "box": {
+                "x": 532.078125,
+                "y": 3491.375,
+                "width": 212.78125,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Return Home",
+              "href": "/",
+              "disabled": false,
+              "box": {
+                "x": 760.859375,
+                "y": 3491.375,
+                "width": 147.046875,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "CHOOSE YOUR PATH\n\nFind the starting point that fits your life right now.\n\nStart with the tools that fit your current capacity, time, and resources. Compare what each path includes, then choose the amount of tracking and daily direction that would be useful to you now.\n\nExplore the Paths\nHelp Me Find Mine\n\nONE DESTINATION. THREE STARTING POINTS.\n\nThe goal is not to push harder forever.\nThe goal is refined resilience.\n\nEvery path includes assessed training, daily check-ins, recovery guidance, and progress history. Nutrition tools and the way next actions are presented differ by path. Your recorded inputs provide context for the guidance you see.\n\nAnastasis brings training, nutrition tools, and recovery guidance into one member dashboard. Learn more about how Anastasis works.\n\nReview your training plan\n\nRecord how you feel\n\nReview recovery guidance\n\nKeep your history together\n\nSee your next step\n\nReturn when you have capacity\n\nTHE PATHS\n\nWhich season sounds most like you?\n\nEMBER\n\nRebuild Consistency\n\nFor the woman who knows what she wants, but needs a sustainable structure she can actually follow.\n\nEmber brings your assessed training plan, macro targets, water tracking, and recorded progress into one place. Start with what you can manage and keep a record you can return to.\n\nINSIDE EMBER\n\n• Training based on member assessments\n\n• Macro targets and daily macro totals\n\n• Water tracking\n\n• Basic recovery guidance\n\n• Recorded progress and cycle context\n\n• Foundational assessments\n\nBEST FOR\n\nWomen who want a self-led foundation with a clear next step.\n\nExplore Ember\n\nIGNITE\n\nOptimize What Is Working\n\nFor the woman who has built some consistency and is ready to refine the details.\n\nIgnite adds food logging and more detail from your recorded nutrition and recovery inputs. Review those details alongside your training plan, with room for the realities of your day.\n\nINSIDE IGNITE\n\n• Assessed training and progress history\n\n• Manual food and barcode logging\n\n• Nutrient detail from recorded foods\n\n• Recovery recommendations\n\n• Progress photo uploads\n\n• User-confirmed posture landmarks\n\nBEST FOR\n\nWomen who want food logging and more context for daily decisions.\n\nExplore Ignite\n\nPHOENIX\n\nRemove Friction\n\nFor the woman who wants meal recommendations and a more directed daily view.\n\nPhoenix brings the food logging, recovery detail, and photo tools available in Ignite together with meal recommendations and directed next actions. Use your recorded inputs to review a manageable next step.\n\nINSIDE PHOENIX\n\n• Assessed training and progress history\n\n• Manual food and barcode logging\n\n• Meal recommendations\n\n• Directed nutrition and recovery next actions\n\n• User-confirmed posture landmarks\n\n• Recorded nutrition and recovery context\n\nBEST FOR\n\nWomen who want a suggested next action alongside their recorded context.\n\nExplore Phoenix\n\nWHAT LIFE LOOKS LIKE INSIDE ANASTASIS\n\nNot another plan to force.\nA system to build from.\nYour starting point\n\nEnter your profile, equipment, goals, training availability, and member assessments. These inputs help establish your starting plan.\n\nYour daily view\n\nReview your assigned workout, nutrition tools, and recovery guidance. Record what you do and how you feel, at a pace that fits your day.\n\nYour recorded history\n\nReturn to saved workouts, check-ins, measurements, and photos to review change over time. Your history reflects what you have recorded.\n\nYour next review\n\nUpdate assessments when they are due and review your current inputs as your circumstances change. Continue from the information available rather than starting over.\n\nNOT SURE WHERE TO BEGIN?\n\nTake the Capacity Assessment.\n\nThe Capacity Assessment asks five broad questions about your energy, overwhelm, time, support, and current season to suggest a starting path. Detailed member assessments follow after enrollment. Review the options and decide what fits your life now.\n\nHelp Me Find My Path\nReturn Home\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/desktop-program-viewport.png",
+          "fullScreenshot": "screenshots/desktop-program-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/program/ignite",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "scrollWidth": 1440,
+          "h1": [
+            {
+              "text": "Guidance with more context.",
+              "box": {
+                "x": 180,
+                "y": 134,
+                "width": 760,
+                "height": 36.484375
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Choose Monthly",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 205,
+                "y": 1210.671875,
+                "width": 167.546875,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Pay in Full",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 388.546875,
+                "y": 1210.671875,
+                "width": 127.5,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Prefer simplicity? Explore Ember",
+              "href": "/program/ember",
+              "disabled": false,
+              "box": {
+                "x": 180,
+                "y": 1352.671875,
+                "width": 285.1875,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Want meal recommendations? Explore Phoenix",
+              "href": "/program/phoenix",
+              "disabled": false,
+              "box": {
+                "x": 481.1875,
+                "y": 1352.671875,
+                "width": 387.03125,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Return to Program",
+              "href": "/program",
+              "disabled": false,
+              "box": {
+                "x": 884.21875,
+                "y": 1352.671875,
+                "width": 183.359375,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "IGNITE\n\nGuidance with more context.\n\nIgnite brings food logging and recovery detail alongside your assessed training plan. See what you have recorded, review the guidance, and choose a manageable next step.\n\nWho Ignite is for\n\nIgnite may fit if you want more context around your daily decisions. Manual food entry, barcode tools, and recovery recommendations bring your recorded inputs together without requiring every day to look the same.\n\nWhat it offers\nStructured guidance\n\nReview your assigned training, daily check-in, and recovery recommendations in one place.\n\nFood logging and context\n\nEnter foods manually or use barcode tools, then review the nutrition detail available from those records.\n\nEnvironmental alignment\n\nKeep your training, check-ins, and progress history together. Progress photos and user-confirmed posture landmarks add a visual record.\n\nIf this is you…\n\nIf you want to see your food records alongside your training…\n\nIf recovery recommendations would help you plan your day…\n\nIf you want to review more detail without turning every decision into another task…\n\nIgnite is a path to consider.\n\nBegin Ignite\n\nChoose how you want to enter Ignite.\n\nChoose Monthly\nPay in Full\nWant a different level of support?\nPrefer simplicity? Explore Ember\nWant meal recommendations? Explore Phoenix\nReturn to Program\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/desktop-program_ignite-viewport.png",
+          "fullScreenshot": "screenshots/desktop-program_ignite-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/guide",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "scrollWidth": 1440,
+          "h1": [
+            {
+              "text": "Make a little room for yourself.",
+              "box": {
+                "x": 180,
+                "y": 134,
+                "width": 760,
+                "height": 36.484375
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Join The Waitlist",
+              "href": "https://checkout.anastasiselite.com/b/fZu3cu7rdgQvc5T8D74ko02",
+              "disabled": false,
+              "box": {
+                "x": 180,
+                "y": 1820.296875,
+                "width": 173.296875,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Return to Application",
+              "href": "/apply",
+              "disabled": false,
+              "box": {
+                "x": 369.296875,
+                "y": 1820.296875,
+                "width": 203.46875,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "THE ANASTASIS SHIFT\n\nMake a little room for yourself.\n\nA forthcoming reflection guide about noticing what works for you, making space in a full life, and choosing manageable next steps.\n\nCOMING SOON\nBegin with what fits your life.\n\nYou already make decisions for a full day. The Anastasis Shift is being developed as a place to pause, consider your own priorities, and think about the routines you want to make room for.\n\nThe planned guide explores:\nYour priorities\nNoticing your patterns\nDaily structure\nMaking room for yourself\nManageable routines\nChoosing what comes next\nWritten with a full life in mind.\n\nYou may be balancing work, relationships, family, or a changing schedule. The guide is intended for women who want time to reflect on what is practical and meaningful for them.\n\nThe guide is in development.\n\nThe Anastasis Shift is not available yet. You can explore the current programs while the guide is being prepared, and decide whether one fits what you want now.\n\nJoin The Waitlist\nReturn to Application\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/desktop-guide-viewport.png",
+          "fullScreenshot": "screenshots/desktop-guide-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/program/phoenix/support",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "scrollWidth": 1440,
+          "h1": [
+            {
+              "text": "Take time to choose your starting point.",
+              "box": {
+                "x": 180,
+                "y": 84,
+                "width": 760,
+                "height": 36.484375
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Continue",
+              "href": "/program/phoenix/support/apply",
+              "disabled": false,
+              "box": {
+                "x": 180,
+                "y": 380.90625,
+                "width": 116.953125,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "Take time to choose your starting point.\n\nCost, timing, and available capacity are part of the decision.\n\nReview the current program options and billing details before choosing. You can decide which tools would be useful and whether this is the right time to begin.\n\nThis page does not confirm an alternative payment arrangement or place on a program. Any available terms need to be confirmed before enrollment.\n\nContinue\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/desktop-program_phoenix_support-viewport.png",
+          "fullScreenshot": "screenshots/desktop-program_phoenix_support-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/support",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "scrollWidth": 1440,
+          "h1": [
+            {
+              "text": "Help with your account or billing.",
+              "box": {
+                "x": 180,
+                "y": 134,
+                "width": 760,
+                "height": 36.484375
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Anastasis.elite@gmail.com",
+              "href": "mailto:Anastasis.elite@gmail.com?subject=Account%20Support",
+              "disabled": false,
+              "box": {
+                "x": 205,
+                "y": 298.71875,
+                "width": 171.515625,
+                "height": 16
+              },
+              "clipped": false
+            },
+            {
+              "text": "Account billing",
+              "href": "/dashboard/account#billing",
+              "disabled": false,
+              "box": {
+                "x": 205,
+                "y": 620.703125,
+                "width": 159.03125,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Billing and refund policy",
+              "href": "/refund-policy",
+              "disabled": false,
+              "box": {
+                "x": 380.03125,
+                "y": 620.703125,
+                "width": 224.390625,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "CUSTOMER SUPPORT\n\nHelp with your account or billing.\nContact support\n\nFor a question about your account or something that is not working as expected, email Anastasis.elite@gmail.com. Include your account email, program, the page where it happened, and any error message. Tell us what you tried, any confirmation you saw, and what still needs checking. A screenshot can help. Keep passwords, payment card details, and private health information out of your email.\n\nBilling help or cancellation\n\nOpen Billing & Subscriptions in your account to manage an eligible paid subscription. If billing management is unavailable or you need help with a charge or cancellation, email the same address with “Billing support” or “Cancellation request” in the subject. Include your account email and the date or receipt reference for the purchase. Gifted access has no paid subscription to cancel.\n\nAccount billing\nBilling and refund policy\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/desktop-support-viewport.png",
+          "fullScreenshot": "screenshots/desktop-support-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/audit",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "scrollWidth": 1440,
+          "h1": [
+            {
+              "text": "Find your currentcapacity.",
+              "box": {
+                "x": 180,
+                "y": 134,
+                "width": 760,
+                "height": 72.96875
+              }
+            }
+          ],
+          "actions": [
+            {
+              "text": "Exhausted",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 238,
+                "y": 1035.015625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Drained",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 420,
+                "y": 1035.015625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Managing",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 602,
+                "y": 1035.015625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Good",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 784,
+                "y": 1035.015625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Thriving",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 966,
+                "y": 1035.015625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Constantly",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 238,
+                "y": 1188.046875,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Most Days",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 420,
+                "y": 1188.046875,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Sometimes",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 602,
+                "y": 1188.046875,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Rarely",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 784,
+                "y": 1188.046875,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Almost Never",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 966,
+                "y": 1188.046875,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Almost None",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 238,
+                "y": 1341.078125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "15 Minutes",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 420,
+                "y": 1341.078125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "30 Minutes",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 602,
+                "y": 1341.078125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "1 Hour",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 784,
+                "y": 1341.078125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "More Than 1 Hour",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 966,
+                "y": 1341.078125,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Completely Alone",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 238,
+                "y": 1494.109375,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Limited Support",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 420,
+                "y": 1494.109375,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Some Support",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 602,
+                "y": 1494.109375,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Good Support",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 784,
+                "y": 1494.109375,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Strong Support",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 966,
+                "y": 1494.109375,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Surviving",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 238,
+                "y": 1647.140625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Regaining Consistency",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 420,
+                "y": 1647.140625,
+                "width": 198.984375,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Building Momentum",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 630.984375,
+                "y": 1647.140625,
+                "width": 186.875,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Optimizing",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 829.859375,
+                "y": 1647.140625,
+                "width": 170,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Performing Higher",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 1011.859375,
+                "y": 1647.140625,
+                "width": 173.46875,
+                "height": 74
+              },
+              "clipped": false
+            },
+            {
+              "text": "Terms of Use",
+              "href": "/terms",
+              "disabled": false,
+              "box": {
+                "x": 903.375,
+                "y": 1833.140625,
+                "width": 84.15625,
+                "height": 24.484375
+              },
+              "clipped": false
+            },
+            {
+              "text": "Health Disclaimer & Liability Waiver",
+              "href": "/conditions",
+              "disabled": false,
+              "box": {
+                "x": 275,
+                "y": 1866.796875,
+                "width": 234.84375,
+                "height": 24.484375
+              },
+              "clipped": false
+            },
+            {
+              "text": "See My Recommended Path",
+              "href": null,
+              "disabled": false,
+              "box": {
+                "x": 213,
+                "y": 1961.453125,
+                "width": 249.734375,
+                "height": 49
+              },
+              "clipped": false
+            },
+            {
+              "text": "Return to Program",
+              "href": "/program",
+              "disabled": false,
+              "box": {
+                "x": 478.734375,
+                "y": 1961.453125,
+                "width": 220,
+                "height": 49
+              },
+              "clipped": false
+            }
+          ],
+          "bodyText": "CAPACITY AUDIT\n\nFind your current\ncapacity.\n\nAbout 1–2 minutes. Five questions about energy, overwhelm, available time, support, and your current season. Your answers suggest a starting program to explore.\n\nYou do not need to have everything figured out.\n\nAnswer from where you are today. This brief public audit does not collect detailed nutrition, movement, symptoms, or a daily schedule. Members complete a separate, fuller onboarding assessment before their plan is created.\n\nYOUR INFORMATION\n\nName\nEmail Address\nYes, send me personalized insights, resources, and support based on my Capacity Audit results.\n\nCAPACITY SNAPSHOT\n\nHow does your energy feel most days?\nExhausted\nDrained\nManaging\nGood\nThriving\nHow often do you feel overwhelmed?\nConstantly\nMost Days\nSometimes\nRarely\nAlmost Never\nHow much uninterrupted time do you have for yourself most days?\nAlmost None\n15 Minutes\n30 Minutes\n1 Hour\nMore Than 1 Hour\nHow supported do you currently feel?\nCompletely Alone\nLimited Support\nSome Support\nGood Support\nStrong Support\nWhich statement feels most true today?\nSurviving\nRegaining Consistency\nBuilding Momentum\nOptimizing\nPerforming Higher\nBy submitting this Capacity Audit, I confirm that I have read, understand, and agree to the Terms of Use and Health Disclaimer & Liability Waiver.\nSee My Recommended Path\nReturn to Program\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/desktop-audit-viewport.png",
+          "fullScreenshot": "screenshots/desktop-audit-full.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:3161/program/phoenix/support/apply",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "scrollWidth": 1440,
+          "h1": [
+            {
+              "text": "404",
+              "box": {
+                "x": 579,
+                "y": 475.5,
+                "width": 69.3125,
+                "height": 49
+              }
+            }
+          ],
+          "actions": [],
+          "bodyText": "404\nThis page could not be found.\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/desktop-program_phoenix_support_apply-viewport.png",
+          "fullScreenshot": "screenshots/desktop-program_phoenix_support_apply-full.png",
+          "status": 404
+        },
+        {
+          "url": "http://127.0.0.1:3161/apply",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "scrollWidth": 1440,
+          "h1": [
+            {
+              "text": "404",
+              "box": {
+                "x": 579,
+                "y": 475.5,
+                "width": 69.3125,
+                "height": 49
+              }
+            }
+          ],
+          "actions": [],
+          "bodyText": "404\nThis page could not be found.\n\nAnastasis — Health & Performance Concierge Platform for Women\n\nWhat is Anastasis?\nPrograms\nAbout Anastasis\nTerms\nPrivacy\nHealth Disclaimer\nAI Disclaimer\nBilling / Refunds\nResearch Consent\nCustomer support\n\n© 2026 Anastasis Elite",
+          "viewportScreenshot": "screenshots/desktop-apply-viewport.png",
+          "fullScreenshot": "screenshots/desktop-apply-full.png",
+          "status": 404
+        }
+      ],
+      "assertions": [],
+      "homeCta": {
+        "text": "Find My Starting Point",
+        "href": "/audit",
+        "y": 1117.421875,
+        "priorCandidateY": 1229.984375,
+        "baselineY": 1143.984375,
+        "improvementFromPriorPx": 112.5625,
+        "deltaFromBaselinePx": -26.5625,
+        "aboveFold": false
+      }
+    }
+  ],
+  "requests": [
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/image?url=%2FLogo.png&w=256&q=75",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/audit?_rsc=1p-R_iEY6bj0jY31",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/what-is-anastasis?_rsc=1p-R_iEY6bj0jY31",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/what-is-anastasis/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/audit/page-7f72f6baf508bbf4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/what-is-anastasis?_rsc=ohGy2AIB4UPNq52N",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program/ignite",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/ignite/page-2289378c0f1f71e0.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/guide",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/AA8E8B4D-7C51-42CC-9C18-6B53F085A673.png",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/guide/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program/phoenix/support",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/phoenix/support/page-08e49d3209069361.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/what-is-anastasis?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/about?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/terms?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/privacy?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/health-disclaimer?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/ai-disclaimer?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/terms/page-0f132939363dc131.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/refund-policy?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/research-consent?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/about/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/support?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/ai-disclaimer/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/support",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/support/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/dashboard/account?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/refund-policy?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/audit",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/audit/page-7f72f6baf508bbf4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program/phoenix/support/apply",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/what-is-anastasis?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/about?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/terms?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/privacy?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/what-is-anastasis/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/health-disclaimer?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/ai-disclaimer?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/terms/page-0f132939363dc131.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/refund-policy?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/research-consent?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/support?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/ai-disclaimer/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/support/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/apply",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/what-is-anastasis?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/about?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/terms?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/privacy?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/what-is-anastasis/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/health-disclaimer?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/ai-disclaimer?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/refund-policy?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/terms/page-0f132939363dc131.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/research-consent?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/support?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/ai-disclaimer/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "mobile",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/support/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/image?url=%2FLogo.png&w=256&q=75",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/audit?_rsc=1p-R_iEY6bj0jY31",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/what-is-anastasis?_rsc=1p-R_iEY6bj0jY31",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/audit/page-7f72f6baf508bbf4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/what-is-anastasis/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/what-is-anastasis?_rsc=ohGy2AIB4UPNq52N",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program/ignite",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/ignite/page-2289378c0f1f71e0.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/guide",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/AA8E8B4D-7C51-42CC-9C18-6B53F085A673.png",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/guide/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program/phoenix/support",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/phoenix/support/page-08e49d3209069361.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/what-is-anastasis?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/about?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/terms?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/privacy?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/health-disclaimer?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/ai-disclaimer?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/about/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/refund-policy?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/terms/page-0f132939363dc131.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/research-consent?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/support?_rsc=pgqpDyXmCmzIbzLM",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/ai-disclaimer/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/support/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/support",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/support/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/dashboard/account?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/refund-policy?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/what-is-anastasis?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/about?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/terms?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/privacy?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/what-is-anastasis/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/health-disclaimer?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/ai-disclaimer?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/about/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/research-consent?_rsc=pKVJK5jlctI8Cp3w",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/terms/page-0f132939363dc131.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/audit",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/audit/page-7f72f6baf508bbf4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program/phoenix/support/apply",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/what-is-anastasis?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/about?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/terms?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/privacy?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/what-is-anastasis/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/health-disclaimer?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/terms/page-0f132939363dc131.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/ai-disclaimer?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/refund-policy?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/research-consent?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/support?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/ai-disclaimer/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/support/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/apply",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/css/ce7bbfb7a48b1559.css",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/webpack-9aaabe492a5e9490.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/4bd1b696-100b9d70ed4e49c1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/main-app-a563746bfb26ca8b.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/44530001-a9ce8b2fb3979725.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/2619-04bc32f026a0d946.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/5376-04a3d57f5f04927f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1613-a701df7af84812ca.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/1356-b1f982685cfcaf9f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/page-a586866ba0f50605.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/what-is-anastasis?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/program?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/about?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/terms?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/privacy?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/what-is-anastasis/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/health-disclaimer?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/terms/page-0f132939363dc131.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/ai-disclaimer?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/program/page-585aaaa15c6bc38f.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/refund-policy?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/research-consent?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/support?_rsc=0JRbJX4JgpfuvHsr",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/ai-disclaimer/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    },
+    {
+      "device": "desktop",
+      "method": "GET",
+      "url": "http://127.0.0.1:3161/_next/static/chunks/app/support/page-86b5483190751ca8.js",
+      "disposition": "loopback-read-allowed"
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/program",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/program/ignite",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/guide",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/program/phoenix/support",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/support",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/support",
+      "text": "Connecting to 'https://localhost:3161/login?redirect=%2Fdashboard%2Faccount#billing' violates the following Content Security Policy directive: \"connect-src 'self' http://127.0.0.1:9 https://*.supabase.co http://127.0.0.1:9 https://us.posthog.com https://us.i.posthog.com\". The action has been blocked."
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/support",
+      "text": "Failed to fetch RSC payload for http://127.0.0.1:3161/dashboard/account#billing. Falling back to browser navigation. TypeError: Failed to fetch\n    at y (http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js:1:44440)\n    at async _ (http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js:1:43298)\n    at async Object.o [as task] (http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js:1:123896)"
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/audit",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/program/phoenix/support/apply",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/program/phoenix/support/apply",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/apply",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "device": "mobile",
+      "url": "http://127.0.0.1:3161/apply",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/program",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/program/ignite",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/guide",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/program/phoenix/support",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/support",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/support",
+      "text": "Connecting to 'https://localhost:3161/login?redirect=%2Fdashboard%2Faccount#billing' violates the following Content Security Policy directive: \"connect-src 'self' http://127.0.0.1:9 https://*.supabase.co http://127.0.0.1:9 https://us.posthog.com https://us.i.posthog.com\". The action has been blocked."
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/support",
+      "text": "Failed to fetch RSC payload for http://127.0.0.1:3161/dashboard/account#billing. Falling back to browser navigation. TypeError: Failed to fetch\n    at y (http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js:1:44440)\n    at async _ (http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js:1:43298)\n    at async Object.o [as task] (http://127.0.0.1:3161/_next/static/chunks/1255-60d8dc7c8c9309a1.js:1:123896)"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/audit",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/program/phoenix/support/apply",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/program/phoenix/support/apply",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/apply",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "device": "desktop",
+      "url": "http://127.0.0.1:3161/apply",
+      "text": "Service worker registration failed: TypeError: Cannot read properties of undefined (reading 'addEventListener')\n    at http://127.0.0.1:3161/_next/static/chunks/app/layout-7d009540d3cd03e4.js:1:1617"
+    }
+  ],
+  "failures": [],
+  "finished": "2026-10-18T13:49:23.401Z"
+}

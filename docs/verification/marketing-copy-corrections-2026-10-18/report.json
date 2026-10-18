@@ -1,0 +1,179 @@
+{
+  "status": "CORRECTED_LOCAL_COPY_CANDIDATE_VALIDATED; NO_RELEASE_APPROVAL",
+  "tested_source_commit": "7ab6190d1fb79ff22701414a912a4b541e218815",
+  "prior_candidate": "4b049d530a45e296dbbd8afeadd3b5d97ffc97a0",
+  "base": "84b16efd3320ab15625f8dd4566df352d5f12ee4",
+  "branch": "codex/marketing-copy-alignment",
+  "checkout": "/private/tmp/anastasis-copy-alignment.zQFD73/Website-v2",
+  "source_files": [
+    "app/page.tsx",
+    "app/program/ignite/page.tsx",
+    "app/program/page.tsx"
+  ],
+  "source_file_sha256": {
+    "app/page.tsx": "562b1bc8c2b28a7b6c7d5f3cb0dd2b1dd3758b1d222453333544ab18e76a6940",
+    "app/program/ignite/page.tsx": "4ff611c08b26e6a8584c0ee8bad4b8c999c262f100de11fcaddbaffd45c01376",
+    "app/program/page.tsx": "7d8c4b8d212ff79c209c41c41afb04366a130aeb39fea9552fc5af049a53cc55"
+  },
+  "founder_hero": "You carry enough. Your health shouldn\u2019t be one more thing you have to figure out.",
+  "reference": "Same complete225-line/four-page founder manual read via Library libfile_ad440f60bf308191820c6ddddbfef35c / file_000000005e7c81fdabdb8aeabee6eb1f; no replacement manual or DOCX materialization.",
+  "prior_independent_review": "/Users/lynkayfaiavelin/Documents/Codex/2026-10-17/task-3/marketing-copy-review-4b049d5/result.json and browser-review/README.md",
+  "changes": [
+    "Shortened homepage descriptor/question/reassurance and replaced two body paragraphs with one concise contextual sentence. Exact founder h1, CTA labels/destinations, styles of retained elements and all handlers remain.",
+    "IGNITE h1 now Guidance with more context.",
+    "Comparison goal now refined resilience."
+  ],
+  "preservation": "Three source files only, independently read; two raw copy-neutral ASTmatches. Homepage raw mismatch is exactly one removed redundant paragraph and its own presentation styles, including removed lineHeight1.8 andmargin0. After explicit exact-block normalization all3trees/protectedvalues match. No formula/numeric-price/entitlement/route/handler/security/legal/clinical change. See preservation-final.json.",
+  "checks": {
+    "tests": {
+      "tests": 596,
+      "passed": 596,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "log": "tests-corrected-final.log"
+    },
+    "typescript": {
+      "exit": 0,
+      "log": "typecheck-final.log"
+    },
+    "lint": {
+      "exit": 0,
+      "warnings": 37,
+      "log": "lint-final.log"
+    },
+    "build": {
+      "exit": 0,
+      "warnings": 37,
+      "log": "build-final-cache-disabled.log",
+      "qualification": "Full Next production build with only optional Webpack filesystem cache disabled in an external preload. Application/Next source configuration unchanged. Server/edge/client compiler logs confirm cache override. Standard final attempt compiled/static-rendered but failed ENOSPC while writing traces. Cache-control first attempt hit a harness circular-initialization error; Proxy correction passed. Guard and all compilation/runtime rules remain intact."
+    },
+    "visual": {
+      "viewport_sizes": [
+        {
+          "width": 390,
+          "height": 844
+        },
+        {
+          "width": 1440,
+          "height": 1000
+        }
+      ],
+      "route_capture_receipts": 18,
+      "expected_200": 14,
+      "expected_404": 4,
+      "failures": [],
+      "page_errors": [],
+      "console_errors": 26,
+      "console_explanation": "18 blocked-service-worker registration errors,4 expected404 messages,2 local auth-prefetch CSP and2 fallback RSC messages. No zero-console claim. All355 routed requests were allowed localhost reads; all API/remote/mutation routes are mocked/blocked by harness, plus guarded server synthetic configuration.",
+      "overflow": false,
+      "clipped_action_labels": false,
+      "log": "visual-report.json",
+      "screenshot_review": "Root viewed final mobile home viewport and desktop home CTA; independent strength reviewer viewed final mobile/desktop Ignite viewport and full comparison pages (four more images). No blocking visual issue identified in these six inspected images."
+    },
+    "diff_check": {
+      "exit": 0
+    },
+    "initial_concurrent_test_run": "tests.log contains an incomplete42-line run that exited1 without a test summary during concurrent build; no cause inferred or pass counted. Subsequent complete runs passed596.",
+    "cleanup": "Review-owned server PID98837 exited0 afterSIGINT; listener inventory found no3161listener. Browser contexts/browser close in finally."
+  },
+  "home_cta_coordinates": [
+    {
+      "device": "mobile",
+      "text": "Find My Starting Point",
+      "href": "/audit",
+      "y": 1363.421875,
+      "priorCandidateY": 1537.5,
+      "baselineY": 1484.3125,
+      "improvementFromPriorPx": 174.078125,
+      "deltaFromBaselinePx": -120.890625,
+      "aboveFold": false
+    },
+    {
+      "device": "desktop",
+      "text": "Find My Starting Point",
+      "href": "/audit",
+      "y": 1117.421875,
+      "priorCandidateY": 1229.984375,
+      "baselineY": 1143.984375,
+      "improvementFromPriorPx": 112.5625,
+      "deltaFromBaselinePx": -26.5625,
+      "aboveFold": false
+    }
+  ],
+  "coordinate_qualification": "Current coordinates measured on actual corrected production build. Prior candidate and baseline coordinates are from supplied independent review; baseline was a synthetic baseline route with shared candidate styles/components, not a production baseline.",
+  "link_proposals": [
+    {
+      "file": "app/program/phoenix/support/page.tsx",
+      "line": 31,
+      "current_label": "Continue",
+      "current_destination": "/program/phoenix/support/apply",
+      "observed": "Local404 at both final viewports; no matching route/redirect/catch-all.",
+      "proposed_label": "Compare current programs",
+      "proposed_destination": "/program",
+      "reason": "Existing comparison page matches cost/timing/options copy; creates no support-service or alternative-payment promise.",
+      "state": "PROPOSED_ONLY; parent direction required; no source link change."
+    },
+    {
+      "file": "app/guide/page.tsx",
+      "line": 131,
+      "current_label": "Join The Waitlist",
+      "current_destination": "https://checkout.anastasiselite.com/b/fZu3cu7rdgQvc5T8D74ko02",
+      "observed": "External destination not opened; no local waitlist page/form/handler found; guide says unavailable.",
+      "proposed_label": "Explore current programs",
+      "proposed_destination": "/program",
+      "reason": "Existing route matches nearby invitation to explore programs while the guide is being prepared; does not invent a waitlist or activate commerce.",
+      "state": "PROPOSED_ONLY; parent direction required; no source link change."
+    },
+    {
+      "file": "app/guide/page.tsx",
+      "line": 139,
+      "current_label": "Return to Application",
+      "current_destination": "/apply",
+      "observed": "Local404 at both final viewports. /api/apply is a separate submission endpoint, not a page.",
+      "proposed_label": "Take the Capacity Audit",
+      "proposed_destination": "/audit",
+      "reason": "Actual public audit route exists and renders200 in both final viewports.",
+      "state": "PROPOSED_ONLY; parent direction required; no source link change."
+    }
+  ],
+  "other_existing_apply_links": [
+    "app/program/support_first/page.tsx:59",
+    "app/medical_clearance_needed/page.tsx:37"
+  ],
+  "remaining_issues": [
+    "Primary home action remains belowfold at390x844 and1440x1000 despite recovering the introduced distance; no layout/style redesign or no-scroll acceptance closure claimed.",
+    "Missing /program/phoenix/support/apply and /apply destinations remain unchanged and reproduce404; proposed replacements require parent direction. External guide checkout/waitlist destination not followed or verified.",
+    "Inherited EMBER micronutrient UI/API exposure still conflicts with intended exclusion. No gate change; held functional correction and isolated acceptance remain separate.",
+    "Ovulatory clinical wording unchanged; founder/qualified review remains.",
+    "Live Auth/API/RLS/persistence, realcommerce/email/providers, fullmemberjourney/native and physicalPWA acceptance remain unrun; strength migration unapplied."
+  ],
+  "operations": {
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "migration": false,
+    "production_data_or_api_write": false,
+    "external_checkout_opened": false,
+    "functional_link_changes": false,
+    "original_downloads_checkout_modified": false
+  },
+  "blockers": {
+    "denied": [],
+    "pending_approval_for_executed_actions": [],
+    "uncertain_external_outcomes": [],
+    "functional_changes": "Proposed link correction only, pending parent direction; not an attempted/denied operation.",
+    "recovered": "Sandbox bind/MachPort/process operations required exact reviewed escalations, all approved; default final build hitENOSPC, cache-disabled external verification override passed; intermediate cache-hook circular-initialization error corrected. No failed/incomplete run counted as pass."
+  },
+  "disposition": "Ready for corrected copy review and next isolated acceptance with explicit unresolved gates; not productionrelease approval. Parent owns existing ledger.",
+  "executed_commands": [
+    "node docs/verification/marketing-copy-alignment-2026-10-18/run-isolated.mjs test tests/*.test.mjs",
+    "node docs/verification/marketing-copy-alignment-2026-10-18/run-isolated.mjs typecheck",
+    "node docs/verification/marketing-copy-alignment-2026-10-18/run-isolated.mjs lint",
+    "node ../run-correction.mjs build",
+    "node ../serve-correction.cjs",
+    "node ../correction-evidence/visual-check.cjs"
+  ],
+  "retained_script_paths": "Exact executed scripts retained for audit. Original runner/cache-control pair executes from parent directory adjacent to Website-v2 and its evidence/isolation.cjs, not directly from this evidence copy. Server uses explicit local root; visual script writes beside itself. Source and tool paths are explicit; no claimed portable one-command replay.",
+  "priority_update": "Founder priority is EMBER launch readiness. This task stops after the bounded three-page corrections, verification and handoff; discretionary IGNITE/PHOENIX expansion and broader polish deferred. Parent task-1 owns consolidated EMBER functional/schema/isolation gates; shared checkouts untouched."
+}

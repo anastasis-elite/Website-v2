@@ -1,0 +1,10 @@
+const { spawn } = require('node:child_process')
+const path = require('node:path')
+const root = '/tmp/anastasis-copy-alignment.zQFD73/Website-v2'
+const { isolatedEnvironment, assertNoEnvironmentFiles } = require(path.join(root, 'docs/verification/marketing-copy-alignment-2026-10-18/isolation.cjs'))
+assertNoEnvironmentFiles(root)
+const env = isolatedEnvironment({ PATH: process.env.PATH, TMPDIR: '/tmp', TZ: 'UTC' }, { loopback: true, nodeEnv: 'production' })
+console.log('[isolated visual server] owner PID', process.pid)
+const child = spawn(process.execPath, [path.join(root, 'node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', '3161'], { cwd: root, env, stdio: 'inherit' })
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal))
+child.on('exit', code => { process.exitCode = code ?? 1 })

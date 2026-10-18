@@ -1,0 +1,21 @@
+CAPTURE mobile / 200
+CAPTURE mobile /program 200
+CAPTURE mobile /program/ignite 200
+CAPTURE mobile /guide 200
+CAPTURE mobile /program/phoenix/support 200
+CAPTURE mobile /support 200
+CAPTURE mobile /audit 200
+CAPTURE mobile /program/phoenix/support/apply 404
+CAPTURE mobile /apply 404
+AssertionError [ERR_ASSERTION]: [{"device":"desktop","error":"AssertionError [ERR_ASSERTION]: copy should recover the introduced CTA distance\n    at /private/tmp/anastasis-copy-alignment.zQFD73/correction-evidence/visual-check.cjs:56:20"}]
+
+1 !== 0
+
+    at /private/tmp/anastasis-copy-alignment.zQFD73/correction-evidence/visual-check.cjs:70:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 1,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}

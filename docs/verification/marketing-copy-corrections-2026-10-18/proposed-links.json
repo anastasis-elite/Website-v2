@@ -1,0 +1,35 @@
+[
+  {
+    "file": "app/program/phoenix/support/page.tsx",
+    "line": 31,
+    "current_label": "Continue",
+    "current_destination": "/program/phoenix/support/apply",
+    "observed": "Local404 at both final viewports; no matching route/redirect/catch-all.",
+    "proposed_label": "Compare current programs",
+    "proposed_destination": "/program",
+    "reason": "Existing comparison page matches cost/timing/options copy; creates no support-service or alternative-payment promise.",
+    "state": "PROPOSED_ONLY; parent direction required; no source link change."
+  },
+  {
+    "file": "app/guide/page.tsx",
+    "line": 131,
+    "current_label": "Join The Waitlist",
+    "current_destination": "https://checkout.anastasiselite.com/b/fZu3cu7rdgQvc5T8D74ko02",
+    "observed": "External destination not opened; no local waitlist page/form/handler found; guide says unavailable.",
+    "proposed_label": "Explore current programs",
+    "proposed_destination": "/program",
+    "reason": "Existing route matches nearby invitation to explore programs while the guide is being prepared; does not invent a waitlist or activate commerce.",
+    "state": "PROPOSED_ONLY; parent direction required; no source link change."
+  },
+  {
+    "file": "app/guide/page.tsx",
+    "line": 139,
+    "current_label": "Return to Application",
+    "current_destination": "/apply",
+    "observed": "Local404 at both final viewports. /api/apply is a separate submission endpoint, not a page.",
+    "proposed_label": "Take the Capacity Audit",
+    "proposed_destination": "/audit",
+    "reason": "Actual public audit route exists and renders200 in both final viewports.",
+    "state": "PROPOSED_ONLY; parent direction required; no source link change."
+  }
+]

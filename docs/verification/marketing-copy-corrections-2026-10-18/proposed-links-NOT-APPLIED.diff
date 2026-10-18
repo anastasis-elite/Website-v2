@@ -1,0 +1,26 @@
+--- a/app/program/phoenix/support/page.tsx
++++ b/app/program/phoenix/support/page.tsx
+@@ -31,2 +31,2 @@
+-          <a href="/program/phoenix/support/apply" style={styles.primaryButtonStyle}>
+-            Continue
++          <a href="/program" style={styles.primaryButtonStyle}>
++            Compare current programs
+--- a/app/guide/page.tsx
++++ b/app/guide/page.tsx
+@@ -130,8 +130,3 @@
+-          <a
+-  href="https://checkout.anastasiselite.com/b/fZu3cu7rdgQvc5T8D74ko02"
+-  target="_blank"
+-  rel="noopener noreferrer"
+-  style={styles.primaryButtonStyle}
+->
+-  Join The Waitlist
+-</a>
++          <Link href="/program" style={styles.primaryButtonStyle}>
++            Explore current programs
++          </Link>
+@@ -139,2 +134,2 @@
+-          <Link href="/apply" style={styles.secondaryButtonStyle}>
+-            Return to Application
++          <Link href="/audit" style={styles.secondaryButtonStyle}>
++            Take the Capacity Audit

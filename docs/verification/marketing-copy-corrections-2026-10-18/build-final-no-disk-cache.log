@@ -1,0 +1,2 @@
+unhandledRejection ReferenceError: Cannot access 'NODE_BASE_ESM_RESOLVE_OPTIONS' before initialization
+    at Module._load (../cache-control.cjs:16:54)

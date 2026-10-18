@@ -1,0 +1,314 @@
+   ▲ Next.js 15.5.28
+
+   Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (101kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (231kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOSPC: no space left on device, write
+ ✓ Compiled successfully in 13.1s
+   Linting and checking validity of types ...
+
+./app/admin/dashboard-preview/page.tsx
+107:9  Warning: 'lesson' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/audits/[id]/page.tsx
+4:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/audits/page.tsx
+4:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/clients/[id]/page.tsx
+4:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/clients/page.tsx
+4:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/page.tsx
+3:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/qa/adapters/platform-adapter.ts
+7:54  Warning: '_options' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/tasks/page.tsx
+4:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/api/marketing/video-generate/route.ts
+58:3  Warning: 'pillar' is defined but never used.  @typescript-eslint/no-unused-vars
+59:3  Warning: 'platform' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/guide/page.tsx
+3:8  Warning: 'Image' is defined but never used.  @typescript-eslint/no-unused-vars
+37:3  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/legal/acceptance/page.tsx
+6:10  Warning: 'EFFECTIVE_DATE' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/medical_clearance_needed/page.tsx
+3:15  Warning: 'CSSProperties' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/medical_review_needed/page.tsx
+3:15  Warning: 'CSSProperties' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/program/ember/recommend/page.tsx
+3:15  Warning: 'CSSProperties' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/program/ignite/page.tsx
+5:15  Warning: 'CSSProperties' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./components/AuthButton.tsx
+81:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./components/DashboardFlowCarousel.tsx
+39:3  Warning: 'client' is defined but never used.  @typescript-eslint/no-unused-vars
+41:3  Warning: 'todaysWorkout' is defined but never used.  @typescript-eslint/no-unused-vars
+42:3  Warning: 'adjustedExercises' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+43:3  Warning: 'output' is defined but never used.  @typescript-eslint/no-unused-vars
+44:3  Warning: 'cycleAdjustment' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./components/MeasurementAssessment.tsx
+752:3  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./components/TrackEvent.tsx
+15:6  Warning: React Hook useEffect has a missing dependency: 'properties'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./lib/legal/logRecommendationAudit.ts
+70:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./lib/nutrition/calculateMicronutrientTargets.ts
+153:7  Warning: 'seleniumTargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+154:7  Warning: 'cholesterolLimitMg' is never reassigned. Use 'const' instead.  prefer-const
+157:7  Warning: 'vitaminATargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+159:7  Warning: 'vitaminDTargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+160:7  Warning: 'vitaminETargetMg' is never reassigned. Use 'const' instead.  prefer-const
+161:7  Warning: 'vitaminKTargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+165:7  Warning: 'b3TargetMg' is never reassigned. Use 'const' instead.  prefer-const
+166:7  Warning: 'b5TargetMg' is never reassigned. Use 'const' instead.  prefer-const
+168:7  Warning: 'b9TargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+169:7  Warning: 'b12TargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+
+./lib/safety/evaluateSafetyEscalation.ts
+21:103  Warning: '_patterns' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/166) ...
+   Generating static pages (41/166)
+   Generating static pages (82/166)
+   Generating static pages (124/166)
+ ✓ Generating static pages (166/166)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                       Size  First Load JS
+┌ ○ /                                           2.4 kB         114 kB
+├ ○ /_not-found                                   1 kB         104 kB
+├ ○ /about                                      2.4 kB         114 kB
+├ ƒ /admin/dashboard-preview                   7.61 kB         119 kB
+├ ƒ /admin/gift-client                         2.56 kB         105 kB
+├ ƒ /admin/social/connect-tiktok               1.98 kB         108 kB
+├ ○ /ai-disclaimer                               202 B         107 kB
+├ ƒ /aos                                       2.87 kB         109 kB
+├ ○ /aos-login                                 2.37 kB         170 kB
+├ ƒ /aos/analytics                             2.86 kB         109 kB
+├ ƒ /aos/audits                                  202 B         107 kB
+├ ƒ /aos/audits/[id]                             436 B         103 kB
+├ ƒ /aos/clients                                 202 B         107 kB
+├ ƒ /aos/clients/[id]                            436 B         103 kB
+├ ƒ /aos/legal                                   436 B         103 kB
+├ ƒ /aos/marketing                             1.81 kB         105 kB
+├ ƒ /aos/qa                                    3.17 kB         106 kB
+├ ƒ /aos/qa/api/daily                            436 B         103 kB
+├ ƒ /aos/qa/api/reports                          436 B         103 kB
+├ ƒ /aos/qa/api/run                              436 B         103 kB
+├ ƒ /aos/revenue                               2.41 kB         105 kB
+├ ƒ /aos/social                                  202 B         107 kB
+├ ƒ /aos/tasks                                   202 B         107 kB
+├ ƒ /api/account/password                        436 B         103 kB
+├ ƒ /api/account/profile                         436 B         103 kB
+├ ƒ /api/admin/gift-client                       436 B         103 kB
+├ ƒ /api/aos/analytics                           436 B         103 kB
+├ ƒ /api/aos/revenue                             436 B         103 kB
+├ ƒ /api/aos/social/sync                         436 B         103 kB
+├ ƒ /api/apply                                   436 B         103 kB
+├ ƒ /api/assessment                              436 B         103 kB
+├ ƒ /api/assessment-photos/landmarks             436 B         103 kB
+├ ƒ /api/assessment-photos/upload                436 B         103 kB
+├ ƒ /api/assessment-strength                     436 B         103 kB
+├ ƒ /api/assessment-window/save                  436 B         103 kB
+├ ƒ /api/auth/create-login                       436 B         103 kB
+├ ƒ /api/auth/login                              436 B         103 kB
+├ ƒ /api/auth/logout                             436 B         103 kB
+├ ƒ /api/billing/portal                          436 B         103 kB
+├ ƒ /api/calendars                               436 B         103 kB
+├ ƒ /api/calendars/[id]                          436 B         103 kB
+├ ƒ /api/calendars/[id]/sync                     436 B         103 kB
+├ ƒ /api/calendars/availability                  436 B         103 kB
+├ ƒ /api/calendars/cron                          436 B         103 kB
+├ ƒ /api/calendars/events                        436 B         103 kB
+├ ƒ /api/calendars/events/[id]                   436 B         103 kB
+├ ƒ /api/calendars/google/callback               436 B         103 kB
+├ ƒ /api/calendars/google/connect                436 B         103 kB
+├ ƒ /api/calendars/icloud                        436 B         103 kB
+├ ƒ /api/calendars/preferences                   436 B         103 kB
+├ ƒ /api/check-access                            436 B         103 kB
+├ ƒ /api/checkout                                436 B         103 kB
+├ ƒ /api/cycle                                   436 B         103 kB
+├ ƒ /api/cycle/flow                              436 B         103 kB
+├ ƒ /api/cycle/quick-log                         436 B         103 kB
+├ ƒ /api/cycle/quick-symptoms                    436 B         103 kB
+├ ƒ /api/cycle/start-period                      436 B         103 kB
+├ ƒ /api/daily-check-in                          436 B         103 kB
+├ ƒ /api/daily-structure                         436 B         103 kB
+├ ƒ /api/daily-structure/no-change               436 B         103 kB
+├ ƒ /api/daily-structure/schedule                436 B         103 kB
+├ ƒ /api/dashboard/activities                    436 B         103 kB
+├ ƒ /api/dashboard/preferences                   436 B         103 kB
+├ ƒ /api/day-block/complete                      436 B         103 kB
+├ ƒ /api/email                                   436 B         103 kB
+├ ƒ /api/internal/tiktok/auth                    436 B         103 kB
+├ ƒ /api/internal/tiktok/callback                436 B         103 kB
+├ ƒ /api/internal/tiktok/sync                    436 B         103 kB
+├ ƒ /api/internal/tiktok/videos/sync             436 B         103 kB
+├ ƒ /api/legal/accept                            436 B         103 kB
+├ ƒ /api/legal/feature-consent                   436 B         103 kB
+├ ƒ /api/marketing/generate                      436 B         103 kB
+├ ƒ /api/marketing/video-generate                436 B         103 kB
+├ ƒ /api/measurements                            436 B         103 kB
+├ ƒ /api/mobile/actions/recovery                 436 B         103 kB
+├ ƒ /api/mobile/actions/water                    436 B         103 kB
+├ ƒ /api/mobile/dashboard                        436 B         103 kB
+├ ƒ /api/mobile/health/sync                      436 B         103 kB
+├ ƒ /api/mobile/schedule                         436 B         103 kB
+├ ƒ /api/mobile/schedule/[id]/complete           436 B         103 kB
+├ ƒ /api/mobile/schedule/[id]/defer              436 B         103 kB
+├ ƒ /api/nutrition                               436 B         103 kB
+├ ƒ /api/nutrition-log                           436 B         103 kB
+├ ƒ /api/nutrition/add-macros                    436 B         103 kB
+├ ƒ /api/nutrition/add-meal                      436 B         103 kB
+├ ƒ /api/nutrition/add-water                     436 B         103 kB
+├ ƒ /api/nutrition/barcode                       436 B         103 kB
+├ ƒ /api/nutrition/custom-food                   436 B         103 kB
+├ ƒ /api/nutrition/delete-meal                   436 B         103 kB
+├ ƒ /api/nutrition/nutrient-insights             436 B         103 kB
+├ ƒ /api/nutrition/photo-estimate                436 B         103 kB
+├ ƒ /api/nutrition/recurring-foods               436 B         103 kB
+├ ƒ /api/nutrition/search-foods                  436 B         103 kB
+├ ƒ /api/nutrition/serving-options               436 B         103 kB
+├ ƒ /api/nutrition/suggested-foods               436 B         103 kB
+├ ƒ /api/nutrition/supplement-recommendation     436 B         103 kB
+├ ƒ /api/onboarding/profile                      436 B         103 kB
+├ ƒ /api/phoenix/tasks                           436 B         103 kB
+├ ƒ /api/pricing                                 436 B         103 kB
+├ ƒ /api/program/generate                        436 B         103 kB
+├ ƒ /api/program/workout                         436 B         103 kB
+├ ƒ /api/quick-add-suggestions                   436 B         103 kB
+├ ƒ /api/recovery/activity                       436 B         103 kB
+├ ƒ /api/reference/hypertrophy-chart             436 B         103 kB
+├ ƒ /api/reference/master-key                    436 B         103 kB
+├ ƒ /api/reference/program-reference             436 B         103 kB
+├ ƒ /api/schedule                                436 B         103 kB
+├ ƒ /api/schedule/[id]                           436 B         103 kB
+├ ƒ /api/schedule/[id]/complete                  436 B         103 kB
+├ ƒ /api/schedule/[id]/defer                     436 B         103 kB
+├ ƒ /api/schedule/plan                           436 B         103 kB
+├ ƒ /api/sleep                                   436 B         103 kB
+├ ƒ /api/symptoms/log                            436 B         103 kB
+├ ƒ /api/symptoms/options                        436 B         103 kB
+├ ƒ /api/today-meals                             436 B         103 kB
+├ ƒ /api/tutorial-progress                       436 B         103 kB
+├ ƒ /api/webhooks/stripe                         436 B         103 kB
+├ ƒ /api/workout-feedback                        436 B         103 kB
+├ ƒ /api/workout-log                             436 B         103 kB
+├ ƒ /api/workout-set-log                         436 B         103 kB
+├ ○ /audit                                     4.87 kB         111 kB
+├ ƒ /audit/results/[auditId]                     679 B         107 kB
+├ ○ /conditions                                  677 B         104 kB
+├ ○ /consent/research                            436 B         103 kB
+├ ○ /create-login                              2.74 kB         106 kB
+├ ƒ /dashboard                                   436 B         103 kB
+├ ƒ /dashboard/account                         5.54 kB         112 kB
+├ ƒ /dashboard/assessment                        202 B         107 kB
+├ ƒ /dashboard/assessment/daily-structure      8.09 kB         114 kB
+├ ƒ /dashboard/assessment/measurements         5.41 kB         108 kB
+├ ƒ /dashboard/assessment/monthly                202 B         107 kB
+├ ƒ /dashboard/assessment/photos                 503 B         115 kB
+├ ƒ /dashboard/assessment/start                4.07 kB         122 kB
+├ ƒ /dashboard/assessment/start2               3.43 kB         110 kB
+├ ƒ /dashboard/check-in                        1.55 kB         120 kB
+├ ƒ /dashboard/community                       3.45 kB         106 kB
+├ ƒ /dashboard/cycle                            6.2 kB         113 kB
+├ ƒ /dashboard/day/[block]                     1.18 kB         107 kB
+├ ƒ /dashboard/main                              436 B         103 kB
+├ ƒ /dashboard/meditation                      1.35 kB         108 kB
+├ ƒ /dashboard/nutrition                       19.1 kB         199 kB
+├ ƒ /dashboard/nutrition/nutrients/[nutrient]    202 B         107 kB
+├ ƒ /dashboard/onboarding/plan                 2.16 kB         105 kB
+├ ƒ /dashboard/onboarding/profile              4.02 kB         107 kB
+├ ƒ /dashboard/payment-issue                   2.16 kB         105 kB
+├ ƒ /dashboard/program                           436 B         103 kB
+├ ƒ /dashboard/program/[program]                 817 B         125 kB
+├ ƒ /dashboard/program/[program]/plan            436 B         103 kB
+├ ƒ /dashboard/program/[program]/plan/content    436 B         103 kB
+├ ƒ /dashboard/program/[program]/workout       26.3 kB         141 kB
+├ ƒ /dashboard/program/ember/plan                436 B         103 kB
+├ ƒ /dashboard/program/ignite/plan               436 B         103 kB
+├ ƒ /dashboard/program/phoenix/plan              436 B         103 kB
+├ ƒ /dashboard/progress                          175 B         125 kB
+├ ƒ /dashboard/recovery                        5.77 kB         128 kB
+├ ƒ /dashboard/schedule                        8.24 kB         119 kB
+├ ƒ /dashboard/settings/calendars              4.71 kB         111 kB
+├ ƒ /dashboard/signup                           2.6 kB         106 kB
+├ ƒ /dashboard/sleep                           1.54 kB         104 kB
+├ ƒ /dashboard/symptoms                          436 B         103 kB
+├ ƒ /dashboard/workout                           436 B         103 kB
+├ ○ /guide                                       679 B         107 kB
+├ ○ /health-disclaimer                           436 B         103 kB
+├ ○ /incident-response                           436 B         103 kB
+├ ○ /instagram                                   436 B         103 kB
+├ ƒ /legal/acceptance                          2.95 kB         109 kB
+├ ○ /legal/compliance-roadmap                    436 B         103 kB
+├ ○ /login                                     2.42 kB         170 kB
+├ ○ /manifest.webmanifest                        436 B         103 kB
+├ ○ /medical_clearance_needed                    436 B         103 kB
+├ ○ /medical_review_needed                       436 B         103 kB
+├ ○ /nutritionist                                436 B         103 kB
+├ ○ /privacy                                     436 B         103 kB
+├ ○ /program                                     679 B         107 kB
+├ ○ /program/ember                             3.07 kB         109 kB
+├ ○ /program/ember/cart                        3.06 kB         109 kB
+├ ○ /program/ember/recommend                     677 B         104 kB
+├ ○ /program/ember/success                     3.05 kB         106 kB
+├ ○ /program/ember/why                           677 B         104 kB
+├ ○ /program/ignite                            3.14 kB         106 kB
+├ ○ /program/ignite/cart                        2.6 kB         106 kB
+├ ○ /program/ignite/recommend                    677 B         104 kB
+├ ○ /program/ignite/success                    3.04 kB         106 kB
+├ ○ /program/ignite/why                          677 B         104 kB
+├ ○ /program/phoenix                           3.19 kB         106 kB
+├ ○ /program/phoenix/cart                      2.66 kB         106 kB
+├ ○ /program/phoenix/recommend                   677 B         104 kB
+├ ○ /program/phoenix/success                   3.07 kB         106 kB
+├ ○ /program/phoenix/support                     677 B         104 kB
+├ ○ /program/phoenix/why                         677 B         104 kB
+├ ○ /program/support_first                       202 B         107 kB
+├ ○ /refund-policy                               436 B         103 kB
+├ ○ /research-consent                            436 B         103 kB
+├ ○ /robots.txt                                  436 B         103 kB
+├ ○ /sitemap.xml                                 436 B         103 kB
+├ ○ /substack                                    436 B         103 kB
+├ ○ /support                                     202 B         107 kB
+├ ○ /terms                                       166 B         106 kB
+├ ○ /tiktok                                      436 B         103 kB
+├ ƒ /verified                                    202 B         107 kB
+├ ○ /what-is-anastasis                           679 B         107 kB
+├ ○ /why                                         679 B         107 kB
+└ ○ /youtube                                     436 B         103 kB
++ First Load JS shared by all                   103 kB
+  ├ chunks/1255-60d8dc7c8c9309a1.js            46.3 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js        54.2 kB
+  └ other shared chunks (total)                 2.4 kB
+
+
+ƒ Middleware                                   90.5 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
