@@ -184,6 +184,8 @@ test('real assessment POST persists normalized day metadata and immutable answer
     assert.equal(Object.hasOwn(f.rows[0], field), false)
   }
   assert.equal(f.rows[0].work_start_time, '09:00')
+  assert.equal(f.rows[0].onboarding_data.routinePreferences.revision, 1)
+  assert.deepEqual(f.rows[0].onboarding_data.routinePreferences.answers, proof.answers)
   assert.deepEqual(f.rows[1], foreignBefore)
   assert.equal(f.invalidations, 1)
   assertOutcomesUnchanged(f)
@@ -216,6 +218,9 @@ test('assessment submissions from an old client preserve saved weekday metadata 
   assert.deepEqual(f.rows[0].onboarding_data.scheduleCommitmentWeekdays, before)
   const proof = getScheduleStructureSubmission(f.rows[0].onboarding_data, event)
   for (const field of dayFields) assert.equal(Object.hasOwn(proof.answers, field), false)
+  for (const field of dayFields) assert.deepEqual(f.rows[0].onboarding_data.routinePreferences.answers[field], before[field], 'mutable snapshot retains canonical omitted weekdays')
+  assert.equal(f.rows[0].onboarding_data.routinePreferences.revision, 1)
+  assert.equal(f.rows[0].onboarding_data.routinePreferences.answers.wake_time, '06:30')
   assert.equal(f.rows[0].wake_time, '06:30')
   assertOutcomesUnchanged(f)
 })
@@ -247,6 +252,7 @@ test('old-client routine edits preserve omitted day selections, while explicit i
   const f = fixture(), before = clone(f.rows[0].onboarding_data.scheduleCommitmentWeekdays)
   assert.equal((await routineRoute.POST(request(routineBody({ wake_time: '06:00' })))).status, 200)
   assert.deepEqual(f.rows[0].onboarding_data.scheduleCommitmentWeekdays, before)
+  for (const field of dayFields) assert.deepEqual(f.rows[0].onboarding_data.routinePreferences.answers[field], before[field])
   const response = await routineRoute.POST(request(routineBody({ expected_revision: 1,
     work_start_time: null, work_end_time: null, school_dropoff_time: null, school_pickup_time: null,
     work_days_of_week: [], school_dropoff_days_of_week: [], school_pickup_days_of_week: [] })))
@@ -254,6 +260,36 @@ test('old-client routine edits preserve omitted day selections, while explicit i
   for (const field of dayFields) assert.deepEqual(f.rows[0].onboarding_data.scheduleCommitmentWeekdays[field], [])
   assert.equal(f.rows[0].onboarding_data.routinePreferences.revision, 2)
   assertOutcomesUnchanged(f)
+})
+
+test('legacy assessment revision fallback rejects related changes during its CAS retry', async () => {
+  const f = fixture({ beforeWrite(row, attempt) {
+    if (attempt !== 1) return
+    row.wake_time = '08:30'
+    row.onboarding_data = { ...row.onboarding_data,
+      scheduleCommitmentWeekdays: { ...row.onboarding_data.scheduleCommitmentWeekdays, school_pickup_days_of_week: [0, 6] },
+      routinePreferences: { revision: 1, savedAt: '2026-10-12T14:59:00.000Z', answers: { ...legacyAnswers, wake_time: '08:30' } } }
+  } })
+  const response = await assessmentRoute.POST(request(submitBody(selectedDays)))
+  assert.equal(response.status, 409)
+  assert.equal(f.attempts.length, 1)
+  assert.equal(f.writes.length, 0)
+  assert.equal(f.rows[0].wake_time, '08:30')
+  assert.equal(f.rows[0].onboarding_data.routinePreferences.revision, 1)
+  assert.deepEqual(f.rows[0].onboarding_data.scheduleCommitmentWeekdays.school_pickup_days_of_week, [0, 6])
+  assert.equal(getScheduleStructureSubmission(f.rows[0].onboarding_data, event), null)
+  assert.equal(f.invalidations, 0)
+  assertOutcomesUnchanged(f)
+})
+
+test('invalid explicit assessment revision tokens fail before any preference or completion write', async () => {
+  const f = fixture(), before = clone(f.rows)
+  for (const expected_revision of [null, -1, 0.5, '0', {}, Number.MAX_SAFE_INTEGER]) {
+    assert.equal((await assessmentRoute.POST(request(submitBody({ expected_revision })))).status, 400)
+  }
+  assert.deepEqual(f.rows, before)
+  assert.equal(f.writes.length, 0)
+  assert.equal(f.invalidations, 0)
 })
 
 test('an unrelated CAS collision preserves the latest outcome and omitted school days before retrying a routine edit', async () => {

@@ -12,6 +12,7 @@ import {
 } from '@/lib/assessment/scheduleStructure'
 import { getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
 import { getCommitmentWeekdays, type CommitmentDayField } from '@/lib/assessment/commitmentWeekdays'
+import { getRoutinePreferencesRevision } from '@/lib/assessment/routinePreferences'
 
 type SearchParams = {
   eventId?: string | string[]
@@ -45,6 +46,7 @@ export default async function DailyStructureAssessmentPage({
   // answers rather than replacing them with an older profile's training values.
   const preferences = submission ? { ...client, ...submission.answers } : client
   const completedAt = submission?.submittedAt
+  const routineRevision = getRoutinePreferencesRevision(client.onboarding_data)
   const commitmentDays = (field: CommitmentDayField) => {
     if (!submission) return getCommitmentWeekdays(client, field)
     // Historical assessment days belong to its saved answers. Missing legacy
@@ -71,11 +73,12 @@ export default async function DailyStructureAssessmentPage({
         </header>
 
         <DailyStructureAssessment
-          key={`${assessmentVersion}:${taskKey}:${completedAt || 'pending'}`}
+          key={`${assessmentVersion}:${taskKey}:${completedAt || 'pending'}:${routineRevision}`}
           clientId={client.client_id}
           scheduleTimezone={getClientTimeZone(client)}
           eventId={task.id}
           assessmentVersion={assessmentVersion}
+          routineRevision={routineRevision}
           completedAt={completedAt}
           currentExecutionStyle={preferences.execution_style}
           currentCarouselStyle={preferences.carousel_style}

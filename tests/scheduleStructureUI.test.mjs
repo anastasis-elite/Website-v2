@@ -12,12 +12,15 @@ const validation = await importTs('lib/assessment/validateScheduleStructure.ts')
 const timezone = await importTs('lib/timezone.ts')
 const scheduleActions = await importTs('lib/schedule/actions.ts')
 const commitmentWeekdays = await importTs('lib/assessment/commitmentWeekdays.ts')
+const routinePreferences = await importTs('lib/assessment/routinePreferences.ts')
 function load(path, mocks, globals = {}) {
   const module = { exports: {} }
   const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
   } })
-  runInNewContext(outputText, { module, exports: module.exports, ...globals, require: name => mocks[name] || (name === '@/lib/assessment/commitmentWeekdays' ? commitmentWeekdays : require(name)) })
+  runInNewContext(outputText, { module, exports: module.exports, ...globals, require: name => mocks[name] ||
+    (name === '@/lib/assessment/commitmentWeekdays' ? commitmentWeekdays
+      : name === '@/lib/assessment/routinePreferences' ? routinePreferences : require(name)) })
   return module.exports.default
 }
 function nodes(tree, predicate) {
@@ -172,6 +175,45 @@ test('assessment and routine defaults reopen current saved weekday metadata with
   }
   assert.equal(routine.mode, 'routine')
   assert.equal(routine.routineRevision, 4)
+  assert.equal(pending.routineRevision, 4)
+})
+
+test('assessment sends the displayed shared revision and refreshes a conflict before a fresh form can save', async () => {
+  const stale = harness({ ...validProps, routineRevision: 4 })
+  stale.setSend((_url, options) => {
+    assert.equal(JSON.parse(options.body).expected_revision, 4)
+    return Response.json({ error: 'Your routine changed on another screen.' }, { status: 409 })
+  })
+  stale.submit(); await tick()
+  assert.equal(stale.calls[0].url, '/api/daily-structure')
+  assert.equal(stale.refreshes, 1)
+  assert.deepEqual(stale.navigation, [])
+  assert.equal(stale.announced, 0)
+  assert.match(text(stale.render()), /Your routine changed on another screen/)
+  const refreshed = harness({ ...validProps, routineRevision: 5 })
+  refreshed.setSend((_url, options) => {
+    const body = JSON.parse(options.body)
+    assert.equal(body.expected_revision, 5)
+    return confirmation(body)
+  })
+  refreshed.submit(); await tick()
+  assert.deepEqual(refreshed.navigation, ['/dashboard/schedule'])
+})
+
+test('a refreshed assessment page remounts its pending form when the shared preference revision changes', async () => {
+  const client = { client_id: 'qa-client', onboarding_data: { routinePreferences: { revision: 4 } } }
+  const pages = pageHarness(client)
+  const first = nodes(await pages.assessmentPage({ searchParams: Promise.resolve({ eventId: 'qa-weekdays' }) }),
+    node => node.props?.clientId === client.client_id)[0]
+  assert.equal(first.props.routineRevision, 4)
+  client.onboarding_data.routinePreferences.revision = 5
+  const next = nodes(await pages.assessmentPage({ searchParams: Promise.resolve({ eventId: 'qa-weekdays' }) }),
+    node => node.props?.clientId === client.client_id)[0]
+  assert.equal(next.props.routineRevision, 5)
+  assert.notEqual(first.key, next.key, 'React must discard stale local form state after conflict refresh')
+  assert.equal(first.props.eventId, next.props.eventId)
+  assert.equal(first.props.completedAt, undefined)
+  assert.equal(next.props.completedAt, undefined)
 })
 
 test('completed assessments reopen their own submitted weekdays instead of newer routine days', async () => {

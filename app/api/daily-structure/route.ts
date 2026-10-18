@@ -2,7 +2,8 @@ import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { updateOwnedOnboardingData } from '@/lib/dashboard/updateOnboardingData'
 import { getScheduleStructureMonth, getScheduleStructureSubmission, getScheduleStructureVersion, scheduleStructureMonthlyTask, scheduleStructureTaskKey, SCHEDULE_STRUCTURE_VERSION } from '@/lib/assessment/scheduleStructure'
 import { validateScheduleStructure } from '@/lib/assessment/validateScheduleStructure'
-import { mergeCommitmentWeekdays, scheduleStructureProfileFields } from '@/lib/assessment/commitmentWeekdays'
+import { scheduleStructureProfileFields } from '@/lib/assessment/commitmentWeekdays'
+import { getRoutinePreferencesRevision, mergeRoutinePreferences, RoutinePreferencesConflict } from '@/lib/assessment/routinePreferences'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getClientLocalDate } from '@/lib/timezone'
@@ -24,6 +25,10 @@ export async function POST(req: Request) {
     if (body.assessmentVersion !== SCHEDULE_STRUCTURE_VERSION) {
       return NextResponse.json({ error: 'This assessment has changed. Refresh the page and submit the current version.' }, { status: 409 })
     }
+    if (body.expected_revision !== undefined && (!Number.isSafeInteger(body.expected_revision) ||
+      body.expected_revision < 0 || body.expected_revision >= Number.MAX_SAFE_INTEGER)) {
+      return NextResponse.json({ error: 'Refresh your assessment before submitting.' }, { status: 400 })
+    }
     const validation = validateScheduleStructure(body)
     if ('error' in validation) return NextResponse.json({ error: validation.error }, { status: 400 })
     const { answers } = validation
@@ -34,6 +39,9 @@ export async function POST(req: Request) {
       .eq('client_id', body.client_id).eq('auth_user_id', user.id).maybeSingle()
     if (clientError) return NextResponse.json({ error: 'Your assessment could not be loaded. Try again.' }, { status: 500 })
     if (!client) return NextResponse.json({ error: 'Client not found for this user.' }, { status: 404 })
+    // Older clients have no form revision. Bind them to this first owned read so
+    // CAS retries cannot overwrite preferences saved while their request runs.
+    const expectedRevision = body.expected_revision ?? getRoutinePreferencesRevision(client.onboarding_data)
 
     const currentMonth = getClientLocalDate(client).slice(0, 7)
     const requestedMonth = body.eventId ? getScheduleStructureMonth(body.eventId) : currentMonth
@@ -75,7 +83,7 @@ export async function POST(req: Request) {
         // screen must not overwrite a newer assessment or profile preference.
         if (previous) return current
         const submission = { assessmentVersion: SCHEDULE_STRUCTURE_VERSION, eventId: event.id, submittedAt: now, answers }
-        return { ...mergeCommitmentWeekdays(current, answers), scheduleStructureAssessments: { ...assessments, [version]: { ...submissions, [taskKey]: submission } } }
+        return { ...mergeRoutinePreferences(current, expectedRevision, answers), scheduleStructureAssessments: { ...assessments, [version]: { ...submissions, [taskKey]: submission } } }
       },
       fields: (current, next) => {
         if (getScheduleStructureSubmission(current, event)) return {}
@@ -91,7 +99,10 @@ export async function POST(req: Request) {
     if (!result.saved) return NextResponse.json({ error: 'Your assessment could not be saved. Refresh and try again.' }, { status: result.status })
     invalidateDailyPlan()
     return NextResponse.json({ success: true, submission: getScheduleStructureSubmission(result.onboardingData, event) })
-  } catch {
+  } catch (error) {
+    if (error instanceof RoutinePreferencesConflict) {
+      return NextResponse.json({ error: 'Your routine changed on another screen. Refresh to review it before submitting.' }, { status: 409 })
+    }
     return NextResponse.json({ error: 'Your assessment could not be saved. Check your connection and try again.' }, { status: 500 })
   }
 }

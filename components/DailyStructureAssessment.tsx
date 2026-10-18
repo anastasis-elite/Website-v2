@@ -206,18 +206,18 @@ export default function DailyStructureAssessment({
           action: 'submit',
           client_id: clientId,
           assessmentVersion,
-          ...(editingRoutine ? { expected_revision: routineRevision } : {}),
+          expected_revision: routineRevision,
           ...(eventId ? { eventId } : {}),
           ...validation.answers,
         }),
       })
 
       const data = await response.json().catch(() => null)
+      if (response.status === 409) router.refresh()
 
       if (editingRoutine) {
         if (!response.ok || data?.success !== true || !data.routine ||
           data.routine.revision !== routineRevision + 1 || !Number.isFinite(Date.parse(data.routine.savedAt))) {
-          if (response.status === 409) router.refresh()
           throw new Error(data?.error || 'Your routine could not be saved. Please try again.')
         }
       } else if (
