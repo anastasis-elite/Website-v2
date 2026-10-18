@@ -797,7 +797,7 @@ setNutritionLog(log)
           <h1 id="nutrition-entry-title">{loggingIntent?.action === 'water' ? 'Log Water' : isEmber ? 'Nutrition Guidance' : loggingIntent?.action === 'meal' ? 'Log Meal' : 'Log Food'}</h1>
           <a href="/dashboard" className="tier-secondary-action">Done</a>
         </div>
-        {loggingIntent?.action !== 'water' && isEmber ? <p>EMBER includes macro targets, macro entry and water logging. Food and meal logging, micronutrient tracking and micronutrient guidance are not included.</p> : null}
+        {loggingIntent?.action !== 'water' && isEmber ? <p>EMBER includes macro targets, macro entry and water logging. Food and meal logging are not included.</p> : null}
         {loggingIntent?.action !== 'water' && directRecipe ? <details className="nutrition-entry-recipe-context"><summary>Recipe: {directRecipe.title}</summary><p>Log the foods and portions you ate from this recipe.</p><ul>{directRecipe.ingredientLines.map(ingredient => <li key={ingredient}>{ingredient}</li>)}</ul></details> : null}
         {loggingIntent?.action === 'water' ? waterEntry : foodEntry}
         {message ? <p className="nutrition-status" role="status">{message}</p> : null}

@@ -37,7 +37,7 @@ const focusAreas = [
   {
     title: 'Nutrition',
     body:
-      'EMBER includes calorie, macro, and hydration targets with quick macro entry. It excludes food and meal logging and micronutrient tracking or guidance. IGNITE and PHOENIX add food and meal logging and micronutrient features.',
+      'EMBER includes calorie, macro, and hydration targets with quick macro entry. It excludes food and meal logging. IGNITE and PHOENIX add food and meal logging and micronutrient features.',
   },
   {
     title: 'Recovery',

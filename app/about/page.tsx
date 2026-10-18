@@ -461,7 +461,7 @@ export default function AboutPage() {
             Your goals, assessments, check-ins, and recorded activity provide
             context for training and recovery guidance. Nutrition features vary
             by program. EMBER focuses on calories, macros, and hydration; it
-            does not include food or meal logging, or micronutrient tracking or guidance.
+            does not include food or meal logging.
           </p>
         </div>
       </section>

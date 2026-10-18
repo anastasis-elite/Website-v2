@@ -11,7 +11,7 @@ export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): Tuto
   const nutritionCopy: Record<ProgramTier, { title: string; description: string }> = {
     ember: {
       title: 'Macro logging',
-      description: 'Record protein, carbs, fats and calories as macro totals in EMBER. Food and meal logging, micronutrient tracking and micronutrient guidance are not included.',
+      description: 'Record protein, carbs, fats and calories as macro totals in EMBER. Food and meal logging are not included.',
     },
     ignite: {
       title: 'Meal logging',

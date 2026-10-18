@@ -81,7 +81,7 @@ export default function DirectNutritionEntry({
         <h1 id="nutrition-entry-title">{!capabilities.nutritionMealLogging ? 'Nutrition Guidance' : loggingIntent.action === 'meal' ? 'Log Meal' : 'Log Food'}</h1>
         <a className="tier-secondary-action" href="/dashboard">Done</a>
       </div>
-      {!capabilities.nutritionMealLogging ? <div><p>EMBER includes macro targets, macro entry and water logging. Food and meal logging, micronutrient tracking and micronutrient guidance are not included.</p><a className="tier-primary-action" href="/dashboard/nutrition">Open macro targets and entry</a></div>
+      {!capabilities.nutritionMealLogging ? <div><p>EMBER includes macro targets, macro entry and water logging. Food and meal logging are not included.</p><a className="tier-primary-action" href="/dashboard/nutrition">Open macro targets and entry</a></div>
           : <>
             {recipe ? <details className="nutrition-entry-recipe-context"><summary>Recipe: {recipe.title}</summary><p>Log the foods and portions you ate from this recipe.</p><ul>{recipe.ingredients.map(ingredient => <li key={ingredient}>{ingredient}</li>)}</ul></details> : null}
             {nutritionLog ? <NutritionFoodLogger key={nutritionLog.id} nutritionLogId={nutritionLog.id} timezone={timezone}

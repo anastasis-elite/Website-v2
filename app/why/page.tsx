@@ -169,8 +169,7 @@ export default function WhyPage() {
             <p style={experienceText}>Choose the program with the tools you want to use.</p>
             <p style={experienceText}>EMBER focuses on calories, macros, and hydration.</p>
             <p style={experienceText}>
-              It does not include food or meal logging, or micronutrient
-              tracking or guidance. IGNITE and PHOENIX add food logging and nutrient information.
+              It does not include food or meal logging. IGNITE and PHOENIX add food logging and nutrient information.
             </p>
             <p style={experienceText}>Your choices can reflect the time and attention you have.</p>
           </section>

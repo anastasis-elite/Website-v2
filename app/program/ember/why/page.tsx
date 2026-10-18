@@ -64,7 +64,7 @@ export default function EmberWhyPage() {
 
           <p style={styles.bodyStyle}>
             Ember includes macro targets and macro-total entry, rather than meal
-            logging, micronutrient tracking, or micronutrient guidance. Compare the included tools and
+            logging. Compare the included tools and
             billing options before choosing; your starting path is a decision
             you can take time to consider.
           </p>

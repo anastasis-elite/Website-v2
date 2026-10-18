@@ -40,7 +40,7 @@ export default function EmberRecommendPage() {
           <h2 style={styles.sectionTitleStyle}>What Ember gives you</h2>
           <p style={styles.bodyStyle}>
             Keep macro totals, water, workouts, and progress history together.
-            Ember does not include meal logging, micronutrient tracking, or micronutrient guidance;
+            Ember does not include meal logging;
             compare the other paths if food logging would be useful to you.
           </p>
         </section>
