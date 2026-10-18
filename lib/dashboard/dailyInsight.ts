@@ -337,6 +337,7 @@ export function buildDailyInsight(input: {
   return {
     ...insight,
     accountability: accountabilityEngine.runAccountabilityPartnerEngine({
+      program: input.tier,
       clientId: input.logic.client?.id,
       resilienceState: context.resilience,
       dailyInsight: insight,

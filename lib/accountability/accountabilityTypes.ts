@@ -160,6 +160,7 @@ export type AccountabilityBehaviorSummary = {
 }
 
 export type AccountabilityContext = {
+  program?: unknown
   userId?: string | null
   clientId?: string | null
   resilienceState: ResilienceEvaluation

@@ -1,3 +1,4 @@
+import { getTierCapabilities } from '@/lib/entitlements'
 import type { CapacityName } from '@/lib/dashboard/resilienceEngine'
 import type {
   AccountabilityContext,
@@ -116,7 +117,9 @@ function buildMessage(context: AccountabilityContext, mode: AccountabilityPartne
   }
 
   if (resilienceState.priority === 'hydration') {
-    return 'Stabilize the simple support first: water, electrolytes if you use them, then the next block.'
+    return getTierCapabilities(context.program).nutritionMicronutrients
+      ? 'Stabilize the simple support first: water, electrolytes if you use them, then the next block.'
+      : 'Stabilize the simple support first: water, then the next block.'
   }
 
   if (availableTime && availableTime <= 20 && resilienceState.priority !== 'training') {

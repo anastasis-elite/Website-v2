@@ -23,7 +23,10 @@ function loadCommonJsTypescript(filePath) {
   moduleCache.set(absolutePath, module)
 
   const localRequire = (id) => {
-    if (id.startsWith('@/')) return loadCommonJsTypescript(id.replace('@/', ''))
+    if (id.startsWith('@/')) {
+      const candidate = id.replace('@/', '')
+      return loadCommonJsTypescript(candidate.endsWith('.ts') ? candidate : `${candidate}.ts`)
+    }
     if (id.startsWith('.')) {
       const candidate = path.resolve(path.dirname(absolutePath), id)
       return loadCommonJsTypescript(candidate.endsWith('.ts') ? candidate : `${candidate}.ts`)
