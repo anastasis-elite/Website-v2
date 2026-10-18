@@ -22,17 +22,19 @@ export async function GET(request: Request) {
       return safeErrorResponse('Unauthorized', 401)
     }
 
-    const { data: client } = await supabase
+    const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('*')
       .eq('client_id', clientId)
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
-    if (!client) {
+    if (clientError || !client) {
       return safeErrorResponse('Client not found.', 404)
     }
 
+    // The service rechecks this owned row and keeps EMBER's existing protein
+    // support separate from micronutrient coverage and recommendation inputs.
     const result = await getSupplementRecommendation({
       supabase,
       user,

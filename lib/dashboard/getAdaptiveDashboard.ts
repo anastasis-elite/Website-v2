@@ -77,7 +77,7 @@ export async function getAdaptiveDashboard({
   const showStatusDock = isIgnite || isPhoenix
   const showDailyCarousel = isIgnite || isPhoenix
   const showFoodLogging = capabilities.nutritionMealLogging
-  const showMicroTracking = isIgnite || isPhoenix
+  const showMicroTracking = capabilities.nutritionMicronutrients
   const showGeneralInsights = isIgnite || isPhoenix
   const showFlame = isIgnite || isPhoenix
 

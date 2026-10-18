@@ -1,7 +1,7 @@
 import { mealEntryHref } from '@/lib/nutrition/loggingRoutes'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
-import type { ProgramTier } from '@/lib/entitlements'
+import { getTierCapabilities, type ProgramTier } from '@/lib/entitlements'
 import {
   evaluateResilience,
   type ResilienceEngineInput,
@@ -216,7 +216,9 @@ export function selectDailyInsight(context: DailyInsightContext): DailyInsight {
       ...base,
       category: 'nutrition',
       message:
-        'Hydration is the clearest support signal today. Stabilize water and electrolytes before asking your body for more output.',
+        getTierCapabilities(context.tier).nutritionMicronutrients
+          ? 'Hydration is the clearest support signal today. Stabilize water and electrolytes before asking your body for more output.'
+          : 'Hydration is the clearest support signal today. Stabilize water before asking your body for more output.',
       reason: resilience.recommendations[0],
       action: { type: 'open_nutrition', label: context.tier === 'ember' ? 'Add macros' : 'Log meal', target: mealEntryHref(context.tier) },
     }

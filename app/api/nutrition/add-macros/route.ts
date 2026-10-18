@@ -1,3 +1,4 @@
+import { memberNutritionRemaining } from '@/lib/nutrition/memberNutrition'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
@@ -150,5 +151,5 @@ export async function POST(request: Request) {
 
   invalidateDailyPlan()
 
-  return NextResponse.json({ success: true, entry, remaining: recordedRemaining, refreshStatus })
+  return NextResponse.json({ success: true, entry, remaining: memberNutritionRemaining(recordedRemaining, client.program), refreshStatus })
 }

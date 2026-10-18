@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
 import { calculateClientNutritionTargets, normalizeCyclePhase, nutritionLogAuditFields } from '@/lib/nutrition/targetService'
+import { canTrackMicronutrients, memberNutritionLog } from '@/lib/nutrition/memberNutrition'
 
 export async function POST(request: Request) {
   try {
@@ -72,14 +73,14 @@ export async function POST(request: Request) {
       const age = birthdate && !Number.isNaN(birthdate.getTime())
         ? now.getFullYear() - birthdate.getFullYear() - (now < new Date(now.getFullYear(), birthdate.getMonth(), birthdate.getDate()) ? 1 : 0)
         : 35
-      const micronutrientTargets = calculateMicronutrientTargets({
+      const micronutrientTargets = canTrackMicronutrients(client.program) ? calculateMicronutrientTargets({
         age,
         calories: target.calories,
         weightLbs,
         waterOz: water,
         cyclePhase: normalizeCyclePhase(nutrition.phase),
         trainingLevel: 'general_fitness',
-      })
+      }) : {}
 
       if (getClientLocalDate(client) !== today) return staleDate()
 
@@ -117,7 +118,7 @@ export async function POST(request: Request) {
       const { data: added, error: addError } = await supabase.rpc('add_daily_water', { p_log_id: newLog.id, p_ounces: ounces, p_submission_id: submissionId })
       if (addError) return NextResponse.json({ error: addError.message, retryWithSameSubmission: true }, { status: 500 })
       invalidateDailyPlan()
-      return NextResponse.json({ success: true, nutritionLog: added })
+      return NextResponse.json({ success: true, nutritionLog: memberNutritionLog(added, client.program) })
     }
 
     if (getClientLocalDate(client) !== today) return staleDate()
@@ -131,7 +132,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      nutritionLog: data,
+      nutritionLog: memberNutritionLog(data, client.program),
     })
   } catch (error) {
     return NextResponse.json(

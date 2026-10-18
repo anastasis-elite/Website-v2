@@ -145,7 +145,7 @@ test('active food method revalidates once on visible resume and retains its sear
 
 test('visible micronutrient rings reload other-device persisted intake after resume', async () => {
   const state = hooks(), doc = documentFixture(); let intakeLoads = 0, iron = 5
-  const log = { id: 'own-log', calories: 2000, protein: 100, carbs: 200, fats: 70, iron_target_mg: 20 }
+  const log = { id: 'own-log', client_id: 'own-client', log_date: '2026-10-14', calories: 2000, protein: 100, carbs: 200, fats: 70, iron_target_mg: 20 }
   const db = { auth: { getUser: async () => ({ data: { user: { id: 'owner' } } }) }, from(table) { const query = { select() { return query }, eq() { return query }, maybeSingle: async () => ({ data: table === 'nutrition_logs' ? log : {}, error: null }) }; return query } }
   const progress = load('lib/nutrition/micronutrientProgress.ts', {})
   const Dashboard = load('components/AdaptiveNutritionDashboard.tsx', {
@@ -154,7 +154,7 @@ test('visible micronutrient rings reload other-device persisted intake after res
     '@/components/nutrition/MicronutrientProgressRing': { __esModule: true, default: 'micro-ring' },
     '@/components/nutrition/hooks': { useNutritionEngine: value => value.nutrition, useFuelReadinessEngine: value => value.fuelReadiness, usePhoenixRecipes: value => value },
     '@/lib/nutrition/canLogFood': { canLogFood: () => true, normalizeProgramTier: () => 'ignite' }, '@/lib/timezone': { getClientLocalDateOffset: () => '2026-10-14' },
-    '@/lib/entitlements': entitlements, '@/lib/nutrition/mealPeriod': periods, '@/lib/analytics': { trackEvent() {} },
+    '@/lib/entitlements': entitlements, '@/lib/nutrition/memberNutrition': load('lib/nutrition/memberNutrition.ts', { '@/lib/entitlements': entitlements }), '@/lib/nutrition/mealPeriod': periods, '@/lib/analytics': { trackEvent() {} },
     '@/components/dashboard/useViewPreference': { useViewPreference: (_id, scope, _allowed, fallback) => [scope.startsWith('nutrition-management') ? 'micros' : fallback, () => {}] },
     '@/lib/nutrition/nextFoodGuidance': { getNextFoodGuidance: () => ({ copy: '' }) },
     '@/lib/nutrition/progress': { loadRecordedNutrition: async () => ({ total: { calories: 0, protein: 0, carbs: 0, fats: 0 } }), nutritionRemainingWithRecordedIntake: () => ({ calories_remaining: 2000, protein_remaining_g: 100, carbs_remaining_g: 200, fat_remaining_g: 70 }) },

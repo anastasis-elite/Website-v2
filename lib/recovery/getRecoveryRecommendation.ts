@@ -1,6 +1,7 @@
 import { getClientLocalDate } from '@/lib/timezone'
 import { loadWorkoutHistory } from '@/lib/workout/history'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
+import { getTierCapabilities } from '@/lib/entitlements'
   
 export async function getRecoveryRecommendation({
   supabase,
@@ -14,6 +15,7 @@ export async function getRecoveryRecommendation({
   const today = getClientLocalDate(client)
 
   const cycleStatus = getCycleStatus(client)
+  const micronutrientGuidance = getTierCapabilities(client.program).nutritionMicronutrients
   
   const { data: todayRecoveryLog } = await supabase
     .from('recovery_logs')
@@ -85,7 +87,9 @@ export async function getRecoveryRecommendation({
     recoveryFocus = 'hydration'
     title = 'Hydration is the recovery priority'
     recommendation =
-      'Before adding sauna or extra recovery stress, stabilize hydration. Aim for steady water and electrolytes first so your system has enough fluid support to recover well.'
+      micronutrientGuidance
+        ? 'Before adding sauna or extra recovery stress, stabilize hydration. Aim for steady water and electrolytes first so your system has enough fluid support to recover well.'
+        : 'Before adding sauna or extra recovery stress, stabilize hydration. Aim for steady water first so your system has enough fluid support to recover well.'
     saunaAllowed = false
     intensity = 'normal'
   } else if (sorenessLevel >= 7) {
@@ -106,7 +110,9 @@ export async function getRecoveryRecommendation({
     recoveryFocus = 'cycle_support'
     title = 'Support the high-burden window'
     recommendation =
-      'Today’s cycle log shows higher flow burden. Keep training decisions conservative, prioritize enough food, hydration, electrolytes, and recovery signals, and consider follow-up if this pattern feels unusual or severe.'
+      micronutrientGuidance
+        ? 'Today’s cycle log shows higher flow burden. Keep training decisions conservative, prioritize enough food, hydration, electrolytes, and recovery signals, and consider follow-up if this pattern feels unusual or severe.'
+        : 'Today’s cycle log shows higher flow burden. Keep training decisions conservative, prioritize enough food, hydration, and recovery signals, and consider follow-up if this pattern feels unusual or severe.'
     saunaAllowed = false
     intensity = 'low'
   } else if (cycleSymptoms || cycleStatus.recoveryCaution) {
@@ -114,7 +120,9 @@ export async function getRecoveryRecommendation({
     title = 'Cycle awareness matters today'
     recommendation =
       cycleStatus.recoveryNote ||
-      'Cycle symptoms are useful data. Keep recovery supportive today with hydration, minerals, enough food, and lower-pressure movement if your body is asking for it.'
+      (micronutrientGuidance
+        ? 'Cycle symptoms are useful data. Keep recovery supportive today with hydration, minerals, enough food, and lower-pressure movement if your body is asking for it.'
+        : 'Cycle symptoms are useful data. Keep recovery supportive today with hydration, enough food, and lower-pressure movement if your body is asking for it.')
     saunaAllowed = false
     intensity = 'moderate'
   } else if (workoutCompleted && nutritionLogged) {
@@ -128,7 +136,9 @@ export async function getRecoveryRecommendation({
     recoveryFocus = 'nutrition_first'
     title = 'Refuel before adding recovery tools'
     recommendation =
-      'Training is only one part of the signal. Before adding sauna or extra recovery stress, give your body food, water, and minerals so it can actually adapt.'
+      micronutrientGuidance
+        ? 'Training is only one part of the signal. Before adding sauna or extra recovery stress, give your body food, water, and minerals so it can actually adapt.'
+        : 'Training is only one part of the signal. Before adding sauna or extra recovery stress, give your body food and water so it can actually adapt.'
     saunaAllowed = false
     intensity = 'normal'
   }

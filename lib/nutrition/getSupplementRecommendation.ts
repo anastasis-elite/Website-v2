@@ -1,4 +1,5 @@
 import { isAOSAdmin } from '@/lib/aos/isAOSAdmin'
+import { canTrackMicronutrients } from '@/lib/nutrition/memberNutrition'
 import {
   DEFAULT_SUPPLEMENT_RECOMMENDATION_CONFIG,
   SUPPLEMENT_RECOMMENDATION_ENGINE_VERSION,
@@ -74,7 +75,7 @@ async function safeQuery<T>(query: PromiseLike<{ data: T | null; error: any }>, 
   return data ?? fallback
 }
 
-function buildCoverageDays(logs: any[], remainingRows: any[], mealEntries: any[], macroEntries: any[]) {
+function buildCoverageDays(logs: any[], remainingRows: any[], mealEntries: any[], macroEntries: any[], keys = Object.keys(nutrientFields)) {
   const remainingByLog = new Map<string, any>((remainingRows || []).map((row) => [String(row.nutrition_log_id), row]))
   const mealCountByLog = new Map<string, number>()
   for (const entry of mealEntries || []) mealCountByLog.set(String(entry.nutrition_log_id), (mealCountByLog.get(String(entry.nutrition_log_id)) || 0) + 1)
@@ -85,7 +86,7 @@ function buildCoverageDays(logs: any[], remainingRows: any[], mealEntries: any[]
     const logId = String(log.id)
     const remaining = remainingByLog.get(logId) || null
     const adequatelyLogged = Boolean(log.completed || (mealCountByLog.get(logId) || 0) > 0)
-    for (const key of Object.keys(nutrientFields)) {
+    for (const key of keys) {
       const fields = nutrientFields[key]
       const day = consumed(log, remaining, key)
       coverageDays.push({
@@ -202,7 +203,7 @@ async function loadConfig(supabase: SupabaseClient): Promise<SupplementRecommend
   }, DEFAULT_SUPPLEMENT_RECOMMENDATION_CONFIG)
 }
 
-async function persistRecommendation(supabase: SupabaseClient, userId: string, clientId: string, result: SupplementRecommendationResult) {
+async function persistRecommendation(supabase: SupabaseClient, userId: string, clientId: string, result: SupplementRecommendationResult, version = SUPPLEMENT_RECOMMENDATION_ENGINE_VERSION) {
   const recommendation = result.recommendation
   if (!recommendation) return
 
@@ -216,7 +217,7 @@ async function persistRecommendation(supabase: SupabaseClient, userId: string, c
     last_qualified_at: recommendation.lastQualifiedAt,
     resolved_at: null,
     recommendation_reason_codes: recommendation.reasonCodes,
-    algorithm_version: SUPPLEMENT_RECOMMENDATION_ENGINE_VERSION,
+    algorithm_version: version,
   }
 
   await supabase
@@ -270,6 +271,30 @@ export async function getSupplementRecommendation({
   includeAdminDebug?: boolean
 }) {
   const clientId = client.client_id
+  // Never let a caller-supplied tier enable micronutrient engines or writes.
+  // Ownership and tier are resolved again at the service boundary.
+  const owned = await supabase.from('clients').select('*')
+    .eq('client_id', clientId).eq('auth_user_id', user.id).maybeSingle()
+  const empty = { recommendation: null, resolvedRecommendations: [], debug: null, nutritionScope: 'unavailable' as const }
+  if (owned.error || !owned.data) return empty
+  client = owned.data
+  const micronutrients = canTrackMicronutrients(client.program)
+  // Protein already participates in the same engine. Restrict its inputs,
+  // rather than changing any eligibility, scoring or safety thresholds.
+  const [directProteinIngredients, proteinNutrientLinks] = micronutrients ? [[], []] : await Promise.all([
+    safeQuery<any[]>(supabase.from('supplement_ingredients').select('id,supplement_id,ingredient_key').eq('ingredient_key', 'protein'), []),
+    // Protein may be supplied by a named ingredient such as whey. Preserve
+    // that existing mapping while requesting no micronutrient catalog values.
+    safeQuery<any[]>(supabase.from('ingredient_nutrients').select('supplement_ingredient_id,nutrients!inner(nutrient_key)').eq('nutrients.nutrient_key', 'protein'), []),
+  ])
+  const mappedProteinIngredients = proteinNutrientLinks.length ? await safeQuery<any[]>(
+    supabase.from('supplement_ingredients').select('id,supplement_id,ingredient_key')
+      .in('id', proteinNutrientLinks.map(row => row.supplement_ingredient_id)), [],
+  ) : []
+  const proteinIngredients = [...new Map([...directProteinIngredients, ...mappedProteinIngredients].map(row => [row.id, row])).values()]
+  const proteinProductIds = Array.from(new Set(proteinIngredients.map(row => String(row.supplement_id))))
+  if (!micronutrients && !proteinProductIds.length) return { ...empty, nutritionScope: 'protein' as const }
+  const forProducts = (query: any) => micronutrients ? query : query.in('supplement_id', proteinProductIds)
   const startDate = daysAgo(13)
   const today = new Date().toISOString().slice(0, 10)
 
@@ -286,20 +311,24 @@ export async function getSupplementRecommendation({
     clinicalRecords,
   ] = await Promise.all([
     loadConfig(supabase),
-    safeQuery<any[]>(supabase.from('nutrition_logs').select('*').eq('client_id', clientId).gte('log_date', startDate).lte('log_date', today).order('log_date'), []),
+    safeQuery<any[]>(supabase.from('nutrition_logs').select(micronutrients ? '*' : 'id,log_date,protein,completed').eq('client_id', clientId).gte('log_date', startDate).lte('log_date', today).order('log_date'), []),
     safeQuery<any[]>(supabase.from('recovery_logs').select('log_date,sleep_quality,energy_level,stress_level,soreness_level').eq('client_id', clientId).gte('log_date', startDate).lte('log_date', today).order('log_date'), []),
     safeQuery<any[]>(supabase.from('cycle_daily_symptoms').select('log_date,energy,training_readiness').eq('client_id', clientId).gte('log_date', startDate).lte('log_date', today).order('log_date'), []),
-    safeQuery<any[]>(supabase.from('supplements').select('id,supplement_key,product_name,status,product_url,recommendation_copy,disclaimer_copy,contraindication_metadata,minimum_matching_requirements'), []),
-    safeQuery<any[]>(supabase.from('supplement_ingredients').select('id,supplement_id,ingredient_key'), []),
-    safeQuery<any[]>(supabase.from('ingredient_nutrients').select('supplement_ingredient_id,nutrients(nutrient_key)'), []),
-    safeQuery<any[]>(supabase.from('supplement_supported_functions').select('supplement_id,function_key'), []),
-    safeQuery<any[]>(supabase.from('client_anastasis_supplement_recommendations').select('id,supplement_id,recommendation_category,resolved_at,status').eq('user_id', user.id).eq('client_id', clientId), []),
+    safeQuery<any[]>(micronutrients
+      ? supabase.from('supplements').select('id,supplement_key,product_name,status,product_url,recommendation_copy,disclaimer_copy,contraindication_metadata,minimum_matching_requirements')
+      : supabase.from('supplements').select('id,supplement_key,product_name,status,product_url,contraindication_metadata,minimum_matching_requirements').in('id', proteinProductIds), []),
+    micronutrients ? safeQuery<any[]>(supabase.from('supplement_ingredients').select('id,supplement_id,ingredient_key'), []) : Promise.resolve(proteinIngredients),
+    micronutrients ? safeQuery<any[]>(supabase.from('ingredient_nutrients').select('supplement_ingredient_id,nutrients(nutrient_key)'), []) : Promise.resolve(proteinNutrientLinks),
+    safeQuery<any[]>(forProducts(supabase.from('supplement_supported_functions').select('supplement_id,function_key')), []),
+    safeQuery<any[]>(forProducts(supabase.from('client_anastasis_supplement_recommendations').select('id,supplement_id,recommendation_category,resolved_at,status,algorithm_version').eq('user_id', user.id).eq('client_id', clientId)), []),
+    // Existing contraindication flags remain safety-only inputs for protein
+    // products too. They never become EMBER coverage, advice or debug output.
     safeQuery<any[]>(supabase.from('client_nutrient_recommendations').select('safety_escalation_reason,nutrients(nutrient_key)').eq('user_id', user.id).eq('client_id', clientId).eq('status', 'active'), []),
   ])
   const nutritionLogIds = (nutritionLogs || []).map((log) => log.id).filter(Boolean)
   const [remainingRows, mealEntries, macroEntries] = nutritionLogIds.length
     ? await Promise.all([
-        safeQuery<any[]>(supabase.from('nutrition_log_remaining').select('*').in('nutrition_log_id', nutritionLogIds), []),
+        safeQuery<any[]>(supabase.from('nutrition_log_remaining').select(micronutrients ? '*' : 'nutrition_log_id,protein_remaining_g').in('nutrition_log_id', nutritionLogIds), []),
         safeQuery<any[]>(supabase.from('meal_entries').select('id,nutrition_log_id').in('nutrition_log_id', nutritionLogIds), []),
         safeQuery<any[]>(supabase.from('macro_entries').select('id,nutrition_log_id').in('nutrition_log_id', nutritionLogIds), []),
       ])
@@ -311,19 +340,40 @@ export async function getSupplementRecommendation({
     .filter(Boolean)
 
   const result = evaluateSupplementRecommendation({
-    coverageDays: buildCoverageDays(nutritionLogs, remainingRows, mealEntries, macroEntries),
+    coverageDays: buildCoverageDays(nutritionLogs, remainingRows, mealEntries, macroEntries, micronutrients ? Object.keys(nutrientFields) : ['protein']),
     functionalInputs: buildFunctionalInputs(recoveryLogs, cycleSymptoms),
     formulations: buildFormulations({ supplements, ingredients, ingredientNutrients, supportedFunctions }),
     safetyContext: buildSafetyContext(client, previousRecommendations, upperIntakeConcernNutrients),
     config,
   })
 
-  await persistRecommendation(supabase, user.id, clientId, result)
-  const resolvedRecommendations = await resolveStaleRecommendations(supabase, previousRecommendations, result)
+  const proteinVersion = `${SUPPLEMENT_RECOMMENDATION_ENGINE_VERSION}:protein`
+  // Older records do not identify their matched nutrients. A protein-capable
+  // product may have qualified from micronutrients before a downgrade; retain
+  // that history rather than overwriting or resolving its unknown basis.
+  const scopedHistory = micronutrients ? previousRecommendations : previousRecommendations.filter(row => row.algorithm_version === proteinVersion)
+  const legacyMatch = !micronutrients && result.recommendation && previousRecommendations.some(row =>
+    String(row.supplement_id) === result.recommendation!.productId && row.algorithm_version !== proteinVersion,
+  )
+  if (!legacyMatch) await persistRecommendation(supabase, user.id, clientId, result, micronutrients ? SUPPLEMENT_RECOMMENDATION_ENGINE_VERSION : proteinVersion)
+  const resolvedRecommendations = await resolveStaleRecommendations(supabase, scopedHistory, result)
 
+  // Catalog copy can describe other nutrients in a mixed formulation. EMBER's
+  // existing protein match uses the same explanation with protein-only wording.
+  const recommendation = !micronutrients && result.recommendation ? {
+    ...result.recommendation,
+    recommendationCopy: `Your recent food logs show that you have not consistently been getting foods that provide protein. Your related wellness trend has also been lower during this period. ${result.recommendation.productName} contains protein that can help supplement what you are getting through food.`,
+    disclaimerCopy: 'This recommendation is based on your logged nutrition and wellness patterns and does not identify or diagnose a deficiency.',
+    why: {
+      ...result.recommendation.why,
+      nutrition: 'Your food logs have not consistently included your usual protein target amounts.',
+      disclaimer: 'This recommendation is based on your logged nutrition and wellness patterns and does not identify or diagnose a deficiency.',
+    },
+  } : result.recommendation
   return {
-    recommendation: result.recommendation,
+    recommendation,
     resolvedRecommendations,
     debug: includeAdminDebug && isAOSAdmin(user.email, user.app_metadata) ? result.debug : null,
+    nutritionScope: micronutrients ? 'micronutrients' as const : 'protein' as const,
   }
 }

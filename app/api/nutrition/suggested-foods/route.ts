@@ -10,6 +10,7 @@ import {
 } from '@/lib/nutrition/suggestedFoods'
 import { flattenFoodsNutrition, foodWithNutritionSelect } from '@/lib/nutrition/foodModel'
 import { buildPhysiologyRecommendationEffects } from '@/lib/physiology/recommendationEffects'
+import { canTrackMicronutrients, memberNutritionRemaining, memberFoodNutrition } from '@/lib/nutrition/memberNutrition'
 
 type MealRow = {
   food_id?: string | null
@@ -69,6 +70,9 @@ export async function GET(request: Request) {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
+  if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
+  const micronutrientsEnabled = canTrackMicronutrients(client.program)
+
   const { data: remaining, error: remainingError } = await supabase
     .from('nutrition_log_remaining')
     .select('*')
@@ -79,6 +83,10 @@ export async function GET(request: Request) {
     console.error('NUTRITION SUGGESTED REMAINING ERROR:', remainingError)
     return NextResponse.json({ error: 'Suggested foods could not be loaded. Please try again.' }, { status: 500 })
   }
+
+  // Stored membership controls which inputs can inform member guidance. Keep
+  // historical rows intact and preserve the existing macro ranking formulas.
+  const memberRemaining = memberNutritionRemaining(remaining, client.program)
 
   const { data: meals, error: mealError } = await supabase
     .from('meal_entries')
@@ -94,11 +102,11 @@ export async function GET(request: Request) {
     .map((meal: MealRow) => meal.food_id)
     .filter((id): id is string => Boolean(id))
 
-  if (remaining && !hasMeaningfulNutritionGaps(remaining as NutritionRemainingSnapshot)) {
+  if (memberRemaining && !hasMeaningfulNutritionGaps(memberRemaining as NutritionRemainingSnapshot)) {
     return NextResponse.json({
       state: 'complete',
       suggestions: [],
-      remaining,
+      remaining: memberRemaining,
     })
   }
 
@@ -171,15 +179,19 @@ export async function GET(request: Request) {
     })),
   })
 
+  const recommendationEffects = micronutrientsEnabled ? physiologyEffects.effects : physiologyEffects.effects
+    .filter(effect => effect.nutrients.includes('protein'))
+    .map(effect => ({ ...effect, nutrients: ['protein'], reason: 'Supports today’s protein needs' }))
+
   const suggestions = buildSuggestedFoods({
-    remaining: remaining as NutritionRemainingSnapshot | null,
-    candidates: flattenFoodsNutrition(foods) as SuggestedFoodCandidate[],
+    remaining: memberRemaining as NutritionRemainingSnapshot | null,
+    candidates: flattenFoodsNutrition(foods).map(food => memberFoodNutrition(food, client.program)) as SuggestedFoodCandidate[],
     loggedFoodIds,
     avoidTerms: avoidTermsFromClient(client),
-    recommendationEffects: physiologyEffects.effects,
+    recommendationEffects,
   })
 
-  if (physiologyEffects.effects.length) {
+  if (recommendationEffects.length) {
     await supabase.from('pattern_recommendation_events').insert({
       user_id: user.id,
       client_id: log.client_id,
@@ -202,16 +214,16 @@ export async function GET(request: Request) {
       formulation_rule_id: physiologyEffects.ruleVersion,
       algorithm_version: physiologyEffects.ruleVersion,
       confidence_at_recommendation: physiologyEffects.audit.confidenceAtRecommendation,
-      recommendation_effects: physiologyEffects.effects,
+      recommendation_effects: recommendationEffects,
       user_response: {},
     })
   }
 
   return NextResponse.json({
     state: suggestions.length ? 'ready' : 'unavailable',
-    basis: remaining ? loggedFoodIds.length ? 'remaining' : 'targets' : 'general',
+    basis: memberRemaining ? loggedFoodIds.length ? 'remaining' : 'targets' : 'general',
     suggestions,
-    remaining,
-    physiologySupportActive: physiologyEffects.effects.length > 0,
+    remaining: memberRemaining,
+    physiologySupportActive: recommendationEffects.length > 0,
   })
 }

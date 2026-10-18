@@ -24,6 +24,7 @@ const prepareRoute = await importTs('app/api/nutrition-log/route.ts', {
 const progress = await importTs('lib/nutrition/progress.ts')
 const micronutrientProgress = await importTs('lib/nutrition/micronutrientProgress.ts')
 const entitlements = await importTs('lib/entitlements.ts')
+const memberNutrition = await importTs('lib/nutrition/memberNutrition.ts')
 const tiers = await importTs('lib/nutrition/canLogFood.ts')
 const timezone = await importTs('lib/timezone.ts')
 const nextFood = await importTs('lib/nutrition/nextFoodGuidance.ts')
@@ -92,13 +93,26 @@ function database({ program = 'ember', store, failTable } = {}) {
   }
 }
 
-function dashboard(db, { request = fetch } = {}) {
-  const states = [], callbacks = []
-  let cursor = 0
+function dashboard(db, { request = async url => { throw new Error(`Unexpected synthetic request: ${url}`) } } = {}) {
+  const requests = []
+  const syntheticRequest = async (url, init) => {
+    const call = { url: String(url), method: init?.method || 'GET' }
+    requests.push(call)
+    if (call.method === 'GET' && call.url.startsWith('/api/nutrition-log?')) {
+      globalThis.nutritionPersistenceDb = db
+      const response = await prepareRoute.GET(new Request(new URL(call.url, 'http://qa.invalid'), init))
+      call.status = response.status
+      return response
+    }
+    return request(url, init)
+  }
+  const states = [], callbacks = [], refs = []
+  let cursor = 0, refCursor = 0
   const nativeRequire = createRequire(import.meta.url)
   const module = { exports: {} }
   const fakeReact = {
     useMemo: callback => callback(), useEffect() {},
+    useRef(initial) { const index = refCursor++; return refs[index] ||= { current: initial } },
     useCallback(callback) { callbacks.push(callback); return callback },
     useState(initial) {
       const index = cursor++
@@ -117,6 +131,7 @@ function dashboard(db, { request = fetch } = {}) {
     '@/lib/nutrition/canLogFood': tiers,
     '@/lib/timezone': timezone,
     '@/lib/entitlements': entitlements,
+    '@/lib/nutrition/memberNutrition': memberNutrition,
     '@/lib/nutrition/mealPeriod': {},
     '@/lib/analytics': { trackEvent() {} },
     '@/components/dashboard/useViewPreference': { useViewPreference: (_id, _scope, _allowed, fallback) => [fallback, () => {}] },
@@ -127,16 +142,16 @@ function dashboard(db, { request = fetch } = {}) {
   const compiled = ts.transpileModule(readFileSync('components/AdaptiveNutritionDashboard.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText
-  vm.runInNewContext(compiled, { module, exports: module.exports, Date, Error, Promise, console, fetch: request, process: { env: { NODE_ENV: 'test' } }, require: name => dependencies[name] || nativeRequire(name) })
+  vm.runInNewContext(compiled, { module, exports: module.exports, Date, Error, Promise, console, fetch: syntheticRequest, process: { env: { NODE_ENV: 'test' } }, require: name => dependencies[name] || nativeRequire(name) })
   const metric = { target: 100, remaining: 100 }
   const logic = { program: 'ember', client: { id: client.client_id, ...client }, trends: [],
     nutrition: { dataStatus: 'needs_input', mealSuggestions: ['Review your next meal.'], calories: { target: 2000, remaining: 2000 }, protein: metric, carbs: metric, fats: metric },
     fuelReadiness: { displayStatus: 'Needs input', reasoning: 'No food is logged yet.' },
     hydration: { consumed: 0, target: 100 },
   }
-  function render() { cursor = 0; return renderToStaticMarkup(module.exports.default({ program: 'ember', logic, recipes: [] })) }
+  function render() { cursor = 0; refCursor = 0; return renderToStaticMarkup(module.exports.default({ program: 'ember', logic, recipes: [] })) }
   render()
-  return { render, load: () => callbacks.find(callback => callback.toString().includes(".from('nutrition_logs')"))() }
+  return { render, requests, load: () => callbacks.find(callback => callback.toString().includes(".from('nutrition_logs')"))() }
 }
 
 test('saved EMBER macros survive a fresh transport and update Nutrition, daily blocks, and What’s Next once', async () => {
@@ -149,7 +164,8 @@ test('saved EMBER macros survive a fresh transport and update Nutrition, daily b
   const saved = await response.json()
   assert.equal(saved.remaining.calories_remaining, 1500)
   assert.equal(saved.remaining.protein_remaining_g, 70)
-  assert.equal(saved.remaining.fiber_remaining_g, 25)
+  assert.equal(saved.remaining.fiber_remaining_g, undefined)
+  assert.equal(db.tables.nutrition_log_remaining[0].fiber_remaining_g, 25, 'Member projection preserves historical stored nutrition')
   assert.equal(db.tables.macro_entries.length, 1)
   const reloaded = database({ store: db.tables })
   const plan = await getDailyExecutionPlan({ supabase: reloaded, client })
@@ -173,11 +189,37 @@ test('saved EMBER macros survive a fresh transport and update Nutrition, daily b
   assert.match(freshPage.render(), /500 \/ 2000 cal/)
 })
 
-test('general nutrition read failure cannot initialize or overwrite an existing saved day', async () => {
+test('EMBER saved-log GET keeps Goals and calculation status metadata after a fresh transport', async () => {
+  const db = database()
+  Object.assign(db.tables.nutrition_logs[0], {
+    calculation_status: 'manual_override', formula_version: 'synthetic-saved-formula', iron_target_mg: 18,
+    nutrition_calculation: { statusLabel: 'Synthetic saved assessment', normalizedGoal: 'Synthetic saved goal',
+      bmi: 24, bodyFatPercentUsed: 28, leanBodyMassKg: 54, activityFactor: 1.5,
+      finalMacroPercentages: { protein: 30, carbs: 40, fats: 30 }, micronutrientTargets: { iron: 18 } },
+  })
+  const before = structuredClone(db.tables)
+  const page = dashboard(db)
+  await page.load()
+  const html = page.render()
+  assert.match(html, /Synthetic saved assessment/)
+  assert.match(html, /Synthetic saved goal/)
+  assert.match(html, /28%/)
+  assert.match(html, /54 kg lean mass used/)
+  assert.match(html, /30% \/ 40% \/ 30%/)
+  assert.equal(page.requests[0].status, 200)
+  assert.deepEqual(db.tables, before)
+  assert.deepEqual(db.writes, [])
+})
+
+test('nutrition GET failure cannot initialize or overwrite an existing saved day', async () => {
   const db = database({ failTable: 'nutrition_logs' })
   const before = structuredClone(db.tables.nutrition_logs)
   const page = dashboard(db, { request() { throw new Error('A failed saved-day read must not fetch targets or prepare a log') } })
   await assert.rejects(page.load(), /saved nutrition could not be loaded/)
+  assert.equal(page.requests.length, 1)
+  assert.equal(page.requests[0].method, 'GET')
+  assert.match(page.requests[0].url, /^\/api\/nutrition-log\?/)
+  assert.equal(page.requests[0].status, 500)
   assert.deepEqual(db.tables.nutrition_logs, before)
   assert.equal(db.writes.length, 0)
 })
@@ -199,7 +241,10 @@ test('general nutrition initialization preserves a daily row created while targe
     return prepareRoute.POST(new Request('https://qa.invalid/api/nutrition-log', init))
   } })
   await page.load()
-  assert.equal(calls.length, 2)
+  assert.equal(calls.length, 2, 'Only target preparation and the existing POST reach the custom request handler')
+  assert.deepEqual(page.requests.map(call => `${call.method} ${new URL(call.url, 'http://qa.invalid').pathname}`), [
+    'GET /api/nutrition-log', 'GET /api/nutrition', 'POST /api/nutrition-log', 'GET /api/nutrition-log',
+  ])
   assert.deepEqual(db.tables.nutrition_logs, [saved])
   assert.equal(db.writes.length, 0)
   assert.match(page.render(), /2300/)

@@ -16,6 +16,7 @@ export type TierCapability =
   | 'workoutDisplay'
   | 'nutritionTracking'
   | 'nutritionMacroEntry'
+  | 'nutritionMicronutrients'
   | 'nutritionMealLogging'
   | 'nutritionBarcodeScanning'
   | 'nutritionRecurringFoodDetection'
@@ -56,6 +57,7 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     workoutDisplay: true,
     nutritionTracking: true,
     nutritionMacroEntry: true,
+    nutritionMicronutrients: false,
     nutritionMealLogging: false,
     nutritionBarcodeScanning: false,
     nutritionRecurringFoodDetection: false,
@@ -81,6 +83,7 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     workoutDisplay: true,
     nutritionTracking: true,
     nutritionMacroEntry: false,
+    nutritionMicronutrients: true,
     nutritionMealLogging: true,
     nutritionBarcodeScanning: true,
     nutritionRecurringFoodDetection: true,
@@ -106,6 +109,7 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     workoutDisplay: true,
     nutritionTracking: true,
     nutritionMacroEntry: false,
+    nutritionMicronutrients: true,
     nutritionMealLogging: true,
     nutritionBarcodeScanning: true,
     nutritionRecurringFoodDetection: true,

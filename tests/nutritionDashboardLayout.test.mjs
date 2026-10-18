@@ -49,7 +49,7 @@ test('suggested foods reuse current remaining nutrition and food log data', () =
   assert.match(suggestedFoodsRoute, /\.from\('meal_entries'\)/)
   assert.match(suggestedFoodsRoute, /\.from\('foods'\)/)
   assert.match(suggestedFoodsRoute, /buildSuggestedFoods/)
-  assert.match(suggestedFoodsRoute, /basis: remaining/)
+  assert.match(suggestedFoodsRoute, /basis: memberRemaining/)
   assert.doesNotMatch(suggestedFoodsRoute, /state: 'needs_logs'/)
   assert.match(suggestedFoodsRoute, /state: 'complete'/)
   assert.match(suggestedFoodsLogic, /protein_remaining_g/)
@@ -70,7 +70,7 @@ test('removing food propagates authoritative recalculated nutrition totals', () 
   assert.match(foodLogger, /onUpdated\?\.\(data\.remaining \|\| null, 'removed'\)/)
   assert.match(foodLogger, /useEffect\(\(\) => \{\s*setRemaining\(initialRemaining\)/s)
   assert.match(dashboard, /handleFoodUpdated\(updatedRemaining\?: Remaining \| null, action: 'added' \| 'removed'/)
-  assert.match(dashboard, /setRemaining\(updatedRemaining\)/)
+  assert.match(dashboard, /setRemaining\(memberNutritionRemaining\(updatedRemaining, tier\)\)/)
   ;[
     'fiber_remaining_g',
     'sodium_remaining_mg',

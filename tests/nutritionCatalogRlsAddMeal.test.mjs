@@ -149,9 +149,9 @@ test('remaining macros update from add meal and macro-only responses without ful
   assert.match(foodLogger, /if \(data\.remaining\) setRemaining\(data\.remaining\)/)
   assert.match(foodLogger, /onUpdated\?\.\(data\.remaining \|\| null, 'added'\)/)
   assert.match(foodLogger, /data\.refreshStatus === 'degraded'/)
-  assert.match(dashboard, /if \(updatedRemaining\) \{\s*setRemaining\(updatedRemaining\)\s*\}/s)
+  assert.match(dashboard, /if \(updatedRemaining\) \{\s*setRemaining\(memberNutritionRemaining\(updatedRemaining, tier\)\)\s*\}/s)
   assert.match(addMacrosRoute, /\.from\('nutrition_log_remaining'\)/)
-  assert.match(dashboard, /if \(payload\?\.remaining\) \{\s*setRemaining\(payload\.remaining\)\s*\}/s)
+  assert.match(dashboard, /if \(payload\?\.remaining\) \{\s*setRemaining\(memberNutritionRemaining\(payload\.remaining, tier\)\)\s*\}/s)
 })
 
 test('completed state is not set merely because one food or macro entry was logged', () => {

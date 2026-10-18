@@ -4,6 +4,33 @@ import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronut
 import { nutritionLogAuditFields } from '@/lib/nutrition/targetService'
 import { getClientLocalDate } from '@/lib/timezone'
 import { getTierCapabilities } from '@/lib/entitlements'
+import { canTrackMicronutrients, memberNutritionLog } from '@/lib/nutrition/memberNutrition'
+
+// Read through the member boundary so optional legacy calculation metadata can
+// remain available without downloading historical micronutrient columns.
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const clientId = searchParams.get('client_id')
+    const logDate = searchParams.get('log_date')
+    if (!clientId || !logDate || !/^\d{4}-\d{2}-\d{2}$/.test(logDate)) {
+      return NextResponse.json({ error: 'Client and log date are required.' }, { status: 400 })
+    }
+    const supabase = await createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: client, error: clientError } = await supabase.from('clients')
+      .select('client_id,program').eq('client_id', clientId).eq('auth_user_id', user.id).maybeSingle()
+    if (clientError) return NextResponse.json({ error: 'Saved nutrition could not be loaded.' }, { status: 500 })
+    if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
+    const { data: log, error: logError } = await supabase.from('nutrition_logs').select('*')
+      .eq('client_id', client.client_id).eq('auth_user_id', user.id).eq('log_date', logDate).maybeSingle()
+    if (logError) return NextResponse.json({ error: 'Saved nutrition could not be loaded.' }, { status: 500 })
+    return NextResponse.json({ nutritionLog: memberNutritionLog(log, client.program) })
+  } catch {
+    return NextResponse.json({ error: 'Saved nutrition could not be loaded.' }, { status: 500 })
+  }
+}
 
 function calculateAge(birthdate?: string | null) {
   if (!birthdate) return 35
@@ -108,14 +135,14 @@ export async function POST(req: Request) {
       Math.round(safeWaterOz / 0.6)
     )
 
-    const micronutrientTargets = calculateMicronutrientTargets({
+    const micronutrientTargets = canTrackMicronutrients(client.program) ? calculateMicronutrientTargets({
       age,
       calories: safeCalories,
       weightLbs: estimatedWeightLbs,
       waterOz: safeWaterOz,
       cyclePhase: cyclePhase || 'unknown',
       trainingLevel: trainingLevel || 'general_fitness',
-    })
+    }) : {}
     const auditFields =
       nutritionCalculation && typeof nutritionCalculation === 'object'
         ? nutritionLogAuditFields(nutritionCalculation)
@@ -171,7 +198,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      nutritionLog,
+      nutritionLog: memberNutritionLog(nutritionLog, client.program),
     })
   } catch (error) {
     console.error('NUTRITION LOG ERROR:', error)

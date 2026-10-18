@@ -5,6 +5,7 @@ import {
   type NutrientReferenceValue,
   type NutrientRelationship,
 } from '@/lib/nutrition/nutrientIntelligence'
+import { canTrackMicronutrients } from '@/lib/nutrition/memberNutrition'
 
 const nutrientFields: Record<string, { remaining: string; target: string; unit: string }> = {
   iron: { remaining: 'iron_remaining_mg', target: 'iron_target_mg', unit: 'mg' },
@@ -64,6 +65,11 @@ export async function getNutrientInsights({
   clientId: string
   limit?: number
 }): Promise<NutrientInsight[]> {
+  // The service is also used by server pages. Resolve the owned stored tier
+  // before reading catalogs or clinical history, independently of route guards.
+  const { data: client, error: clientError } = await supabase.from('clients')
+    .select('client_id,program').eq('client_id', clientId).eq('auth_user_id', userId).maybeSingle()
+  if (clientError || !client || !canTrackMicronutrients(client.program)) return []
   const today = new Date().toISOString().slice(0, 10)
   const fourteenDaysAgo = daysAgo(14)
 

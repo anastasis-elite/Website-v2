@@ -71,7 +71,7 @@ export function calculateRecordedNutrition(
 
 export async function loadRecordedNutrition(supabase: any, nutritionLogId: string): Promise<RecordedNutrition> {
   const [meals, macros] = await Promise.all([
-    supabase.from('nutrition_log_totals_by_block').select('*').eq('nutrition_log_id', nutritionLogId),
+    supabase.from('nutrition_log_totals_by_block').select('calories_eaten,protein_eaten_g,carbs_eaten_g,fat_eaten_g,day_block').eq('nutrition_log_id', nutritionLogId),
     supabase.from('macro_entries').select('calories,protein_g,carbs_g,fat_g,day_block').eq('nutrition_log_id', nutritionLogId),
   ])
   if (meals.error || macros.error) throw new Error('Saved nutrition progress could not be loaded.')

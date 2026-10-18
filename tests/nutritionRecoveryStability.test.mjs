@@ -35,6 +35,7 @@ const tierHelpers = await import(moduleUrl('lib/nutrition/canLogFood.ts'))
 const nextFoodGuidance = await import(moduleUrl('lib/nutrition/nextFoodGuidance.ts'))
 const nutritionProgress = await import(moduleUrl('lib/nutrition/progress.ts'))
 const micronutrientProgress = await import(moduleUrl('lib/nutrition/micronutrientProgress.ts'))
+const memberNutrition = await import(moduleUrl('lib/nutrition/memberNutrition.ts'))
 const timezone = await import(moduleUrl('lib/timezone.ts'))
 const remaining = { calories_remaining: 1800, protein_remaining_g: 120, carbs_remaining_g: 200, fat_remaining_g: 60, fiber_remaining_g: 25 }
 const foods = [
@@ -42,12 +43,13 @@ const foods = [
   { id: 'yogurt', name: 'Greek yogurt', food_nutrients: { calories: 90, protein_g: 18, carbs_g: 5, fat_g: 0, calcium_mg: 110 }, allergens: ['milk'] },
 ]
 
-function database({ tier = 'ignite', owner = 'qa-user', snapshot = remaining, mealIds = [], catalog = foods, signedIn = true } = {}) {
+function database({ tier = 'ignite', owner = 'qa-user', snapshot = remaining, mealIds = [], catalog = foods, signedIn = true, clientPresent = true, flowBurden = false } = {}) {
   const rows = {
     nutrition_logs: [{ id: 'qa-log', client_id: 'qa-client', auth_user_id: owner }],
-    clients: [{ client_id: 'qa-client', auth_user_id: 'qa-user', program: tier, allergies: ['milk'] }],
+    clients: clientPresent ? [{ client_id: 'qa-client', auth_user_id: 'qa-user', program: tier, allergies: ['milk'] }] : [],
     nutrition_log_remaining: snapshot ? [snapshot] : [],
     meal_entries: mealIds.map(food_id => ({ food_id })), foods: catalog,
+    cycle_burden_scores: flowBurden ? [{ user_id: 'qa-user', client_id: 'qa-client', burden_score: 30, burden_band: 'high', normalized_factors: { factors: [] }, algorithm_version: 'synthetic' }] : [],
   }
   const writes = []
   return {
@@ -117,6 +119,76 @@ test('food ranking excludes logged foods, avoided foods, and supplement products
   ]
   assert.deepEqual(buildSuggestedFoods({ remaining, candidates, loggedFoodIds: ['beans'], avoidTerms: ['milk'] }), [])
   assert.equal(buildSuggestedFoods({ remaining: null, candidates, avoidTerms: ['milk'] })[0].foodId, 'beans')
+})
+
+test('EMBER suggestions ignore historical micro gaps and food values without changing entitled-tier ranking', async () => {
+  const snapshot = { calories_remaining: 500, protein_remaining_g: 50, carbs_remaining_g: 50, fat_remaining_g: 20, magnesium_remaining_mg: 300, fiber_remaining_g: 20 }
+  const catalog = [{ id: 'a', name: 'Option A', food_nutrients: { calories: 100, protein_g: 10, carbs_g: 5, fat_g: 1 } },
+    { id: 'b', name: 'Option B', food_nutrients: { calories: 100, protein_g: 10, carbs_g: 5, fat_g: 1, magnesium_mg: 300, fiber_g: 20 } }]
+  const request = () => new Request('http://test/api/nutrition/suggested-foods?nutritionLogId=qa-log&program=phoenix')
+  let ember
+  for (const tier of ['ember', 'unrecognized', 'ignite', 'phoenix']) {
+    const db = database({ tier, snapshot, catalog }); globalThis.nutritionRecoveryTestClient = db
+    const body = await (await suggestedRoute.GET(request())).json()
+    assert.equal(body.state, 'ready')
+    if (tier === 'ember' || tier === 'unrecognized') {
+      assert.equal(body.suggestions[0].foodId, 'a')
+      assert.equal(body.remaining.magnesium_remaining_mg, undefined)
+      assert.equal(body.remaining.fiber_remaining_g, undefined)
+      assert.equal(body.remaining.protein_remaining_g, 50)
+      assert.doesNotMatch(JSON.stringify(body), /magnesium|fiber|micronutrient/i)
+      if (tier === 'ember') ember = body.suggestions
+    } else {
+      assert.equal(body.suggestions[0].foodId, 'b')
+      assert.equal(body.remaining.magnesium_remaining_mg, 300)
+    }
+    assert.equal(snapshot.magnesium_remaining_mg, 300, 'Projecting member output does not mutate historical rows')
+  }
+  const changed = structuredClone(catalog); changed[0].food_nutrients.magnesium_mg = 3000; changed[1].food_nutrients.magnesium_mg = 0
+  globalThis.nutritionRecoveryTestClient = database({ tier: 'ember', snapshot, catalog: changed })
+  assert.deepEqual((await (await suggestedRoute.GET(request())).json()).suggestions, ember)
+})
+
+test('micro-only gaps cannot keep EMBER guidance active; general macro food planning remains available', async () => {
+  const url = new Request('http://test/api/nutrition/suggested-foods?nutritionLogId=qa-log')
+  for (const tier of ['ember', 'ignite', 'phoenix']) {
+    globalThis.nutritionRecoveryTestClient = database({ tier, snapshot: { calories_remaining: 0, protein_remaining_g: 0, magnesium_remaining_mg: 300 } })
+    const body = await (await suggestedRoute.GET(url)).json()
+    assert.equal(body.state, tier === 'ember' ? 'complete' : 'unavailable')
+    globalThis.nutritionRecoveryTestClient = database({ tier, snapshot: null })
+    const general = await (await suggestedRoute.GET(url)).json()
+    assert.equal(general.state, 'ready')
+    assert.equal(general.basis, 'general')
+    if (tier === 'ember') assert.doesNotMatch(JSON.stringify(general), /fiber|magnesium|micronutrient/i)
+  }
+})
+
+test('EMBER retains physiology-based protein support without micro guidance in responses or audit writes', async () => {
+  const db = database({ tier: 'ember', flowBurden: true }); globalThis.nutritionRecoveryTestClient = db
+  const body = await (await suggestedRoute.GET(new Request('http://test/api/nutrition/suggested-foods?nutritionLogId=qa-log'))).json()
+  assert.equal(body.state, 'ready')
+  assert.equal(body.physiologySupportActive, true)
+  assert.equal(db.writes.length, 1)
+  assert.deepEqual(db.writes[0].payload.recommendation_effects[0].nutrients, ['protein'])
+  assert.doesNotMatch(JSON.stringify(body) + JSON.stringify(db.writes[0].payload.recommendation), /iron|magnesium|potassium|fiber|anemia|deficiency/i)
+})
+
+test('a log without a current owned membership cannot receive suggested food guidance', async () => {
+  globalThis.nutritionRecoveryTestClient = database({ clientPresent: false })
+  assert.equal((await suggestedRoute.GET(new Request('http://test/api/nutrition/suggested-foods?nutritionLogId=qa-log&program=phoenix'))).status, 404)
+})
+
+test('recorded macro refresh requests only its macro fields and preserves recorded totals', async () => {
+  const reads = []
+  const rows = { nutrition_log_totals_by_block: [{ day_block: 'morning', calories_eaten: 100, protein_eaten_g: 10, carbs_eaten_g: 12, fat_eaten_g: 2, iron_eaten_mg: 999 }],
+    macro_entries: [{ calories: 200, protein_g: 20, carbs_g: 24, fat_g: 4, day_block: 'morning' }] }
+  const db = { from(table) { let columns; const query = { select(value) { columns = value; return query }, eq(key, value) { assert.equal(key, 'nutrition_log_id'); assert.equal(value, 'qa-log'); return query },
+    then(done) { reads.push({ table, columns }); return Promise.resolve({ data: rows[table].map(row => Object.fromEntries(columns.split(',').filter(key => key in row).map(key => [key, row[key]]))), error: null }).then(done) } }; return query } }
+  const recorded = await nutritionProgress.loadRecordedNutrition(db, 'qa-log')
+  assert.deepEqual(recorded.total, { calories: 300, protein: 30, carbs: 36, fats: 6 })
+  assert.equal(recorded.macroEntryCount, 1)
+  assert.ok(reads.every(read => !read.columns.includes('*') && !/iron|fiber|magnesium|vitamin/.test(read.columns)))
+  assert.equal(rows.nutrition_log_totals_by_block[0].iron_eaten_mg, 999)
 })
 
 function recoveryInputs(overrides = {}) {
@@ -257,6 +329,7 @@ test('zero-log nutrition hero provides an actionable food starting point across 
     '@/lib/nutrition/nextFoodGuidance': nextFoodGuidance,
     '@/lib/nutrition/progress': nutritionProgress,
     '@/lib/nutrition/micronutrientProgress': micronutrientProgress,
+    '@/lib/nutrition/memberNutrition': memberNutrition,
   }
   vm.runInNewContext(output, { module, exports: module.exports, require: specifier => mocks[specifier] || nativeRequire(specifier) })
   for (const program of ['ember', 'ignite', 'phoenix']) {

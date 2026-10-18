@@ -10,6 +10,7 @@ import { getClientTimeZone, getLocalMinutes } from '@/lib/timezone'
 import { getWorkoutForToday, workoutFallbackAdjustmentLevel } from '@/lib/workout/getWorkoutForToday'
 import { getStreakRequirementDestinations } from '@/lib/dashboard/logic/streakRequirementDestinations'
 import { calculateHydrationPacing } from '@/lib/hydration/pacing'
+import { getTierCapabilities } from '@/lib/entitlements'
 
 export function numeric(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -291,7 +292,8 @@ export function runCycleEngine(inputs: ProgramLogicInputs): CycleResult {
   const status = inputs.cycleStatus || {}
   if (!status.enabled) return { enabled: false, day: null, phase: null, trainingAdjustment: 'Use current symptoms and recovery inputs.', nutritionAdjustment: 'Use normal targets.', recoveryAdjustment: 'Use current recovery inputs.', symptomPrediction: [], insight: null }
   const ownCycleSymptoms = inputs.recentSymptoms.filter((item) => item.likely_cycle_related).map((item) => String(item.symptom_types?.name || '')).filter(Boolean)
-  return { enabled: true, day: nullableNumeric(status.cycleDay), phase: status.phase || null, trainingAdjustment: inputs.cycleAdjustment?.note || 'Use symptoms over generalized phase assumptions.', nutritionAdjustment: status.phase === 'luteal' || status.phase === 'menstrual' ? 'Protect regular meals, fluids, and minerals if symptoms are present.' : 'Use normal targets and respond to hunger.', recoveryAdjustment: status.recoveryNote || 'Use actual symptoms and energy as the primary signal.', symptomPrediction: Array.from(new Set(ownCycleSymptoms)).slice(0, 3), insight: ownCycleSymptoms.length ? 'Your own repeated cycle-linked signals are informing today’s recommendation.' : 'Cycle phase is context, not a rule.' }
+  const mineralGuidance = getTierCapabilities(inputs.program).nutritionMicronutrients
+  return { enabled: true, day: nullableNumeric(status.cycleDay), phase: status.phase || null, trainingAdjustment: inputs.cycleAdjustment?.note || 'Use symptoms over generalized phase assumptions.', nutritionAdjustment: status.phase === 'luteal' || status.phase === 'menstrual' ? mineralGuidance ? 'Protect regular meals, fluids, and minerals if symptoms are present.' : 'Protect regular meals and fluids if symptoms are present.' : 'Use normal targets and respond to hunger.', recoveryAdjustment: status.recoveryNote || 'Use actual symptoms and energy as the primary signal.', symptomPrediction: Array.from(new Set(ownCycleSymptoms)).slice(0, 3), insight: ownCycleSymptoms.length ? 'Your own repeated cycle-linked signals are informing today’s recommendation.' : 'Cycle phase is context, not a rule.' }
 }
 
 export function runPostureCompensationEngine(inputs: ProgramLogicInputs): PostureResult {
@@ -366,7 +368,7 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, capacity:Ca
   const allowLoadProgression=os.allowLoadProgression
   const allowEnduranceProgression=os.allowEnduranceProgression
   if(allowLoadProgression)modifications.push('Consistent protein and stable performance support conservative load progression.')
-  if(allowEnduranceProgression)modifications.push('Consistent micronutrient logging and performance support a small endurance progression.')
+  if(allowEnduranceProgression&&getTierCapabilities(inputs.program).nutritionMicronutrients)modifications.push('Consistent micronutrient logging and performance support a small endurance progression.')
   const availableEquipment=(Array.isArray(inputs.client.equipment_access)?inputs.client.equipment_access:String(inputs.client.equipment_access||'').split(',')).map(normalizeEquipmentName).filter(Boolean).flatMap((item:string)=>['gym','full gym','commercial gym','all equipment'].includes(item)?['*']:[item])
   const assignedExercises = modifyExercises(inputs.plannedExercises, adjustmentLevel, fuel, hydration, recovery, allowLoadProgression, allowEnduranceProgression,structural,os.dose,os.clientCues,os.goal,availableEquipment)
   const workoutForToday = getWorkoutForToday({

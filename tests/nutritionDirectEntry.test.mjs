@@ -126,7 +126,7 @@ test('meal selection stays editable and shared while switching distinct input me
 
 test('direct food and meal entry shows the actual entitled logger while EMBER retains guidance and macro entry', () => {
   let cursor = 0
-  const hooks = { useEffect() {}, useMemo: callback => callback(), useCallback: callback => callback,
+  const hooks = { useRef: value => ({ current: value }), useEffect() {}, useMemo: callback => callback(), useCallback: callback => callback,
     useState(initial) { const index = cursor++; return [index === 0 ? false : index === 1 ? { id: 'own-log', calories: 2000, protein: 100, carbs: 250, fats: 70 } : typeof initial === 'function' ? initial() : initial, () => {}] },
   }
   const Dashboard = load('components/AdaptiveNutritionDashboard.tsx', {
@@ -137,7 +137,7 @@ test('direct food and meal entry shows the actual entitled logger while EMBER re
     '@/components/nutrition/MicronutrientProgressRing': { __esModule: true, default: () => null },
     '@/components/nutrition/hooks': { useNutritionEngine: logic => logic.nutrition, useFuelReadinessEngine: logic => logic.fuelReadiness, usePhoenixRecipes: recipes => recipes },
     '@/lib/nutrition/canLogFood': load('lib/nutrition/canLogFood.ts', { '@/lib/entitlements': entitlements }),
-    '@/lib/timezone': load('lib/timezone.ts'), '@/lib/entitlements': entitlements,
+    '@/lib/timezone': load('lib/timezone.ts'), '@/lib/entitlements': entitlements, '@/lib/nutrition/memberNutrition': load('lib/nutrition/memberNutrition.ts', { '@/lib/entitlements': entitlements }),
     '@/lib/nutrition/mealPeriod': periods, '@/lib/analytics': {},
     '@/components/dashboard/useViewPreference': { useViewPreference: (_client, _scope, _values, fallback) => [fallback, () => {}] },
     '@/lib/nutrition/nextFoodGuidance': load('lib/nutrition/nextFoodGuidance.ts'),

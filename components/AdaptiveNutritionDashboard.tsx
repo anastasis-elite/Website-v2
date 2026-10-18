@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import HydrationQuickAdd from '@/components/hydration/HydrationQuickAdd'
@@ -20,9 +20,12 @@ import { getNextFoodGuidance } from '@/lib/nutrition/nextFoodGuidance'
 import { loadRecordedNutrition, nutritionRemainingWithRecordedIntake } from '@/lib/nutrition/progress'
 import { calculateMicronutrientProgress, confirmedToxicityWarning, loadMicronutrientProgress } from '@/lib/nutrition/micronutrientProgress'
 import type { NutritionLoggingIntent } from '@/lib/nutrition/loggingIntent'
+import { canTrackMicronutrients, memberNutritionLog, memberNutritionLogColumns, memberNutritionRemaining, memberNutritionRemainingColumns } from '@/lib/nutrition/memberNutrition'
 
 type NutritionLog = {
   id: string
+  client_id?: string
+  log_date?: string
   calories?: number | null
   protein?: number | null
   carbs?: number | null
@@ -183,10 +186,10 @@ export default function AdaptiveNutritionDashboard({
 
   const tier = normalizeProgramTier(program || logic.program || logic.client.program)
   const isEmber = tier === 'ember'
-  const isIgnite = tier === 'ignite'
   const isPhoenix = tier === 'phoenix'
   const foodLoggingEnabled = canLogFood(tier)
   const capabilities = getTierCapabilities(tier)
+  const micronutrientsEnabled = canTrackMicronutrients(tier)
 
   const [loading, setLoading] = useState(true)
   const [nutritionLog, setNutritionLog] = useState<NutritionLog | null>(null)
@@ -211,10 +214,24 @@ export default function AdaptiveNutritionDashboard({
     fats: '',
   })
   const [savingMacros, setSavingMacros] = useState(false)
+  // Guidance belongs to one member, tier and local day, including in-flight reads.
+  const guidanceScope = `${logic.client.id}:${tier}:${getClientLocalDateOffset(logic.client)}`
+  const guidanceContext = useRef(guidanceScope)
+  const nutritionReadRequest = useRef<symbol | null>(null)
+  const publishedNutritionScope = useRef('')
+  const nutrientInsightRequest = useRef<symbol | null>(null)
+  const supplementRequest = useRef<symbol | null>(null)
+  const suggestedFoodRequest = useRef<symbol | null>(null)
+  const nutrientInsightScope = useRef('')
+  const supplementScope = useRef('')
+  const suggestedFoodScope = useRef('')
+  guidanceContext.current = guidanceScope
+  const nutritionLogIsCurrent = publishedNutritionScope.current === guidanceScope &&
+    nutritionLog?.client_id === logic.client.id && nutritionLog?.log_date === getClientLocalDateOffset(logic.client)
 
   const [progressTab, setProgressTab] = useViewPreference<ProgressTab>(logic.client.id, 'nutrition-progress', ['daily', 'trends'], 'daily')
   const [intakeTab, setIntakeTab] = useViewPreference<IntakeTab>(logic.client.id, 'nutrition-intake', ['water', 'meal', 'suggested'], 'meal')
-  const [managementTab, setManagementTab] = useViewPreference<ManagementTab>(logic.client.id, `nutrition-management-${tier}`, isPhoenix ? ['goals', 'micros', 'recipes'] : isEmber ? ['goals'] : ['goals', 'micros'], 'goals')
+  const [managementTab, setManagementTab] = useViewPreference<ManagementTab>(logic.client.id, `nutrition-management-${tier}`, isPhoenix ? ['goals', 'micros', 'recipes'] : micronutrientsEnabled ? ['goals', 'micros'] : ['goals'], 'goals')
   const [suggestedFoods, setSuggestedFoods] = useState<SuggestedFood[]>([])
   const [suggestedFoodsState, setSuggestedFoodsState] = useState<'idle' | 'loading' | 'ready' | 'unavailable' | 'complete' | 'error'>('idle')
   const [suggestedFoodsBasis, setSuggestedFoodsBasis] = useState<'remaining' | 'targets' | 'general'>('remaining')
@@ -223,6 +240,17 @@ export default function AdaptiveNutritionDashboard({
   const [supplementRecommendation, setSupplementRecommendation] = useState<SupplementRecommendation | null>(null)
   const [supplementDismissed, setSupplementDismissed] = useState(false)
   const [supplementShownKey, setSupplementShownKey] = useState('')
+
+  useEffect(() => {
+    setNutrientInsights([])
+    setSuggestedFoods([])
+    setSuggestedFoodsState('idle')
+    setSuggestedFoodsMessage('')
+    setMicronutrientIntake(null)
+    setSupplementRecommendation(null)
+    setSupplementDismissed(false)
+    setSupplementShownKey('')
+  }, [guidanceScope])
 
   useEffect(() => setWaterConsumed(logic.hydration.consumed), [logic.hydration.consumed])
 
@@ -242,14 +270,23 @@ export default function AdaptiveNutritionDashboard({
   }, [setIntakeTab])
 
   const loadSuggestedFoods = useCallback(async () => {
-    if (!nutritionLog?.id) return
+    const logMatchesCurrentMemberDay = () => {
+      return publishedNutritionScope.current === guidanceScope && nutritionLog?.client_id === logic.client.id &&
+        nutritionLog?.log_date === getClientLocalDateOffset(logic.client)
+    }
+    if (!nutritionLog?.id || guidanceContext.current !== guidanceScope || !logMatchesCurrentMemberDay()) return
+    const request = Symbol('suggested-foods')
+    suggestedFoodRequest.current = request
+    const isCurrent = () => guidanceContext.current === guidanceScope && suggestedFoodRequest.current === request && logMatchesCurrentMemberDay()
 
+    suggestedFoodScope.current = guidanceScope
     setSuggestedFoodsState('loading')
     setSuggestedFoodsMessage('')
 
     try {
       const response = await fetch(`/api/nutrition/suggested-foods?nutritionLogId=${encodeURIComponent(nutritionLog.id)}`)
       const payload = await response.json().catch(() => null)
+      if (!isCurrent()) return
 
       if (!response.ok) {
         throw new Error(payload?.error || 'Suggested foods could not be loaded.')
@@ -259,65 +296,84 @@ export default function AdaptiveNutritionDashboard({
       setSuggestedFoodsState(payload?.state || 'ready')
       setSuggestedFoodsBasis(payload?.basis || 'remaining')
     } catch (error) {
+      if (!isCurrent()) return
       setSuggestedFoods([])
       setSuggestedFoodsState('error')
       setSuggestedFoodsMessage(error instanceof Error ? error.message : 'Suggested foods could not be loaded.')
     }
-  }, [nutritionLog?.id])
+  }, [nutritionLog, logic.client, guidanceScope])
 
   const loadNutrientInsights = useCallback(async () => {
     const clientId = logic.client.id
-    if (!clientId) return
+    if (!clientId || !micronutrientsEnabled || guidanceContext.current !== guidanceScope) return
+    const request = Symbol('nutrient-insights')
+    nutrientInsightRequest.current = request
+    const isCurrent = () => guidanceContext.current === guidanceScope && nutrientInsightRequest.current === request
 
     try {
       const response = await fetch(`/api/nutrition/nutrient-insights?clientId=${encodeURIComponent(clientId)}`)
       const payload = await response.json().catch(() => null)
+      if (!isCurrent()) return
       if (!response.ok) return
+      nutrientInsightScope.current = guidanceScope
       setNutrientInsights(payload?.insights || [])
     } catch {
+      if (!isCurrent()) return
       setNutrientInsights([])
     }
-  }, [logic.client.id])
+  }, [logic.client.id, guidanceScope, micronutrientsEnabled])
 
   const loadSupplementRecommendation = useCallback(async () => {
     const clientId = logic.client.id
-    if (!clientId) return
+    if (!clientId || guidanceContext.current !== guidanceScope) return
+    const request = Symbol('supplement-recommendation')
+    supplementRequest.current = request
+    const isCurrent = () => guidanceContext.current === guidanceScope && supplementRequest.current === request
 
     try {
       const response = await fetch(`/api/nutrition/supplement-recommendation?clientId=${encodeURIComponent(clientId)}`)
       const payload = await response.json().catch(() => null)
+      if (!isCurrent()) return
       if (!response.ok) return
-      setSupplementRecommendation(payload?.recommendation || null)
+      supplementScope.current = guidanceScope
+      // EMBER support is the server's protein-only adapter. Never reuse a
+      // micronutrient response from a prior tier or an unscoped response.
+      const allowed = micronutrientsEnabled || payload?.nutritionScope === 'protein'
+      setSupplementRecommendation(allowed ? payload?.recommendation || null : null)
       setSupplementDismissed(false)
-      for (const resolved of payload?.resolvedRecommendations || []) {
+      for (const resolved of allowed ? payload?.resolvedRecommendations || [] : []) {
         trackEvent('supplement_recommendation_resolved', {
           product_id: String(resolved.productId || ''),
           recommendation_category: String(resolved.category || 'general_nutrition'),
         })
       }
     } catch {
+      if (!isCurrent()) return
       setSupplementRecommendation(null)
     }
-  }, [logic.client.id])
+  }, [logic.client.id, guidanceScope, micronutrientsEnabled])
   
   async function handleFoodUpdated(updatedRemaining?: Remaining | null, action: 'added' | 'removed' = 'added') {
+    if (guidanceContext.current !== guidanceScope) return
     if (updatedRemaining) {
-      setRemaining(updatedRemaining)
+      setRemaining(memberNutritionRemaining(updatedRemaining, tier))
     }
 
     setIntakeRevision(current => current + 1)
     try {
       await loadToday()
+      if (guidanceContext.current !== guidanceScope) return
       setMessage(
         action === 'removed'
           ? 'Food removed — today’s calories, macros, and micronutrients are updated.'
           : 'Food logged — today’s calories, macros, and micronutrients are updated.'
       )
     } catch {
+      if (guidanceContext.current !== guidanceScope) return
       setMessage(action === 'removed' ? 'Food removed. Saved totals could not be refreshed yet.' : 'Food saved. Saved totals could not be refreshed yet.')
       setLoading(false)
     }
-    router.refresh()
+    if (guidanceContext.current === guidanceScope) router.refresh()
   }
 
   async function handleMacroSubmit(event: React.FormEvent) {
@@ -344,7 +400,7 @@ export default function AdaptiveNutritionDashboard({
       if (!response.ok) throw new Error(payload?.error || 'Macros could not be saved.')
       setMacroEntry({ calories: '', protein: '', carbs: '', fats: '' })
       if (payload?.remaining) {
-        setRemaining(payload.remaining)
+        setRemaining(memberNutritionRemaining(payload.remaining, tier))
       }
       await loadToday()
       setMessage(payload?.refreshStatus === 'degraded' ? 'Macros logged. Today’s remaining totals are refreshing.' : 'Macros logged.')
@@ -362,15 +418,15 @@ export default function AdaptiveNutritionDashboard({
   }, [loadSuggestedFoods, remaining, directEntry])
 
   useEffect(() => {
-    if (!directEntry) void loadNutrientInsights()
-  }, [loadNutrientInsights, remaining, directEntry])
+    if (!directEntry && micronutrientsEnabled) void loadNutrientInsights()
+  }, [loadNutrientInsights, remaining, directEntry, micronutrientsEnabled])
 
   useEffect(() => {
     if (!directEntry) void loadSupplementRecommendation()
   }, [loadSupplementRecommendation, remaining, directEntry])
 
   useEffect(() => {
-    if (!supplementRecommendation || supplementDismissed) return
+    if (!supplementRecommendation || supplementDismissed || supplementScope.current !== guidanceScope) return
     const key = `${supplementRecommendation.productId}:${supplementRecommendation.category}`
     if (supplementShownKey === key) return
     setSupplementShownKey(key)
@@ -382,7 +438,7 @@ export default function AdaptiveNutritionDashboard({
       product_id: supplementRecommendation.productId,
       recommendation_category: supplementRecommendation.category,
     })
-  }, [supplementRecommendation, supplementDismissed, supplementShownKey])
+  }, [supplementRecommendation, supplementDismissed, supplementShownKey, guidanceScope])
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
@@ -405,12 +461,17 @@ export default function AdaptiveNutritionDashboard({
   }
 
   const loadToday = useCallback(async () => {
+    if (guidanceContext.current !== guidanceScope) return
+    const request = Symbol('nutrition-read')
+    nutritionReadRequest.current = request
+    const isCurrent = () => guidanceContext.current === guidanceScope && nutritionReadRequest.current === request
     setLoading(true)
     setMessage('')
 
     const {
       data: { user },
     } = await supabase.auth.getUser()
+    if (!isCurrent()) return
 
     if (!user) {
       setMessage('Please log in to view nutrition.')
@@ -428,15 +489,24 @@ export default function AdaptiveNutritionDashboard({
 
     const today = getClientLocalDateOffset(logic.client)
 
-    const { data: savedLog, error: logError } = await supabase
-      .from('nutrition_logs')
-      .select('*')
-      .eq('client_id', clientId)
-      .eq('log_date', today)
-      .maybeSingle()
+    const readMemberLog = async () => {
+      if (micronutrientsEnabled) {
+        return supabase.from('nutrition_logs').select(memberNutritionLogColumns(tier))
+          .eq('client_id', clientId).eq('log_date', today).maybeSingle<NutritionLog>()
+      }
+      // The server selects optional legacy metadata compatibly and projects it
+      // before transport. Explicit optional columns can break older schemas.
+      const response = await fetch(`/api/nutrition-log?client_id=${encodeURIComponent(clientId)}&log_date=${encodeURIComponent(today)}`)
+      const payload = await response.json().catch(() => null)
+      return response.ok
+        ? { data: (payload?.nutritionLog || null) as NutritionLog | null, error: null }
+        : { data: null, error: { message: 'Saved nutrition could not be loaded.' } }
+    }
+    const { data: savedLog, error: logError } = await readMemberLog()
 
+    if (!isCurrent()) return
     if (logError) throw new Error('Today’s saved nutrition could not be loaded. Try again before preparing a new log.')
-    let log = savedLog
+    let log = memberNutritionLog(savedLog, tier)
 
    if (!log) {
   const targetResponse = await fetch(
@@ -446,6 +516,7 @@ export default function AdaptiveNutritionDashboard({
   )
 
   const targets = await targetResponse.json().catch(() => null)
+  if (!isCurrent()) return
 
   if (!targetResponse.ok) {
     if (process.env.NODE_ENV === 'development') {
@@ -519,6 +590,7 @@ export default function AdaptiveNutritionDashboard({
   })
 
   const createPayload = await createResponse.json().catch(() => null)
+  if (!isCurrent()) return
 
   if (!createResponse.ok) {
     if (process.env.NODE_ENV === 'development') {
@@ -540,13 +612,9 @@ export default function AdaptiveNutritionDashboard({
     return
   }
 
-  const created = await supabase
-    .from('nutrition_logs')
-    .select('*')
-    .eq('client_id', clientId)
-    .eq('log_date', today)
-    .maybeSingle()
+  const created = await readMemberLog()
 
+  if (!isCurrent()) return
   if (created.error) {
     if (process.env.NODE_ENV === 'development') {
       console.error('[AOS Nutrition] created log could not be reloaded', {
@@ -563,7 +631,7 @@ export default function AdaptiveNutritionDashboard({
     return
   }
 
-  log = created.data
+  log = memberNutritionLog(created.data, tier)
 }
 
     if (!log) {
@@ -572,18 +640,20 @@ export default function AdaptiveNutritionDashboard({
   return
 }
 
+publishedNutritionScope.current = guidanceScope
 setNutritionLog(log)
     const [{ data: remainingData, error: remainingError }, recorded] = await Promise.all([
       supabase
       .from('nutrition_log_remaining')
-      .select('*')
+      .select(memberNutritionRemainingColumns(tier))
       .eq('nutrition_log_id', log.id)
-      .maybeSingle(),
+      .maybeSingle<Remaining>(),
       loadRecordedNutrition(supabase, log.id),
     ])
+    if (!isCurrent()) return
     if (remainingError) throw new Error('Saved nutrition progress could not be loaded.')
 
-    setRemaining(nutritionRemainingWithRecordedIntake(log, remainingData, recorded))
+    setRemaining(memberNutritionRemaining(nutritionRemainingWithRecordedIntake(log, remainingData, recorded), tier))
 
     const initialProtein = String(log.protein || remainingData?.protein_remaining_g || '')
     const initialCarbs = String(log.carbs || remainingData?.carbs_remaining_g || '')
@@ -595,7 +665,7 @@ setNutritionLog(log)
     setCalorieTarget(Number(log.calories || calculateCalories(initialProtein, initialCarbs, initialFat)))
 
     setLoading(false)
-  }, [supabase, logic.client, tier])
+  }, [supabase, logic.client, tier, guidanceScope, micronutrientsEnabled])
 
   useEffect(() => {
     if (loggingIntent?.action === 'water') return
@@ -603,37 +673,37 @@ setNutritionLog(log)
   }, [loadToday, loggingIntent?.action])
 
   useEffect(() => {
-    if (managementTab !== 'micros' || directEntry || !nutritionLog?.id || !foodLoggingEnabled) return
+    if (!micronutrientsEnabled || !nutritionLogIsCurrent || managementTab !== 'micros' || directEntry || !nutritionLog?.id || !foodLoggingEnabled) return
     let cancelled = false
     setMicronutrientState('loading')
     void loadMicronutrientProgress(supabase, nutritionLog.id).then(intake => {
-      if (cancelled) return
+      if (cancelled || guidanceContext.current !== guidanceScope) return
       setMicronutrientIntake(intake)
       setMicronutrientState('ready')
     }).catch(() => {
-      if (cancelled) return
+      if (cancelled || guidanceContext.current !== guidanceScope) return
       setMicronutrientIntake(null)
       setMicronutrientState('error')
     })
     return () => { cancelled = true }
-  }, [supabase, nutritionLog?.id, managementTab, directEntry, foodLoggingEnabled, intakeRevision])
+  }, [supabase, nutritionLog?.id, managementTab, directEntry, foodLoggingEnabled, intakeRevision, micronutrientsEnabled, guidanceScope, nutritionLogIsCurrent])
 
   useEffect(() => {
-    if (managementTab !== 'micros' || directEntry || !nutritionLog?.id || !foodLoggingEnabled) return
+    if (!micronutrientsEnabled || !nutritionLogIsCurrent || managementTab !== 'micros' || directEntry || !nutritionLog?.id || !foodLoggingEnabled) return
     const resume = () => {
       if (document.visibilityState === 'visible') setIntakeRevision(current => current + 1)
     }
     document.addEventListener('visibilitychange', resume)
     return () => document.removeEventListener('visibilitychange', resume)
-  }, [managementTab, directEntry, nutritionLog?.id, foodLoggingEnabled])
+  }, [managementTab, directEntry, nutritionLog?.id, foodLoggingEnabled, micronutrientsEnabled, nutritionLogIsCurrent])
 
-  const microRows = calculateMicronutrientProgress({
+  const microRows = micronutrientsEnabled && nutritionLogIsCurrent ? calculateMicronutrientProgress({
     targets: nutritionLog || {},
     meals: micronutrientIntake?.meals || [],
     macroEntryCount: micronutrientIntake?.macroEntryCount || 0,
     upperLimits: micronutrientIntake?.upperLimits || [],
     age: logic.client.age ?? null,
-  })
+  }) : []
 
   const macroMetrics = [
     {
@@ -672,7 +742,7 @@ setNutritionLog(log)
   const nutritionTrends = logic.trends.filter((trend) => ['calories', 'protein', 'water'].includes(trend.key))
   const managementTabs: Array<{ key: ManagementTab; label: string }> = [
     { key: 'goals', label: 'Goals / Assessment' },
-    ...(isIgnite || isPhoenix ? [{ key: 'micros' as ManagementTab, label: 'Micronutrients' }] : []),
+    ...(micronutrientsEnabled ? [{ key: 'micros' as ManagementTab, label: 'Micronutrients' }] : []),
     ...(isPhoenix && phoenixRecipes.length ? [{ key: 'recipes' as ManagementTab, label: 'Recipes' }] : []),
   ]
 
@@ -681,10 +751,12 @@ setNutritionLog(log)
     (nutritionLog?.calculation_status === 'manual_override'
       ? 'Manually overridden target'
       : 'Estimated nutrition target')
+  const currentSuggestedFoods = suggestedFoodScope.current === guidanceScope ? suggestedFoods : []
+  const currentSuggestedFoodsState = suggestedFoodScope.current === guidanceScope ? suggestedFoodsState : 'idle'
   const nextFoodGuidance = getNextFoodGuidance({
     dataStatus: engineNutrition.dataStatus,
     mealSuggestions: engineNutrition.mealSuggestions,
-    suggestedFoods,
+    suggestedFoods: currentSuggestedFoods,
   })
 
   const waterEntry = (
@@ -850,7 +922,7 @@ setNutritionLog(log)
           {loading && <p className="nutrition-status">Loading...</p>}
           {message && <p className="nutrition-status">{message}</p>}
 
-          {nutrientInsights.length ? (
+          {micronutrientsEnabled && nutrientInsightScope.current === guidanceScope && nutrientInsights.length ? (
             <section className="nutrition-dashboard-panel nutrient-insight-card" data-testid="nutrient-insight-card">
               <div className="tier-panel-heading">
                 <div>
@@ -873,7 +945,7 @@ setNutritionLog(log)
             </section>
           ) : null}
 
-          {supplementRecommendation && !supplementDismissed ? (
+          {supplementScope.current === guidanceScope && supplementRecommendation && !supplementDismissed ? (
             <section className="nutrition-dashboard-panel supplement-recommendation-card" data-testid="supplement-recommendation-card">
               <div className="tier-panel-heading">
                 <div>
@@ -1005,26 +1077,26 @@ setNutritionLog(log)
 
               {intakeTab === 'suggested' ? (
                 <div id="nutrition-suggested-foods" className="nutrition-suggested-foods-panel" data-testid="nutrition-suggested-foods-tab">
-                  {suggestedFoodsState === 'loading' ? (
+                  {currentSuggestedFoodsState === 'loading' ? (
                     <p className="tier-calendar-empty">Finding today’s best matches...</p>
                   ) : null}
 
-                  {suggestedFoodsState === 'unavailable' ? (
+                  {currentSuggestedFoodsState === 'unavailable' ? (
                     <p className="tier-calendar-empty">No food suggestions are available for your current preferences. You can still {foodLoggingEnabled ? 'record foods in the food log' : 'enter your macro totals'}.</p>
                   ) : null}
 
-                  {suggestedFoodsState === 'complete' ? (
+                  {currentSuggestedFoodsState === 'complete' ? (
                     <p className="tier-calendar-empty">No additional food suggestions based on your logged intake.</p>
                   ) : null}
 
-                  {suggestedFoodsState === 'error' ? (
+                  {currentSuggestedFoodsState === 'error' ? (
                     <p className="tier-calendar-empty">{suggestedFoodsMessage}</p>
                   ) : null}
 
-                  {suggestedFoodsState === 'ready' && suggestedFoods.length ? (
+                  {currentSuggestedFoodsState === 'ready' && currentSuggestedFoods.length ? (
                     <div className="nutrition-suggested-foods-list">
                       {suggestedFoodsBasis !== 'remaining' ? <p className="tier-calendar-empty">{suggestedFoodsBasis === 'targets' ? 'Starting options based on today’s targets. No prior meal logs needed.' : 'Starting food options. Log intake to personalize your remaining targets.'}</p> : null}
-                      {suggestedFoods.map((food) => (
+                      {currentSuggestedFoods.map((food) => (
                         <article key={food.foodId} className="nutrition-suggested-food-card">
                           <div>
                             <span>{food.contribution}</span>
@@ -1067,7 +1139,7 @@ setNutritionLog(log)
               </div>
             ) : null}
 
-            {managementTab === 'micros' ? (
+            {micronutrientsEnabled && nutritionLogIsCurrent && managementTab === 'micros' ? (
               <div data-testid="nutrition-micronutrients-tab">
                 {micronutrientState === 'loading' ? <p role="status" className="nutrition-status">Loading saved micronutrient intake…</p> : null}
                 {micronutrientState === 'error' ? <div><p role="status">Saved micronutrient intake could not be loaded.</p><button type="button" className="tier-secondary-action" onClick={() => setIntakeRevision(current => current + 1)}>Retry micronutrients</button></div> : null}

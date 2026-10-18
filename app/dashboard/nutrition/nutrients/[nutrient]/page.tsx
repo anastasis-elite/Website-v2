@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getNutrientInsights } from '@/lib/nutrition/getNutrientInsights'
+import { canTrackMicronutrients } from '@/lib/nutrition/memberNutrition'
 
 export default async function NutrientDetailPage({
   params,
@@ -10,6 +11,7 @@ export default async function NutrientDetailPage({
 }) {
   const { nutrient } = await params
   const { supabase, user, client } = await getDashboardContext()
+  if (!canTrackMicronutrients(client.program)) notFound()
 
   const { data: nutrientRow } = await supabase
     .from('nutrients')

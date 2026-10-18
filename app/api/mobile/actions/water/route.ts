@@ -3,6 +3,7 @@ import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronut
 import { calculateClientNutritionTargets, normalizeCyclePhase, nutritionLogAuditFields } from '@/lib/nutrition/targetService'
 import { getClientLocalDateOffset } from '@/lib/timezone'
 import { createMobileRequestContext } from '@/lib/mobile/auth'
+import { canTrackMicronutrients, memberNutritionLog } from '@/lib/nutrition/memberNutrition'
 
 export async function POST(request: Request) {
   try {
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      return NextResponse.json({ success: true, nutritionLog: data })
+      return NextResponse.json({ success: true, nutritionLog: memberNutritionLog(data, context.client.program) })
     }
 
     const nutrition = await calculateClientNutritionTargets({
@@ -81,14 +82,14 @@ export async function POST(request: Request) {
         fats: target.fats,
         water_oz: water,
         water_consumed_oz: ounces,
-        ...calculateMicronutrientTargets({
+        ...(canTrackMicronutrients(context.client.program) ? calculateMicronutrientTargets({
           age,
           calories: target.calories,
           weightLbs,
           waterOz: water,
           cyclePhase: normalizeCyclePhase(nutrition.phase),
           trainingLevel: 'general_fitness',
-        }),
+        }) : {}),
         ...nutritionLogAuditFields(target),
         updated_at: new Date().toISOString(),
       })
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, nutritionLog: data })
+    return NextResponse.json({ success: true, nutritionLog: memberNutritionLog(data, context.client.program) })
   } catch (error) {
     return NextResponse.json(
       {
