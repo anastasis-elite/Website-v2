@@ -3,6 +3,7 @@ import type {
   HistoricalRecoverySignal,
   RecoveryAction,
 } from '@/lib/workout-os/types'
+import type { StrengthAssessmentStatus } from '@/lib/assessment/getStrengthAssessmentStatus'
 
 export type ProgramTier = 'ember' | 'ignite' | 'phoenix'
 export type CapacityStatus = 'low_capacity' | 'moderate_capacity' | 'high_capacity'
@@ -64,6 +65,7 @@ export type ProgramLogicInputs = {
   executionHistory: Array<{ log_date: string; streak_eligible: boolean }>
   yesterday: { workoutComplete: boolean; nutritionLogged: boolean; taskCount: number }
   monthlyAssessmentsDueCount: number
+  strengthAssessment?: StrengthAssessmentStatus
   bodyAssessment: {
     latestMonthlyCompletedAt: string | null
     latestStructuralCompletedAt: string | null
@@ -133,6 +135,7 @@ export type ProgramLogicOutput = {
     dailyCompleted: boolean
     monthlyDueCount: number
     completionPercent: number
+    strength: StrengthAssessmentStatus
     body: {
       dueKind: 'none' | 'monthly' | 'structural' | 'full'
       monthlyDue: boolean

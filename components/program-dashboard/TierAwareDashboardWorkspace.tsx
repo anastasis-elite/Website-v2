@@ -20,6 +20,7 @@ import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashb
 import dynamic from 'next/dynamic'
 import OptionalDashboardModule from '@/components/OptionalDashboardModule'
 import type { PlanBlock } from './dashboardWorkspaceTypes'
+import { getStrengthAssessmentDetail } from '@/lib/assessment/getStrengthAssessmentStatus'
 
 const DashboardCalendar = dynamic(() => import('./DashboardCalendar'), {
   loading: () => <p role="status">Loading calendar details…</p>,
@@ -174,6 +175,7 @@ export function AssessmentsTab({ logic, capabilities }: { logic: ProgramLogicOut
     ? 'Posture landmark assessment available'
     : 'Progress photos available'
   const bodyAssessment = logic.assessments.body
+  const strengthAssessment = logic.assessments.strength
   const bodyAssessmentDetail = bodyAssessment.inProgress
     ? 'Continue'
     : bodyAssessment.dueKind === 'none'
@@ -186,7 +188,7 @@ export function AssessmentsTab({ logic, capabilities }: { logic: ProgramLogicOut
       <Link href={bodyAssessment.href} title="Measurements" data-tutorial-id="dashboard-body-assessment"><span>Body Assessment</span><strong>{bodyAssessment.title}</strong><small>{bodyAssessmentDetail}</small></Link>
       <Link href="/dashboard/assessment/photos" data-tutorial-id="dashboard-progress-photos"><span>Progress Photos</span><strong>{logic.progress.photoUrls.length ? `${logic.progress.photoUrls.length} saved` : 'Available'}</strong><small>{logic.progress.photosDue ? 'Photo update available' : 'History available'}</small></Link>
       <Link href="/dashboard/assessment/photos"><span>Assessment Photos</span><strong>Available</strong><small>{postureCopy}</small></Link>
-      <Link href="/dashboard/assessment/start2" data-tutorial-id="dashboard-strength-assessment"><span>Strength Assessment</span><strong>{logic.assessments.monthlyDueCount ? 'Due' : 'Current'}</strong><small>Functional progress history</small></Link>
+      <Link href={strengthAssessment.href} data-tutorial-id="dashboard-strength-assessment"><span>Strength Assessment</span><strong>{strengthAssessment.label}</strong><small>{getStrengthAssessmentDetail(strengthAssessment, logic.client)}</small><span>{strengthAssessment.actionLabel}</span></Link>
       <Link href={capabilities.postureAssessment ? '/dashboard/assessment/photos?type=posture' : '/dashboard/assessment/photos'} aria-disabled={!capabilities.postureAssessment}><span>Posture Assessment</span><strong>{capabilities.postureAssessment ? 'Available' : 'Ignite/Phoenix'}</strong><small>{capabilities.postureAssessment ? 'Confirm landmarks before saving' : 'Not included in Ember'}</small></Link>
     </div>
   )
