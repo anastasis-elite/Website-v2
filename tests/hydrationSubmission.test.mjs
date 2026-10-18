@@ -100,6 +100,19 @@ test('quick add keeps one committed drink through response loss, double-click, r
   assert.equal(server.total, 52)
 })
 
+test('closing an unsaved direct water dialog notifies its route without submitting or retaining a drink', () => {
+  const server = scenario(); let closed = 0
+  const app = mount(QuickAdd, { ...quickProps, initiallyOpen: true, onClosed: () => { closed++ } }, server.storage, server.fetch)
+  button(app, 'Close').props.onClick(); app.render()
+  const dialog = nodes(app.tree, node => node.type === 'dialog')[0]
+  assert.equal(closed, 0, 'Navigation waits for the native dialog close event')
+  dialog.props.onClose()
+  assert.equal(closed, 1)
+  assert.equal(server.calls.length, 0)
+  assert.equal(server.total, 36)
+  assert.equal(server.values.size, 0)
+})
+
 test('an older open control retries its original drink after another tab confirms and clears storage', async () => {
   const server = scenario(), original = mount(QuickAdd, quickProps, server.storage, server.fetch)
   button(original, 'Log 8 oz').props.onClick(); await original.flush()

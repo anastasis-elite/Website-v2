@@ -68,15 +68,20 @@ export default function DirectNutritionEntry({
 
   const consumed = waterTotal ?? (Number(nutritionLog?.water_consumed_oz) || 0)
   const target = Number(nutritionLog?.water_oz) || 0
+  if (water) return <main className="aos-nutrition-page nutrition-direct-entry">
+    <HydrationQuickAdd clientId={clientId} logDate={logDate} consumed={consumed} consumedKnown={!error || waterTotal !== null} target={target} initiallyOpen
+      onSaved={setWaterTotal} onClosed={() => router.replace('/dashboard')} renderTrigger={() => null}>
+      {error ? <div><p role="alert">{error}</p><button type="button" className="tier-secondary-action" disabled={loading} onClick={() => setRetry(current => current + 1)}>Retry loading saved intake</button></div> : null}
+    </HydrationQuickAdd>
+  </main>
+
   return <main className="aos-nutrition-page nutrition-direct-entry">
     <section className="nutrition-dashboard-panel" data-tier={program} aria-labelledby="nutrition-entry-title">
       <div className="nutrition-direct-entry-heading tier-panel-heading">
-        <h1 id="nutrition-entry-title">{water ? 'Log Water' : !capabilities.nutritionMealLogging ? 'Nutrition Guidance' : loggingIntent.action === 'meal' ? 'Log Meal' : 'Log Food'}</h1>
+        <h1 id="nutrition-entry-title">{!capabilities.nutritionMealLogging ? 'Nutrition Guidance' : loggingIntent.action === 'meal' ? 'Log Meal' : 'Log Food'}</h1>
         <a className="tier-secondary-action" href="/dashboard">Done</a>
       </div>
-      {water ? <HydrationQuickAdd clientId={clientId} logDate={logDate} consumed={consumed} consumedKnown={!error || waterTotal !== null} target={target} initiallyOpen
-        onSaved={setWaterTotal} renderTrigger={({ toggle, triggerRef }) => <button ref={triggerRef} type="button" className="tier-primary-action" onClick={toggle}>Log water</button>} />
-        : !capabilities.nutritionMealLogging ? <div><p>Your EMBER plan includes nutrition guidance and macro entry. Food and meal logging require IGNITE or PHOENIX.</p><a className="tier-primary-action" href="/dashboard/nutrition">Open nutrition guidance and macros</a></div>
+      {!capabilities.nutritionMealLogging ? <div><p>Your EMBER plan includes nutrition guidance and macro entry. Food and meal logging require IGNITE or PHOENIX.</p><a className="tier-primary-action" href="/dashboard/nutrition">Open nutrition guidance and macros</a></div>
           : <>
             {recipe ? <details className="nutrition-entry-recipe-context"><summary>Recipe: {recipe.title}</summary><p>Log the foods and portions you ate from this recipe.</p><ul>{recipe.ingredients.map(ingredient => <li key={ingredient}>{ingredient}</li>)}</ul></details> : null}
             {nutritionLog ? <NutritionFoodLogger key={nutritionLog.id} nutritionLogId={nutritionLog.id} timezone={timezone}

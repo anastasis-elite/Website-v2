@@ -63,6 +63,48 @@ test('same-day direct entry adopts refreshed water while retaining the same food
   assert.equal(nodes(render()).find(node => node.type === 'food-entry').key, before.key, 'A transient read failure preserves the active food draft')
 })
 
+test('direct water opens the actual entry without a second heading or trigger and closes to Dashboard', () => {
+  const state = hooks(), navigations = []
+  const Direct = load('components/nutrition/DirectNutritionEntry.tsx', {
+    react: state.react, 'next/navigation': { useRouter: () => ({ refresh() {}, replace: href => navigations.push(href) }) },
+    '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: 'water-entry' },
+    '@/components/NutritionFoodLogger': { __esModule: true, default: 'food-entry' },
+    '@/lib/entitlements': entitlements, '@/lib/supabase/client': { createClient: () => ({}) }, '@/lib/nutrition/directEntry': {},
+  }).default
+  const tree = state.render(Direct, { clientId: 'own-client', program: 'ember', timezone: 'America/Chicago', logDate: '2026-10-14',
+    loggingIntent: { action: 'water' }, initialLog: { id: 'own-log', water_consumed_oz: 8, water_oz: 90 } })
+  const entries = nodes(tree).filter(node => node.type === 'water-entry')
+  assert.equal(entries.length, 1)
+  assert.equal(entries[0].props.initiallyOpen, true)
+  assert.equal(nodes(tree).filter(node => node.type === 'h1' || node.type === 'button' || node.type === 'a').length, 0, 'No redundant wrapper controls precede the actual entry')
+  assert.equal(entries[0].props.renderTrigger({}), null)
+  assert.equal(entries[0].props.consumed, 8)
+  entries[0].props.onClosed()
+  assert.deepEqual(navigations, ['/dashboard'])
+})
+
+test('direct water retains unavailable-total feedback and its read retry inside the actual entry', async () => {
+  const state = hooks(); let reads = 0
+  const Direct = load('components/nutrition/DirectNutritionEntry.tsx', {
+    react: state.react, 'next/navigation': { useRouter: () => router },
+    '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: 'water-entry' },
+    '@/components/NutritionFoodLogger': { __esModule: true, default: 'food-entry' },
+    '@/lib/entitlements': entitlements, '@/lib/supabase/client': { createClient: () => ({}) },
+    '@/lib/nutrition/directEntry': { readDirectEntryLog: async () => { reads++; return { id: 'own-log', water_consumed_oz: 24, water_oz: 90 } } },
+  }).default
+  const props = { clientId: 'own-client', program: 'ember', timezone: 'America/Chicago', logDate: '2026-10-14', loggingIntent: { action: 'water' }, initialLog: null, initialError: 'Synthetic saved-total read failed' }
+  const render = () => state.render(Direct, props)
+  let entry = nodes(render()).find(node => node.type === 'water-entry')
+  assert.equal(entry.props.consumedKnown, false)
+  assert.ok(nodes(entry).some(node => node.props?.role === 'alert'))
+  nodes(entry).find(node => node.type === 'button').props.onClick()
+  await flush(render)
+  entry = nodes(render()).find(node => node.type === 'water-entry')
+  assert.equal(reads, 1)
+  assert.equal(entry.props.consumed, 24)
+  assert.equal(entry.props.consumedKnown, true)
+})
+
 test('active food method revalidates once on visible resume and retains its search draft', async () => {
   const parentState = hooks(), inputState = hooks(), doc = documentFixture(), calls = []
   let activeHooks = parentState.react

@@ -23,13 +23,15 @@ type Props = {
   stepOunces?: number
   initiallyOpen?: boolean
   onSaved?: (total: number) => void
+  onClosed?: () => void
+  children?: ReactNode
   renderTrigger: (props: TriggerRenderProps) => ReactNode
 }
 
 export default function HydrationQuickAdd({
   clientId, logDate, consumed, consumedKnown = true, target, defaultOunces = 8,
   minimumOunces = 4, maximumOunces = 64, stepOunces = 4,
-  initiallyOpen = false, onSaved, renderTrigger,
+  initiallyOpen = false, onSaved, onClosed, children, renderTrigger,
 }: Props) {
   const router = useRouter()
   const id = useId()
@@ -178,11 +180,12 @@ export default function HydrationQuickAdd({
     {renderTrigger({ open, addingWater, triggerRef, toggle: () => setOpen(current => !current) })}
     <dialog ref={dialogRef} className="daily-action-dialog water-entry-dialog"
       onCancel={() => setOpen(false)}
-      onClose={() => { setOpen(false); triggerRef.current?.focus() }}
+      onClose={() => { setOpen(false); triggerRef.current?.focus(); onClosed?.() }}
       aria-labelledby={`${id}-title`} aria-describedby={`${id}-summary`}>
       <div className="tier-panel-heading"><h2 id={`${id}-title`}>Log water</h2><button type="button" onClick={() => setOpen(false)} aria-label="Close water entry">Close</button></div>
       <p id={`${id}-summary`} className="water-entry-summary">{!totalKnown ? 'Saved water total unavailable' : logged > 0 ? `${logged} oz logged` : 'No water logged yet'}{Number.isFinite(target) && target > 0 ? ` · Daily target ${Math.round(target)} oz` : ' · Daily target unavailable'}</p>
       <p className="water-entry-help">Choose the amount you drank. Follow any fluid guidance from your care team.</p>
+      {children}
       {pending && pending.logDate !== logDate ? <div className="water-earlier-save">
         <p>{checkingEarlier ? 'Checking your earlier saved water…' : `Your ${pending.ounces} oz save for ${pending.logDate} needs review.`}</p>
         <button type="button" disabled={checkingEarlier || addingWater} onClick={() => setReceiptCheck(current => current + 1)}>Check earlier save</button>
