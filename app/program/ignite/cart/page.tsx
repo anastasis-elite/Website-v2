@@ -2,6 +2,7 @@
 
 import * as styles from '../../../styles/globalstyles'
 import TrackEvent from '@/components/TrackEvent'
+import { CartPriceDetails, useCartPricing } from '@/components/commerce/CartPriceDetails'
 
 async function startCheckout(billing: 'subscription' | 'annual') {
   const response = await fetch('/api/checkout', {
@@ -24,6 +25,7 @@ async function startCheckout(billing: 'subscription' | 'annual') {
 }
 
 export default function IgniteCartPage() {
+  const pricing = useCartPricing('ignite')
   return (
     <><TrackEvent event="ignite_cart_page_viewed" properties={{ page: 'ignite_cart' }} />
     <main style={styles.pageStyle}>
@@ -40,6 +42,7 @@ export default function IgniteCartPage() {
         <section style={styles.cardGridStyle}>
           <div style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>Monthly</h2>
+            <CartPriceDetails pricing={pricing} billing="subscription" />
             <p style={styles.bodyStyle}>
               Begin Ignite with monthly access.
             </p>
@@ -54,6 +57,7 @@ export default function IgniteCartPage() {
 
           <div style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>Pay in Full</h2>
+            <CartPriceDetails pricing={pricing} billing="annual" />
             <p style={styles.bodyStyle}>
               Review the purchase details before paying.
             </p>

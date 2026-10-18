@@ -2,6 +2,7 @@
 
 import * as styles from '../../../styles/globalstyles'
 import TrackEvent from '@/components/TrackEvent'
+import { CartPriceDetails, useCartPricing } from '@/components/commerce/CartPriceDetails'
 
 async function startCheckout(billing: 'subscription' | 'annual') {
   const referralCode = new URLSearchParams(window.location.search).get('ref') || ''
@@ -26,6 +27,7 @@ async function startCheckout(billing: 'subscription' | 'annual') {
 }
 
 export default function PhoenixCartPage() {
+  const pricing = useCartPricing('phoenix')
   return (
     <><TrackEvent event="phoenix_cart_page_viewed" properties={{ page: 'phoenix_cart' }} />
     <main style={styles.pageStyle}>
@@ -42,6 +44,7 @@ export default function PhoenixCartPage() {
         <section style={styles.cardGridStyle}>
           <div style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>Monthly</h2>
+            <CartPriceDetails pricing={pricing} billing="subscription" />
             <p style={styles.bodyStyle}>
               Begin Phoenix with monthly access.
             </p>
@@ -56,6 +59,7 @@ export default function PhoenixCartPage() {
 
           <div style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>Pay in Full</h2>
+            <CartPriceDetails pricing={pricing} billing="annual" />
             <p style={styles.bodyStyle}>
               Review the purchase details before paying.
             </p>
