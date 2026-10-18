@@ -42,7 +42,7 @@ const outcomes = {
 }
 const originalMetadata = { work_days_of_week: [1, 2], school_dropoff_days_of_week: [1, 2, 3, 4, 5], school_pickup_days_of_week: [0, 6], kept: 'future metadata' }
 const request = body => new Request('https://disposable.invalid/api/daily-structure', { method: 'POST', body: JSON.stringify(body) })
-const submitBody = overrides => ({ action: 'submit', assessmentVersion: 1, client_id: clientId, eventId: event.id, ...legacyAnswers, ...overrides })
+const submitBody = overrides => ({ action: 'submit', assessmentVersion: 1, client_id: clientId, eventId: event.id, expected_revision: 0, ...legacyAnswers, ...overrides })
 const routineBody = overrides => ({ client_id: clientId, expected_revision: 0, ...legacyAnswers, ...overrides })
 const clone = value => structuredClone(value)
 
@@ -194,7 +194,7 @@ test('real assessment POST persists normalized day metadata and immutable answer
   assert.equal(refreshed.writes.length, 0, 'reading persisted completion never resubmits an assessment')
 })
 
-test('old assessment proof remains complete and its retry cannot replace newer routine day metadata', async () => {
+test('old assessment proof accepts tokenless retries without replacing newer routine day metadata', async () => {
   const f = fixture()
   const validated = validateScheduleStructure(legacyAnswers)
   assert.ok(!('error' in validated))
@@ -204,14 +204,21 @@ test('old assessment proof remains complete and its retry cannot replace newer r
   f.rows[0].onboarding_data.scheduleCommitmentWeekdays.work_days_of_week = [2, 4]
   const before = clone(f.rows)
   assert.deepEqual(getScheduleStructureSubmission(f.rows[0].onboarding_data, event), proof)
-  const response = await assessmentRoute.POST(request(submitBody({ ...selectedDays, work_start_time: '10:00' })))
-  assert.equal(response.status, 200)
-  assert.deepEqual((await response.json()).submission, proof)
+  for (const days of [{}, selectedDays]) {
+    const response = await assessmentRoute.POST(request(submitBody({ ...days, expected_revision: undefined, work_start_time: '10:00' })))
+    assert.equal(response.status, 200)
+    assert.deepEqual((await response.json()).submission, proof)
+    assert.deepEqual(f.rows, before, 'legacy proof replay never rewrites current routine preferences')
+  }
+  assert.equal((await assessmentRoute.POST(request(submitBody({ expected_revision: null })))).status, 400)
+  for (const assessmentVersion of [0, 2]) {
+    assert.equal((await assessmentRoute.POST(request(submitBody({ expected_revision: undefined, assessmentVersion })))).status, 409)
+  }
   assert.deepEqual(f.rows, before, 'completed proof retries cannot overwrite canonical routine selections or reviewed-at')
   assertOutcomesUnchanged(f)
 })
 
-test('assessment submissions from an old client preserve saved weekday metadata and existing outcomes', async () => {
+test('revisioned assessment submissions omitting weekday fields preserve saved metadata and existing outcomes', async () => {
   const f = fixture(), before = clone(f.rows[0].onboarding_data.scheduleCommitmentWeekdays)
   const response = await assessmentRoute.POST(request(submitBody({ wake_time: '06:30' })))
   assert.equal(response.status, 200)
@@ -262,7 +269,7 @@ test('old-client routine edits preserve omitted day selections, while explicit i
   assertOutcomesUnchanged(f)
 })
 
-test('legacy assessment revision fallback rejects related changes during its CAS retry', async () => {
+test('revisioned assessment rejects related changes during its CAS retry', async () => {
   const f = fixture({ beforeWrite(row, attempt) {
     if (attempt !== 1) return
     row.wake_time = '08:30'

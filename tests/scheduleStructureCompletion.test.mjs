@@ -43,7 +43,7 @@ const answers = {
   daily_non_negotiables: ['family'], day_structure_notes: '  Keep evenings open.  ',
 }
 const request = (overrides = {}) => new Request('http://disposable.test/api/daily-structure', {
-  method: 'POST', body: JSON.stringify({ action: 'submit', assessmentVersion: 1, client_id: clientId, eventId: assessment.id, ...answers, ...overrides }),
+  method: 'POST', body: JSON.stringify({ action: 'submit', assessmentVersion: 1, client_id: clientId, eventId: assessment.id, expected_revision: 0, ...answers, ...overrides }),
 })
 const currentLogic = () => ({
   program: 'ignite', flameState: { requirements: { requiredItems: {
@@ -165,7 +165,7 @@ test('duplicate submissions preserve the original evidence, answers and completi
   const original = structuredClone(saved(initial))
   const { db } = setup({ clients: structuredClone(initial.rows), events: structuredClone(initial.events) })
   mock.timers.setTime(frozen + 10 * 60000)
-  assert.equal((await POST(request())).status, 200)
+  assert.equal((await POST(request({ expected_revision: undefined }))).status, 200)
   assert.deepEqual(saved(db), original)
   assert.equal(db.rows[0].execution_style, original.answers.execution_style)
   assert.equal(db.rows[0].wake_time, original.answers.wake_time)
@@ -180,10 +180,10 @@ test('an older task retry cannot replace its assessment answers or newer saved p
   assert.equal((await POST(request())).status, 200)
   const original = structuredClone(saved(db))
   mock.timers.setTime(Date.parse('2026-11-12T15:00:00Z'))
-  assert.equal((await POST(request({ eventId: undefined, execution_style: 'schedule', wake_time: '08:00' }))).status, 200)
+  assert.equal((await POST(request({ eventId: undefined, expected_revision: 1, execution_style: 'schedule', wake_time: '08:00' }))).status, 200)
   const afterNewReview = structuredClone(db.rows[0])
   mock.timers.setTime(Date.parse('2026-11-12T15:10:00Z'))
-  const response = await POST(request({ execution_style: 'flow', wake_time: '05:00' }))
+  const response = await POST(request({ expected_revision: undefined, execution_style: 'flow', wake_time: '05:00' }))
   assert.equal(response.status, 200)
   assert.deepEqual((await response.json()).submission, original)
   assert.deepEqual(saved(db), original)
@@ -249,7 +249,7 @@ test('monthly standalone reviews remain idempotent within a month and persist a 
   assert.equal((await POST(request({ eventId: undefined }))).status, 200)
   assert.deepEqual(db.rows[0].onboarding_data.scheduleStructureAssessments['1']['standalone:2026-10'], october)
   mock.timers.setTime(Date.parse('2026-11-12T15:00:00Z'))
-  assert.equal((await POST(request({ eventId: undefined }))).status, 200)
+  assert.equal((await POST(request({ eventId: undefined, expected_revision: 1 }))).status, 200)
   assert.equal(db.rows[0].onboarding_data.scheduleStructureAssessments['1']['standalone:2026-11'].submittedAt, '2026-11-12T15:00:00.000Z')
   assert.equal(db.rows[0].daily_structure_reviewed_at, '2026-11-12T15:00:00.000Z')
   assert.deepEqual(db.rows[0].onboarding_data.scheduleStructureAssessments['1']['standalone:2026-10'], october)
@@ -301,9 +301,9 @@ test('monthly task identity respects local month boundaries and accepts old retr
   assert.equal((await POST(request({ eventId: undefined, wake_time: '05:00' }))).status, 200)
   assert.deepEqual(db.rows[0], october, 'Chicago is still in October before local midnight')
   mock.timers.setTime(Date.parse('2026-11-01T05:00:00Z'))
-  assert.equal((await POST(request({ eventId: 'schedule-structure:2026-11', wake_time: '08:00' }))).status, 200)
+  assert.equal((await POST(request({ eventId: 'schedule-structure:2026-11', expected_revision: 1, wake_time: '08:00' }))).status, 200)
   const november = structuredClone(db.rows[0])
-  assert.equal((await POST(request({ eventId: 'schedule-structure:2026-10', wake_time: '05:00' }))).status, 200)
+  assert.equal((await POST(request({ eventId: 'schedule-structure:2026-10', expected_revision: undefined, wake_time: '05:00' }))).status, 200)
   assert.deepEqual(db.rows[0], november, 'an old completed task cannot roll current preferences backward')
   assert.deepEqual(november.onboarding_data.scheduleStructureAssessments['1']['standalone:2026-10'], october.onboarding_data.scheduleStructureAssessments['1']['standalone:2026-10'])
 })

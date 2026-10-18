@@ -144,11 +144,10 @@ test('unrelated JSON CAS collisions still retry while retaining outcomes and sel
   assert.equal(f.row.daily_structure_reviewed_at, null)
 })
 
-test('legacy omission keeps chosen weekday metadata and binds the assessment request to its first owned read', async () => {
+test('legacy weekday omission with a current revision retains chosen metadata', async () => {
   const f = fixture()
   f.row.onboarding_data.scheduleCommitmentWeekdays.school_dropoff_days_of_week = [0, 2, 6]
   const legacyRequest = assessmentBody()
-  delete legacyRequest.expected_revision
   delete legacyRequest.work_days_of_week
   delete legacyRequest.school_dropoff_days_of_week
   delete legacyRequest.school_pickup_days_of_week
@@ -169,4 +168,69 @@ test('shared revision handling preserves route authentication and foreign-client
   assert.equal((await routine.POST(request(routineBody({ client_id: 'SYNTHETIC-FOREIGN' })))).status, 404)
   assert.deepEqual(f.row, before)
   assert.deepEqual(f.writes, [])
+})
+
+
+for (const omitWeekdays of [false, true]) test(`tokenless stale assessment rejects a prior saved routine ${omitWeekdays ? 'without legacy weekday fields' : 'with weekday fields'}`, async () => {
+  const f = fixture(), stale = assessmentBody({ ...oldAnswers })
+  delete stale.expected_revision
+  if (omitWeekdays) for (const field of ['work_days_of_week', 'school_dropoff_days_of_week', 'school_pickup_days_of_week']) delete stale[field]
+  assert.equal((await routine.POST(request(routineBody({ wake_time: '08:15', work_start_time: '11:00', school_dropoff_time: '09:15',
+    work_days_of_week: [2, 4], school_dropoff_days_of_week: [2, 4] })))).status, 200)
+  const before = clone(f.row), writes = f.writes.length, invalidations = f.invalidations
+  const response = await assessment.POST(request(stale))
+  assert.equal(response.status, 409, 'An older form cannot adopt the revision of a newer saved routine')
+  assert.match((await response.json()).error, /refresh/i)
+  assert.deepEqual(f.row, before)
+  assert.equal(getScheduleStructureSubmission(f.row.onboarding_data, task), null)
+  assert.equal(f.writes.length, writes)
+  assert.equal(f.invalidations, invalidations)
+})
+
+test('tokenless new assessment requires refresh even before the first routine revision', async () => {
+  for (const omitWeekdays of [false, true]) {
+    const f = fixture(), before = clone(f.row), body = assessmentBody()
+    delete body.expected_revision
+    if (omitWeekdays) for (const field of ['work_days_of_week', 'school_dropoff_days_of_week', 'school_pickup_days_of_week']) delete body[field]
+    const response = await assessment.POST(request(body))
+    assert.equal(response.status, 409)
+    assert.match((await response.json()).error, /refresh/i)
+    assert.deepEqual(f.row, before)
+    assert.equal(f.attempts.length, 0)
+    assert.equal(f.invalidations, 0)
+  }
+})
+
+for (const month of ['2026-09', '2026-10']) test(`completed legacy ${month} proof replays without token or weekdays after a newer routine save`, async () => {
+  const f = fixture(), event = scheduleStructureMonthlyTask(month)
+  mock.timers.setTime(Date.parse(`${month}-18T20:00:00Z`))
+  const original = assessmentBody({ eventId: event.id })
+  for (const field of ['work_days_of_week', 'school_dropoff_days_of_week', 'school_pickup_days_of_week']) delete original[field]
+  assert.equal((await assessment.POST(request(original))).status, 200)
+  const proof = clone(getScheduleStructureSubmission(f.row.onboarding_data, event))
+  assert.equal(Object.hasOwn(proof.answers, 'school_dropoff_days_of_week'), false)
+  mock.timers.setTime(Date.parse('2026-10-18T20:00:00Z'))
+  assert.equal((await routine.POST(request(routineBody({ expected_revision: revision(f), wake_time: '08:15', school_dropoff_days_of_week: [2, 4] })))).status, 200)
+  const before = clone(f.row), legacy = { ...original, wake_time: '09:30' }
+  delete legacy.expected_revision
+  const response = await assessment.POST(request(legacy))
+  assert.equal(response.status, 200)
+  assert.deepEqual((await response.json()).submission, proof)
+  assert.deepEqual(f.row, before, 'Only original proof is acknowledged; newer preferences and revision stay intact')
+})
+
+test('older form versions and explicit invalid tokens never gain a completed-proof bypass', async () => {
+  const f = fixture(), body = assessmentBody()
+  assert.equal((await assessment.POST(request(body))).status, 200)
+  const before = clone(f.row)
+  for (const expected_revision of [null, -1, 0.5, '0', {}, Number.MAX_SAFE_INTEGER]) {
+    assert.equal((await assessment.POST(request({ ...body, expected_revision }))).status, 400)
+  }
+  for (const assessmentVersion of [0, 2, null]) {
+    const legacy = { ...body, assessmentVersion }; delete legacy.expected_revision
+    const response = await assessment.POST(request(legacy))
+    assert.equal(response.status, 409)
+    assert.match((await response.json()).error, /refresh/i)
+  }
+  assert.deepEqual(f.row, before)
 })

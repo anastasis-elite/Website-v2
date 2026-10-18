@@ -3,7 +3,7 @@ import { updateOwnedOnboardingData } from '@/lib/dashboard/updateOnboardingData'
 import { getScheduleStructureMonth, getScheduleStructureSubmission, getScheduleStructureVersion, scheduleStructureMonthlyTask, scheduleStructureTaskKey, SCHEDULE_STRUCTURE_VERSION } from '@/lib/assessment/scheduleStructure'
 import { validateScheduleStructure } from '@/lib/assessment/validateScheduleStructure'
 import { scheduleStructureProfileFields } from '@/lib/assessment/commitmentWeekdays'
-import { getRoutinePreferencesRevision, mergeRoutinePreferences, RoutinePreferencesConflict } from '@/lib/assessment/routinePreferences'
+import { mergeRoutinePreferences, RoutinePreferencesConflict } from '@/lib/assessment/routinePreferences'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getClientLocalDate } from '@/lib/timezone'
@@ -39,9 +39,7 @@ export async function POST(req: Request) {
       .eq('client_id', body.client_id).eq('auth_user_id', user.id).maybeSingle()
     if (clientError) return NextResponse.json({ error: 'Your assessment could not be loaded. Try again.' }, { status: 500 })
     if (!client) return NextResponse.json({ error: 'Client not found for this user.' }, { status: 404 })
-    // Older clients have no form revision. Bind them to this first owned read so
-    // CAS retries cannot overwrite preferences saved while their request runs.
-    const expectedRevision = body.expected_revision ?? getRoutinePreferencesRevision(client.onboarding_data)
+    const expectedRevision = body.expected_revision
 
     const currentMonth = getClientLocalDate(client).slice(0, 7)
     const requestedMonth = body.eventId ? getScheduleStructureMonth(body.eventId) : currentMonth
@@ -82,6 +80,9 @@ export async function POST(req: Request) {
         // A completed task/version is immutable. A delayed retry from an older
         // screen must not overwrite a newer assessment or profile preference.
         if (previous) return current
+        // A tokenless older form cannot prove it saw the latest saved routine.
+        // Completed proof retries above remain safe to acknowledge unchanged.
+        if (expectedRevision === undefined) throw new RoutinePreferencesConflict('Refresh your assessment before submitting. Your saved routine has not been changed.')
         const submission = { assessmentVersion: SCHEDULE_STRUCTURE_VERSION, eventId: event.id, submittedAt: now, answers }
         return { ...mergeRoutinePreferences(current, expectedRevision, answers), scheduleStructureAssessments: { ...assessments, [version]: { ...submissions, [taskKey]: submission } } }
       },
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, submission: getScheduleStructureSubmission(result.onboardingData, event) })
   } catch (error) {
     if (error instanceof RoutinePreferencesConflict) {
-      return NextResponse.json({ error: 'Your routine changed on another screen. Refresh to review it before submitting.' }, { status: 409 })
+      return NextResponse.json({ error: error.message || 'Your routine changed on another screen. Refresh to review it before submitting.' }, { status: 409 })
     }
     return NextResponse.json({ error: 'Your assessment could not be saved. Check your connection and try again.' }, { status: 500 })
   }
