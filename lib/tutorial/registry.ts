@@ -11,19 +11,19 @@ export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): Tuto
   const nutritionCopy: Record<ProgramTier, { title: string; description: string }> = {
     ember: {
       title: 'Macro logging',
-      description: 'This shows nutrition progress. Ember uses macro entry, so you can record protein, carbs, fats, and calories without opening the meal logger.',
+      description: 'Record protein, carbs, fats and calories as macro totals in EMBER. Food and meal logging, micronutrient tracking and micronutrient guidance are not included.',
     },
     ignite: {
       title: 'Meal logging',
-      description: 'This shows nutrition progress. Ignite uses meal logging and quick foods so Anastasis can give clearer nutrition guidance.',
+      description: 'Record foods with manual entry or barcode lookup, review recurring food options, and track macros and micronutrients in IGNITE.',
     },
     phoenix: {
-      title: 'Recommended meals',
-      description: 'This shows nutrition progress. Phoenix surfaces recommended meals when nutrition is the next useful action, then lets you log or adjust them.',
+      title: 'Recipe suggestions',
+      description: 'PHOENIX adds recipe suggestions based on your remaining nutrition priorities. Open a recipe for context, then review and log the foods you ate. Photo estimation is currently unavailable.',
     },
   }
   const recoveryCopy: Record<ProgramTier, string> = {
-    ember: 'Recovery stays available as a place to record support without Anastasis choosing a specific modality for you.',
+    ember: 'Record recovery activities and review guidance based on your available inputs.',
     ignite: 'Recovery can include recommendations such as a mobility, breathing, or gentle movement option.',
     phoenix: 'Recovery can become a directed next action when the available signals show what should happen next.',
   }
@@ -114,7 +114,7 @@ export function buildCoreOnboardingTutorial(tierValue: unknown = 'ignite'): Tuto
       description: tier === 'ember'
         ? 'Tap Nutrition to open macro entry and review today’s targets.'
         : tier === 'phoenix'
-          ? 'Tap Nutrition to review reusable recipes, recommended meals when they fit today, food logging, and the full day.'
+          ? 'Tap Nutrition to review recipe suggestions, record the foods you ate, and review the day’s intake.'
           : 'Tap Nutrition to open the full food log. Quick Add is for speed; the Nutrition page is where you can log and review the full day.',
       revealTarget: { tutorialTargetId: 'dashboard-nav-nutrition' },
     },

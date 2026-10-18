@@ -28,42 +28,42 @@ const samplePosts = [
   {
     id: '1',
     name: 'Maya R.',
-    badge: 'Ignite Member',
+    badge: 'Example Ignite member',
     category: 'Progress',
-    time: '18 min ago',
-    body: 'Today was the first day I noticed my recovery felt better than my motivation. I still showed up, but it didn’t feel like I had to fight myself to do it.',
+    time: 'Sample post',
+    body: 'I have a full day ahead. I’m choosing a shorter workout and leaving room to adjust if plans change.',
     supports: 12,
     comments: [
       {
         id: 'c1',
         name: 'Alina',
-        body: 'That is such a huge nervous system win.',
+        body: 'That sounds like a manageable next step for today.',
       },
     ],
   },
   {
     id: '2',
     name: 'Kara T.',
-    badge: 'Phoenix Member',
+    badge: 'Example Phoenix member',
     category: 'Wins',
-    time: '1 hr ago',
-    body: 'My waist measurement didn’t change much this week, but my hip and thigh measurements did. I would have missed this completely if I was only watching the scale.',
+    time: 'Sample post',
+    body: 'I’m setting aside a few minutes this week to review what I recorded and decide what to carry forward.',
     supports: 21,
     comments: [],
   },
   {
     id: '3',
     name: 'Sienna M.',
-    badge: 'Ember Member',
+    badge: 'Example Ember member',
     category: 'Question',
-    time: '3 hrs ago',
-    body: 'Does anyone else notice they feel stronger right before ovulation but more inflamed before their period?',
+    time: 'Sample post',
+    body: 'When your available time changes, how do you choose which activity to move first?',
     supports: 8,
     comments: [
       {
         id: 'c2',
         name: 'Rhea',
-        body: 'Yes. That can be a very real pattern. Keep tracking it so the system can see your trend over time.',
+        body: 'I would start with the fixed commitments, then look at what still fits.',
       },
     ],
   },
@@ -81,13 +81,14 @@ export default function CommunityFeed() {
   return (
     <main style={{ display: 'grid', gap: '28px' }}>
       <section style={styles.cartBoxStyle}>
-        <p style={styles.eyebrowStyle}>The Pulse</p>
+        <p style={styles.eyebrowStyle}>Community</p>
 
-        <h1 style={styles.sectionTitleStyle}>Member Community</h1>
+        <h1 style={styles.sectionTitleStyle}>Community preview</h1>
 
         <p style={styles.bodyStyle}>
-          Share your progress, ask for support, and celebrate the women building
-          beside you. This is a regulated support space — not a comment section.
+          These conversations, names, and counts are fictional examples.
+          Posting is unavailable. Support and replies stay on this screen
+          without being saved or shared.
         </p>
 
         <div

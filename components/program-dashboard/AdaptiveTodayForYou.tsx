@@ -54,9 +54,9 @@ export default function AdaptiveTodayForYou({
 
         {dayComplete ? (
           <div className="adaptive-complete-state">
-            <strong>Streak status: {streak} day{streak === 1 ? '' : 's'}</strong>
+            <strong>Recorded streak: {streak} day{streak === 1 ? '' : 's'}</strong>
             <p>{insight}</p>
-            <small>Tonight: protect recovery, prep tomorrow, and let completed work recede.</small>
+            <small>Make room for rest when you can.</small>
           </div>
         ) : (
           <div className="adaptive-next-action">
@@ -70,7 +70,7 @@ export default function AdaptiveTodayForYou({
             ) : null}
             {schedule.nextAction.action_route ? (
               <Link href={schedule.nextAction.action_route} className="adaptive-primary-action">
-                Execute next action
+                Open next step
               </Link>
             ) : null}
           </div>
@@ -90,14 +90,14 @@ export default function AdaptiveTodayForYou({
           <span>
             {appliedAdjustments[0]?.reason ||
               recommendedAdjustments[0]?.reason ||
-              'The effective schedule is using the planned order.'}
+              'Your schedule follows its planned order.'}
           </span>
         </div>
 
         <div>
           <p className="adaptive-kicker">Remaining Required</p>
           <strong>{requiredRemaining.length}</strong>
-          <span>{requiredRemaining.length ? 'Required actions still need attention.' : 'Required actions are closed.'}</span>
+          <span>{requiredRemaining.length ? 'Open the next step when you have room.' : 'No required actions remain open.'}</span>
         </div>
       </aside>
 

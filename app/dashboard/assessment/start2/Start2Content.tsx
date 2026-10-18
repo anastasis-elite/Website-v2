@@ -78,14 +78,14 @@ export default function Start2Content({ client }: { client: ClientData }) {
 
       if (!res.ok) {
         setRetrySavedPlan(data.baselineSaved === true && data.retryRoute === '/dashboard/onboarding/plan')
-        throw new Error(data.error || 'Assessment 2 submission failed')
+        throw new Error(data.error || 'Your strength assessment could not be confirmed.')
       }
 
      window.location.href = '/dashboard'
     } catch (error) {
       console.error('ASSESSMENT 2 ERROR:', error)
       setStatus('error')
-      setMessage(error instanceof Error ? error.message : 'Something went wrong.')
+      setMessage(error instanceof Error ? error.message : 'Your strength assessment could not be confirmed. Review its status before submitting again.')
     }
   }
 

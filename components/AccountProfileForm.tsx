@@ -329,11 +329,11 @@ export default function AccountProfileForm({
       {mode === 'all' ? <section style={styles.cartBoxStyle}>
         <p style={styles.eyebrowStyle}>Uploads</p>
 
-        <h2 style={styles.sectionTitleStyle}>Progress uploads coming next.</h2>
+        <h2 style={styles.sectionTitleStyle}>Your progress uploads.</h2>
 
         <p style={styles.bodyStyle}>
-          This section will hold progress photos, assessment uploads, and other
-          private client files once upload storage is connected.
+          Add and review your private progress photos and assessment uploads
+          under Progress.
         </p>
       </section> : null}
     </div>

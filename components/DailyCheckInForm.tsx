@@ -178,7 +178,7 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
         completionTracked.current = true
         trackEvent('daily_check_in_completed', { program: tier, source: stayOnSave ? 'recovery' : 'daily_check_in' })
       }
-      setMessage('Your check-in is saved. Your next step is ready on Today.')
+      setMessage('Your check-in is saved. Review your next step on Today.')
       if (!stayOnSave) router.push(`/dashboard/program/${tier}`)
       router.refresh()
     } catch {
@@ -212,7 +212,7 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
     </AOSCard>
     <details className="aos-symptom-column guided-check-in-details guided-check-in-symptoms" onToggle={(event) => setSymptomsOpen(event.currentTarget.open)}><summary>Log symptoms (optional)<span>Open your detailed body map</span></summary>{symptomsOpen ? <><AOSSectionHeader eyebrow="Symptoms" title="Add any body signal." copy="Tap the area where you feel something. Symptoms are saved separately."/><SymptomLogger clientId={clientId}/></> : null}</details>
     <AOSModal open={sorenessDialogOpen} title="Soreness regions" onClose={closeSorenessDialog}>
-      <AOSSectionHeader eyebrow="Soreness" title="Where are you sore?" copy="Choose every area that should be protected from today's training." />
+      <AOSSectionHeader eyebrow="Soreness" title="Where are you sore?" copy="Select the areas where you feel soreness." />
       <div className="aos-chip-list" role="group" aria-label="Soreness regions">
         {SORENESS_REGIONS.map((region) => {
           const selected = values.sorenessRegions.includes(region.key)

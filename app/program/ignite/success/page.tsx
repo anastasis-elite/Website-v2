@@ -17,22 +17,22 @@ function IgniteSuccessContent() {
     <><TrackEvent event="ignite_success_page_viewed" properties={{ page: 'ignite_success' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Ignite • Confirmed</p>
+        <p style={styles.eyebrowStyle}>Ignite</p>
 
-        <h1 style={styles.heroTitleStyle}>You’re in.</h1>
+        <h1 style={styles.heroTitleStyle}>Confirm your purchase to continue.</h1>
 
         <p style={styles.heroTextStyle}>
-          Your enrollment has been confirmed. Ignite is your next level of structure —
-          focused, guided, and built to move you forward with precision.
+          This page cannot confirm payment or account access. Use the secure
+          confirmation shown after Stripe Checkout, or sign in to your account.
         </p>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>What happens next</h2>
 
           <div style={styles.bodyStyle}>
-            <p>Your payment has been processed and your dashboard access is being prepared.</p>
+            <p>After your payment is verified, create your private login and complete your member profile.</p>
             <p>The next step is completing your assessment so your plan can be built around your current capacity, schedule, recovery, and equipment access.</p>
-            <p>You can complete it now, or explore your dashboard first and come back when you’re ready.</p>
+            <p>Once your account has access, you can complete the assessment or explore your dashboard and return when you are ready.</p>
           </div>
         </section>
 
@@ -50,9 +50,9 @@ function IgniteSuccessContent() {
           <h2 style={styles.sectionTitleStyle}>This is where Ignite begins</h2>
 
           <div style={styles.bodyStyle}>
-            <p>This is where momentum gets structure.</p>
-            <p>This is where effort starts becoming repeatable.</p>
-            <p>You do not have to force the fire — you just have to follow the system.</p>
+            <p>Start with your member inputs.</p>
+            <p>Review your assigned plan and available tools.</p>
+            <p>Record what you do and return when you have capacity.</p>
           </div>
         </section>
 

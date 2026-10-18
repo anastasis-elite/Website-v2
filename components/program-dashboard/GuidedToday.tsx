@@ -82,7 +82,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error || 'Your choice could not be saved. Try again.')
       setSavedGuide({ date: schedule.date, value: payload.dailyGuide })
-      setMessage(action === 'defer' ? 'Saved for later today. Take the next step when you have room.' : action === 'skip' ? 'Skipped for today. You can return whenever you like.' : action === 'resume' ? 'Ready when you are.' : 'Schedule review saved. Your next step is ready.')
+      setMessage(action === 'defer' ? 'Saved for later today. Take the next step when you have room.' : action === 'skip' ? 'Skipped for today. You can review your options here.' : action === 'resume' ? 'Ready when you are.' : 'Schedule review saved. Return to your next step when you’re ready.')
       if (action !== 'review') trackEvent(action === 'defer' ? 'activity_deferred' : action === 'skip' ? 'activity_skipped' : 'activity_resumed', { activity: activityId, tier: logic.program })
       router.refresh()
     } catch (error) {
@@ -100,7 +100,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
       <div className="today-progress-segments" role="progressbar" aria-valuemin={0} aria-valuemax={Math.max(1,today.total)} aria-valuenow={today.completed} aria-valuetext={`${today.completed} of ${today.total} applicable activities completed`}>
         {Array.from({ length: today.total }, (_, index) => <i key={index} className={index < today.completed ? 'is-complete' : ''} />)}
       </div>
-      <p>{complete ? 'Your essentials are saved. Leave a little room for yourself.' : 'Every saved step counts. Optional activities can wait.'}</p>
+      <p>{complete ? 'Your essentials are saved. Leave a little room for yourself.' : 'Saved activities show your progress. Optional activities can wait.'}</p>
     </section>
 
     <article className="today-next" data-testid="guided-next-step" data-activity-id={primaryId} data-tutorial-id="dashboard-whats-next">

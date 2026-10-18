@@ -42,7 +42,7 @@ export default function PostureLandmarkEditor({
   const imageRef = useRef<HTMLImageElement | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'saving' | 'saved'>('loading')
-  const [message, setMessage] = useState('Locating your posture landmarks...')
+  const [message, setMessage] = useState('Estimating posture landmarks...')
   const [result, setResult] = useState<PoseDetectionResult | null>(null)
   const [activeName, setActiveName] = useState<PostureLandmarkName | null>(null)
   const [draggingName, setDraggingName] = useState<PostureLandmarkName | null>(null)
@@ -61,7 +61,7 @@ export default function PostureLandmarkEditor({
     if (!image) return
 
     setStatus('loading')
-    setMessage('Locating your posture landmarks...')
+    setMessage('Estimating posture landmarks...')
     setImageSize({
       width: image.naturalWidth || image.width,
       height: image.naturalHeight || image.height,
@@ -267,7 +267,7 @@ export default function PostureLandmarkEditor({
         </div>
 
         <aside className="aos-landmark-panel">
-          {status === 'loading' ? <p className="aos-landmark-note">Locating your posture landmarks...</p> : null}
+          {status === 'loading' ? <p className="aos-landmark-note">Estimating posture landmarks...</p> : null}
           {uncertainCount ? <p className="aos-landmark-warning">{uncertainCount} point{uncertainCount === 1 ? '' : 's'} need closer review.</p> : null}
           <div className="aos-landmark-active">
             <strong>{activeLandmark?.label || 'Select a landmark'}</strong>

@@ -27,7 +27,7 @@ function getProgramContent(program: Program) {
       label: 'Ember',
       title: 'Your current capacity points toward Ember.',
       body:
-        'You appear to have enough current capacity for a structured, sustainable starting point. Ember is designed to help you rebuild rhythm, consistency, and trust without overcomplicating the process.',
+        'Your answers suggest exploring Ember as a starting point. Review its training guidance, macro targets, water logging, and daily check-ins, then decide whether that level of support fits your life.',
       button: 'Explore Ember',
     }
   }
@@ -37,7 +37,7 @@ function getProgramContent(program: Program) {
       label: 'Phoenix',
       title: 'Your current capacity points toward Phoenix.',
       body:
-        'Your responses suggest that you may be carrying more than your current systems can comfortably support. Phoenix is designed to reduce friction, support decision fatigue, and give you the highest level of guidance.',
+        'Your answers suggest exploring Phoenix. Compare its current included features, support, and billing terms with the other tiers. Your answers offer a starting point; the choice remains yours.',
       button: 'Explore Phoenix',
     }
   }
@@ -46,7 +46,7 @@ function getProgramContent(program: Program) {
     label: 'Ignite',
     title: 'Your current capacity points toward Ignite.',
     body:
-      'Your responses suggest that you may not need the highest level of support, but you would benefit from more adaptive structure, deeper guidance, and clearer feedback as you rebuild momentum.',
+      'Your answers suggest exploring Ignite. Review how its food logging, micronutrient tracking, and recovery guidance compare with Ember, and choose the level of support that feels useful to you.',
     button: 'Explore Ignite',
   }
 }
@@ -133,7 +133,7 @@ export default async function CapacityAuditResultsPage({
             </Link>
 
             <Link href="/program" style={styles.secondaryButtonStyle}>
-              Compare All Paths
+              Compare support levels
             </Link>
           </div>
         </section>
@@ -194,10 +194,9 @@ export default async function CapacityAuditResultsPage({
           </h2>
 
           <p style={styles.bodyStyle}>
-            The purpose of Anastasis is to meet your current capacity, support
-            what is under-resourced, and help you build from there. Your
-            recommended path is simply the starting point that appears most
-            aligned with the level of support your system may need right now.
+            Your answers offer a place to begin, not a judgment about how much
+            you can handle. Compare the available support, review what each
+            tier includes, and choose the next step that fits your circumstances.
           </p>
         </section>
       </div>

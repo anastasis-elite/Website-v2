@@ -52,10 +52,9 @@ export default async function DailyStructureAssessmentPage({
         <p className="aos-eyebrow">Schedule Structure Assessment</p>
         <h1>Build the rhythm your day can actually hold.</h1>
         <p>
-          This assessment helps your dashboard understand how you move through
-          the day. Some women need exact times. Some need flexible blocks. Some
-          need one next step at a time. This is where your system learns how to
-          support you without overwhelming you. {completedAt
+          Choose how you prefer to move through your day: exact times, flexible
+          blocks, or one next step at a time. Your saved preferences help shape
+          how your dashboard presents the day. {completedAt
             ? 'This assessment is complete. Your saved answers are available below.'
             : 'Select Complete Assessment to save your answers, complete this task, and return to your next step.'}
         </p>

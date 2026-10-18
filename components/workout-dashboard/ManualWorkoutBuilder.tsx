@@ -254,14 +254,14 @@ export default function ManualWorkoutBuilder({
           selectedMuscleId={selectedRegionId}
           onSelectMuscle={chooseRegion}
           heading="Choose muscle"
-          eyebrow="Live Readiness Map"
+          eyebrow="Readiness from your logs"
         />
       ) : null}
 
       {selectedRegionId && readinessSummary ? (
         <section className="manual-readiness-context" data-testid="manual-readiness-context">
           <span>{firstMuscleLabel(selectedMuscles)}</span>
-          <strong>{typeof readinessSummary.score === 'number' ? `${readinessSummary.score}% ready` : readinessSummary.label}</strong>
+          <strong>{typeof readinessSummary.score === 'number' ? `${readinessSummary.score}% readiness estimate` : readinessSummary.label}</strong>
           <small>{readinessSummary.guidance}</small>
           {readinessSummary.reason ? <small>{readinessSummary.reason}</small> : null}
         </section>

@@ -18,12 +18,12 @@ export default function CreatePostBox() {
 
   return (
     <section style={styles.cartBoxStyle}>
-      <p style={styles.eyebrowStyle}>Share With The Pulse</p>
+      <p style={styles.eyebrowStyle}>Sample post draft</p>
 
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="What are you noticing, celebrating, questioning, or working through today?"
+        placeholder="Try a draft here. It stays on this screen."
         style={{
           ...styles.textareaStyle,
           minHeight: '120px',
@@ -64,7 +64,7 @@ export default function CreatePostBox() {
             opacity: body.trim() ? 1 : 0.5,
           }}
         >
-          Post to The Pulse
+          Posting unavailable in preview
         </button>
       </div>
 
@@ -76,8 +76,7 @@ export default function CreatePostBox() {
           color: 'rgba(215,199,182,0.58)',
         }}
       >
-        Keep it supportive. Derogatory, shaming, or hostile comments will not be
-        allowed inside this community.
+        Your draft stays on this screen and is not saved or shared.
       </p>
     </section>
   )

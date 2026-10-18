@@ -42,7 +42,7 @@ export function calendarError(error: unknown) {
  // Never emit database or provider payloads, credentials, event text, or exception stack to logs/analytics.
  return NextResponse.json({error:'Calendar service is temporarily unavailable. Check the connection settings and try again.'},{status:503})
 }
-export function checkDb(result: {error?: any}) { if(result.error) throw new CalendarHttpError(503,'Calendar data could not be saved. Try again.') }
+export function checkDb(result: {error?: any}) { if(result.error) throw new CalendarHttpError(503,'The calendar request could not be completed. Review your calendar before retrying.') }
 export function googleConfig() {
  const clientId=process.env.GOOGLE_CALENDAR_CLIENT_ID,clientSecret=process.env.GOOGLE_CALENDAR_CLIENT_SECRET,redirectUri=process.env.GOOGLE_CALENDAR_REDIRECT_URI
  if(!clientId || !clientSecret || !redirectUri) throw new CalendarHttpError(503,'Google Calendar needs administrator setup.')

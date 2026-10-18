@@ -30,10 +30,10 @@ export default async function OnboardingProfilePage() {
         <h1 style={styles.heroTitleStyle}>Complete your profile.</h1>
 
         <p style={styles.heroTextStyle}>
-          Save your birthdate, address, preferences, and cycle status. This completes
-          your account profile.
+          Start with the details and preferences that fit your life.
+          Continue from the setup steps you have already saved; you do not need to have every part figured out today.
         </p>
-        {setupStep === 'initial_assessment' ? <p style={styles.bodyStyle}>Next, the member assessment asks about training availability, equipment, goals, limitations, sleep, and recovery. A separate strength baseline then supplies the starting loads for your saved training plan. The brief public Capacity Audit does not replace these steps.</p> : null}
+        {setupStep === 'initial_assessment' ? <p style={styles.bodyStyle}>The member assessment asks about your training availability, equipment, goals, limitations, sleep, and recovery. A separate strength baseline helps set your starting loads. These steps provide more detail than the brief public Capacity Audit.</p> : null}
         {setupStep === 'strength_assessment' ? <p style={styles.bodyStyle}>Your first member assessment is saved. Continue to the strength baseline after this profile to create your starting training plan.</p> : null}
         {setupStep === 'dashboard' ? <p style={styles.bodyStyle}>Your earlier training setup is saved. Continue to your dashboard after updating this profile.</p> : null}
         {setupStep === 'plan_generation' ? <p style={styles.bodyStyle}>Your assessments are saved. Continue to create your plan from those records; you do not need to repeat the forms.</p> : null}

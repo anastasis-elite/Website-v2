@@ -150,7 +150,7 @@ test('image outage is isolated, and a reviewed resolved candidate uses canonical
   form.append('photo', new File(['image'], 'meal.png', { type: 'image/png' }))
   const unavailable = await image.POST(new Request('http://test/image', { method: 'POST', body: form }))
   assert.equal(unavailable.status, 501)
-  assert.match((await unavailable.json()).error, /manually instead/)
+  assert.equal((await unavailable.json()).error, 'Photo estimation is currently unavailable. Use Search / manual or Barcode to log this meal.')
   assert.equal((await createMealEntry(db, userId, normalizeMealInput(requestInput).input)).status, 200)
   assert.equal((await barcode.GET(new Request('http://test/barcode?barcode=0123456789012'))).status, 200)
   const confirmed = normalizeMealInput({ ...requestInput, entrySource: 'photo_estimate', image: 'never stored' }).input

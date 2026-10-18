@@ -64,7 +64,7 @@ const measurementFields: MeasurementField[] = [
     group: 'Scale',
     unit: 'lb',
     description:
-      'Record the current scale weight from the same scale and similar conditions when possible. This anchors total body mass for estimated composition calculations.',
+      'Record the current scale weight from the same scale and similar conditions when possible. Your saved entries provide a record to compare over time.',
   },
   {
     key: 'bust_chest',
@@ -92,7 +92,7 @@ const measurementFields: MeasurementField[] = [
     label: 'Right Upper Arm',
     group: 'Upper Body',
     description:
-      'Measure around the widest part of the upper arm. Tracking both sides helps the system notice symmetry and development patterns.',
+      'Measure around the widest part of the upper arm. Recording both sides keeps separate left and right measurements in your history.',
   },
   {
     key: 'left_forearm',
@@ -148,7 +148,7 @@ const measurementFields: MeasurementField[] = [
     label: 'Right Thigh',
     group: 'Lower Body',
     description:
-      'Measure around the fullest part of the thigh. Tracking both sides helps compare symmetry and compensation patterns.',
+      'Measure around the fullest part of the thigh. Recording both sides keeps separate left and right measurements in your history.',
   },
   {
     key: 'left_calf',
@@ -170,7 +170,7 @@ const measurementFields: MeasurementField[] = [
     group: 'Advanced Core',
     advanced: true,
     description:
-      'Measure around the lower abdomen below the natural waist. This is optional and useful for more detailed symptom-context, posture, or body composition tracking.',
+      'Measure around the lower abdomen below the natural waist. This optional entry adds another measurement to your history.',
   },
   {
     key: 'high_hip',
@@ -498,9 +498,9 @@ export default function MeasurementAssessment({ clientId }: { clientId: string }
           <h2 style={styles.sectionTitleStyle}>Measurement Inputs</h2>
 
           <p style={styles.bodyStyle}>
-            Tap any measurement name to focus the diagram. Monthly regional
-            measurements and 9-month structural lengths are stored as raw
-            history before any Estimated results are calculated.
+            Tap a measurement name to highlight its location on the diagram.
+            Your monthly regional measurements and 9-month structural lengths
+            are saved as measurement history.
           </p>
 
           <label

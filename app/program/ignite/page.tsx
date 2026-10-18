@@ -34,17 +34,17 @@ export default function IgnitePage() {
         <h1 style={styles.heroTitleStyle}>Guided. Corrective. Aligned.</h1>
 
         <p style={styles.heroTextStyle}>
-          Ignite is for the woman who has been trying, showing up, and doing the
-          work — but needs the system corrected, explained, and structured around
-          what actually creates progress.
+          Ignite brings food logging and recovery detail alongside your assessed
+          training plan. See what you have recorded, review the guidance, and
+          choose a manageable next step.
         </p>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>Who Ignite is for</h2>
           <p style={styles.bodyStyle}>
-            Ignite is for the woman who does not need more pressure. She needs
-            more clarity. She needs the why behind the structure, the environment
-            aligned around the goal, and a system that helps her stop guessing.
+            Ignite may fit if you want more context around your daily decisions.
+            Manual food entry, barcode tools, and recovery recommendations bring
+            your recorded inputs together without requiring every day to look the same.
           </p>
         </section>
 
@@ -55,23 +55,24 @@ export default function IgnitePage() {
             <div style={styles.cardStyle}>
               <h3 style={styles.cardTitleStyle}>Structured guidance</h3>
               <p style={styles.cardTextStyle}>
-                The plan, plus the reasoning behind the plan in digestible pieces.
+                Review your assigned training, daily check-in, and recovery
+                recommendations in one place.
               </p>
             </div>
 
             <div style={styles.cardStyle}>
-              <h3 style={styles.cardTitleStyle}>System correction</h3>
+              <h3 style={styles.cardTitleStyle}>Food logging and context</h3>
               <p style={styles.cardTextStyle}>
-                Designed for women who are consistent but not getting the response
-                they should be getting.
+                Enter foods manually or use barcode tools, then review the
+                nutrition detail available from those records.
               </p>
             </div>
 
             <div style={styles.cardStyle}>
               <h3 style={styles.cardTitleStyle}>Environmental alignment</h3>
               <p style={styles.cardTextStyle}>
-                Guidance that helps your daily life start supporting where your body
-                and mind are going.
+                Keep your training, check-ins, and progress history together.
+                Progress photos and user-confirmed posture landmarks add a visual record.
               </p>
             </div>
           </div>
@@ -80,16 +81,16 @@ export default function IgnitePage() {
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>If this is you…</h2>
           <div style={styles.bodyStyle}>
-  <p>If you’ve been consistent… but your body stopped responding…</p>
+  <p>If you want to see your food records alongside your training…</p>
 
-  <p>If you’ve been doing the work… but still feel like you’re guessing…</p>
+  <p>If recovery recommendations would help you plan your day…</p>
 
   <p>
-    If you’re tired of wondering if you’re doing too much, too little,
-    or the wrong things entirely…
+    If you want to review more detail without turning every decision into
+    another task…
   </p>
 
-  <p><strong>This is exactly where Ignite fits.</strong></p>
+  <p><strong>Ignite is a path to consider.</strong></p>
 </div>
         </section>
         
@@ -125,7 +126,7 @@ export default function IgnitePage() {
             </a>
 
             <a href="/program/phoenix" style={styles.secondaryButtonStyle}>
-              Want full personalization? Explore Phoenix
+              Want meal recommendations? Explore Phoenix
             </a>
 
             <a href="/program" style={styles.secondaryButtonStyle}>

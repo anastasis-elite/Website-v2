@@ -35,19 +35,19 @@ export default function PhoenixPage() {
         <h1 style={styles.heroTitleStyle}>Personalized. Precise. Built around you.</h1>
 
         <p style={styles.heroTextStyle}>
-          Phoenix is for the woman who is no longer here to guess. This is the
-          deepest level of the system — personalized structure, deeper strategy,
-          and quarterly 1:1 support built around your body, your goals, and your
-          progression.
+          Phoenix adds meal recommendations and directed next actions to the
+          food logging, training, recovery, and progress tools available in
+          Ignite. Review the context from your recorded inputs and decide what
+          is manageable today.
         </p>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>Who Phoenix is for</h2>
           <p style={styles.bodyStyle}>
-            Phoenix is for the woman who wants a more personalized experience,
-            deeper calibration, and more direct strategic support. She is not
-            looking for another generic plan. She wants the system shaped around
-            where she is going.
+            Phoenix may fit if you would find a suggested meal or recovery action
+            useful alongside your daily records. Your assessments, goals,
+            equipment, and check-ins provide context; you remain able to review
+            what the guidance is based on.
           </p>
         </section>
 
@@ -58,23 +58,25 @@ export default function PhoenixPage() {
             <div style={styles.cardStyle}>
               <h3 style={styles.cardTitleStyle}>Personalized program direction</h3>
               <p style={styles.cardTextStyle}>
-                Customized program options based on the transformation you are building.
+                Your member assessments, equipment, and goals provide inputs
+                for your starting training plan, as they do across Anastasis paths.
               </p>
             </div>
 
             <div style={styles.cardStyle}>
-              <h3 style={styles.cardTitleStyle}>The science behind the structure</h3>
+              <h3 style={styles.cardTitleStyle}>Meal recommendations</h3>
               <p style={styles.cardTextStyle}>
-                Deeper education around the system, your physiology, and the reason
-                behind the progression.
+                Review suggested meals alongside your remaining macro targets
+                and food records, then choose what fits your day.
               </p>
             </div>
 
             <div style={styles.cardStyle}>
-              <h3 style={styles.cardTitleStyle}>Quarterly 1:1 support</h3>
+              <h3 style={styles.cardTitleStyle}>Directed next actions</h3>
               <p style={styles.cardTextStyle}>
-                One private session per quarter to refine the direction and keep the
-                system aligned with your evolution.
+                See a suggested nutrition or recovery action with the recorded
+                context behind it. Progress photos and user-confirmed posture
+                landmarks remain available alongside your history.
               </p>
             </div>
           </div>
@@ -84,17 +86,16 @@ export default function PhoenixPage() {
           <h2 style={styles.sectionTitleStyle}>If this is you…</h2>
 
           <div style={styles.bodyStyle}>
-            <p>If you’re done guessing completely.</p>
+            <p>If a suggested next action would make your daily view more useful.</p>
 
             <p>
-              If you want your system to be built around you, not adjusted from
-              something generic.
+              If you want meal ideas alongside your food records and macro targets.
             </p>
 
-            <p>If you’re ready for precision, not approximation.</p>
+            <p>If you want to review your training, nutrition, and recovery context together.</p>
 
             <p>
-              <strong>This is exactly where Phoenix fits.</strong>
+              <strong>Phoenix is a path to consider.</strong>
             </p>
           </div>
         </section>
@@ -127,7 +128,7 @@ export default function PhoenixPage() {
 
           <div style={styles.buttonRowStyle}>
             <a href="/program/ignite" style={styles.secondaryButtonStyle}>
-              Need a lighter level? Explore Ignite
+              Compare food logging in Ignite
             </a>
 
             <a href="/program" style={styles.secondaryButtonStyle}>

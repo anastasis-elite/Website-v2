@@ -129,8 +129,8 @@ function ProgressTab({ logic, exercises }: { logic: ProgramLogicOutput; exercise
   return (
     <div className="workout-tab-grid" data-testid="workout-progress-tab">
       <article><span>Completion</span><strong>{logic.execution.workoutComplete ? 'Complete' : 'Open'}</strong><small>{logic.workout.assigned ? logic.workout.title : 'Recovery movement'}</small></article>
-      <article><span>Strength Volume</span><strong>{totals.sets} sets</strong><small>{totals.reps} prescribed repetitions</small></article>
-      <article><span>Activity Dose</span><strong>{Math.round(totals.minutes * 10) / 10} min · {totals.breaths} breaths</strong><small>{totals.activities} completion-based movement{totals.activities === 1 ? '' : 's'}</small></article>
+      <article><span>Planned Strength</span><strong>{totals.sets} sets</strong><small>{totals.reps} prescribed repetitions</small></article>
+      <article><span>Planned Activity</span><strong>{Math.round(totals.minutes * 10) / 10} min · {totals.breaths} breaths</strong><small>{totals.activities} completion-based movement{totals.activities === 1 ? '' : 's'}</small></article>
       <article><span>Duration</span><strong>{logic.workout.durationMinutes ? `${logic.workout.durationMinutes} min` : 'Not set'}</strong><small>From the current workout source</small></article>
       <article><span>Progression</span><strong>{logic.workoutDecision.allowLoadProgression ? 'Open' : 'Hold'}</strong><small>{logic.workoutDecision.intensityTarget}</small></article>
     </div>
@@ -143,7 +143,7 @@ function StrengthTab({ showOffer, endDate, logic }: { showOffer: boolean; endDat
       <article>
         <span>Strength Assessment</span>
         <strong>{showOffer ? 'Window open' : logic.assessments.monthlyDueCount ? 'Due' : 'Current'}</strong>
-        <small>{showOffer && formatAssessmentEnd(endDate) ? `Available through ${formatAssessmentEnd(endDate)}` : 'Baselines stay connected to the existing assessment system.'}</small>
+        <small>{showOffer && formatAssessmentEnd(endDate) ? `Available through ${formatAssessmentEnd(endDate)}` : 'Review or update your recorded strength baselines.'}</small>
         <Link href="/dashboard/assessment/start2" className="tier-secondary-action">Begin Assessment</Link>
       </article>
       <article><span>Load Direction</span><strong>{logic.workoutDecision.allowLoadProgression ? 'Progress allowed' : 'Conservative'}</strong><small>{logic.workoutDecision.reasonForModification}</small></article>
@@ -176,9 +176,9 @@ function HistoryTab({ history, timezone }: { history: WorkoutLogRow[]; timezone?
         <article key={row.id || `${row.workout_date}-${index}`}>
           <time>{formatWorkoutHistoryDate(row.workout_started_at || row.workout_date, timezone)}</time>
           <strong>{row.day_name || 'Completed workout'}</strong>
-          <small>{row.completed ? 'Completed' : 'Not completed'} · {row.workout_source || 'recommended'} · {(row.exercise_logs || []).length} performed</small>
+          <small>{row.completed ? 'Completed' : 'Not completed'} · {row.workout_source || 'recommended'} · {(row.exercise_logs || []).length} logged exercises</small>
         </article>
-      )) : <p className="tier-calendar-empty">Workout history will appear after completed sessions.</p>}
+      )) : <p className="tier-calendar-empty">Your saved workout sessions will appear here.</p>}
     </div>
   )
 }

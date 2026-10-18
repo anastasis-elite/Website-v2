@@ -10,36 +10,38 @@ export default function EmberRecommendPage() {
         <p style={styles.eyebrowStyle}>Recommended Path</p>
 
         <h1 style={styles.heroTitleStyle}>
-          You don’t need more information.
+          A clear starting point.
           <br />
-          You need less thinking.
+          Less to keep in your head.
         </h1>
 
         <p style={styles.heroTextStyle}>
-          Ember was recommended because your answers suggest you already have the
-          discipline, awareness, and ability to execute — you just need the structure
-          handled for you.
+          Ember offers a self-led foundation: assessed training, macro targets,
+          water tracking, and a record of your progress. Review what it includes
+          and decide whether it fits your current capacity.
         </p>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>Why Ember fits</h2>
           <p style={styles.bodyStyle}>
-            You’ve already learned pieces of what works. But carrying the daily weight
-            of deciding how much, when, how often, and whether it’s enough creates
-            friction.
+            If you want your assigned workout and daily guidance in one place,
+            Ember may be a useful starting point. Your member assessments,
+            equipment, goals, and training availability provide the plan inputs.
           </p>
 
           <p style={styles.bodyStyle}>
-            Ember removes that friction. Your structure is calculated. Your numbers are
-            set. Your execution becomes cleaner, simpler, and easier to sustain.
+            Review prescribed sets, repetitions, and loads, then record what you
+            actually complete. Your check-in adds context for normal training,
+            reduced-capacity training, or a recovery-only day.
           </p>
         </section>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>What Ember gives you</h2>
           <p style={styles.bodyStyle}>
-            Ember is the base layer — a precision execution system for women who are
-            self-led and ready to stop wasting energy figuring everything out manually.
+            Keep macro totals, water, workouts, and progress history together.
+            Ember does not include meal logging, micronutrient tracking, or micronutrient guidance;
+            compare the other paths if food logging would be useful to you.
           </p>
         </section>
 
@@ -50,11 +52,11 @@ export default function EmberRecommendPage() {
 
           <a href="/program/ignite" style={styles.secondaryButtonStyle}>
 
-    Want deeper support? Explore Ignite
+    Want food logging? Explore Ignite
 
   </a>
 <a href="/program/ember/why" style={styles.secondaryButtonStyle}>
-  See what we saw in your application
+  See how Ember works
 </a>
 </div>
       </div>

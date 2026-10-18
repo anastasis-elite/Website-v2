@@ -637,7 +637,7 @@ function FoodInputLogger({
       setMessage(data?.error || 'Recurring food preference could not be saved.')
       return
     }
-    setMessage(action === 'prelog' ? 'Recurring food saved. It will appear as a pre-logged option on matching days.' : 'Recurring food saved as a suggestion.')
+    setMessage(action === 'prelog' ? 'Recurring option saved. Review and confirm it before it counts toward today.' : 'Recurring food saved as a suggestion.')
     setDismissedRecurring((current) => new Set(current).add(candidate.foodId + candidate.mealPeriod))
     await loadRecurringFoods()
   }
@@ -653,7 +653,7 @@ function FoodInputLogger({
       setMessage(data?.error || 'Recurring food could not be stopped.')
       return
     }
-    setMessage('Future pre-logging stopped for that food.')
+    setMessage('Recurring option stopped for that food.')
     await loadRecurringFoods()
   }
 
@@ -820,7 +820,7 @@ function FoodInputLogger({
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                 <button type="button" style={{ ...styles.primaryButtonStyle, width: 'auto', padding: '8px 12px' }} onClick={() => void saveRecurring(candidate, 'prelog')}>
-                  Yes, pre-log it
+                  Save as a recurring option
                 </button>
                 <button type="button" style={{ ...styles.secondaryButtonStyle, width: 'auto', padding: '8px 12px' }} onClick={() => void saveRecurring(candidate, 'suggest')}>
                   Suggest it instead
@@ -838,14 +838,14 @@ function FoodInputLogger({
               <div key={pattern.id} style={styles.compactCardStyle}>
                 <h4 style={styles.compactCardTitleStyle}>{food?.name || 'Recurring food'}</h4>
                 <p style={styles.compactCardTextStyle}>
-                  Pre-logged option for {String(pattern.meal_period || 'meal').toLowerCase()}. Confirm before it counts toward today.
+                  Recurring option for {String(pattern.meal_period || 'meal').toLowerCase()}. Review and confirm before it counts toward today.
                 </p>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                   <button type="button" style={{ ...styles.primaryButtonStyle, width: 'auto', padding: '8px 12px' }} onClick={() => void logRecurring(pattern)}>
                     Review / Confirm
                   </button>
                   <button type="button" style={{ ...styles.secondaryButtonStyle, width: 'auto', padding: '8px 12px' }} onClick={() => void stopRecurring(pattern.id)}>
-                    Stop Future
+                    Stop recurring option
                   </button>
                 </div>
               </div>
@@ -868,7 +868,7 @@ function FoodInputLogger({
                     {meal.grams ? ` - ${Math.round(meal.grams)}g` : ''}
                   </p>
                   <p style={styles.compactCardTextStyle}>
-                    {meal.entry_source === 'photo_estimate' ? 'Estimated from your photo - actual nutrition may vary.' : meal.entry_source === 'barcode' ? 'Barcode verified entry.' : meal.entry_source === 'recurring' ? 'Recurring entry confirmed today.' : 'Manual entry.'}
+                    {meal.entry_source === 'photo_estimate' ? 'Estimated from your photo - actual nutrition may vary.' : meal.entry_source === 'barcode' ? 'Added using a barcode.' : meal.entry_source === 'recurring' ? 'Recurring entry confirmed today.' : 'Manual entry.'}
                   </p>
                 </div>
                 <button type="button" onClick={() => deleteMeal(meal.id)} disabled={Boolean(deletingMealId)} style={{ ...styles.secondaryButtonStyle, padding: '8px 14px', fontSize: '0.82rem', width: 'auto' }}>

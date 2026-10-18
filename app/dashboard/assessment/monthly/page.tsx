@@ -32,7 +32,7 @@ export default async function MonthlyAssessmentsPage() {
     {
       id: 'monthly-check-in',
       title: 'Monthly Check-In',
-      body: 'Update current body, strength, recovery, goals, and readiness so your program can stay aligned.',
+      body: 'Review your goals, training routine, recovery, and current limitations.',
       complete: assessmentCompletedThisMonth,
       href: `/dashboard/assessment/start?program=${program}&assessmentType=monthly`,
       buttonLabel: 'Start Check-In',
@@ -48,7 +48,7 @@ export default async function MonthlyAssessmentsPage() {
     {
       id: 'measurements',
       title: 'Physical Measurements',
-      body: 'Take consistent measurements so progress can be tracked without guessing.',
+      body: 'Record measurements using the same reference points when possible.',
       complete: measurementsCompletedThisMonth,
       href: '/dashboard/assessment/measurements',
       buttonLabel: 'Start Measurements',
@@ -65,7 +65,7 @@ export default async function MonthlyAssessmentsPage() {
           <p className="aos-eyebrow">Monthly Assessments</p>
           <h1>Keep your system aligned.</h1>
           <p>
-            These check-ins refresh your program for the month. Completed items
+            Review your current inputs and schedule. Completed items
             stay out of the required flow until they are due again.
           </p>
         </header>
@@ -107,7 +107,7 @@ export default async function MonthlyAssessmentsPage() {
             </div>
           ) : (
             <p className="aos-muted-copy">
-              Your dashboard has what it needs for this month.
+              Your monthly check-in items are recorded.
             </p>
           )}
         </section>

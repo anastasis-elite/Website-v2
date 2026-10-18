@@ -64,13 +64,13 @@ export default function OnboardingProfileForm({ client, setupStep = 'dashboard' 
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data?.error || 'Profile update failed')
+        throw new Error(data?.error || 'Your profile update could not be confirmed. Please try again.')
       }
 
       router.push(data.redirect||'/dashboard')
       router.refresh()
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Something went wrong.')
+      setMessage(error instanceof Error ? error.message : 'Your profile update could not be confirmed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -139,7 +139,7 @@ export default function OnboardingProfileForm({ client, setupStep = 'dashboard' 
 
         <div style={{ display: 'grid', gap: 8 }}>
           <label style={styles.labelStyle}>
-            How should your accountability partner support you?
+            What kind of encouragement would help you most?
           </label>
 
           <select
@@ -148,12 +148,12 @@ export default function OnboardingProfileForm({ client, setupStep = 'dashboard' 
             onChange={handleChange}
             style={styles.inputStyle}
           >
-            <option value="call_me_out">Call me on my shit.</option>
+            <option value="call_me_out">Be direct when I lose focus.</option>
             <option value="remind_me_why">Remind me why I&apos;m doing this.</option>
             <option value="make_next_step_smaller">Help me make the next step smaller.</option>
-            <option value="facts_and_direction">Give me the facts and tell me what to do.</option>
+            <option value="facts_and_direction">Give me clear facts and a practical next step.</option>
             <option value="encourage_without_pressure">Encourage me without pressuring me.</option>
-            <option value="push_when_ready">Push me when you know I can handle more.</option>
+            <option value="push_when_ready">Encourage a challenge when I feel ready.</option>
             <option value="help_me_stop">Help me stop when I&apos;m doing too much.</option>
           </select>
         </div>

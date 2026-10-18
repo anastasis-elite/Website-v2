@@ -7,21 +7,23 @@ export default function PhoenixSupportPage() {
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <h1 style={styles.heroTitleStyle}>
-          There are other ways to step into this.
+          Take time to choose your starting point.
         </h1>
 
         <p style={styles.heroTextStyle}>
-          You don’t have to explain everything to move forward.
+          Cost, timing, and available capacity are part of the decision.
         </p>
 
         <section style={styles.sectionStyle}>
           <p style={styles.bodyStyle}>
-            If cost, timing, or external factors are making this feel out of reach,
-            there are alternative entry paths available.
+            Review the current program options and billing details before
+            choosing. You can decide which tools would be useful and whether
+            this is the right time to begin.
           </p>
 
           <p style={styles.bodyStyle}>
-            This is not a barrier. It’s just a different starting point.
+            This page does not confirm an alternative payment arrangement or
+            place on a program. Any available terms need to be confirmed before enrollment.
           </p>
         </section>
 

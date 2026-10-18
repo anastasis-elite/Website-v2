@@ -162,17 +162,17 @@ export default function AuthButton() {
                 className="dashboard-menu-link-with-badge"
               >
                 <span>
-                  <span className="dashboard-menu-link-title">Ascent</span>
+                  <span className="dashboard-menu-link-title">Community</span>
                   <span className="dashboard-menu-link-subtitle">
-                    The Ascent Collective
+                    Sample conversations
                   </span>
                 </span>
 
-                <span className="dashboard-menu-badge">3</span>
+                <span className="dashboard-menu-badge">Preview</span>
               </Link>
 
               <Link href="/program" onClick={closeMenu}>
-                Explore Programs
+                Compare support levels
               </Link>
 
               <Link href="/about" onClick={closeMenu}>
@@ -188,7 +188,7 @@ export default function AuthButton() {
               </Link>
 
               <Link href="/audit" onClick={closeMenu}>
-                Apply
+                Capacity Audit
               </Link>
 
               <button
@@ -222,7 +222,7 @@ export default function AuthButton() {
               </Link>
 
               <Link href="/audit" onClick={closeMenu}>
-                Apply
+                Capacity Audit
               </Link>
 
               <Link href="/login" onClick={closeMenu}>

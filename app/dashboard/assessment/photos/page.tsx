@@ -11,7 +11,7 @@ export default async function ProgressPhotosPage() {
   return (
     <main className="aos-photo-page">
       <div className="aos-photo-shell">
-        <header className="aos-flow-hero"><p className="aos-eyebrow">Photos</p><h1>Track change without relying only on the scale.</h1><p>{capabilities.postureAssessment?'Upload progress photos for private comparison or posture photos when movement review is needed.':'Upload progress photos for private comparison and assessment history.'}</p></header>
+        <header className="aos-flow-hero"><p className="aos-eyebrow">Photos</p><h1>Track change without relying only on the scale.</h1><p>{capabilities.postureAssessment?'Upload progress photos for private comparison, or add posture photos to review and confirm estimated landmarks.':'Upload progress photos for private comparison and assessment history.'}</p></header>
         <AssessmentPhotoUpload postureAssessmentEnabled={capabilities.postureAssessment} />
         <section className="aos-photo-history"><div><p className="aos-eyebrow">History</p><h2>Your private gallery</h2></div>{history.length?<div className="aos-photo-gallery">{history.map((photo,index)=><figure key={`${photo.url}-${index}`}><Image src={photo.url} alt={`${photo.type||'Progress'} photo`} width={360} height={480}/><figcaption>{photo.type||'Progress'} · {new Date(photo.date).toLocaleDateString()}</figcaption></figure>)}</div>:<p>No photo history yet. Your first upload will appear here.</p>}</section>
       </div>

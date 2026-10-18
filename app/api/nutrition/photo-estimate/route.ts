@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   }
 
   if (!getTierCapabilities(client.program).nutritionPhotoMacroEstimation) {
-    return NextResponse.json({ error: 'Photo macro estimation is only available for PHOENIX.' }, { status: 403 })
+    return NextResponse.json({ error: 'Photo estimation is not available for this plan.' }, { status: 403 })
   }
 
   const formData = await request.formData().catch(() => null)
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       configured: false,
-      error: "We couldn't analyze this image. You can add the food manually instead.",
+      error: 'Photo estimation is currently unavailable. Use Search / manual or Barcode to log this meal.',
       disclaimer:
         'Photo-based nutrition estimates are approximations. Portion size, ingredients, preparation methods, sauces, oils, brands, and other factors can significantly change calorie and macronutrient values. For the most accurate nutrition tracking, measure or weigh your food and verify nutrition information when available.',
     },
@@ -55,6 +55,6 @@ export async function GET() {
  if(!user)return NextResponse.json({error:'Unauthorized'},{status:401})
  const {data:client}=await supabase.from('clients').select('client_id,program').eq('auth_user_id',user.id).maybeSingle()
  if(!client)return NextResponse.json({error:'Client not found.'},{status:404})
- if(!getTierCapabilities(client.program).nutritionPhotoMacroEstimation)return NextResponse.json({error:'Photo estimation is only available for Phoenix.'},{status:403})
+ if(!getTierCapabilities(client.program).nutritionPhotoMacroEstimation)return NextResponse.json({error:'Photo estimation is not available for this plan.'},{status:403})
  return NextResponse.json({available:false,message:'Photo estimation is not available yet. Search for your food or use a barcode to log this meal.'})
 }

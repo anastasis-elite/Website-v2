@@ -9,7 +9,7 @@ import TrackedButton from '@/components/TrackedButton'
 import { BRAND_NAME, BRAND_TITLE } from '@/lib/seo'
 
 const homeDescription =
-  'Anastasis brings your workouts, nutrition, recovery, symptoms, cycle, goals, and schedule together so you can understand what your body needs today.'
+  'Make room for your health with training plans, nutrition targets, recovery guidance, and recorded progress informed by your goals, circumstances, and check-ins.'
 
 export const metadata: Metadata = {
   title: BRAND_TITLE,
@@ -102,45 +102,45 @@ const cardTextStyle: CSSProperties = {
 }
 
 const heroQuestions = [
-  'Should I train hard today?',
-  'Do I need more recovery?',
-  'What should I eat?',
-  'Why am I exhausted?',
-  'Am I doing enough?',
+  'What fits my energy today?',
+  'Would recovery be useful?',
+  'Where can I start with nutrition?',
+  'What deserves my attention?',
+  'What can wait?',
 ]
 
 const auditOutcomes = [
-  'What needs your attention now',
-  'What may be making things harder',
-  'What changes could make the biggest difference',
-  'What you can stop worrying about for now',
+  'A suggested program to explore',
+  'The support level that may fit your current season',
+  'What each program includes',
+  'A starting point you can review in your own time',
 ]
 
 const workSteps = [
   {
-    title: '1. Check in',
-    label: 'Assess',
+    title: '1. Start with your life',
+    label: 'Context',
     body:
-      'Tell Anastasis how you’re feeling, how you slept, what’s sore, where you are in your cycle, what your schedule looks like, and anything else affecting your day.',
+      'Your profile and assessments record your goals, equipment, training experience, and circumstances. Daily check-ins add how you feel, so guidance has context.',
   },
   {
-    title: '2. Your plan adjusts',
-    label: 'Adapt',
+    title: '2. Review your next step',
+    label: 'Clarity',
     body:
-      'Your workouts, nutrition, recovery, and daily priorities can change based on what’s actually happening—not what a generic plan assumed would happen.',
+      'Review your training plan, nutrition targets, and recovery guidance. Saved inputs and check-ins help inform the options you see; you choose what fits today.',
   },
   {
-    title: '3. Know what to do next',
-    label: 'Direct',
+    title: '3. Continue with context',
+    label: 'Continuity',
     body:
-      'Open Anastasis and see what deserves your attention today.',
+      'Record what you do and return to your saved progress. A check-in, a drink of water, or the next part of your workout can be enough to begin.',
   },
 ]
 
 const reliefStatements = [
-  'No piecing together five apps.',
-  'No trying to remember everything your trainer, nutrition coach, doctor, podcast, and Instagram told you.',
-  'No treating every health goal like it has to be accomplished today.',
+  'Keep your plan and recorded progress together.',
+  'Return to one place for training, nutrition targets, and recovery guidance.',
+  'Take the next useful step with the room you have today.',
 ]
 
 const womenCarry = [
@@ -233,8 +233,8 @@ export default function Home() {
                 color: 'rgba(215,199,182,0.66)',
               }}
             >
-              One place to understand your workouts, food, recovery, symptoms,
-              cycle, goals, and real life together.
+              Training, nutrition targets, recovery guidance, and recorded
+              progress, with room for the rest of your life.
             </p>
           </MistReveal>
         </div>
@@ -253,7 +253,7 @@ export default function Home() {
             textWrap: 'balance',
           }}
         >
-          Stop trying to figure out what your body needs every day.
+          You carry enough. Your health shouldn’t be one more thing you have to figure out.
         </h1>
 
         <div
@@ -273,7 +273,7 @@ export default function Home() {
               textWrap: 'balance',
             }}
           >
-            You already have enough to manage.
+            Your time and attention already have a lot of places to be.
           </p>
 
           <p
@@ -285,9 +285,9 @@ export default function Home() {
               textWrap: 'balance',
             }}
           >
-            Anastasis brings your workouts, nutrition, recovery, symptoms,
-            cycle, goals, and schedule together—then helps you decide what to
-            do today.
+            Anastasis brings your plan, check-ins, and recorded progress
+            together. Your goals and circumstances help inform practical
+            guidance, so the next step is easier to see.
           </p>
         </div>
 
@@ -329,7 +329,7 @@ export default function Home() {
             color: 'rgba(197,139,87,0.9)',
           }}
         >
-          You have one place helping you put the pieces together.
+          A clearer place to begin, and a familiar place to return.
         </p>
 
         <div
@@ -346,7 +346,7 @@ export default function Home() {
             event="audit_cta_clicked_1"
             properties={{ location: 'hero', page: 'landing' }}
           >
-            See What My Body Needs
+            Find My Starting Point
           </TrackedButton>
 
           <Button href="#how-it-works">See How It Works</Button>
@@ -371,8 +371,8 @@ export default function Home() {
           }}
         >
           <span>{CAPACITY_AUDIT_TIME}</span>
-          <span>One clear starting point</span>
-          <span>Next step today</span>
+          <span>A suggested starting program</span>
+          <span>Explore at your own pace</span>
         </div>
 
         <div style={{ height: '80px' }} />
@@ -383,7 +383,7 @@ export default function Home() {
           <p style={eyebrowStyle}>Capacity Audit</p>
 
           <h2 style={sectionTitleStyle}>
-            You don’t have to fix everything at once.
+            You can begin with the room you have.
           </h2>
 
           <div
@@ -396,9 +396,9 @@ export default function Home() {
           >
             <p style={{ margin: 0 }}>Start with five brief questions.</p>
             <p style={{ margin: 0 }}>
-              Share your energy, overwhelm, available time, support, and current season. Get a suggested starting program to explore. Member onboarding separately collects the detail needed to create your plan.
+              Share your energy, available time, support, and current season. The Capacity Audit suggests a program to explore. Member onboarding then gathers the detail used for your starting plan.
             </p>
-            <p style={{ margin: 0 }}>Then we help you understand:</p>
+            <p style={{ margin: 0 }}>Use it to find:</p>
           </div>
 
           <div style={{ ...gridStyle, marginBottom: '58px' }}>
@@ -421,9 +421,9 @@ export default function Home() {
 
       <section id="seen" style={sectionStyle}>
         <div style={{ ...sectionInnerStyle, maxWidth: '980px' }}>
-          <p style={eyebrowStyle}>The real problem</p>
+          <p style={eyebrowStyle}>When life is full</p>
 
-          <h2 style={sectionTitleStyle}>You already know the basics.</h2>
+          <h2 style={sectionTitleStyle}>Making room for your health takes thought.</h2>
 
           <div
             style={{
@@ -436,11 +436,11 @@ export default function Home() {
               color: 'rgba(215,199,182,0.82)',
             }}
           >
-            <p style={{ margin: 0 }}>You know you should eat well.</p>
-            <p style={{ margin: 0 }}>You know sleep matters.</p>
+            <p style={{ margin: 0 }}>You have learned what matters to you.</p>
+            <p style={{ margin: 0 }}>You know how much a good night’s rest can change a day.</p>
             <p style={{ margin: 0 }}>
-              You know you need to move your body, manage stress, drink water,
-              recover, and stay consistent.
+              Making space for movement, food, water, and recovery still takes
+              thought alongside everything else you do.
             </p>
             <p
               style={{
@@ -449,15 +449,14 @@ export default function Home() {
                 fontSize: '1.18rem',
               }}
             >
-              Knowing isn’t the problem.
+              Some days have more room than others.
             </p>
             <p style={{ margin: 0 }}>
-              The problem is figuring out what your body needs when you’re
-              tired, sore, stressed, on your period, short on time, slept
-              terribly, have a packed schedule—or all of the above.
+              Energy, soreness, sleep, cycle context, and a changing schedule
+              can all affect the choices in front of you.
             </p>
             <p style={{ margin: 0 }}>
-              Most health and fitness plans tell you what to do.
+              It helps to have your plan and what you have recorded in view.
             </p>
           </div>
 
@@ -481,7 +480,7 @@ export default function Home() {
                 textWrap: 'balance',
               }}
             >
-              Anastasis helps determine what makes sense for you today.
+              Anastasis helps you review what makes sense for today.
             </p>
           </div>
 
@@ -525,9 +524,9 @@ export default function Home() {
             }}
           >
             {[
-              'Tell us what’s going on.',
-              'We put the pieces together.',
-              'You get a clear next step.',
+              'Share your goals and circumstances.',
+              'Review guidance with context.',
+              'Choose a manageable next step.',
             ].map((step) => (
               <div
                 key={step}
@@ -621,7 +620,7 @@ export default function Home() {
                 textWrap: 'balance',
               }}
             >
-              Just: “Here’s what matters right now.”
+              Your next step can fit the day you are having.
             </p>
           </div>
         </div>
@@ -712,7 +711,7 @@ export default function Home() {
               color: 'rgba(197,139,87,0.9)',
             }}
           >
-            That’s what Anastasis is built for.
+            Anastasis is designed to make those choices more manageable.
           </p>
         </div>
       </section>
@@ -752,7 +751,7 @@ export default function Home() {
                 textWrap: 'balance',
               }}
             >
-              Your body shouldn’t be another thing you have to manage alone.
+              Make room for a starting point that fits.
             </h2>
 
             <div
@@ -767,12 +766,11 @@ export default function Home() {
               }}
             >
               <p style={{ margin: 0 }}>
-                You don’t need another plan to follow perfectly.
+                You can start without having every detail worked out.
               </p>
               <p style={{ margin: 0 }}>
-                You need something that can look at the bigger picture and help
-                you understand what your body needs, what matters today, and
-                what can wait.
+                Explore a self-led foundation, compare the support levels, or
+                use five brief questions to find a suggested place to begin.
               </p>
               <p style={{ margin: 0 }}>Start with the Capacity Audit.</p>
               <p style={{ margin: 0 }}>
@@ -796,7 +794,7 @@ export default function Home() {
                 Show Me Where to Start
               </TrackedButton>
 
-              <Button href="/program">Explore Anastasis</Button>
+              <Button href="/program">Compare support levels</Button>
             </div>
 
             <p

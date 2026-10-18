@@ -11,13 +11,12 @@ export default function GuidePage() {
         <p style={styles.eyebrowStyle}>The Anastasis Shift</p>
 
         <h1 style={styles.heroTitleStyle}>
-          For the woman who wants her life back.
+          Make a little room for yourself.
         </h1>
 
         <p style={styles.heroTextStyle}>
-          A psychological guide for rebuilding self-trust, breaking shame
-          cycles, and learning how to return to yourself again before stepping
-          into a structured transformation program.
+          A forthcoming reflection guide about noticing what works for you,
+          making space in a full life, and choosing manageable next steps.
         </p>
 
         <div
@@ -72,30 +71,29 @@ export default function GuidePage() {
         
         <section style={styles.cartBoxStyle}>
           <h2 style={styles.sectionTitleStyle}>
-            You do not need more pressure.
+            Begin with what fits your life.
           </h2>
 
           <p style={styles.bodyStyle}>
-            You need a system that helps you become ready to execute
-            consistently. This guide was created for women who are not failing
-            from lack of effort, but from carrying too much without the right
-            structure beneath them.
+            You already make decisions for a full day. The Anastasis Shift is
+            being developed as a place to pause, consider your own priorities,
+            and think about the routines you want to make room for.
           </p>
         </section>
 
         <section style={styles.cartBoxStyle}>
           <h2 style={styles.sectionTitleStyle}>
-            This guide helps you rebuild:
+            The planned guide explores:
           </h2>
 
           <div style={styles.compactCardGridStyle}>
             {[
-              'Self-trust',
-              'Execution capacity',
+              'Your priorities',
+              'Noticing your patterns',
               'Daily structure',
-              'Emotional regulation',
-              'Consistency without shame',
-              'Readiness for the next layer',
+              'Making room for yourself',
+              'Manageable routines',
+              'Choosing what comes next',
             ].map((item) => (
               <div key={item} style={styles.compactCardStyle}>
                 <h3 style={styles.compactCardTitleStyle}>{item}</h3>
@@ -106,25 +104,25 @@ export default function GuidePage() {
 
         <section style={styles.cartBoxStyle}>
           <h2 style={styles.sectionTitleStyle}>
-            This is for you if:
+            Written with a full life in mind.
           </h2>
 
           <p style={styles.bodyStyle}>
-            You keep restarting. You know what to do, but struggle to sustain
-            it. You feel overwhelmed by everything required to change. You need
-            a foundation before intensity.
+            You may be balancing work, relationships, family, or a changing
+            schedule. The guide is intended for women who want time to reflect
+            on what is practical and meaningful for them.
           </p>
         </section>
 
         <section style={styles.cartBoxStyle}>
           <h2 style={styles.sectionTitleStyle}>
-            You are not behind.
+            The guide is in development.
           </h2>
 
           <p style={styles.bodyStyle}>
-            You are building the capacity to sustain what comes next. The
-            Anastasis Shift is the bridge between where you are now and the
-            program layer you may be ready for later.
+            The Anastasis Shift is not available yet. You can explore the
+            current programs while the guide is being prepared, and decide
+            whether one fits what you want now.
           </p>
         </section>
 

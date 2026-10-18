@@ -12,20 +12,19 @@ export default function SupportFirstPage() {
         </h1>
 
         <p style={styles.heroTextStyle}>
-          Based on your responses, the most aligned next step is to prioritize
-          stability, support, and self-trust before moving into a structured
-          training program.
+          Your responses suggest taking time to consider support and daily
+          structure before choosing a structured training plan.
         </p>
 
         <section style={styles.cartBoxStyle}>
           <h2 style={styles.sectionTitleStyle}>
-            This is not a rejection.
+            Consider a different starting point.
           </h2>
 
           <p style={styles.bodyStyle}>
-            It simply means your body, nervous system, schedule, or current
-            capacity may need a different starting point before structured
-            progression can be effective and sustainable.
+            This is a suggested next step from the information you shared.
+            Review it alongside your circumstances and consider what support
+            would help you now.
           </p>
         </section>
 
@@ -35,9 +34,8 @@ export default function SupportFirstPage() {
           </h2>
 
           <p style={styles.bodyStyle}>
-            Your body is not something to push through. It is something to work
-            with. Creating the right foundation now allows you to progress
-            faster, safer, and more sustainably long-term.
+            Your available time, energy, and support matter. A manageable next
+            step can leave room for the rest of your day.
           </p>
         </section>
 
@@ -47,15 +45,15 @@ export default function SupportFirstPage() {
           </h2>
 
           <p style={styles.bodyStyle}>
-            The Anastasis Shift was created for women who are not quite ready
-            to enter the full program yet, but who are ready to rebuild the
-            structure, trust, and execution capacity needed to get there.
+            The Anastasis Shift is a forthcoming reflection guide about your
+            priorities, daily structure, and manageable routines. It is still
+            in development and is not available yet.
           </p>
         </section>
 
         <div style={styles.buttonRowStyle}>
           <Link href="/guide" style={styles.primaryButtonStyle}>
-            Begin The Anastasis Shift
+            Read about The Anastasis Shift
           </Link>
 
           <Link href="/apply" style={styles.secondaryButtonStyle}>

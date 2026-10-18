@@ -45,7 +45,7 @@ export default function DashboardSignupPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Dashboard setup failed')
+        throw new Error(data.error || 'Dashboard setup could not be confirmed.')
       }
 
       setStatus('success')
@@ -53,7 +53,7 @@ export default function DashboardSignupPage() {
     } catch (error) {
       console.error('DASHBOARD SIGNUP ERROR:', error)
       setStatus('error')
-      setMessage('Something went wrong. Please try again.')
+      setMessage('Dashboard setup could not be confirmed. Please try again or contact support for help.')
     }
   }
 
@@ -63,12 +63,12 @@ export default function DashboardSignupPage() {
         <p style={styles.eyebrowStyle}>Dashboard Setup</p>
 
         <h1 style={styles.heroTitleStyle}>
-          Create your access point.
+          Set up your member dashboard.
         </h1>
 
         <p style={styles.heroTextStyle}>
-          This is where your program begins to become personal. Set up your dashboard
-          so your assessment and execution plan can be built around you.
+          Keep your member details together so you can continue
+          to your assessments and starting plan.
         </p>
 
         <form onSubmit={handleSubmit} style={styles.cartBoxStyle}>

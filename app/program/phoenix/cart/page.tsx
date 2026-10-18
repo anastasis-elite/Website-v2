@@ -35,7 +35,7 @@ export default function PhoenixCartPage() {
         <h1 style={styles.heroTitleStyle}>Choose how you want to begin.</h1>
 
         <p style={styles.heroTextStyle}>
-          Phoenix is your recommended path. Select the payment option that fits best,
+          Review Phoenix and select the payment option that fits best,
           then you’ll be taken to secure checkout.
         </p>
 

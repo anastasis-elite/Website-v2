@@ -46,7 +46,7 @@ function LoginContent() {
       router.push(redirect)
       router.refresh()
     } catch {
-      setMessage('Unable to login.')
+      setMessage('Sign-in could not be completed. Check your connection and try again.')
       setLoading(false)
     }
   }
@@ -55,7 +55,7 @@ function LoginContent() {
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>
-          Client Login
+          Member Login
         </p>
 
         <h1 style={styles.heroTitleStyle}>
@@ -63,9 +63,9 @@ function LoginContent() {
         </h1>
 
         <p style={styles.heroTextStyle}>
-          Login to access your dashboard,
-          assessment, program updates,
-          and progress tracking.
+          Return to your plan, saved assessments,
+          and recorded progress. Start with the next step
+          that fits your day.
         </p>
 
         <section style={styles.cartBoxStyle}>

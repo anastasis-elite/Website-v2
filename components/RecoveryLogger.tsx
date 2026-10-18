@@ -36,7 +36,7 @@ export default function RecoveryLogger({ clientId }: { clientId: string }) {
 
   return (
     <AOSCard className="aos-recovery-logger">
-      <AOSSectionHeader eyebrow="Log Recovery" title="What can your body receive?" copy="Choose one action. Completing the right-sized action counts toward today." />
+      <AOSSectionHeader eyebrow="Recovery log" title="Record a recovery activity" copy="Choose what you completed. Add the duration when it applies." />
       <div className="aos-chip-list">
         {options.map((option) => (
           <AOSChip key={option} selected={selected === option} onClick={() => { setSelected(option); setSaved(false) }}>{option}</AOSChip>
@@ -45,8 +45,8 @@ export default function RecoveryLogger({ clientId }: { clientId: string }) {
       {selected && selected !== 'Full rest' ? (
         <AOSSlider label="Duration" value={minutes} min={5} max={90} step={5} suffix=" minutes" onChange={(value)=>{setMinutes(value);setSaved(false)}}/>
       ) : null}
-      <AOSButton type="button" disabled={!selected||saving} aria-describedby={!selected ? completionHintId : undefined} onClick={save}>{saving?'Saving…':'Complete Recovery Action'}</AOSButton>
-      {!selected ? <p id={completionHintId} className="aos-status">Choose a recovery action above to enable completion.</p> : null}
+      <AOSButton type="button" disabled={!selected||saving} aria-describedby={!selected ? completionHintId : undefined} onClick={save}>{saving?'Saving…':'Save recovery activity'}</AOSButton>
+      {!selected ? <p id={completionHintId} className="aos-status">Choose a recovery activity above to save it.</p> : null}
       {saved ? <p className="aos-status">Recovery saved for today.</p> : null}
       {error ? <p className="aos-status" role="alert">{error}</p> : null}
     </AOSCard>

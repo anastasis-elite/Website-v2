@@ -26,7 +26,7 @@ export default function DashboardProgressLinks({
         >
           <span aria-hidden="true">▧</span>
           <strong>Progress Photos</strong>
-          <small>Upload visual progress. Posture photo analysis is coming soon.</small>
+          <small>Add photos and compare your recorded progress over time.</small>
         </Link>
 
         <Link
@@ -35,7 +35,7 @@ export default function DashboardProgressLinks({
         >
           <span aria-hidden="true">▥</span>
           <strong>Measurements</strong>
-          <small>Log and review objective body measurement progress.</small>
+          <small>Record measurements and review your saved history.</small>
         </Link>
 
         <Link
@@ -44,7 +44,7 @@ export default function DashboardProgressLinks({
         >
           <span aria-hidden="true">↟</span>
           <strong>Strength Assessment</strong>
-          <small>Track functional progress separately from photos and measurements.</small>
+          <small>Record strength baselines separately from photos and measurements.</small>
         </Link>
       </div>
 

@@ -5,7 +5,7 @@ import TrackEvent from '@/components/TrackEvent'
 import { BRAND_NAME } from '@/lib/seo'
 
 const whyDescription =
-  'Understand why Anastasis connects capacity, recovery, fitness, nutrition, and daily support for women instead of treating health as another full-time job.'
+  'See how Anastasis uses your goals, circumstances, check-ins, and recorded activity to help you choose a manageable next step.'
 
 export const metadata: Metadata = {
   title: 'Why Anastasis',
@@ -55,39 +55,38 @@ export default function WhyPage() {
       <main style={styles.pageStyle}>
         <div style={{ ...styles.containerStyle, maxWidth: '1060px' }}>
           <section style={{ ...sectionBlock, marginBottom: '130px' }}>
-            <p style={styles.eyebrowStyle}>Why You Keep Starting Over</p>
+            <p style={styles.eyebrowStyle}>Room for real life</p>
 
             <h1 style={{ ...styles.heroTitleStyle, textAlign: 'center' }}>
-              It&apos;s probably not because you&apos;re lazy, unmotivated, or
-              lacking discipline.
+              Your plans should have room for your life.
             </h1>
 
             <p style={experienceText}>
-              Most women don&apos;t need another plan.
+              You can be capable, committed, and carrying a lot.
               <br />
-              They need enough capacity to actually follow one.
+              A useful plan starts with the day you actually have.
             </p>
           </section>
 
           <section style={sectionBlock}>
-            <p style={styles.eyebrowStyle}>The Real Problem</p>
+            <p style={styles.eyebrowStyle}>When plans meet the day</p>
 
             <h2 style={{ ...styles.heroTitleStyle, fontSize: 'clamp(2rem, 4vw, 3.7rem)' }}>
-              The problem was never motivation.
+              The day can change. Your next step can too.
             </h2>
 
             <div style={{ ...softPanel, maxWidth: '860px', margin: '42px auto 0 auto' }}>
               {[
-                'You&apos;ve downloaded the meal plans.',
-                'You&apos;ve bought the programs.',
-                'You&apos;ve promised yourself that this time would be different.',
-                'And for a while, it usually is.',
-                'Until life gets heavy.',
-                'The kids need something.',
-                'Work gets stressful.',
-                'Someone gets sick.',
-                'Sleep disappears.',
-                'And suddenly the things that were helping you feel like yourself become the first things sacrificed.',
+                'You make time for training.',
+                'You plan meals around a full week.',
+                'Then a meeting runs late.',
+                'Someone needs your attention.',
+                'You have less time than you expected.',
+                'You may have slept differently.',
+                'Your energy may be different too.',
+                'The original plan still matters.',
+                'So does what is practical now.',
+                'A clear next step can help you decide where to begin.',
               ].map((line) => (
                 <p key={line} style={experienceText} dangerouslySetInnerHTML={{ __html: line }} />
               ))}
@@ -95,49 +94,49 @@ export default function WhyPage() {
           </section>
 
           <section style={sectionBlock}>
-            <p style={styles.eyebrowStyle}>What Most Programs Miss</p>
+            <p style={styles.eyebrowStyle}>Context matters</p>
 
             <h2 style={{ ...styles.heroTitleStyle, fontSize: 'clamp(2rem, 4vw, 3.7rem)' }}>
-              Most programs ignore capacity.
+              A plan is more useful when it has context.
             </h2>
 
             <p style={experienceText}>
-              Traditional wellness programs assume you have unlimited energy,
-              unlimited time, and unlimited mental bandwidth.
+              Your available time, recent activity, sleep, and how you feel
+              can affect what is practical for the day ahead.
             </p>
 
-            <p style={experienceText}>Real life doesn&apos;t work like that.</p>
+            <p style={experienceText}>Those details deserve a place in the plan.</p>
 
             <p style={experienceText}>
-              Especially for women carrying careers, households, relationships,
-              children, appointments, responsibilities, and everyone else&apos;s
-              needs.
+              Anastasis uses the goals, assessments, circumstances, and
+              check-ins you share to inform training and recovery guidance.
             </p>
 
             <p style={experienceText}>
-              When your capacity drops, your ability to execute drops with it.
+              You can review that guidance alongside your commitments and
+              choose what makes sense to do next.
             </p>
 
-            <p style={experienceText}>That isn&apos;t failure.</p>
+            <p style={experienceText}>Your recorded progress stays in view.</p>
 
-            <p style={experienceText}>That&apos;s reality.</p>
+            <p style={experienceText}>A change of plan can be a considered decision.</p>
           </section>
 
           <section style={sectionBlock}>
-            <p style={styles.eyebrowStyle}>The Signals</p>
+            <p style={styles.eyebrowStyle}>Useful information</p>
 
             <h2 style={{ ...styles.heroTitleStyle, fontSize: 'clamp(2rem, 4vw, 3.7rem)' }}>
-              Your body has been telling the story all along.
+              Start with what you can tell us today.
             </h2>
 
             <div style={{ ...styles.cardGridStyle, marginTop: '54px' }}>
               {[
-                'Chronic fatigue',
-                'Stress eating',
-                'Poor recovery',
-                'Constant restarts',
-                'Hormonal symptoms',
-                'Feeling disconnected from yourself',
+                'Sleep',
+                'Energy',
+                'Soreness',
+                'Training availability',
+                'Cycle context, if shared',
+                'Your goals and commitments',
               ].map((item) => (
                 <div key={item} style={styles.cardStyle}>
                   <p style={{ ...styles.cardTextStyle, margin: 0 }}>{item}</p>
@@ -146,58 +145,57 @@ export default function WhyPage() {
             </div>
 
             <div style={{ marginTop: '36px' }}>
-              <p style={experienceText}>None of these happen in isolation.</p>
-              <p style={experienceText}>Your body adapts to the environment it lives in.</p>
+              <p style={experienceText}>You provide the context through your inputs.</p>
+              <p style={experienceText}>Your dashboard brings your plan and recorded activity together.</p>
               <p style={experienceText}>
-                If the environment is chaotic, overloaded, exhausted, and
-                running on survival mode, your body eventually reflects that
-                reality.
+                That gives you a place to review what is planned, what you
+                have done, and the guidance available in your program.
               </p>
             </div>
           </section>
 
           <section style={sectionBlock}>
-            <p style={styles.eyebrowStyle}>Something Different</p>
+            <p style={styles.eyebrowStyle}>A clearer place to begin</p>
 
             <h2 style={{ ...styles.heroTitleStyle, fontSize: 'clamp(2rem, 4vw, 3.7rem)' }}>
-              So we built something different.
+              Bring the next step into view.
             </h2>
 
-            <p style={experienceText}>Anastasis wasn&apos;t designed around punishment.</p>
-            <p style={experienceText}>It wasn&apos;t designed around perfection.</p>
+            <p style={experienceText}>Open your assigned workout and review its prescribed movements.</p>
+            <p style={experienceText}>Record what you do and return to your saved progress.</p>
             <p style={experienceText}>
-              And it wasn&apos;t designed for the woman whose entire life
-              revolves around fitness.
+              Review nutrition targets and recovery options alongside your daily check-in.
             </p>
-            <p style={experienceText}>It was built for the woman carrying everything.</p>
-            <p style={experienceText}>The woman trying to hold her family together.</p>
+            <p style={experienceText}>Choose the program with the tools you want to use.</p>
+            <p style={experienceText}>EMBER focuses on calories, macros, and hydration.</p>
             <p style={experienceText}>
-              The woman trying to take care of herself without abandoning
-              everyone else.
+              It does not include food or meal logging, or micronutrient
+              tracking or guidance. IGNITE and PHOENIX add food logging and nutrient information.
             </p>
-            <p style={experienceText}>The woman who misses who she used to be.</p>
+            <p style={experienceText}>Your choices can reflect the time and attention you have.</p>
           </section>
 
           <section style={{ ...sectionBlock, marginBottom: '80px' }}>
             <div style={{ ...softPanel, maxWidth: '900px', margin: '0 auto' }}>
-              <p style={styles.eyebrowStyle}>The Real Goal</p>
+              <p style={styles.eyebrowStyle}>Your starting point</p>
 
               <h2 style={{ ...styles.heroTitleStyle, fontSize: 'clamp(2rem, 4vw, 3.8rem)' }}>
-                The goal isn&apos;t weight loss.
+                Room for what matters to you.
               </h2>
 
-              <p style={experienceText}>Weight loss may happen.</p>
-              <p style={experienceText}>Strength may happen.</p>
-              <p style={experienceText}>Better energy may happen.</p>
-              <p style={experienceText}>Better recovery may happen.</p>
-              <p style={experienceText}>But the real goal is bigger than that.</p>
+              <p style={experienceText}>Start with the goals you want to work toward.</p>
+              <p style={experienceText}>Consider the circumstances you are working within.</p>
+              <p style={experienceText}>Choose a level of guidance that suits you.</p>
+              <p style={experienceText}>Use your check-ins and recorded activity to keep context in view.</p>
+              <p style={experienceText}>Then take one manageable next step.</p>
               <p style={experienceText}>
-                The goal is helping you build enough capacity to consistently
-                show up for the life you want.
+                The Capacity Audit asks five brief questions and suggests a
+                starting program to explore. Member onboarding gathers the
+                detail needed to create your plan.
               </p>
-              <p style={experienceText}>Because the woman you miss is still there.</p>
-              <p style={experienceText}>She doesn&apos;t need more punishment.</p>
-              <p style={experienceText}>She needs support.</p>
+              <p style={experienceText}>You can also review the programs at your own pace.</p>
+              <p style={experienceText}>See what each one includes.</p>
+              <p style={experienceText}>Choose where you would like to begin.</p>
 
               <div style={{ ...styles.buttonRowStyle, justifyContent: 'center', marginTop: '42px' }}>
                 <Link href="/audit" style={styles.primaryButtonStyle}>

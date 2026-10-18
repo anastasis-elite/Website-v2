@@ -783,7 +783,7 @@ setNutritionLog(log)
 
                   {!nutritionLog?.id ? (
                     <p className="tier-calendar-empty">
-                      {loading ? 'Preparing food logging...' : message || 'Food logging could not be prepared yet.'}
+                      {loading ? 'Preparing nutrition entry...' : message || 'Nutrition entry could not be prepared yet.'}
                     </p>
                   ) : null}
                 </div>
@@ -797,7 +797,7 @@ setNutritionLog(log)
           <h1 id="nutrition-entry-title">{loggingIntent?.action === 'water' ? 'Log Water' : isEmber ? 'Nutrition Guidance' : loggingIntent?.action === 'meal' ? 'Log Meal' : 'Log Food'}</h1>
           <a href="/dashboard" className="tier-secondary-action">Done</a>
         </div>
-        {loggingIntent?.action !== 'water' && isEmber ? <p>Your EMBER plan includes nutrition guidance and macro entry. Food and meal logging require IGNITE or PHOENIX.</p> : null}
+        {loggingIntent?.action !== 'water' && isEmber ? <p>EMBER includes macro targets, macro entry and water logging. Food and meal logging, micronutrient tracking and micronutrient guidance are not included.</p> : null}
         {loggingIntent?.action !== 'water' && directRecipe ? <details className="nutrition-entry-recipe-context"><summary>Recipe: {directRecipe.title}</summary><p>Log the foods and portions you ate from this recipe.</p><ul>{directRecipe.ingredientLines.map(ingredient => <li key={ingredient}>{ingredient}</li>)}</ul></details> : null}
         {loggingIntent?.action === 'water' ? waterEntry : foodEntry}
         {message ? <p className="nutrition-status" role="status">{message}</p> : null}
@@ -1010,11 +1010,11 @@ setNutritionLog(log)
                   ) : null}
 
                   {suggestedFoodsState === 'unavailable' ? (
-                    <p className="tier-calendar-empty">No food matches are available for your current preferences. You can still choose foods in the {foodLoggingEnabled ? 'food log' : 'macro entry'}.</p>
+                    <p className="tier-calendar-empty">No food suggestions are available for your current preferences. You can still {foodLoggingEnabled ? 'record foods in the food log' : 'enter your macro totals'}.</p>
                   ) : null}
 
                   {suggestedFoodsState === 'complete' ? (
-                    <p className="tier-calendar-empty">You’re well covered today.</p>
+                    <p className="tier-calendar-empty">No additional food suggestions based on your logged intake.</p>
                   ) : null}
 
                   {suggestedFoodsState === 'error' ? (
@@ -1029,7 +1029,7 @@ setNutritionLog(log)
                           <div>
                             <span>{food.contribution}</span>
                             <strong>{food.name}</strong>
-                            <small>{food.serving || (foodLoggingEnabled ? 'Serving available in food log' : 'Choose a serving for your macro entry')}</small>
+                            <small>{food.serving || (foodLoggingEnabled ? 'Serving available in food log' : 'Use this food idea when recording your macro totals')}</small>
                           </div>
                           <p>{food.reason}</p>
                         </article>
@@ -1107,7 +1107,7 @@ function Recipe({ recipe }: { recipe: PhoenixRecipe }) {
       <h4>Simple steps</h4>
       <ol>{recipe.steps.map((step)=><li key={step}>{step}</li>)}</ol>
       <p>Servings: {recipe.servings} · {recipe.meal_type} · {recipe.tags.join(', ')}</p>
-      <a href={`/dashboard/nutrition?log=meal&meal=${recipe.meal_type}&recipe=${encodeURIComponent(recipe.id)}`} className="tier-primary-action">Log this recipe</a>
+      <a href={`/dashboard/nutrition?log=meal&meal=${recipe.meal_type}&recipe=${encodeURIComponent(recipe.id)}`} className="tier-primary-action">Log foods from this recipe</a>
     </details>
   )
 }

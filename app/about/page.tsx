@@ -8,7 +8,7 @@ import TrackedButton from '@/components/TrackedButton'
 import { BRAND_NAME } from '@/lib/seo'
 
 const aboutDescription =
-  'Learn why Anastasis was built for real life, connecting training, nutrition, recovery, readiness, symptoms, cycle, assessments, and daily inputs into one supportive system.'
+  'Learn how Anastasis uses your goals, assessments, check-ins, and recorded activity to bring training, nutrition, recovery, and daily priorities into view.'
 
 export const metadata: Metadata = {
   title: 'About Anastasis',
@@ -94,14 +94,14 @@ const cardTextStyle: CSSProperties = {
 }
 
 const realLifeChanges = [
-  'Some days you slept eight hours and you’re ready to push.',
+  'Some days you feel rested and ready to train.',
   'Some days the kids were up all night.',
-  'Some weeks training is consistent. Others aren’t.',
+  'Some weeks leave more room for training than others.',
   'Your energy changes.',
   'Your recovery changes.',
   'Your cycle changes.',
   'Your schedule changes.',
-  'What your body can handle today may not be what it could handle yesterday.',
+  'What fits today may be different from what fit yesterday.',
 ]
 
 const systemPieces = [
@@ -215,8 +215,8 @@ export default function AboutPage() {
               textWrap: 'balance',
             }}
           >
-            Your body doesn’t experience your workout, nutrition, sleep, stress,
-            cycle, recovery, and schedule separately.
+            Your training sits alongside work, sleep, meals, relationships,
+            recovery, and the rest of your day.
           </p>
 
           <p
@@ -228,7 +228,7 @@ export default function AboutPage() {
               textWrap: 'balance',
             }}
           >
-            Neither should the system helping you manage them.
+            Having those parts of your life in view can make the next decision clearer.
           </p>
 
           <p
@@ -240,9 +240,9 @@ export default function AboutPage() {
               textWrap: 'balance',
             }}
           >
-            Anastasis was built around a simple idea: your health and
-            performance support should adapt to the life you’re actually
-            living—not require you to build your life around a perfect plan.
+            Anastasis was built around a simple idea: your goals deserve a
+            place in the life you already have. Your circumstances, assessments,
+            and check-ins help shape a plan you can review and act on.
           </p>
         </div>
 
@@ -336,7 +336,7 @@ export default function AboutPage() {
                 textWrap: 'balance',
               }}
             >
-              That isn’t failure.
+              A different day can call for a different approach.
             </p>
             <p
               style={{
@@ -368,19 +368,18 @@ export default function AboutPage() {
             }}
           >
             <p style={{ margin: 0 }}>
-              Most health and fitness tools solve one piece at a time.
+              It takes attention to keep track of the different parts of a full day.
             </p>
             <p style={{ margin: 0 }}>
-              A workout app knows your workouts. A nutrition tracker knows your
-              food. A recovery device knows your sleep. A cycle tracker knows
-              where you are in your cycle.
+              You might have a workout to follow, nutrition targets to review,
+              appointments to keep, and recent activity you want to remember.
             </p>
             <p style={{ margin: 0 }}>
-              But you’re still the person responsible for taking all of that
-              information and figuring out what to actually do with it.
+              The useful question is how that information can help you choose
+              what to do next.
             </p>
             <p style={{ margin: 0 }}>
-              Anastasis was designed to connect those pieces.
+              Anastasis brings your plan and the information you record into one dashboard.
             </p>
           </div>
 
@@ -453,15 +452,16 @@ export default function AboutPage() {
                 What makes sense for today.
               </p>
               <p style={{ ...cardTextStyle, textAlign: 'center' }}>
-                Not an imaginary perfect Tuesday. Your Tuesday.
+                A next step you can consider alongside the day ahead.
               </p>
             </div>
           </div>
 
           <p style={bodyStyle}>
-            Your training, nutrition, recovery, readiness, symptoms, cycle,
-            assessments, and daily inputs work together to help shape what makes
-            sense for today.
+            Your goals, assessments, check-ins, and recorded activity provide
+            context for training and recovery guidance. Nutrition features vary
+            by program. EMBER focuses on calories, macros, and hydration; it
+            does not include food or meal logging, or micronutrient tracking or guidance.
           </p>
         </div>
       </section>
@@ -470,7 +470,7 @@ export default function AboutPage() {
         <div style={{ ...sectionInnerStyle, maxWidth: '980px' }}>
           <p style={eyebrowStyle}>Less to carry</p>
 
-          <h2 style={sectionTitleStyle}>You don’t need more capacity.</h2>
+          <h2 style={sectionTitleStyle}>Make room for the decisions that matter.</h2>
 
           <div
             style={{
@@ -481,19 +481,19 @@ export default function AboutPage() {
             }}
           >
             <p style={{ margin: 0 }}>
-              Women are constantly being handed another thing to track, another
-              habit to perfect, another routine to follow, and another standard
-              they’re somehow supposed to fit into an already full life.
+              A full life already asks you to make plenty of decisions.
+              Looking after yourself deserves a place in it without every
+              choice becoming a project.
             </p>
             <p style={{ margin: 0 }}>
-              Anastasis isn’t designed to add another responsibility.
+              Anastasis gives your plan, check-ins, and recorded progress a place to stay together.
             </p>
             <p style={{ margin: 0 }}>
-              It’s designed to reduce the number of decisions you’re carrying.
+              You can review your assigned workout, nutrition targets, and recovery options.
             </p>
             <p style={{ margin: 0 }}>
-              You give the system information about what’s actually happening.
-              Anastasis helps turn that information into direction.
+              The guidance uses the goals, circumstances, and inputs you share.
+              You decide how to make room for the next step.
             </p>
           </div>
 
@@ -519,7 +519,7 @@ export default function AboutPage() {
                 textWrap: 'balance',
               }}
             >
-              Women don’t need more capacity. They need refined resilience.
+              More clarity. A manageable next step. Room for the rest of your life.
             </p>
           </div>
         </div>
@@ -544,28 +544,23 @@ export default function AboutPage() {
             }}
           >
             <p style={{ margin: 0 }}>
-              I spent years working in fitness and nutrition and kept seeing the
-              same problem:
+              My work in fitness and nutrition kept bringing me back to one question:
             </p>
             <p style={{ margin: 0 }}>
-              The individual pieces could be good—and still fail to account for
-              the whole woman.
+              How can a useful plan account for the woman following it?
             </p>
             <p style={{ margin: 0 }}>
-              A perfectly written workout doesn’t exist in isolation from poor
-              sleep.
+              A workout has to find its place alongside sleep, work, and other commitments.
             </p>
             <p style={{ margin: 0 }}>
-              Nutrition doesn’t exist separately from energy, recovery,
-              symptoms, or a woman’s cycle.
+              Nutrition guidance has to consider the information a woman can
+              share about her goals and circumstances.
             </p>
             <p style={{ margin: 0 }}>
-              Recovery isn’t useful as a score if you still have to figure out
-              what that score means for your day.
+              Recovery guidance needs to lead to options she can understand and review.
             </p>
             <p style={{ margin: 0 }}>
-              And real women aren’t living inside controlled environments where
-              every variable stays the same.
+              And the plan needs room for circumstances to change.
             </p>
           </div>
 
@@ -608,11 +603,11 @@ export default function AboutPage() {
             }}
           >
             <p style={{ ...bodyStyle, marginBottom: '18px' }}>
-              And still trying to take care of themselves.
+              With goals and needs of their own.
             </p>
             <p style={{ ...bodyStyle, marginBottom: '18px' }}>
-              I didn’t want to build another program that demanded women become
-              better at fitting themselves into the system.
+              I wanted the information a woman shares about her life to matter
+              in the structure of her plan.
             </p>
             <p
               style={{
@@ -623,7 +618,7 @@ export default function AboutPage() {
                 textWrap: 'balance',
               }}
             >
-              I wanted to build the system around them.
+              That perspective is the starting point for Anastasis.
             </p>
             <p
               style={{
@@ -688,19 +683,18 @@ export default function AboutPage() {
                 color: 'rgba(215,199,182,0.82)',
               }}
             >
-              <p style={{ margin: 0 }}>Not perfection.</p>
-              <p style={{ margin: 0 }}>Not endless optimization.</p>
+              <p style={{ margin: 0 }}>Your goals give the plan direction.</p>
+              <p style={{ margin: 0 }}>Your circumstances give it context.</p>
               <p style={{ margin: 0 }}>
-                Not another rigid plan waiting to tell you that you fell behind.
+                Your check-ins and recorded activity help keep that context current.
               </p>
               <p style={{ margin: 0 }}>
-                A system that learns from your inputs, recognizes patterns, and
-                helps you make more informed decisions as your life and body
-                change.
+                Review your plan, see what you have recorded, and choose a
+                manageable next step as your day changes.
               </p>
               <p style={{ margin: 0 }}>
-                Because thriving shouldn’t require life to stop being
-                complicated first.
+                The Capacity Audit offers a suggested starting program from
+                five brief questions. Member onboarding gathers the detail for your plan.
               </p>
             </div>
 

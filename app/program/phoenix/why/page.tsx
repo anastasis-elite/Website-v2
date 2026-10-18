@@ -6,119 +6,119 @@ export default function PhoenixWhyPage() {
     <><TrackEvent event="phoenix_why_page_viewed" properties={{ page: 'phoenix_why' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Phoenix • Selection</p>
+        <p style={styles.eyebrowStyle}>Phoenix • Your Options</p>
 
-        <h1 style={styles.heroTitleStyle}>You were chosen for Phoenix.</h1>
+        <h1 style={styles.heroTitleStyle}>Consider Phoenix as your starting point.</h1>
 
         <p style={styles.heroTextStyle}>
-          Not because you need to be pushed harder.
+          More daily direction when it is useful.
           <br />
-          Because you deserve to be supported more deeply.
+          Room to choose what fits your capacity.
         </p>
 
         <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>Why Phoenix fits you</h2>
+          <h2 style={styles.sectionTitleStyle}>Why Phoenix may fit</h2>
 
           <p style={styles.bodyStyle}>
-            Phoenix was built for the woman who knows she wants to change, but does
-            not yet feel fully safe, clear, or supported enough to do it alone.
+            Phoenix may fit if suggested meals and directed next actions would
+            make your daily view more useful. It brings those options alongside
+            your training, food records, and recovery context.
           </p>
 
           <p style={styles.bodyStyle}>
-            You may know what you do not like about where you are right now. You may
-            feel tired of being stuck. You may feel like you want more for yourself,
-            but you are not fully sure where to begin, what to trust, or how to keep
-            choosing yourself when life has taught you not to.
+            Your member assessments, equipment, goals, and daily check-ins provide
+            inputs for the guidance. You can review your recorded history and
+            choose what is manageable today.
           </p>
         </section>
 
         <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>What we saw in your application</h2>
+          <h2 style={styles.sectionTitleStyle}>What you can review</h2>
 
           <div style={styles.bodyStyle}>
-            <p>You need more than a plan.</p>
-            <p>You need guidance that helps you feel safe enough to begin.</p>
-            <p>You need structure that does not shame you for needing support.</p>
-            <p>You need a system that helps you rebuild trust with yourself.</p>
+            <p>Your assigned training and saved workout history.</p>
+            <p>Meal recommendations alongside your remaining macro targets.</p>
+            <p>Directed nutrition and recovery next actions.</p>
+            <p>Your recorded food, check-ins, measurements, and photos.</p>
           </div>
         </section>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>
-            Phoenix is not about forcing yourself forward
+            A clear next step, with room to choose
           </h2>
 
           <p style={styles.bodyStyle}>
-            This path is not built on punishment, pressure, or pretending you are fine.
+            A recommendation is a starting point to review. Your current time,
+            resources, and capacity still matter.
           </p>
 
           <p style={styles.bodyStyle}>
-            Phoenix is the most extensive path because it is the most supported one.
-            It is designed for the woman who may have spent years surviving,
-            shrinking, silencing herself, or trying to become smaller so life felt
-            safer.
+            Phoenix includes the food logging, recovery detail, and photo tools
+            available in Ignite. Its additional meal recommendations and directed
+            next actions offer another way to navigate that information.
           </p>
 
           <p style={styles.bodyStyle}>
-            Here, the goal is not just to change your body. The goal is to help you
-            hear yourself again.
+            Posture photos let you review and confirm estimated landmarks. They
+            do not provide a diagnosis or a corrective training prescription.
           </p>
         </section>
 
         <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>What Phoenix helps you reclaim</h2>
+          <h2 style={styles.sectionTitleStyle}>Keep the context together</h2>
 
           <div style={styles.bodyStyle}>
-            <p>Your voice.</p>
-            <p>Your confidence.</p>
-            <p>Your structure.</p>
-            <p>Your boundaries.</p>
-            <p>Your sense of direction.</p>
-            <p>Your ability to trust your own decisions again.</p>
+            <p>Member assessment inputs.</p>
+            <p>Your assigned workout.</p>
+            <p>Food and water records.</p>
+            <p>Daily check-ins.</p>
+            <p>Recovery guidance.</p>
+            <p>Your saved progress history.</p>
           </div>
         </section>
 
         <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>This is the gentlest path</h2>
+          <h2 style={styles.sectionTitleStyle}>A pace that fits your capacity</h2>
 
           <p style={styles.bodyStyle}>
-            Phoenix may look like the highest level of support, but at its core,
-            it is the gentlest.
+            You can use a suggested action when it helps and return to the wider
+            view when you want more context.
           </p>
 
           <p style={styles.bodyStyle}>
-            Because some women do not need to be challenged first. They need to feel
-            held first.
+            Optional updates can wait until you have room. Your recorded history
+            gives you a place to return to.
           </p>
 
           <p style={styles.bodyStyle}>
-            They need someone to help them find the next right step without making
-            them feel weak for not seeing it yet.
+            Choose this path for the tools you would use, at a cost and level of
+            tracking that fit your circumstances.
           </p>
         </section>
 
         <section style={styles.sectionStyle}>
-          <h2 style={styles.sectionTitleStyle}>You are not too far gone</h2>
+          <h2 style={styles.sectionTitleStyle}>You can take time to decide</h2>
 
           <p style={styles.bodyStyle}>
-            You were not chosen for Phoenix because you are broken.
+            This page describes the path; it is not a personal evaluation of you.
           </p>
 
           <p style={styles.bodyStyle}>
-            You were chosen because this path was built for the woman who is ready
-            to stop disappearing from her own life.
+            Compare what is included and choose the starting point that feels
+            useful and manageable now.
           </p>
 
           <p style={styles.bodyStyle}>
-            This is where rebuilding becomes supported.
+            There is room to review the options before making a decision.
           </p>
 
           <div style={{ ...styles.bodyStyle, marginTop: '40px' }}>
-            <p style={{ marginBottom: '12px' }}>I see you.</p>
+            <p style={{ marginBottom: '12px' }}>Your time matters.</p>
 
-            <p style={{ marginBottom: '12px' }}>I have been you.</p>
+            <p style={{ marginBottom: '12px' }}>Your resources matter.</p>
 
-            <p>And you do not have to find your way out of this alone.</p>
+            <p>Your next step can reflect both.</p>
           </div>
         </section>
 
@@ -136,12 +136,12 @@ export default function PhoenixWhyPage() {
           <h2 style={styles.sectionTitleStyle}>If moving forward feels complicated</h2>
 
           <div style={styles.bodyStyle}>
-            <p>If this feels out of reach financially…</p>
-            <p>If you feel like you need to justify this decision…</p>
-            <p>If something outside of you is making this harder to step into…</p>
+            <p>Consider the cost alongside the features you would use.</p>
+            <p>Take the time you need to review the options.</p>
+            <p>Beginning later is also a choice.</p>
 
             <a href="/program/phoenix/support" style={styles.quietLinkStyle}>
-              There are other ways to enter this.
+              Review starting-point considerations
             </a>
           </div>
         </section>

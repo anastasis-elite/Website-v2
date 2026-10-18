@@ -50,9 +50,9 @@ function EmberSuccessContent() {
           <h2 style={styles.sectionTitleStyle}>This is where Ember begins</h2>
 
           <div style={styles.bodyStyle}>
-            <p>Simple does not mean small.</p>
-            <p>Self-led does not mean unsupported.</p>
-            <p>This is precision without the noise.</p>
+            <p>Start with your member inputs.</p>
+            <p>Review your assigned workout, macro targets, and recovery guidance.</p>
+            <p>Record what you do and return when you have capacity.</p>
           </div>
         </section>
 

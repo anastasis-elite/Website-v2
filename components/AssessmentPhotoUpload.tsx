@@ -122,7 +122,7 @@ export default function AssessmentPhotoUpload({
             : 'Photos uploaded, but the editor could not open the images.',
         )
       } else {
-        setMessage('Assessment photos uploaded successfully.')
+        setMessage('Photos uploaded. You can review them in your gallery.')
         router.refresh()
       }
 
@@ -143,7 +143,7 @@ export default function AssessmentPhotoUpload({
       setMessage(
         error instanceof Error
           ? error.message
-          : 'Something went wrong uploading photos.'
+          : 'The photo upload could not be confirmed. Review your gallery before uploading again.'
       )
     } finally {
       setLoading(false)
@@ -171,7 +171,7 @@ export default function AssessmentPhotoUpload({
         <div className="aos-posture-progress">
           <p className="aos-eyebrow">Posture review</p>
           <h2>Confirm {POSTURE_VIEW_LABELS[activeUploadedView.view]} landmarks</h2>
-          <p>Review the estimated skeleton and move any point that does not line up with your body.</p>
+          <p>Review the estimated landmarks and move any point that does not line up with your body in the photo.</p>
           <div className="aos-posture-view-steps" aria-label="Posture photo views">
             {uploadedViews.map((item, index) => (
               <span key={item.path} className={index === activeViewIndex ? 'is-active' : index < activeViewIndex ? 'is-complete' : ''}>
@@ -196,7 +196,7 @@ export default function AssessmentPhotoUpload({
       <div className="aos-photo-uploader__header">
         <p className="aos-eyebrow">Private photo tracking</p>
         <h2>{assessmentType==='posture'?'Upload Posture Photos':'Upload Progress Photos'}</h2>
-        <p>These photos stay inside your Anastasis account and support visual progress and movement review.</p>
+        <p>These photos stay inside your Anastasis account and support visual comparisons over time.</p>
       </div>
       <div className="aos-chip-list"><AOSChip selected={assessmentType==='progress'} onClick={()=>setAssessmentType('progress')}>Progress photos</AOSChip>{postureAssessmentEnabled?<AOSChip selected={assessmentType==='posture'} onClick={()=>setAssessmentType('posture')}>Posture review</AOSChip>:null}</div>
       {!postureAssessmentEnabled ? <p className="aos-status">Progress photo upload and history are available here.</p> : null}

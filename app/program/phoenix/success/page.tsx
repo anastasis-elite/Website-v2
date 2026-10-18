@@ -17,22 +17,22 @@ function PhoenixSuccessContent() {
     <><TrackEvent event="phoenix_success_page_viewed" properties={{ page: 'phoenix_success' }} />
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Phoenix • Confirmed</p>
+        <p style={styles.eyebrowStyle}>Phoenix</p>
 
-        <h1 style={styles.heroTitleStyle}>You’re in.</h1>
+        <h1 style={styles.heroTitleStyle}>Confirm your purchase to continue.</h1>
 
         <p style={styles.heroTextStyle}>
-          Your enrollment has been confirmed. Phoenix is your highest level of support,
-          precision, and adaptation — built for transformation that cannot be ignored.
+          This page cannot confirm payment or account access. Use the secure
+          confirmation shown after Stripe Checkout, or sign in to your account.
         </p>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>What happens next</h2>
 
           <div style={styles.bodyStyle}>
-            <p>Your payment has been processed and your dashboard access is being prepared.</p>
+            <p>After your payment is verified, create your private login and complete your member profile.</p>
             <p>The next step is completing your assessment so your plan can be built around your current capacity, schedule, recovery, and equipment access.</p>
-            <p>You can complete it now, or explore your dashboard first and come back when you’re ready.</p>
+            <p>Once your account has access, you can complete the assessment or explore your dashboard and return when you are ready.</p>
           </div>
         </section>
 
@@ -50,9 +50,9 @@ function PhoenixSuccessContent() {
           <h2 style={styles.sectionTitleStyle}>This is where Phoenix begins</h2>
 
           <div style={styles.bodyStyle}>
-            <p>You are not here for random effort.</p>
-            <p>You are here to build a body and system that can sustain expansion.</p>
-            <p>This is precision, adaptation, and execution at the highest level.</p>
+            <p>Start with your member inputs.</p>
+            <p>Review meal recommendations and suggested next actions alongside your plan.</p>
+            <p>Choose what is manageable and keep a record you can return to.</p>
           </div>
         </section>
 

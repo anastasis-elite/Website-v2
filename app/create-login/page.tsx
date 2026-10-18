@@ -67,14 +67,14 @@ function CreateLoginContent() {
       const data = await res.json()
 
       if (!res.ok) {
-        setMessage(data.error || 'Unable to create login.')
+        setMessage(data.error || 'Login setup could not be confirmed. Use your invitation link to try again.')
         setLoading(false)
         return
       }
 
       router.push(`/login?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(data.redirect||'/dashboard/onboarding/profile')}`)
     } catch {
-      setMessage('Something went wrong. Please try again.')
+      setMessage('Login setup could not be confirmed. Try your invitation link again, or contact support for help.')
       setLoading(false)
     }
   }
@@ -82,18 +82,18 @@ function CreateLoginContent() {
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Private Client Access</p>
+        <p style={styles.eyebrowStyle}>Private Member Access</p>
 
         <h1 style={styles.heroTitleStyle}>Create your login.</h1>
 
         <p style={styles.heroTextStyle}>
-          This login protects your assessment, program, dashboard, and future
-          progress updates.
+          Choose a password for your member account. Use this login to return
+          to your plan, assessments, and recorded progress.
         </p>
 
         {!invitationToken ? (
           <section style={styles.cartBoxStyle}>
-            <p style={styles.bodyStyle}>This login invitation is incomplete or expired. Request a new secure invitation from Anastasis support.</p>
+            <p style={styles.bodyStyle}>This link is missing its invitation details. Contact Anastasis support for a complete invitation.</p>
           </section>
         ) : null}
 
@@ -109,8 +109,8 @@ function CreateLoginContent() {
             />
 
             <p style={styles.bodyStyle}>
-              We recommend using the same email address from your application so
-              your payment, dashboard, and assessment stay connected.
+              Use the email address on your invitation so this login can be
+              connected to the correct member account.
             </p>
 
             <label style={styles.bodyStyle}>Password</label>

@@ -57,7 +57,7 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
       const response = await fetch('/api/workout-log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: clientId, program, day_name: dayName, workout_source: workoutSource,
         workout_date: new Date().toISOString(), planned_exercises: plannedExercises, exercise_logs: logs, completed: final && counts.completed }) })
       const payload = await response.json(); if (!response.ok) throw new Error(payload.error || 'Session could not be saved.')
-      setDirty(false); setModifiedAt(payload.session?.updated_at || new Date().toISOString()); setMessage(final ? 'Session saved. Your plan now reflects what you completed.' : 'Progress saved. You can resume here.'); setSummary(final); router.refresh(); if(final && workoutSource === 'manual') onManualExerciseFinished?.(payload.completed === true)
+      setDirty(false); setModifiedAt(payload.session?.updated_at || new Date().toISOString()); setMessage(final ? 'Session saved. Your recorded progress is available in workout history.' : 'Progress saved. You can resume here.'); setSummary(final); router.refresh(); if(final && workoutSource === 'manual') onManualExerciseFinished?.(payload.completed === true)
     } catch(e) { setMessage(e instanceof Error ? e.message : 'Session could not be saved. Your draft is still here.') }
     finally { lock.current = false; setSaving(false) }
   }

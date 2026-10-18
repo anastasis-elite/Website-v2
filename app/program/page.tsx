@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { BRAND_NAME } from '@/lib/seo'
 
 const programDescription =
-  'Explore Anastasis program paths for personalized fitness, nutrition, recovery, progress tracking, and daily support.'
+  'Compare Anastasis program paths for assessed training, nutrition tools, recovery guidance, and recorded progress.'
 
 export const metadata: Metadata = {
   title: 'Anastasis Programs',
@@ -33,16 +33,16 @@ const paths = [
     tagline:
       'For the woman who knows what she wants, but needs a sustainable structure she can actually follow.',
     body:
-      'You are capable. You are motivated. You are simply carrying a lot. Ember helps you establish rhythm, rebuild trust in yourself, and create consistency without relying on perfection.',
+      'Ember brings your assessed training plan, macro targets, water tracking, and recorded progress into one place. Start with what you can manage and keep a record you can return to.',
     includes: [
-      'Adaptive training structure',
-      'Nutrition guidance',
-      'Recovery recommendations',
-      'Progress tracking',
-      'Cycle awareness',
+      'Training based on member assessments',
+      'Macro targets and daily macro totals',
+      'Water tracking',
+      'Basic recovery guidance',
+      'Recorded progress and cycle context',
       'Foundational assessments',
     ],
-    bestFor: 'Women who need clarity, structure, and momentum.',
+    bestFor: 'Women who want a self-led foundation with a clear next step.',
     href: '/program/ember',
   },
   {
@@ -51,34 +51,34 @@ const paths = [
     tagline:
       'For the woman who has built some consistency and is ready to refine the details.',
     body:
-      'Ignite creates greater precision around training, nutrition, recovery, and performance while still adapting to the realities of your actual life.',
+      'Ignite adds food logging and more detail from your recorded nutrition and recovery inputs. Review those details alongside your training plan, with room for the realities of your day.',
     includes: [
-      'Everything in Ember',
-      'Advanced nutrition support',
-      'Deeper tracking',
-      'More personalized adjustments',
-      'Greater visibility into progress',
-      'More refined training and recovery guidance',
+      'Assessed training and progress history',
+      'Manual food and barcode logging',
+      'Nutrient detail from recorded foods',
+      'Recovery recommendations',
+      'Progress photo uploads',
+      'User-confirmed posture landmarks',
     ],
-    bestFor: 'Women who want to optimize rather than simply maintain.',
+    bestFor: 'Women who want food logging and more context for daily decisions.',
     href: '/program/ignite',
   },
   {
     name: 'Phoenix',
     headline: 'Remove Friction',
     tagline:
-      'For the woman carrying the greatest load who wants the highest level of support.',
+      'For the woman who wants meal recommendations and a more directed daily view.',
     body:
-      'Phoenix is designed to reduce decision fatigue, increase personalization, and make execution as simple as possible so your energy can go toward your life, not constantly figuring out what to do next.',
+      'Phoenix brings the food logging, recovery detail, and photo tools available in Ignite together with meal recommendations and directed next actions. Use your recorded inputs to review a manageable next step.',
     includes: [
-      'Everything in Ignite',
-      'Food photo guidance',
-      'Personalized insights',
-      'Posture and compensation assessment',
+      'Assessed training and progress history',
+      'Manual food and barcode logging',
       'Meal recommendations',
-      'Highest level of support',
+      'Directed nutrition and recovery next actions',
+      'User-confirmed posture landmarks',
+      'Recorded nutrition and recovery context',
     ],
-    bestFor: 'Women who want the most guidance with the fewest obstacles.',
+    bestFor: 'Women who want a suggested next action alongside their recorded context.',
     href: '/program/phoenix',
   },
 ]
@@ -109,10 +109,9 @@ export default function ProgramPage() {
               margin: '0 auto 42px auto',
             }}
           >
-            Anastasis is designed to meet you where you are and grow with you as
-            your capacity expands. Whether you are rebuilding consistency,
-            optimizing what is already working, or removing as much friction as
-            possible, there is a path designed for your current season.
+            Start with the tools that fit your current capacity, time, and
+            resources. Compare what each path includes, then choose the amount
+            of tracking and daily direction that would be useful to you now.
           </p>
 
           <div style={{ ...styles.buttonRowStyle, justifyContent: 'center' }}>
@@ -149,10 +148,10 @@ export default function ProgramPage() {
               margin: '0 auto 56px auto',
             }}
           >
-            Every Anastasis path is built to help you train, eat, recover, and
-            rebuild in a way your life can actually sustain. The difference is
-            the amount of structure, guidance, personalization, and support
-            provided along the way.
+            Every path includes assessed training, daily check-ins, recovery
+            guidance, and progress history. Nutrition tools and the way next
+            actions are presented differ by path. Your recorded inputs provide
+            context for the guidance you see.
           </p>
 
           <p
@@ -162,7 +161,8 @@ export default function ProgramPage() {
               margin: '0 auto 48px auto',
             }}
           >
-            Anastasis is a health and performance concierge platform for women.
+            Anastasis brings training, nutrition tools, and recovery guidance
+            into one member dashboard.
             Learn more about{' '}
             <Link href="/what-is-anastasis" style={{ color: '#c58b57', textDecoration: 'underline' }}>
               how Anastasis works
@@ -172,12 +172,12 @@ export default function ProgramPage() {
 
           <div style={styles.cardGridStyle}>
             {[
-              'Build strength',
-              'Improve energy',
-              'Support recovery',
-              'Reduce overwhelm',
-              'Expand capacity',
-              'Create sustainable consistency',
+              'Review your training plan',
+              'Record how you feel',
+              'Review recovery guidance',
+              'Keep your history together',
+              'See your next step',
+              'Return when you have capacity',
             ].map((item) => (
               <div key={item} style={styles.cardStyle}>
                 <p style={{ ...styles.cardTextStyle, margin: 0 }}>{item}</p>
@@ -305,24 +305,24 @@ export default function ProgramPage() {
           <div style={styles.cardGridStyle}>
             {[
               {
-                title: 'Week 1',
+                title: 'Your starting point',
                 text:
-                  'You complete your assessment so your starting point, capacity, goals, schedule, nutrition, recovery, and movement history can be understood clearly.',
+                  'Enter your profile, equipment, goals, training availability, and member assessments. These inputs help establish your starting plan.',
               },
               {
-                title: 'Week 2',
+                title: 'Your daily view',
                 text:
-                  'Your structure begins taking shape through workouts, nutrition direction, recovery timing, and guidance based on the path that fits your needs.',
+                  'Review your assigned workout, nutrition tools, and recovery guidance. Record what you do and how you feel, at a pace that fits your day.',
               },
               {
-                title: 'Month 1',
+                title: 'Your recorded history',
                 text:
-                  'Patterns become visible. You begin to understand what supports your body, what drains it, and where your capacity needs to be rebuilt first.',
+                  'Return to saved workouts, check-ins, measurements, and photos to review change over time. Your history reflects what you have recorded.',
               },
               {
-                title: 'Month 2+',
+                title: 'Your next review',
                 text:
-                  'The system adapts as you do. Strength, energy, confidence, recovery, and consistency become less chaotic and more sustainable.',
+                  'Update assessments when they are due and review your current inputs as your circumstances change. Continue from the information available rather than starting over.',
               },
             ].map((item) => (
               <div key={item.title} style={styles.cardStyle}>
@@ -361,10 +361,10 @@ export default function ProgramPage() {
               margin: '0 auto 36px auto',
             }}
           >
-            You do not need to figure it out alone. The Capacity Assessment helps
-            determine which path best supports your current season by looking at
-            your recovery, stress load, capacity, nutrition, movement, goals, and
-            lifestyle demands.
+            The Capacity Assessment asks five broad questions about your energy,
+            overwhelm, time, support, and current season to suggest a starting
+            path. Detailed member assessments follow after enrollment. Review the
+            options and decide what fits your life now.
           </p>
 
           <div style={{ ...styles.buttonRowStyle, justifyContent: 'center' }}>

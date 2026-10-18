@@ -9,29 +9,30 @@ export default function PhoenixRecommendPage() {
         <p style={styles.eyebrowStyle}>Recommended Path</p>
 
         <h1 style={styles.heroTitleStyle}>
-          You’re not here to guess anymore.
+          More direction for your day.
           <br />
-          You’re here to get it right.
+          Room to choose what fits.
         </h1>
 
         <p style={styles.heroTextStyle}>
-          Phoenix was recommended because your answers suggest you are ready for a
-          deeper, more personalized transformation system — not another generic plan.
+          Phoenix is a path to consider if meal recommendations and directed next
+          actions would be useful to you. Review the current tools and choose
+          the level of daily direction that fits your needs.
         </p>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>Why Phoenix fits</h2>
 
           <p style={styles.bodyStyle}>
-            At this level, doing more is not the answer. The margin for error gets
-            smaller, and the cost of guessing gets higher. You need precision,
-            personalization, and strategic oversight.
+            Your daily view brings assigned training, recorded food, and recovery
+            context together. Suggested meals and next actions give you something
+            concrete to review when you are deciding what to do next.
           </p>
 
           <p style={styles.bodyStyle}>
-            Phoenix is designed around your goals, physiology, progression, and
-            timeline. This is where decisions become deliberate and your system adapts
-            with you.
+            Member assessments, equipment, goals, and check-ins provide inputs for
+            the guidance you see. Your history remains available as you update
+            those inputs and review your progress.
           </p>
         </section>
 
@@ -39,22 +40,23 @@ export default function PhoenixRecommendPage() {
           <h2 style={styles.sectionTitleStyle}>What Phoenix gives you</h2>
 
           <p style={styles.bodyStyle}>
-            Phoenix includes a more personalized program path, deeper structure,
-            the science behind the system, and one 1:1 session per quarter throughout
-            the year.
+            Phoenix includes the food logging, recovery detail, and photo tools
+            available in Ignite, plus meal recommendations and directed nutrition
+            and recovery next actions. Posture tools capture user-confirmed
+            landmarks; they do not diagnose movement or prescribe corrective training.
           </p>
         </section>
 
         <div style={styles.buttonRowStyle}>
           <a href="/program/phoenix/cart" style={styles.primaryButtonStyle}>
-            Apply for Phoenix
+            Continue with Phoenix
           </a>
 
           <a href="/program/ignite" style={styles.secondaryButtonStyle}>
-            Prefer less structure? Explore Ignite
+            Compare food logging in Ignite
           </a>
           <a href="/program/phoenix/why" style={styles.secondaryButtonStyle}>
-  See what we saw in your application
+  See how Phoenix works
 </a>
         </div>
       </div>

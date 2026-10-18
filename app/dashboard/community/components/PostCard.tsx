@@ -39,12 +39,12 @@ export default function PostCard({ post }: { post: Post }) {
     if (!comment.trim()) return
 
     if (comment.length > 280) {
-      setError('Comments must stay under 280 characters.')
+      setError('Use 280 characters or fewer.')
       return
     }
 
     if (!isSupportiveComment(comment)) {
-      setError('This space only allows supportive, respectful comments.')
+      setError('Please keep this sample reply respectful.')
       return
     }
 
@@ -158,7 +158,7 @@ export default function PostCard({ post }: { post: Post }) {
             cursor: 'pointer',
           }}
         >
-          Support · {post.supports + (supported ? 1 : 0)}
+          Preview support · {post.supports + (supported ? 1 : 0)}
         </button>
 
         <span
@@ -167,7 +167,7 @@ export default function PostCard({ post }: { post: Post }) {
             fontSize: '0.82rem',
           }}
         >
-          {comments.length} comments
+          {comments.length} preview replies
         </span>
       </div>
 
@@ -216,7 +216,7 @@ export default function PostCard({ post }: { post: Post }) {
         <input
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Add supportive comment..."
+          placeholder="Try a reply in this preview..."
           style={styles.inputStyle}
         />
 

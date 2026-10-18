@@ -797,7 +797,7 @@ export default function CycleTracker({
               : 'Save Cycle Note'}
         </button>
 
-        {saved ? <p role="status" style={styles.bodyStyle}>Today’s guidance now includes your updated cycle context. <Link href="/dashboard">See today’s next step</Link></p> : null}
+        {saved ? <p role="status" style={styles.bodyStyle}>Your cycle context is saved. <Link href="/dashboard">Review today’s next step</Link></p> : null}
         {error ? (
           <p
             style={{

@@ -190,7 +190,7 @@ export default function MuscleReadinessMap({
         {active && activeDefinition ? (
           <>
             <strong>{activeDefinition.label}</strong>
-            <span>{active.readinessScore ? `${active.readinessScore}% ready · ` : ''}{stateLabels[active.state]}</span>
+            <span>{active.readinessScore ? `${active.readinessScore}% readiness estimate · ` : ''}{stateLabels[active.state]}</span>
             {formatLastTrained(active.lastTrainedAt) ? <small>Last trained: {formatLastTrained(active.lastTrainedAt)}</small> : null}
             {active.exercisesToday?.length ? <small>Today: {active.exercisesToday.slice(0, 2).join(', ')}</small> : null}
             {activePresentation ? <small>{activePresentation.guidance}</small> : null}

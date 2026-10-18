@@ -99,9 +99,9 @@ export default function StartContent({ client, assessmentType = 'initial' }: { c
         </h1>
 
         <p>
-          This assessment gives the system the information it needs to begin shaping
-          your execution plan around your body, schedule, recovery, environment, and
-          current capacity.
+          Your answers add context to your training, recovery, and daily plan.
+          Enter the goals, routine, equipment, and limitations that reflect your
+          life now.
         </p>
         </header>
 

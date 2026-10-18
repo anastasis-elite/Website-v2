@@ -9,30 +9,30 @@ export default function IgniteRecommendPage() {
         <p style={styles.eyebrowStyle}>Recommended Path</p>
 
         <h1 style={styles.heroTitleStyle}>
-          You didn’t fail.
+          More context.
           <br />
-          Your system did.
+          A clearer next step.
         </h1>
 
         <p style={styles.heroTextStyle}>
-          Ignite was recommended because your answers suggest you’ve been trying,
-          showing up, and pushing — but the structure you’ve been using may not be
-          evolving with you.
+          Ignite is a path to consider if you want food logging and more recovery
+          detail alongside your assessed training. You can compare the tools
+          before choosing what fits your life.
         </p>
 
         <section style={styles.sectionStyle}>
           <h2 style={styles.sectionTitleStyle}>Why Ignite fits</h2>
 
           <p style={styles.bodyStyle}>
-            At some point, consistency stops being enough if the system underneath it
-            is not aligned. Your body adapts. Your recovery matters. Your environment
-            matters. The structure has to change with you.
+            Manual food entry and barcode tools let you record meals and review
+            the nutrition detail available from those foods. Daily check-ins add
+            context to your training and recovery guidance.
           </p>
 
           <p style={styles.bodyStyle}>
-            Ignite gives you more than a plan. It gives you the correction, context,
-            and guidance to understand why the structure works and how to align your
-            daily life around it.
+            Keep those records alongside workouts, measurements, and progress
+            photos. Posture photos also allow you to review and confirm estimated
+            landmarks; they do not provide a posture diagnosis.
           </p>
         </section>
 
@@ -40,9 +40,9 @@ export default function IgniteRecommendPage() {
           <h2 style={styles.sectionTitleStyle}>What Ignite gives you</h2>
 
           <p style={styles.bodyStyle}>
-            Ignite is for women who need more support than self-led execution. You’ll
-            receive the structure, plus digestible guidance that helps you stop
-            guessing and start building progress that holds.
+            Ignite adds recorded food detail and recovery recommendations to the
+            shared training and progress tools. You can return to your history
+            and review what is available without needing to complete every update at once.
           </p>
         </section>
 
@@ -52,14 +52,14 @@ export default function IgniteRecommendPage() {
           </a>
 
           <a href="/program/ember" style={styles.secondaryButtonStyle}>
-            Prefer less structure? Explore Ember
+            Prefer macro-total entry? Explore Ember
           </a>
 
           <a href="/program/phoenix" style={styles.secondaryButtonStyle}>
-            Want deeper support? Explore Phoenix
+            Want meal recommendations? Explore Phoenix
           </a>
           <a href="/program/ignite/why" style={styles.secondaryButtonStyle}>
-  See what we saw in your application
+  See how Ignite works
 </a>
         </div>
       </div>

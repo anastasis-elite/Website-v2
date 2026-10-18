@@ -33,7 +33,7 @@ export default function IgniteCartPage() {
         <h1 style={styles.heroTitleStyle}>Choose how you want to begin.</h1>
 
         <p style={styles.heroTextStyle}>
-          Ignite is your recommended path. Select the payment option that fits best,
+          Review Ignite and select the payment option that fits best,
           then you’ll be taken to secure checkout.
         </p>
 
