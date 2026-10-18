@@ -104,7 +104,7 @@ const cardTextStyle: CSSProperties = {
 const heroQuestions = [
   'What fits my energy today?',
   'Would recovery be useful?',
-  'Where can I start with nutrition?',
+  'Where does nutrition fit?',
   'What deserves my attention?',
   'What can wait?',
 ]
@@ -233,8 +233,7 @@ export default function Home() {
                 color: 'rgba(215,199,182,0.66)',
               }}
             >
-              Training, nutrition targets, recovery guidance, and recorded
-              progress, with room for the rest of your life.
+              Training, nutrition targets, recovery guidance, and progress together.
             </p>
           </MistReveal>
         </div>
@@ -267,27 +266,13 @@ export default function Home() {
           <p
             style={{
               fontSize: 'var(--landing-body-large)',
-              lineHeight: 1.8,
-              color: 'rgba(215,199,182,0.9)',
-              margin: 0,
-              textWrap: 'balance',
-            }}
-          >
-            Your time and attention already have a lot of places to be.
-          </p>
-
-          <p
-            style={{
-              fontSize: 'var(--landing-body-large)',
               lineHeight: 1.85,
               color: 'rgba(215,199,182,0.82)',
               margin: 0,
               textWrap: 'balance',
             }}
           >
-            Anastasis brings your plan, check-ins, and recorded progress
-            together. Your goals and circumstances help inform practical
-            guidance, so the next step is easier to see.
+            Your goals and check-ins inform training, nutrition targets, and recovery guidance.
           </p>
         </div>
 
@@ -329,7 +314,7 @@ export default function Home() {
             color: 'rgba(197,139,87,0.9)',
           }}
         >
-          A clearer place to begin, and a familiar place to return.
+          A clear starting point. Room to continue.
         </p>
 
         <div

@@ -138,7 +138,7 @@ export default function ProgramPage() {
           >
             The goal is not to push harder forever.
             <br />
-            The goal is expanded capacity.
+            The goal is refined resilience.
           </h2>
 
           <p

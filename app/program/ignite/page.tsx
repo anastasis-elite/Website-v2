@@ -31,7 +31,7 @@ export default function IgnitePage() {
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>Ignite</p>
 
-        <h1 style={styles.heroTitleStyle}>Guided. Corrective. Aligned.</h1>
+        <h1 style={styles.heroTitleStyle}>Guidance with more context.</h1>
 
         <p style={styles.heroTextStyle}>
           Ignite brings food logging and recovery detail alongside your assessed
