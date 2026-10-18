@@ -362,11 +362,11 @@ export async function getSupplementRecommendation({
   // existing protein match uses the same explanation with protein-only wording.
   const recommendation = !micronutrients && result.recommendation ? {
     ...result.recommendation,
-    recommendationCopy: `Your recent food logs show that you have not consistently been getting foods that provide protein. Your related wellness trend has also been lower during this period. ${result.recommendation.productName} contains protein that can help supplement what you are getting through food.`,
+    recommendationCopy: `Your recently recorded protein totals have not consistently reached your usual protein target. Your related wellness trend has also been lower during this period. ${result.recommendation.productName} contains protein that can help supplement what you are getting through food.`,
     disclaimerCopy: 'This recommendation is based on your logged nutrition and wellness patterns and does not identify or diagnose a deficiency.',
     why: {
       ...result.recommendation.why,
-      nutrition: 'Your food logs have not consistently included your usual protein target amounts.',
+      nutrition: 'Your recorded protein totals have not consistently reached your usual protein target.',
       disclaimer: 'This recommendation is based on your logged nutrition and wellness patterns and does not identify or diagnose a deficiency.',
     },
   } : result.recommendation
