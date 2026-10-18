@@ -1,0 +1,234 @@
+{
+  "task": "Founder manual alignment across public and member-facing copy",
+  "status": "LOCAL_REVIEW_CANDIDATE_VALIDATED; NOT_PUSHED_OR_RELEASED",
+  "repository": "anastasis-elite/Website-v2",
+  "branch": "codex/marketing-copy-alignment",
+  "verified_remote_main_at_start": "84b16efd3320ab15625f8dd4566df352d5f12ee4",
+  "tested_source_commit": "2181d0294a3699f0d7ce33ab8f63b1023896ef1e",
+  "isolated_checkout": "/tmp/anastasis-copy-alignment.zQFD73/Website-v2",
+  "original_downloads_checkout": "untouched; not used as edit/test cwd",
+  "prior_preparation_status": "Supersedes inventory-only marketing-copy-preparation-2026-10-18.json. Supported Library full-text read was accepted; local DOCX materialization was explicitly waived by parent.",
+  "reference": {
+    "library_file_id": "libfile_ad440f60bf308191820c6ddddbfef35c",
+    "file_id": "file_000000005e7c81fdabdb8aeabee6eb1f",
+    "filename": "Anastasis_Marketing_Verbiage_Manual_v1.docx",
+    "title": "Master Marketing Verbiage Manual | v1.0 | 18 October 2026",
+    "pages_read": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "lines_read": 225,
+    "has_more": false,
+    "local_docx_materialization": "Not required; waived after successful full Library read. No replacement manual created."
+  },
+  "founder_hero": "You carry enough. Your health shouldn\u2019t be one more thing you have to figure out.",
+  "scope": {
+    "route_inventory_count": 99,
+    "source_files_edited": 68,
+    "test_files_updated": 2,
+    "changes": "Display text, descriptions and visible-error strings only; two tests updated only for changed text.",
+    "asset_register": "changed-assets.csv",
+    "routes": "route-inventory.json"
+  },
+  "protection": {
+    "copy_neutral_ast_equal_files": 68,
+    "source_files_compared": 68,
+    "protected_literal_changes": [],
+    "protected_path_drift": [],
+    "method": "TypeScript syntax trees with only text literals/JSX text/template text masked, plus separate comparison of numeric literals, static paths/URLs, functional JSX attributes, module strings, predicates and database call strings; actual diffs independently read. This is evidence of unchanged source behavior, not a formal proof or live acceptance.",
+    "preserved": "Formulae, numeric parameters, prices/reference360/720/1200, entitlements, handlers, routes, data contracts, auth/security, legal/privacy/refund/clinical substance, migrations, configuration and dependencies.",
+    "details": "preservation.json"
+  },
+  "validation": {
+    "isolation": "No .env files; positive environment allowlist; synthetic localhost:9 Supabase; Stripe/Resend disabled; Node preload blocks remote/loopback transports, DNS, UDP and non-Node child executables. In-process test mocks and PGlite only. Guard is a Node transport guard, not an OS network sandbox.",
+    "full_tests": {
+      "tests": 596,
+      "pass": 596,
+      "fail": 0,
+      "skipped": 0,
+      "log": "tests-final.log"
+    },
+    "initial_tests": {
+      "tests": 596,
+      "pass": 594,
+      "fail": 2,
+      "reason": "Exact old photo-estimation copy and recovery button/help text; only those assertions were updated. Status/failure/retry/refresh assertions remain.",
+      "log": "tests.log"
+    },
+    "targeted_recheck": {
+      "status": "passed",
+      "log": "targeted-tests.log"
+    },
+    "typecheck": {
+      "exit_code": 0,
+      "log": "typecheck.log"
+    },
+    "lint": {
+      "exit_code": 0,
+      "warnings": 37,
+      "log": "lint.log"
+    },
+    "build": {
+      "exit_code": 0,
+      "warnings": 37,
+      "log": "build-final-clean.log",
+      "initial_pass_log": "build.log",
+      "intermediate_environment_failure": "build-final.log: ENOSPC during Webpack cache write. Cleared only this isolated checkout generated .next directory; clean final build passed."
+    },
+    "diff_check": "passed",
+    "browser_or_physical_tests": "No new browser, physical PWA, live Auth/API/RLS, provider, payment, email or real-member operations in this copy task.",
+    "static_output": {
+      "checks": 6,
+      "pass": 6,
+      "scope": "Parsed generated HTML text only, not an interactive browser test",
+      "log": "static-output-checks.json"
+    },
+    "retained_runner_check": {
+      "status": "passed",
+      "log": "retained-runner-check.log"
+    }
+  },
+  "independent_review": {
+    "reviewed": "Full working source/test diff by evidence_review; domain diffs by bounded public/member reviewers; root source preservation check and actual key hunks.",
+    "result": "No new routing, pricing, tier-gate, formula, query, authentication or clinical-behavior drift identified."
+  },
+  "remaining_limits": [
+    {
+      "item": "EMBER micronutrient exclusion is stated correctly but inherited main still exposes micronutrient UI/API data. No tier-gate behavior was changed in this pass; held functional work remains separate.",
+      "evidence": [
+        "app/api/nutrition/route.ts:42",
+        "app/api/nutrition/nutrient-insights/route.ts:24",
+        "components/AdaptiveNutritionDashboard.tsx:800"
+      ],
+      "state": "Unresolved inherited functional gap; requires separate authorized functionality/acceptance before release."
+    },
+    {
+      "item": "Guide Join The Waitlist link still points to an unchanged checkout domain. Its behavior was not opened or verified.",
+      "evidence": [
+        "app/guide/page.tsx:131"
+      ],
+      "state": "Unverified destination/claim; founder review before release."
+    },
+    {
+      "item": "Phoenix support Continue destination /program/phoenix/support/apply has no page in this tree; href preserved under routing constraint.",
+      "evidence": [
+        "app/program/phoenix/support/page.tsx:31"
+      ],
+      "state": "Existing routing gap; separate scope."
+    },
+    {
+      "item": "Strength-assessment ovulatory-window clinical wording is untouched.",
+      "evidence": [
+        "app/dashboard/assessment/start2/Start2Content.tsx:108"
+      ],
+      "state": "Founder/qualified clinical review; no medical guidance changes."
+    },
+    {
+      "item": "Live isolated Auth/API/RLS, Stripe/email/provisioning, calendar/health-provider, native persistence, physical PWA and member journey acceptance remain unrun. iCloud current credential flow remains the earlier founder-design mismatch.",
+      "state": "Pending separate acceptance; no availability proof."
+    },
+    {
+      "item": "Strength migration remains unapplied; held combined functionality was not merged into this remote-main copy branch. This change neither certifies founder numeric fidelity nor resolves those held implementation findings.",
+      "state": "Unchanged; parent owns existing ledger."
+    }
+  ],
+  "blockers": {
+    "permission_denials": [],
+    "pending_or_uncertain_external_actions": [],
+    "resolved_environment_issue": "Final build initially hit ENOSPC; clean generated-cache retry passed.",
+    "remaining_implementation_blockers": "None for authorized local copy alignment. Release and functional acceptance limits remain above."
+  },
+  "release_assessment": "Suitable for founder copy review and next isolated acceptance stage with documented inherited gaps; not production release approval.",
+  "operations": {
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "migration": false,
+    "production_data_mutation": false,
+    "external_messages": false
+  },
+  "supporting_refs": {
+    "home_hero": "app/page.tsx:256",
+    "ember_exclusion_copy": "components/AdaptiveNutritionDashboard.tsx:800",
+    "ember_micro_api_gap": "app/api/nutrition/route.ts:42",
+    "ember_nutrient_insight_gap": "app/api/nutrition/nutrient-insights/route.ts:24",
+    "waitlist_destination": "app/guide/page.tsx:131",
+    "missing_phoenix_support_destination": "app/program/phoenix/support/page.tsx:31",
+    "unchanged_ovulatory_advice": "app/dashboard/assessment/start2/Start2Content.tsx:108",
+    "photo_estimation_unavailable": "app/api/nutrition/photo-estimate/route.ts:42"
+  },
+  "source_file_sha256": {
+    "app/about/page.tsx": "a9ba7af3250225f73926bcf8141c7156c79796702c100ee9678b89a144b788a2",
+    "app/api/nutrition/photo-estimate/route.ts": "b47473494d4ca264507be61ac86609bfd0ab5ebc33ab33fe7daf79be56489b23",
+    "app/audit/results/[auditId]/page.tsx": "c2edfeb6f6de05d00ab8202b356ed089f5f70f11eb8df4f10a24a43a6997c680",
+    "app/create-login/page.tsx": "0d475af326cec92ef16b33fd4e419a89dee4085b4565697b3de99d453eb643b2",
+    "app/dashboard/assessment/AssessmentContent.tsx": "529e6dd8212e71a96cc963dbe083cf1ad068f84802e6e035cff04f8eb544db11",
+    "app/dashboard/assessment/daily-structure/page.tsx": "1dbe309cd0576e2cc3f47f68314c6ea90d7fa6e0f00f32cee924d6705c2f8bf2",
+    "app/dashboard/assessment/monthly/page.tsx": "7456f5e385ec636e2a79199958f63e3e118c69c22d4a5017ec92b3783b444bb6",
+    "app/dashboard/assessment/photos/page.tsx": "0d1b602bf4d0921c67da288ea4cde3c8c9422095b53012c9e0f0e278baff063c",
+    "app/dashboard/assessment/start/StartContent.tsx": "478defcf2f539aba130d2b4e9d4908435f6670c47decbfe5ada2cb291da7dd5f",
+    "app/dashboard/assessment/start2/Start2Content.tsx": "0ca45bc9f6c12d17e98c5ca16e0613414b8cf86050841dc881e39a45f26a4992",
+    "app/dashboard/community/components/CommunityFeed.tsx": "0f18fe4327584b6854f3f4336cbf64063f116153ed04f17fbb42e1e443861dad",
+    "app/dashboard/community/components/CreatePostBox.tsx": "1bec2ad1c9d05b07cc45c03931f8bbd30a6fa6efdcbc165af78111f2d757eaec",
+    "app/dashboard/community/components/PostCard.tsx": "fda3d4ea23d3daadf6583cafc6930f4167faa81a65e1d45df709ba075283899b",
+    "app/dashboard/onboarding/profile/page.tsx": "bfb681efb4ce4d82b605bfb806d996f29874ce73c5babb75e91feded0f738afa",
+    "app/dashboard/program/[program]/error.tsx": "dcbc2e611adfb42f943d11b169a47f10aaf90a18a56d884965ec8a79bcb89b62",
+    "app/dashboard/signup/SignupContent.tsx": "5ebd15ec2f5949326123e2b207b0f10c756295baeeb2dbde01ccce8d39ba7976",
+    "app/dashboard/sleep/page.tsx": "41adb6b83b54da8293bdefafcf1827104245644ddaddedb22fa2cf55a00c89ba",
+    "app/guide/page.tsx": "b8e03bd4ad4d49eba18b7a9c24cf98177a9b739334f51a915ebbda3b12d477cb",
+    "app/login/page.tsx": "c81a7567a45d0f6cbc67b27b40fa4a00b2056ec79ea84ba46adcb3b1bb3fa355",
+    "app/page.tsx": "f10ad4aae3e9f84f782009dc3a071b3be3d1ad8c274bc83b9005d0d546a1abf5",
+    "app/program/ember/cart/page.tsx": "33bc19a7593dff8a7ea1a7a6d30b343777e42dba5827af4d91cbc9b87511663a",
+    "app/program/ember/page.tsx": "5b387cb83899daf0f64e7a8cb2a45c40dbaedc4a27e22f79dc2d200aa263bfa7",
+    "app/program/ember/recommend/page.tsx": "1dedc4103d160bb266aa43ed2367877d1f597e89f08d689d7101658a57aecfe4",
+    "app/program/ember/success/page.tsx": "209089c7c4df232817e5e266c0b53a9d5dc5e9483234a384412d16ada5bb3ac6",
+    "app/program/ember/why/page.tsx": "b09632776bc2219f241a8e1aac3a70f11525dca1d7df2f7c165779b9fe404381",
+    "app/program/ignite/cart/page.tsx": "914ef41e05694e10f8c9612dbc67392b784c1ddc59567fec7200b9e7751dbf2e",
+    "app/program/ignite/page.tsx": "ead2f6932a4457c76af781e1c230de8b1bc2c62951df9aaef5090058997ddfe4",
+    "app/program/ignite/recommend/page.tsx": "cb9350c9b59960cf104b6defa4a71c4365d663fea5f9467f1289d7503c76abd0",
+    "app/program/ignite/success/page.tsx": "211a63540c79ae8c4f3e32c3796a7a5805ea6937b249da13d2161c6ff7e58cd6",
+    "app/program/ignite/why/page.tsx": "c1ed9bc65f7586b9a1ed472fb7e621e57bb6c8d2281f60c55e2fea09ba570eda",
+    "app/program/page.tsx": "d818199a6eae6fda1679e065668c17ddb2dcd6bbc813ea5566824d9121c5859f",
+    "app/program/phoenix/cart/page.tsx": "3b56cfb8c7b1fb3a6bbcb6a4a8de19e6c6d46301d02afc6d8598a81ea36de5c8",
+    "app/program/phoenix/page.tsx": "18dd00cdd0197e3095c3a9f3331e684d16c68d5203df0d2c84daa85bcc4ad875",
+    "app/program/phoenix/recommend/page.tsx": "ff223e5d77d3eb777f8d4b0dfd45817d86412353c75384f8e888c64b078e5176",
+    "app/program/phoenix/success/page.tsx": "752e1d2588d9b3bdc6f9d75e7f4551e79675977127c7d52d1a640030b89c81a1",
+    "app/program/phoenix/support/page.tsx": "a2f1626b91ea80fca8093886046b2ff2f1603407dd4e51aff5fff308c2f4c3e2",
+    "app/program/phoenix/why/page.tsx": "475cb6cf3b3803fa622bf3eb75b2098c2334afe32871f4075d7f4033c8e49ae9",
+    "app/program/support_first/page.tsx": "3568c2eeed3afcc5f119b88fcbd40764b782b8cb58367d80180b1e5d0181c20e",
+    "app/support/page.tsx": "ea494001041dcf16b8fc1b7b5eccadab84473c6d6a1c1fc4659183e9a49c3c86",
+    "app/what-is-anastasis/page.tsx": "e387d616527718d143a29d4abd1c936bbfa9677d7c66e069828a8de0fd56659c",
+    "app/why/page.tsx": "126ca83d85700823e49b345b21230750d6113e31fce76225f07563b0c3f5feff",
+    "components/AccountProfileForm.tsx": "a959bd06f6338ed113b17dc1cf1f5fc16419d21391136a4fd5a68d2084e890b7",
+    "components/ActivityWorkoutTracker.tsx": "e1f729092a78717a751c8121eac1bd3bce23eeef08609f11cbeae193c871eae2",
+    "components/AdaptiveNutritionDashboard.tsx": "870ef8579645d287f2117c28e7b21fb86131d04b931650acda07fdff28ae6bcd",
+    "components/AssessmentPhotoUpload.tsx": "ea571d07dc029904e50e2b988c9cb1aa3711adbdff597c50bd85f865a32b992b",
+    "components/AuthButton.tsx": "dc94e85b98c1c605390e2a73bfa5aecfd7c2aed8fa8e3cd1a2f4bcab5a4d543e",
+    "components/ConnectedCalendars.tsx": "737bfdb2b81b8e11ad49a25710aafd1effc23dd3c7892aab48b4a1102b396fe1",
+    "components/CycleTracker.tsx": "84c8af10214a782ac7929a97b733333c56281e485e803a3b7c148d2ab0205e4e",
+    "components/DailyCheckInForm.tsx": "b2576f418c2191e9e1621225fc81affc0b42423de72482ef7fa51c499a6b9018",
+    "components/MeasurementAssessment.tsx": "a97fe348068b5b4d7b65d7f043d684679638688d76119a48c73a51659cda6ff9",
+    "components/NutritionFoodLogger.tsx": "6afa856559771ef90746131d285a0b1a287f1d414480b5ad7b6ea06f3505fef3",
+    "components/OnboardingProfileForm.tsx": "605673e3a74f0c44c8a86d2f21e41ca0433ad264f00ed57e3f71762122aabaf8",
+    "components/PostureLandmarkEditor.tsx": "0d846a3cdc2c2e3ae10e91a761885c56ca9e0ef369d139c905c6aaddeb3b4719",
+    "components/RecoveryLogger.tsx": "1093c72091563de0c3ee7d5b9fed0203effc500b63611daa7d4e44a897484185",
+    "components/SleepLogger.tsx": "3ccffe700824031a7ff23a030a7fec15281e57a2bd097b008c5fbf3f9d1674ef",
+    "components/account/AccountDashboard.tsx": "1d93930f48214f882dd799b3c50a805ffc886bbce59c53d979afcb3070673a52",
+    "components/nutrition/DirectNutritionEntry.tsx": "30235b507537a0c811c642819c887dbc8b66af7223d2db935d6c9644d141bd86",
+    "components/program-dashboard/AdaptiveTodayForYou.tsx": "b3a1a0843c9b48cd6a71a61ba17b7f8a076e902d7aae4d7f423abd29e2367fc5",
+    "components/program-dashboard/DashboardProgressLinks.tsx": "26b984c728d4367c6bd193275246ee15f6d851d57f3b01cc6d8796a136a212a5",
+    "components/program-dashboard/GuidedToday.tsx": "09245d3fdf214edc4d434426e602de14713fc2fcde07d349c1e832c620735406",
+    "components/program-dashboard/TierAwareDashboardWorkspace.tsx": "bdf56ec99f44cf67419a0ffe2c7a0b93d2545d8525112d648771d77d8d7227f7",
+    "components/workout-dashboard/ManualWorkoutBuilder.tsx": "859f93b446d75731c92d5d358d5f8c512696ce3ad401073019cc2c3e3b12134e",
+    "components/workout-dashboard/MuscleReadinessMap.tsx": "bd2bae4c6df535e7de6b95ba365e17b0f78f6d7c37e233b59434a0b6b1cce192",
+    "components/workout-dashboard/WorkoutDashboard.tsx": "d5c4891d32e438e3af8ee84a3b2096a8120b7b0deeb91ddbd8fe81f3c58127fd",
+    "components/workout-feedback/WorkoutFeedback.tsx": "b026306db054f5cab919e878a44c07f4fd68949d8d9b9bef77bd8ad0cd0d4568",
+    "lib/calendar/server-context.ts": "5af7b35f99af4f3023b9ce79bb53dce011718518649a5f542e3cda816a6a30e7",
+    "lib/seo.ts": "3e5c56c2ff934388a6bc43bc7b494914e6a0c841743de4f93c5f5677bf41cee5",
+    "lib/tutorial/registry.ts": "797edb5f2dbca869c72ec5f5056b00af2ea644f2484366d53a54a9ca6dd262fa",
+    "tests/mealLoggingArchitecture.test.mjs": "8d079214cc54216870ccc29b4e10c8c26a52f3e5b00dd110a198e6aa5cc8113e",
+    "tests/nutritionRecoveryStability.test.mjs": "f30634b4f06da097cbdf183af4605d7e4ff1d4532211f0c16919867b7469dfa5"
+  }
+}

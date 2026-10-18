@@ -1,0 +1,421 @@
+{
+  "base": "84b16efd3320ab15625f8dd4566df352d5f12ee4",
+  "branch": "codex/marketing-copy-alignment",
+  "head": "2181d0294a3699f0d7ce33ab8f63b1023896ef1e",
+  "sourceFiles": 68,
+  "files": [
+    {
+      "file": "app/about/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/api/nutrition/photo-estimate/route.ts",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/audit/results/[auditId]/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/create-login/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/assessment/AssessmentContent.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/assessment/daily-structure/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/assessment/monthly/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/assessment/photos/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/assessment/start/StartContent.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/assessment/start2/Start2Content.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/community/components/CommunityFeed.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/community/components/CreatePostBox.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/community/components/PostCard.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/onboarding/profile/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/program/[program]/error.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/signup/SignupContent.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/dashboard/sleep/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/guide/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/login/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/ember/cart/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/ember/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/ember/recommend/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/ember/success/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/ember/why/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/ignite/cart/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/ignite/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/ignite/recommend/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/ignite/success/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/ignite/why/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/phoenix/cart/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/phoenix/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/phoenix/recommend/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/phoenix/success/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/phoenix/support/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/phoenix/why/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/program/support_first/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/support/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/what-is-anastasis/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "app/why/page.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/AccountProfileForm.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/ActivityWorkoutTracker.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/AdaptiveNutritionDashboard.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/AssessmentPhotoUpload.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/AuthButton.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/ConnectedCalendars.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/CycleTracker.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/DailyCheckInForm.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/MeasurementAssessment.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/NutritionFoodLogger.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/OnboardingProfileForm.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/PostureLandmarkEditor.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/RecoveryLogger.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/SleepLogger.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/account/AccountDashboard.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/nutrition/DirectNutritionEntry.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/program-dashboard/AdaptiveTodayForYou.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/program-dashboard/DashboardProgressLinks.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/program-dashboard/GuidedToday.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/program-dashboard/TierAwareDashboardWorkspace.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/workout-dashboard/ManualWorkoutBuilder.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/workout-dashboard/MuscleReadinessMap.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/workout-dashboard/WorkoutDashboard.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "components/workout-feedback/WorkoutFeedback.tsx",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "lib/calendar/server-context.ts",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "lib/seo.ts",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    },
+    {
+      "file": "lib/tutorial/registry.ts",
+      "copyNeutralAstEqual": true,
+      "protectedChanges": []
+    }
+  ],
+  "protectedPathDrift": [],
+  "changedFiles": [
+    "app/about/page.tsx",
+    "app/api/nutrition/photo-estimate/route.ts",
+    "app/audit/results/[auditId]/page.tsx",
+    "app/create-login/page.tsx",
+    "app/dashboard/assessment/AssessmentContent.tsx",
+    "app/dashboard/assessment/daily-structure/page.tsx",
+    "app/dashboard/assessment/monthly/page.tsx",
+    "app/dashboard/assessment/photos/page.tsx",
+    "app/dashboard/assessment/start/StartContent.tsx",
+    "app/dashboard/assessment/start2/Start2Content.tsx",
+    "app/dashboard/community/components/CommunityFeed.tsx",
+    "app/dashboard/community/components/CreatePostBox.tsx",
+    "app/dashboard/community/components/PostCard.tsx",
+    "app/dashboard/onboarding/profile/page.tsx",
+    "app/dashboard/program/[program]/error.tsx",
+    "app/dashboard/signup/SignupContent.tsx",
+    "app/dashboard/sleep/page.tsx",
+    "app/guide/page.tsx",
+    "app/login/page.tsx",
+    "app/page.tsx",
+    "app/program/ember/cart/page.tsx",
+    "app/program/ember/page.tsx",
+    "app/program/ember/recommend/page.tsx",
+    "app/program/ember/success/page.tsx",
+    "app/program/ember/why/page.tsx",
+    "app/program/ignite/cart/page.tsx",
+    "app/program/ignite/page.tsx",
+    "app/program/ignite/recommend/page.tsx",
+    "app/program/ignite/success/page.tsx",
+    "app/program/ignite/why/page.tsx",
+    "app/program/page.tsx",
+    "app/program/phoenix/cart/page.tsx",
+    "app/program/phoenix/page.tsx",
+    "app/program/phoenix/recommend/page.tsx",
+    "app/program/phoenix/success/page.tsx",
+    "app/program/phoenix/support/page.tsx",
+    "app/program/phoenix/why/page.tsx",
+    "app/program/support_first/page.tsx",
+    "app/support/page.tsx",
+    "app/what-is-anastasis/page.tsx",
+    "app/why/page.tsx",
+    "components/AccountProfileForm.tsx",
+    "components/ActivityWorkoutTracker.tsx",
+    "components/AdaptiveNutritionDashboard.tsx",
+    "components/AssessmentPhotoUpload.tsx",
+    "components/AuthButton.tsx",
+    "components/ConnectedCalendars.tsx",
+    "components/CycleTracker.tsx",
+    "components/DailyCheckInForm.tsx",
+    "components/MeasurementAssessment.tsx",
+    "components/NutritionFoodLogger.tsx",
+    "components/OnboardingProfileForm.tsx",
+    "components/PostureLandmarkEditor.tsx",
+    "components/RecoveryLogger.tsx",
+    "components/SleepLogger.tsx",
+    "components/account/AccountDashboard.tsx",
+    "components/nutrition/DirectNutritionEntry.tsx",
+    "components/program-dashboard/AdaptiveTodayForYou.tsx",
+    "components/program-dashboard/DashboardProgressLinks.tsx",
+    "components/program-dashboard/GuidedToday.tsx",
+    "components/program-dashboard/TierAwareDashboardWorkspace.tsx",
+    "components/workout-dashboard/ManualWorkoutBuilder.tsx",
+    "components/workout-dashboard/MuscleReadinessMap.tsx",
+    "components/workout-dashboard/WorkoutDashboard.tsx",
+    "components/workout-feedback/WorkoutFeedback.tsx",
+    "lib/calendar/server-context.ts",
+    "lib/seo.ts",
+    "lib/tutorial/registry.ts",
+    "tests/mealLoggingArchitecture.test.mjs",
+    "tests/nutritionRecoveryStability.test.mjs"
+  ]
+}

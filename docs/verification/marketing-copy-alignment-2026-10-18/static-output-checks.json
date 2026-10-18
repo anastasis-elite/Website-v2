@@ -1,0 +1,44 @@
+[
+  {
+    "surface": "home",
+    "generated_file": ".next/server/app/index.html",
+    "expected": "You carry enough. Your health shouldn\u2019t be one more thing you have to figure out.",
+    "found": true,
+    "h1": "You carry enough. Your health shouldn\u2019t be one more thing you have to figure out."
+  },
+  {
+    "surface": "ember",
+    "generated_file": ".next/server/app/program/ember.html",
+    "expected": "micronutrient tracking",
+    "found": true,
+    "h1": "A self-led plan with a clear next step."
+  },
+  {
+    "surface": "ignite",
+    "generated_file": ".next/server/app/program/ignite.html",
+    "expected": "food logging",
+    "found": true,
+    "h1": "Guided. Corrective. Aligned."
+  },
+  {
+    "surface": "phoenix",
+    "generated_file": ".next/server/app/program/phoenix.html",
+    "expected": "Meal recommendations",
+    "found": true,
+    "h1": "Personalized. Precise. Built around you."
+  },
+  {
+    "surface": "guide",
+    "generated_file": ".next/server/app/guide.html",
+    "expected": "not available yet",
+    "found": true,
+    "h1": "Make a little room for yourself."
+  },
+  {
+    "surface": "support_first",
+    "generated_file": ".next/server/app/program/support_first.html",
+    "expected": "in development",
+    "found": true,
+    "h1": "Let\u2019s build your foundation first."
+  }
+]

@@ -1,0 +1,88 @@
+`next lint` is deprecated and will be removed in Next.js 16.
+For new projects, use create-next-app to choose your preferred linter.
+For existing projects, migrate to the ESLint CLI:
+npx @next/codemod@canary next-lint-to-eslint-cli .
+
+
+./app/admin/dashboard-preview/page.tsx
+107:9  Warning: 'lesson' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/audits/[id]/page.tsx
+4:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/audits/page.tsx
+4:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/clients/[id]/page.tsx
+4:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/clients/page.tsx
+4:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/page.tsx
+3:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/qa/adapters/platform-adapter.ts
+7:54  Warning: '_options' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/aos/tasks/page.tsx
+4:8  Warning: 'AOSNavigation' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/api/marketing/video-generate/route.ts
+58:3  Warning: 'pillar' is defined but never used.  @typescript-eslint/no-unused-vars
+59:3  Warning: 'platform' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/guide/page.tsx
+3:8  Warning: 'Image' is defined but never used.  @typescript-eslint/no-unused-vars
+37:3  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/legal/acceptance/page.tsx
+6:10  Warning: 'EFFECTIVE_DATE' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/medical_clearance_needed/page.tsx
+3:15  Warning: 'CSSProperties' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/medical_review_needed/page.tsx
+3:15  Warning: 'CSSProperties' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/program/ember/recommend/page.tsx
+3:15  Warning: 'CSSProperties' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/program/ignite/page.tsx
+5:15  Warning: 'CSSProperties' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./components/AuthButton.tsx
+81:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./components/DashboardFlowCarousel.tsx
+39:3  Warning: 'client' is defined but never used.  @typescript-eslint/no-unused-vars
+41:3  Warning: 'todaysWorkout' is defined but never used.  @typescript-eslint/no-unused-vars
+42:3  Warning: 'adjustedExercises' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+43:3  Warning: 'output' is defined but never used.  @typescript-eslint/no-unused-vars
+44:3  Warning: 'cycleAdjustment' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./components/MeasurementAssessment.tsx
+752:3  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./components/TrackEvent.tsx
+15:6  Warning: React Hook useEffect has a missing dependency: 'properties'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./lib/legal/logRecommendationAudit.ts
+70:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./lib/nutrition/calculateMicronutrientTargets.ts
+153:7  Warning: 'seleniumTargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+154:7  Warning: 'cholesterolLimitMg' is never reassigned. Use 'const' instead.  prefer-const
+157:7  Warning: 'vitaminATargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+159:7  Warning: 'vitaminDTargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+160:7  Warning: 'vitaminETargetMg' is never reassigned. Use 'const' instead.  prefer-const
+161:7  Warning: 'vitaminKTargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+165:7  Warning: 'b3TargetMg' is never reassigned. Use 'const' instead.  prefer-const
+166:7  Warning: 'b5TargetMg' is never reassigned. Use 'const' instead.  prefer-const
+168:7  Warning: 'b9TargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+169:7  Warning: 'b12TargetMcg' is never reassigned. Use 'const' instead.  prefer-const
+
+./lib/safety/evaluateSafetyEscalation.ts
+21:103  Warning: '_patterns' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

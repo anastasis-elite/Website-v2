@@ -1,0 +1,53 @@
+✔ normalization allows only meal data and ignores legacy ingestion fields (0.70575ms)
+✔ manual creates a canonical entry, updates macros and micros, survives readback, and deletes (2.854625ms)
+✔ barcode resolves catalog food and confirms through the same service (0.313ms)
+✔ barcode misses leave manual creation available (0.324417ms)
+NUTRITION_ADD_MEAL_DIAGNOSTIC {
+  route: 'app/api/nutrition/add-meal',
+  stage: 'nutrition_log_ownership',
+  table: 'nutrition_logs',
+  code: null,
+  message: null,
+  userId: '40000000-0000-4000-8000-000000000001',
+  nutritionLogId: '10000000-0000-4000-8000-000000000001',
+  foodId: '20000000-0000-4000-8000-000000000001',
+  servingOptionId: '30000000-0000-4000-8000-000000000001',
+  entryId: null
+}
+NUTRITION_ADD_MEAL_DIAGNOSTIC {
+  route: 'app/api/nutrition/add-meal',
+  stage: 'serving_option_food_mismatch',
+  table: 'food_serving_options',
+  code: null,
+  message: null,
+  userId: '40000000-0000-4000-8000-000000000001',
+  nutritionLogId: '10000000-0000-4000-8000-000000000001',
+  foodId: '20000000-0000-4000-8000-000000000001',
+  servingOptionId: '30000000-0000-4000-8000-000000000001',
+  entryId: null
+}
+✔ image outage is isolated, and a reviewed resolved candidate uses canonical creation (3.729333ms)
+✔ Ember is rejected at meal, barcode, image, read, delete, and recurring boundaries (0.441167ms)
+✔ cross-user log ownership and serving mismatch fail before writing (0.298875ms)
+✔ Ignite keeps manual/barcode access and rejects image while Phoenix allows confirmed image (9.649125ms)
+✔ meal retries keep a single confirmed entry and recomputed totals (0.203208ms)
+✔ photo availability is honest and remains restricted to Phoenix (0.182708ms)
+✔ zero prior meals still return useful target-based foods across tiers without logging (2.921208ms)
+✔ food suggestions distinguish missing targets, satisfied targets, and an empty matching catalog (0.573792ms)
+✔ food ranking excludes logged foods, avoided foods, and supplement products (0.296375ms)
+✔ no recovery inputs explain missing fields and never present the default as a confirmed score (0.165208ms)
+✔ partial saved recovery inputs remain provisional and identify exactly what is missing (0.078292ms)
+✔ recovery scores require saved complete finite inputs and retain existing engine results (0.072166ms)
+✔ recovery completion explains selection, recovers after failed save, and refreshes after success (8.168916ms)
+✔ food suggestions keep log ownership and authentication protection (0.247417ms)
+✔ view preferences survive revisits, reject invalid values, and stay client scoped (0.150416ms)
+✔ zero-log nutrition hero provides an actionable food starting point across tiers (37.222792ms)
+✔ next food guidance uses current food suggestions without requiring or inventing prior intake (0.081625ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 255.809417

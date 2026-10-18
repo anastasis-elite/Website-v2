@@ -1,0 +1,695 @@
+[
+  {
+    "route": "/about",
+    "file": "app/about/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/admin/dashboard-preview",
+    "file": "app/admin/dashboard-preview/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/admin/gift-client",
+    "file": "app/admin/gift-client/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/admin/social/connect-tiktok",
+    "file": "app/admin/social/connect-tiktok/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/ai-disclaimer",
+    "file": "app/ai-disclaimer/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos/analytics",
+    "file": "app/aos/analytics/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos/audits/[id]",
+    "file": "app/aos/audits/[id]/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos/audits",
+    "file": "app/aos/audits/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos/clients/[id]",
+    "file": "app/aos/clients/[id]/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos/clients",
+    "file": "app/aos/clients/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos/legal",
+    "file": "app/aos/legal/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos/marketing",
+    "file": "app/aos/marketing/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos",
+    "file": "app/aos/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos/qa",
+    "file": "app/aos/qa/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos/revenue",
+    "file": "app/aos/revenue/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos/social",
+    "file": "app/aos/social/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos/tasks",
+    "file": "app/aos/tasks/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/aos-login",
+    "file": "app/aos-login/page.tsx",
+    "surface": "Internal/operational",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/audit",
+    "file": "app/audit/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/audit/results/[auditId]",
+    "file": "app/audit/results/[auditId]/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/conditions",
+    "file": "app/conditions/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/consent/research",
+    "file": "app/consent/research/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/create-login",
+    "file": "app/create-login/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/account",
+    "file": "app/dashboard/account/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/assessment/daily-structure",
+    "file": "app/dashboard/assessment/daily-structure/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/assessment/measurements",
+    "file": "app/dashboard/assessment/measurements/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/assessment/monthly",
+    "file": "app/dashboard/assessment/monthly/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/assessment",
+    "file": "app/dashboard/assessment/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/assessment/photos",
+    "file": "app/dashboard/assessment/photos/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/assessment/start",
+    "file": "app/dashboard/assessment/start/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/assessment/start2",
+    "file": "app/dashboard/assessment/start2/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/check-in",
+    "file": "app/dashboard/check-in/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/community",
+    "file": "app/dashboard/community/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/cycle",
+    "file": "app/dashboard/cycle/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/day/[block]",
+    "file": "app/dashboard/day/[block]/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/main",
+    "file": "app/dashboard/main/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/meditation",
+    "file": "app/dashboard/meditation/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/nutrition/nutrients/[nutrient]",
+    "file": "app/dashboard/nutrition/nutrients/[nutrient]/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/nutrition",
+    "file": "app/dashboard/nutrition/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/onboarding/plan",
+    "file": "app/dashboard/onboarding/plan/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/onboarding/profile",
+    "file": "app/dashboard/onboarding/profile/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard",
+    "file": "app/dashboard/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/payment-issue",
+    "file": "app/dashboard/payment-issue/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/program/[program]",
+    "file": "app/dashboard/program/[program]/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/program/[program]/plan/content",
+    "file": "app/dashboard/program/[program]/plan/content/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/program/[program]/plan",
+    "file": "app/dashboard/program/[program]/plan/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/program/[program]/workout",
+    "file": "app/dashboard/program/[program]/workout/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/program/ember/plan",
+    "file": "app/dashboard/program/ember/plan/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/program/ignite/plan",
+    "file": "app/dashboard/program/ignite/plan/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/program",
+    "file": "app/dashboard/program/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/program/phoenix/plan",
+    "file": "app/dashboard/program/phoenix/plan/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/progress",
+    "file": "app/dashboard/progress/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/recovery",
+    "file": "app/dashboard/recovery/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/schedule",
+    "file": "app/dashboard/schedule/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/settings/calendars",
+    "file": "app/dashboard/settings/calendars/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/signup",
+    "file": "app/dashboard/signup/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/sleep",
+    "file": "app/dashboard/sleep/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/symptoms",
+    "file": "app/dashboard/symptoms/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/dashboard/workout",
+    "file": "app/dashboard/workout/page.tsx",
+    "surface": "Member",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/guide",
+    "file": "app/guide/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/health-disclaimer",
+    "file": "app/health-disclaimer/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/incident-response",
+    "file": "app/incident-response/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/instagram",
+    "file": "app/instagram/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/legal/acceptance",
+    "file": "app/legal/acceptance/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/legal/compliance-roadmap",
+    "file": "app/legal/compliance-roadmap/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/login",
+    "file": "app/login/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/medical_clearance_needed",
+    "file": "app/medical_clearance_needed/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/medical_review_needed",
+    "file": "app/medical_review_needed/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/nutritionist",
+    "file": "app/nutritionist/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/",
+    "file": "app/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/privacy",
+    "file": "app/privacy/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/ember/cart",
+    "file": "app/program/ember/cart/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/ember",
+    "file": "app/program/ember/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/ember/recommend",
+    "file": "app/program/ember/recommend/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/ember/success",
+    "file": "app/program/ember/success/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/ember/why",
+    "file": "app/program/ember/why/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/ignite/cart",
+    "file": "app/program/ignite/cart/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/ignite",
+    "file": "app/program/ignite/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/ignite/recommend",
+    "file": "app/program/ignite/recommend/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/ignite/success",
+    "file": "app/program/ignite/success/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/ignite/why",
+    "file": "app/program/ignite/why/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program",
+    "file": "app/program/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/phoenix/cart",
+    "file": "app/program/phoenix/cart/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/phoenix",
+    "file": "app/program/phoenix/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/phoenix/recommend",
+    "file": "app/program/phoenix/recommend/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/phoenix/success",
+    "file": "app/program/phoenix/success/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/phoenix/support",
+    "file": "app/program/phoenix/support/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/phoenix/why",
+    "file": "app/program/phoenix/why/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/program/support_first",
+    "file": "app/program/support_first/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/refund-policy",
+    "file": "app/refund-policy/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/research-consent",
+    "file": "app/research-consent/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/substack",
+    "file": "app/substack/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/support",
+    "file": "app/support/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/terms",
+    "file": "app/terms/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/tiktok",
+    "file": "app/tiktok/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/verified",
+    "file": "app/verified/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/what-is-anastasis",
+    "file": "app/what-is-anastasis/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/why",
+    "file": "app/why/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": true,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  },
+  {
+    "route": "/youtube",
+    "file": "app/youtube/page.tsx",
+    "surface": "Public/auth/legal",
+    "direct_source_edited": false,
+    "note": "Shared component and metadata changes may also apply; unchanged legal/clinical and operational content is outside copy rewriting."
+  }
+]

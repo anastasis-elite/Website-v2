@@ -1,0 +1,11 @@
+   ▲ Next.js 15.5.28
+
+   Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOSPC: no space left on device, write
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOSPC: no space left on device, write
+Failed to compile.
+
+Error: ENOSPC: no space left on device, write
+
+
+> Build failed because of webpack errors
