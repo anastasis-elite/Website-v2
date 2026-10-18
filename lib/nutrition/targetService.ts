@@ -42,6 +42,7 @@ type DailyHealthMetricRow = {
   metric_date: string
   metric_type: string
   value: number | string | null
+  unit?: string | null
   source_providers?: string[] | null
   metadata?: Record<string, unknown> | null
 }
@@ -142,6 +143,9 @@ function resolveWeightKg({
 
   const healthWeight = numeric(latestHealthWeight?.value)
   if (!healthWeight) return null
+  if (latestHealthWeight?.unit === 'kg') return healthWeight
+  if (latestHealthWeight?.unit === 'lb') return poundsToKg(healthWeight)
+  // Retain legacy interpretation when the stored unit is absent or unsupported.
   return healthWeight > 90 ? poundsToKg(healthWeight) : healthWeight
 }
 
