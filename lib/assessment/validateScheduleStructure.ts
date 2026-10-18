@@ -1,4 +1,6 @@
-export type ScheduleStructureAnswers = Record<string, string | number | string[] | null>
+import { COMMITMENT_DAY_FIELDS } from './commitmentWeekdays'
+
+export type ScheduleStructureAnswers = Record<string, string | number | string[] | number[] | null>
 
 const timeFields = [
   'wake_time', 'bed_time', 'work_start_time', 'work_end_time',
@@ -31,6 +33,19 @@ export function validateScheduleStructure(input: unknown): { answers: ScheduleSt
   }
   if (!answers.wake_time || !answers.bed_time) return { error: 'Enter your wake time and bed time.' }
   if (Boolean(answers.work_start_time) !== Boolean(answers.work_end_time)) return { error: 'Enter both work start and end times, or leave both blank.' }
+  // Legacy submissions have no day choices. They remain valid completion
+  // evidence, while a supplied choice must match its active fixed anchor.
+  for (const field of COMMITMENT_DAY_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(value, field)) continue
+    const days = value[field]
+    if (!Array.isArray(days) || Array.from(days).some(day => typeof day !== 'number' || !Number.isInteger(day) || day < 0 || day > 6)) {
+      return { error: 'Choose valid days for your fixed commitments.' }
+    }
+    const active = field === 'work_days_of_week' ? answers.work_start_time || answers.work_end_time
+      : field === 'school_dropoff_days_of_week' ? answers.school_dropoff_time : answers.school_pickup_time
+    if (active && days.length === 0) return { error: 'Choose at least one day for each fixed commitment with a saved time.' }
+    answers[field] = [...new Set(days)].sort((left, right) => left - right)
+  }
   const available = wholeNumber(value.workout_days_available, 0, 7)
   if (available === null) return { error: 'Choose how many days your life can hold training, including zero.' }
   answers.workout_days_available = available

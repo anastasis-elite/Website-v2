@@ -104,7 +104,8 @@ function fixture() {
   const actions = load('lib/schedule/actions.ts', {}, env)
   const entitlements = load('lib/entitlements.ts', {}, env)
   const loggingRoutes = load('lib/nutrition/loggingRoutes.ts', { '@/lib/entitlements': entitlements }, env)
-  const structureValidation = load('lib/assessment/validateScheduleStructure.ts', {}, env)
+  const commitmentWeekdays = load('lib/assessment/commitmentWeekdays.ts', {}, env)
+  const structureValidation = load('lib/assessment/validateScheduleStructure.ts', { './commitmentWeekdays': commitmentWeekdays }, env)
   const structure = load('lib/assessment/scheduleStructure.ts', { './validateScheduleStructure': structureValidation }, env)
   const engine = load('lib/schedule/engine.ts', { './actions': actions, '@/lib/nutrition/loggingRoutes': loggingRoutes, '@/lib/assessment/scheduleStructure': structure }, env)
   const types = load('lib/calendar/providers/types.ts', {}, env)
@@ -155,6 +156,8 @@ function fixture() {
     deleteICloudEvent: icloudTransport.delete,
   }
   const service = load('lib/calendar/service.ts', { './crypto': crypto, './server-context': context, './providers/google': google, './providers/icloud': icloud, './providers/types': types, './providers/ical': ical, '@/lib/schedule/time': time }, env)
+  const adapter = load('lib/schedule/dailyPlanAdapter.ts', { '@/lib/nutrition/loggingRoutes': loggingRoutes, '@/lib/assessment/commitmentWeekdays': commitmentWeekdays, './time': time, '@/lib/timezone': timezone }, env)
+  const commitmentCalendar = load('lib/schedule/commitmentCalendar.ts', { '@/lib/timezone': timezone, './dailyPlanAdapter': adapter, './actions': actions }, env)
   const handlers = load('lib/calendar/api-handlers.ts', {
     'next/server': next, 'next/headers': { cookies: async () => ({ set: (key, value) => state.cookies.set(key, value), get: key => state.cookies.has(key) ? { value: state.cookies.get(key) } : undefined, delete: key => state.cookies.delete(key) }) },
     '@/lib/supabase/admin': { createAdminClient: () => db }, './server-context': context, './crypto': crypto, './service': service,
@@ -162,6 +165,7 @@ function fixture() {
     '@/lib/schedule/time': time, '@/lib/schedule/engine': { getOpenWindows: (...args) => { state.windowChecks = (state.windowChecks || 0) + 1; return engine.getOpenWindows(...args) } },
     '@/lib/schedule/service': { getDailyScheduleState: async () => state.dailySchedule || { fixedEvents: [], unavailableSources: [] } }, '@/lib/timezone': timezone,
     '@/lib/dashboard/invalidateDailyPlan': { invalidateDailyPlan: () => { state.invalidations = (state.invalidations || 0) + 1 } },
+    '@/lib/schedule/commitmentCalendar': commitmentCalendar,
   }, env)
   const request = (path, method = 'GET', body) => new Request(`https://anastasis.test${path}`, { method, headers: { Origin: 'https://anastasis.test', 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
   const body = (overrides = {}) => ({ title: 'Anastasis activity', event_type: 'workout', start_at: '2030-06-18T14:00:00Z', end_at: '2030-06-18T14:30:00Z', timezone: 'America/Chicago', all_day: false, recurrence: [], reminders: [], idempotency_key: randomUUID(), ...overrides })
@@ -210,6 +214,72 @@ test('availability refuses incomplete schedule sources instead of advertising un
   assert.ok(result.windows.every(window => window.end_at <= '2030-06-18T13:50:00.000Z' || window.start_at >= '2030-06-18T22:10:00.000Z'))
   assert.equal(f.state.windowChecks, 1)
   assert.deepEqual(f.db.mutations, {})
+})
+
+test('calendar reads return owned member-timezone commitments separately from editable events and flag incomplete sources', async () => {
+  const f = fixture(), client = f.db.tables.clients[0]
+  Object.assign(client, { timezone: 'Pacific/Kiritimati', work_start_time: '00:15', work_end_time: '02:00',
+    onboarding_data: { scheduleCommitmentWeekdays: { work_days_of_week: [1] } } })
+  // An unrelated owner's template must not suppress the signed-in member's anchor.
+  f.db.tables.client_schedule_blocks = [{ id: 'other-work', user_id: 'user-b', client_id: 'client-b', active: true,
+    block_type: 'work', days_of_week: [2], start_time: '09:00', end_time: '17:00' }]
+  const path = '/api/calendars/events?start=2026-10-11T10:00:00Z&end=2026-10-12T10:00:00Z&timezone=Pacific%2FHonolulu'
+  const response = await f.handlers.eventsGET(f.request(path))
+  assert.equal(response.status, 200)
+  const data = await response.json()
+  assert.deepEqual(data.events, [], 'virtual commitments never become editable connected events')
+  assert.equal(data.commitmentEvents.length, 1)
+  assert.equal(data.commitmentEvents[0].id, 'virtual-work-2026-10-12')
+  assert.equal(data.commitmentEvents[0].start_at, '2026-10-11T10:15:00.000Z', 'Monday remains a member-local weekday despite Sunday display/UTC dates')
+  assert.equal(data.commitmentEvents[0].timezone, 'Pacific/Kiritimati')
+  assert.equal(data.commitmentsUnavailable, false)
+  f.db.failNext = 'client_schedule_blocks:select'
+  const fallback = await (await f.handlers.eventsGET(f.request(path))).json()
+  assert.equal(fallback.commitmentsUnavailable, true)
+  assert.equal(fallback.commitmentEvents[0].id, 'virtual-work-2026-10-12', 'known profile remains readable during a template read failure')
+  assert.deepEqual(f.db.mutations, {})
+})
+
+test('availability respects member-local commitments on the adjacent day of a different calendar-preference timezone', async () => {
+  const f = fixture(), client = f.db.tables.clients[0]
+  Object.assign(client, { timezone: 'Pacific/Kiritimati', work_start_time: '09:00', work_end_time: '10:00',
+    onboarding_data: { scheduleCommitmentWeekdays: { work_days_of_week: [1] } } })
+  f.db.tables.calendar_preferences = [{ user_id: 'user-a', timezone: 'Pacific/Honolulu', preferred_start: '07:00', preferred_end: '21:00', buffer_minutes: 0 }]
+  const path = '/api/calendars/availability?date=2030-06-16&duration=30'
+  const response = await f.handlers.availabilityGET(f.request(path))
+  assert.equal(response.status, 200)
+  const data = await response.json()
+  assert.equal(data.timezone, 'Pacific/Honolulu')
+  // Sunday 09:00 in Honolulu is Monday 09:00 in the member's Kiritimati timezone.
+  const busyStart = Date.parse('2030-06-16T19:00:00Z'), busyEnd = Date.parse('2030-06-16T20:00:00Z')
+  assert.ok(data.windows.length)
+  assert.ok(data.windows.every(window => Date.parse(window.end_at) <= busyStart || Date.parse(window.start_at) >= busyEnd))
+  f.db.failNext = 'client_schedule_blocks:select'
+  const unavailable = await f.handlers.availabilityGET(f.request(path))
+  assert.equal(unavailable.status, 503)
+  assert.equal((await unavailable.json()).windows, undefined)
+  assert.deepEqual(f.db.mutations, {})
+})
+
+test('midnight availability blocks both Monday school carryovers before offering the remaining Tuesday minutes', async () => {
+  for (const kind of ['dropoff', 'pickup']) {
+    const f = fixture(), client = f.db.tables.clients[0]
+    Object.assign(client, { timezone: 'America/Chicago',
+      school_dropoff_time: kind === 'dropoff' ? '23:45' : null,
+      school_pickup_time: kind === 'pickup' ? '23:45' : null,
+      onboarding_data: { scheduleCommitmentWeekdays: {
+        work_days_of_week: [], school_dropoff_days_of_week: kind === 'dropoff' ? [1] : [], school_pickup_days_of_week: kind === 'pickup' ? [1] : [],
+      } } })
+    f.db.tables.calendar_preferences = [{ user_id: 'user-a', timezone: 'America/Chicago',
+      preferred_start: '00:00', preferred_end: '00:30', buffer_minutes: 0 }]
+    const response = await f.handlers.availabilityGET(f.request('/api/calendars/availability?date=2030-06-18&duration=15'))
+    assert.equal(response.status, 200)
+    const result = await response.json()
+    assert.deepEqual(result.windows.map(({ start_at, end_at, minutes }) => ({ start_at, end_at, minutes })), [{
+      start_at: '2030-06-18T05:15:00.000Z', end_at: '2030-06-18T05:30:00.000Z', minutes: 15,
+    }], `${kind}: Monday 23:45–Tuesday 00:15 must not be advertised as free time`)
+    assert.deepEqual(f.db.mutations, {})
+  }
 })
 
 test('mocked Google authorization → selection → existing appointment → confirmed create → external change → edit/delete', async () => {

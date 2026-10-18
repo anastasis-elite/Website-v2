@@ -7,21 +7,28 @@ import * as styles from '@/app/styles/globalstyles'
 import { SCHEDULE_STRUCTURE_VERSION } from '@/lib/assessment/scheduleStructure'
 import { validateScheduleStructure } from '@/lib/assessment/validateScheduleStructure'
 import { announceCalendarChange } from '@/lib/calendar/client'
+import { ALL_COMMITMENT_WEEKDAYS, COMMITMENT_WEEKDAYS, type CommitmentDayField } from '@/lib/assessment/commitmentWeekdays'
 
 type Props = {
   clientId: string
   eventId?: string
   assessmentVersion?: number
   completedAt?: string
+  mode?: 'assessment' | 'routine'
+  routineRevision?: number
+  scheduleTimezone?: string
   currentExecutionStyle?: string | null
   currentCarouselStyle?: string | null
   wakeTime?: string | null
   bedTime?: string | null
   workStartTime?: string | null
   workEndTime?: string | null
+  workDaysOfWeek?: number[] | null
   preferredWorkoutTime?: string | null
   schoolDropoffTime?: string | null
   schoolPickupTime?: string | null
+  schoolDropoffDaysOfWeek?: number[] | null
+  schoolPickupDaysOfWeek?: number[] | null
   lunchWindowTime?: string | null
   dinnerWindowTime?: string | null
   dailyNonNegotiables?: string[] | null
@@ -53,15 +60,21 @@ export default function DailyStructureAssessment({
   eventId,
   assessmentVersion = SCHEDULE_STRUCTURE_VERSION,
   completedAt,
+  mode = 'assessment',
+  routineRevision = 0,
+  scheduleTimezone,
   currentExecutionStyle,
   currentCarouselStyle,
   wakeTime,
   bedTime,
   workStartTime,
   workEndTime,
+  workDaysOfWeek,
   preferredWorkoutTime,
   schoolDropoffTime,
   schoolPickupTime,
+  schoolDropoffDaysOfWeek,
+  schoolPickupDaysOfWeek,
   lunchWindowTime,
   dinnerWindowTime,
   dailyNonNegotiables,
@@ -105,13 +118,31 @@ export default function DailyStructureAssessment({
   const [selectedNonNegotiables, setSelectedNonNegotiables] = useState<string[]>(
     dailyNonNegotiables || []
   )
+  const initialDays = (days: number[] | null | undefined, hasTime: boolean) =>
+    Array.isArray(days) ? [...days] : hasTime ? [...ALL_COMMITMENT_WEEKDAYS] : []
+  const [commitmentDays, setCommitmentDays] = useState<Record<CommitmentDayField, number[]>>(() => ({
+    work_days_of_week: initialDays(workDaysOfWeek, Boolean(workStartTime || workEndTime)),
+    school_dropoff_days_of_week: initialDays(schoolDropoffDaysOfWeek, Boolean(schoolDropoffTime)),
+    school_pickup_days_of_week: initialDays(schoolPickupDaysOfWeek, Boolean(schoolPickupTime)),
+  }))
+  const hasLegacyCommitmentDays = Boolean(
+    ((workStartTime || workEndTime) && !Array.isArray(workDaysOfWeek)) ||
+    (schoolDropoffTime && !Array.isArray(schoolDropoffDaysOfWeek)) ||
+    (schoolPickupTime && !Array.isArray(schoolPickupDaysOfWeek))
+  )
+  const commitmentDayGroups = [
+    { field: 'work_days_of_week', label: 'Work days', active: Boolean(formData.work_start_time || formData.work_end_time) },
+    { field: 'school_dropoff_days_of_week', label: 'School drop-off days', active: Boolean(formData.school_dropoff_time) },
+    { field: 'school_pickup_days_of_week', label: 'School pickup days', active: Boolean(formData.school_pickup_time) },
+  ] as const
 
   const [status, setStatus] = useState<
     'idle' | 'saving' | 'success' | 'error'
   >('idle')
 
   const [message, setMessage] = useState('')
-  const isCompleted = Boolean(completedAt) || status === 'success'
+  const editingRoutine = mode === 'routine'
+  const isCompleted = (!editingRoutine && Boolean(completedAt)) || status === 'success'
 
   function clearFeedback() {
     if (status === 'error') {
@@ -137,6 +168,13 @@ export default function DailyStructureAssessment({
     )
   }
 
+  function toggleCommitmentDay(field: CommitmentDayField, day: number) {
+    clearFeedback()
+    setCommitmentDays(current => ({ ...current, [field]: current[field].includes(day)
+      ? current[field].filter(value => value !== day)
+      : [...current[field], day].sort((left, right) => left - right) }))
+  }
+
   async function submitAssessment() {
     if (isCompleted || submitting.current) return
 
@@ -145,6 +183,7 @@ export default function DailyStructureAssessment({
       carousel_style: carouselStyle,
       daily_non_negotiables: selectedNonNegotiables,
       ...formData,
+      ...commitmentDays,
     })
 
     if ('error' in validation) {
@@ -158,7 +197,7 @@ export default function DailyStructureAssessment({
       setStatus('saving')
       setMessage('')
 
-      const response = await fetch('/api/daily-structure', {
+      const response = await fetch(editingRoutine ? '/api/daily-structure/routine' : '/api/daily-structure', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -167,6 +206,7 @@ export default function DailyStructureAssessment({
           action: 'submit',
           client_id: clientId,
           assessmentVersion,
+          ...(editingRoutine ? { expected_revision: routineRevision } : {}),
           ...(eventId ? { eventId } : {}),
           ...validation.answers,
         }),
@@ -174,7 +214,13 @@ export default function DailyStructureAssessment({
 
       const data = await response.json().catch(() => null)
 
-      if (
+      if (editingRoutine) {
+        if (!response.ok || data?.success !== true || !data.routine ||
+          data.routine.revision !== routineRevision + 1 || !Number.isFinite(Date.parse(data.routine.savedAt))) {
+          if (response.status === 409) router.refresh()
+          throw new Error(data?.error || 'Your routine could not be saved. Please try again.')
+        }
+      } else if (
         !response.ok ||
         data?.success !== true ||
         !data.submission ||
@@ -189,9 +235,9 @@ export default function DailyStructureAssessment({
       }
 
       setStatus('success')
-      setMessage('Assessment completed. Returning to your next step…')
+      setMessage(editingRoutine ? 'Routine saved. Returning to your schedule…' : 'Assessment completed. Returning to your schedule…')
       announceCalendarChange()
-      router.push('/dashboard')
+      router.push('/dashboard/schedule')
       router.refresh()
     } catch (error) {
       submitting.current = false
@@ -206,7 +252,7 @@ export default function DailyStructureAssessment({
 
   return (
     <form
-      aria-label="Schedule Structure Assessment"
+      aria-label={editingRoutine ? 'Edit My Routine' : 'Schedule Structure Assessment'}
       aria-describedby="schedule-structure-guidance"
       aria-busy={status === 'saving'}
       noValidate
@@ -219,6 +265,8 @@ export default function DailyStructureAssessment({
       <p id="schedule-structure-guidance" style={styles.bodyStyle}>
         {isCompleted ? (
           <><strong>Assessment completed.</strong> Your saved answers are shown below. You can return to your dashboard or Schedule to continue.</>
+        ) : editingRoutine ? (
+          <>Adjust your everyday rhythm, then select Save routine. Your previous assessment responses and completed activities stay saved.</>
         ) : (
           <>Choose your guidance and dashboard styles, wake and bed times, and
           training availability, then select Complete Assessment. If training fits
@@ -310,8 +358,9 @@ export default function DailyStructureAssessment({
 
         <p style={styles.bodyStyle}>
           These help the system place meals, training, recovery, and check-ins
-          where they actually fit.
+          where they actually fit. Choose the days your fixed time anchors repeat.
         </p>
+        {hasLegacyCommitmentDays ? <p style={styles.bodyStyle}>Existing time anchors without saved days repeat every day. Choose days and Save routine to change future occurrences.{isCompleted ? <> <Link href="/dashboard/schedule/settings/routine">Edit my routine</Link></> : null}</p> : null}
 
         <div style={styles.gridTwoCol}>
           <Field
@@ -375,6 +424,22 @@ export default function DailyStructureAssessment({
               updateField('school_pickup_time', value)
             }
           />
+        </div>
+        <div style={{ display: 'grid', gap: 20, marginTop: 24 }}>
+          <p style={styles.bodyStyle}>{scheduleTimezone ? `Days and times follow your schedule time zone: ${scheduleTimezone}.` : 'Days and times follow your schedule time zone.'}</p>
+          {commitmentDayGroups.map(group => <fieldset key={group.field} aria-label={group.label} disabled={!group.active}
+            style={{ border: '1px solid rgba(181,110,67,0.2)', borderRadius: 14, padding: 16, margin: 0, minWidth: 0 }}>
+            <legend style={styles.labelStyle}>{group.label}</legend>
+            <p style={{ ...styles.bodyStyle, marginTop: 0 }}>{group.active ? 'Choose every day this time anchor repeats.' : 'Add its time above to choose days.'}</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {COMMITMENT_WEEKDAYS.map(day => <label key={day.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 44, padding: '6px 10px', borderRadius: 8, color: '#f5f0e8', background: commitmentDays[group.field].includes(day.value) ? 'rgba(181,110,67,0.14)' : 'rgba(255,255,255,0.035)', cursor: group.active ? 'pointer' : 'default' }}>
+                <input type="checkbox" name={group.field} value={day.value} aria-label={day.label}
+                  checked={commitmentDays[group.field].includes(day.value)} onChange={() => toggleCommitmentDay(group.field, day.value)}
+                  style={{ width: 20, height: 20, accentColor: '#b56e43' }} />
+                <span>{day.shortLabel}</span>
+              </label>)}
+            </div>
+          </fieldset>)}
         </div>
       </section>
 
@@ -605,7 +670,7 @@ export default function DailyStructureAssessment({
                 opacity: status === 'saving' ? 0.65 : 1,
               }}
             >
-              {status === 'saving' ? 'Completing…' : 'Complete Assessment'}
+              {editingRoutine ? status === 'saving' ? 'Saving…' : 'Save routine' : status === 'saving' ? 'Completing…' : 'Complete Assessment'}
             </button>
           ) : null}
 

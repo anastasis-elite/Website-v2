@@ -15,6 +15,7 @@ import { getOpenWindows } from '@/lib/schedule/engine'
 import { getDailyScheduleState } from '@/lib/schedule/service'
 import { getClientTimeZone } from '@/lib/timezone'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { getCommitmentCalendarRange } from '@/lib/schedule/commitmentCalendar'
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const datePattern = /^\d{4}-\d{2}-\d{2}$/
@@ -144,7 +145,12 @@ export async function preferencesPATCH(request:Request) {try{const c=await calen
 export async function eventsGET(request:Request) {
  try {const c=await calendarContext(request),url=new URL(request.url),start=url.searchParams.get('start')||new Date().toISOString(),end=url.searchParams.get('end')||new Date(Date.now()+31*86400000).toISOString()
   if(!Number.isFinite(Date.parse(start))||!Number.isFinite(Date.parse(end))||Date.parse(end)<=Date.parse(start)||Date.parse(end)-Date.parse(start)>400*86400000) throw new CalendarHttpError(400,'Choose a calendar range of up to 400 days.')
-  return ok(await listUnifiedEvents(c.admin,c.user.id,start,end,validTimezone(url.searchParams.get('timezone')||getClientTimeZone(c.client))))
+  const timezone=validTimezone(url.searchParams.get('timezone')||getClientTimeZone(c.client))
+  const [events,commitments]=await Promise.all([
+   listUnifiedEvents(c.admin,c.user.id,start,end,timezone),
+   getCommitmentCalendarRange({supabase:c.supabase,user:c.user,client:c.client,start,end}),
+  ])
+  return ok({...events,...commitments})
  }catch(e){return calendarError(e)}
 }
 export async function availabilityGET(request:Request) {
@@ -152,10 +158,13 @@ export async function availabilityGET(request:Request) {
   const c=await calendarContext(request),url=new URL(request.url),date=url.searchParams.get('date')||'',duration=Number(url.searchParams.get('duration')||30)
   if(!isValidDate(date)||!Number.isInteger(duration)||duration<5||duration>480) throw new CalendarHttpError(400,'Choose a valid day and duration (5–480 minutes).')
   const state=await listCalendarState(c.admin,c.user.id),prefs=state.preferences,tz=prefs.timezone||getClientTimeZone(c.client),start=zonedDateTimeToUtc(date,prefs.preferred_start,tz),end=zonedDateTimeToUtc(date,prefs.preferred_end,tz)
-  const result=await listUnifiedEvents(c.admin,c.user.id,start.toISOString(),end.toISOString(),tz)
-  const daily=c.client?await getDailyScheduleState({supabase:c.supabase,user:c.user,client:c.client,date,includeVirtualPlan:false}):null
-  if(daily?.unavailableSources?.length) throw new CalendarHttpError(503,'Your full schedule could not be loaded. Try again before choosing an available time.')
-  const busy=[...result.events.filter(e=>e.busy!==false),...(daily?.fixedEvents||[])]
+  const [result,daily,commitments]=await Promise.all([
+   listUnifiedEvents(c.admin,c.user.id,start.toISOString(),end.toISOString(),tz),
+   c.client?getDailyScheduleState({supabase:c.supabase,user:c.user,client:c.client,date,includeVirtualPlan:false}):Promise.resolve(null),
+   getCommitmentCalendarRange({supabase:c.supabase,user:c.user,client:c.client,start:start.toISOString(),end:end.toISOString()}),
+  ])
+  if(daily?.unavailableSources?.length||commitments.commitmentsUnavailable) throw new CalendarHttpError(503,'Your full schedule could not be loaded. Try again before choosing an available time.')
+  const busy=[...result.events.filter(e=>e.busy!==false),...(daily?.fixedEvents||[]),...commitments.commitmentEvents]
   const windows=getOpenWindows(busy as any,start,end,duration,prefs.buffer_minutes).map(window=>{const usableStart=Math.ceil(Math.max(Date.parse(window.start_at),Date.now())/60000)*60000;return {...window,start_at:new Date(usableStart).toISOString(),minutes:Math.max(0,Math.floor((Date.parse(window.end_at)-usableStart)/60000))}}).filter(w=>Date.parse(w.end_at)-Date.parse(w.start_at)>=duration*60000)
   return ok({windows,timezone:tz})
  }catch(e){return calendarError(e)}

@@ -7,7 +7,7 @@ import { getScheduleStructureSubmission, getScheduleStructureVersion, scheduleSt
 import { getClientLocalDate } from '@/lib/timezone'
 import { getClientDayRange, zonedDateTimeToUtc } from './time'
 import { buildDailyScheduleState, buildNextAction } from './engine'
-import { dailyPlanToScheduleEvents, recurringCommitmentsToEvents } from './dailyPlanAdapter'
+import { dailyPlanToScheduleEvents, fixedCommitmentsForDate } from './dailyPlanAdapter'
 import type { DailyScheduleState, ScheduleEvent } from './types'
 
 export async function loadScheduleEventsForDay({
@@ -95,11 +95,21 @@ export async function getDailyScheduleState({
   logic || (includeVirtualPlan ? dailyPlanPromise.then(dailyPlan => getProgramLogicForClient({ supabase, user, client, dailyPlan: dailyPlan || undefined })) : null),
   ])
   persistedEvents.push(...calendarEvents)
-  const commitments = recurringCommitmentsToEvents({ userId: user.id, client, date: day.date, timezone: day.timezone, blocks: blocks || [] })
-  const virtualEvents =
-    includeVirtualPlan && dailyPlan?.date === day.date
-      ? dailyPlanToScheduleEvents({ userId: user.id, client, dailyPlan }).filter(event => !commitments.some(c => c.event_type === event.event_type && event.flexibility_type === 'fixed') && !persistedEvents.some(e => ['workout','hydration'].includes(event.event_type) && e.event_type === event.event_type && !['skipped','cancelled'].includes(e.status)))
-      : []
+  const commitments = fixedCommitmentsForDate({ userId: user.id, client, date: day.date, timezone: day.timezone, blocks: blocks || [] })
+    .map(event => {
+      // Preserve the existing per-occurrence outcome reader as profile anchors
+      // join the shared fixed-commitment projection. No mutation path changes.
+      const override = client.onboarding_data?.scheduleOverrides?.[event.id]
+      return override ? { ...event, ...override } : event
+    })
+  // The selected local day receives fixed commitments independently of health
+  // suggestions. Today's health completion is never copied to another day.
+  const virtualEvents = includeVirtualPlan
+    ? dailyPlanToScheduleEvents({ userId: user.id, client,
+      dailyPlan: dailyPlan?.date === day.date ? dailyPlan : { date: day.date, timezone: day.timezone, timing: {} } })
+      .filter(event => dailyPlan?.date === day.date && !['work', 'school'].includes(event.event_type) &&
+        !persistedEvents.some(e => ['workout','hydration'].includes(event.event_type) && e.event_type === event.event_type && !['skipped','cancelled'].includes(e.status)))
+    : []
   const month = day.date.slice(0, 7)
   const monthlyTask = scheduleStructureMonthlyTask(month)
   const monthlySubmission = getScheduleStructureSubmission(client.onboarding_data, monthlyTask)

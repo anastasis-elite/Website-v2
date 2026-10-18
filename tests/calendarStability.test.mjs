@@ -55,9 +55,9 @@ test('each schedule row routes its own Work details even when the primary action
   assert.doesNotMatch(row, /nutrition/)
 })
 
-test('generated work and school commitments retain Daily Structure routing; tier activity destinations stay intact', () => {
+test('generated work and school commitments open the daily schedule; tier activity destinations stay intact', () => {
   const events = adapters.dailyPlanToScheduleEvents({ userId: 'qa-user', client: { client_id: 'qa-client', program: 'ignite', work_start_time: '09:00', work_end_time: '17:00', school_pickup_time: '15:30' }, dailyPlan: { date: '2026-10-12', timezone: 'America/Chicago' } })
-  for (const item of events) assert.equal(engine.getActionRouteForEvent(item), '/dashboard/assessment/daily-structure')
+  for (const item of events) assert.equal(engine.getActionRouteForEvent(item), `/dashboard/schedule?date=2026-10-12#event-${item.id}`)
   assert.equal(engine.getActionRouteForEvent(event({ event_type: 'meal', action_route: '/dashboard/nutrition#aos-food-logger' }), 'ember'), '/dashboard/nutrition')
   for (const program of ['ember', 'ignite', 'phoenix']) assert.equal(engine.getActionRouteForEvent(event({ event_type: 'workout' }), program), `/dashboard/program/${program}/workout`)
 })

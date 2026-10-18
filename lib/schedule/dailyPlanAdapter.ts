@@ -2,6 +2,15 @@ import { mealEntryHref } from '@/lib/nutrition/loggingRoutes'
 import type { ScheduleEvent } from './types'
 import { zonedDateTimeToUtc } from './time'
 import { addLocalDays } from '@/lib/timezone'
+import { getCommitmentWeekdays, type CommitmentDayField } from '@/lib/assessment/commitmentWeekdays'
+
+function commitmentOccursOn(client: any, field: CommitmentDayField, date: string) {
+  const days = getCommitmentWeekdays(client, field)
+  // The supplied date is already the member's local calendar date. Parsing at
+  // UTC noon avoids interpreting it in the browser or server's timezone.
+  const weekday = new Date(`${date}T12:00:00Z`).getUTCDay()
+  return days === undefined || days.includes(weekday)
+}
 
 function addMinutes(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60000)
@@ -67,7 +76,7 @@ function fixedEvent({
     adjusted_end_at: null,
     adjusted_duration_minutes: null,
     virtual: true,
-    action_route: '/dashboard/assessment/daily-structure',
+    action_route: `/dashboard/schedule?date=${date}#event-${id}`,
   }
 }
 
@@ -75,16 +84,18 @@ export function dailyPlanToScheduleEvents({
   userId,
   client,
   dailyPlan,
+  includeHealthActivities = true,
 }: {
   userId: string
   client: any
   dailyPlan: any
+  includeHealthActivities?: boolean
 }): ScheduleEvent[] {
   const date = dailyPlan.date
   const timezone = dailyPlan.timezone || dailyPlan.timing?.timezone || 'America/Chicago'
   const events: ScheduleEvent[] = []
 
-  if (client.work_start_time && client.work_end_time) {
+  if (client.work_start_time && client.work_end_time && commitmentOccursOn(client, 'work_days_of_week', date)) {
     const start = zonedDateTimeToUtc(date, String(client.work_start_time).slice(0, 5), timezone)
     const end = zonedDateTimeToUtc(date, String(client.work_end_time).slice(0, 5), timezone)
     if (end > start) {
@@ -105,7 +116,7 @@ export function dailyPlanToScheduleEvents({
     }
   }
 
-  if (client.school_dropoff_time) {
+  if (client.school_dropoff_time && commitmentOccursOn(client, 'school_dropoff_days_of_week', date)) {
     events.push(fixedEvent({
       id: `virtual-school-dropoff-${date}`,
       userId,
@@ -119,7 +130,7 @@ export function dailyPlanToScheduleEvents({
     }))
   }
 
-  if (client.school_pickup_time) {
+  if (client.school_pickup_time && commitmentOccursOn(client, 'school_pickup_days_of_week', date)) {
     events.push(fixedEvent({
       id: `virtual-school-pickup-${date}`,
       userId,
@@ -132,6 +143,8 @@ export function dailyPlanToScheduleEvents({
       minutes: 30,
     }))
   }
+
+  if (!includeHealthActivities) return events
 
   const workoutTime = dailyPlan.timing?.workoutTime || client.preferred_workout_time
   if (workoutTime) {
@@ -217,4 +230,24 @@ export function recurringCommitmentsToEvents({ userId, client, date, timezone, b
     }
   }
   return result
+}
+
+/** One projection is shared by the daily schedule, availability and calendar. */
+export function fixedCommitmentsForDate({ userId, client, date, timezone, blocks }: { userId: string; client: any; date: string; timezone: string; blocks: any[] }): ScheduleEvent[] {
+  // A saved recurring template remains authoritative on its excluded days too.
+  // Drop-off and pickup have distinct identities even though both are school.
+  const templateKinds = new Set(blocks.filter(block => block.active !== false).map(block => block.block_type))
+  const profile = [addLocalDays(date, -1), date].flatMap(originDate =>
+    dailyPlanToScheduleEvents({ userId, client, dailyPlan: { date: originDate, timezone, timing: {} }, includeHealthActivities: false })
+      .filter(event => {
+        const kind = event.id === `virtual-work-${originDate}` ? 'work'
+          : event.id === `virtual-school-dropoff-${originDate}` ? 'school_dropoff' : 'school_pickup'
+        return !templateKinds.has(kind)
+      }))
+  const dayStart = zonedDateTimeToUtc(date, '00:00', timezone).getTime()
+  const dayEnd = zonedDateTimeToUtc(addLocalDays(date, 1), '00:00', timezone).getTime()
+  // A late anchor still belongs to its selected start day, even when part of
+  // that occurrence continues into this day. Exact-midnight endings do not.
+  return [...recurringCommitmentsToEvents({ userId, client, date, timezone, blocks }), ...profile]
+    .filter(event => Date.parse(event.start_at) < dayEnd && Date.parse(event.end_at) > dayStart)
 }

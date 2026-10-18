@@ -10,12 +10,14 @@ const require = createRequire(import.meta.url)
 const assessment = await importTs('lib/assessment/scheduleStructure.ts')
 const validation = await importTs('lib/assessment/validateScheduleStructure.ts')
 const timezone = await importTs('lib/timezone.ts')
+const scheduleActions = await importTs('lib/schedule/actions.ts')
+const commitmentWeekdays = await importTs('lib/assessment/commitmentWeekdays.ts')
 function load(path, mocks, globals = {}) {
   const module = { exports: {} }
   const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
   } })
-  runInNewContext(outputText, { module, exports: module.exports, ...globals, require: name => mocks[name] || require(name) })
+  runInNewContext(outputText, { module, exports: module.exports, ...globals, require: name => mocks[name] || (name === '@/lib/assessment/commitmentWeekdays' ? commitmentWeekdays : require(name)) })
   return module.exports.default
 }
 function nodes(tree, predicate) {
@@ -57,6 +59,164 @@ function confirmation(body) {
     submittedAt: '2026-10-15T18:00:00Z', answers: body } })
 }
 
+const dayGroup = (view, label) => nodes(view.render(), node => node.type === 'fieldset' && node.props['aria-label'] === label)[0]
+const dayInputs = (view, label) => nodes(dayGroup(view, label), node => node.type === 'input' && node.props.type === 'checkbox')
+const selectedDays = (view, label) => dayInputs(view, label).filter(node => node.props.checked).map(node => node.props.value).sort((left, right) => left - right)
+const chooseDay = (view, label, day) => dayInputs(view, label).find(node => node.props.value === day).props.onChange()
+const setTime = (view, label, value) => nodes(view.render(), node => node.props?.label === label)[0].props.onChange(value)
+const text = value => typeof value === 'string' ? value : Array.isArray(value) ? value.map(text).join('') : value && typeof value === 'object' ? text(value.props?.children) : ''
+
+test('every fixed anchor offers seven accessible days and submits independent weekday, weekend and custom choices', async () => {
+  const view = harness({ ...validProps, scheduleTimezone: 'America/Chicago', workStartTime: '09:00', workEndTime: '17:00', workDaysOfWeek: [1,2,3,4,5],
+    schoolDropoffTime: '08:00', schoolDropoffDaysOfWeek: [0,6], schoolPickupTime: '15:00', schoolPickupDaysOfWeek: [2,4] })
+  for (const label of ['Work days', 'School drop-off days', 'School pickup days']) {
+    const inputs = dayInputs(view, label)
+    assert.equal(inputs.length, 7)
+    assert.deepEqual(inputs.map(input => input.props['aria-label']), ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'])
+    assert.deepEqual(inputs.map(input => input.props.value).sort((left, right) => left - right), [0,1,2,3,4,5,6])
+    assert.equal(dayGroup(view, label).props.disabled, false)
+  }
+  assert.deepEqual(selectedDays(view, 'Work days'), [1,2,3,4,5])
+  assert.deepEqual(selectedDays(view, 'School drop-off days'), [0,6], 'school may intentionally occur on weekends')
+  assert.deepEqual(selectedDays(view, 'School pickup days'), [2,4])
+  assert.match(text(view.render()), /Days and times follow your schedule time zone: America\/Chicago\./)
+  view.setSend((_url, options) => confirmation(JSON.parse(options.body)))
+  view.submit(); await tick()
+  assert.deepEqual(view.calls[0].body.work_days_of_week, [1,2,3,4,5])
+  assert.deepEqual(view.calls[0].body.school_dropoff_days_of_week, [0,6])
+  assert.deepEqual(view.calls[0].body.school_pickup_days_of_week, [2,4])
+  assert.deepEqual(view.navigation, ['/dashboard/schedule'])
+})
+
+test('blank anchors start with no selected days and newly entered times require an explicit day choice', async () => {
+  const view = harness()
+  for (const label of ['Work days', 'School drop-off days', 'School pickup days']) {
+    assert.deepEqual(selectedDays(view, label), [])
+    assert.equal(dayGroup(view, label).props.disabled, true)
+  }
+  assert.doesNotMatch(text(view.render()), /Existing time anchors without saved days/)
+  setTime(view, 'School pickup', '15:00')
+  assert.equal(dayGroup(view, 'School pickup days').props.disabled, false)
+  assert.deepEqual(selectedDays(view, 'School pickup days'), [])
+  view.submit(); await tick()
+  assert.equal(view.calls.length, 0)
+  assert.match(text(view.render()), /Choose at least one day/)
+  chooseDay(view, 'School pickup days', 6)
+  chooseDay(view, 'School pickup days', 0)
+  view.setSend((_url, options) => confirmation(JSON.parse(options.body)))
+  view.submit(); await tick()
+  assert.deepEqual(view.calls[0].body.work_days_of_week, [])
+  assert.deepEqual(view.calls[0].body.school_dropoff_days_of_week, [])
+  assert.deepEqual(view.calls[0].body.school_pickup_days_of_week, [0,6])
+})
+
+test('legacy timed anchors show all seven days with an explanation, while an explicit empty choice is never replaced by a default', async () => {
+  const legacy = harness({ ...validProps, workStartTime: '09:00', workEndTime: '17:00', schoolDropoffTime: '08:00' })
+  assert.deepEqual(selectedDays(legacy, 'Work days'), [0,1,2,3,4,5,6])
+  assert.deepEqual(selectedDays(legacy, 'School drop-off days'), [0,1,2,3,4,5,6])
+  assert.deepEqual(selectedDays(legacy, 'School pickup days'), [])
+  assert.match(text(legacy.render()), /Existing time anchors without saved days repeat every day\. Choose days and Save routine to change future occurrences\./)
+  const explicit = harness({ ...validProps, workStartTime: '09:00', workEndTime: '17:00', workDaysOfWeek: [] })
+  assert.deepEqual(selectedDays(explicit, 'Work days'), [])
+  explicit.submit(); await tick()
+  assert.equal(explicit.calls.length, 0)
+  assert.match(text(explicit.render()), /Choose at least one day/)
+  chooseDay(explicit, 'Work days', 3)
+  assert.equal(nodes(explicit.render(), node => node.props?.role === 'alert').length, 0)
+})
+
+test('a failed weekday save preserves choices and an intentional routine retry submits the edited days', async () => {
+  const view = harness({ ...validProps, mode: 'routine', routineRevision: 4, schoolDropoffTime: '08:00', schoolDropoffDaysOfWeek: [1,3] })
+  view.submit(); await tick()
+  assert.deepEqual(selectedDays(view, 'School drop-off days'), [1,3])
+  assert.match(text(view.render()), /Save unavailable/)
+  assert.deepEqual(view.navigation, [])
+  chooseDay(view, 'School drop-off days', 6)
+  view.setSend((_url, options) => {
+    const body = JSON.parse(options.body)
+    assert.deepEqual(body.school_dropoff_days_of_week, [1,3,6])
+    assert.equal(body.expected_revision, 4)
+    return Response.json({ success: true, routine: { revision: 5, savedAt: '2026-10-18T12:00:00Z' } })
+  })
+  view.submit(); await tick()
+  assert.equal(view.calls[1].url, '/api/daily-structure/routine')
+  assert.deepEqual(view.navigation, ['/dashboard/schedule'])
+})
+
+function pageHarness(client) {
+  const Assessment = () => null
+  const query = { select() { return query }, eq() { return query }, async order() { return { data: [], error: null } } }
+  const mocks = {
+    '@/lib/dashboard/getDashboardContext': { getDashboardContext: async () => ({ client, user: { id: 'qa-owner' }, supabase: { from() { return query } } }) },
+    '@/components/DailyStructureAssessment': Assessment, '@/components/ScheduleBlockEditor': () => null,
+    '@/lib/assessment/scheduleStructure': assessment, '@/lib/timezone': timezone,
+  }
+  const props = tree => nodes(tree, node => node.type === Assessment)[0].props
+  return { assessmentPage: load('app/dashboard/assessment/daily-structure/page.tsx', mocks),
+    routinePage: load('app/dashboard/schedule/settings/routine/page.tsx', mocks), props }
+}
+
+test('assessment and routine defaults reopen current saved weekday metadata without weekday-name assumptions', async () => {
+  const client = { client_id: 'qa-client', timezone: 'America/Chicago', ...{ wake_time: '07:00', bed_time: '22:00', school_dropoff_time: '08:00' },
+    onboarding_data: { routinePreferences: { revision: 4 }, scheduleCommitmentWeekdays: {
+      work_days_of_week: [0,6], school_dropoff_days_of_week: [1,3,5], school_pickup_days_of_week: [2,4],
+    } } }
+  const pages = pageHarness(client)
+  const pending = pages.props(await pages.assessmentPage({ searchParams: Promise.resolve({ eventId: 'qa-weekdays' }) }))
+  const routine = pages.props(await pages.routinePage())
+  for (const props of [pending, routine]) {
+    assert.equal(props.scheduleTimezone, 'America/Chicago')
+    assert.deepEqual([...props.workDaysOfWeek], [0,6])
+    assert.deepEqual([...props.schoolDropoffDaysOfWeek], [1,3,5])
+    assert.deepEqual([...props.schoolPickupDaysOfWeek], [2,4])
+  }
+  assert.equal(routine.mode, 'routine')
+  assert.equal(routine.routineRevision, 4)
+})
+
+test('completed assessments reopen their own submitted weekdays instead of newer routine days', async () => {
+  const answers = { execution_style: 'flow', carousel_style: 'section', wake_time: '07:00', bed_time: '22:00', workout_days_available: 0,
+    work_start_time: '09:00', work_end_time: '17:00', work_days_of_week: [1,2,3,4,5],
+    school_dropoff_time: '08:00', school_dropoff_days_of_week: [0,6], school_pickup_days_of_week: [] }
+  const client = { client_id: 'qa-client', onboarding_data: {
+    scheduleCommitmentWeekdays: { work_days_of_week: [0], school_dropoff_days_of_week: [2], school_pickup_days_of_week: [3] },
+    scheduleStructureAssessments: { '1': { 'qa-weekdays': { assessmentVersion: 1, eventId: 'qa-weekdays', submittedAt: '2026-10-18T12:00:00Z', answers } } },
+  } }
+  const original = JSON.stringify(client)
+  const pages = pageHarness(client)
+  const props = pages.props(await pages.assessmentPage({ searchParams: Promise.resolve({ eventId: 'qa-weekdays', assessmentVersion: '1' }) }))
+  assert.deepEqual([...props.workDaysOfWeek], [1,2,3,4,5])
+  assert.deepEqual([...props.schoolDropoffDaysOfWeek], [0,6])
+  assert.deepEqual([...props.schoolPickupDaysOfWeek], [])
+  const view = harness(props)
+  assert.equal(nodes(view.render(), node => node.type === 'fieldset')[0].props.disabled, true)
+  assert.deepEqual(selectedDays(view, 'School drop-off days'), [0,6])
+  view.submit(); await tick()
+  assert.equal(view.calls.length, 0)
+  assert.equal(JSON.stringify(client), original)
+})
+
+test('completed legacy assessment without submitted weekdays shows its old daily anchors despite newer routine metadata', async () => {
+  const answers = { execution_style: 'flow', carousel_style: 'section', wake_time: '07:00', bed_time: '22:00', workout_days_available: 0,
+    work_start_time: '09:00', work_end_time: '17:00', school_dropoff_time: '08:00' }
+  const client = { client_id: 'qa-client', onboarding_data: {
+    scheduleCommitmentWeekdays: { work_days_of_week: [1], school_dropoff_days_of_week: [6] },
+    scheduleStructureAssessments: { '1': { 'qa-weekdays': { assessmentVersion: 1, eventId: 'qa-weekdays', submittedAt: '2026-10-18T12:00:00Z', answers } } },
+  } }
+  const pages = pageHarness(client)
+  const props = pages.props(await pages.assessmentPage({ searchParams: Promise.resolve({ eventId: 'qa-weekdays', assessmentVersion: '1' }) }))
+  assert.ok(props.completedAt)
+  assert.equal(props.workDaysOfWeek, undefined)
+  assert.equal(props.schoolDropoffDaysOfWeek, undefined)
+  const view = harness(props)
+  assert.deepEqual(selectedDays(view, 'Work days'), [0,1,2,3,4,5,6])
+  assert.deepEqual(selectedDays(view, 'School drop-off days'), [0,1,2,3,4,5,6])
+  assert.equal(nodes(view.render(), node => node.type === 'fieldset')[0].props.disabled, true)
+  assert.match(text(view.render()), /Existing time anchors without saved days repeat every day/)
+  view.submit(); await tick()
+  assert.equal(view.calls.length, 0)
+})
+
 test('opening or leaving the form is read-only; incomplete submission explains missing answers without posting', async () => {
   const view = harness({ clientId: 'qa-client' })
   let tree = view.render()
@@ -70,6 +230,21 @@ test('opening or leaving the form is read-only; incomplete submission explains m
   tree = view.render()
   assert.match(nodes(tree, n => n.props?.role === 'alert')[0].props.children, /Choose how/)
   assert.equal(nodes(tree, n => n.props?.href === '/dashboard').length, 1)
+})
+
+test('intentional routine edit stays editable after assessment completion and saves separately before returning to Schedule', async () => {
+  const view = harness({ ...validProps, mode: 'routine', routineRevision: 2, completedAt: '2026-10-15T18:00:00Z' })
+  assert.equal(nodes(view.render(), n => n.type === 'form')[0].props['aria-label'], 'Edit My Routine')
+  assert.equal(nodes(view.render(), n => n.type === 'fieldset')[0].props.disabled, false)
+  view.setSend((_url, options) => {
+    const body = JSON.parse(options.body)
+    assert.equal(body.expected_revision, 2)
+    return Response.json({ success: true, routine: { revision: 3, savedAt: '2026-10-16T01:00:00Z', answers: body } })
+  })
+  view.submit(); await tick()
+  assert.equal(view.calls[0].url, '/api/daily-structure/routine')
+  assert.deepEqual(view.navigation, ['/dashboard/schedule'])
+  assert.equal(view.announced, 1)
 })
 
 test('submit carries task/version, locks double clicks, and advances only after confirmed persistence', async () => {
@@ -89,7 +264,7 @@ test('submit carries task/version, locks double clicks, and advances only after 
   assert.equal(nodes(view.render(), n => n.type === 'fieldset')[0].props.disabled, true, 'answers stay fixed while persistence is pending')
   assert.equal(nodes(view.render(), n => n.type === 'button' && n.props.type === 'submit')[0].props.children, 'Completing…')
   resolve(confirmation(view.calls[0].body)); await tick()
-  assert.deepEqual(view.navigation, ['/dashboard'])
+  assert.deepEqual(view.navigation, ['/dashboard/schedule'])
   assert.equal(view.announced, 1)
   assert.equal(view.refreshes, 1)
   assert.equal(nodes(view.render(), n => n.type === 'button' && n.props.type === 'submit').length, 0)
@@ -116,7 +291,7 @@ test('failed/offline saves and malformed or mismatched confirmations stay retrya
   }
   view.setSend((_url, options) => confirmation(JSON.parse(options.body)))
   view.submit(); await tick()
-  assert.deepEqual(view.navigation, ['/dashboard'])
+  assert.deepEqual(view.navigation, ['/dashboard/schedule'])
   assert.equal(view.calls.length, 7)
 })
 
@@ -140,7 +315,7 @@ test('required choices and conditional training inputs become a valid form submi
   assert.equal(view.calls.length, 1)
   assert.equal(view.calls[0].body.workout_days_available, 3)
   assert.equal(view.calls[0].body.current_workout_days_per_week, 0)
-  assert.deepEqual(view.navigation, ['/dashboard'])
+  assert.deepEqual(view.navigation, ['/dashboard/schedule'])
 })
 
 test('assessment page preserves task and requested version without mutating completion on navigation', async () => {
@@ -187,7 +362,7 @@ test('monthly Schedule and legacy standalone links reopen one immutable saved co
     } } }) },
     '@/components/DailyStructureAssessment': Assessment, '@/components/ScheduleBlockEditor': () => null,
     '@/lib/assessment/scheduleStructure': assessment,
-    '@/lib/timezone': { getClientLocalDate: () => localDate },
+    '@/lib/timezone': { ...timezone, getClientLocalDate: () => localDate },
   })
 
   for (const search of [
@@ -301,7 +476,7 @@ test('completed Schedule Structure assessments retain Done and provide a read-on
     'next/link': () => null,
     'next/navigation': { useRouter: () => ({ refresh() { refreshes.push(true) } }) },
     '@/lib/schedule/engine': { getActionRouteForEvent() { throw new Error('Completed activities must not resolve a new activity action.') } },
-    '@/lib/schedule/actions': { healthEventTypes: new Set(['assessment', 'workout', 'meal']) },
+    '@/lib/schedule/actions': scheduleActions,
     '@/lib/schedule/time': {},
     '@/lib/timezone': timezone,
     '@/lib/calendar/client': { announceCalendarChange() { throw new Error('Review navigation must not announce a new completion.') } },

@@ -2,6 +2,7 @@ import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { updateOwnedOnboardingData } from '@/lib/dashboard/updateOnboardingData'
 import { getScheduleStructureMonth, getScheduleStructureSubmission, getScheduleStructureVersion, scheduleStructureMonthlyTask, scheduleStructureTaskKey, SCHEDULE_STRUCTURE_VERSION } from '@/lib/assessment/scheduleStructure'
 import { validateScheduleStructure } from '@/lib/assessment/validateScheduleStructure'
+import { mergeCommitmentWeekdays, scheduleStructureProfileFields } from '@/lib/assessment/commitmentWeekdays'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getClientLocalDate } from '@/lib/timezone'
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
         // screen must not overwrite a newer assessment or profile preference.
         if (previous) return current
         const submission = { assessmentVersion: SCHEDULE_STRUCTURE_VERSION, eventId: event.id, submittedAt: now, answers }
-        return { ...current, scheduleStructureAssessments: { ...assessments, [version]: { ...submissions, [taskKey]: submission } } }
+        return { ...mergeCommitmentWeekdays(current, answers), scheduleStructureAssessments: { ...assessments, [version]: { ...submissions, [taskKey]: submission } } }
       },
       fields: (current, next) => {
         if (getScheduleStructureSubmission(current, event)) return {}
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
             !('error' in validateScheduleStructure(submission.answers)))
           .reduce((latest, submission) => Date.parse(submission.submittedAt) > Date.parse(latest) ? submission.submittedAt : latest,
             next.scheduleStructureAssessments[version][taskKey].submittedAt)
-        return { ...answers, daily_structure_reviewed_at: reviewedAt }
+        return { ...scheduleStructureProfileFields(answers), daily_structure_reviewed_at: reviewedAt }
       },
     })
     if (!result.saved) return NextResponse.json({ error: 'Your assessment could not be saved. Refresh and try again.' }, { status: result.status })

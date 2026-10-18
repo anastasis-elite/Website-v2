@@ -56,12 +56,25 @@ export default function DashboardCalendar({
   const rangeEnd = zonedDateTimeToUtc(rangeEndDate, '00:00', schedule.timezone).toISOString()
   const connected = useCalendarEvents(rangeStart, rangeEnd, schedule.timezone)
   const items = useMemo<ConnectedDisplayItem[]>(() => {
-    const persistedKeys = new Set(connected.events.map(event => `${event.id}:${event.start_at}`))
-    const existing = schedule.events.filter(event => !['cancelled', 'skipped'].includes(event.status) && !persistedKeys.has(`${event.calendar_event_id || event.id}:${event.start_at}`))
-    const planItems = buildCalendarItems(existing, schedule.openWindows, schedule.timezone).map(item => ({ ...item, source_label: item.event?.source_label, all_day: item.event?.all_day }))
-    const accountItems: ConnectedDisplayItem[] = connected.events.flatMap(event => visibleEventDates(event, schedule.timezone, rangeStartDate, rangeEndDate).map(date => ({ id: `connected:${event.id}:${event.occurrence_start || event.start_at}:${date}`, title: event.title, date, start_at: event.start_at, end_at: event.end_at, source: event.calendar_id ? 'external_calendar' : 'user_created', event_type: event.event_type || 'personal', status: event.calendar_id ? 'Synced' : 'Saved', suggested: false, source_label: event.source_label, all_day: event.all_day } as ConnectedDisplayItem)))
+    const dailyIds = new Set(schedule.events.map(event => event.id))
+    const dailyKeys = new Set(schedule.events.map(event => `${event.calendar_event_id || event.id}:${event.adjusted_start_at || event.start_at}`))
+    const dayStart = zonedDateTimeToUtc(schedule.date, '00:00', schedule.timezone).getTime()
+    const dayEnd = zonedDateTimeToUtc(addLocalDays(schedule.date, 1), '00:00', schedule.timezone).getTime()
+    // Current daily state wins over a slower range read, including terminal
+    // outcomes. Other local dates come from the same commitment projection.
+    const ranged = (connected.commitmentEvents || []).filter(event => !dailyIds.has(event.id) &&
+      !(Date.parse(event.adjusted_start_at || event.start_at) < dayEnd && Date.parse(event.adjusted_end_at || event.end_at) > dayStart))
+    const combined = new Map([...ranged, ...schedule.events].map(event => [`${event.id}:${event.adjusted_start_at || event.start_at}`, event]))
+    const existing = [...combined.values()].filter(event => !['cancelled', 'skipped'].includes(event.status))
+    const planItems = buildCalendarItems(existing, connected.commitmentsUnavailable ? [] : schedule.openWindows, schedule.timezone).flatMap(item => {
+      const displayed = { ...item, source_label: item.event?.source_label, all_day: item.event?.all_day }
+      return item.event ? visibleEventDates({ start_at: item.start_at, end_at: item.end_at, all_day: item.event.all_day }, schedule.timezone, rangeStartDate, rangeEndDate)
+        .map(date => ({ ...displayed, id: date === item.date ? item.id : `${item.id}:${date}`, date })) : [displayed]
+    })
+    const accountItems: ConnectedDisplayItem[] = connected.events.filter(event => !dailyKeys.has(`${event.id}:${event.start_at}`))
+      .flatMap(event => visibleEventDates(event, schedule.timezone, rangeStartDate, rangeEndDate).map(date => ({ id: `connected:${event.id}:${event.occurrence_start || event.start_at}:${date}`, title: event.title, date, start_at: event.start_at, end_at: event.end_at, source: event.calendar_id ? 'external_calendar' : 'user_created', event_type: event.event_type || 'personal', status: event.calendar_id ? 'Synced' : 'Saved', suggested: false, source_label: event.source_label, all_day: event.all_day } as ConnectedDisplayItem)))
     return filterDismissedCalendarSuggestions([...planItems, ...accountItems], dismissed).sort((a, b) => a.start_at.localeCompare(b.start_at))
-  }, [schedule.events, schedule.openWindows, schedule.timezone, connected.events, rangeStartDate, rangeEndDate, dismissed])
+  }, [schedule.date, schedule.events, schedule.openWindows, schedule.timezone, connected.events, connected.commitmentEvents, connected.commitmentsUnavailable, rangeStartDate, rangeEndDate, dismissed])
   const selectedItems = itemsForDate(items, selectedDate)
   const monthCells = buildMonthGrid({ selectedDate, items, today: schedule.date })
   const weekDays = buildWeekDays(selectedDate, items)
@@ -134,6 +147,7 @@ export default function DashboardCalendar({
       </div>
       {dismissalNotice ? <p role="status" className="tier-calendar-empty">{dismissalNotice}</p> : null}
       {connected.error ? <p role="alert" className="tier-calendar-empty">{connected.error} <Link href="/dashboard/settings/calendars">Review connection</Link></p> : null}
+      {connected.commitmentsUnavailable ? <p role="status" className="tier-calendar-empty">Some recurring commitments could not be loaded. Your saved routine is shown, but this calendar may be incomplete. Refresh before choosing an available time.</p> : null}
 
       {mode === 'month' ? (
         <div className="tier-month-calendar" data-testid="calendar-month-grid">
@@ -173,7 +187,7 @@ export default function DashboardCalendar({
               <div>
                 {day.items.length ? day.items.slice(0, 4).map((item) => (
                   <CalendarPill key={item.id} item={item} timezone={schedule.timezone} />
-                )) : <small>Open</small>}
+                )) : <small>{connected.loading ? 'Loading…' : connected.error || connected.commitmentsUnavailable ? 'Unavailable' : 'No scheduled items'}</small>}
               </div>
             </button>
           ))}

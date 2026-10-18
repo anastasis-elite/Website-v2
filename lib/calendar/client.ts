@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ScheduleEvent } from '@/lib/schedule/types'
 
 export type ConnectedCalendar = { id: string; name: string; timezone?: string; writable: boolean; selected: boolean; provider?: string }
 export type CalendarConnection = {
@@ -20,7 +21,7 @@ export type UnifiedCalendarEvent = {
   legacy?: boolean; calendar_event_id?: string
   reminders_default?: boolean; calendar_provider?: string
 }
-export type CalendarEventsResponse = { events: UnifiedCalendarEvent[]; calendars: ConnectedCalendar[] }
+export type CalendarEventsResponse = { events: UnifiedCalendarEvent[]; calendars: ConnectedCalendar[]; commitmentEvents?: ScheduleEvent[]; commitmentsUnavailable?: boolean }
 export const CALENDAR_CHANGE_STORAGE_KEY = 'anastasis:calendar-updated'
 
 export class CalendarRequestError extends Error {

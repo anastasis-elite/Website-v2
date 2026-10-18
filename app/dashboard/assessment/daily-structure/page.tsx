@@ -1,6 +1,7 @@
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import DailyStructureAssessment from '@/components/DailyStructureAssessment'
 import ScheduleBlockEditor from '@/components/ScheduleBlockEditor'
+import Link from 'next/link'
 import {
   getScheduleStructureMonth,
   getScheduleStructureSubmission,
@@ -9,7 +10,8 @@ import {
   SCHEDULE_STRUCTURE_PATH,
   SCHEDULE_STRUCTURE_VERSION,
 } from '@/lib/assessment/scheduleStructure'
-import { getClientLocalDate } from '@/lib/timezone'
+import { getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
+import { getCommitmentWeekdays, type CommitmentDayField } from '@/lib/assessment/commitmentWeekdays'
 
 type SearchParams = {
   eventId?: string | string[]
@@ -43,11 +45,19 @@ export default async function DailyStructureAssessmentPage({
   // answers rather than replacing them with an older profile's training values.
   const preferences = submission ? { ...client, ...submission.answers } : client
   const completedAt = submission?.submittedAt
+  const commitmentDays = (field: CommitmentDayField) => {
+    if (!submission) return getCommitmentWeekdays(client, field)
+    // Historical assessment days belong to its saved answers. Missing legacy
+    // days must not inherit a later routine edit; the form shows all seven.
+    const value = submission.answers[field]
+    return Array.isArray(value) && value.every(day => typeof day === 'number') ? value as number[] : undefined
+  }
   const { data: scheduleBlocks } = await supabase.from('client_schedule_blocks').select('id,block_type,label,days_of_week,start_time,end_time').eq('client_id', client.client_id).eq('user_id', user.id).eq('active', true).order('start_time')
 
   return (
     <main className="aos-flow-page">
       <div className="aos-flow-shell">
+        <nav aria-label="Schedule settings"><Link href="/dashboard/schedule">Schedule</Link> · <Link href="/dashboard/schedule/settings">Settings</Link> · Schedule Structure Assessment</nav>
         <header className="aos-flow-hero">
         <p className="aos-eyebrow">Schedule Structure Assessment</p>
         <h1>Build the rhythm your day can actually hold.</h1>
@@ -63,6 +73,7 @@ export default async function DailyStructureAssessmentPage({
         <DailyStructureAssessment
           key={`${assessmentVersion}:${taskKey}:${completedAt || 'pending'}`}
           clientId={client.client_id}
+          scheduleTimezone={getClientTimeZone(client)}
           eventId={task.id}
           assessmentVersion={assessmentVersion}
           completedAt={completedAt}
@@ -72,9 +83,12 @@ export default async function DailyStructureAssessmentPage({
           bedTime={preferences.bed_time}
           workStartTime={preferences.work_start_time}
           workEndTime={preferences.work_end_time}
+          workDaysOfWeek={commitmentDays('work_days_of_week')}
           preferredWorkoutTime={preferences.preferred_workout_time}
           schoolDropoffTime={preferences.school_dropoff_time}
           schoolPickupTime={preferences.school_pickup_time}
+          schoolDropoffDaysOfWeek={commitmentDays('school_dropoff_days_of_week')}
+          schoolPickupDaysOfWeek={commitmentDays('school_pickup_days_of_week')}
           lunchWindowTime={preferences.lunch_window_time}
           dinnerWindowTime={preferences.dinner_window_time}
           dailyNonNegotiables={preferences.daily_non_negotiables}
@@ -89,6 +103,7 @@ export default async function DailyStructureAssessmentPage({
           <p className="aos-flow-intro">
             Recurring commitments are optional and have their own save action.
             Save any commitment changes here separately from completing your assessment.
+            Recurring commitments use their own selected days and replace matching time anchors in your schedule.
           </p>
           <ScheduleBlockEditor clientId={client.client_id} initialBlocks={scheduleBlocks || []} />
         </section>
