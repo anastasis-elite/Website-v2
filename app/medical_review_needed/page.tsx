@@ -6,23 +6,22 @@ export default function MedicalReviewNeededPage() {
   return (
     <main style={styles.pageStyle}>
       <div style={styles.containerStyle}>
-        <p style={styles.eyebrowStyle}>Manual Review Required</p>
+        <p style={styles.eyebrowStyle}>Before you choose a program</p>
 
-        <h1 style={styles.heroTitleStyle}>Your application needs a quick safety review.</h1>
+        <h1 style={styles.heroTitleStyle}>Consider your health needs before choosing a program.</h1>
 
         <p style={styles.bodyStyle}>
-          Because you shared an injury, medical condition, or restriction, your application
-          will be reviewed before a program recommendation is finalized.
+          If you have an injury, medical condition, or restriction, ask your healthcare
+          provider whether a structured training and nutrition program is appropriate for you.
         </p>
 
         <p style={styles.bodyStyle}>
-          If you uploaded medical clearance, it will be reviewed to confirm that it clearly
-          supports participation in a structured fitness and nutrition program.
+          This page does not confirm medical clearance or approval to participate.
         </p>
 
         <p style={styles.bodyStyle}>
-          This protects both your progress and your safety. Once reviewed, you’ll receive the
-          next appropriate step.
+          You can review program information while considering the guidance from your
+          healthcare provider.
         </p>
 
         <a href="/program" style={styles.primaryButtonStyle}>

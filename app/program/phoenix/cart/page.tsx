@@ -57,7 +57,7 @@ export default function PhoenixCartPage() {
           <div style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>Pay in Full</h2>
             <p style={styles.bodyStyle}>
-              Secure the full Phoenix year upfront.
+              Review the purchase details before paying.
             </p>
 
             <button

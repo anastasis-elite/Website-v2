@@ -133,7 +133,7 @@ export default function GuidePage() {
   rel="noopener noreferrer"
   style={styles.primaryButtonStyle}
 >
-  Join The Waitlist
+  Open external checkout
 </a>
 
           <Link href="/apply" style={styles.secondaryButtonStyle}>

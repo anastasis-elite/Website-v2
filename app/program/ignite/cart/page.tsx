@@ -55,7 +55,7 @@ export default function IgniteCartPage() {
           <div style={styles.cartBoxStyle}>
             <h2 style={styles.sectionTitleStyle}>Pay in Full</h2>
             <p style={styles.bodyStyle}>
-              Secure the full Ignite year upfront.
+              Review the purchase details before paying.
             </p>
 
             <button
