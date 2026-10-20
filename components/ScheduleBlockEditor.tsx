@@ -29,7 +29,7 @@ export default function ScheduleBlockEditor({ clientId, initialBlocks }: { clien
           <input type="time" value={block.start_time.slice(0,5)} onChange={(event) => update(index, { start_time: event.target.value })} style={styles.inputStyle} />
           <input type="time" value={block.end_time.slice(0,5)} onChange={(event) => update(index, { end_time: event.target.value })} style={styles.inputStyle} />
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>{days.map((label, day) => <button type="button" key={label} onClick={() => update(index, { days_of_week: block.days_of_week.includes(day) ? block.days_of_week.filter((value) => value !== day) : [...block.days_of_week, day] })} style={block.days_of_week.includes(day) ? styles.primaryButtonStyle : styles.secondaryButtonStyle}>{label}</button>)}</div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>{days.map((label, day) => <button type="button" key={label} aria-pressed={block.days_of_week.includes(day)} onClick={() => update(index, { days_of_week: block.days_of_week.includes(day) ? block.days_of_week.filter((value) => value !== day) : [...block.days_of_week, day] })} style={block.days_of_week.includes(day) ? styles.primaryButtonStyle : styles.secondaryButtonStyle}>{label}{block.days_of_week.includes(day) ? <span aria-hidden="true"> ✓</span> : null}</button>)}</div>
         <button type="button" onClick={() => setBlocks((current) => current.filter((_, position) => position !== index))} style={{ ...styles.secondaryButtonStyle, marginTop: 12 }}>Remove</button>
       </div>)}
     </div>

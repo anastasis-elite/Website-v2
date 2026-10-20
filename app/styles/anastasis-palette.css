@@ -15,6 +15,10 @@
   --anastasis-copper-highlight: #D99A5E;
   --anastasis-copper-button-gradient: linear-gradient(180deg, #885333 0%, #583523 100%);
   --anastasis-metallic-gradient: linear-gradient(135deg, #885333 0%, #D99A5E 48%, #B87333 72%, #583523 100%);
+  --anastasis-page-background: var(--anastasis-warm-obsidian);
+  --anastasis-action-background: var(--anastasis-copper-button-gradient);
+  --anastasis-action-text: var(--anastasis-ivory);
+  --anastasis-action-border: var(--anastasis-copper);
   --anastasis-supporting-text: var(--anastasis-muted-stone);
   --anastasis-secondary-text: var(--anastasis-ivory);
   --anastasis-focus-ring: var(--anastasis-copper);
@@ -26,6 +30,8 @@
   --anastasis-supporting-text: var(--anastasis-black);
   --anastasis-secondary-text: var(--anastasis-black);
   --anastasis-focus-ring: var(--anastasis-black);
+  --muted: var(--anastasis-black);
+  --text-muted: var(--anastasis-black);
   background: var(--anastasis-ivory);
   color: var(--anastasis-black);
   color-scheme: light;
@@ -37,9 +43,9 @@
 }
 
 .anastasis-primary-button {
-  background: var(--anastasis-copper-button-gradient);
-  color: var(--anastasis-ivory);
-  border: 1px solid var(--anastasis-copper);
+  background: var(--anastasis-action-background);
+  color: var(--anastasis-action-text);
+  border: 1px solid var(--anastasis-action-border);
 }
 .anastasis-secondary-button {
   background: transparent;
@@ -51,7 +57,7 @@
   color: var(--anastasis-secondary-text);
 }
 
-/* Optional original-palette emphasis; the copper treatment is not mandatory. */
+/* Restrained emphasis only; ordinary primary actions use the copper treatment. */
 .anastasis-primary-button--flame {
   background: var(--anastasis-flame);
   color: var(--anastasis-black);

@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 
 export const pageStyle: CSSProperties = {
-  background: 'var(--anastasis-black)',
+  background: 'var(--anastasis-page-background)',
   color: 'var(--anastasis-ivory)',
   minHeight: '100vh',
   padding: '84px 18px calc(126px + env(safe-area-inset-bottom))',
@@ -117,11 +117,11 @@ export const buttonRowStyle: CSSProperties = {
 }
 
 export const primaryButtonStyle: CSSProperties = {
-  background: 'var(--anastasis-flame)',
-  color: 'var(--anastasis-black)',
+  background: 'var(--anastasis-action-background)',
+  color: 'var(--anastasis-action-text)',
   padding: '15px 26px',
   borderRadius: '999px',
-  border: 'none',
+  border: '1px solid var(--anastasis-action-border)',
   fontWeight: 500,
   cursor: 'pointer',
   fontSize: '1rem',
