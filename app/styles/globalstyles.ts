@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react'
 
 export const pageStyle: CSSProperties = {
-  background: 'radial-gradient(circle at 50% -10%,rgba(126,38,15,.16),transparent 35rem),#050505',
-  color: '#f5f0e8',
+  background: 'var(--anastasis-black)',
+  color: 'var(--anastasis-ivory)',
   minHeight: '100vh',
   padding: '84px 18px calc(126px + env(safe-area-inset-bottom))',
 }
@@ -17,7 +17,7 @@ export const containerStyle: CSSProperties = {
 export const eyebrowStyle: CSSProperties = {
   letterSpacing: '6px',
   fontSize: '12px',
-  color: '#c58b57',
+  color: 'var(--anastasis-ivory)',
   opacity: 0.85,
   marginBottom: '24px',
   textTransform: 'uppercase',
@@ -34,7 +34,7 @@ export const heroTitleStyle: CSSProperties = {
 export const heroTextStyle: CSSProperties = {
   fontSize: '.9rem',
   lineHeight: 1.55,
-  color: '#a58a7d',
+  color: 'var(--anastasis-ivory)',
   maxWidth: '720px',
   marginBottom: '28px',
 }
@@ -51,7 +51,7 @@ export const sectionTitleStyle: CSSProperties = {
 }
 
 export const bodyStyle: CSSProperties = {
-  color: '#a58a7d',
+  color: 'var(--anastasis-ivory)',
   lineHeight: 1.55,
   fontSize: '.9rem',
   maxWidth: '720px',
@@ -64,13 +64,14 @@ export const cardGridStyle: CSSProperties = {
 }
 
 export const cardStyle: CSSProperties = {
+  color: 'var(--anastasis-ivory)',
   border: 'none',
   borderRadius: '28px',
   padding: '32px 28px',
-  background: 'rgba(255,255,255,0.025)',
+  background: 'var(--anastasis-charcoal)',
 
   boxShadow: `
-    0 18px 60px rgba(0,0,0,0.16)
+    0 18px 60px rgba(12,12,12,0.16)
   `,
 }
 
@@ -83,28 +84,30 @@ export const cardTitleStyle: CSSProperties = {
 export const cardTextStyle: CSSProperties = {
   fontSize: '1rem',
   lineHeight: 1.8,
-  color: '#d7c7b6',
+  color: 'var(--anastasis-ivory)',
   margin: 0,
 }
 
 export const cartBoxStyle: CSSProperties = {
-  background: 'linear-gradient(145deg,rgba(31,21,17,.68),rgba(8,8,8,.92))',
-  border: '1px solid rgba(217,91,48,.2)',
+  color: 'var(--anastasis-ivory)',
+  background: 'var(--anastasis-charcoal)',
+  border: '1px solid var(--anastasis-copper)',
   borderRadius: '22px',
   padding: 'clamp(18px,2.6vw,24px)',
   marginBottom: '22px',
   backdropFilter: 'blur(18px)',
   boxShadow: `
-    0 20px 50px rgba(0,0,0,.33),
-    inset 0 1px rgba(255,255,255,.025)
+    0 20px 50px rgba(12,12,12,.33),
+    inset 0 1px rgba(245,241,232,.025)
   `,
 }
 
 export const innerCardStyle = {
+  color: 'var(--anastasis-ivory)',
   padding: '20px',
   borderRadius: '22px',
-  background: 'rgba(255,255,255,0.035)',
-  border: '1px solid rgba(255,255,255,0.05)',
+  background: 'var(--anastasis-charcoal)',
+  border: '1px solid var(--anastasis-copper)',
 } as const
 
 export const buttonRowStyle: CSSProperties = {
@@ -114,33 +117,32 @@ export const buttonRowStyle: CSSProperties = {
 }
 
 export const primaryButtonStyle: CSSProperties = {
-  background:
-    'linear-gradient(180deg, rgba(181,110,67,0.58), rgba(120,72,44,0.46))',
-  color: '#f5f0e8',
+  background: 'var(--anastasis-flame)',
+  color: 'var(--anastasis-black)',
   padding: '15px 26px',
   borderRadius: '999px',
   border: 'none',
   fontWeight: 500,
   cursor: 'pointer',
   fontSize: '1rem',
-  boxShadow: '0 12px 34px rgba(120,72,44,0.16)',
+  boxShadow: '0 12px 34px rgba(12,12,12,0.16)',
   transition: 'all 0.22s ease',
 }
 
 export const secondaryButtonStyle: CSSProperties = {
-  border: '1px solid rgba(181,110,67,0.28)',
-  color: '#f5f0e8',
+  border: '1px solid var(--anastasis-copper)',
+  color: 'var(--anastasis-ivory)',
   padding: '14px 24px',
   textDecoration: 'none',
   borderRadius: '999px',
   fontWeight: 500,
-  background: 'rgba(181,110,67,0.055)',
+  background: 'transparent',
   backdropFilter: 'blur(12px)',
   transition: 'all 0.22s ease',
 }
 
 export const quietLinkStyle: CSSProperties = {
-  color: '#c58b57',
+  color: 'var(--anastasis-ivory)',
   fontSize: '0.9rem',
   opacity: 0.7,
   textDecoration: 'underline',
@@ -162,7 +164,7 @@ export const fieldWrap: CSSProperties = {
 }
 
 export const labelStyle: CSSProperties = {
-  color: '#f5f0e8',
+  color: 'var(--anastasis-ivory)',
   fontSize: '0.96rem',
   lineHeight: 1.5,
 }
@@ -173,7 +175,7 @@ export const h1Style: CSSProperties = {
   marginTop: '64px',
   marginBottom: '16px',
   letterSpacing: '-0.01em',
-  color: '#f5f0e8',
+  color: 'var(--anastasis-ivory)',
 }
 
 export const h2Style: CSSProperties = {
@@ -182,16 +184,16 @@ export const h2Style: CSSProperties = {
   marginTop: '48px',
   marginBottom: '12px',
   letterSpacing: '-0.01em',
-  color: '#f5f0e8',
+  color: 'var(--anastasis-ivory)',
 }
 
 export const inputStyle: CSSProperties = {
   width: '100%',
   minWidth: 0,
 
-  background: 'rgba(255,255,255,0.03)',
+  background: 'var(--anastasis-charcoal)',
 
-  color: '#f5f0e8',
+  color: 'var(--anastasis-ivory)',
 
   border: 'none',
 
@@ -206,7 +208,7 @@ export const inputStyle: CSSProperties = {
   backdropFilter: 'blur(14px)',
 
   boxShadow: `
-    inset 0 0 24px rgba(0,0,0,0.18)
+    inset 0 0 24px rgba(12,12,12,0.18)
   `,
 }
 
@@ -223,19 +225,20 @@ export const compactCardGridStyle: CSSProperties = {
 }
 
 export const compactCardStyle: CSSProperties = {
-  border: '1px solid rgba(181,110,67,0.12)',
+  color: 'var(--anastasis-ivory)',
+  border: '1px solid var(--anastasis-copper)',
   borderRadius: '22px',
   padding: '20px 18px',
-  background: 'rgba(255,255,255,0.022)',
+  background: 'var(--anastasis-charcoal)',
   boxShadow: `
-    0 14px 44px rgba(0,0,0,0.14),
-    inset 0 0 22px rgba(255,255,255,0.012)
+    0 14px 44px rgba(12,12,12,0.14),
+    inset 0 0 22px rgba(245,241,232,0.012)
   `,
 }
 
 export const compactCardTitleStyle: CSSProperties = {
   fontSize: '0.92rem',
-  color: '#f5f0e8',
+  color: 'var(--anastasis-ivory)',
   margin: '0 0 8px 0',
   fontWeight: 500,
 }
@@ -243,7 +246,7 @@ export const compactCardTitleStyle: CSSProperties = {
 export const compactCardTextStyle: CSSProperties = {
   fontSize: '0.98rem',
   lineHeight: 1.5,
-  color: '#d7c7b6',
+  color: 'var(--anastasis-ivory)',
   margin: 0,
 }
 
@@ -252,12 +255,12 @@ export const checkboxRowStyle: CSSProperties = {
   alignItems: 'flex-start',
   gap: '12px',
   lineHeight: 1.7,
-  color: '#d7c7b6',
+  color: 'var(--anastasis-ivory)',
   fontSize: '0.98rem',
   cursor: 'pointer',
 }
 
 export const checkboxInputStyle: CSSProperties = {
   marginTop: '4px',
-  accentColor: '#c58b57',
+  accentColor: 'var(--anastasis-flame)',
 }

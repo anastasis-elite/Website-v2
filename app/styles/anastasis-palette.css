@@ -1,0 +1,69 @@
+/* Founder-approved palette. Shared by every tier; use semantic roles below. */
+:root {
+  --anastasis-black: #0C0C0C;
+  --anastasis-charcoal: #2B2B2B;
+  --anastasis-ivory: #F5F1E8;
+  --anastasis-copper: #B87333;
+  --anastasis-flame: #FF6B3C;
+  --anastasis-red: #B63A28;
+  --anastasis-signature-gradient: linear-gradient(135deg, #B87333 0%, #FF6B3C 55%, #B63A28 100%);
+  --anastasis-warm-obsidian: #15110E;
+  --anastasis-smoked-copper: #281C14;
+  --anastasis-muted-stone: #B8ADA0;
+  --anastasis-deep-copper: #583523;
+  --anastasis-rich-copper: #885333;
+  --anastasis-copper-highlight: #D99A5E;
+  --anastasis-copper-button-gradient: linear-gradient(180deg, #885333 0%, #583523 100%);
+  --anastasis-metallic-gradient: linear-gradient(135deg, #885333 0%, #D99A5E 48%, #B87333 72%, #583523 100%);
+  --anastasis-supporting-text: var(--anastasis-muted-stone);
+  --anastasis-secondary-text: var(--anastasis-ivory);
+  --anastasis-focus-ring: var(--anastasis-copper);
+  color-scheme: dark;
+}
+
+/* A light section is explicit, with its own readable text and focus contrast. */
+.anastasis-light-section {
+  --anastasis-supporting-text: var(--anastasis-black);
+  --anastasis-secondary-text: var(--anastasis-black);
+  --anastasis-focus-ring: var(--anastasis-black);
+  background: var(--anastasis-ivory);
+  color: var(--anastasis-black);
+  color-scheme: light;
+}
+
+:root :where(button, a[href], input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--anastasis-focus-ring) !important;
+  outline-offset: 3px !important;
+}
+
+.anastasis-primary-button {
+  background: var(--anastasis-copper-button-gradient);
+  color: var(--anastasis-ivory);
+  border: 1px solid var(--anastasis-copper);
+}
+.anastasis-secondary-button {
+  background: transparent;
+  color: var(--anastasis-secondary-text);
+  border: 1px solid var(--anastasis-copper);
+}
+
+.anastasis-light-section .anastasis-secondary-button {
+  color: var(--anastasis-secondary-text);
+}
+
+/* Optional original-palette emphasis; the copper treatment is not mandatory. */
+.anastasis-primary-button--flame {
+  background: var(--anastasis-flame);
+  color: var(--anastasis-black);
+  border-color: var(--anastasis-flame);
+}
+.anastasis-warm-section {
+  --anastasis-supporting-text: var(--anastasis-muted-stone);
+  --anastasis-secondary-text: var(--anastasis-ivory);
+  --anastasis-focus-ring: var(--anastasis-copper);
+  background: var(--anastasis-warm-obsidian);
+  color: var(--anastasis-ivory);
+}
+.anastasis-supporting-copy { color: var(--anastasis-supporting-text); }
+/* Decorative only: no paragraph or essential state is placed over this gradient. */
+.anastasis-metallic-highlight { background: var(--anastasis-metallic-gradient); }
