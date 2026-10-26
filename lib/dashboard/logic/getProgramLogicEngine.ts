@@ -643,6 +643,8 @@ export async function getProgramLogicEngine(
 
     flameState,
 
+    streakAvailable: inputs.executionHistoryAvailable === true,
+
     hydration,
 
     nutrition,

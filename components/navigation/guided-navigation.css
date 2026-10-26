@@ -1,5 +1,5 @@
 .dashboard-client-shell .client-dashboard-nav.client-dashboard-nav--guided {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   width: min(620px, calc(100% - 24px));
   height: calc(78px + env(safe-area-inset-bottom));
   gap: 4px;
@@ -14,7 +14,7 @@
   transform: none;
 }
 .dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__item small {
-  font-size: .75rem;
+  font-size: .72rem;
   line-height: 1.25;
   text-transform: none;
   letter-spacing: 0;

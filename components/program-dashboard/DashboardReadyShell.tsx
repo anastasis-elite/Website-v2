@@ -3,16 +3,18 @@ import DashboardPerformance from '@/components/DashboardPerformance'
 import type { ProgramTier } from '@/lib/entitlements'
 import { WATER_ENTRY_HREF, foodEntryHref } from '@/lib/nutrition/loggingRoutes'
 import DashboardShellTiming from '@/components/DashboardShellTiming'
+import TodayStreakBadge from '@/components/program-dashboard/TodayStreakBadge'
 
 // Rendered only after member access, tier and safety checks have completed.
 // These actions do not imply that any activity has already been recorded.
-export default function DashboardReadyShell({ program }: { program: ProgramTier }) {
+export default function DashboardReadyShell({ program, showStreak = true }: { program: ProgramTier; showStreak?: boolean }) {
   return <div className="today-dashboard" data-tier={program} data-dashboard-stage="primary">
     <DashboardShellTiming />
     <DashboardPerformance stage="shell" />
     <DashboardPerformance stage="primary" />
     <div className="today-shell">
       <header className="today-header">
+        {showStreak && <TodayStreakBadge loading />}
         <div className="today-brand"><span>Anastasis</span><small>{program.toUpperCase()}</small></div>
         <h1>Your day, made lighter.</h1>
       </header>

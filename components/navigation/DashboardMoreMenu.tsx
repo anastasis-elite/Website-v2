@@ -13,7 +13,7 @@ export default function DashboardMoreMenu({ program }: { program: 'ember' | 'ign
   const [open, setOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [message, setMessage] = useState('')
-  const active = ['/dashboard/account', '/dashboard/settings', '/dashboard/cycle', '/dashboard/community'].some((path) => pathname.startsWith(path))
+  const active = ['/dashboard/account', '/dashboard/settings', '/dashboard/cycle'].some((path) => pathname.startsWith(path))
   const items = [
     { label: 'Account & preferences', href: '/dashboard/account' },
     { label: 'Daily check-in', href: '/dashboard/check-in', tutorialId: 'dashboard-daily-checkin' },

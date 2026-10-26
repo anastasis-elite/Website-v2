@@ -1,6 +1,7 @@
 import { getGreeting } from '@/lib/timezone'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
+import TodayStreakBadge from '@/components/program-dashboard/TodayStreakBadge'
 
 export default function TodayDashboardHeader({ logic, schedule, plan = false }: { logic: ProgramLogicOutput; schedule: DailyScheduleState; plan?: boolean }) {
   const date = new Date(schedule.now)
@@ -20,6 +21,7 @@ export default function TodayDashboardHeader({ logic, schedule, plan = false }: 
       <g filter="url(#today-satin-soft)"><path d="M-200-160C100 120 400 50 630 160S1000 250 1220-150L1250 300C1020 400 730 250 500 190S50 190-200-20Z" fill="url(#today-satin-fold)" opacity=".55"/><path d="M-200 10Q331 93 587 205T1200-173L1200 265Q864 260 654 230T-200 80Z" fill="url(#today-satin-fold)" opacity=".45"/></g>
     </svg>
     <div className="today-brand"><span>Anastasis</span><small>Elite</small></div>
+    {!plan && <TodayStreakBadge count={logic.flameState?.streak} available={logic.streakAvailable === true} />}
     <p className="today-page-label">{plan ? 'Plan' : 'Today'}</p>
     <h1>{plan ? 'A week that fits you.' : 'Welcome back.'}</h1>
     <p className="today-subtitle">{plan ? 'Structure, with room for life.' : 'A little space for you.'}</p>

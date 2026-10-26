@@ -20,6 +20,10 @@ function ProgressIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M5 19V5"/><path d="M5 19h15"/><path d="m8 15 4-4 3 2 5-7"/></svg>
 }
 
+function CommunityIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="9" cy="7" r="3"/><path d="M3 20v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6M17 13a5 5 0 0 1 4 5v2"/></svg>
+}
+
 export default function ClientDashboardNav({ program }: { program: 'ember' | 'ignite' | 'phoenix' }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -32,6 +36,7 @@ export default function ClientDashboardNav({ program }: { program: 'ember' | 'ig
     { id: 'today', label: 'Today', href: today, active: !planView && (pathname === today || pathname === '/dashboard' || pathname === '/dashboard/main'), tutorialId: 'client-dashboard-home', icon: <TodayIcon/> },
     { id: 'schedule', label: visualPage ? 'Plan' : 'Schedule', href: visualPage ? `${today}/plan` : '/dashboard/schedule', active: planView || pathname.startsWith('/dashboard/schedule'), tutorialId: undefined, icon: <CalendarIcon/> },
     { id: 'progress', label: 'Progress', href: '/dashboard/progress', active: pathname.startsWith('/dashboard/progress') || pathname.startsWith('/dashboard/assessment'), tutorialId: 'dashboard-progress-navigation', icon: <ProgressIcon/> },
+    { id: 'community', label: 'Community', href: '/dashboard/community', active: pathname.startsWith('/dashboard/community'), tutorialId: undefined, icon: <CommunityIcon/> },
   ]
 
   return <nav className="client-dashboard-nav client-dashboard-nav--guided" aria-label="Member navigation" data-tutorial-id="dashboard-navigation">

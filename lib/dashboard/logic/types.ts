@@ -63,6 +63,7 @@ export type ProgramLogicInputs = {
   todayRecoveryActivities: any[]
   missedDayCount: number
   executionHistory: Array<{ log_date: string; streak_eligible: boolean }>
+  executionHistoryAvailable?: boolean
   yesterday: { workoutComplete: boolean; nutritionLogged: boolean; taskCount: number }
   monthlyAssessmentsDueCount: number
   strengthAssessment?: StrengthAssessmentStatus
@@ -128,6 +129,7 @@ export type ProgramLogicOutput = {
   recoveryTarget: 1 | 3
   recoveryActions: RecoveryAction[]
   flameState: FlameResult
+  streakAvailable?: boolean
   hydration: HydrationResult
   nutrition: NutritionResult
   workout: { assigned: boolean; completed: boolean; title: string; type: string; durationMinutes: number | null }

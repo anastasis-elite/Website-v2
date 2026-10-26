@@ -76,7 +76,7 @@ export default async function ProgramPage({
     return <SafetyEscalationNotice flags={safetyFlags} />
   }
 
-  return <main><Suspense fallback={<DashboardReadyShell program={program as ProgramTier} />}>
+  return <main><Suspense fallback={<DashboardReadyShell program={program as ProgramTier} showStreak={view === 'today'} />}>
     <PersonalizedDashboard supabase={supabase} user={user} client={client} program={program as ProgramTier} view={view} />
   </Suspense></main>
 }
