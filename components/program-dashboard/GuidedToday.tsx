@@ -16,6 +16,14 @@ const icons: Record<string, string> = { check_in: '☀', hydration: '◒', sched
 const statusLabels: Record<string, string> = { available: 'Available', upcoming: 'Upcoming', in_progress: 'In progress', completed: 'Completed', deferred: 'Deferred', skipped: 'Skipped' }
 const tutorialIds: Partial<Record<TodayActivityId, string>> = { 'check-in': 'dashboard-daily-checkin', water: 'dashboard-water-progress', workout: 'dashboard-nav-workout', nutrition: 'dashboard-nav-nutrition', recovery: 'dashboard-nav-recovery' }
 type GuideAction = 'defer' | 'skip' | 'resume' | 'review'
+const activityCards: Partial<Record<TodayActivityId, { illustration: string; label: string; action: string }>> = {
+  water: { illustration: 'water', label: 'Today’s essential', action: 'Log water' },
+  schedule: { illustration: 'schedule', label: 'Your time', action: 'Open schedule' },
+  'check-in': { illustration: 'check-in', label: 'Start with you', action: 'Open check-in' },
+  nutrition: { illustration: 'nutrition', label: 'Nourishment', action: 'Open nutrition' },
+  workout: { illustration: 'training', label: 'Movement', action: 'Open workout' },
+  recovery: { illustration: 'recovery', label: 'Rest & recovery', action: 'Open recovery' },
+}
 
 function ActivityOptions({ activity, busy, onAction }: { activity: TodayActivity; busy: boolean; onAction: (id: TodayActivityId, action: GuideAction) => void }) {
   if (activity.status === 'deferred' || activity.status === 'skipped') {
@@ -93,8 +101,9 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
   const openActivity = (id: string, alreadyCompleted = false) => recordTodayActionOpened(logic.client.id, schedule.date, id, logic.program, alreadyCompleted)
   const quiet = schedule.preferences?.carouselStyle === 'step'
   const complete = today.total > 0 && today.completed === today.total
-  const illustrated = (id: TodayActivityId) => id === 'water' || id === 'schedule'
-  const displayActivities = [...today.activities.filter(activity => illustrated(activity.id)), ...today.activities.filter(activity => !illustrated(activity.id))]
+  const illustrated = (id: TodayActivityId) => Boolean(activityCards[id])
+  const highlighted = (id: TodayActivityId) => id === 'water' || id === 'schedule'
+  const displayActivities = [...today.activities.filter(activity => highlighted(activity.id)), ...today.activities.filter(activity => !highlighted(activity.id))]
   return <div className="today-guide">
     {schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved activities are still recorded; check your calendar before choosing a time.</p> : null}
 
@@ -112,9 +121,9 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
       <div className="today-section-heading"><h2>At your pace.</h2><span>Go in your own order</span></div>
       <ul>{displayActivities.map(activity => <li key={activity.id} data-activity-id={activity.id} data-status={activity.status} data-illustrated={illustrated(activity.id) ? 'true' : undefined}>
         <Link href={activity.href} onClick={() => openActivity(activity.id, activity.status === 'completed')} data-tutorial-id={tutorialIds[activity.id]}>
-          {illustrated(activity.id) ? <img src={`/illustrations/today-${activity.id === 'water' ? 'water' : 'schedule'}.svg`} width="360" height="180" alt="" className="today-card-illustration" /> : null}
+          {illustrated(activity.id) ? <img src={`/illustrations/today-${activityCards[activity.id]?.illustration}.svg`} width="360" height="180" alt="" className="today-card-illustration" /> : null}
           <span className="today-activity-icon" aria-hidden="true">{activity.status === 'completed' ? '✓' : icons[activity.category] || '▦'}</span>
-          <span className="today-activity-copy">{illustrated(activity.id) ? <span className="today-card-kicker">{activity.id === 'water' ? 'Today’s essential' : 'Your time'}</span> : null}<strong>{activity.title}{!activity.countsTowardProgress ? <span className="today-optional-label">Optional</span> : null}</strong>{quiet ? null : <small>{activity.detail}</small>}{illustrated(activity.id) ? <span className="today-card-action">{activity.id === 'water' ? 'Log water' : 'Open schedule'} <span aria-hidden="true">↗</span></span> : null}</span>
+          <span className="today-activity-copy">{illustrated(activity.id) ? <span className="today-card-kicker">{activityCards[activity.id]?.label}</span> : null}<strong>{activity.title}{!activity.countsTowardProgress ? <span className="today-optional-label">Optional</span> : null}</strong>{quiet ? null : <small>{activity.detail}</small>}{illustrated(activity.id) ? <span className="today-card-action">{activityCards[activity.id]?.action} <span aria-hidden="true">↗</span></span> : null}</span>
           <span className="today-activity-state">{statusLabels[activity.status] || 'Available'}{activity.deferredUntil ? <small>Until {formatLocalTime(activity.deferredUntil, schedule.timezone)}</small> : null}</span>
         </Link>
         <ActivityOptions activity={activity} busy={busy !== null} onAction={updateActivity} />

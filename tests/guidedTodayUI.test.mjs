@@ -62,6 +62,22 @@ test('recorded check-in advances the single action and completed status is expli
   assert.match(html, /data-activity-id="check-in" data-status="completed"/)
   assert.doesNotMatch(html, /Start daily check-in/)
 })
+test('all six activities keep their destinations and use the shared illustrated cards, with water and schedule first', () => {
+  for (const tier of ['ember', 'ignite', 'phoenix']) {
+    const html = render(fixture(tier))
+    const cards = [...html.matchAll(/<li data-activity-id="([^"]+)"[^>]*data-illustrated="true"[^>]*>([\s\S]*?)<\/li>/g)]
+    assert.deepEqual(cards.map(card => card[1]), ['water', 'schedule', 'check-in', 'nutrition', 'workout', 'recovery'])
+    const targets = [
+      ['water', '/dashboard/nutrition?log=water'], ['schedule', '/dashboard/schedule'],
+      ['check-in', '/dashboard/check-in'], ['nutrition', `/dashboard/nutrition${tier === 'ember' ? '' : '?log=meal'}`],
+      ['training', `/dashboard/program/${tier}/workout`], ['recovery', '/dashboard/recovery'],
+    ]
+    cards.forEach((card, index) => {
+      assert.ok(card[2].includes(`src="/illustrations/today-${targets[index][0]}.svg"`))
+      assert.ok(card[2].includes(`href="${targets[index][1]}"`))
+    })
+  }
+})
 test('one-step preference quiets supporting copy while keeping every activity accessible', () => {
   const state = schedule(); state.preferences = { carouselStyle: 'step' }
   const html = render(fixture(), state)
