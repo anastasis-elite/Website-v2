@@ -18,6 +18,8 @@
   line-height: 1.25;
   text-transform: none;
   letter-spacing: 0;
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 .dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__item.active {
   background: rgba(221, 117, 73, .09);
