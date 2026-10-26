@@ -93,15 +93,11 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
   const openActivity = (id: string, alreadyCompleted = false) => recordTodayActionOpened(logic.client.id, schedule.date, id, logic.program, alreadyCompleted)
   const quiet = schedule.preferences?.carouselStyle === 'step'
   const complete = today.total > 0 && today.completed === today.total
+  const illustrated = (id: TodayActivityId) => id === 'water' || id === 'schedule'
+  const displayActivities = [...today.activities.filter(activity => illustrated(activity.id)), ...today.activities.filter(activity => !illustrated(activity.id))]
   return <div className="today-guide">
     {schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved activities are still recorded; check your calendar before choosing a time.</p> : null}
-    <section className="today-progress" data-testid="today-progress" aria-label={`Today's progress: ${today.completed} of ${today.total}`} data-tutorial-id="dashboard-progress-area">
-      <div><h2>Today’s progress</h2><span>{today.total ? `${today.completed} of ${today.total}` : 'No essentials due'}</span></div>
-      <div className="today-progress-segments" role="progressbar" aria-valuemin={0} aria-valuemax={Math.max(1,today.total)} aria-valuenow={today.completed} aria-valuetext={`${today.completed} of ${today.total} applicable activities completed`}>
-        {Array.from({ length: today.total }, (_, index) => <i key={index} className={index < today.completed ? 'is-complete' : ''} />)}
-      </div>
-      <p>{complete ? 'Your essentials are saved. Leave a little room for yourself.' : 'Saved activities show your progress. Optional activities can wait.'}</p>
-    </section>
+
 
     <article className="today-next" data-testid="guided-next-step" data-activity-id={primaryId} data-tutorial-id="dashboard-whats-next">
       <div className="today-next-heading"><p className="tier-dashboard-label">Your next step</p><span className="today-activity-icon" aria-hidden="true">{icons[plan.primary.category] || '▦'}</span></div>
@@ -113,15 +109,24 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
     <p className="today-feedback" role="status" aria-live="polite">{message}</p>
 
     <section className="today-activities" data-testid="today-activities" aria-label="Your day at a glance" data-tutorial-id="dashboard-nutrition-progress">
-      <div className="today-section-heading"><h2>Your day at a glance</h2><span>Go in your own order</span></div>
-      <ul>{today.activities.map(activity => <li key={activity.id} data-activity-id={activity.id} data-status={activity.status}>
+      <div className="today-section-heading"><h2>At your pace.</h2><span>Go in your own order</span></div>
+      <ul>{displayActivities.map(activity => <li key={activity.id} data-activity-id={activity.id} data-status={activity.status} data-illustrated={illustrated(activity.id) ? 'true' : undefined}>
         <Link href={activity.href} onClick={() => openActivity(activity.id, activity.status === 'completed')} data-tutorial-id={tutorialIds[activity.id]}>
+          {illustrated(activity.id) ? <img src={`/illustrations/today-${activity.id === 'water' ? 'water' : 'schedule'}.svg`} width="360" height="180" alt="" className="today-card-illustration" /> : null}
           <span className="today-activity-icon" aria-hidden="true">{activity.status === 'completed' ? '✓' : icons[activity.category] || '▦'}</span>
-          <span className="today-activity-copy"><strong>{activity.title}{!activity.countsTowardProgress ? <span className="today-optional-label">Optional</span> : null}</strong>{quiet ? null : <small>{activity.detail}</small>}</span>
+          <span className="today-activity-copy">{illustrated(activity.id) ? <span className="today-card-kicker">{activity.id === 'water' ? 'Today’s essential' : 'Your time'}</span> : null}<strong>{activity.title}{!activity.countsTowardProgress ? <span className="today-optional-label">Optional</span> : null}</strong>{quiet ? null : <small>{activity.detail}</small>}{illustrated(activity.id) ? <span className="today-card-action">{activity.id === 'water' ? 'Log water' : 'Open schedule'} <span aria-hidden="true">↗</span></span> : null}</span>
           <span className="today-activity-state">{statusLabels[activity.status] || 'Available'}{activity.deferredUntil ? <small>Until {formatLocalTime(activity.deferredUntil, schedule.timezone)}</small> : null}</span>
         </Link>
         <ActivityOptions activity={activity} busy={busy !== null} onAction={updateActivity} />
       </li>)}</ul>
+    </section>
+
+    <section className="today-progress" data-testid="today-progress" aria-label={`Today's progress: ${today.completed} of ${today.total}`} data-tutorial-id="dashboard-progress-area">
+      <div><h2>Today’s progress</h2><span>{today.total ? `${today.completed} of ${today.total}` : 'No essentials due'}</span></div>
+      <div className="today-progress-segments" role="progressbar" aria-valuemin={0} aria-valuemax={Math.max(1,today.total)} aria-valuenow={today.completed} aria-valuetext={`${today.completed} of ${today.total} applicable activities completed`}>
+        {Array.from({ length: today.total }, (_, index) => <i key={index} className={index < today.completed ? 'is-complete' : ''} />)}
+      </div>
+      <p>{complete ? 'Your essentials are saved. Leave a little room for yourself.' : 'Saved activities show your progress. Optional activities can wait.'}</p>
     </section>
   </div>
 }

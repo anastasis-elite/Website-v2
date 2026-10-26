@@ -1,0 +1,97 @@
+.surface {
+  --anastasis-ivory: #f4eee4;
+  --anastasis-copper: #ad7c52;
+  --anastasis-flame: #c28e63;
+  --soft: #c9b29a;
+  --accent: #c28e63;
+  min-height: 100dvh;
+  background: radial-gradient(ellipse at 86% 4%, #50301b55, transparent 40rem), radial-gradient(ellipse at 20% 60%, #57351e33, transparent 45rem), linear-gradient(165deg, #20130b, #170d07 42%, #24150c);
+  color: var(--anastasis-ivory);
+  font-family: Arial, Helvetica, sans-serif;
+}
+.surface :global(.today-shell) { width: min(960px, calc(100% - 40px)); padding: 0 0 max(110px, var(--dashboard-nav-clearance, 0px)); }
+.surface :global(.today-header) { position: relative; isolation: isolate; margin-bottom: 24px; padding: 26px 12px 0; }
+.surface :global(.today-satin) { position: absolute; z-index: -1; top: 0; left: 50%; width: 100vw; max-width: none; height: 350px; transform: translateX(-50%); pointer-events: none; mask-image: linear-gradient(#000, #0009 65%, transparent); }
+.surface :global(.today-brand) { display: block; margin-bottom: 34px; text-align: center; }
+.surface :global(.today-brand) > span { display: block; font: 400 20px/1.3 Georgia, serif; letter-spacing: .3em; text-transform: uppercase; }
+.surface :global(.today-brand) > small { display: block; margin-top: 5px; padding: 0; border: 0; border-radius: 0; color: var(--accent); font: 500 11px/1.4 Arial, sans-serif; letter-spacing: .4em; text-transform: uppercase; }
+.surface :global(.today-header) > :global(.today-page-label), .surface :global(.today-card-kicker) { margin: 0 0 12px; color: var(--accent); font: 500 11px/1.5 Arial, sans-serif; letter-spacing: .25em; text-transform: uppercase; }
+.surface :global(.today-header) h1 { margin: 20px 0 7px; font: 400 clamp(2.6rem, 6.8vw, 4.9rem)/1.07 Georgia, serif; letter-spacing: -.035em; overflow-wrap: normal; }
+.surface :global(.today-header) > :global(.today-subtitle) { margin: 0; color: var(--soft); font: 400 clamp(1.35rem, 3.5vw, 2.7rem)/1.18 Georgia, serif; letter-spacing: -.025em; }
+.surface :global(.today-personal-greeting) { margin: 14px 0 7px; color: var(--soft); font-size: .85rem; line-height: 1.5; }
+.surface :global(.today-header) time { color: var(--soft); font-size: clamp(.9rem, 2.5vw, 1.3rem); }
+.surface :global(.today-week-range) { margin: 24px 0 0; text-align: center; color: var(--soft); font-size: clamp(.9rem, 2.5vw, 1.3rem); }
+.surface :global(.today-week-strip) { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; padding: 0; margin: 24px 0 0; list-style: none; }
+.surface :global(.today-week-strip) li { display: grid; place-content: center; gap: 5px; min-height: 70px; border: 1px solid transparent; border-radius: 14px; text-align: center; }
+.surface :global(.today-week-strip) li span { font-size: .9rem; }
+.surface :global(.today-week-strip) li strong { font: 400 1.35rem/1 Georgia, serif; }
+.surface :global(.today-week-strip) li[aria-current] { border-color: #ac75444d; background: linear-gradient(135deg, #7951326b, #5a3c2540); }
+.surface :global(.today-next) { padding: 28px 36px; border: 1px solid #b3835045; border-radius: 24px; background: radial-gradient(ellipse at 65% 0, #85563655, transparent 80%), linear-gradient(125deg, #51331d66, #4029188c); box-shadow: none; }
+.surface :global(.today-next-heading) > p { color: var(--accent); font: 500 11px/1.5 Arial, sans-serif; letter-spacing: .25em; }
+.surface :global(.today-next-heading) > :global(.today-activity-icon) { display: none; }
+.surface :global(.today-next) h2 { margin: 16px 0 10px; font: 400 clamp(1.9rem, 5.3vw, 3.5rem)/1.1 Georgia, serif; letter-spacing: -.025em; }
+.surface :global(.today-next) > p { color: var(--soft); font-size: 1rem; line-height: 1.5; }
+.surface :global(.today-next) > :global(.tier-primary-action) { display: flex; width: 100%; min-height: 56px; border: 1px solid #b183595e; border-radius: 18px; color: var(--anastasis-ivory); background: linear-gradient(145deg, #805236a6, #57351e99); font: 400 1.4rem/1.3 Georgia, serif; letter-spacing: normal; text-transform: none; }
+.surface :global(.today-later) { display: block; width: fit-content; margin: 10px auto -8px; color: var(--soft); font-size: .9rem; }
+.surface :global(.today-section-heading) h2, .surface :global(.plan-overview) > h2 { margin: 0 0 12px; font: 400 clamp(1.65rem, 4.3vw, 2.8rem)/1.13 Georgia, serif; letter-spacing: -.025em; }
+.surface :global(.today-section-heading) > span { color: var(--soft); font-size: .8rem; }
+.surface :global(.today-activities) ul, .surface :global(.plan-overview-grid) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.surface :global(.today-activities) li { grid-column: 1 / -1; padding: 12px 18px; border: 1px solid #b3835045; border-radius: 18px; background: linear-gradient(130deg, #4d301d66, #302014aa); }
+.surface :global(.today-activities) li[data-illustrated="true"], .surface :global(.plan-overview-card) { position: relative; display: flex; flex-direction: column; grid-column: auto; overflow: hidden; min-width: 0; padding: 0; border: 1px solid #b383504d; border-radius: 22px; background: radial-gradient(ellipse at 75% 0, #8b542b45, transparent 80%), linear-gradient(135deg, #4b2f1b99, #352112c9); }
+.surface :global(.today-card-illustration) { display: block; width: 100%; height: auto; border-bottom: 1px solid #9e6a3f14; background: linear-gradient(125deg, #7b4b2933, #38231266); }
+.surface :global(.today-activities) li[data-illustrated="true"] > a:first-child { display: flex; flex: 1; flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
+.surface :global(.today-activities) li[data-illustrated="true"] > a > :global(.today-activity-icon) { display: none; }
+.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy), .surface :global(.plan-overview-copy) { display: flex; flex: 1; flex-direction: column; padding: 18px 24px 20px; }
+.surface :global(.today-card-kicker) { display: block; margin: 0 0 7px; font-size: 10px; letter-spacing: .23em; }
+.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > strong, .surface :global(.plan-overview-copy) h3 { margin: 0; color: var(--anastasis-ivory); font: 400 clamp(1.35rem, 3.7vw, 2.3rem)/1.08 Georgia, serif; letter-spacing: -.02em; }
+.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > small, .surface :global(.plan-overview-copy) > p:not(:global(.today-card-kicker)) { margin: 10px 0 20px; color: var(--soft); font-size: clamp(.85rem, 2.1vw, 1.2rem); line-height: 1.45; }
+.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-optional-label) { display: block; margin: 6px 0 0; color: var(--soft); font: 400 .75rem Arial, sans-serif; }
+.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-state) { position: static; display: block; flex: none; margin: 0; padding: 0 24px 12px; color: var(--soft); font-size: .8rem; text-align: left; }
+.surface :global(.today-card-action), .surface :global(.plan-overview-copy) > a { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; margin-top: auto; color: var(--anastasis-ivory); font-size: clamp(.8rem, 1.8vw, 1rem); font-weight: 600; text-decoration: none; }
+.surface :global(.plan-overview-copy) > a > span { display: grid; flex-shrink: 0; width: 40px; height: 40px; place-items: center; border: 1px solid var(--accent); border-radius: 50%; color: var(--accent); font: 300 1.8rem/1 Arial, sans-serif; }
+.surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-row-options), .surface :global(.today-activities) li[data-illustrated="true"] > button, .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-change-time) { margin: 0 16px 12px; }
+.surface :global(.today-row-options) summary { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid #bd895867; border-radius: 12px; color: var(--soft); }
+.surface :global(.today-row-options) button, .surface :global(.today-activities) li > button { border-color: #bd895867; color: var(--anastasis-ivory); }
+.surface :global(.today-progress) { margin-top: 28px; padding: 20px; border: 1px solid #b3835038; border-radius: 18px; background: #41291955; }
+.surface :global(.today-progress-segments) i { background: #81553555; }
+.surface :global(.today-progress-segments) i:global(.is-complete) { background: var(--accent); }
+.surface :global(.today-progress) > p, .surface :global(.today-feedback) { color: var(--soft); }
+.surface :global(.daily-disclosure), .surface :global(.daily-preferences), .surface :global(.daily-preview) section { border-color: #b3835038; background: linear-gradient(130deg, #4d301d66, #302014aa); }
+.surface a:focus-visible, .surface button:focus-visible, .surface summary:focus-visible { outline: 2px solid #e4bb91; outline-offset: 4px; }
+:global(.dashboard-client-shell):has(.surface) { background: #1d110a; }
+:global(.dashboard-client-shell):has(.surface) :global(.client-dashboard-nav--guided) { --anastasis-ivory: #f4eee4; --anastasis-copper: #c28e63; color: #f4eee4; background: #21140cef; border-color: #b383502f; backdrop-filter: blur(18px); }
+:global(.dashboard-client-shell):has(.surface) :global(.client-dashboard-nav__item) { color: #f4eee4; }
+:global(.dashboard-client-shell):has(.surface) :global(.client-dashboard-nav--guided) :global(.active) { color: #c28e63; }
+@media (max-width: 600px) {
+  .surface :global(.today-shell) { width: calc(100% - 36px); }
+  .surface :global(.today-header) { padding: 16px 10px 0; margin-bottom: 20px; }
+  .surface :global(.today-satin) { height: 230px; }
+  .surface :global(.today-brand) { margin-bottom: 18px; }
+  .surface :global(.today-brand) > span { font-size: 13px; }
+  .surface :global(.today-brand) > small { margin-top: 4px; font-size: 8px; }
+  .surface :global(.today-header) > :global(.today-page-label) { font-size: 9px; }
+  .surface :global(.today-header) h1 { margin-top: 14px; font-size: 2.3rem; }
+  .surface[data-view="plan"] :global(.today-header) h1 { font-size: 2.05rem; }
+  .surface :global(.today-personal-greeting) { margin-top: 12px; font-size: .8rem; }
+  .surface :global(.today-week-strip) { gap: 3px; margin-top: 18px; }
+  .surface :global(.today-week-strip) li { min-height: 50px; border-radius: 10px; }
+  .surface :global(.today-week-strip) li span { font-size: .75rem; }
+  .surface :global(.today-week-strip) li strong { font-size: 1.1rem; }
+  .surface :global(.today-next) { padding: 20px; border-radius: 18px; }
+  .surface :global(.today-next) h2 { font-size: 1.75rem; }
+  .surface :global(.today-next) > p { font-size: .9rem; margin-bottom: 16px; }
+  .surface :global(.today-next) > :global(.tier-primary-action) { min-height: 46px; font-size: 1.15rem; }
+  .surface :global(.today-activities) ul, .surface :global(.plan-overview-grid) { gap: 10px; }
+  .surface :global(.today-activities) li[data-illustrated="true"], .surface :global(.plan-overview-card) { border-radius: 16px; }
+  .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy), .surface :global(.plan-overview-copy) { padding: 12px 12px 14px; }
+  .surface :global(.today-card-kicker) { font-size: 8px; letter-spacing: .16em; }
+  .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > strong, .surface :global(.plan-overview-copy) h3 { font-size: 1.25rem; }
+  .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > small, .surface :global(.plan-overview-copy) > p:not(:global(.today-card-kicker)) { font-size: .83rem; margin-bottom: 12px; }
+  .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-state) { padding: 0 12px 10px; font-size: .75rem; }
+  .surface :global(.today-card-action), .surface :global(.plan-overview-copy) > a { min-height: 36px; font-size: .77rem; }
+  .surface :global(.plan-overview-copy) > a > span { width: 30px; height: 30px; font-size: 1.4rem; }
+  .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-row-options), .surface :global(.today-activities) li[data-illustrated="true"] > button { margin-left: 10px; margin-right: 10px; }
+}
+@media (max-width: 350px) {
+  .surface :global(.today-activities) ul, .surface :global(.plan-overview-grid) { grid-template-columns: 1fr; }
+}

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
 import { trackEvent } from '@/lib/analytics'
 import './guided-navigation.css'
@@ -22,12 +22,15 @@ function ProgressIcon() {
 
 export default function ClientDashboardNav({ program }: { program: 'ember' | 'ignite' | 'phoenix' }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   if (hiddenPrefixes.some((prefix) => pathname.startsWith(prefix))) return null
 
   const today = `/dashboard/program/${program}`
+  const visualPage = pathname === today
+  const planView = visualPage && searchParams.get('view') === 'plan'
   const items = [
-    { id: 'today', label: 'Today', href: today, active: pathname === today || pathname === '/dashboard' || pathname === '/dashboard/main', tutorialId: 'client-dashboard-home', icon: <TodayIcon/> },
-    { id: 'schedule', label: 'Schedule', href: '/dashboard/schedule', active: pathname.startsWith('/dashboard/schedule'), tutorialId: undefined, icon: <CalendarIcon/> },
+    { id: 'today', label: 'Today', href: today, active: !planView && (pathname === today || pathname === '/dashboard' || pathname === '/dashboard/main'), tutorialId: 'client-dashboard-home', icon: <TodayIcon/> },
+    { id: 'schedule', label: visualPage ? 'Plan' : 'Schedule', href: visualPage ? `${today}/plan` : '/dashboard/schedule', active: planView || pathname.startsWith('/dashboard/schedule'), tutorialId: undefined, icon: <CalendarIcon/> },
     { id: 'progress', label: 'Progress', href: '/dashboard/progress', active: pathname.startsWith('/dashboard/progress') || pathname.startsWith('/dashboard/assessment'), tutorialId: 'dashboard-progress-navigation', icon: <ProgressIcon/> },
   ]
 
