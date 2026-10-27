@@ -6,5 +6,5 @@ export default async function PlanRedirect({
   params: Promise<{ program: string }>
 }) {
   const { program } = await params
-  redirect(`/dashboard/program/${program}`)
+  redirect(`/dashboard/program/${program}?view=plan`)
 }

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default async function PlanRedirect() {
-  redirect('/dashboard/program/phoenix')
+  redirect('/dashboard/program/phoenix?view=plan')
 }

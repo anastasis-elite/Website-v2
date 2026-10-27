@@ -17,11 +17,17 @@ export default function DayBlockCompletionForm({
   block,
   items,
   initialCompleted = false,
+  initialCompletedTasks = [],
+  returnHref = '/dashboard',
+  logDate,
 }: {
   clientId: string
   block: 'morning' | 'midday' | 'evening'
   items: string[]
   initialCompleted?: boolean
+  initialCompletedTasks?: string[]
+  returnHref?: string
+  logDate?: string
 }) {
   const router = useRouter()
   const taskIds = useMemo(
@@ -29,7 +35,7 @@ export default function DayBlockCompletionForm({
     [block, items]
   )
   const [checked, setChecked] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(taskIds.map((taskId) => [taskId, initialCompleted]))
+    Object.fromEntries(taskIds.map((taskId) => [taskId, initialCompleted || initialCompletedTasks.includes(taskId)]))
   )
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -42,15 +48,15 @@ export default function DayBlockCompletionForm({
       const response = await fetch('/api/day-block/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId, block, completedTasks }),
+        body: JSON.stringify({ clientId, block, completedTasks, ...(logDate ? {logDate} : {}) }),
       })
-      const payload = await response.json()
-      if (!response.ok) {
-        setMessage(payload.error || 'This block could not be saved.')
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || payload?.success !== true) {
+        setMessage(payload?.error || 'This block could not be confirmed. Check your connection and retry.')
         return
       }
-      setMessage('Saved. Returning to dashboard.')
-      router.push('/dashboard')
+      setMessage(returnHref.startsWith('/dashboard/schedule') ? 'Saved. Returning to your schedule.' : 'Saved. Returning to dashboard.')
+      router.push(returnHref)
       router.refresh()
     } catch {
       setMessage('This block could not be saved. Check your connection and try again.')
@@ -64,7 +70,7 @@ export default function DayBlockCompletionForm({
       <div className="aos-section-header">
         <div>
           <p className="aos-eyebrow">Block checklist</p>
-          <h2>{initialCompleted ? 'Completed' : 'Complete this block'}</h2>
+          <h2>{initialCompleted ? 'Your checklist · completed' : 'Your checklist'}</h2>
         </div>
       </div>
 

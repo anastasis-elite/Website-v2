@@ -77,7 +77,7 @@ export async function loadProgramLogicInputs({
     { data: nutritionLogs }, { data: workoutHistory }, { data: strengthAssessments },
     { data: initialAssessment }, { data: measurementLogs }, { data: photoRecord },
     { data: phoenixTasks }, { data: recentTasks }, { data: todayWorkoutFeedback },
-    { data: recoveryActivities }, { data: rawRecentRecovery }, { data: executionHistory },
+    { data: recoveryActivities }, { data: rawRecentRecovery }, { data: executionHistory, error: executionHistoryError },
     { data: dailyHealthMetrics }, { data: latestBodySessions }, { data: activeBodySession },
     sleepStatus, { data: todayCycle }, strengthAssessment,
   ] = await Promise.all([
@@ -348,6 +348,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
     workoutHistory: workoutHistory || [],
     strengthAssessments: strengthAssessments || [], initialAssessment, measurementLogs: measurementLogs || [],
     photoRecord, photoUrls, phoenixTaskIds: Array.from(automaticTaskIds), todayRecoveryActivities: recoveryActivities || [], missedDayCount, executionHistory: executionHistory || [],
+    executionHistoryAvailable: !executionHistoryError && Array.isArray(executionHistory),
     yesterday: {
   workoutComplete: Boolean(yesterdayWorkout?.completed),
   nutritionLogged:

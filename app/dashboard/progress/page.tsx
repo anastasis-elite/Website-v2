@@ -2,8 +2,18 @@ import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
 import { getTierCapabilities } from '@/lib/entitlements'
 import { ProgressTab, AssessmentsTab, TrendsTab } from '@/components/program-dashboard/TierAwareDashboardWorkspace'
-export default async function ProgressPage() {
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
+import ProgressOverview from '@/components/program-dashboard/ProgressOverview'
+import { loadProgressOverview, progressRange } from '@/lib/dashboard/progressOverview'
+import styles from '@/components/program-dashboard/ProgressOverview.module.css'
+export default async function ProgressPage({ searchParams }: { searchParams: Promise<{ range?: string | string[] }> }) {
  const {supabase,user,client} = await getDashboardContext()
- const logic = await getProgramLogicForClient({supabase,user,client})
- return <main className="schedule-page"><div className="schedule-shell"><h1>Your progress and assessments</h1><p>Use your recorded history to see what is changing. Optional updates can wait until you have room.</p><section className="daily-disclosure"><h2>Progress</h2><ProgressTab logic={logic} tier={logic.program}/></section><details className="daily-disclosure"><summary>Assessments and requirements</summary><AssessmentsTab logic={logic} capabilities={getTierCapabilities(logic.program)}/></details><details className="daily-disclosure"><summary>Detailed trends</summary><TrendsTab logic={logic}/></details></div></main>
+ const range = progressRange((await searchParams).range)
+ const [logic, overview] = await Promise.all([getProgramLogicForClient({supabase,user,client}), loadProgressOverview({supabase,userId:user.id,client,range})])
+ return <PhoneAppFrame eyebrow="Progress" title="Look how far you’ve come." subtitle="There’s more to progress than a number."><main className={styles.content}>
+   <ProgressOverview data={overview} program={logic.program}/>
+   <details className={`daily-disclosure ${styles.details}`} id="progress-details" open><summary>Daily progress and consistency details</summary><ProgressTab logic={logic} tier={logic.program}/></details>
+   <details className={`daily-disclosure ${styles.details}`}><summary>Assessments and requirements</summary><AssessmentsTab logic={logic} capabilities={getTierCapabilities(logic.program)}/></details>
+   <details className={`daily-disclosure ${styles.details}`}><summary>Detailed trends</summary><TrendsTab logic={logic}/></details>
+ </main></PhoneAppFrame>
 }

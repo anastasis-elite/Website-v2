@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { useRouter } from 'next/navigation'
 import { archiveWaterSubmission, archivedWaterSubmissions, beginWaterSubmission, confirmWaterSubmission, pendingWaterSubmission, retainWaterSubmission, type WaterSubmission } from '@/lib/hydration/waterSubmission'
 import { readWaterReceiptStatus } from '@/lib/hydration/reconcileWaterSubmission'
@@ -22,6 +22,7 @@ type Props = {
   maximumOunces?: number
   stepOunces?: number
   initiallyOpen?: boolean
+  inline?: boolean
   onSaved?: (total: number) => void
   onClosed?: () => void
   children?: ReactNode
@@ -31,7 +32,7 @@ type Props = {
 export default function HydrationQuickAdd({
   clientId, logDate, consumed, consumedKnown = true, target, defaultOunces = 8,
   minimumOunces = 4, maximumOunces = 64, stepOunces = 4,
-  initiallyOpen = false, onSaved, onClosed, children, renderTrigger,
+  initiallyOpen = false, inline = false, onSaved, onClosed, children, renderTrigger,
 }: Props) {
   const router = useRouter()
   const id = useId()
@@ -176,13 +177,8 @@ export default function HydrationQuickAdd({
     }
   }
 
-  return <div className="hydration-quick-add">
-    {renderTrigger({ open, addingWater, triggerRef, toggle: () => setOpen(current => !current) })}
-    <dialog ref={dialogRef} className="daily-action-dialog water-entry-dialog"
-      onCancel={() => setOpen(false)}
-      onClose={() => { setOpen(false); triggerRef.current?.focus(); onClosed?.() }}
-      aria-labelledby={`${id}-title`} aria-describedby={`${id}-summary`}>
-      <div className="tier-panel-heading"><h2 id={`${id}-title`}>Log water</h2><button type="button" onClick={() => setOpen(false)} aria-label="Close water entry">Close</button></div>
+  const content = <>
+      <div className="tier-panel-heading"><h2 id={`${id}-title`}>A little water, at your pace.</h2>{!inline ? <button type="button" onClick={() => setOpen(false)} aria-label="Close water entry">Close</button> : null}</div>
       <p id={`${id}-summary`} className="water-entry-summary">{!totalKnown ? 'Saved water total unavailable' : logged > 0 ? `${logged} oz logged` : 'No water logged yet'}{Number.isFinite(target) && target > 0 ? ` · Daily target ${Math.round(target)} oz` : ' · Daily target unavailable'}</p>
       <p className="water-entry-help">Choose the amount you drank. Follow any fluid guidance from your care team.</p>
       {children}
@@ -194,6 +190,7 @@ export default function HydrationQuickAdd({
       <div className="water-amount-control">
         <label htmlFor={`${id}-slider`}>Water amount <strong>{validAmount ? `${amount} oz` : 'Choose an amount'}</strong></label>
         <input id={`${id}-slider`} className="water-amount-slider" type="range"
+          style={{ '--aos-range-progress': `${(sliderValue - sliderMinimum) / Math.max(1, sliderMaximum - sliderMinimum) * 100}%` } as CSSProperties}
           min={sliderMinimum} max={sliderMaximum} step={sliderStep} value={sliderValue}
           aria-valuetext={`${sliderValue} fluid ounces`} aria-controls={`${id}-manual`}
           onChange={event => setAmount(event.target.value)} disabled={controlsDisabled} />
@@ -208,12 +205,18 @@ export default function HydrationQuickAdd({
       </label>
       <button type="button" className="tier-primary-action water-save-action"
         disabled={addingWater || !clientId || !validAmount || Boolean(pending && pending.logDate !== logDate)}
-        onClick={() => void addWater()}>{addingWater ? 'Saving…' : pending ? `Retry ${pending.ounces} oz save` : `Log ${amount || 'water'} oz`}</button>
+        onClick={() => void addWater()}>{addingWater ? 'Saving…' : pending ? `Retry ${pending.ounces} oz save` : `${inline ? 'Add' : 'Log'} ${amount || 'water'} oz`}</button>
       <p className="water-entry-status" role="status" aria-live="polite">{message}</p>
       {archived.length ? <details className="water-earlier-receipts"><summary>Earlier water saves kept for review ({archived.length})</summary>
         <p>These earlier receipts remain in this browser. They are not retried or included in today’s water log.</p>
         <ul>{archived.map(receipt => <li key={receipt.submissionId}>{receipt.logDate}: {receipt.ounces} oz · confirmation unknown</li>)}</ul>
       </details> : null}
-    </dialog>
+    </>
+  return <div className="hydration-quick-add">
+    {renderTrigger({ open, addingWater, triggerRef, toggle: () => setOpen(current => !current) })}
+    {inline ? <section className="phone-app-water-entry" aria-labelledby={`${id}-title`} aria-describedby={`${id}-summary`}>{content}</section> : <dialog ref={dialogRef} className="daily-action-dialog water-entry-dialog"
+      onCancel={() => setOpen(false)}
+      onClose={() => { setOpen(false); triggerRef.current?.focus(); onClosed?.() }}
+      aria-labelledby={`${id}-title`} aria-describedby={`${id}-summary`}>{content}</dialog>}
   </div>
 }

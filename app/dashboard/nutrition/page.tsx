@@ -13,6 +13,7 @@ import { readDirectEntryLog } from '@/lib/nutrition/directEntry'
 import { getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
 import { normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
 import { seedRecipes } from '@/lib/nutrition/recipes/catalog'
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 
 export default async function NutritionPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const loggingIntent = parseNutritionLoggingIntent(await searchParams)
@@ -43,5 +44,5 @@ export default async function NutritionPage({ searchParams }: { searchParams: Pr
   }
   const recipes=getTierCapabilities(logic.program).nutritionRecommendedMeal?getPhoenixRecipeRecommendations({logic,client}):[]
   const schedule = await getDailyScheduleState({ supabase, user, client, logic })
-  return <><DailyPlanCard plan={schedule.dailyRecommendation!} schedule={schedule} compact /><NutritionDashboardClient logic={logic} recipes={recipes} loggingIntent={loggingIntent} /></>
+  return <PhoneAppFrame eyebrow={`Nutrition · ${logic.program}`} title="Nourish the life you’re building." subtitle="Clear targets. Less guesswork."><DailyPlanCard plan={schedule.dailyRecommendation!} schedule={schedule} compact /><NutritionDashboardClient logic={logic} recipes={recipes} loggingIntent={loggingIntent} /></PhoneAppFrame>
 }

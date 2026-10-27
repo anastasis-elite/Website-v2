@@ -31,7 +31,8 @@ function component(path, extra = {}) {
   return module.exports.default
 }
 const Today = component('components/program-dashboard/GuidedToday.tsx')
-const Header = component('components/program-dashboard/TodayDashboardHeader.tsx')
+const StreakBadge = component('components/program-dashboard/TodayStreakBadge.tsx', { './TodayPlanTheme.module.css': { streakBadge: 'today-streak-badge' } })
+const Header = component('components/program-dashboard/TodayDashboardHeader.tsx', { '@/components/program-dashboard/TodayStreakBadge': StreakBadge })
 const fixture = (tier = 'ignite') => ({ program: tier, client: { id: 'QA-ONLY', name: 'Maya' },
   capacityStatus: { status: 'moderate_capacity' }, assessments: { dailyCompleted: false },
   hydration: { status: 'needs_input', target: 80, remaining: 80, consumed: 0 },
@@ -42,6 +43,64 @@ const fixture = (tier = 'ignite') => ({ program: tier, client: { id: 'QA-ONLY', 
   symptoms: { redFlag: false }, recoveryStatus: { reasoning: 'Review existing guidance.' } })
 const schedule = () => ({ date: '2026-10-13', timezone: 'America/Chicago', now: '2026-10-13T13:00:00Z', events: [], nextActionableEvent: null, dailyGuide: { date: '2026-10-13', activities: {} } })
 const render = (logic, state = schedule()) => renderToStaticMarkup(React.createElement(Today, { logic, schedule: state }))
+
+test('Today shows a confirmed zero and nonzero streak, while Plan omits the badge', () => {
+  for (const count of [0, 1, 17]) {
+    const logic = fixture(); logic.flameState.streak = count; logic.streakAvailable = true
+    const html = renderToStaticMarkup(React.createElement(Header, { logic, schedule: schedule() }))
+    assert.match(html, new RegExp(`aria-label="${count} ${count === 1 ? 'day' : 'days'} streak"`))
+    assert.ok(html.includes(`<span aria-hidden="true">${count}</span>`))
+    assert.ok(html.includes('data-testid="today-streak"'))
+    const plan = renderToStaticMarkup(React.createElement(Header, { logic, schedule: schedule(), plan: true }))
+    assert.doesNotMatch(plan, /data-testid="today-streak"/)
+  }
+})
+
+test('missing, failed, invalid or loading streak data never renders a confirmed zero', () => {
+  for (const props of [{ count: 0 }, { count: 0, available: false }, { available: true }, { count: null, available: true }, { count: NaN, available: true }, { count: -1, available: true }, { count: 0, available: true, loading: true }]) {
+    const html = renderToStaticMarkup(React.createElement(StreakBadge, props))
+    assert.doesNotMatch(html, /aria-label="0 days streak"/)
+    assert.ok(html.includes('—'))
+    if (props.loading) assert.match(html, /aria-busy="true"/)
+  }
+})
+
+test('known Today loading shell keeps a flame placeholder without claiming zero', () => {
+  const Ready = component('components/program-dashboard/DashboardReadyShell.tsx', {
+    '@/components/program-dashboard/TodayStreakBadge': StreakBadge,
+    '@/components/DashboardPerformance': () => null,
+    '@/components/DashboardShellTiming': () => null,
+    '@/lib/nutrition/loggingRoutes': { WATER_ENTRY_HREF: '/dashboard/nutrition?log=water', foodEntryHref: () => '/dashboard/nutrition' },
+  })
+  const html = renderToStaticMarkup(React.createElement(Ready, { program: 'ember' }))
+  assert.match(html, /aria-label="Streak loading"/)
+  assert.doesNotMatch(html, /0 days streak/)
+  assert.doesNotMatch(renderToStaticMarkup(React.createElement(Ready, { program: 'ember', showStreak: false })), /today-streak/)
+})
+
+test('Community uses the existing destination and active state without disturbing Today or Plan', () => {
+  let pathname = '/dashboard/program/ember', query = ''
+  const Navigation = component('components/navigation/ClientDashboardNav.tsx', {
+    'next/navigation': { usePathname: () => pathname, useSearchParams: () => new URLSearchParams(query) },
+    '@/components/navigation/DashboardMoreMenu': () => React.createElement('button', null, 'You'),
+    './guided-navigation.css': {},
+  })
+  for (const tier of ['ember', 'ignite', 'phoenix']) {
+    pathname = `/dashboard/program/${tier}`; query = ''
+    let html = renderToStaticMarkup(React.createElement(Navigation, { program: tier }))
+    assert.ok(html.includes('href="/dashboard/community"'))
+    assert.match(html, /data-nav-item="community"/)
+    assert.match(html, /<small>Community<\/small>/)
+    query = 'view=plan'
+    html = renderToStaticMarkup(React.createElement(Navigation, { program: tier }))
+    assert.match(html, /href="[^\"]+\/plan"[^>]+aria-current="page"/)
+    pathname = '/dashboard/community'; query = ''
+    html = renderToStaticMarkup(React.createElement(Navigation, { program: tier }))
+    assert.match(html, /href="\/dashboard\/community"[^>]+aria-current="page"/)
+    pathname = '/dashboard/onboarding/profile'
+    assert.equal(renderToStaticMarkup(React.createElement(Navigation, { program: tier })), '')
+  }
+})
 
 test('fresh Today has one primary action, persisted progress, and directly accessible activities in each tier', () => {
   for (const tier of ['ember', 'ignite', 'phoenix']) {
@@ -61,6 +120,22 @@ test('recorded check-in advances the single action and completed status is expli
   assert.match(html, /data-activity-id="water" data-tutorial-id="dashboard-whats-next"/)
   assert.match(html, /data-activity-id="check-in" data-status="completed"/)
   assert.doesNotMatch(html, /Start daily check-in/)
+})
+test('all six activities keep their destinations and use the shared illustrated cards, with water and schedule first', () => {
+  for (const tier of ['ember', 'ignite', 'phoenix']) {
+    const html = render(fixture(tier))
+    const cards = [...html.matchAll(/<li data-activity-id="([^"]+)"[^>]*data-illustrated="true"[^>]*>([\s\S]*?)<\/li>/g)]
+    assert.deepEqual(cards.map(card => card[1]), ['water', 'schedule', 'check-in', 'nutrition', 'workout', 'recovery'])
+    const targets = [
+      ['water', '/dashboard/nutrition?log=water'], ['schedule', '/dashboard/schedule'],
+      ['check-in', '/dashboard/check-in'], ['nutrition', `/dashboard/nutrition${tier === 'ember' ? '' : '?log=meal'}`],
+      ['training', `/dashboard/program/${tier}/workout`], ['recovery', '/dashboard/recovery'],
+    ]
+    cards.forEach((card, index) => {
+      assert.ok(card[2].includes(`src="/illustrations/today-${targets[index][0]}.svg"`))
+      assert.ok(card[2].includes(`href="${targets[index][1]}"`))
+    })
+  }
 })
 test('one-step preference quiets supporting copy while keeping every activity accessible', () => {
   const state = schedule(); state.preferences = { carouselStyle: 'step' }

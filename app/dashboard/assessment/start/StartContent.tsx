@@ -1,8 +1,11 @@
 'use client'
 
 import { useEffect,useRef,useState } from 'react'
-import * as styles from '../../../styles/globalstyles'
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
+import '@/components/phone-app/assessments.css'
 import AssessmentPhotoUpload from '@/components/AssessmentPhotoUpload'
+import { memberAssessmentSections, memberSelections, memberFieldValid, validMemberSelections, type MemberAssessmentKind } from '@/lib/assessment/memberSelections'
+import { getTierCapabilities } from '@/lib/entitlements'
 
 type ClientData = {
   client_id: string
@@ -17,28 +20,30 @@ type ClientData = {
   program?: string
 }
 
-export default function StartContent({ client, assessmentType = 'initial' }: { client: ClientData; assessmentType?: 'initial' | 'monthly' }) {
-  const [formData, setFormData] = useState({
-    program: client.program || '',
-    client_id: client.client_id || '',
-    fullName: client.full_name || '',
-    email: client.email || '',
-    birthdate: client.birthdate || '',
-    trainingDays: String(client.workout_days_available || ''),
-    equipmentAccess: (client.equipment_access || []).join(', '),
-    experienceLevel: client.experience_level || '',
-    primaryFocus: client.primary_goal || '',
-    currentLimitations: (client.limitations || []).join(', '),
-    recoveryCapacity: '',
-    sleepQuality: '',
-    stressLevel: '',
-    cardioPreference: '',
-    notes: '',
-  })
+export default function StartContent({ client, assessmentType = 'initial', savedAnswers = {}, canSubmit = true, notice, draftVersion }: {
+  client: ClientData; assessmentType?: MemberAssessmentKind; savedAnswers?: Record<string, unknown>; canSubmit?: boolean; notice?: string; draftVersion?: string
+}) {
+  const [formData, setFormData] = useState(() => memberSelections(client, savedAnswers))
+  const [draftRestored, setDraftRestored] = useState(false)
+  const [editing, setEditing] = useState<Record<string, boolean>>({})
+  const review = assessmentType === 'review'
 
-  const lock=useRef(false);const draftKey=`anastasis-assessment:${client.client_id}:${assessmentType}`;const [draftReady,setDraftReady]=useState(false)
-  useEffect(()=>{try {const saved=JSON.parse(localStorage.getItem(draftKey)||'null');if(saved) setFormData(current=>({...current,...Object.fromEntries(Object.entries(saved).filter(([key,value])=>key in current && typeof value==='string'))}))}catch{}setDraftReady(true)},[draftKey])
-  useEffect(()=>{if(draftReady)try{localStorage.setItem(draftKey,JSON.stringify(formData))}catch{}},[draftReady,draftKey,formData])
+  const lock=useRef(false);const draftKey=`anastasis-assessment:${client.client_id}:${assessmentType === 'quarterly' ? 'monthly' : assessmentType === 'review' ? `review:${draftVersion || 'current'}` : assessmentType}`;const [draftReady,setDraftReady]=useState(false)
+  useEffect(() => {
+    if (!canSubmit) return
+    try {
+      const saved = JSON.parse(localStorage.getItem(draftKey) || 'null')
+      if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
+        setDraftRestored(true)
+        setFormData(current => ({ ...current, ...Object.fromEntries(Object.entries(saved).filter(
+          (entry): entry is [string, string] => entry[0] in current && typeof entry[1] === 'string'
+            && !['client_id', 'program', 'fullName', 'email', 'birthdate'].includes(entry[0])
+        )) }))
+      }
+    } catch {}
+    setDraftReady(true)
+  }, [draftKey, canSubmit])
+  useEffect(()=>{if(canSubmit&&draftReady)try{localStorage.setItem(draftKey,JSON.stringify(formData))}catch{}},[canSubmit,draftReady,draftKey,formData])
   const [status, setStatus] = useState<'idle' | 'submitting' | 'error'>('idle')
   const [message, setMessage] = useState('')
 
@@ -55,7 +60,7 @@ export default function StartContent({ client, assessmentType = 'initial' }: { c
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if(lock.current)return
+    if(lock.current || !canSubmit)return
     lock.current=true
     setStatus('submitting')
     setMessage('')
@@ -79,7 +84,7 @@ export default function StartContent({ client, assessmentType = 'initial' }: { c
       }
 
       localStorage.removeItem(draftKey)
-      window.location.href = data.redirect || (assessmentType === 'monthly' ? '/dashboard/assessment/monthly' : '/dashboard/assessment/start2')
+      window.location.href = data.redirect || (assessmentType === 'initial' ? '/dashboard/assessment/start2' : '/dashboard/assessment/monthly')
 
     } catch (error) {
       console.error('ASSESSMENT ERROR:', error)
@@ -88,253 +93,36 @@ export default function StartContent({ client, assessmentType = 'initial' }: { c
     } finally { lock.current=false }
   }
 
-  return (
-    <main className="aos-flow-page">
-      <div className="aos-flow-shell">
-        <header className="aos-flow-hero">
-        <p className="aos-eyebrow">{assessmentType === 'monthly' ? 'Monthly Assessment' : 'Assessment'}</p>
 
-        <h1>
-          {assessmentType === 'monthly' ? 'Review what has changed.' : 'Let’s build the starting point.'}
-        </h1>
 
-        <p>
-          Your answers add context to your training, recovery, and daily plan.
-          Enter the goals, routine, equipment, and limitations that reflect your
-          life now.
-        </p>
-        </header>
-
-<p>Your draft stays in this browser while you complete the assessment. Known profile information is prefilled. Fields marked required must be answered before submitting.</p>
-        <form onSubmit={handleSubmit} style={styles.cartBoxStyle}>
-          <input type="hidden" name="client_id" value={formData.client_id} readOnly />
-
-          <div style={styles.gridTwoCol}>
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle} htmlFor="trainingDays">
-                How many days per week can you realistically train?
-              </label>
-              <select
-                id="trainingDays"
-                name="trainingDays"
-                required
-                value={formData.trainingDays}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              >
-                <option value="">Select one</option>
-                <option value="2">2 days</option>
-                <option value="3">3 days</option>
-                <option value="4">4 days</option>
-                <option value="5">5 days</option>
-                <option value="6">6 days</option>
-              </select>
-            </div>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle} htmlFor="experienceLevel">
-                Training experience
-              </label>
-              <select
-                id="experienceLevel"
-                name="experienceLevel"
-                required
-                value={formData.experienceLevel}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              >
-                <option value="">Select one</option>
-                <option value="beginner">Beginner</option>
-                <option value="some-experience">Some experience</option>
-                <option value="consistent">Consistent lifter</option>
-                <option value="advanced">Advanced</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle} htmlFor="equipmentAccess">
-              What equipment do you have access to?
-            </label>
-            <select
-              id="equipmentAccess"
-              name="equipmentAccess"
-              required
-              value={formData.equipmentAccess}
-              onChange={handleChange}
-              style={styles.inputStyle}
-            >
-              <option value="">Select one</option>
-              <option value="commercial-gym">Commercial gym</option>
-              <option value="home-gym">Home gym</option>
-              <option value="dumbbells-bands">Dumbbells / bands only</option>
-              <option value="bodyweight">Bodyweight only</option>
-            </select>
-          </div>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle} htmlFor="primaryFocus">
-              What is the main physical outcome you want this plan to support?
-            </label>
-            <select
-              id="primaryFocus"
-              name="primaryFocus"
-              required
-              value={formData.primaryFocus}
-              onChange={handleChange}
-              style={styles.inputStyle}
-            >
-              <option value="">Select one</option>
-              <option value="recomposition">Body recomposition</option>
-              <option value="fat-loss">Fat loss</option>
-              <option value="muscle-building">Muscle building</option>
-              <option value="strength">Strength</option>
-              <option value="glutes-shape">Glutes / shape</option>
-              <option value="stage-prep">Stage or transformation prep</option>
-              <option value="energy-regulation">Energy, consistency, and regulation</option>
-            </select>
-          </div>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle} htmlFor="currentLimitations">
-              Are there any movements, injuries, pain points, or limitations we need to account for?
-            </label>
-            <textarea
-              id="currentLimitations"
-              name="currentLimitations"
-              required
-              value={formData.currentLimitations}
-              onChange={handleChange}
-              style={styles.textareaStyle}
-              placeholder="Share anything relevant. If none, write none."
-            />
-          </div>
-
-          <div style={styles.gridTwoCol}>
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle} htmlFor="recoveryCapacity">
-                Current recovery capacity
-              </label>
-              <select
-                id="recoveryCapacity"
-                name="recoveryCapacity"
-                required
-                value={formData.recoveryCapacity}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              >
-                <option value="">Select one</option>
-                <option value="low">Low — I feel depleted often</option>
-                <option value="moderate">Moderate — I can train but need balance</option>
-                <option value="high">High — I recover well</option>
-              </select>
-            </div>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle} htmlFor="sleepQuality">
-                Sleep quality
-              </label>
-              <select
-                id="sleepQuality"
-                name="sleepQuality"
-                required
-                value={formData.sleepQuality}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              >
-                <option value="">Select one</option>
-                <option value="poor">Poor</option>
-                <option value="inconsistent">Inconsistent</option>
-                <option value="decent">Decent</option>
-                <option value="strong">Strong</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={styles.gridTwoCol}>
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle} htmlFor="stressLevel">
-                Current stress load
-              </label>
-              <select
-                id="stressLevel"
-                name="stressLevel"
-                required
-                value={formData.stressLevel}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              >
-                <option value="">Select one</option>
-                <option value="low">Low</option>
-                <option value="moderate">Moderate</option>
-                <option value="high">High</option>
-                <option value="very-high">Very high</option>
-              </select>
-            </div>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.labelStyle} htmlFor="cardioPreference">
-                Cardio preference
-              </label>
-              <select
-                id="cardioPreference"
-                name="cardioPreference"
-                required
-                value={formData.cardioPreference}
-                onChange={handleChange}
-                style={styles.inputStyle}
-              >
-                <option value="">Select one</option>
-                <option value="walking">Walking</option>
-                <option value="incline-walk">Incline walk</option>
-                <option value="stair-stepper">Stair stepper</option>
-                <option value="bike">Bike</option>
-                <option value="running">Running</option>
-                <option value="minimal">Minimal cardio</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={styles.fieldWrap}>
-            <label style={styles.labelStyle} htmlFor="notes">
-              Anything else you want the system to consider?
-            </label>
-            <textarea
-              id="notes"
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              style={styles.textareaStyle}
-              placeholder="Schedule constraints, preferences, fears, goals, or anything you want considered."
-            />
-          </div>
-
-          <div style={styles.buttonRowStyle}>
-            <button
-              type="submit"
-              disabled={status === 'submitting'}
-              style={styles.primaryButtonStyle}
-            >
-              {status === 'submitting' ? 'Submitting...' : 'Submit Assessment'}
-            </button>
-          </div>
-
-          {message ? (
-            <p
-              style={{
-                ...styles.bodyStyle,
-                color: '#ffb4b4',
-                marginBottom: 0,
-              }}
-            >
-              {message}
-            </p>
-          ) : null}
-        </form>
-                <div style={{ marginTop: 32 }}>
-          <AssessmentPhotoUpload />
-        </div>
-      </div>
+  return <PhoneAppFrame eyebrow={review ? 'Monthly Review' : 'Member assessment'} title={review ? 'Monthly Review' : assessmentType === 'quarterly' ? 'Quarterly Assessment' : 'Your starting point'} subtitle={review ? 'Still right for you?' : 'Your system, your life, your way.'}>
+    <main className="assessment-content">
+      {notice ? <p className="assessment-notice" role="status">{notice}</p> : null}
+      <p className="assessment-notice">{review ? 'Review your saved selections. Edit only what’s changed.' : 'Your draft stays in this browser. Known profile information is prefilled. Complete each required selection and leave notes if there is anything else to consider.'}</p>
+      {draftRestored ? <p className="assessment-notice" role="status">Unsaved selections from this browser were restored. They are not confirmed until you submit.</p> : null}
+      <form onSubmit={handleSubmit} className="assessment-full-form">
+        <input type="hidden" name="client_id" value={formData.client_id} readOnly />
+        {memberAssessmentSections.map(section => {
+          const missing = section.fields.some(field => !memberFieldValid(field.name, formData[field.name]))
+          const open = !review || editing[section.title] || canSubmit && missing
+          return <fieldset className="assessment-section" key={section.title} disabled={!canSubmit}>
+            <legend>{section.title}</legend>
+            {review ? <div className="assessment-review-heading"><p>{missing ? 'Some selections have not been recorded.' : 'Your saved selections'}</p>{canSubmit ? <button type="button" className="assessment-review-edit" aria-expanded={Boolean(open)} onClick={() => setEditing(current => ({...current,[section.title]:!open}))}>{open ? 'Done' : 'Edit'}</button> : null}</div> : null}
+            {section.fields.map(field => open ? <label className="assessment-field" htmlFor={field.name} key={field.name}>
+              {field.label} <small>Required</small>
+              {'options' in field && field.options ? <select id={field.name} name={field.name} required value={formData[field.name]} onChange={handleChange}>
+                <option value="">Select one</option>{field.options.map(([value,label]) => <option key={value} value={value}>{label}</option>)}
+              </select> : <textarea id={field.name} name={field.name} required value={formData[field.name]} onChange={handleChange} placeholder={'placeholder' in field ? field.placeholder : undefined} />}
+            </label> : <div className="assessment-review-value" key={field.name}><span>{field.label}</span><strong>{'options' in field && field.options ? field.options.find(([value]) => value === formData[field.name])?.[1] || 'Not recorded' : formData[field.name] || 'Not recorded'}</strong></div>)}
+          </fieldset>
+        })}
+        <fieldset className="assessment-section" disabled={!canSubmit}><legend>Notes</legend><label className="assessment-field" htmlFor="notes">Anything else you want the system to consider?
+          <textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} placeholder="Schedule constraints, preferences, fears, goals, or anything you want considered." />
+        </label></fieldset>
+        {canSubmit ? <button type="submit" disabled={status === 'submitting' || !validMemberSelections(formData)} className="assessment-action">{status === 'submitting' ? 'Submitting…' : review ? 'Confirm selections' : 'Submit Assessment'}</button> : null}
+        {message ? <p role="alert">{message}</p> : null}
+      </form>
+      {!review ? <details className="assessment-section"><summary>Optional assessment photos</summary><AssessmentPhotoUpload postureAssessmentEnabled={getTierCapabilities(client.program).postureAssessment} /></details> : null}
     </main>
-  )
+  </PhoneAppFrame>
 }

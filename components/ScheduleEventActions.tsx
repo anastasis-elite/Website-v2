@@ -11,6 +11,12 @@ import { announceCalendarChange } from '@/lib/calendar/client'
 import { scheduleStructureTaskHref } from '@/lib/assessment/scheduleStructure'
 export default function ScheduleEventActions({ event, timezone, program = 'ignite', suggestion, canChangeTime = true }: { event: ScheduleEvent; timezone: string; program?: string; suggestion?: ScheduleAdjustment; canChangeTime?: boolean }) {
   const router = useRouter(); const lock = useRef(false); const [saving, setSaving] = useState(false); const [message, setMessage] = useState(''); const [moving, setMoving] = useState(false)
+  const moveDialog = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    const dialog = moveDialog.current
+    if (moving && dialog && !dialog.open) dialog.showModal()
+    else if (!moving && dialog?.open) dialog.close()
+  }, [moving])
   const initial = suggestion?.suggested_start_at || event.adjusted_start_at || event.start_at
   const minute = getLocalMinutes(new Date(initial), timezone)
   const [local, setLocal] = useState(`${localDateKey(new Date(initial), timezone)}T${String(Math.floor(minute/60)).padStart(2,'0')}:${String(minute%60).padStart(2,'0')}`)
@@ -54,7 +60,14 @@ export default function ScheduleEventActions({ event, timezone, program = 'ignit
       {suggestion ? <small>{suggestion.reason}{!acceptedStart ? ' No time has been placed on your calendar.' : ''}</small> : null}
       {canChangeTime && acceptedStart && acceptedEnd && !suggestion?.applied ? <button disabled={saving} onClick={() => void mutate('move', acceptedStart, acceptedEnd)}>Accept {formatLocalTime(acceptedStart, timezone)} suggestion</button> : null}
     </>}
-    {moving && canChangeTime ? <div><label>New time ({timezone})<input type="datetime-local" value={local} onChange={e => setLocal(e.target.value)}/></label><button disabled={saving} onClick={move}>Save new time</button></div> : null}
+    {canChangeTime && !done && event.flexibility_type === 'flexible' && event.movable && !event.approval_required ? <dialog ref={moveDialog} className="phone-app-reschedule" aria-label={`Reschedule ${event.title}`} onCancel={() => setMoving(false)} onClose={() => setMoving(false)}>
+      <p className="phone-app-eyebrow">Reschedule</p><h2>Make room for it.</h2><p>Your plan can move with you.</p>
+      <h3>{event.title}</h3><p>Currently {formatLocalTime(event.adjusted_start_at || event.start_at, timezone)}{event.adjusted_duration_minutes || event.estimated_duration_minutes ? ` · ${event.adjusted_duration_minutes || event.estimated_duration_minutes} minutes` : ''}</p>
+      <label>Choose a day and time ({timezone})<input type="datetime-local" value={local} onChange={e => setLocal(e.target.value)}/></label>
+      <p>Only this activity will move. Times from unconnected calendars are unavailable.</p>
+      <div className="phone-app-reschedule-actions"><button className="tier-primary-action" disabled={saving} onClick={move}>Confirm new time</button><button disabled={saving} onClick={() => setMoving(false)}>Keep original time</button></div>
+      <p role="status">{saving ? 'Saving…' : message}</p>
+    </dialog> : null}
     <p role="status">{saving ? 'Saving…' : message}</p>
   </div>
 }

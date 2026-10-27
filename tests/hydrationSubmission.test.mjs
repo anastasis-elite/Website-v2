@@ -76,6 +76,23 @@ function scenario() {
   return { storage, fetch, values, calls, get total() { return total } }
 }
 
+test('inline hydration changes its draft without saving until Add is explicitly pressed', async () => {
+  const server = scenario(), calls = []
+  const app = mount(QuickAdd, { ...quickProps, inline: true }, server.storage, async (_url, options) => {
+    const body = JSON.parse(options.body); calls.push(body)
+    return Response.json({ nutritionLog: { water_consumed_oz: 36 + body.ounces } })
+  })
+  assert.equal(nodes(app.tree, node => node.type === 'dialog').length, 0)
+  nodes(app.tree, node => node.type === 'input' && node.props.type === 'range')[0].props.onChange({ target: { value: '20' } })
+  app.render()
+  assert.equal(calls.length, 0)
+  assert.match(text(app.tree), /36 oz logged/)
+  button(app, 'Add 20 oz').props.onClick(); await app.flush()
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].ounces, 20)
+  assert.match(text(app.tree), /56 oz logged/)
+})
+
 test('quick add keeps one committed drink through response loss, double-click, reload, and retry', async () => {
   const server = scenario(), first = mount(QuickAdd, quickProps, server.storage, server.fetch)
   const save = button(first, 'Log 8 oz')

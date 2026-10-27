@@ -4,6 +4,7 @@ import { getClientTimeZone } from '@/lib/timezone'
 import { redirect } from 'next/navigation'
 
 import WorkoutDashboard from '@/components/workout-dashboard/WorkoutDashboard'
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 
 import { getAssessmentWindow } from '@/lib/assessments/getAssessmentWindow'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
@@ -311,7 +312,7 @@ export default async function ProgramWorkoutPage({
 
   const schedule = await getDailyScheduleState({ supabase, user, client, logic })
   return (
-    <main className="aos-workout-page">
+    <PhoneAppFrame eyebrow="Workout" title="Your strength, one set at a time." subtitle={workoutTitle}><main className="aos-workout-page">
       <div className="aos-workout-shell">
         <DailyPlanCard plan={schedule.dailyRecommendation!} schedule={schedule} compact />
         <WorkoutDashboard
@@ -355,6 +356,6 @@ export default async function ProgramWorkoutPage({
           }
         />
       </div>
-    </main>
+    </main></PhoneAppFrame>
   )
 }

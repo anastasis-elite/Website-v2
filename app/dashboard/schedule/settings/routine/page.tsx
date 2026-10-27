@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
+import '@/components/phone-app/detail-screens.css'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import DailyStructureAssessment from '@/components/DailyStructureAssessment'
 import { getCommitmentWeekdays } from '@/lib/assessment/commitmentWeekdays'
@@ -6,9 +8,8 @@ import { getClientTimeZone } from '@/lib/timezone'
 
 export default async function EditRoutinePage() {
   const { client } = await getDashboardContext()
-  return <main className="aos-flow-page"><div className="aos-flow-shell">
-    <nav aria-label="Schedule settings"><Link href="/dashboard/schedule">Schedule</Link> · <Link href="/dashboard/schedule/settings">Settings</Link> · Edit My Routine</nav>
-    <header className="aos-flow-hero"><p className="aos-eyebrow">Your daily rhythm</p><h1>Edit My Routine</h1><p>Make room for the life you have today. Your saved assessment remains available to review.</p><Link href="/dashboard/assessment/daily-structure">Review Schedule Structure Assessment</Link></header>
+  return <PhoneAppFrame backHref="/dashboard/schedule/settings" backLabel="Settings" eyebrow="Your daily rhythm" title="Edit My Routine" subtitle="Keep your plan aligned with your days."><main className="rhythm-content">
+    <p className="detail-note"><Link href="/dashboard/assessment/daily-structure">Review your saved Daily Structure assessment</Link>. Prior assessments and completed activities stay saved.</p>
     <DailyStructureAssessment key={Number(client.onboarding_data?.routinePreferences?.revision || 0)} mode="routine"
       routineRevision={Number(client.onboarding_data?.routinePreferences?.revision || 0)} clientId={client.client_id}
       scheduleTimezone={getClientTimeZone(client)}
@@ -23,5 +24,5 @@ export default async function EditRoutinePage() {
       currentWorkoutDaysPerWeek={client.current_workout_days_per_week} currentWorkoutMinutesPerSession={client.current_workout_minutes_per_session}
       currentTrainingIntensity={client.current_training_intensity} workoutSchedulePreference={client.workout_schedule_preference} />
 
-  </div></main>
+  </main></PhoneAppFrame>
 }

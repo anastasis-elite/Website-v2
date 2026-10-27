@@ -211,7 +211,7 @@ export default function WorkoutDashboard(props: Props) {
       <article className="tier-daily-insight workout-objective" data-testid="workout-objective">
         <p className="tier-dashboard-label">{training.label}</p>
         <div>
-          <h1>{props.workoutTitle}</h1>
+          <h2>{props.workoutTitle}</h2>
           <WorkoutFeedback
             clientId={props.clientId}
             program={props.program}
@@ -226,6 +226,7 @@ export default function WorkoutDashboard(props: Props) {
       </article>
 
       {props.hasSafetyFlags ? <SafetyEscalationNotice flags={props.safetyFlags} embedded /> : null}
+      <details className="phone-app-report"><summary>Heart-rate recovery · Unavailable</summary><p>No timestamped heart-rate stream or continuous exercise/rest intervals are connected to this session. Your recorded sets remain available. This screen does not establish a watch connection or a heart-rate readiness threshold.</p></details>
 
       <div className="workout-dashboard-row">
         <details className="daily-disclosure"><summary>Muscle readiness details</summary><MuscleReadinessMap readiness={props.muscleReadiness} highlightedMuscleIds={highlightedMuscles} /></details>

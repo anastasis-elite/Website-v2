@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import PlanOverview from '@/components/program-dashboard/PlanOverview'
 import EmberDashboard from '@/components/program-dashboard/EmberDashboard'
 import IgniteDashboard from '@/components/program-dashboard/IgniteDashboard'
 import PhoenixDashboard from '@/components/program-dashboard/PhoenixDashboard'
@@ -46,10 +47,13 @@ function getPhoenixTrackLabel({
 
 export default async function ProgramPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ program: string }>
+  searchParams?: Promise<{ view?: string }>
 }) {
   const { program } = await params
+  const view = (await searchParams)?.view === 'plan' ? 'plan' : 'today'
 
   if (!supportedPrograms.includes(program as any)) {
     redirect('/dashboard')
@@ -72,19 +76,19 @@ export default async function ProgramPage({
     return <SafetyEscalationNotice flags={safetyFlags} />
   }
 
-  return <main><Suspense fallback={<DashboardReadyShell program={program as ProgramTier} />}>
-    <PersonalizedDashboard supabase={supabase} user={user} client={client} program={program as ProgramTier} />
+  return <main><Suspense fallback={<DashboardReadyShell program={program as ProgramTier} showStreak={view === 'today'} />}>
+    <PersonalizedDashboard supabase={supabase} user={user} client={client} program={program as ProgramTier} view={view} />
   </Suspense></main>
 }
 
-async function PersonalizedDashboard({ supabase, user, client, program }: {
-  supabase: any; user: any; client: any; program: ProgramTier
+async function PersonalizedDashboard({ supabase, user, client, program, view }: {
+  supabase: any; user: any; client: any; program: ProgramTier; view: 'today' | 'plan'
 }) {
 
   const cycleStatus = getCycleStatus(client)
   const [dailyPlan, monthlyAssessment, { data: output }] = await Promise.all([
     getDailyExecutionPlan({ supabase, client }),
-    getMonthlyAssessmentStatus(supabase, client.client_id),
+    getMonthlyAssessmentStatus(supabase, client),
     supabase
       .from('program_outputs')
       .select('*')
@@ -144,6 +148,7 @@ async function PersonalizedDashboard({ supabase, user, client, program }: {
     dailyPlan,
     sourceTimeoutMs: 2000,
   })
+  if (view === 'plan') return <PlanOverview logic={logic} schedule={schedule} />
   const phoenixRecipes = program === 'phoenix' ? getPhoenixRecipeRecommendations({ logic, client }) : []
 
   return (

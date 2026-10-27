@@ -44,8 +44,10 @@ const photoFields: {
 
 export default function AssessmentPhotoUpload({
   postureAssessmentEnabled = true,
+  initialAssessmentType = 'progress',
 }: {
   postureAssessmentEnabled?: boolean
+  initialAssessmentType?: 'progress' | 'posture'
 }) {
   const router=useRouter()
   const [files, setFiles] = useState<Record<PhotoKey, File | null>>({
@@ -64,7 +66,7 @@ export default function AssessmentPhotoUpload({
 
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
-  const [assessmentType,setAssessmentType]=useState<'progress'|'posture'>('progress')
+  const [assessmentType,setAssessmentType]=useState<'progress'|'posture'>(postureAssessmentEnabled ? initialAssessmentType : 'progress')
   const [uploadedRecordId, setUploadedRecordId] = useState<string | null>(null)
   const [uploadedViews, setUploadedViews] = useState<UploadedView[]>([])
   const [activeViewIndex, setActiveViewIndex] = useState(0)
@@ -201,16 +203,16 @@ export default function AssessmentPhotoUpload({
       <div className="aos-chip-list"><AOSChip selected={assessmentType==='progress'} onClick={()=>setAssessmentType('progress')}>Progress photos</AOSChip>{postureAssessmentEnabled?<AOSChip selected={assessmentType==='posture'} onClick={()=>setAssessmentType('posture')}>Posture review</AOSChip>:null}</div>
       {!postureAssessmentEnabled ? <p className="aos-status">Progress photo upload and history are available here.</p> : null}
       {assessmentType === 'posture' ? (
-        <ul className="aos-posture-instructions">
+        <details className="aos-posture-instructions"><summary>Photo tips</summary><ul>
           {postureInstructions.map((instruction) => (
             <li key={instruction}>{instruction}</li>
           ))}
-        </ul>
+        </ul></details>
       ) : null}
       <div className="aos-photo-upload-grid">
         {photoFields.map((field) => (
           <label key={field.key} className={`aos-photo-upload-box${previews[field.key]?' has-preview':''}`}>
-            <span className="aos-photo-upload-icon" aria-hidden="true">＋</span>
+            {assessmentType === 'posture' ? <div className="posture-view-outline" aria-hidden="true"><svg viewBox="0 0 70 125">{field.key === 'front' || field.key === 'back' ? <><ellipse cx="35" cy="12" rx="7" ry="9"/><path d="M30 21 23 27 18 55 21 66 25 41 25 67 22 105 21 119 28 119 34 78 36 78 42 119 49 119 48 105 45 67 45 41 49 66 52 55 47 27 40 21"/></> : <g transform={field.key === 'right' ? 'translate(70 0) scale(-1 1)' : undefined}><ellipse cx="33" cy="12" rx="7" ry="9"/><path d="M29 21 26 33 28 49 24 66 29 81 27 118 35 118 36 85 42 68 40 48 42 31 37 22M37 30 34 48 39 66"/></g>}</svg></div> : <span className="aos-photo-upload-icon" aria-hidden="true">＋</span>}
             <strong>{field.label}</strong>
             <span>{field.description}</span>
             <input

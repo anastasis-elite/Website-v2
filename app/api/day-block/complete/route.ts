@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
   const { data: client } = await supabase
     .from('clients')
-    .select('client_id,timezone,state')
+    .select('client_id,timezone,state,onboarding_data')
     .eq('client_id', clientId)
     .eq('auth_user_id', user.id)
     .maybeSingle()
@@ -51,12 +51,17 @@ export async function POST(request: Request) {
   if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
 
   const today = getClientLocalDate(client)
-  const { data: existing } = await supabase
+  if (body.logDate !== undefined && body.logDate !== today) {
+    return NextResponse.json({ error: 'This block is for a different day. Reopen today’s schedule before logging.' }, { status: 409 })
+  }
+  const { data: existing, error: existingError } = await supabase
     .from('recovery_logs')
     .select('daily_tasks')
     .eq('client_id', client.client_id)
     .eq('log_date', today)
     .maybeSingle()
+
+  if (existingError) return NextResponse.json({ error: 'Your saved completion could not be loaded. Please retry before saving this block.' }, { status: 503 })
 
   const existingTasks = Array.isArray(existing?.daily_tasks) ? existing.daily_tasks : []
   const mergedTasks = Array.from(new Set([...existingTasks, `${block}-complete`, ...completedTasks]))

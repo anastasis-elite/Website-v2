@@ -5,6 +5,7 @@ import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicF
 import RecoveryDashboardClient from '@/components/recovery/RecoveryDashboardClient'
 import { getClientLocalDateOffset } from '@/lib/timezone'
 import { isSorenessRegionKey } from '@/lib/recovery/sorenessRegions'
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 
 function nullableNumber(value: unknown) {
   if (value === null || value === undefined || value === '') return null
@@ -63,7 +64,7 @@ export default async function RecoveryPage() {
 
   const schedule = await getDailyScheduleState({ supabase, user, client, logic })
   return (
-    <><DailyPlanCard plan={schedule.dailyRecommendation!} schedule={schedule} compact /><RecoveryDashboardClient
+    <PhoneAppFrame eyebrow="Recovery" title="A little room to restore." subtitle="Choose what feels right today."><DailyPlanCard plan={schedule.dailyRecommendation!} schedule={schedule} compact /><RecoveryDashboardClient
       logic={logic}
       clientId={client.client_id}
       program={client.program || logic.program}
@@ -83,6 +84,6 @@ export default async function RecoveryPage() {
       }}
       trends={trends}
       recentActivities={recentActivities || []}
-    /></>
+    /></PhoneAppFrame>
   )
 }

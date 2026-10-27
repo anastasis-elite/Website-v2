@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
 import { isAOSAdmin } from '@/lib/aos/isAOSAdmin'
+import { memberSelections, validMemberSelections } from '@/lib/assessment/memberSelections'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 
 export const runtime = 'nodejs'
@@ -36,38 +37,31 @@ export async function POST(req: Request) {
       )
     }
 
-    if (!body || typeof body !== 'object' || Array.isArray(body)
-      || !Number.isInteger(Number(body.trainingDays)) || Number(body.trainingDays) < 1 || Number(body.trainingDays) > 7
-      || !['commercial-gym', 'home-gym', 'dumbbells-bands', 'bodyweight'].includes(body.equipmentAccess)
-      || !['beginner', 'some-experience', 'consistent', 'advanced'].includes(body.experienceLevel)
-      || !['recomposition', 'fat-loss', 'muscle-building', 'strength', 'glutes-shape', 'stage-prep', 'energy-regulation'].includes(body.primaryFocus)
-      || typeof body.currentLimitations !== 'string' || !body.currentLimitations.trim()
-      || !['low', 'moderate', 'high'].includes(body.recoveryCapacity)
-      || !['poor', 'inconsistent', 'decent', 'strong'].includes(body.sleepQuality)
-      || !['low', 'moderate', 'high', 'very-high'].includes(body.stressLevel)
-      || !['walking', 'incline-walk', 'stair-stepper', 'bike', 'running', 'minimal'].includes(body.cardioPreference)) {
+    if (!validMemberSelections(body) || body.notes !== undefined && typeof body.notes !== 'string'
+      || !['initial', 'monthly', 'quarterly', 'review'].includes(body.assessmentType)) {
       return NextResponse.json({ error: 'Complete the required member assessment fields before continuing.' }, { status: 400 })
     }
-
-    const payload = {
-      client_id: client.client_id,
-      auth_user_id: user.id,
-      fullName: client.full_name || '',
-      email: client.email || client.login_email || '',
-      birthdate: client.birthdate || '',
-      program: client.program || '',
-      assessment_type: body.assessmentType === 'monthly' ? 'monthly' : 'initial',
-      data: body,
-      source: 'dashboard-assessment',
-      submittedAt: new Date().toISOString(),
+    // Legacy monthly form URLs/submissions are full assessments. The compact
+    // review explicitly opts into its own record source and completion date.
+    const kind = body.assessmentType === 'monthly' ? 'quarterly' : body.assessmentType
+    const status = await getMonthlyAssessmentStatus(supabase, client)
+    if (status.unavailable) return NextResponse.json({ error: 'Your saved assessment status could not be loaded. No new assessment was saved.' }, { status: 503 })
+    const adminOverride = body.adminOverride === true && isAOSAdmin(user.email)
+    if (kind === 'initial' && status.lastCompletedAt) {
+      return NextResponse.json({ error: 'Your starting assessment is already saved. Use your assessment library for reviews.', redirect: '/dashboard/assessment' }, { status: 409 })
     }
-
-    if (payload.assessment_type === 'monthly') {
-      const status = await getMonthlyAssessmentStatus(supabase, client.client_id)
-      const adminOverride = body.adminOverride === true && isAOSAdmin(user.email)
-      if (!status.due && !adminOverride) {
-        return NextResponse.json({ error: 'Your monthly assessment is already complete. It will reopen 30 days after the last submission.', nextDueAt: status.lastCompletedAt ? new Date(new Date(status.lastCompletedAt).getTime() + 30 * 86400000).toISOString() : null }, { status: 409 })
-      }
+    if (kind === 'review' && (status.dueKind !== 'review' || !status.lastCompletedAt)) {
+      return NextResponse.json({ error: status.dueKind === 'quarterly' ? 'Your Quarterly Assessment is due. Complete the full assessment instead of a separate Monthly Review.' : 'Your Monthly Review is already up to date.', nextDueAt: status.nextReviewDueDate }, { status: 409 })
+    }
+    if (kind === 'quarterly' && status.dueKind !== 'quarterly' && !adminOverride) {
+      return NextResponse.json({ error: 'Your Quarterly Assessment reopens three calendar months after the last full completion.', nextDueAt: status.nextFullDueDate }, { status: 409 })
+    }
+    const payload = {
+      client_id: client.client_id, auth_user_id: user.id, program: client.program || '',
+      assessment_type: kind === 'initial' ? 'initial' : 'monthly',
+      data: { ...memberSelections(client, body), assessmentKind: kind },
+      source: kind === 'review' ? 'monthly-review' : 'dashboard-assessment',
+      submittedAt: new Date().toISOString(),
     }
 
     const { error: assessmentInsertError } = await supabase
@@ -110,7 +104,7 @@ if (assessmentInsertError) {
 
     return NextResponse.json({
       success: true,
-      redirect: payload.assessment_type === 'monthly' ? '/dashboard/assessment/monthly' : '/dashboard/assessment/start2',
+      redirect: kind === 'initial' ? '/dashboard/assessment/start2' : '/dashboard/assessment/monthly',
     })
   } catch (error) {
     console.error('ASSESSMENT API ERROR:', error)

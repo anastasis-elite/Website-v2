@@ -1,12 +1,12 @@
-.section { margin: 20px 0; padding: 22px; border: 1px solid #684030; border-radius: 18px; background: #14100e; color: #f4dfd3; }
+.section { margin: 20px 0; padding: 22px; border: 1px solid #684030; border-radius: 18px; background: var(--phone-panel, #14100e); color: var(--text-primary, #f4dfd3); }
 .heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
 .heading h2, .heading h3 { margin: 0 0 5px; }
 .heading p, .muted { color: #ccb3a6; line-height: 1.55; margin: 5px 0; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .section button, .link { display: inline-block; min-height: 42px; border: 1px solid #995b3b; border-radius: 8px; background: #312017; color: #ffeadb; padding: 10px 14px; font: inherit; text-decoration: none; cursor: pointer; }
 .section button:disabled { cursor: not-allowed; opacity: .5; }
-.section button:focus-visible, .section a:focus-visible, .section input:focus-visible, .section select:focus-visible, .section textarea:focus-visible { outline: 3px solid #f7a76d; outline-offset: 3px; }
-.section .primary { background: #bd4b27; border-color: #e47847; }
+.section button:focus-visible, .section a:focus-visible, .section input:focus-visible, .section select:focus-visible, .section textarea:focus-visible { outline: 2px solid #dcc0a1; outline-offset: 3px; }
+.section .primary { background: linear-gradient(135deg,#845939,#583b27); border-color: #b98b63; }
 .section .danger { color: #ffc7b5; border-color: #a85043; }
 .section details > summary { cursor: pointer; min-height: 44px; padding: 10px 0; }
 .form { display: grid; gap: 14px; }

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import * as styles from '@/app/styles/globalstyles'
 import CreatePostBox from './CreatePostBox'
 import PostCard from './PostCard'
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 
 type CommunityCategory =
   | 'All'
@@ -76,33 +77,22 @@ export default function CommunityFeed() {
   const filteredPosts =
     activeCategory === 'All'
       ? samplePosts
-      : samplePosts.filter((post) => post.category === activeCategory)
+      : samplePosts.filter((post) => post.category === activeCategory || activeCategory === 'Questions' && post.category === 'Question')
 
   return (
-    <main style={{ display: 'grid', gap: '28px' }}>
-      <section style={styles.cartBoxStyle}>
-        <p style={styles.eyebrowStyle}>Community</p>
-
-        <h1 style={styles.sectionTitleStyle}>Community preview</h1>
-
-        <p style={styles.bodyStyle}>
+    <PhoneAppFrame eyebrow="Together" title="Community" subtitle="Room for every part of your day."><main className="phone-app-community">
+        <p className="phone-app-community-note">
           These conversations, names, and counts are fictional examples.
           Posting is unavailable. Support and replies stay on this screen
           without being saved or shared.
         </p>
 
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '10px',
-            marginTop: '24px',
-          }}
-        >
+        <nav className="phone-app-topics" aria-label="Community topics">
           {categories.map((category) => (
             <button
               key={category}
               type="button"
+              aria-pressed={activeCategory === category}
               onClick={() => setActiveCategory(category)}
               style={{
                 border:
@@ -123,19 +113,19 @@ export default function CommunityFeed() {
                 cursor: 'pointer',
               }}
             >
-              {category}
+              <span className="phone-app-topic-icon" aria-hidden="true">{category === 'All' ? '◎' : <img alt="" src={`/illustrations/today-${category === 'Progress' || category === 'Transformation' ? 'training' : category === 'Wins' ? 'check-in' : category === 'Questions' ? 'schedule' : 'recovery'}.svg`} />}</span><span>{category}</span>
             </button>
           ))}
-        </div>
-      </section>
+        </nav>
+        <p className="phone-app-community-note">Mixed feed · Following, saved posts and media sharing are unavailable in this preview.</p>
 
       <CreatePostBox />
 
       <section style={{ display: 'grid', gap: '18px' }}>
-        {filteredPosts.map((post) => (
+        {filteredPosts.length ? filteredPosts.map((post) => (
           <PostCard key={post.id} post={post} />
-        ))}
+        )) : <p>No sample conversations in this topic yet.</p>}
       </section>
-    </main>
+    </main></PhoneAppFrame>
   )
 }

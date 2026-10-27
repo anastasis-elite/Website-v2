@@ -76,7 +76,7 @@ test('dashboard navigation always uses current HTML, with a static offline page 
   sw.network = async () => { throw new Error('offline') }
   const result = await sw.emit('fetch', { request })
   assert.match(await result.response.text(), /Reconnect to load your dashboard/)
-  assert.equal(sw.stores.get('anastasis-static-v2').has(request.url), false)
+  assert.equal(sw.stores.get('anastasis-static-v3').has(request.url), false)
 })
 
 test('immutable assets recover exact old chunks after a deploy and never return cached HTML as JS', async () => {
@@ -116,7 +116,7 @@ test('wrong asset MIME types and unavailable CSS never fall back to home HTML', 
   const request = sw.request('/_next/static/chunks/new.js', 'script')
   sw.network = async () => asset('<html>deployment error</html>', 'text/html')
   assert.equal((await sw.emit('fetch', { request })).response.type, 'error')
-  assert.equal(sw.stores.get('anastasis-static-v2').has(request.url), false)
+  assert.equal(sw.stores.get('anastasis-static-v3').has(request.url), false)
   sw.network = async () => { throw new Error('offline') }
   assert.equal((await sw.emit('fetch', { request: sw.request('/_next/static/css/new.css', 'style') })).response.type, 'error')
 })
@@ -124,7 +124,7 @@ test('wrong asset MIME types and unavailable CSS never fall back to home HTML', 
 test('cache quota failure does not turn a successfully fetched asset into an outage', async () => {
   const sw = workerHarness(); await sw.emit('install')
   sw.network = async () => asset('current chunk')
-  const store = sw.storage('anastasis-static-v2')
+  const store = sw.storage('anastasis-static-v3')
   store.set = () => { throw new Error('Quota exceeded') }
   const result = await sw.emit('fetch', { request: sw.request('/_next/static/chunks/current.js', 'script') })
   assert.equal(await result.response.text(), 'current chunk')
@@ -239,4 +239,13 @@ test('release identity is forwarded to Next and the worker script cannot be serv
     else process.env.VERCEL_DEPLOYMENT_ID = previous
     delete require.cache[filename]
   }
+})
+
+test('the updated offline shell retains exact assets from the previous v2 cache',async()=>{
+ const sw=workerHarness();await sw.emit('install')
+ const request=sw.request('/_next/static/chunks/page-aabbccdd.js','script')
+ sw.storage('anastasis-static-v2').set(request.url,asset('previous verified asset'))
+ sw.network=async()=>{throw new Error('offline')}
+ assert.equal(await(await sw.emit('fetch',{request})).response.text(),'previous verified asset')
+ assert.equal(sw.stores.get('anastasis-static-v2').has(request.url),true)
 })
