@@ -1,7 +1,21 @@
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
 import SleepLogger from '@/components/SleepLogger'
-import { AOSCard } from '@/components/aos-ui/AOSCard'
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 import { getClientLocalDate } from '@/lib/timezone'
+import '@/components/phone-app/detail-screens.css'
 
-export default async function SleepPage(){const {supabase,user,client}=await getDashboardContext();const today=getClientLocalDate(client);const [logic,{data:log},{data:trend}]=await Promise.all([getProgramLogicForClient({supabase,user,client}),supabase.from('sleep_logs').select('*').eq('user_id',user.id).eq('client_id',client.client_id).eq('log_date',today).maybeSingle(),supabase.from('sleep_logs').select('duration_hours,quality,log_date').eq('user_id',user.id).eq('client_id',client.client_id).order('log_date',{ascending:false}).limit(7)]);const rows=trend||[];const avg=rows.length?Math.round(rows.reduce((sum:number,row:any)=>sum+Number(row.duration_hours||0),0)/rows.length*10)/10:null;return <main className="aos-flow-page"><div className="aos-flow-shell"><header className="aos-flow-hero"><p className="aos-eyebrow">Sleep</p><h1>Log last night. Review today.</h1><p>Sleep logs help inform today&apos;s recovery, capacity and workout guidance.</p></header><div className="aos-sleep-analysis"><AOSCard><p className="aos-eyebrow">Recovery impact</p><h2>{logic.recoveryStatus.status.replaceAll('_',' ')}</h2><p>{logic.recoveryStatus.reasoning}</p></AOSCard><AOSCard><p className="aos-eyebrow">Workout impact</p><h2>{logic.workoutDecision.intensityTarget}</h2><p>{logic.workoutDecision.reasonForModification}</p></AOSCard><AOSCard><p className="aos-eyebrow">Recent sleep logs</p><h2>{avg===null?'Needs more logs':`${avg} hours average`}</h2><p>{rows.length} recorded nights shown.</p></AOSCard></div><SleepLogger clientId={client.client_id} initial={{duration:Number(log?.duration_hours??logic.sleep.hours??7),quality:Number(log?.quality??logic.sleep.quality??5),bedtime:String(log?.bedtime||''),wakeTime:String(log?.wake_time||''),notes:String(log?.notes||'')}}/></div></main>}
+export default async function SleepPage() {
+  const {supabase,user,client}=await getDashboardContext(),today=getClientLocalDate(client)
+  const [logic,{data:log,error:logError},{data:trend,error:trendError}]=await Promise.all([
+    getProgramLogicForClient({supabase,user,client}),
+    supabase.from('sleep_logs').select('*').eq('user_id',user.id).eq('client_id',client.client_id).eq('log_date',today).maybeSingle(),
+    supabase.from('sleep_logs').select('duration_hours,quality,log_date').eq('user_id',user.id).eq('client_id',client.client_id).order('log_date',{ascending:false}).limit(7),
+  ])
+  const recorded = Boolean(log)
+  return <PhoneAppFrame backHref="/dashboard/recovery" backLabel="Recovery" eyebrow="Recovery" title="Sleep" subtitle="Make space for rest."><main className="detail-content">
+    {logError ? <p role="status">Your saved night could not be loaded. Refresh before editing it.</p> : <SleepLogger key={`${today}:${log?.updated_at||'new'}`} clientId={client.client_id} initial={{duration:log?.duration_hours??'',quality:log?.quality??'',bedtime:log?.bedtime||'',wakeTime:log?.wake_time||'',notes:log?.notes||''}}/>}
+    <section className="detail-panel"><p className="phone-app-eyebrow">Recovery context</p><div className="sleep-context"><div><h3>Recovery impact</h3><p>{recorded?logic.recoveryStatus.reasoning:'Log your sleep to add context.'}</p></div><div><h3>Workout impact</h3><p>{recorded?logic.workoutDecision.reasonForModification:'Log your sleep to add context.'}</p></div></div></section>
+    <section className="detail-panel"><h2>Recent sleep</h2>{trendError?<p role="status">Recent nights could not be loaded.</p>:trend?.length?<ul className="sleep-history">{trend.map((night:any)=><li key={night.log_date}><time>{night.log_date}</time><span>{night.duration_hours??'Not recorded'} hours · Quality {night.quality??'not recorded'}</span></li>)}</ul>:<p>Your recorded nights will appear here.</p>}</section>
+  </main></PhoneAppFrame>
+}

@@ -1,5 +1,6 @@
 // Cache policy version, independent of Next's content-addressed deployment assets.
-const CACHE_NAME = 'anastasis-static-v2'
+const CACHE_NAME = 'anastasis-static-v3'
+const PREVIOUS_ASSET_CACHE = 'anastasis-static-v2'
 const LEGACY_ASSET_CACHE = 'anastasis-shell-v1'
 const OFFLINE_PAGE = '/offline.html'
 const SHELL_ASSETS = ['/Logo.png', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-512-maskable.png']
@@ -25,7 +26,7 @@ function isAssetResponse(response, destination) {
 }
 
 async function cachedAsset(request) {
-  for (const name of [CACHE_NAME, LEGACY_ASSET_CACHE]) {
+  for (const name of [CACHE_NAME, PREVIOUS_ASSET_CACHE, LEGACY_ASSET_CACHE]) {
     try {
       const response = await caches.match(request, { cacheName: name })
       if (isAssetResponse(response, request.destination)) return response

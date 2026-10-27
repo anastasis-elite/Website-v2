@@ -252,6 +252,7 @@ export default function DailyStructureAssessment({
 
   return (
     <form
+      className="rhythm-form"
       aria-label={editingRoutine ? 'Edit My Routine' : 'Schedule Structure Assessment'}
       aria-describedby="schedule-structure-guidance"
       aria-busy={status === 'saving'}
@@ -268,19 +269,16 @@ export default function DailyStructureAssessment({
         ) : editingRoutine ? (
           <>Adjust your everyday rhythm, then select Save routine. Your previous assessment responses and completed activities stay saved.</>
         ) : (
-          <>Choose your guidance and dashboard styles, wake and bed times, and
-          training availability, then select Complete Assessment. If training fits
-          your week, complete the training questions too. Other time anchors and
-          notes are optional. Enter both work times when adding a work window.</>
+          <>Choose your rhythm, dashboard style, wake and bed times, and training capacity. Other anchors and notes are optional. Add both work times for a work window, then select Complete Assessment.</>
         )}
       </p>
       <fieldset
         disabled={isCompleted || status === 'saving'}
         style={{ display: 'grid', gap: '28px', border: 0, padding: 0, margin: 0, minWidth: 0 }}
       >
-      <section style={styles.cartBoxStyle}>
+      <section className="rhythm-section" style={styles.cartBoxStyle}>
         <h2 style={styles.sectionTitleStyle}>
-          How do you want the system to guide you?
+          Your rhythm
         </h2>
 
         <p style={styles.bodyStyle}>
@@ -289,11 +287,11 @@ export default function DailyStructureAssessment({
           step at a time.
         </p>
 
-        <div style={{ display: 'grid', gap: '14px', marginTop: '24px' }}>
+        <div className="rhythm-choices" style={{ display: 'grid', gap: '14px', marginTop: '24px' }}>
           <Choice
             active={executionStyle === 'schedule'}
             title="Structured schedule"
-            body="I feel best when things have target times and clear windows."
+            body="Same flow each day."
             onClick={() => {
               clearFeedback()
               setExecutionStyle('schedule')
@@ -304,7 +302,7 @@ export default function DailyStructureAssessment({
           <Choice
             active={executionStyle === 'flow'}
             title="Flexible rhythm"
-            body="I need guidance, but I do not want my day to feel rigid."
+            body="Adapt as needed."
             onClick={() => {
               clearFeedback()
               setExecutionStyle('flow')
@@ -314,7 +312,7 @@ export default function DailyStructureAssessment({
           <Choice
             active={executionStyle === 'hybrid'}
             title="Hybrid"
-            body="Some things need times, but the rest needs room to breathe."
+            body="Structure with flexibility."
             onClick={() => {
               clearFeedback()
               setExecutionStyle('hybrid')
@@ -323,18 +321,18 @@ export default function DailyStructureAssessment({
         </div>
       </section>
 
-      <section style={styles.cartBoxStyle}>
+      <section className="rhythm-section" style={styles.cartBoxStyle}>
         <h2 style={styles.sectionTitleStyle}>Dashboard style</h2>
 
         <p style={styles.bodyStyle}>
           Choose how much of the day you want to see at once.
         </p>
 
-        <div style={{ display: 'grid', gap: '14px', marginTop: '24px' }}>
+        <div className="rhythm-choices" style={{ display: 'grid', gap: '14px', marginTop: '24px' }}>
           <Choice
             active={carouselStyle === 'section'}
             title="Morning / Midday / Evening"
-            body="Show me the day in larger sections so I can understand the rhythm."
+            body="See your whole day at a glance."
             onClick={() => {
               clearFeedback()
               setCarouselStyle('section')
@@ -344,7 +342,7 @@ export default function DailyStructureAssessment({
           <Choice
             active={carouselStyle === 'step'}
             title="One next step at a time"
-            body="Only show me the next thing so I do not feel overloaded."
+            body="Focus on what’s next."
             onClick={() => {
               clearFeedback()
               setCarouselStyle('step')
@@ -353,7 +351,7 @@ export default function DailyStructureAssessment({
         </div>
       </section>
 
-      <section style={styles.cartBoxStyle}>
+      <section className="rhythm-section" style={styles.cartBoxStyle}>
         <h2 style={styles.sectionTitleStyle}>Time anchors</h2>
 
         <p style={styles.bodyStyle}>
@@ -443,9 +441,9 @@ export default function DailyStructureAssessment({
         </div>
       </section>
 
-      <section style={styles.cartBoxStyle}>
+      <section className="rhythm-section" style={styles.cartBoxStyle}>
         <h2 style={styles.sectionTitleStyle}>
-          Daily anchors / non-negotiables
+          Non-negotiables
         </h2>
 
         <p style={styles.bodyStyle}>
@@ -494,7 +492,7 @@ export default function DailyStructureAssessment({
         </div>
       </section>
 
-      <section style={styles.cartBoxStyle}>
+      <section className="rhythm-section" style={styles.cartBoxStyle}>
   <h2 style={styles.sectionTitleStyle}>
     Training capacity
   </h2>
@@ -638,7 +636,7 @@ export default function DailyStructureAssessment({
   ) : null}
 </section>
       
-      <section style={styles.cartBoxStyle}>
+      <section className="rhythm-section" style={styles.cartBoxStyle}>
         <h2 style={styles.sectionTitleStyle}>
           Anything else the system should know?
         </h2>
@@ -714,6 +712,7 @@ function Choice({
   return (
     <button
       type="button"
+      className="rhythm-choice"
       aria-pressed={active}
       onClick={onClick}
       style={{

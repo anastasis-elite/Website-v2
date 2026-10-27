@@ -88,7 +88,7 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
   const cycleStatus = getCycleStatus(client)
   const [dailyPlan, monthlyAssessment, { data: output }] = await Promise.all([
     getDailyExecutionPlan({ supabase, client }),
-    getMonthlyAssessmentStatus(supabase, client.client_id),
+    getMonthlyAssessmentStatus(supabase, client),
     supabase
       .from('program_outputs')
       .select('*')

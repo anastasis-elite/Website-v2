@@ -18,7 +18,7 @@ function load(path, mocks, globals = {}) {
   const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
   } })
-  runInNewContext(outputText, { module, exports: module.exports, ...globals, require: name => mocks[name] ||
+  runInNewContext(outputText, { module, exports: module.exports, ...globals, require: name => name.endsWith('.css') ? {} : name === '@/components/phone-app/PhoneAppFrame' ? (() => null) : mocks[name] ||
     (name === '@/lib/assessment/commitmentWeekdays' ? commitmentWeekdays
       : name === '@/lib/assessment/routinePreferences' ? routinePreferences : require(name)) })
   return module.exports.default

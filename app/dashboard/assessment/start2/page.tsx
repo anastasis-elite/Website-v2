@@ -1,12 +1,9 @@
 import Start2Content from './Start2Content'
-import { getClientData } from '@/lib/supabase/getClient'
+import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
+import { getStrengthFormHistory } from '@/lib/assessment/strengthForm'
 
 export default async function Page() {
-  const client = await getClientData()
-
-  if (!client) {
-    return null
-  }
-
-  return <Start2Content client={client} />
+  const { client, supabase } = await getDashboardContext({ allowIncompleteOnboarding: true })
+  const history = await getStrengthFormHistory(supabase, client)
+  return <Start2Content client={client} history={history} />
 }

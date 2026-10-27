@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
-import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
 import { trackEvent } from '@/lib/analytics'
 import './guided-navigation.css'
 
@@ -30,13 +29,14 @@ export default function ClientDashboardNav({ program }: { program: 'ember' | 'ig
   if (hiddenPrefixes.some((prefix) => pathname.startsWith(prefix))) return null
 
   const today = `/dashboard/program/${program}`
-  const visualPage = pathname === today
-  const planView = visualPage && searchParams.get('view') === 'plan'
+  const visualPage = pathname === today || pathname === `${today}/plan`
+  const planView = pathname === `${today}/plan` || visualPage && searchParams.get('view') === 'plan'
   const items = [
     { id: 'today', label: 'Today', href: today, active: !planView && (pathname === today || pathname === '/dashboard' || pathname === '/dashboard/main'), tutorialId: 'client-dashboard-home', icon: <TodayIcon/> },
-    { id: 'schedule', label: visualPage ? 'Plan' : 'Schedule', href: visualPage ? `${today}/plan` : '/dashboard/schedule', active: planView || pathname.startsWith('/dashboard/schedule'), tutorialId: undefined, icon: <CalendarIcon/> },
-    { id: 'progress', label: 'Progress', href: '/dashboard/progress', active: pathname.startsWith('/dashboard/progress') || pathname.startsWith('/dashboard/assessment'), tutorialId: 'dashboard-progress-navigation', icon: <ProgressIcon/> },
+    { id: 'plan', label: 'Plan', href: `${today}?view=plan`, active: planView || pathname.startsWith('/dashboard/schedule') || pathname === '/dashboard/settings/calendars', tutorialId: undefined, icon: <CalendarIcon/> },
     { id: 'community', label: 'Community', href: '/dashboard/community', active: pathname.startsWith('/dashboard/community'), tutorialId: undefined, icon: <CommunityIcon/> },
+    { id: 'progress', label: 'Progress', href: '/dashboard/progress', active: pathname.startsWith('/dashboard/progress') || pathname.startsWith('/dashboard/assessment'), tutorialId: 'dashboard-progress-navigation', icon: <ProgressIcon/> },
+    { id: 'account', label: 'Account', href: '/dashboard/account', active: pathname.startsWith('/dashboard/account') || pathname.startsWith('/dashboard/cycle') || pathname === '/dashboard/support' || pathname === '/support', tutorialId: undefined, icon: <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20v-1a7 7 0 0 1 14 0v1"/></svg> },
   ]
 
   return <nav className="client-dashboard-nav client-dashboard-nav--guided" aria-label="Member navigation" data-tutorial-id="dashboard-navigation">
@@ -49,6 +49,5 @@ export default function ClientDashboardNav({ program }: { program: 'ember' | 'ig
       data-tutorial-id={item.tutorialId}
       onClick={() => trackEvent('dashboard_navigation_clicked', { item: item.id, href: item.href })}
     ><span className="client-dashboard-nav__icon">{item.icon}</span><small>{item.label}</small></Link>)}
-    <DashboardMoreMenu program={program}/>
   </nav>
 }

@@ -1,16 +1,35 @@
 import Link from 'next/link'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
-import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
-import { AOSCard } from '@/components/aos-ui/AOSCard'
+import { getTierCapabilities } from '@/lib/entitlements'
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
+import '@/components/phone-app/assessments.css'
 
-export default async function AssessmentContent(){
-  const {supabase,client}=await getDashboardContext();const monthly=await getMonthlyAssessmentStatus(supabase,client.client_id)
-  const actions=[
-    {title:'Daily Check-In',body:'Log sleep, energy, stress, soreness, mood, hunger, cycle status, and symptoms.',href:'/dashboard/check-in',cta:'Check In Today',primary:true},
-    ...(monthly.due?[{title:'Monthly Assessment Due',body:'It has been 30 days or this is your first monthly assessment.',href:'/dashboard/assessment/monthly',cta:'Open Monthly Assessment',primary:true}]:[]),
-    {title:'Strength Assessment',body:'Review and update the strength baselines used for your training plan.',href:'/dashboard/assessment/start2',cta:'Open Strength Assessment',primary:false},
-    {title:'Measurements',body:'Record consistent physical measurements.',href:'/dashboard/assessment/measurements',cta:'Open Measurements',primary:false},
-    {title:'Photos',body:'Upload private progress and assessment photos.',href:'/dashboard/assessment/photos',cta:'Open Photos',primary:false},
+export default async function AssessmentContent() {
+  const { client } = await getDashboardContext()
+  const capabilities = getTierCapabilities(client.program)
+  const groups = [
+    { title: 'Planning & preferences', items: [
+      { title: 'Quarterly Assessment', copy: 'Full assessment · three calendar months after completion', href: '/dashboard/assessment/start?assessmentType=quarterly' },
+      { title: 'Monthly Review', copy: 'Confirm saved selections or edit what changed', href: '/dashboard/assessment/start?assessmentType=review' },
+      { title: 'Daily Structure Review', copy: 'Daily anchors and training rhythm', href: '/dashboard/assessment/daily-structure' },
+    ] },
+    { title: 'Physical progress', items: [
+      { title: 'Strength Assessment', copy: 'Your current capacity and previous results', href: '/dashboard/assessment/start2' },
+      { title: 'Body Measurements', copy: 'Body and regional measurements · shared entry', href: '/dashboard/assessment/measurements' },
+      { title: 'Structural Measurements', copy: 'Body lengths and advanced fields · shared entry', href: '/dashboard/assessment/measurements' },
+      { title: 'Progress Photos', copy: 'Optional · private photo history', href: '/dashboard/assessment/photos' },
+    ] },
   ]
-  return <main className="aos-flow-page"><div className="aos-flow-shell"><header className="aos-flow-hero"><p className="aos-eyebrow">Assessments</p><h1>Use the right check-in for the right job.</h1><p>Daily check-ins record today’s context. Monthly and strength assessments keep your longer-term inputs up to date.</p></header><div className="aos-assessment-grid">{actions.map((action)=><AOSCard key={action.title}><h2 className="aos-card-title">{action.title}</h2><p className="aos-muted-copy">{action.body}</p><Link href={action.href} className={action.primary?'aos-primary-link':'aos-secondary-link'}>{action.cta}</Link></AOSCard>)}</div>{!monthly.due?<AOSCard><h2 className="aos-card-title">Monthly assessment complete</h2><p className="aos-muted-copy">It will return when 30 days have passed.</p></AOSCard>:null}</div></main>
+  return <PhoneAppFrame eyebrow="Your account" title="Assessments" subtitle="Your full assessment library.">
+    <main className="assessment-content">
+      <p className="assessment-notice">Only currently due assessments appear in <Link href="/dashboard/assessment/monthly">Monthly Assessments</Link>. Your full list stays here.</p>
+      <div className="assessment-library">
+        {groups.map(group => <section key={group.title}><h2>{group.title}</h2>{group.items.map(item => <Link href={item.href} key={item.title}><span>{item.title}<small>{item.copy}</small></span><b aria-hidden="true">›</b></Link>)}</section>)}
+        <section><h2>Posture</h2>{capabilities.postureAssessment
+          ? <Link href="/dashboard/assessment/photos?type=posture"><span>Posture Assessment<small>Optional · Ignite & Phoenix</small></span><b aria-hidden="true">›</b></Link>
+          : <p className="assessment-notice">Posture Assessment is available with Ignite &amp; Phoenix.</p>}</section>
+      </div>
+      <p className="assessment-notice"><Link href="/dashboard/check-in">Daily Check-In</Link> remains separate. <Link href="/dashboard/account">Back to Account</Link>.</p>
+    </main>
+  </PhoneAppFrame>
 }

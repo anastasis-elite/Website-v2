@@ -25,9 +25,10 @@ export default function DashboardMoreMenu({ program }: { program: 'ember' | 'ign
     { label: 'Cycle', href: '/dashboard/cycle' },
     { label: 'Monthly assessments', href: '/dashboard/assessment/monthly' },
     { label: 'Daily structure preferences', href: '/dashboard/assessment/daily-structure' },
+    { label: 'Schedule settings', href: '/dashboard/schedule/settings' },
     { label: 'Connected calendars', href: '/dashboard/settings/calendars' },
     ...(program === 'phoenix' ? [{ label: 'Recipes', href: '/dashboard/nutrition#phoenix-recipes' }] : []),
-    { label: 'Help & support', href: '/support' },
+    { label: 'Help & support', href: '/dashboard/support' },
   ]
 
   function close() {
@@ -72,8 +73,8 @@ export default function DashboardMoreMenu({ program }: { program: 'ember' | 'ign
   }
 
   return <div className="dashboard-more-menu">
-    <button ref={trigger} type="button" className={`dashboard-more-trigger client-dashboard-nav__item client-dashboard-nav__item--you${active || open ? ' active' : ''}`} data-nav-item="you" aria-expanded={open} aria-haspopup="dialog" aria-controls={open ? 'dashboard-you-menu' : undefined} onClick={() => { setOpen((value) => !value); trackEvent('dashboard_navigation_clicked', { item: 'you' }) }}>
-      <span className="client-dashboard-nav__icon"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.5"/><path d="M5 20v-1a7 7 0 0 1 14 0v1"/></svg></span><small>You</small>
+    <button ref={trigger} type="button" className={`account-outline-button dashboard-more-trigger${active || open ? ' active' : ''}`} data-nav-item="more" aria-expanded={open} aria-haspopup="dialog" aria-controls={open ? 'dashboard-you-menu' : undefined} onClick={() => { setOpen((value) => !value); trackEvent('dashboard_navigation_clicked', { item: 'you' }) }}>
+      <span className="client-dashboard-nav__icon"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.5"/><path d="M5 20v-1a7 7 0 0 1 14 0v1"/></svg></span><small>More tools</small>
     </button>
     {open ? createPortal(<div className="dashboard-more-backdrop dashboard-you-backdrop" onClick={close}>
       <div id="dashboard-you-menu" className="dashboard-more-sheet dashboard-you-sheet" role="dialog" aria-modal="true" aria-labelledby="dashboard-you-title" onKeyDown={(event) => {
@@ -83,7 +84,7 @@ export default function DashboardMoreMenu({ program }: { program: 'ember' | 'ign
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
       }} onClick={(event) => event.stopPropagation()}>
-        <div className="dashboard-more-heading"><div><small>{program}</small><h2 id="dashboard-you-title">You</h2></div><button type="button" autoFocus onClick={close} aria-label="Close your tools">×</button></div>
+        <div className="dashboard-more-heading"><div><small>{program}</small><h2 id="dashboard-you-title">Your tools</h2></div><button type="button" autoFocus onClick={close} aria-label="Close your tools">×</button></div>
         <p className="dashboard-you-copy">Your tools, preferences, and support.</p>
         <nav aria-label="Member tools">{items.map(({ label, href, tutorialId }) => <Link key={label} href={href} data-tutorial-id={tutorialId} onClick={() => { setOpen(false); trackEvent('dashboard_navigation_clicked', { item: label, href }) }}>{label}<span aria-hidden="true">›</span></Link>)}</nav>
         <button type="button" className="dashboard-more-logout" disabled={loggingOut} onClick={logout}>{loggingOut ? 'Signing out…' : 'Sign out'}</button>

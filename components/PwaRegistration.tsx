@@ -64,7 +64,7 @@ export default function PwaRegistration() {
 
   if (!waitingWorker) return null
   return (
-    <aside role="status" className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-lg rounded-xl border border-amber-200/30 bg-[#0b0908] p-4 text-sm text-stone-100 shadow-xl">
+    <aside role="status" className="pwa-update-prompt fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-lg rounded-xl border border-amber-200/30 bg-[#0b0908] p-4 text-sm text-stone-100 shadow-xl">
       <p className="font-semibold">Anastasis update ready</p>
       <p className="mt-1 text-stone-300">Save any open activity before applying this update.</p>
       <button type="button" disabled={applying} onClick={() => {

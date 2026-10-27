@@ -21,5 +21,6 @@ export default function PlanOverview({ logic, schedule }: { logic: ProgramLogicO
         <div className="plan-overview-copy"><p className="today-card-kicker">{card.label}</p><h3>{card.title}</h3><p>{card.detail}</p><Link href={card.href}>{card.action}<span aria-hidden="true">↗</span></Link></div>
       </article>)}</div>
     </section>
+    <nav className="today-rhythm-links" aria-label="Plan settings"><Link href="/dashboard/schedule/settings">Schedule settings</Link><Link href="/dashboard/assessment/monthly">Due assessments</Link></nav>
   </div></div>
 }

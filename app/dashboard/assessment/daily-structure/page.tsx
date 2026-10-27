@@ -1,7 +1,8 @@
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
+import '@/components/phone-app/detail-screens.css'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import DailyStructureAssessment from '@/components/DailyStructureAssessment'
 import ScheduleBlockEditor from '@/components/ScheduleBlockEditor'
-import Link from 'next/link'
 import {
   getScheduleStructureMonth,
   getScheduleStructureSubmission,
@@ -57,21 +58,8 @@ export default async function DailyStructureAssessmentPage({
   const { data: scheduleBlocks } = await supabase.from('client_schedule_blocks').select('id,block_type,label,days_of_week,start_time,end_time').eq('client_id', client.client_id).eq('user_id', user.id).eq('active', true).order('start_time')
 
   return (
-    <main className="aos-flow-page">
-      <div className="aos-flow-shell">
-        <nav aria-label="Schedule settings"><Link href="/dashboard/schedule">Schedule</Link> · <Link href="/dashboard/schedule/settings">Settings</Link> · Schedule Structure Assessment</nav>
-        <header className="aos-flow-hero">
-        <p className="aos-eyebrow">Schedule Structure Assessment</p>
-        <h1>Build the rhythm your day can actually hold.</h1>
-        <p>
-          Choose how you prefer to move through your day: exact times, flexible
-          blocks, or one next step at a time. Your saved preferences help shape
-          how your dashboard presents the day. {completedAt
-            ? 'This assessment is complete. Your saved answers are available below.'
-            : 'Select Complete Assessment to save your answers, complete this task, and return to your next step.'}
-        </p>
-        </header>
-
+    <PhoneAppFrame backHref="/dashboard/assessment" backLabel="Assessments" eyebrow="Daily rhythm" title="Daily Structure Review" subtitle="Make room for the life you actually live.">
+      <main className="rhythm-content">
         <DailyStructureAssessment
           key={`${assessmentVersion}:${taskKey}:${completedAt || 'pending'}:${routineRevision}`}
           clientId={client.client_id}
@@ -110,7 +98,7 @@ export default async function DailyStructureAssessmentPage({
           </p>
           <ScheduleBlockEditor clientId={client.client_id} initialBlocks={scheduleBlocks || []} />
         </section>
-      </div>
-    </main>
+      </main>
+    </PhoneAppFrame>
   )
 }

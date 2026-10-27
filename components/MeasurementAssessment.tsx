@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import '@/components/phone-app/assessments.css'
 import * as styles from '@/app/styles/globalstyles'
 
 type MeasurementKey =
@@ -412,6 +413,8 @@ export default function MeasurementAssessment({ clientId }: { clientId: string }
   const [advancedEnabled, setAdvancedEnabled] = useState(false)
   const [activeKey, setActiveKey] = useState<MeasurementKey>('waist')
   const [overlayOpen, setOverlayOpen] = useState(false)
+  const guideDialog = useRef<HTMLDialogElement>(null)
+  useEffect(() => { if (overlayOpen) guideDialog.current?.showModal() }, [overlayOpen])
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -484,197 +487,33 @@ export default function MeasurementAssessment({ clientId }: { clientId: string }
     }
   }
 
-  return (
-    <>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1.15fr) minmax(280px, 0.85fr)',
-          gap: '28px',
-          alignItems: 'start',
-        }}
-      >
-        <section style={styles.cartBoxStyle}>
-          <h2 style={styles.sectionTitleStyle}>Measurement Inputs</h2>
+  const groups = Object.entries(groupedFields)
+  const standardOrder = ['Scale', 'Core', 'Upper Body', 'Lower Body']
+  const renderGroup = ([group, fields]: [string, MeasurementField[]]) => <fieldset className="assessment-section measurement-group" key={group}>
+    <legend>{group}</legend>
+    {fields.map(field => <div className="measurement-row" key={field.key}>
+      <button type="button" id={`${field.key}-label`} onClick={() => setActiveKey(field.key)} aria-pressed={activeKey === field.key}>{field.label}</button>
+      <div className="measurement-unit-input"><input id={`measurement-${field.key}`} aria-labelledby={`${field.key}-label`} type="number" min="0" step="0.25" value={values[field.key]} onFocus={() => setActiveKey(field.key)} onChange={event => updateValue(field.key, event.target.value)} /><span>{field.unit || 'in'}</span></div>
+    </div>)}
+  </fieldset>
 
-          <p style={styles.bodyStyle}>
-            Tap a measurement name to highlight its location on the diagram.
-            Your monthly regional measurements and 9-month structural lengths
-            are saved as measurement history.
-          </p>
-
-          <label
-            style={{
-              ...styles.bodyStyle,
-              display: 'flex',
-              gap: '12px',
-              alignItems: 'center',
-              marginTop: '18px',
-              cursor: 'pointer',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={advancedEnabled}
-              onChange={(e) => setAdvancedEnabled(e.target.checked)}
-              style={{ accentColor: '#b56e43' }}
-            />
-            Enable advanced measurements
-          </label>
-
-          <div style={{ display: 'grid', gap: '30px', marginTop: '30px' }}>
-            {Object.entries(groupedFields).map(([group, fields]) => (
-              <div key={group}>
-                <p
-                  style={{
-                    ...styles.eyebrowStyle,
-                    marginBottom: '14px',
-                    letterSpacing: '3px',
-                    fontSize: '10px',
-                  }}
-                >
-                  {group}
-                </p>
-
-                <div style={{ display: 'grid', gap: '16px' }}>
-                  {fields.map((field) => (
-                    <div key={field.key} style={styles.fieldWrap}>
-                      <button
-                        type="button"
-                        onClick={() => setActiveKey(field.key)}
-                        style={{
-                          all: 'unset',
-                          cursor: 'pointer',
-                          color:
-                            activeKey === field.key ? '#c58b57' : '#f5f0e8',
-                          fontSize: '0.98rem',
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {field.label}
-                      </button>
-
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.25"
-                        value={values[field.key]}
-                        onFocus={() => setActiveKey(field.key)}
-                        onChange={(e) => updateValue(field.key, e.target.value)}
-                        placeholder={field.unit === 'lb' ? 'Pounds' : field.unit === 'mm' ? 'Millimeters' : 'Inches'}
-                        style={styles.inputStyle}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ ...styles.fieldWrap, marginTop: '30px' }}>
-            <label style={styles.labelStyle}>Notes</label>
-
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              style={styles.textareaStyle}
-              placeholder="Anything that may affect today's measurements? Hydration, soreness, cycle phase, digestion, recovery, etc."
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={saveMeasurements}
-            disabled={saving}
-            style={{
-              ...styles.primaryButtonStyle,
-              marginTop: '24px',
-              opacity: saving ? 0.65 : 1,
-            }}
-          >
-            {saving
-              ? 'Saving...'
-              : saved
-              ? 'Measurements Saved'
-              : 'Save Measurements'}
-          </button>
-
-          {error ? (
-            <p
-              style={{
-                ...styles.bodyStyle,
-                color: '#ffb4b4',
-                marginTop: '14px',
-              }}
-            >
-              {error}
-            </p>
-          ) : null}
-        </section>
-
-        <aside
-          style={{
-            position: 'sticky',
-            top: '110px',
-            alignSelf: 'start',
-          }}
-        >
-          <MeasurementDiagram
-            activeKey={activeKey}
-            activeField={activeField}
-            onOpen={() => setOverlayOpen(true)}
-          />
-        </aside>
-      </div>
-
-      {overlayOpen ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 2000,
-            background: 'rgba(0,0,0,0.82)',
-            backdropFilter: 'blur(18px)',
-            padding: '32px',
-            display: 'grid',
-            placeItems: 'center',
-          }}
-        >
-          <div
-            style={{
-              width: 'min(100%, 980px)',
-              maxHeight: '90vh',
-              overflow: 'auto',
-              background: 'rgba(10,10,10,0.92)',
-              borderRadius: '34px',
-              padding: '30px',
-              boxShadow: '0 30px 120px rgba(0,0,0,0.55)',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setOverlayOpen(false)}
-              style={{
-                ...styles.secondaryButtonStyle,
-                marginBottom: '24px',
-              }}
-            >
-              Close
-            </button>
-
-            <MeasurementDiagram
-              activeKey={activeKey}
-              activeField={activeField}
-              large
-              onOpen={() => {}}
-            />
-          </div>
-        </div>
-      ) : null}
-    </>
-  )
+  return <div className="assessment-content measurement-assessment">
+    <MeasurementDiagram activeKey={activeKey} activeField={activeField} onOpen={() => setOverlayOpen(true)} />
+    <p className="assessment-notice">Tap a measurement name to highlight its location on the guide. Monthly regional measurements and 9-month structural lengths keep their own schedules.</p>
+    {groups.filter(([, fields]) => !fields[0].advanced).sort(([a], [b]) => standardOrder.indexOf(a) - standardOrder.indexOf(b)).map(renderGroup)}
+    <label className="assessment-section measurement-advanced"><input type="checkbox" checked={advancedEnabled} onChange={event => setAdvancedEnabled(event.target.checked)} /><span>Enable advanced measurements<small>Additional measurements when needed.</small></span></label>
+    {groups.filter(([, fields]) => fields[0].advanced).map(renderGroup)}
+    <fieldset className="assessment-section"><legend>Notes</legend><label className="assessment-field" htmlFor="measurement-notes">Optional
+      <textarea id="measurement-notes" value={notes} onChange={event => setNotes(event.target.value)} placeholder="Anything that may affect today's measurements? Hydration, soreness, cycle phase, digestion, recovery, etc." />
+    </label></fieldset>
+    <button type="button" onClick={saveMeasurements} disabled={saving} className="assessment-action">{saving ? 'Saving…' : saved ? 'Measurements Saved' : 'Save Measurements'}</button>
+    {error ? <p role="alert">{error}</p> : null}
+    {saved ? <p role="status">Your measurements were saved.</p> : null}
+    {overlayOpen ? <dialog ref={guideDialog} className="phone-app-practice-dialog measurement-dialog" aria-label="Full measurement guide" onCancel={() => setOverlayOpen(false)} onClose={() => setOverlayOpen(false)}>
+      <button type="button" className="assessment-action" onClick={() => guideDialog.current?.close()}>Close guide</button>
+      <MeasurementDiagram activeKey={activeKey} activeField={activeField} large onOpen={() => {}} />
+    </dialog> : null}
+  </div>
 }
 
 function MeasurementDiagram({
@@ -698,6 +537,11 @@ function MeasurementDiagram({
 
   return (
     <section
+      className={large ? 'measurement-guide measurement-guide-large' : 'measurement-guide'}
+      role={large ? undefined : 'button'}
+      tabIndex={large ? undefined : 0}
+      aria-label={large ? undefined : 'Open full measurement guide'}
+      onKeyDown={large ? undefined : event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }}
       onClick={onOpen}
       style={{
         background:

@@ -42,3 +42,9 @@
   .dashboard-you-backdrop { padding: 0; }
   .dashboard-you-sheet { max-height: 86dvh; border-radius: 24px 24px 0 0; padding-bottom: max(22px, env(safe-area-inset-bottom)); }
 }
+
+.dashboard-more-trigger .client-dashboard-nav__icon {display:inline-block;width:24px;height:24px;flex-shrink:0;}
+.dashboard-more-trigger .client-dashboard-nav__icon svg {width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.5;}
+.pwa-update-prompt {bottom:calc(94px + env(safe-area-inset-bottom))!important;background:#25170f!important;border-color:#aa8058!important;color:#f1e9dc!important;}
+
+.today-rhythm-links {display:flex;flex-wrap:wrap;gap:10px;margin:20px 0;}.today-rhythm-links a {display:inline-flex;align-items:center;min-height:44px;padding:10px 14px;border:1px solid #a77b514d;border-radius:14px;color:#d8b897;background:#3d291a55;text-decoration:none;font-size:.85rem;}

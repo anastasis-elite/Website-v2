@@ -7,6 +7,8 @@ import ScheduleEventActions from '@/components/ScheduleEventActions'
 import CalendarWorkspace from '@/components/CalendarWorkspace'
 import Link from 'next/link'
 import { useDailyScheduleRefresh } from '@/lib/schedule/client'
+import { dayBlockHref, dayBlockLabels, type DayBlock } from '@/lib/day/dayBlockRoutes'
+import '@/components/phone-app/day-blocks.css'
 import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 
 function eventLabel(event: ScheduleEvent) {
@@ -23,6 +25,7 @@ export default function ScheduleDashboardClient({ initialSchedule }: { initialSc
     {schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved events are still recorded. Time changes will be available when your full schedule loads.</p> : null}
     {schedule.dailyRecommendation ? <DailyPlanCard plan={schedule.dailyRecommendation} compact autoRefresh={false} /> : null}
     <CalendarWorkspace date={schedule.date} timezone={schedule.timezone} />
+    <nav className="schedule-day-blocks" aria-label="Parts of your selected day"><div><p className="phone-app-eyebrow">Your daily rhythm</p><h2>Morning, midday & evening</h2><p>Open a block for {schedule.date}. Day-block logging is available for today.</p></div><div className="schedule-day-block-links">{(Object.keys(dayBlockLabels) as DayBlock[]).map(block => <Link key={block} href={dayBlockHref(block,schedule.date)}><span aria-hidden="true">{block==='morning'?'☀':block==='midday'?'◉':'☾'}</span>{dayBlockLabels[block]}<b aria-hidden="true">›</b></Link>)}</div></nav>
     <section className="schedule-panel" aria-label="Anastasis activities and daily structure">
       <div className="schedule-section-heading"><h2>Anastasis activities and daily structure</h2><span>{schedule.date}</span></div>
       <p>Suggestions stay here until you choose them. Use the calendar above to save an activity to a connected calendar.</p>
