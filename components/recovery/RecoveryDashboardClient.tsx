@@ -1,6 +1,6 @@
 'use client'
 
-import type { CSSProperties } from 'react'
+import { useId, useRef, type CSSProperties } from 'react'
 
 import DailyCheckInForm from '@/components/DailyCheckInForm'
 import RecoveryLogger from '@/components/RecoveryLogger'
@@ -42,6 +42,20 @@ type CheckInInitial = {
   hunger?: number | null
   notes?: string | null
   sorenessRegions?: SorenessRegionKey[]
+}
+
+export function OwnPractice({ clientId }: { clientId: string }) {
+  const id = useId()
+  const dialog = useRef<HTMLDialogElement>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
+  return <section className="phone-app-own-practice" id="own-practice">
+    <span>Your own practice</span>
+    <button ref={trigger} type="button" aria-haspopup="dialog" aria-controls={id} onClick={() => dialog.current?.showModal()}>Log your practice</button>
+    <dialog ref={dialog} id={id} className="phone-app-practice-dialog" aria-labelledby={`${id}-title`} onClose={() => trigger.current?.focus()}>
+      <header><h2 id={`${id}-title`}>Log your practice</h2><button type="button" onClick={() => dialog.current?.close()}>Close</button></header>
+      <RecoveryLogger clientId={clientId} />
+    </dialog>
+  </section>
 }
 
 function progressPercent(value: number | null | undefined) {
@@ -205,7 +219,7 @@ export default function RecoveryDashboardClient({
   return (
     <main className="aos-nutrition-page recovery-dashboard-page">
       <div className="aos-nutrition-shell recovery-dashboard-shell">
-        <details className="phone-app-own-practice" id="own-practice"><summary>Your own practice · Log what you completed</summary><RecoveryLogger clientId={clientId} /></details>
+        <OwnPractice clientId={clientId} />
         <h2>Let us guide you.</h2>
         <div className="phone-app-grid">
           <PhoneAppCard title="Meditation" copy="Make a quiet moment for yourself." href="/dashboard/meditation?practice=recovery-meditation" action="Open silent timer" />
