@@ -881,13 +881,21 @@ setNutritionLog(log)
   return (
     <main className="aos-nutrition-page">
       <div className="aos-nutrition-shell">
+        <section className="phone-app-targets" aria-label="Your daily nutrition targets">
+          <h2>Your daily targets</h2>
+          {loading ? <p role="status">Loading your targets…</p> : nutritionLog ? <><strong>{roundValue(macroMetrics[0].target)} <small>kcal</small></strong><p>Daily energy target</p><div>{macroMetrics.slice(1).map(metric => <div key={metric.label}><span>{metric.label}</span><b>{roundValue(metric.target)} g</b></div>)}</div><small>{nutritionStatus}</small></> : <p>Today’s targets are unavailable. Retry using the nutrition controls below.</p>}
+        </section>
+        <h2>Keep it simple today.</h2><div className="phone-app-grid">
+          <article className="phone-app-card"><img src="/illustrations/today-nutrition.svg" width="360" height="180" alt=""/><div><h3>Start with protein</h3><p>{!loading && nutritionLog ? `Your daily protein target is ${roundValue(macroMetrics[1].target)} g.` : 'Your personalized protein target will appear when available.'}</p></div></article>
+          <article className="phone-app-card"><img src="/illustrations/today-nutrition.svg" width="360" height="180" alt=""/><div><h3>Build a balanced plate</h3><p>{nextFoodGuidance.copy}</p></div></article>
+        </div>
         <section className="nutrition-dashboard-workspace" data-tier={tier}>
           <article className="tier-daily-insight workout-objective nutrition-objective" data-testid="nutrition-objective">
             <p className="tier-dashboard-label">
               {isEmber ? 'Nutrition Targets' : 'Nutrition Intelligence'}
             </p>
             <div>
-              <h1>{isEmber ? 'Today’s Targets' : 'Today’s Intake'}</h1>
+              <h2>{isEmber ? 'Today’s Targets' : 'Today’s Intake'}</h2>
               {(foodLoggingEnabled || isEmber) && nutritionLog?.id ? (
                 <button
                   type="button"
@@ -1162,7 +1170,8 @@ setNutritionLog(log)
         </section>
 
       </div>
-    </main>
+        <details className="phone-app-report"><summary>Allergies &amp; intolerances report · Unavailable</summary><p>No verified allergy or intolerance report is connected to this app. Saved food preferences do not constitute a diagnosis or verified report.</p><a href="/support">Ask about report availability</a></details>
+      </main>
   )
 }
 

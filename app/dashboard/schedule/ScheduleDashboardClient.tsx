@@ -7,6 +7,7 @@ import ScheduleEventActions from '@/components/ScheduleEventActions'
 import CalendarWorkspace from '@/components/CalendarWorkspace'
 import Link from 'next/link'
 import { useDailyScheduleRefresh } from '@/lib/schedule/client'
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 
 function eventLabel(event: ScheduleEvent) {
   if (event.flexibility_type === 'fixed') return 'Fixed'
@@ -17,8 +18,8 @@ function eventLabel(event: ScheduleEvent) {
 export default function ScheduleDashboardClient({ initialSchedule }: { initialSchedule: DailyScheduleState }) {
   const schedule = initialSchedule
   useDailyScheduleRefresh(schedule)
-  return <main className="schedule-page"><div className="schedule-shell">
-    <header className="schedule-hero"><div><p className="schedule-label">{schedule.date} · {schedule.timezone}</p><h1>Your day, with room to breathe</h1><p>Keep appointments in view and choose time for what supports you.</p><Link href="/dashboard/schedule/settings">Schedule settings</Link></div></header>
+  return <PhoneAppFrame eyebrow="Schedule review" title="Make room for your day." subtitle="Your plan can move with you."><main className="schedule-page"><div className="schedule-shell">
+    <header className="schedule-hero"><div><p className="schedule-label">{schedule.date} · {schedule.timezone}</p><p>Keep appointments in view and choose time for what supports you.</p><Link href="/dashboard/schedule/settings">Schedule settings</Link></div></header>
     {schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved events are still recorded. Time changes will be available when your full schedule loads.</p> : null}
     {schedule.dailyRecommendation ? <DailyPlanCard plan={schedule.dailyRecommendation} compact autoRefresh={false} /> : null}
     <CalendarWorkspace date={schedule.date} timezone={schedule.timezone} />
@@ -31,5 +32,5 @@ export default function ScheduleDashboardClient({ initialSchedule }: { initialSc
         <ScheduleEventActions event={event} program={schedule.program} timezone={schedule.timezone} canChangeTime={!schedule.unavailableSources?.length} suggestion={schedule.adjustments.find(item => item.event_id === event.id && !item.applied)} />
       </article>)}</div>
     </section>
-  </div></main>
+  </div></main></PhoneAppFrame>
 }

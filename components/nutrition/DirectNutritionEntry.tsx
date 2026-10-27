@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { prepareDirectFoodEntry, readDirectEntryLog, type DirectEntryLog } from '@/lib/nutrition/directEntry'
 import type { NutritionLoggingIntent } from '@/lib/nutrition/loggingIntent'
 import type { MealPeriod } from '@/lib/nutrition/mealPeriod'
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 
 export type DirectRecipeContext = { title: string; meal: MealPeriod; ingredients: string[] }
 
@@ -68,14 +69,14 @@ export default function DirectNutritionEntry({
 
   const consumed = waterTotal ?? (Number(nutritionLog?.water_consumed_oz) || 0)
   const target = Number(nutritionLog?.water_oz) || 0
-  if (water) return <main className="aos-nutrition-page nutrition-direct-entry">
-    <HydrationQuickAdd clientId={clientId} logDate={logDate} consumed={consumed} consumedKnown={!error || waterTotal !== null} target={target} initiallyOpen
+  if (water) return <PhoneAppFrame eyebrow="Hydration" title="A moment to refill." subtitle="Choose what you drank, then add it."><main className="aos-nutrition-page nutrition-direct-entry">
+    <HydrationQuickAdd inline clientId={clientId} logDate={logDate} consumed={consumed} consumedKnown={!error || waterTotal !== null} target={target}
       onSaved={setWaterTotal} onClosed={() => router.replace('/dashboard')} renderTrigger={() => null}>
       {error ? <div><p role="alert">{error}</p><button type="button" className="tier-secondary-action" disabled={loading} onClick={() => setRetry(current => current + 1)}>Retry loading saved intake</button></div> : null}
     </HydrationQuickAdd>
-  </main>
+  </main></PhoneAppFrame>
 
-  return <main className="aos-nutrition-page nutrition-direct-entry">
+  return <PhoneAppFrame eyebrow="Nutrition" title="Make room for nourishment." subtitle="Record what you actually ate."><main className="aos-nutrition-page nutrition-direct-entry">
     <section className="nutrition-dashboard-panel" data-tier={program} aria-labelledby="nutrition-entry-title">
       <div className="nutrition-direct-entry-heading tier-panel-heading">
         <h1 id="nutrition-entry-title">{!capabilities.nutritionMealLogging ? 'Nutrition Guidance' : loggingIntent.action === 'meal' ? 'Log Meal' : 'Log Food'}</h1>
@@ -92,5 +93,5 @@ export default function DirectNutritionEntry({
       {error ? <div><p role="alert">{error}</p><button type="button" className="tier-secondary-action" disabled={loading} onClick={() => setRetry(current => current + 1)}>Retry loading saved intake</button></div> : null}
       {message ? <p role="status" aria-live="polite">{message}</p> : null}
     </section>
-  </main>
+  </main></PhoneAppFrame>
 }

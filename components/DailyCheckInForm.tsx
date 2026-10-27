@@ -195,10 +195,10 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
       <AOSSectionHeader eyebrow="Daily check-in" title="How’s your energy today?" copy="One answer is enough to check in. Add more context when it helps." />
       <div className="guided-check-in-energy">{slider('energy','Energy')}<p><span>Running on empty</span><span>Feeling strong</span></p>{!answered.has('energy') ? <AOSButton type="button" variant="secondary" onClick={() => updateSlider('energy', values.energy)}>Use this energy level</AOSButton> : null}</div>
       {saved && !changed ? <p className="aos-status" role="status">Your check-in is already saved. You can update any answer below.</p> : null}
-      <details className="guided-check-in-details">
+      <details className="guided-check-in-details" open>
       <summary>Add more context (optional)<span>Sleep, stress, soreness, and more</span></summary>
       <p className="guided-check-in-copy">Untouched markers stay unanswered. Your existing inputs and detailed body signals remain available here.</p>
-      <div className="aos-slider-grid">{slider('sleepHours','Sleep duration')}{slider('sleepQuality','Sleep quality')}{slider('stress','Stress')}{slider('soreness','Soreness')}{slider('mood','Mood')}{slider('hunger','Hunger')}</div>
+      <div className="aos-slider-grid">{slider('stress','Stress')}{slider('soreness','Soreness')}{slider('sleepQuality','Sleep quality')}{slider('sleepHours','Hours slept')}{slider('mood','Mood')}{slider('hunger','Hunger')}</div>
       {values.soreness > 5 && values.sorenessRegions.length ? <div className="aos-chip-list" aria-label="Selected soreness regions">{values.sorenessRegions.map((region) => {
         const label = SORENESS_REGIONS.find((item) => item.key === region)?.label || region
         return <button type="button" key={region} className="aos-chip is-selected" aria-pressed="true" onClick={() => toggleSorenessRegion(region)}>{label}</button>

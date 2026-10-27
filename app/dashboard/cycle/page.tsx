@@ -2,6 +2,7 @@ import { loadDailySignals } from '@/lib/dashboard/dailySignals'
 import Link from 'next/link'
 
 import CycleTracker from '@/components/CycleTracker'
+import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 
 import * as styles from '../../styles/globalstyles'
 
@@ -192,15 +193,15 @@ export default async function CyclePage() {
     getCycleStatus(resolvedClient)
 
   return (
-    <main style={styles.pageStyle}>
+    <PhoneAppFrame eyebrow="Cycle awareness" title="Your cycle" subtitle="A little more understanding, built around you."><main className="phone-app-cycle-content" style={styles.pageStyle}>
       <div style={styles.containerStyle}>
         <p style={styles.eyebrowStyle}>
           Cycle Awareness
         </p>
 
-        <h1 style={styles.heroTitleStyle}>
+        <h2 style={styles.heroTitleStyle}>
           Your body context for today.
-        </h1>
+        </h2>
 
         <p style={styles.heroTextStyle}>
           This space helps Anastasis interpret your
@@ -284,7 +285,7 @@ export default async function CyclePage() {
                       letterSpacing: '3px',
                     }}
                   >
-                    Calculated Average
+                    {cyclePrediction.recentCycleLengths.length ? 'Logged-cycle average' : client.average_cycle_length ? 'Saved cycle length estimate' : 'Default fallback estimate'}
                   </p>
 
                   <strong
@@ -388,6 +389,9 @@ export default async function CyclePage() {
           )}
         </section>
 
+        <section className="phone-app-cycle-history"><h2>Your patterns</h2><p>Last period started: {resolvedLastPeriodStart || 'Not recorded'}</p>
+          {periodStartLogsResult.error ? <p role="status">Cycle history could not be loaded. Estimates may use your saved cycle settings.</p> : cyclePrediction.recentCycleLengths.length ? <><p>{cyclePrediction.recentCycleLengths.length} completed cycle intervals in your logged history.</p><h3>Recent cycles</h3><ul>{cyclePrediction.recentCycleLengths.slice(-6).reverse().map((days, index) => <li key={index}>{days} days</li>)}</ul></> : <p>Log period starts to build your own cycle history. Estimates do not confirm ovulation.</p>}
+        </section>
         <section className="daily-plan-card"><h2>Today’s shared check-in</h2><p>{shared.recovery?.energy_level != null ? `Energy: ${shared.recovery.energy_level}/10, saved today.` : 'Energy has not been answered today.'}</p><p>{shared.symptoms.length ? `Reported today: ${shared.symptoms.map((item: any) => item.symptom_types?.name || item.symptom_name).join(', ')}.` : 'No symptoms logged today. That does not mean you have none.'}</p><Link href="/dashboard/check-in" className="tier-secondary-action">Update shared answers</Link></section>
       <CycleTracker
           clientId={client.client_id}
@@ -469,6 +473,6 @@ export default async function CyclePage() {
           </Link>
         </div>
       </div>
-    </main>
+    </main></PhoneAppFrame>
   )
 }

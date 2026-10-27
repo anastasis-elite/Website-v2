@@ -10,6 +10,7 @@ import type { SorenessRegionKey } from '@/lib/recovery/sorenessRegions'
 import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
 import { getRecoveryScoreExplanation } from '@/lib/recovery/scoreExplanation'
 import { useViewPreference } from '@/components/dashboard/useViewPreference'
+import { PhoneAppCard } from '@/components/phone-app/PhoneAppFrame'
 
 type ProgressTab = 'daily' | 'trends'
 type ActionTab = 'tools' | 'checkIn'
@@ -204,11 +205,24 @@ export default function RecoveryDashboardClient({
   return (
     <main className="aos-nutrition-page recovery-dashboard-page">
       <div className="aos-nutrition-shell recovery-dashboard-shell">
+        <details className="phone-app-own-practice" id="own-practice"><summary>Your own practice · Log what you completed</summary><RecoveryLogger clientId={clientId} /></details>
+        <h2>Let us guide you.</h2>
+        <div className="phone-app-grid">
+          <PhoneAppCard title="Meditation" copy="Make a quiet moment for yourself." href="/dashboard/meditation?practice=recovery-meditation" action="Open silent timer" />
+          <PhoneAppCard title="Yoga nidra" copy="Deep rest for body and mind." unavailable="Guided recording unavailable" />
+          <PhoneAppCard title="Guided mobility" copy="Move with ease." illustration="training" unavailable="Guided sessions unavailable · log your own above" />
+          <PhoneAppCard title="Yogic practices" copy="A gentle practice, at your pace." unavailable="Guided sessions unavailable" />
+          <PhoneAppCard title="Breathwork" copy="Come back to center." href="/dashboard/meditation?practice=breath-reset" action="Open breathing timer" />
+        </div>
+        <h2>Simple ways to unwind.</h2><div className="phone-app-grid">
+          <PhoneAppCard title="Slow walk" copy="Fresh air, a calmer mind." illustration="training" href="#own-practice" action="Choose your activity above" />
+          <PhoneAppCard title="Warm soak" copy="A little warmth goes a long way." illustration="water" href="#own-practice" action="Choose your activity above" />
+        </div>
         <section className="recovery-dashboard-workspace" data-tier={logic.program}>
           <article className="tier-daily-insight workout-objective recovery-objective" data-testid="recovery-objective">
             <p className="tier-dashboard-label">Recovery Status</p>
             <div>
-              <h1>{training.label}</h1>
+              <h2>{training.label}</h2>
               <BreathingReset clientId={clientId} />
             </div>
             <p>{training.reason}</p>
@@ -296,7 +310,7 @@ export default function RecoveryDashboardClient({
                       </article>
                     )) : <p className="tier-calendar-empty">{logic.symptoms.recoveryRecommendation}</p>}
                   </div>
-                  <RecoveryLogger clientId={clientId} />
+                  <a href="#own-practice" className="tier-secondary-action">Log your own recovery practice</a>
                 </div>
               ) : null}
 

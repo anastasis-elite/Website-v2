@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { activityDose, isBodyweightExercise, workoutCompletion, summarizeStrengthSets, summarizeActivityUnits } from '@/lib/workout/activity'
@@ -100,6 +101,13 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
     <div className="tier-action-row"><button type="button" disabled={saving || !ready} onClick={() => void save()}>Save / pause</button><button type="button" className="tier-primary-action" disabled={saving || !ready} onClick={() => void save(true)}>{saving ? 'Saving…' : 'Finish and review'}</button></div>
     {ready && !counts.completed ? <p>Finish and review saves a partial session. Complete the remaining exercises to mark the workout complete.</p> : null}
     <p role="status">{message}</p>
-    {summary ? <article className="daily-plan-card" aria-label="Session summary"><h3>{workoutSource === 'manual' ? counts.completed ? 'Exercise saved' : 'Partial exercise saved' : counts.completed ? 'Workout complete' : 'Partial session saved'}</h3><p>{counts.complete} complete · {counts.partial} partial · {counts.skipped} skipped · {counts.total} planned</p><p>{totals.sets} strength sets · {totals.reps} reps · {Math.round(totals.minutes * 10) / 10} minutes · {totals.breaths} breaths · {totals.activities} movements completed</p><p>Your confirmed work is saved. You can return to the remaining exercises.</p></article> : null}
+    {summary ? <article className="daily-plan-card phone-app-session-summary" aria-label="Session summary" role="status">
+      <span className="phone-app-save-mark" aria-hidden="true">✓</span><p className="phone-app-eyebrow">Session saved</p>
+      <h3>{workoutSource === 'manual' ? counts.completed ? 'Exercise saved' : 'Partial exercise saved' : counts.completed ? 'You made time for strength.' : 'Partial session saved'}</h3>
+      <p>{counts.complete} complete · {counts.partial} partial · {counts.skipped} skipped · {counts.total} planned</p><p>{totals.sets} strength sets · {totals.reps} reps · {Math.round(totals.minutes * 10) / 10} minutes · {totals.breaths} breaths · {totals.activities} movements completed</p>
+      <p>Your confirmed work is saved. You can return to the remaining exercises.</p>
+      <details><summary>Session overview · Recorded sets</summary>{logs.filter(log => log.set_logs.length).map(log => <section key={log.session_key}><h4>{log.display_name || log.exercise}</h4>{log.set_logs.map((set: any, index: number) => <p key={index}>Set {set.set_number}: {set.reps} reps · {set.weight} {set.weight_unit}{set.completed_at ? ` · ${new Date(set.completed_at).toLocaleTimeString([], { timeZone: timezone, hour: 'numeric', minute: '2-digit' })}` : ''}</p>)}</section>)}<p>Heart-rate readings and continuous set/rest intervals are unavailable. No watch connection is established by this screen.</p></details>
+      <Link href={`/dashboard/program/${program}`}>Back to Today</Link>
+    </article> : null}
   </section>
 }

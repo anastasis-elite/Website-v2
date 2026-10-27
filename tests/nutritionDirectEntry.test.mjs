@@ -11,7 +11,7 @@ const nativeRequire = createRequire(import.meta.url)
 function load(path, mocks = {}, environment = {}) {
   const output = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText
   const module = { exports: {} }
-  vm.runInNewContext(output, { module, exports: module.exports, console, Intl, ...environment, require: specifier => mocks[specifier] || nativeRequire(specifier) })
+  vm.runInNewContext(output, { module, exports: module.exports, console, Intl, ...environment, require: specifier => mocks[specifier] || (specifier === '@/components/phone-app/PhoneAppFrame' ? { __esModule: true, default: 'phone-app-frame' } : nativeRequire(specifier)) })
   return module.exports
 }
 const { parseNutritionLoggingIntent } = load('lib/nutrition/loggingIntent.ts')

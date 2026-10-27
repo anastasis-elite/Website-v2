@@ -85,6 +85,24 @@ const button = (tree, label) => nodes(tree, n => n.type === 'button' && content(
 const props = exercises => ({ clientId: 'DISPOSABLE-TEST', authUserId: 'disposable-user', program: 'ignite', dayName: 'Control regression', exercises, timezone: 'America/Chicago' })
 const bodyweight = { id: 'squat', exercise: 'Squat', exercise_category: 'strength', sets: 1, reps: 8, load_type: 'bodyweight' }
 
+test('session summary and completion mark require a successful save and retain honest telemetry gaps', async () => {
+  const app = mount(ActivityTracker, props([bodyweight]))
+  await app.flush()
+  button(app.tree, 'Complete set 1').props.onClick(); app.render()
+  globalThis.fetch = async () => Response.json({ error: 'Synthetic save failure' }, { status: 503 })
+  button(app.tree, 'Finish and review').props.onClick(); await app.flush()
+  assert.equal(nodes(app.tree, node => node.props?.['aria-label'] === 'Session summary').length, 0)
+  assert.match(content(app.tree), /Synthetic save failure/)
+  globalThis.fetch = async () => Response.json({ success: true, completed: true, session: { updated_at: new Date().toISOString() } })
+  button(app.tree, 'Finish and review').props.onClick(); await app.flush()
+  const summary = nodes(app.tree, node => node.props?.['aria-label'] === 'Session summary')[0]
+  assert.ok(summary)
+  assert.match(content(summary), /You made time for strength/)
+  assert.match(content(summary), /Set 1: 8 reps/)
+  assert.match(content(summary), /Heart-rate readings and continuous set\/rest intervals are unavailable/)
+  assert.equal(nodes(summary, node => node.type === 'a')[0].props.href, '/dashboard/program/ignite')
+})
+
 test('zero added load remains a valid prescription and logged set', async () => {
   const app = mount(ActivityTracker, props([{ ...bodyweight, load_type: 'total_load', recommended_weight: 0 }]))
   await app.flush()

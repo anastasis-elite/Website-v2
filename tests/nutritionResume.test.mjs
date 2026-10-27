@@ -9,7 +9,7 @@ const nativeRequire = createRequire(import.meta.url)
 function load(path, mocks, environment = {}) {
   const module = { exports: {} }
   const compiled = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText
-  vm.runInNewContext(compiled, { module, exports: module.exports, console, Date, Error, Promise, AbortController, process: { env: { NODE_ENV: 'test' } }, ...environment, require: name => mocks[name] || nativeRequire(name) })
+  vm.runInNewContext(compiled, { module, exports: module.exports, console, Date, Error, Promise, AbortController, process: { env: { NODE_ENV: 'test' } }, ...environment, require: name => mocks[name] || (name === '@/components/phone-app/PhoneAppFrame' ? { __esModule: true, default: 'phone-app-frame' } : nativeRequire(name)) })
   return module.exports
 }
 function hooks() {
@@ -63,7 +63,7 @@ test('same-day direct entry adopts refreshed water while retaining the same food
   assert.equal(nodes(render()).find(node => node.type === 'food-entry').key, before.key, 'A transient read failure preserves the active food draft')
 })
 
-test('direct water opens the actual entry without a second heading or trigger and closes to Dashboard', () => {
+test('direct water exposes the actual inline entry without a second trigger', () => {
   const state = hooks(), navigations = []
   const Direct = load('components/nutrition/DirectNutritionEntry.tsx', {
     react: state.react, 'next/navigation': { useRouter: () => ({ refresh() {}, replace: href => navigations.push(href) }) },
@@ -75,7 +75,8 @@ test('direct water opens the actual entry without a second heading or trigger an
     loggingIntent: { action: 'water' }, initialLog: { id: 'own-log', water_consumed_oz: 8, water_oz: 90 } })
   const entries = nodes(tree).filter(node => node.type === 'water-entry')
   assert.equal(entries.length, 1)
-  assert.equal(entries[0].props.initiallyOpen, true)
+  assert.equal(entries[0].props.inline, true)
+  assert.equal(entries[0].props.initiallyOpen, undefined)
   assert.equal(nodes(tree).filter(node => node.type === 'h1' || node.type === 'button' || node.type === 'a').length, 0, 'No redundant wrapper controls precede the actual entry')
   assert.equal(entries[0].props.renderTrigger({}), null)
   assert.equal(entries[0].props.consumed, 8)
