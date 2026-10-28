@@ -1,5 +1,3 @@
-import DailyPlanCard from '@/components/DailyPlanCard'
-import { getDailyScheduleState } from '@/lib/schedule/service'
 import { getClientTimeZone } from '@/lib/timezone'
 import { redirect } from 'next/navigation'
 
@@ -85,6 +83,14 @@ function isSupportedProgram(
 function getWorkoutStateLabel(
   workoutState?: string | null,
 ): string {
+  if (workoutState === 'rest') {
+    return 'Rest day'
+  }
+
+  if (workoutState === 'unavailable') {
+    return 'Workout unavailable'
+  }
+
   if (workoutState === 'starter') {
     return 'Starter Workout'
   }
@@ -286,10 +292,15 @@ export default async function ProgramWorkoutPage({
     !hasSafetyFlags
 
   const previewTitle =
-    hasSafetyFlags ||
-    !logic.workoutDecision.canTrain
+    hasSafetyFlags
       ? 'Safety support first'
-      : 'Recovery movement'
+      : assignedWorkout?.workout_state === 'rest'
+        ? 'Rest day'
+        : assignedWorkout?.workout_state === 'unavailable'
+          ? 'Workout unavailable'
+          : !logic.workoutDecision.canTrain
+            ? 'Safety support first'
+            : 'Recovery movement'
 
   const previewMessage = hasSafetyFlags
     ? 'The assigned plan is listed below, but completion is paused until the safety message is resolved.'
@@ -310,11 +321,9 @@ export default async function ProgramWorkoutPage({
       recoverySignals,
     })
 
-  const schedule = await getDailyScheduleState({ supabase, user, client, logic })
   return (
     <PhoneAppFrame eyebrow="Workout" title="Your strength, one set at a time." subtitle={workoutTitle}><main className="aos-workout-page">
       <div className="aos-workout-shell">
-        <DailyPlanCard plan={schedule.dailyRecommendation!} schedule={schedule} compact />
         <WorkoutDashboard
           timezone={getClientTimeZone(client)}
           weightUnit={client.weight_unit === 'kg' || client.unit_preference === 'metric' || client.onboarding_data?.unitPreference === 'metric' ? 'kg' : 'lb'}

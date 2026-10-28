@@ -11,6 +11,7 @@ import { getClientLocalDate } from '@/lib/timezone'
 type Props = { clientId: string; authUserId: string; program: string; dayName: string; exercises: any[]; plannedExercises?: unknown[]; workoutSource?: 'manual' | 'recommended'; timezone?: string; weightUnit?: 'lb' | 'kg'; onManualExerciseFinished?: (completed?: boolean) => void; onExerciseFocus?: (exercise: any) => void; onExerciseBlur?: () => void }
 export default function ActivityWorkoutTracker({ clientId, program, dayName, exercises, plannedExercises = exercises, workoutSource = 'recommended', timezone = 'America/Chicago', weightUnit = 'lb', onExerciseFocus, onExerciseBlur, onManualExerciseFinished }: Props) {
   const router = useRouter(); const lock = useRef(false)
+  const carousel = useRef<HTMLDivElement | null>(null)
   const date = getClientLocalDate({ timezone }); const legacyKey = `anastasis-session:${clientId}:${program}:${dayName}:${date}`
   const planKeys = JSON.stringify(workoutSessionKeys(exercises)); const key = `${legacyKey}:${workoutSource}:${planKeys}`
   const prescriptionKey = JSON.stringify(exercises.map(exercise => activityDose(exercise, weightUnit)))
@@ -18,6 +19,13 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
   const [logs, setLogs] = useState(initialize); const [ready, setReady] = useState(false); const [saving, setSaving] = useState(false); const [message, setMessage] = useState(''); const [summary, setSummary] = useState(false)
   const [draft, setDraft] = useState(() => exercises.map(e => { const dose = activityDose(e, weightUnit); return { weight: dose.weight, amount: dose.prescribed } }))
   const [dirty, setDirty] = useState(false); const [modifiedAt, setModifiedAt] = useState<string | null>(null); const [retry, setRetry] = useState(0); const [loadFailed, setLoadFailed] = useState(false)
+  const [exercisePosition, setExercisePosition] = useState({ key, index: 0 })
+  const activeIndex = exercisePosition.key === key ? Math.min(exercisePosition.index, Math.max(0, logs.length - 1)) : 0
+  function showExercise(index: number) {
+    const next = Math.max(0, Math.min(index, logs.length - 1))
+    setExercisePosition({ key, index: next })
+    if (carousel.current) carousel.current.scrollTo({ left: next * carousel.current.clientWidth, behavior: 'auto' })
+  }
   useEffect(() => {
     let cancelled = false; setReady(false); setSummary(false)
     async function resume() {
@@ -29,14 +37,19 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
         const result = await response.json()
         if (!response.ok) throw new Error(result.error || 'Saved progress could not be loaded.')
         const resumed = resumeWorkoutSession(initial, stored, result.session)
-        if (!cancelled) { setLogs(resumed.logs); setDraft(resumed.draft || exercises.map(e => { const dose = activityDose(e, weightUnit); return { weight: dose.weight, amount: dose.prescribed } })); setDirty(resumed.dirty); setModifiedAt(resumed.modifiedAt); setLoadFailed(false); setReady(true) }
+        if (!cancelled) { setLogs(resumed.logs); setDraft(resumed.draft || exercises.map(e => { const dose = activityDose(e, weightUnit); return { weight: dose.weight, amount: dose.prescribed } })); setDirty(resumed.dirty); setModifiedAt(resumed.modifiedAt); setLoadFailed(false); setReady(true)
+          const savedIndex = resumed.logs.findIndex((log: { session_key: string }) => log.session_key === stored?.activeExerciseKey)
+          const index = savedIndex >= 0 ? savedIndex : 0
+          setExercisePosition({ key, index })
+          if (carousel.current) carousel.current.scrollTo({ left: index * carousel.current.clientWidth, behavior: 'auto' })
+        }
       } catch(e) { if (!cancelled) { setLoadFailed(true); setMessage(e instanceof Error ? e.message : 'Saved progress could not be loaded. Retry before editing or saving.'); } }
     }
     void resume(); return () => { cancelled = true }
   // Session keys deliberately scope persisted work to this client, plan, and local day.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, retry, prescriptionKey])
-  useEffect(() => { if (ready) { try { localStorage.setItem(key, JSON.stringify({ version: 2, logs, draft, dirty, modifiedAt })) } catch { setMessage('This browser could not retain a draft. Use Save / pause to keep your progress.') } } }, [key, ready, logs, draft, dirty, modifiedAt])
+  useEffect(() => { if (ready) { try { localStorage.setItem(key, JSON.stringify({ version: 2, logs, draft, dirty, modifiedAt, activeExerciseKey: logs[activeIndex]?.session_key })) } catch { setMessage('This browser could not retain a draft. Use Save / pause to keep your progress.') } } }, [key, ready, logs, draft, dirty, modifiedAt, activeIndex])
   const counts = workoutCompletion(logs)
   const totals = summarizeActivityUnits(logs, true)
   function markDirty() { setDirty(true); setModifiedAt(new Date().toISOString()) }
@@ -67,9 +80,25 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
     {loadFailed ? <button type="button" onClick={() => setRetry(value => value + 1)}>Retry saved progress</button> : null}
     <p>{counts.complete} of {counts.total} exercises complete{counts.partial ? ` · ${counts.partial} in progress` : ''}{counts.skipped ? ` · ${counts.skipped} skipped` : ''}</p>
     <p>Prescribed values are a starting point. Confirm each set or activity to record what you did.</p>
-    {logs.map((log, index) => {
+    {logs.length ? <section className="activity-exercise-carousel" aria-label="Exercises" aria-roledescription="carousel">
+      <div className="activity-carousel-controls">
+        <button type="button" aria-label="Previous exercise" disabled={!ready || activeIndex === 0} onClick={() => showExercise(activeIndex - 1)}>Previous</button>
+        <p role="status" aria-live="polite" aria-atomic="true">Exercise {activeIndex + 1} of {logs.length}</p>
+        <button type="button" aria-label="Next exercise" disabled={!ready || activeIndex === logs.length - 1} onClick={() => showExercise(activeIndex + 1)}>Next</button>
+      </div>
+      <p className="activity-carousel-hint">Swipe left or right, or use Previous and Next.</p>
+      <div className="activity-exercise-track" ref={carousel} tabIndex={0} role="region" aria-label="Exercise cards" onKeyDown={event => {
+        // Arrow keys inside number inputs, selects and other controls retain their native behavior.
+        if (event.target !== event.currentTarget || !ready || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+        event.preventDefault()
+        showExercise(event.key === 'Home' ? 0 : event.key === 'End' ? logs.length - 1 : activeIndex + (event.key === 'ArrowRight' ? 1 : -1))
+      }} onScroll={event => {
+        const viewport = event.currentTarget
+        if (viewport.clientWidth > 0) setExercisePosition({ key, index: Math.max(0, Math.min(logs.length - 1, Math.round(viewport.scrollLeft / viewport.clientWidth))) })
+      }}>
+      {logs.map((log, index) => {
       const dose = activityDose(log, weightUnit)
-      return <article key={log.session_key} className="activity-exercise" data-activity={dose.kind} onFocus={() => onExerciseFocus?.(log)} onBlur={onExerciseBlur}>
+      return <article key={log.session_key} className="activity-exercise" data-activity={dose.kind} role="group" aria-roledescription="slide" aria-label={`Exercise ${index + 1} of ${logs.length}: ${exerciseOccurrenceLabel(logs, index)}`} aria-hidden={index !== activeIndex} ref={node => { if (node) node.inert = index !== activeIndex }} onFocus={() => { if (index !== activeIndex) showExercise(index); onExerciseFocus?.(log) }} onBlur={onExerciseBlur}>
         <div className="tier-panel-heading"><h3>{exerciseOccurrenceLabel(logs, index)}</h3><span>{log.completed ? 'Done' : log.skipped ? 'Skipped' : dose.kind === 'strength' ? `${log.set_logs.length}/${dose.sets} sets` : 'Available'}</span></div>
         <p>Prescribed: {dose.metric === 'completion' ? `${log.duration_label || 'Complete the movement comfortably'} · record completion` : <>{dose.kind === 'strength' ? `${dose.sets} sets · ` : ''}{dose.prescribed || log.duration_label || 'Choose a comfortable amount'} {dose.prescribed ? dose.metric : ''}{dose.kind === 'strength' && dose.weight > 0 ? ` · ${dose.weight} ${dose.unit} ${dose.loadLabel}` : ''}</>}</p>
         {dose.kind === 'strength' && dose.weight === 0 ? <p>{isBodyweightExercise(log) ? 'Bodyweight · no added load.' : [log.recommended_weight, log.cycle_adjusted_weight, log.calculated_weight, log.baseline_weight].some(value => value != null) ? `No added load prescribed. Record the ${dose.unit} you actually used, including zero.` : `No load baseline is available yet. Record the ${dose.unit} you actually used; zero means no added load.`}</p> : null}
@@ -97,7 +126,9 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
         }} /></details><button type="button" disabled={!ready || saving} onClick={() => { const sets = log.set_logs.filter((_: any,i: number) => i !== n).map((s: any,i: number) => ({ ...s, set_number: i+1 })); patch(index, { set_logs: sets, ...summarizeStrengthSets(sets), completed: sets.length >= dose.sets, skipped: false }) }}>Remove set {set.set_number}</button></div>)}</details> : null}
         {log.client_cues?.length ? <details><summary>Form guidance</summary>{log.client_cues.map((cue: string) => <p key={cue}>{cue}</p>)}</details> : null}
       </article>
-    })}
+      })}
+      </div>
+    </section> : null}
     <div className="tier-action-row"><button type="button" disabled={saving || !ready} onClick={() => void save()}>Save / pause</button><button type="button" className="tier-primary-action" disabled={saving || !ready} onClick={() => void save(true)}>{saving ? 'Saving…' : 'Finish and review'}</button></div>
     {ready && !counts.completed ? <p>Finish and review saves a partial session. Complete the remaining exercises to mark the workout complete.</p> : null}
     <p role="status">{message}</p>

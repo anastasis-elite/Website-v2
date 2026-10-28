@@ -7,8 +7,10 @@ import styles from './TodayPlanTheme.module.css'
 
 export default function PlanOverview({ logic, schedule }: { logic: ProgramLogicOutput; schedule: DailyScheduleState }) {
   const capabilities = getTierCapabilities(logic.program)
+  const workoutDayState = logic.workoutDecision.assignedWorkout?.workout_state
+  const inactiveWorkoutDay = workoutDayState === 'rest' || workoutDayState === 'unavailable'
   const cards = [
-    { kind: 'training', label: 'Movement', title: 'Your training', detail: logic.workout.assigned ? logic.workout.title : 'Make room for movement and rest.', action: 'Explore sessions', href: `/dashboard/program/${logic.program}/workout`, enabled: capabilities.workoutDisplay },
+    { kind: 'training', label: 'Movement', title: 'Your training', detail: logic.workout.assigned || inactiveWorkoutDay ? logic.workout.title : 'Make room for movement and rest.', action: 'Explore sessions', href: `/dashboard/program/${logic.program}/workout`, enabled: capabilities.workoutDisplay },
     { kind: 'nutrition', label: 'Nourishment', title: 'Your nutrition', detail: 'Your daily targets, in one place.', action: 'View targets', href: '/dashboard/nutrition', enabled: capabilities.nutritionTracking },
     { kind: 'recovery', label: 'Rest & recovery', title: 'Your recovery', detail: 'Make room to restore.', action: 'View recovery', href: '/dashboard/recovery', enabled: capabilities.recoveryBasic },
     { kind: 'schedule', label: 'Your time', title: 'Your schedule', detail: 'See how your week comes together.', action: 'Open schedule', href: '/dashboard/schedule', enabled: capabilities.calendar },

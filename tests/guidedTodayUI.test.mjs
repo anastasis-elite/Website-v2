@@ -13,8 +13,9 @@ const activities = await importTs('lib/dashboard/todayActivities.ts')
 const recommendations = await importTs('lib/dashboard/dailyRecommendation.ts')
 const timezone = await importTs('lib/timezone.ts')
 const scheduleTime = await importTs('lib/schedule/time.ts')
+const entitlements = await importTs('lib/entitlements.ts')
 const Link = ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children)
-function component(path, extra = {}) {
+function component(path, extra = {}, exportName = 'default') {
   const module = { exports: {} }
   const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } })
   runInNewContext(outputText, { module, exports: module.exports, Date, require: name => extra[name] || ({
@@ -28,11 +29,18 @@ function component(path, extra = {}) {
     '@/lib/analytics/todayJourney': { recordTodayActionOpened() {}, recordTodayActionCompletions() {} },
     '@/lib/timezone': timezone,
   }[name] || require(name)) })
-  return module.exports.default
+  return module.exports[exportName]
 }
-const Today = component('components/program-dashboard/GuidedToday.tsx')
+const ActionArrow = component('components/ActionArrow.tsx')
+const Today = component('components/program-dashboard/GuidedToday.tsx', { '@/components/ActionArrow': ActionArrow })
+const PhoneAppCard = component('components/phone-app/PhoneAppFrame.tsx', { '@/components/ActionArrow': ActionArrow, './phone-app.css': {} }, 'PhoneAppCard')
 const StreakBadge = component('components/program-dashboard/TodayStreakBadge.tsx', { './TodayPlanTheme.module.css': { streakBadge: 'today-streak-badge' } })
 const Header = component('components/program-dashboard/TodayDashboardHeader.tsx', { '@/components/program-dashboard/TodayStreakBadge': StreakBadge })
+const Plan = component('components/program-dashboard/PlanOverview.tsx', {
+  '@/lib/entitlements': entitlements,
+  './TodayDashboardHeader': Header,
+  './TodayPlanTheme.module.css': { surface: 'today-surface' },
+})
 const fixture = (tier = 'ignite') => ({ program: tier, client: { id: 'QA-ONLY', name: 'Maya' },
   capacityStatus: { status: 'moderate_capacity' }, assessments: { dailyCompleted: false },
   hydration: { status: 'needs_input', target: 80, remaining: 80, consumed: 0 },
@@ -134,9 +142,53 @@ test('all six activities keep their destinations and use the shared illustrated 
     cards.forEach((card, index) => {
       assert.ok(card[2].includes(`src="/illustrations/today-${targets[index][0]}.svg"`))
       assert.ok(card[2].includes(`href="${targets[index][1]}"`))
+      assert.match(card[2], /<svg class="today-action-arrow"[^>]+stroke="currentColor"[^>]+aria-hidden="true"[^>]+focusable="false"/)
+      assert.doesNotMatch(card[2], /↗/)
     })
   }
 })
+
+test('Recovery action cards use the same decorative SVG without changing destinations or unavailable controls', () => {
+  for (const [href, action] of [
+    ['/dashboard/meditation?practice=recovery-meditation', 'Open silent timer'],
+    ['/dashboard/meditation?practice=breath-reset', 'Open breathing timer'],
+    ['#own-practice', 'Choose your activity above'],
+  ]) {
+    const html = renderToStaticMarkup(React.createElement(PhoneAppCard, { title: 'Recovery practice', copy: 'Synthetic guidance', href, action }))
+    assert.ok(html.includes(`href="${href}"`))
+    assert.ok(html.includes(`>${action}<svg`))
+    assert.match(html, /<svg class="phone-app-action-arrow"[^>]+stroke="currentColor"[^>]+aria-hidden="true"[^>]+focusable="false"/)
+    assert.doesNotMatch(html, /↗/)
+  }
+  const html = renderToStaticMarkup(React.createElement(PhoneAppCard, { title: 'Recovery practice', copy: 'Synthetic guidance', href: '/dashboard/meditation', unavailable: 'Guided recording unavailable' }))
+  assert.doesNotMatch(html, /<a\b|<svg\b/)
+  assert.match(html, /Guided recording unavailable/)
+})
+
+test('Today and Plan preserve explicit rest and unavailable day labels without inventing workout completion', () => {
+  for (const [state, title, reason] of [
+    ['rest', 'Rest day', 'Today is an intentional rest day in your program. No workout is assigned.'],
+    ['unavailable', 'Workout unavailable', 'Your training plan is missing or incomplete. Contact your coach to review it.'],
+  ]) {
+    const logic = fixture()
+    logic.workout = { assigned: false, title }
+    logic.workoutDecision = { ...logic.workoutDecision, assignedWorkout: { workout_state: state }, canTrain: false, reasonForModification: reason }
+    const html = render(logic)
+    const status = html.match(/<p class="today-workout-status"[^>]*>([\s\S]*?)<\/p>/)?.[1]
+    assert.ok(status)
+    assert.ok(status.includes(`<strong>${title}</strong>`))
+    assert.ok(status.includes(reason))
+    assert.doesNotMatch(status, /<a\b|<button\b/)
+    assert.doesNotMatch(html, /data-activity-id="workout"/)
+    const plan = renderToStaticMarkup(React.createElement(Plan, { logic, schedule: schedule() }))
+    assert.ok(plan.includes(`<p>${title}</p>`))
+    assert.doesNotMatch(plan, /Make room for movement and rest/)
+  }
+  const unknown = fixture(); unknown.workout.assigned = false
+  assert.doesNotMatch(render(unknown), /today-workout-status/)
+  assert.match(renderToStaticMarkup(React.createElement(Plan, { logic: unknown, schedule: schedule() })), /Make room for movement and rest/)
+})
+
 test('one-step preference quiets supporting copy while keeping every activity accessible', () => {
   const state = schedule(); state.preferences = { carouselStyle: 'step' }
   const html = render(fixture(), state)

@@ -19,6 +19,7 @@ import { Suspense } from 'react'
 import { after } from 'next/server'
 import DashboardReadyShell from '@/components/program-dashboard/DashboardReadyShell'
 import DashboardPerformance from '@/components/DashboardPerformance'
+import styles from '@/components/program-dashboard/TodayPlanTheme.module.css'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix'] as const
 
@@ -76,7 +77,7 @@ export default async function ProgramPage({
     return <SafetyEscalationNotice flags={safetyFlags} />
   }
 
-  return <main><Suspense fallback={<DashboardReadyShell program={program as ProgramTier} showStreak={view === 'today'} />}>
+  return <main className={styles.page}><Suspense fallback={<DashboardReadyShell program={program as ProgramTier} showStreak={view === 'today'} />}>
     <PersonalizedDashboard supabase={supabase} user={user} client={client} program={program as ProgramTier} view={view} />
   </Suspense></main>
 }

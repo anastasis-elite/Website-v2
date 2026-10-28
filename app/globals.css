@@ -276,6 +276,8 @@
 .workout-current-panel{display:grid;grid-template-rows:auto minmax(0,1fr)}
 .workout-current-panel>.tier-panel-heading{position:sticky;top:0;z-index:3;margin:-2px 0 10px;padding-bottom:8px;background:var(--anastasis-charcoal)}
 .workout-scroll-region{min-width:0;min-height:0;overflow:visible}
+.workout-panel-title{display:flex;flex:1;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.workout-session-guidance{color:var(--text-secondary);font-size:.85rem;line-height:1.5}
 .workout-mode-switch{display:flex;flex:0 0 auto;gap:6px;align-items:center;border:1px solid var(--anastasis-copper);border-radius:999px;padding:4px;background:var(--anastasis-charcoal)}
 .workout-mode-switch button{min-height:34px;border:0;border-radius:999px;padding:0 11px;color:var(--text-muted);background:transparent;font:700 .68rem/1 inherit;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
 .workout-mode-switch button.is-active{color:var(--anastasis-black);background:var(--anastasis-flame)}
@@ -325,6 +327,15 @@
 .workout-completed-control{display:inline-flex;align-items:center;gap:8px;min-height:44px;width:max-content;max-width:100%;padding:4px 0;line-height:1.2;cursor:pointer}
 .workout-completed-control input{width:20px;height:20px;margin:0;flex:0 0 auto}
 .workout-exercise-actions{min-width:0;flex-wrap:wrap}
+.activity-exercise-carousel{min-width:0;max-width:100%}
+.activity-carousel-controls{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px}
+.activity-carousel-controls button{min-height:44px;min-width:0;border:1px solid var(--anastasis-copper);border-radius:12px;padding:8px 12px;color:var(--anastasis-ivory);background:var(--anastasis-charcoal);font:inherit;cursor:pointer}
+.activity-carousel-controls button:disabled{opacity:.45;cursor:default}
+.activity-carousel-controls p{margin:0;color:var(--anastasis-ivory);font-size:.8rem;text-align:center}
+.activity-carousel-hint{margin:10px 0;color:var(--text-muted);font-size:.78rem}
+.activity-exercise-track{display:flex;align-items:flex-start;width:100%;max-width:100%;min-width:0;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;touch-action:pan-x pan-y pinch-zoom}
+.activity-exercise-track>.activity-exercise{flex:0 0 100%;width:100%;max-width:100%;min-width:0;box-sizing:border-box;scroll-snap-align:start;scroll-snap-stop:always;overflow-wrap:anywhere}
+.activity-exercise-track:focus-visible,.activity-carousel-controls button:focus-visible{outline:2px solid var(--anastasis-copper);outline-offset:2px}
 .manual-workout-builder{display:grid;gap:16px;min-width:0;width:100%;box-sizing:border-box;padding-bottom:18px}
 .manual-workout-summary{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-width:0}
 .manual-workout-summary h3{margin:5px 0 0;color:var(--text-primary);font:400 clamp(1.25rem,2.5vw,1.65rem)/1.15 Georgia,'Times New Roman',serif;letter-spacing:0}

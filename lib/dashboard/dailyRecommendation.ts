@@ -26,6 +26,7 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
     logic.hydration.remaining <= 0 ? 'completed' : 'partial'
   const workout: DataAvailability = logic.execution.workoutComplete ? 'completed' : logic.execution.workoutInProgress ? 'partial' : 'not_logged'
   const checkIn: DataAvailability = logic.assessments.dailyCompleted ? 'completed' : 'not_logged'
+  const emptyWorkoutDay = ['rest', 'unavailable'].includes(logic.workoutDecision.assignedWorkout?.workout_state)
   const today = buildTodayActivities(logic, schedule)
   const guideId = (id: string): TodayActivityId | undefined => id === 'food-input' ? 'nutrition' :
     ['check-in', 'water', 'schedule', 'workout', 'recovery'].includes(id) ? id as TodayActivityId : undefined
@@ -36,6 +37,7 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   const eventActivityId = (category: string) => category === 'check_in' ? 'check-in' : category === 'hydration' ? 'water' :
     category === 'workout' || category === 'recovery' ? category : undefined
   const eventUnavailable = (category: string) => {
+    if (category === 'workout' && emptyWorkoutDay) return true
     const id = eventActivityId(category)
     const activity = today.activities.find(item => item.id === id)
     return Boolean(id && (held(id) || activity?.status === 'completed'))
@@ -53,7 +55,7 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   if (checkIn !== 'completed') {
     add('check-in', 'check_in', 'Daily check-in', 'Start with your energy. Your answers help today’s plan fit your actual capacity.', '/dashboard/check-in', 'not_logged')
   }
-  if (!logic.workoutDecision.canTrain && !logic.symptoms.redFlag) {
+  if (!logic.workoutDecision.canTrain && !logic.symptoms.redFlag && !emptyWorkoutDay) {
     add('safety', 'recovery', 'Review today’s recovery guidance', logic.recoveryStatus.reasoning, '/dashboard/recovery', 'confirmed')
   }
   const active = schedule.events.find(e => e.flexibility_type === 'fixed' && e.status === 'scheduled' &&

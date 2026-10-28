@@ -225,6 +225,66 @@ test('recommended repeated occurrences survive save, reload and revisit with sep
   assert.match(content(revisited.tree), /2 of 2 exercises complete/)
 })
 
+test('carousel keeps exercise drafts, completed sets and saved progress through navigation and reload', async () => {
+  const storage = new Map(), exercises = [
+    { ...bodyweight, sets: 2, load_type: 'per_hand', recommended_weight: 10 },
+    { ...bodyweight, id: 'row', exercise: 'Row', load_type: 'per_hand', recommended_weight: 15 },
+  ]
+  const app = mount(ActivityTracker, props(exercises), storage); await app.flush()
+  const slides = tree => nodes(tree, n => n.props?.['aria-roledescription'] === 'slide')
+  const active = tree => slides(tree).find(n => n.props['aria-hidden'] === false)
+  const control = (tree, label) => nodes(tree, n => n.type === 'button' && n.props['aria-label'] === label)[0]
+  assert.match(content(app.tree), /Exercise 1 of 2/)
+  assert.equal(control(app.tree, 'Previous exercise').props.disabled, true)
+  let inputs = nodes(active(app.tree), n => n.type === 'input')
+  inputs[0].props.onChange({ target: { value: '12.5' } }); inputs[1].props.onChange({ target: { value: '9' } }); app.render()
+  button(active(app.tree), 'Complete set 1').props.onClick(); app.render()
+  inputs = nodes(active(app.tree), n => n.type === 'input')
+  inputs[1].props.onChange({ target: { value: '11' } }); app.render()
+  control(app.tree, 'Next exercise').props.onClick(); app.render()
+  assert.match(content(app.tree), /Exercise 2 of 2/)
+  assert.equal(control(app.tree, 'Next exercise').props.disabled, true)
+  const mounted = slides(app.tree)
+  assert.equal(mounted.length, 2, 'Navigating keeps both keyed cards mounted, including recorded-set editors')
+  const inactiveElement = { inert: false }; mounted[0].ref(inactiveElement)
+  assert.equal(inactiveElement.inert, true)
+  inputs = nodes(active(app.tree), n => n.type === 'input')
+  inputs[0].props.onChange({ target: { value: '17.5' } }); inputs[1].props.onChange({ target: { value: '10' } }); app.render()
+  button(active(app.tree), 'Complete set 1').props.onClick(); app.render()
+  control(app.tree, 'Previous exercise').props.onClick(); app.render()
+  inputs = nodes(active(app.tree), n => n.type === 'input')
+  assert.deepEqual(inputs.map(n => n.props.value), [12.5, 11])
+  assert.match(content(active(app.tree)), /Set 1: 9 reps · 12.5 lb/)
+  button(active(app.tree), 'Complete set 2').props.onClick(); app.render()
+  control(app.tree, 'Next exercise').props.onClick(); app.render()
+  button(app.tree, 'Save / pause').props.onClick(); await app.flush()
+  assert.deepEqual(app.calls.at(-1).payload.exercise_logs.map(log => log.set_logs.map(set => [set.weight, set.reps])), [[[12.5, 9], [12.5, 11]], [[17.5, 10]]])
+  const reloaded = mount(ActivityTracker, props(exercises), storage); await reloaded.flush()
+  assert.match(content(reloaded.tree), /Exercise 2 of 2/)
+  assert.match(content(reloaded.tree), /2 of 2 exercises complete/)
+  control(reloaded.tree, 'Previous exercise').props.onClick(); reloaded.render()
+  assert.match(content(active(reloaded.tree)), /Set 2: 11 reps · 12.5 lb/)
+})
+
+test('carousel follows native horizontal scrolling and reserves keyboard navigation for its viewport', async () => {
+  const app = mount(ActivityTracker, props([bodyweight, { ...bodyweight, id: 'second' }, { ...bodyweight, id: 'third' }])); await app.flush()
+  const viewport = () => nodes(app.tree, n => n.props?.['aria-label'] === 'Exercise cards')[0]
+  viewport().props.onScroll({ currentTarget: { clientWidth: 320, scrollLeft: 320 } }); app.render()
+  assert.match(content(app.tree), /Exercise 2 of 3/)
+  const target = {}, prevented = []
+  viewport().props.onKeyDown({ key: 'ArrowRight', target: {}, currentTarget: target, preventDefault: () => prevented.push('input') }); app.render()
+  assert.match(content(app.tree), /Exercise 2 of 3/)
+  assert.deepEqual(prevented, [])
+  for (const [key, expected] of [['ArrowRight', 3], ['Home', 1], ['End', 3], ['ArrowLeft', 2]]) {
+    viewport().props.onKeyDown({ key, target, currentTarget: target, preventDefault: () => prevented.push(key) }); app.render()
+    assert.match(content(app.tree), new RegExp(`Exercise ${expected} of 3`))
+  }
+  assert.deepEqual(prevented, ['ArrowRight', 'Home', 'End', 'ArrowLeft'])
+  const css = readFileSync('app/globals.css', 'utf8')
+  assert.match(css, /\.activity-exercise-track\{[^}]*overflow-x:auto[^}]*scroll-snap-type:x mandatory[^}]*touch-action:pan-x pan-y pinch-zoom/)
+  assert.match(css, /\.activity-exercise-track>\.activity-exercise\{[^}]*flex:0 0 100%[^}]*scroll-snap-align:start/)
+})
+
 test('manual builder resumes the same exercise occurrence after reload and picks the selected equipment', async () => {
   const storage = new Map(), builderProps = { ...props([]), recommendedDayName: 'Recommendation', recommendedExercises: [], memberEquipment: ['dumbbell'], readiness: [] }
   const app = mount(Builder, builderProps, storage); await app.flush()

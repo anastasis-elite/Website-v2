@@ -1,3 +1,6 @@
+/* Body owns the safe area; Today and Plan supply their own header spacing. */
+.page { padding-top: 0; }
+
 .surface {
   --anastasis-ivory: #f4eee4;
   --anastasis-copper: #ad7c52;
@@ -52,6 +55,7 @@
 .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-optional-label) { display: block; margin: 6px 0 0; color: var(--soft); font: 400 .75rem Arial, sans-serif; }
 .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-state) { position: static; display: block; flex: none; margin: 0; padding: 0 24px 12px; color: var(--soft); font-size: .8rem; text-align: left; }
 .surface :global(.today-card-action), .surface :global(.plan-overview-copy) > a { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; margin-top: auto; color: var(--anastasis-ivory); font-size: clamp(.8rem, 1.8vw, 1rem); font-weight: 600; text-decoration: none; }
+.surface :global(.today-action-arrow) { flex-shrink: 0; width: 32px; height: 32px; color: var(--anastasis-copper); }
 .surface :global(.plan-overview-copy) > a > span { display: grid; flex-shrink: 0; width: 40px; height: 40px; place-items: center; border: 1px solid var(--accent); border-radius: 50%; color: var(--accent); font: 300 1.8rem/1 Arial, sans-serif; }
 .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-row-options), .surface :global(.today-activities) li[data-illustrated="true"] > button, .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-change-time) { margin: 0 16px 12px; }
 .surface :global(.today-row-options) summary { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid #bd895867; border-radius: 12px; color: var(--soft); }
@@ -60,6 +64,8 @@
 .surface :global(.today-progress-segments) i { background: #81553555; }
 .surface :global(.today-progress-segments) i:global(.is-complete) { background: var(--accent); }
 .surface :global(.today-progress) > p, .surface :global(.today-feedback) { color: var(--soft); }
+.surface :global(.today-workout-status) { display: grid; gap: 4px; margin: 0 0 20px; padding-block: 12px; border-block: 1px solid #b3835038; color: var(--soft); font-size: .85rem; line-height: 1.5; }
+.surface :global(.today-workout-status) strong { color: var(--anastasis-ivory); }
 .surface :global(.daily-disclosure), .surface :global(.daily-preferences), .surface :global(.daily-preview) section { border-color: #b3835038; background: linear-gradient(130deg, #4d301d66, #302014aa); }
 .surface a:focus-visible, .surface button:focus-visible, .surface summary:focus-visible { outline: 2px solid #e4bb91; outline-offset: 4px; }
 :global(.dashboard-client-shell):has(.surface) { background: #1d110a; }
