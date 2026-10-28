@@ -121,6 +121,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, nutritionLog: memberNutritionLog(added, client.program) })
     }
 
+    // A pre-existing day can predate hydration targets. Repair only an invalid
+    // target during this explicit save, and never overwrite a concurrent valid
+    // saved target. Merely opening the water screen remains read-only.
+    const savedWater = Number(log.water_oz)
+    if (!Number.isFinite(savedWater) || savedWater <= 0) {
+      const { water } = await calculateClientNutritionTargets({ supabase, clientId, failOnReadError: true })
+      if (getClientLocalDate(client) !== today) return staleDate()
+      const repair = supabase.from('nutrition_logs').update({ water_oz: water })
+        .eq('id', log.id).eq('client_id', clientId).eq('auth_user_id', user.id).eq('log_date', today)
+      const unchanged = log.water_oz === null || log.water_oz === undefined
+        ? repair.is('water_oz', null) : repair.eq('water_oz', log.water_oz)
+      const { data: repaired, error: repairError } = await unchanged.select('id,water_oz').maybeSingle()
+      if (repairError) return NextResponse.json({ error: 'Today’s water target could not be saved.' }, { status: 500 })
+      // A concurrent change makes the comparison fail. Confirm its target
+      // rather than replacing it with this request's calculated value.
+      const confirmed = repaired || (await supabase.from('nutrition_logs').select('id,water_oz')
+        .eq('id', log.id).eq('auth_user_id', user.id).eq('log_date', today).maybeSingle()).data
+      if (!confirmed || !Number.isFinite(Number(confirmed.water_oz)) || Number(confirmed.water_oz) <= 0) {
+        return NextResponse.json({ error: 'Today’s water target could not be confirmed.' }, { status: 500 })
+      }
+    }
+
     if (getClientLocalDate(client) !== today) return staleDate()
     const { data, error } = await supabase.rpc('add_daily_water', { p_log_id: log.id, p_ounces: ounces, p_submission_id: submissionId })
 

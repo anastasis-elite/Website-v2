@@ -180,10 +180,12 @@ export async function calculateClientNutritionTargets({
   supabase,
   clientId,
   program,
+  failOnReadError = false,
 }: {
   supabase: SupabaseReader
   clientId: string
   program?: string
+  failOnReadError?: boolean
 }) {
   const now = new Date()
   const startDate = dateOffset(21, now)
@@ -231,6 +233,12 @@ export async function calculateClientNutritionTargets({
       .select('*')
       .eq('client_id', clientId),
   ])
+
+  // Read-only hydration entry needs an honest failure state when its source
+  // data could not be read, rather than presenting fallback inputs as loaded.
+  if (failOnReadError && [strengthResult, initialResult, clientResult, cycleResult, healthMetricsResult, healthIntegrationsResult].some(result => result.error)) {
+    throw new Error('Nutrition target source data could not be loaded.')
+  }
 
   const strengthData = strengthResult.data?.data || {}
   const initialData = initialResult.data?.data || {}

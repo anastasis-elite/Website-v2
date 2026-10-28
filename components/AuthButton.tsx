@@ -115,7 +115,7 @@ export default function AuthButton() {
                   </span>
                 </span>
 
-                <span className="dashboard-menu-badge"> • 3</span>
+                <span className="dashboard-menu-badge">Members</span>
               </Link>
 
               <Link href="/about" onClick={closeMenu}>
@@ -164,11 +164,11 @@ export default function AuthButton() {
                 <span>
                   <span className="dashboard-menu-link-title">Community</span>
                   <span className="dashboard-menu-link-subtitle">
-                    Sample conversations
+                    Member conversations
                   </span>
                 </span>
 
-                <span className="dashboard-menu-badge">Preview</span>
+                <span className="dashboard-menu-badge">Members</span>
               </Link>
 
               <Link href="/program" onClick={closeMenu}>
