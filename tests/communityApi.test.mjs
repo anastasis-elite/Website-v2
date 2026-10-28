@@ -186,7 +186,10 @@ test('canceled/failed uploads retain recoverable drafts; delete hides first, rep
   const state = fixture()
   const payload = input({ media: { mimeType: 'image/jpeg', size: jpeg.length } })
   const reserved = await (await feed.POST(request(payload))).json()
+  state.rows[0].created_at = '2026-01-01T00:00:00Z'
+  state.rows[0].upload_active_until = '2026-01-01T00:15:00Z'
   assert.deepEqual(await (await feed.POST(request(payload))).json(), reserved, 'failed upload retries same reserved path')
+  assert.ok(Date.parse(state.rows[0].upload_active_until) > Date.now() + 14 * 60_000, 'resuming an old draft renews its upload lease before returning the reservation')
   state.files.set(reserved.draft.mediaPath, new Blob([jpeg])); state.failCleanup = true
   let response = await deletion.DELETE(request(null, 'DELETE'), context())
   assert.equal(response.status, 503); assert.equal((await response.json()).code, 'CLEANUP_PENDING'); assert.equal(state.rows[0].status, 'deleting')

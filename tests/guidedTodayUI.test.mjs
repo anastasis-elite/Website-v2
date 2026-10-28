@@ -101,7 +101,7 @@ test('Community uses the existing destination and active state without disturbin
     assert.match(html, /<small>Community<\/small>/)
     query = 'view=plan'
     html = renderToStaticMarkup(React.createElement(Navigation, { program: tier }))
-    assert.match(html, /href="[^\"]+\/plan"[^>]+aria-current="page"/)
+    assert.ok(html.includes(`href="/dashboard/program/${tier}?view=plan" class="client-dashboard-nav__item client-dashboard-nav__item--plan active" aria-current="page"`))
     pathname = '/dashboard/community'; query = ''
     html = renderToStaticMarkup(React.createElement(Navigation, { program: tier }))
     assert.match(html, /href="\/dashboard\/community"[^>]+aria-current="page"/)

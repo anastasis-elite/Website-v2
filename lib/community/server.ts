@@ -98,6 +98,19 @@ function reserveResult(row: CommunityRow): CommunityReserveResponse {
   return { draft: { id: row.id, mediaPath: row.media_path, mediaMime: row.media_mime, mediaSize: row.media_size } }
 }
 
+async function renewDraftReservation(identity: Identity, row: CommunityRow) {
+  if (row.status !== 'draft') return reserveResult(row)
+  // A resumed old draft gets a short upload lease before the browser sends
+  // bytes. Operator abandonment cleanup rechecks this lease atomically when
+  // scrubbing, so a seven-day-old reservation can still be actively uploading.
+  const { data, error } = await createAdminClient().from('community_posts')
+    .update({ upload_active_until: new Date(Date.now() + 15 * 60_000).toISOString() })
+    .eq('id', row.id).eq('author_id', identity.user.id).eq('status', 'draft').select('*').maybeSingle()
+  if (error) throw unavailable()
+  if (!data) throw conflict()
+  return reserveResult(data)
+}
+
 export async function reserveCommunityPost(identity: Identity, value: Record<string, unknown>): Promise<CommunityReserveResponse> {
   const input = parseInput(value)
   const format = input.media ? COMMUNITY_MEDIA_FORMATS[input.media.mimeType] : null
@@ -107,7 +120,7 @@ export async function reserveCommunityPost(identity: Identity, value: Record<str
   if (readError) throw unavailable()
   if (existing) {
     if (!matches(existing)) throw conflict()
-    return reserveResult(existing)
+    return renewDraftReservation(identity, existing)
   }
   // Only this verified server path may publish or reserve posts. Browser table writes are denied.
   const admin = createAdminClient()
@@ -121,7 +134,7 @@ export async function reserveCommunityPost(identity: Identity, value: Record<str
   if (error?.code === '23505') {
     const recovered = await ownedRow(identity, input.id)
     if (!matches(recovered)) throw conflict()
-    return reserveResult(recovered)
+    return renewDraftReservation(identity, recovered)
   }
   if (error || !data) throw unavailable()
   return reserveResult(data)

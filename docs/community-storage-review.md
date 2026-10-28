@@ -1,5 +1,7 @@
 # Community data and media setup for review
 
+Continuation: the bounded existing-admin workflow is now implemented at `/admin/community`, with supplemental review-only SQL in [docs/sql/community-operations-review.sql](sql/community-operations-review.sql). The original package findings below remain as its historical limitations; the new code supplies manual report review, Community-only request cleanup and abandoned-upload reconciliation. Both SQL proposals and the schedule migration remain unapplied. There is still no automatic member-account deletion, enabled cron, live Storage verification or iPhone acceptance result.
+
 No database or Storage changes have been applied. The review SQL is [docs/sql/community-posts-storage-review.sql](sql/community-posts-storage-review.sql), separate from migration history. The transient Supabase CLI could not create a migration because startup tried to create `/home/agent/.supabase` on the read-only filesystem; a bounded configuration retry had the same result. No credentials or remote database access were requested.
 
 ## Review and application order
