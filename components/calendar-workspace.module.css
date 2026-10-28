@@ -1,0 +1,12 @@
+.editor {
+  box-sizing: border-box;
+  width: min(94vw, 620px);
+  min-width: 0;
+  max-height: 88dvh;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #352316, #21150e);
+}
+
+.editor[open] { margin: auto; }
+.editor::backdrop { background: rgb(0 0 0 / 70%); }
+.editor > h3 { margin-top: 0; }

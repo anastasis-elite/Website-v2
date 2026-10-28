@@ -8,6 +8,7 @@ import { getClientLocalDate } from '@/lib/timezone'
 import { getClientDayRange, zonedDateTimeToUtc } from './time'
 import { buildDailyScheduleState, buildNextAction } from './engine'
 import { dailyPlanToScheduleEvents, fixedCommitmentsForDate } from './dailyPlanAdapter'
+import { applyScheduleCheckoffs, loadScheduleCheckoffs } from './checkoffs'
 import type { DailyScheduleState, ScheduleEvent } from './types'
 
 export async function loadScheduleEventsForDay({
@@ -77,7 +78,7 @@ export async function getDailyScheduleState({
     }
   }
   const dailyPlanPromise = includeVirtualPlan ? Promise.resolve(providedDailyPlan || getDailyExecutionPlan({ supabase, client })) : Promise.resolve(null)
-  const [persistedEvents, blocks, calendarEvents, dailyPlan, effectiveLogic] = await Promise.all([
+  const [persistedEvents, blocks, calendarEvents, dailyPlan, effectiveLogic, checkoffs] = await Promise.all([
     optionalSource('saved_events', () => loadScheduleEventsForDay({
     supabase,
     userId: user.id,
@@ -93,6 +94,7 @@ export async function getDailyScheduleState({
   optionalSource('calendar', () => importedScheduleEvents(supabase, user.id, client.client_id, day.start.toISOString(), day.end.toISOString(), day.timezone), []),
   dailyPlanPromise,
   logic || (includeVirtualPlan ? dailyPlanPromise.then(dailyPlan => getProgramLogicForClient({ supabase, user, client, dailyPlan: dailyPlan || undefined })) : null),
+  optionalSource('checkoffs', () => loadScheduleCheckoffs({ supabase, userId: user.id, clientId: client.client_id, date: day.date }), []),
   ])
   persistedEvents.push(...calendarEvents)
   const commitments = fixedCommitmentsForDate({ userId: user.id, client, date: day.date, timezone: day.timezone, blocks: blocks || [] })
@@ -142,7 +144,7 @@ export async function getDailyScheduleState({
     now: new Date(),
     dayStart: client.wake_time && (!client.bed_time || client.wake_time < client.bed_time) ? zonedDateTimeToUtc(day.date, client.wake_time, day.timezone) : day.start,
     dayEnd: client.bed_time && (!client.wake_time || client.wake_time < client.bed_time) ? zonedDateTimeToUtc(day.date, client.bed_time, day.timezone) : day.end,
-    events: [...commitments, ...persistedEvents.map(event => {
+    events: applyScheduleCheckoffs([...commitments, ...persistedEvents.map(event => {
       if (event.status !== 'scheduled' || !effectiveLogic || dailyPlan?.date !== day.date) return event
       const confirmed = event.event_type === 'workout' ? effectiveLogic.execution.workoutComplete : event.event_type === 'check_in' ? effectiveLogic.assessments.dailyCompleted : event.event_type === 'hydration' ? effectiveLogic.hydration.status !== 'needs_input' && effectiveLogic.hydration.remaining <= 0 : false
       return confirmed ? { ...event, status: 'completed' as const } : event
@@ -158,7 +160,7 @@ export async function getDailyScheduleState({
         action_route: `${SCHEDULE_STRUCTURE_PATH}?assessmentVersion=${submission.assessmentVersion}` }
       // A task is complete only when its matching assessment version was saved.
       return event.status === 'completed' ? { ...event, status: 'scheduled' as const, completed_at: null } : event
-    }),
+    }).map(event => ({ ...event, schedule_date: day.date })), checkoffs),
     transitionMinutes: Number(client.onboarding_data?.transitionMinutes ?? 10),
     logic: effectiveLogic,
     program: client.program || 'ignite',

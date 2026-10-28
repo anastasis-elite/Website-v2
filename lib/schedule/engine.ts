@@ -8,6 +8,7 @@ import type {
 import { healthEventTypes, scheduleConflict } from './actions'
 import { inferMealType, mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 import { scheduleStructureTaskHref } from '@/lib/assessment/scheduleStructure'
+import { localDateKey } from '@/lib/timezone'
 
 export const ACTION_ROUTES: Record<string, string> = {
   workout: '/dashboard/program/ignite/workout',
@@ -133,7 +134,16 @@ export function firstValidWindow(
 }
 
 export function getActionRouteForEvent(event: ScheduleEvent, program = 'ignite') {
-  if (event.calendar_event_id) return `/dashboard/schedule#calendar-event-${event.calendar_event_id}`
+  // A calendar label does not constitute health completion. Imported tracked
+  // activities must open their real logging flow, even when their provider
+  // record carries the generic calendar/Schedule destination.
+  if (event.calendar_event_id && healthEventTypes.has(event.event_type)) {
+    event = { ...event, calendar_event_id: undefined, action_route: null }
+  }
+  if (event.calendar_event_id) {
+    const date = event.schedule_date || localDateKey(new Date(event.start_at), event.timezone || 'UTC')
+    return `/dashboard/calendar?date=${date}#calendar-event-${event.calendar_event_id}`
+  }
   const assessmentHref = scheduleStructureTaskHref(event)
   if (assessmentHref) return assessmentHref
   if (event.event_type === 'meal' && program === 'ember') return '/dashboard/nutrition'
