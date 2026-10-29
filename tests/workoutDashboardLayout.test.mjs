@@ -40,7 +40,11 @@ test('route reuses existing workout engine and reads existing history and recove
 
 test('muscle map reuses existing body model and exposes interactive muscle labels', () => {
   assert.match(map, /src="\/woman-silhouette\.png"/)
-  assert.match(map, /viewBox="0 0 100 100"/)
+  assert.match(map, /const bodyImageSize = \{ width: 862, height: 1825 \}/)
+  assert.match(map, /width=\{bodyImageSize.width\}/)
+  assert.match(map, /height=\{bodyImageSize.height\}/)
+  assert.match(map, /viewBox=\{`0 0 \$\{bodyImageSize.width\} \$\{bodyImageSize.height\}`\}/)
+  assert.match(map, /preserveAspectRatio="xMidYMid meet"/)
   assert.match(map, /muscleMapGeometry/)
   assert.match(map, /mirror\(leftGeometry/)
   assert.match(map, /role="button"/)
