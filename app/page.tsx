@@ -4,8 +4,8 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Button from '../components/Button'
 import MistReveal from '../components/MistReveal'
-import TrackEvent from '@/components/TrackEvent'
-import TrackedButton from '@/components/TrackedButton'
+import HomepageAnalytics from '@/components/homepage/HomepageAnalytics'
+import styles from './homepage.module.css'
 import { BRAND_NAME, BRAND_TITLE } from '@/lib/seo'
 
 const homeDescription =
@@ -116,31 +116,29 @@ const auditOutcomes = [
   'A starting point you can review in your own time',
 ]
 
-const workSteps = [
+const storyMoments = [
   {
-    title: '1. Start with your life',
-    label: 'Context',
-    body:
-      'Your profile and assessments record your goals, equipment, training experience, and circumstances. Daily check-ins add how you feel, so guidance has context.',
+    title: 'The good morning',
+    lead: 'You wake up feeling great.',
+    body: 'Your training plan is ready. You know what you’re working on, and your nutrition targets are in the same place.',
   },
   {
-    title: '2. Review your next step',
-    label: 'Clarity',
-    body:
-      'Review your training plan, nutrition targets, and recovery guidance. Saved inputs and check-ins help inform the options you see; you choose what fits today.',
+    title: 'The disrupted afternoon',
+    lead: 'The day doesn’t go according to plan.',
+    body: 'You check in, review your options, and decide what fits instead of trying to reconstruct your entire routine from memory.',
   },
   {
-    title: '3. Continue with context',
-    label: 'Continuity',
-    body:
-      'Record what you do and return to your saved progress. A check-in, a drink of water, or the next part of your workout can be enough to begin.',
+    title: 'The recovery evening',
+    lead: 'You need recovery more than another workout.',
+    body: 'Recovery guidance has a place alongside your training—not as something you have to earn by pushing harder.',
   },
 ]
 
-const reliefStatements = [
-  'Keep your plan and recorded progress together.',
-  'Return to one place for training, nutrition targets, and recovery guidance.',
-  'Take the next useful step with the room you have today.',
+const productFeatures = [
+  { title: 'Training', body: 'Your assessed plan, exercise guidance, and recorded workouts.' },
+  { title: 'Nutrition', body: 'Targets and food tools appropriate to your program.' },
+  { title: 'Recovery', body: 'Guidance informed by your recorded recovery context.' },
+  { title: 'Progress', body: 'A history of the work you’ve done and the changes you’ve recorded.' },
 ]
 
 const womenCarry = [
@@ -155,17 +153,14 @@ const womenCarry = [
 export default function Home() {
   return (
     <main
-      className="landing-page"
+      className={`landing-page ${styles.page}`}
       style={{
         minHeight: '100vh',
         overflow: 'hidden',
         position: 'relative',
       }}
     >
-      <TrackEvent
-        event="landing_page_viewed"
-        properties={{ page: 'landing' }}
-      />
+      <HomepageAnalytics />
 
       <section
         style={{
@@ -272,7 +267,17 @@ export default function Home() {
               textWrap: 'balance',
             }}
           >
-            Your goals and check-ins inform training, nutrition targets, and recovery guidance.
+            You know what you want for your body. You’ve probably researched the
+            workouts, saved the recipes, and promised yourself you’d get consistent
+            when things settle down.
+          </p>
+          <p style={{ ...bodyStyle, margin: 0, fontSize: 'var(--landing-body-large)', lineHeight: 1.85, textWrap: 'balance' }}>
+            But somehow, figuring out how to take care of yourself keeps becoming
+            another thing on your list.
+          </p>
+          <p style={{ ...bodyStyle, margin: 0, fontSize: 'var(--landing-body-large)', lineHeight: 1.85, textWrap: 'balance' }}>
+            Anastasis brings your training, nutrition, recovery, and progress into
+            one personalized system—built around the life you’re actually living.
           </p>
         </div>
 
@@ -326,13 +331,9 @@ export default function Home() {
             marginTop: '12px',
           }}
         >
-          <TrackedButton
-            href="/audit"
-            event="audit_cta_clicked_1"
-            properties={{ location: 'hero', page: 'landing' }}
-          >
-            Find My Starting Point
-          </TrackedButton>
+          <div data-homepage-audit-cta="hero">
+            <Button href="/audit">Find My Starting Point</Button>
+          </div>
 
           <Button href="#how-it-works">See How It Works</Button>
         </div>
@@ -361,6 +362,40 @@ export default function Home() {
         </div>
 
         <div style={{ height: '80px' }} />
+      </section>
+
+      <section id="story" aria-labelledby="story-title" style={sectionStyle}>
+        <div style={sectionInnerStyle}>
+          <p style={eyebrowStyle}>A familiar moment</p>
+          <h2 id="story-title" style={sectionTitleStyle}>It’s 9 p.m. You finally have a minute.</h2>
+          <div className={styles.storyGrid}>
+            <div className={styles.prose} style={bodyStyle}>
+              <p>You were going to work out today.</p>
+              <p>You even thought about it three different times.</p>
+              <p>But then the meeting ran long. Dinner needed making. Something came up that couldn’t wait.</p>
+              <p>Now you’re standing in the kitchen wondering whether a workout is even worth starting this late.</p>
+              <p>So you tell yourself you’ll do it tomorrow.</p>
+              <p>And tomorrow, you’ll have to figure it all out again.</p>
+            </div>
+            <div className={styles.storyImage}>
+              <Image
+                src="/images/homepage/evening-kitchen.webp"
+                alt="A woman in everyday clothes pauses thoughtfully at her kitchen counter in warm evening light."
+                width={1536}
+                height={1024}
+                sizes="(max-width: 760px) calc(100vw - 48px), (max-width: 1068px) 46vw, 486px"
+                loading="lazy"
+                style={{ display: 'block', width: '100%', height: 'auto' }}
+              />
+            </div>
+          </div>
+          <p style={{ ...bodyStyle, marginTop: '48px', color: '#f5f0e8', fontSize: 'var(--landing-moment)', lineHeight: 1.35, textWrap: 'balance' }}>
+            That’s the part Anastasis is designed to change.
+          </p>
+          <p style={{ ...bodyStyle, marginTop: '24px' }}>
+            Not by demanding another hour from your day. By helping you understand what makes sense with the time, energy, and recovery you actually have.
+          </p>
+        </div>
       </section>
 
       <section id="outcome" style={sectionStyle}>
@@ -394,219 +429,93 @@ export default function Home() {
             ))}
           </div>
 
-          <TrackedButton
-            href="/audit"
-            event="audit_cta_clicked_2"
-            properties={{ location: 'outcome', page: 'landing' }}
-          >
-            Find My Starting Point
-          </TrackedButton>
+          <div data-homepage-audit-cta="outcome">
+            <Button href="/audit">Find My Starting Point</Button>
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works" style={{ ...sectionStyle, paddingBottom: '140px' }}>
+        <div style={{ ...sectionInnerStyle, maxWidth: '1080px' }}>
+          <p style={eyebrowStyle}>How it works</p>
+          <h2 style={sectionTitleStyle}>What if you didn’t have to figure it all out every morning?</h2>
+          <div style={{ ...gridStyle, gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))' }}>
+            {storyMoments.map((moment) => (
+              <div key={moment.title} style={cardStyle}>
+                <h3 style={cardTitleStyle}>{moment.title}</h3>
+                <p style={{ ...cardTextStyle, marginBottom: '18px', color: '#f5f0e8' }}>{moment.lead}</p>
+                <p style={cardTextStyle}>{moment.body}</p>
+              </div>
+            ))}
+          </div>
+          <p style={{ ...bodyStyle, marginTop: '48px', textWrap: 'balance' }}>
+            Anastasis doesn’t live in an imaginary world where every day goes perfectly. Neither do you.
+          </p>
         </div>
       </section>
 
       <section id="seen" style={sectionStyle}>
-        <div style={{ ...sectionInnerStyle, maxWidth: '980px' }}>
-          <p style={eyebrowStyle}>When life is full</p>
-
-          <h2 style={sectionTitleStyle}>Making room for your health takes thought.</h2>
-
-          <div
-            style={{
-              maxWidth: '790px',
-              margin: '0 auto 52px',
-              display: 'grid',
-              gap: '18px',
-              fontSize: '1.08rem',
-              lineHeight: 1.85,
-              color: 'rgba(215,199,182,0.82)',
-            }}
-          >
-            <p style={{ margin: 0 }}>You have learned what matters to you.</p>
-            <p style={{ margin: 0 }}>You know how much a good night’s rest can change a day.</p>
-            <p style={{ margin: 0 }}>
-              Making space for movement, food, water, and recovery still takes
-              thought alongside everything else you do.
-            </p>
-            <p
-              style={{
-                margin: '16px 0 0',
-                color: 'rgba(245,240,232,0.92)',
-                fontSize: '1.18rem',
-              }}
-            >
-              Some days have more room than others.
-            </p>
-            <p style={{ margin: 0 }}>
-              Energy, soreness, sleep, cycle context, and a changing schedule
-              can all affect the choices in front of you.
-            </p>
-            <p style={{ margin: 0 }}>
-              It helps to have your plan and what you have recorded in view.
-            </p>
+        <div style={sectionInnerStyle}>
+          <p style={eyebrowStyle}>Together, with context</p>
+          <h2 style={sectionTitleStyle}>One place for the things you’ve been trying to piece together.</h2>
+          <div style={gridStyle}>
+            {productFeatures.map((feature) => (
+              <div key={feature.title} style={cardStyle}>
+                <h3 style={cardTitleStyle}>{feature.title}</h3>
+                <p style={cardTextStyle}>{feature.body}</p>
+              </div>
+            ))}
           </div>
-
-          <div
-            style={{
-              maxWidth: '860px',
-              margin: '0 auto 58px',
-              background: 'rgba(181,110,67,0.08)',
-              border: '1px solid rgba(197,139,87,0.15)',
-              borderRadius: '34px',
-              padding: '38px 34px',
-            }}
-          >
-            <p
-              style={{
-                fontSize: 'var(--landing-moment)',
-                lineHeight: 1.35,
-                letterSpacing: '0',
-                color: 'rgba(245,240,232,0.92)',
-                margin: 0,
-                textWrap: 'balance',
-              }}
-            >
-              Anastasis helps you review what makes sense for today.
-            </p>
+          <p style={{ ...cardTextStyle, margin: '28px auto 0', maxWidth: '680px' }}>
+            Tools and guidance vary by program. <a className={styles.textLink} href="/program">Compare support levels</a> to find your starting point.
+          </p>
+          <div style={{ marginTop: '38px' }}>
+            <Button href="#how-it-works">See How It Works</Button>
           </div>
-
-          <Button href="#how-it-works">See How It Works</Button>
         </div>
       </section>
 
-      <section
-        id="how-it-works"
-        style={{
-          ...sectionStyle,
-          paddingBottom: '140px',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '1080px',
-            margin: '0 auto',
-            textAlign: 'center',
-          }}
-        >
-          <p style={eyebrowStyle}>How it works</p>
-
-          <h2
-            style={{
-              ...sectionTitleStyle,
-              fontSize: 'var(--landing-hero-title)',
-              lineHeight: 1.04,
-            }}
-          >
-            How Anastasis works
-          </h2>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '18px',
-              maxWidth: '920px',
-              margin: '0 auto 76px',
-            }}
-          >
-            {[
-              'Share your goals and circumstances.',
-              'Review guidance with context.',
-              'Choose a manageable next step.',
-            ].map((step) => (
-              <div
-                key={step}
-                style={{
-                  background: 'rgba(18,18,18,0.56)',
-                  borderRadius: '28px',
-                  padding: '28px 24px',
-                  color: 'rgba(245,240,232,0.9)',
-                  fontSize: '1.12rem',
-                  lineHeight: 1.55,
-                  boxShadow: '0 24px 80px rgba(0,0,0,0.16)',
-                }}
-              >
-                {step}
-              </div>
-            ))}
+      <section id="founder" aria-labelledby="founder-title" style={sectionStyle}>
+        <div style={sectionInnerStyle}>
+          <p style={eyebrowStyle}>From the founder</p>
+          <h2 id="founder-title" style={sectionTitleStyle}>I didn’t build Anastasis because women needed another workout plan.</h2>
+          <div className={styles.founderGrid}>
+            {/* Reserved for an approved authentic founder photograph. No synthetic likeness. */}
+            <div className={styles.founderPortrait} role="img" aria-label="Founder portrait placeholder; authentic photograph to be added.">
+              <span style={eyebrowStyle}>Founder portrait</span>
+              <span style={{ ...cardTitleStyle, margin: 0 }}>Rhea Nyx Anastasia</span>
+              <span style={{ ...cardTextStyle, marginTop: '12px' }}>Photograph to come</span>
+            </div>
+            <div className={styles.prose} style={bodyStyle}>
+              <p>I became a personal trainer and nutrition coach because I wanted to understand the questions I couldn’t find satisfying answers to.</p>
+              <p>And the more women I worked with, the more obvious something became.</p>
+              <p>A workout could look perfect on paper and still be completely wrong for the woman trying to fit it into her life.</p>
+              <p>Her schedule mattered. Her recovery mattered. Her training history mattered. What was happening outside the gym mattered.</p>
+              <p>I kept seeing how much time women spent trying to piece everything together.</p>
+              <p>The workouts. The food. The progress. The adjustments.</p>
+              <p>And I kept coming back to the same question:</p>
+              <p style={{ color: '#f5f0e8' }}>Why are we expecting women to manage all of that by themselves?</p>
+              <p>So I started building something different.</p>
+              <p style={{ ...cardTextStyle, color: '#c58b57', marginTop: '12px' }}>Rhea Nyx Anastasia — NASM Certified Personal Trainer &amp; Certified Nutrition Coach</p>
+            </div>
           </div>
+        </div>
+      </section>
 
-          <div
-            style={{
-              ...gridStyle,
-              gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))',
-              marginBottom: '72px',
-            }}
-          >
-            {workSteps.map((item) => (
-              <div key={item.title} style={{ ...cardStyle, padding: '40px 34px' }}>
-                <p
-                  style={{
-                    letterSpacing: '4px',
-                    fontSize: '11px',
-                    color: '#c58b57',
-                    opacity: 0.82,
-                    margin: '0 0 18px',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {item.label}
-                </p>
-
-                <h3 style={{ ...cardTitleStyle, fontSize: '1.38rem' }}>
-                  {item.title}
-                </h3>
-
-                <p style={cardTextStyle}>{item.body}</p>
-              </div>
-            ))}
+      <section id="community" aria-labelledby="community-title" style={sectionStyle}>
+        <div style={sectionInnerStyle}>
+          <p style={eyebrowStyle}>A community we’re building</p>
+          <h2 id="community-title" style={sectionTitleStyle}>And you don’t have to do it alone.</h2>
+          <div className={styles.prose} style={bodyStyle}>
+            <p>You know that feeling when you finally notice something changing?</p>
+            <p>Maybe you caught your reflection and did a double take. Maybe you lifted more than you ever thought you could. Maybe you simply made it through a month of keeping a promise to yourself.</p>
+            <p>Those moments deserve to be celebrated.</p>
+            <p>We’re building the Anastasis community around women sharing their progress, supporting each other, and celebrating what it took to get there.</p>
+            <p style={{ color: '#f5f0e8' }}>Every first of the month, we show up for each other.</p>
           </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gap: '16px',
-              maxWidth: '860px',
-              margin: '0 auto 64px',
-            }}
-          >
-            {reliefStatements.map((item) => (
-              <div
-                key={item}
-                style={{
-                  background: 'rgba(18,18,18,0.46)',
-                  borderRadius: '24px',
-                  padding: '22px 26px',
-                  color: 'rgba(215,199,182,0.84)',
-                  fontSize: '1.02rem',
-                  lineHeight: 1.65,
-                }}
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-
-          <div
-            style={{
-              maxWidth: '760px',
-              margin: '0 auto',
-              background: 'rgba(181,110,67,0.08)',
-              border: '1px solid rgba(197,139,87,0.15)',
-              borderRadius: '34px',
-              padding: '38px 34px',
-            }}
-          >
-            <p
-              style={{
-                fontSize: 'var(--landing-moment)',
-                lineHeight: 1.35,
-                color: 'rgba(245,240,232,0.92)',
-                margin: 0,
-                textWrap: 'balance',
-              }}
-            >
-              Your next step can fit the day you are having.
-            </p>
+          <div style={{ ...cardStyle, maxWidth: '790px', margin: '38px auto 0', textAlign: 'center', border: '1px solid rgba(197,139,87,0.15)' }}>
+            <p style={cardTextStyle}>You’re invited to make a monthly progress update part of your own rhythm. A few words about your month, a personal story, or an optional progress photo—choose what feels right for you.</p>
+            <p style={{ ...cardTextStyle, marginTop: '18px' }}>This is our community vision. In-app posting and photo sharing are not yet available.</p>
           </div>
         </div>
       </section>
@@ -736,7 +645,7 @@ export default function Home() {
                 textWrap: 'balance',
               }}
             >
-              Make room for a starting point that fits.
+              You have a life you’re building. Your health belongs in it.
             </h2>
 
             <div
@@ -751,11 +660,10 @@ export default function Home() {
               }}
             >
               <p style={{ margin: 0 }}>
-                You can start without having every detail worked out.
+                Not someday, when everything settles down. Not after you’ve figured out every detail.
               </p>
               <p style={{ margin: 0 }}>
-                Explore a self-led foundation, compare the support levels, or
-                use five brief questions to find a suggested place to begin.
+                Start with the woman you are, the goals you have, and the time you can make available.
               </p>
               <p style={{ margin: 0 }}>Start with the Capacity Audit.</p>
               <p style={{ margin: 0 }}>
@@ -771,13 +679,9 @@ export default function Home() {
                 flexWrap: 'wrap',
               }}
             >
-              <TrackedButton
-                href="/audit"
-                event="audit_cta_clicked_3"
-                properties={{ location: 'final_cta', page: 'landing' }}
-              >
-                Show Me Where to Start
-              </TrackedButton>
+              <div data-homepage-audit-cta="final_cta">
+                <Button href="/audit">Show Me Where to Start</Button>
+              </div>
 
               <Button href="/program">Compare support levels</Button>
             </div>
