@@ -154,10 +154,11 @@ test('direct food and meal entry shows the actual entitled logger while EMBER re
   }
 })
 
-test('nutrition page starts direct logging before schedule cards and retains client-scoped state', () => {
+test('nutrition page starts direct logging before personalized dashboard logic and retains client-scoped state', () => {
   const page = readFileSync('app/dashboard/nutrition/page.tsx', 'utf8')
   const client = readFileSync('app/dashboard/nutrition/NutritionDashboardClient.tsx', 'utf8')
-  assert.ok(page.indexOf('if (loggingIntent.action)') < page.indexOf('const schedule ='))
+  assert.ok(page.indexOf('if (loggingIntent.action)') < page.indexOf('const logic='))
+  assert.doesNotMatch(page, /DailyPlanCard|getDailyScheduleState/)
   assert.match(client, /key=\{logic.client.id\}/)
 })
 

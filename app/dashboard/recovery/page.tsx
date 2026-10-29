@@ -1,5 +1,3 @@
-import DailyPlanCard from '@/components/DailyPlanCard'
-import { getDailyScheduleState } from '@/lib/schedule/service'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
 import RecoveryDashboardClient from '@/components/recovery/RecoveryDashboardClient'
@@ -62,9 +60,8 @@ export default async function RecoveryPage() {
 
   const cycleTrackingEnabled = !['menopause','pregnant','not_tracking'].includes(String(client.reproductive_status||'cycling'))
 
-  const schedule = await getDailyScheduleState({ supabase, user, client, logic })
   return (
-    <PhoneAppFrame eyebrow="Recovery" title="A little room to restore." subtitle="Choose what feels right today."><DailyPlanCard plan={schedule.dailyRecommendation!} schedule={schedule} compact /><RecoveryDashboardClient
+    <PhoneAppFrame eyebrow="Recovery" title="A little room to restore." subtitle="Choose what feels right today."><RecoveryDashboardClient
       logic={logic}
       clientId={client.client_id}
       program={client.program || logic.program}
