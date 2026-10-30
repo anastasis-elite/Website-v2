@@ -4,6 +4,9 @@ import { useId, useRef, type CSSProperties } from 'react'
 
 import DailyCheckInForm from '@/components/DailyCheckInForm'
 import RecoveryLogger from '@/components/RecoveryLogger'
+import RecoveryActivitySheets from '@/components/recovery/RecoveryActivitySheets'
+import { formatRecoveryDetails } from '@/lib/recovery/activityDisplay'
+import type { RecoveryActivityDetails } from '@/lib/recovery/activityDetails'
 import BreathingReset from '@/components/recovery/BreathingReset'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { SorenessRegionKey } from '@/lib/recovery/sorenessRegions'
@@ -28,6 +31,7 @@ type RecoveryActivity = {
   id?: string
   activity_type?: string | null
   duration_minutes?: number | null
+  activity_details?: RecoveryActivityDetails | null
   log_date?: string | null
   created_at?: string | null
 }
@@ -229,8 +233,7 @@ export default function RecoveryDashboardClient({
           <PhoneAppCard title="Breathwork" copy="Come back to center." href="/dashboard/meditation?practice=breath-reset" action="Open breathing timer" />
         </div>
         <h2>Simple ways to unwind.</h2><div className="phone-app-grid">
-          <PhoneAppCard title="Slow walk" copy="Fresh air, a calmer mind." illustration="training" href="#own-practice" action="Choose your activity above" />
-          <PhoneAppCard title="Warm soak" copy="A little warmth goes a long way." illustration="water" href="#own-practice" action="Choose your activity above" />
+          <RecoveryActivitySheets clientId={clientId} />
         </div>
         <section className="recovery-dashboard-workspace" data-tier={logic.program}>
           <article className="tier-daily-insight workout-objective recovery-objective" data-testid="recovery-objective">
@@ -375,7 +378,7 @@ export default function RecoveryDashboardClient({
                   <article key={activity.id || `${activity.activity_type}-${index}`}>
                     <time>{activity.log_date || (activity.created_at ? new Date(activity.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Recovery')}</time>
                     <strong>{activity.activity_type || 'Recovery action'}</strong>
-                    <small>{activity.duration_minutes ? `${activity.duration_minutes} minutes` : 'Rest-based action'}</small>
+                    {activity.activity_details ? formatRecoveryDetails(activity.activity_details).map(line => <small key={line}>{line}</small>) : <small>{activity.duration_minutes ? `${activity.duration_minutes} minutes` : 'Rest-based action'}</small>}
                   </article>
                 )) : <p className="tier-calendar-empty">Completed recovery actions will appear here.</p>}
               </div>

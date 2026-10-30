@@ -35,7 +35,7 @@ export default async function RecoveryPage() {
       .order('log_date', { ascending: true }),
     supabase
       .from('recovery_activity_logs')
-      .select('id,activity_type,duration_minutes,log_date,created_at')
+      .select('id,activity_type,duration_minutes,activity_details,log_date,created_at')
       .eq('user_id', user.id)
       .eq('client_id', client.client_id)
       .gte('log_date', sevenDaysAgo)
