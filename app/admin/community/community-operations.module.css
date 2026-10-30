@@ -1,0 +1,21 @@
+.workspace { display: grid; gap: 24px; margin-bottom: 28px; }
+.panel { padding: clamp(18px, 3vw, 28px); border: 1px solid var(--anastasis-copper); border-radius: 20px; background: var(--anastasis-charcoal); min-width: 0; }
+.panel h2 { margin: 0 0 14px; font-size: 1.15rem; }
+.panel h3 { margin: 0 0 10px; font-size: 1rem; }
+.panel p, .panel label, .rows { font-size: .9rem; line-height: 1.6; }
+.fields { display: grid; gap: 14px; padding: 0; margin: 16px 0 0; border: 0; min-width: 0; }
+.panel label { display: grid; gap: 6px; }
+.panel input:not([type='checkbox']), .panel textarea, .panel select { box-sizing: border-box; width: 100%; padding: 11px 12px; border: 1px solid rgba(255,255,255,.25); border-radius: 9px; background: #171717; color: inherit; font: inherit; }
+.panel textarea { resize: vertical; }
+.controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.controls label { flex: 1; min-width: 140px; }
+.panel button { justify-self: start; padding: 11px 16px; min-height: 44px; border: 1px solid var(--anastasis-copper); border-radius: 10px; background: rgba(183,113,81,.15); color: inherit; font: inherit; cursor: pointer; }
+.panel button:disabled { opacity: .45; cursor: not-allowed; }
+.panel :is(input, textarea, select, button):focus-visible { outline: 2px solid var(--anastasis-copper); outline-offset: 3px; }
+.panel .checkbox { display: flex; align-items: flex-start; gap: 10px; }
+.checkbox input { flex-shrink: 0; margin-top: 5px; width: 17px; height: 17px; }
+.report { margin-top: 20px; border-top: 1px solid rgba(255,255,255,.18); padding-top: 20px; }
+.postBody { margin: 12px 0; padding: 12px 16px; border-left: 2px solid var(--anastasis-copper); white-space: pre-wrap; overflow-wrap: anywhere; }
+.rows { max-height: 300px; overflow: auto; padding-left: 22px; }
+.rows li { margin-bottom: 10px; }
+.panel code { overflow-wrap: anywhere; font-size: .83rem; }

@@ -2,7 +2,7 @@
 
 import { getStrengthAssessmentDetail } from '@/lib/assessment/getStrengthAssessmentStatus'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 import WorkoutTracker from '@/components/WorkoutTracker'
@@ -12,12 +12,10 @@ import ManualWorkoutBuilder from '@/components/workout-dashboard/ManualWorkoutBu
 import MuscleReadinessMap from '@/components/workout-dashboard/MuscleReadinessMap'
 import {
   getMuscleIdsForExercise,
-  summarizeWorkoutMuscleFocus,
   type MuscleId,
   type MuscleReadiness,
 } from '@/lib/workout/muscleReadiness'
 import type { ProgramTier, ProgramLogicOutput } from '@/lib/dashboard/logic/types'
-import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
 import { activityDose, summarizeActivityUnits } from '@/lib/workout/activity'
 import { exerciseOccurrenceLabel, formatWorkoutHistoryDate } from '@/lib/workout/logging'
 import { parseWorkoutViewPreferences } from '@/lib/workout/viewPreferences'
@@ -105,7 +103,7 @@ function formatAssessmentEnd(date?: string | null) {
 function WorkoutPreview({ exercises, previewTitle, previewMessage }: { exercises: AssignedExercise[]; previewTitle: string; previewMessage: string }) {
   return (
     <div className="aos-workout-preview">
-      <p className="tier-dashboard-label">Plan remains visible</p>
+      {exercises.length ? <p className="tier-dashboard-label">Plan remains visible</p> : null}
       <h2>{previewTitle}</h2>
       <p>{previewMessage}</p>
       {exercises.length ? (
@@ -203,28 +201,9 @@ export default function WorkoutDashboard(props: Props) {
     if (restoredPreferenceKey !== preferenceKey) return
     try { localStorage.setItem(preferenceKey, JSON.stringify({ tab, mode: workoutMode })) } catch { /* Browser preferences are optional. */ }
   }, [preferenceKey, restoredPreferenceKey, tab, workoutMode])
-  const training = getDailyTraining(props.logic)
-  const focus = useMemo(() => summarizeWorkoutMuscleFocus(props.assignedExercises).slice(0, 3), [props.assignedExercises])
 
   return (
     <section className="workout-dashboard-workspace" data-tier={props.program}>
-      <article className="tier-daily-insight workout-objective" data-testid="workout-objective">
-        <p className="tier-dashboard-label">{training.label}</p>
-        <div>
-          <h2>{props.workoutTitle}</h2>
-          <WorkoutFeedback
-            clientId={props.clientId}
-            program={props.program}
-            assignedWorkoutId={props.assignedWorkoutId}
-            workoutTitle={props.workoutTitle}
-            workoutHref={`/dashboard/program/${props.program}/workout`}
-          />
-        </div>
-        <p>{props.logic.workoutDecision.intensityTarget}. {props.logic.workoutDecision.reasonForModification}</p>
-        <p>{training.readinessNote}</p>
-        {focus.length ? <small>Primary emphasis: {focus.map(titleCaseMuscle).join(' + ')}</small> : null}
-      </article>
-
       {props.hasSafetyFlags ? <SafetyEscalationNotice flags={props.safetyFlags} embedded /> : null}
       <details className="phone-app-report"><summary>Heart-rate recovery · Unavailable</summary><p>No timestamped heart-rate stream or continuous exercise/rest intervals are connected to this session. Your recorded sets remain available. This screen does not establish a watch connection or a heart-rate readiness threshold.</p></details>
 
@@ -233,9 +212,18 @@ export default function WorkoutDashboard(props: Props) {
 
         <section className="workout-current-panel" data-testid="today-workout-panel">
           <div className="tier-panel-heading">
-            <div>
-              <p className="tier-dashboard-label">{props.workoutStateLabel}</p>
-              <h2>Today&apos;s Workout</h2>
+            <div className="workout-panel-title">
+              <div>
+                <p className="tier-dashboard-label">{props.workoutStateLabel}</p>
+                <h2>Today&apos;s Workout</h2>
+              </div>
+              <WorkoutFeedback
+                clientId={props.clientId}
+                program={props.program}
+                assignedWorkoutId={props.assignedWorkoutId}
+                workoutTitle={props.workoutTitle}
+                workoutHref={`/dashboard/program/${props.program}/workout`}
+              />
             </div>
             <div className="workout-mode-switch" role="tablist" aria-label="Workout mode">
               {(['recommended', 'manual'] as const).map((mode) => (
@@ -252,6 +240,7 @@ export default function WorkoutDashboard(props: Props) {
               ))}
             </div>
           </div>
+          {props.showInteractiveWorkout && workoutMode === 'recommended' ? <p className="workout-session-guidance">{props.logic.workoutDecision.intensityTarget} {props.logic.workoutDecision.reasonForModification}</p> : null}
           <div className="workout-session-region">
             {workoutMode === 'manual' ? (
               <ManualWorkoutBuilder

@@ -52,6 +52,7 @@ test('compact own-practice button opens the existing logger and closing restores
   const mocks = {
     react: { useId: () => 'practice-dialog', useRef: () => ({ current: null }) },
     '@/components/RecoveryLogger': { __esModule: true, default: 'recovery-logger' },
+    '@/components/recovery/RecoveryActivitySheets': {}, '@/lib/recovery/activityDisplay': {},
     '@/components/DailyCheckInForm': {}, '@/components/recovery/BreathingReset': {},
     '@/lib/dashboard/dailyTraining': {}, '@/lib/recovery/scoreExplanation': {},
     '@/components/dashboard/useViewPreference': {}, '@/components/phone-app/PhoneAppFrame': {},

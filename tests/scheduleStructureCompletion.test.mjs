@@ -67,7 +67,7 @@ function setup({ events = [assessment, nextTask], clients, conflict, failWrite =
   const savedEvents = structuredClone(events), writes = []
   let attempts = 0
   const db = { rows, events: savedEvents, writes, auth: { getUser: async () => ({ data: { user: authenticated ? { id: owner } : null }, error: null }) }, from(table) {
-    assert.ok(['clients', 'anastasis_schedule_events', 'client_schedule_blocks'].includes(table), `Unexpected table ${table}`)
+    assert.ok(['clients', 'anastasis_schedule_events', 'client_schedule_blocks', 'schedule_occurrence_checkoffs'].includes(table), `Unexpected table ${table}`)
     const filters = []; let mutation
     const matches = row => filters.every(([key, value]) => key === 'onboarding_data'
       ? value === null ? row[key] == null : JSON.stringify(row[key]) === value : row[key] === value)

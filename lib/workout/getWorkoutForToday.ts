@@ -7,7 +7,7 @@ import type {
 } from '@/lib/dashboard/logic/types'
 import { getClientLocalDate } from '@/lib/timezone'
 
-type WorkoutState = 'planned' | 'recovery' | 'starter' | 'reduced'
+type WorkoutState = 'planned' | 'recovery' | 'starter' | 'reduced' | 'rest' | 'unavailable'
 
 type WorkoutForToday = {
   type: WorkoutState
@@ -176,10 +176,8 @@ function getDefaultRecoveryActions() {
 }
 
 /**
- * This is used only when a generated strength workout is unavailable or the
- * client does not yet have enough training history.
- *
- * It is intentionally a real strength workout—not a stretching routine.
+ * Provides supported strength movements to the reduced-capacity builder.
+ * Missing training plans and intentional rest days do not use this fallback.
  */
 export function getStarterWorkout(): WorkoutForToday {
   return {
@@ -503,6 +501,38 @@ export function getWorkoutForToday({
   const localDate =
     getClientLocalDate(inputs.client)
 
+  if (
+    plannedWorkout?.day_intent === 'rest' &&
+    Array.isArray(plannedWorkout.exercises) &&
+    plannedWorkout.exercises.length === 0 &&
+    assignedExercises.length === 0
+  ) {
+    return {
+      type: 'rest',
+      title: 'Rest day',
+      exercises: [],
+      completionEligible: false,
+      reason: 'Today is an intentional rest day in your program. No workout is assigned.',
+    }
+  }
+
+  // Missing and incomplete training plans are unavailable, including a day
+  // emptied by equipment filtering. Readiness must not invent a replacement.
+  if (
+    !plannedWorkout ||
+    plannedWorkout.day_intent === 'rest' ||
+    !hasUsableExercises(assignedExercises) ||
+    !getStrengthExercises(assignedExercises).length
+  ) {
+    return {
+      type: 'unavailable',
+      title: 'Workout unavailable',
+      exercises: [],
+      completionEligible: false,
+      reason: `Your training plan for ${localDate} is missing or incomplete. Contact your coach to review it.`,
+    }
+  }
+
   /**
    * Only a true recovery or safety red flag should remove lifting entirely.
    */
@@ -532,38 +562,6 @@ export function getWorkoutForToday({
       assignedExercises,
       'Capacity or recovery is reduced today, so the session includes three strength exercises and three recovery actions.',
     )
-  }
-
-  /**
-   * When no complete generated workout exists, provide a real foundational
-   * strength workout.
-   */
-  if (
-    !plannedWorkout ||
-    !hasUsableExercises(assignedExercises)
-  ) {
-    return {
-      ...getStarterWorkout(),
-
-      reason:
-        `No complete generated strength workout was available for ${localDate}, so a foundational strength workout is assigned.`,
-    }
-  }
-
-  const strengthExercises =
-    getStrengthExercises(assignedExercises)
-
-  /**
-   * Do not accept a generated plan containing only stretching, mobility, or
-   * recovery actions as a valid planned workout.
-   */
-  if (!strengthExercises.length) {
-    return {
-      ...getStarterWorkout(),
-
-      reason:
-        'The generated plan did not contain a valid strength workout, so a foundational strength workout is assigned instead.',
-    }
   }
 
   return {

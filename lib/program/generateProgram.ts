@@ -324,6 +324,8 @@ export function generateProgram({
 
     return {
       ...day,
+      // Preserve source intent before equipment filtering can empty training.
+      day_intent: day.day_intent === 'rest' ? 'rest' : 'training',
       exercises,
     }
   })
@@ -331,6 +333,8 @@ export function generateProgram({
   return {
     generated_at: new Date().toISOString(),
     program: client.program,
+    template_program: template.program,
+    template_version: template.version,
     days: generatedDays,
     equipment_review_required: restrictedEquipment && excludedExercises.length > 0,
     excluded_exercises: excludedExercises,
