@@ -7,10 +7,12 @@ const dashboard = readFileSync('components/workout-dashboard/WorkoutDashboard.ts
 const map = readFileSync('components/workout-dashboard/MuscleReadinessMap.tsx', 'utf8')
 const css = readFileSync('app/globals.css', 'utf8')
 
-test('workout opens with the workout panel and keeps rest guidance without the removed summary cards', () => {
+test('workout opens with the workout panel, keeps rest guidance and puts adaptations in an optional disclosure', () => {
   assert.doesNotMatch(route, /DailyPlanCard/)
   assert.doesNotMatch(dashboard, /workout-objective|training\.label|training\.readinessNote/)
   assert.match(dashboard, /workout-session-guidance/)
+  assert.match(dashboard, /<summary>About today’s workout<\/summary>/)
+  assert.match(dashboard, /Rest until breathing is comfortable/)
   assert.match(dashboard, /props\.logic\.workoutDecision\.intensityTarget/)
   assert.match(dashboard, /<WorkoutFeedback/)
   assert.match(dashboard, /className="workout-dashboard-row"/)

@@ -2,8 +2,8 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { activityDose, isBodyweightExercise, workoutCompletion, summarizeStrengthSets, summarizeActivityUnits } from '@/lib/workout/activity'
-import { initialWorkoutLogs, resumeWorkoutSession, workoutSessionKeys } from '@/lib/workout/session'
+import { activityDose, isBodyweightExercise, manualWorkoutPlan, workoutCompletion, summarizeStrengthSets, summarizeActivityUnits } from '@/lib/workout/activity'
+import { initialWorkoutLogs, matchingWorkoutPlan, resumeWorkoutSession, workoutSessionKeys } from '@/lib/workout/session'
 import { exerciseOccurrenceLabel } from '@/lib/workout/logging'
 import WorkoutSetEditor from '@/components/workout-dashboard/WorkoutSetEditor'
 import { getClientLocalDate } from '@/lib/timezone'
@@ -20,6 +20,7 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
   const [draft, setDraft] = useState(() => exercises.map(e => { const dose = activityDose(e, weightUnit); return { weight: dose.weight, amount: dose.prescribed } }))
   const [dirty, setDirty] = useState(false); const [modifiedAt, setModifiedAt] = useState<string | null>(null); const [retry, setRetry] = useState(0); const [loadFailed, setLoadFailed] = useState(false)
   const [exercisePosition, setExercisePosition] = useState({ key, index: 0 })
+  const [sessionPlan, setSessionPlan] = useState<any[]>(plannedExercises as any[])
   const activeIndex = exercisePosition.key === key ? Math.min(exercisePosition.index, Math.max(0, logs.length - 1)) : 0
   function showExercise(index: number) {
     const next = Math.max(0, Math.min(index, logs.length - 1))
@@ -36,8 +37,11 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
         const response = await fetch(`/api/workout-log?clientId=${encodeURIComponent(clientId)}&dayName=${encodeURIComponent(dayName)}&source=${workoutSource}&planKeys=${encodeURIComponent(planKeys)}`, { cache: 'no-store' })
         const result = await response.json()
         if (!response.ok) throw new Error(result.error || 'Saved progress could not be loaded.')
-        const resumed = resumeWorkoutSession(initial, stored, result.session)
+        const fixedPlan = workoutSource === 'recommended' && matchingWorkoutPlan(result.session?.planned_exercises, workoutSessionKeys(exercises)) ? result.session.planned_exercises :
+          workoutSource === 'recommended' && matchingWorkoutPlan(stored?.plannedExercises, workoutSessionKeys(exercises)) ? stored.plannedExercises : plannedExercises
+        const resumed = resumeWorkoutSession(workoutSource === 'recommended' ? initialWorkoutLogs(fixedPlan) : initial, stored, result.session)
         if (!cancelled) { setLogs(resumed.logs); setDraft(resumed.draft || exercises.map(e => { const dose = activityDose(e, weightUnit); return { weight: dose.weight, amount: dose.prescribed } })); setDirty(resumed.dirty); setModifiedAt(resumed.modifiedAt); setLoadFailed(false); setReady(true)
+          setSessionPlan(fixedPlan)
           const savedIndex = resumed.logs.findIndex((log: { session_key: string }) => log.session_key === stored?.activeExerciseKey)
           const index = savedIndex >= 0 ? savedIndex : 0
           setExercisePosition({ key, index })
@@ -49,8 +53,8 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
   // Session keys deliberately scope persisted work to this client, plan, and local day.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, retry, prescriptionKey])
-  useEffect(() => { if (ready) { try { localStorage.setItem(key, JSON.stringify({ version: 2, logs, draft, dirty, modifiedAt, activeExerciseKey: logs[activeIndex]?.session_key })) } catch { setMessage('This browser could not retain a draft. Use Save / pause to keep your progress.') } } }, [key, ready, logs, draft, dirty, modifiedAt, activeIndex])
-  const counts = workoutCompletion(logs)
+  useEffect(() => { if (ready) { try { localStorage.setItem(key, JSON.stringify({ version: 2, logs, plannedExercises: sessionPlan, draft, dirty, modifiedAt, activeExerciseKey: logs[activeIndex]?.session_key })) } catch { setMessage('This browser could not retain a draft. Use Save / pause to keep your progress.') } } }, [key, ready, logs, sessionPlan, draft, dirty, modifiedAt, activeIndex])
+  const counts = workoutCompletion(logs, workoutSource === 'manual' ? manualWorkoutPlan(logs) : sessionPlan)
   const totals = summarizeActivityUnits(logs, true)
   function markDirty() { setDirty(true); setModifiedAt(new Date().toISOString()) }
   function patch(index: number, values: Record<string, unknown>) { markDirty(); setLogs(current => current.map((log, i) => i === index ? { ...log, ...values } : log)); setSummary(false); setMessage('Your changes are in this draft. Save progress when you’re ready.') }
@@ -60,7 +64,8 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
     if (dose.kind === 'strength') {
       const set = { set_number: log.set_logs.length + 1, weight: isBodyweightExercise(log) ? 0 : actual.weight, weight_unit: dose.unit, reps: actual.amount, completed_at: new Date().toISOString() }
       const sets = [...log.set_logs, set]
-      patch(index, { set_logs: sets, ...summarizeStrengthSets(sets), completed: sets.length >= dose.sets, skipped: false })
+      const progress = workoutCompletion([{ ...log, set_logs: sets }])
+      patch(index, { set_logs: sets, ...summarizeStrengthSets(sets), completed: progress.totalSets > 0 && progress.completedSets === progress.totalSets, skipped: false })
     } else patch(index, { actual_duration: ['minutes','seconds'].includes(dose.metric) ? actual.amount : 0, duration_unit: dose.metric,
       actual_reps: 0, actual_breaths: dose.metric === 'breaths' ? actual.amount : 0, activity_completed: dose.metric === 'completion', completed: true, skipped: false, confirmed_at: new Date().toISOString() })
     setMessage('Recorded in your session. Save progress whenever you need to pause.')
@@ -69,7 +74,7 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
     if (lock.current) return; lock.current = true; setSaving(true); setMessage('')
     try {
       const response = await fetch('/api/workout-log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: clientId, program, day_name: dayName, workout_source: workoutSource,
-        workout_date: new Date().toISOString(), planned_exercises: plannedExercises, exercise_logs: logs, completed: final && counts.completed }) })
+        workout_date: new Date().toISOString(), planned_exercises: workoutSource === 'manual' ? plannedExercises : sessionPlan, exercise_logs: logs, completed: counts.completed }) })
       const payload = await response.json(); if (!response.ok) throw new Error(payload.error || 'Session could not be saved.')
       setDirty(false); setModifiedAt(payload.session?.updated_at || new Date().toISOString()); setMessage(final ? 'Session saved. Your recorded progress is available in workout history.' : 'Progress saved. You can resume here.'); setSummary(final); router.refresh(); if(final && workoutSource === 'manual') onManualExerciseFinished?.(payload.completed === true)
     } catch(e) { setMessage(e instanceof Error ? e.message : 'Session could not be saved. Your draft is still here.') }
@@ -79,6 +84,7 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
     {!ready ? <p role="status">{loadFailed ? 'Saved progress is unavailable. Retry before editing or saving.' : 'Loading your saved progress…'}</p> : null}
     {loadFailed ? <button type="button" onClick={() => setRetry(value => value + 1)}>Retry saved progress</button> : null}
     <p>{counts.complete} of {counts.total} exercises complete{counts.partial ? ` · ${counts.partial} in progress` : ''}{counts.skipped ? ` · ${counts.skipped} skipped` : ''}</p>
+    <p>{counts.completedSets} of {counts.totalSets} prescribed sets recorded{counts.totalSets > 0 ? ` · ${counts.requiredSets} needed for workout checkoff` : ' · No fixed set prescription is available.'}</p>
     <p>Prescribed values are a starting point. Confirm each set or activity to record what you did.</p>
     {logs.length ? <section className="activity-exercise-carousel" aria-label="Exercises" aria-roledescription="carousel">
       <div className="activity-carousel-controls">
@@ -122,20 +128,22 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
         </> : <button type="button" disabled={!ready || saving} onClick={() => patch(index, { completed: false, skipped: false })}>Edit activity</button>}
         {log.set_logs.length ? <details><summary>Recorded sets</summary>{log.set_logs.map((set: any, n: number) => <div key={`${set.set_number}:${set.completed_at}`}><p>Set {set.set_number}: {set.reps} reps · {set.weight} {set.weight_unit}</p><details><summary>Edit set {set.set_number}</summary><WorkoutSetEditor key={`${set.weight}:${set.reps}`} set={set} increment={dose.increment} loadLabel={dose.loadLabel} disabled={!ready || saving} bodyweight={isBodyweightExercise(log)} onSave={values => {
           const sets = log.set_logs.map((existing: any, i: number) => i === n ? { ...existing, ...values } : existing)
-          patch(index, { set_logs: sets, ...summarizeStrengthSets(sets), completed: sets.length >= dose.sets, skipped: false })
-        }} /></details><button type="button" disabled={!ready || saving} onClick={() => { const sets = log.set_logs.filter((_: any,i: number) => i !== n).map((s: any,i: number) => ({ ...s, set_number: i+1 })); patch(index, { set_logs: sets, ...summarizeStrengthSets(sets), completed: sets.length >= dose.sets, skipped: false }) }}>Remove set {set.set_number}</button></div>)}</details> : null}
+          const progress = workoutCompletion([{ ...log, set_logs: sets }])
+          patch(index, { set_logs: sets, ...summarizeStrengthSets(sets), completed: progress.totalSets > 0 && progress.completedSets === progress.totalSets, skipped: false })
+        }} /></details><button type="button" disabled={!ready || saving} onClick={() => { const sets = log.set_logs.filter((_: any,i: number) => i !== n).map((s: any,i: number) => ({ ...s, set_number: i+1 })); const progress = workoutCompletion([{ ...log, set_logs: sets }]); patch(index, { set_logs: sets, ...summarizeStrengthSets(sets), completed: progress.totalSets > 0 && progress.completedSets === progress.totalSets, skipped: false }) }}>Remove set {set.set_number}</button></div>)}</details> : null}
         {log.client_cues?.length ? <details><summary>Form guidance</summary>{log.client_cues.map((cue: string) => <p key={cue}>{cue}</p>)}</details> : null}
       </article>
       })}
       </div>
     </section> : null}
     <div className="tier-action-row"><button type="button" disabled={saving || !ready} onClick={() => void save()}>Save / pause</button><button type="button" className="tier-primary-action" disabled={saving || !ready} onClick={() => void save(true)}>{saving ? 'Saving…' : 'Finish and review'}</button></div>
-    {ready && !counts.completed ? <p>Finish and review saves a partial session. Complete the remaining exercises to mark the workout complete.</p> : null}
+    {ready ? <p>{counts.completed ? 'Your recorded sets meet the workout checkoff threshold. Save your progress; you can continue with the remaining sets.' : 'Finish and review saves a partial session. Record at least half of all prescribed sets to qualify for workout checkoff.'}</p> : null}
     <p role="status">{message}</p>
     {summary ? <article className="daily-plan-card phone-app-session-summary" aria-label="Session summary" role="status">
       <span className="phone-app-save-mark" aria-hidden="true">✓</span><p className="phone-app-eyebrow">Session saved</p>
       <h3>{workoutSource === 'manual' ? counts.completed ? 'Exercise saved' : 'Partial exercise saved' : counts.completed ? 'You made time for strength.' : 'Partial session saved'}</h3>
       <p>{counts.complete} complete · {counts.partial} partial · {counts.skipped} skipped · {counts.total} planned</p><p>{totals.sets} strength sets · {totals.reps} reps · {Math.round(totals.minutes * 10) / 10} minutes · {totals.breaths} breaths · {totals.activities} movements completed</p>
+      <p>{counts.completedSets} of {counts.totalSets} prescribed sets recorded. {counts.completed ? 'Workout checkoff threshold met.' : 'Workout checkoff threshold not met yet.'}</p>
       <p>Your confirmed work is saved. You can return to the remaining exercises.</p>
       <details><summary>Session overview · Recorded sets</summary>{logs.filter(log => log.set_logs.length).map(log => <section key={log.session_key}><h4>{log.display_name || log.exercise}</h4>{log.set_logs.map((set: any, index: number) => <p key={index}>Set {set.set_number}: {set.reps} reps · {set.weight} {set.weight_unit}{set.completed_at ? ` · ${new Date(set.completed_at).toLocaleTimeString([], { timeZone: timezone, hour: 'numeric', minute: '2-digit' })}` : ''}</p>)}</section>)}<p>Heart-rate readings and continuous set/rest intervals are unavailable. No watch connection is established by this screen.</p></details>
       <Link href={`/dashboard/program/${program}`}>Back to Today</Link>

@@ -1,5 +1,6 @@
 import { addLocalDays, getClientLocalDate, getClientTimeZone, recordLocalDate } from '@/lib/timezone'
 import { getClientDayRange } from '@/lib/schedule/time'
+import { workoutRecordComplete } from './activity'
 
 export function workoutLocalDate(row: any, timeZone: string) {
   const value = row.workout_started_at || row.workout_date
@@ -28,12 +29,11 @@ export async function loadWorkoutHistory({ supabase, client, startDate = getClie
   function base() {
     let query = supabase.from('workout_logs').select('*').eq('client_id', client.client_id)
     if (authUserId) query = query.eq('auth_user_id', authUserId)
-    if (completed !== undefined) query = query.eq('completed', completed)
     if (dayName !== undefined) query = query.eq('day_name', dayName)
     return query
   }
   const [timed, dated] = await Promise.all([
-    (allHistory ? base() : base().gte('workout_started_at', start).lt('workout_started_at', end)).order('workout_started_at', { ascending: false }).limit(limit),
+    (allHistory ? base() : base().gte('workout_started_at', start).lt('workout_started_at', end)).order('workout_started_at', { ascending: false }).limit(completed === undefined ? limit : Math.max(limit, 100)),
     (allHistory ? base() : base().gte('workout_date', startDate).lt('workout_date', endDateExclusive)).order('workout_date', { ascending: false }),
   ])
   const missingTimestamp = timed.error && ['42703', 'PGRST204'].includes(timed.error.code) && String(timed.error.message).includes('workout_started_at')
@@ -42,7 +42,8 @@ export async function loadWorkoutHistory({ supabase, client, startDate = getClie
   for (const row of [...(timed.data || []), ...(dated.data || []).filter((row: any) => !row.workout_started_at)]) {
     const date = workoutLocalDate(row, timeZone)
     if ((!allHistory && (date < startDate || date >= endDateExclusive)) || (source && (row.workout_source || 'recommended') !== source)) continue
-    byId.set(String(row.id), row)
+    const normalized = { ...row, completed: workoutRecordComplete(row) }
+    if (completed === undefined || normalized.completed === completed) byId.set(String(row.id), normalized)
   }
   const data = [...byId.values()].sort((a, b) => {
     const aDate = workoutLocalDate(a, timeZone), bDate = workoutLocalDate(b, timeZone)

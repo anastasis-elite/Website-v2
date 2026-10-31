@@ -69,3 +69,18 @@ for (const [state, label] of [['rest', 'Rest day'], ['unavailable', 'Workout una
     assert.equal(safetyDashboard.props.showInteractiveWorkout, false)
   })
 }
+
+test('ready workouts use a neutral page subtitle without changing the actual workout identity', async () => {
+  fixture = { safetyFlags: [], logic: {
+    workout: { title: 'Low-Capacity Strength Workout' }, workoutDecision: {
+      assignedWorkout: { workout_state: 'reduced', day_name: 'Low-Capacity Strength Workout', exercises: [{ exercise: 'Squat', sets: 3, reps: 8 }] },
+      canTrain: true, displayWorkout: true, reasonForModification: 'Synthetic adaptation reason.',
+    },
+  } }
+  const page = await Page({ params: Promise.resolve({ program: 'ignite' }) })
+  assert.equal(page.props.subtitle, 'Your exercises are ready to log.')
+  const dashboard = findDashboard(page)
+  assert.equal(dashboard.props.workoutTitle, 'Low-Capacity Strength Workout')
+  assert.equal(dashboard.props.assignedDayName, 'Low-Capacity Strength Workout')
+  assert.equal(dashboard.props.showInteractiveWorkout, true)
+})

@@ -225,6 +225,31 @@ test('recommended repeated occurrences survive save, reload and revisit with sep
   assert.match(content(revisited.tree), /2 of 2 exercises complete/)
 })
 
+test('set threshold shows whole-plan progress, stays open at half, and reopens the fixed prescription', async () => {
+  const storage = new Map(), exercises = [0, 1, 2].map(index => ({ ...bodyweight, id: `threshold-${index}`, exercise: `Threshold ${index}`, sets: 3 }))
+  const app = mount(ActivityTracker, props(exercises), storage); await app.flush()
+  const card = index => nodes(app.tree, node => node.type === 'article' && node.props.className === 'activity-exercise')[index]
+  for (let count = 0; count < 3; count++) { button(card(0), `Complete set ${count + 1}`).props.onClick(); app.render() }
+  button(card(1), 'Complete set 1').props.onClick(); app.render()
+  assert.match(content(app.tree), /4 of 9 prescribed sets recorded · 5 needed/)
+  button(app.tree, 'Save / pause').props.onClick(); await app.flush()
+  assert.equal(app.calls.at(-1).payload.completed, false)
+  button(card(1), 'Complete set 2').props.onClick(); app.render()
+  assert.match(content(app.tree), /5 of 9 prescribed sets recorded · 5 needed/)
+  assert.match(content(app.tree), /meet the workout checkoff threshold/)
+  assert.equal(nodes(app.tree, node => node.props?.['aria-label'] === 'Session summary').length, 0, 'crossing half never finishes automatically')
+  assert.ok(button(card(1), 'Complete set 3'))
+  button(app.tree, 'Save / pause').props.onClick(); await app.flush()
+  const saved = app.calls.at(-1).payload
+  assert.equal(saved.completed, true)
+  assert.equal(saved.exercise_logs[1].completed, false, 'two of three sets never pretends the third was performed')
+  assert.equal(saved.exercise_logs[2].set_logs.length, 0)
+  storage.set('__disposableServer', JSON.stringify({ ...saved, updated_at: new Date().toISOString() }))
+  const reopened = mount(ActivityTracker, props(exercises.map(exercise => ({ ...exercise, sets: 1 }))), storage); await reopened.flush()
+  assert.match(content(reopened.tree), /5 of 9 prescribed sets recorded · 5 needed/)
+  assert.equal(nodes(reopened.tree, node => node.props?.['aria-label'] === 'Session summary').length, 0)
+})
+
 test('carousel keeps exercise drafts, completed sets and saved progress through navigation and reload', async () => {
   const storage = new Map(), exercises = [
     { ...bodyweight, sets: 2, load_type: 'per_hand', recommended_weight: 10 },

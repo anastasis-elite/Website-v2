@@ -128,11 +128,10 @@ function ProgressTab({ logic, exercises }: { logic: ProgramLogicOutput; exercise
 
   return (
     <div className="workout-tab-grid" data-testid="workout-progress-tab">
-      <article><span>Completion</span><strong>{logic.execution.workoutComplete ? 'Complete' : 'Open'}</strong><small>{logic.workout.assigned ? logic.workout.title : 'Recovery movement'}</small></article>
+      <article><span>Completion</span><strong>{logic.execution.workoutComplete ? 'Complete' : 'Open'}</strong><small>From your saved workout session</small></article>
       <article><span>Planned Strength</span><strong>{totals.sets} sets</strong><small>{totals.reps} prescribed repetitions</small></article>
       <article><span>Planned Activity</span><strong>{Math.round(totals.minutes * 10) / 10} min · {totals.breaths} breaths</strong><small>{totals.activities} completion-based movement{totals.activities === 1 ? '' : 's'}</small></article>
       <article><span>Duration</span><strong>{logic.workout.durationMinutes ? `${logic.workout.durationMinutes} min` : 'Not set'}</strong><small>From the current workout source</small></article>
-      <article><span>Progression</span><strong>{logic.workoutDecision.allowLoadProgression ? 'Open' : 'Hold'}</strong><small>{logic.workoutDecision.intensityTarget}</small></article>
     </div>
   )
 }
@@ -148,7 +147,6 @@ function StrengthTab({ showOffer, endDate, logic }: { showOffer: boolean; endDat
         {strength.state === 'due' && showOffer && formatAssessmentEnd(endDate) ? <small>Available through {formatAssessmentEnd(endDate)}</small> : null}
         <Link href={strength.href} className="tier-secondary-action">{strength.actionLabel}</Link>
       </article>
-      <article><span>Load Direction</span><strong>{logic.workoutDecision.allowLoadProgression ? 'Progress allowed' : 'Conservative'}</strong><small>{logic.workoutDecision.reasonForModification}</small></article>
     </div>
   )
 }
@@ -214,7 +212,7 @@ export default function WorkoutDashboard(props: Props) {
           <div className="tier-panel-heading">
             <div className="workout-panel-title">
               <div>
-                <p className="tier-dashboard-label">{props.workoutStateLabel}</p>
+                {!props.showInteractiveWorkout ? <p className="tier-dashboard-label">{props.workoutStateLabel}</p> : null}
                 <h2>Today&apos;s Workout</h2>
               </div>
               <WorkoutFeedback
@@ -240,7 +238,17 @@ export default function WorkoutDashboard(props: Props) {
               ))}
             </div>
           </div>
-          {props.showInteractiveWorkout && workoutMode === 'recommended' ? <p className="workout-session-guidance">{props.logic.workoutDecision.intensityTarget} {props.logic.workoutDecision.reasonForModification}</p> : null}
+          {props.showInteractiveWorkout && workoutMode === 'recommended' ? <>
+            <p>Rest until breathing is comfortable.</p>
+            <details className="workout-session-guidance">
+              <summary>About today’s workout</summary>
+              <p>{props.workoutTitle}</p>
+              <p>{props.workoutStateLabel}</p>
+              <p>{props.logic.workoutDecision.intensityTarget}</p>
+              <p>{props.logic.workoutDecision.reasonForModification}</p>
+              <p>Load progression: {props.logic.workoutDecision.allowLoadProgression ? 'Open' : 'Hold'}</p>
+            </details>
+          </> : null}
           <div className="workout-session-region">
             {workoutMode === 'manual' ? (
               <ManualWorkoutBuilder

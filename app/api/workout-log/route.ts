@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getClientDayRange } from '@/lib/schedule/time'
 import { getClientLocalDate } from '@/lib/timezone'
-import { isConfirmedActivity, summarizeStrengthSets, workoutCompletion } from '@/lib/workout/activity'
-import { matchingWorkoutPlan } from '@/lib/workout/session'
+import { isConfirmedActivity, isValidCompletedSet, manualWorkoutPlan, summarizeStrengthSets, workoutCompletion } from '@/lib/workout/activity'
+import { matchingWorkoutPlan, workoutSessionKeys } from '@/lib/workout/session'
 import { loadWorkoutHistory } from '@/lib/workout/history'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 export async function POST(req: Request) {
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const logs = body.exercise_logs
     for (const log of logs) {
       if (!log || typeof log !== 'object' || ['actual_weight','actual_reps','actual_breaths','actual_duration'].some(k => log[k] !== undefined && (!Number.isFinite(Number(log[k])) || Number(log[k]) < 0))) return NextResponse.json({ error: 'Activity values must be valid nonnegative numbers.' }, { status: 400 })
-      if (log.set_logs !== undefined && (!Array.isArray(log.set_logs) || log.set_logs.length > 100 || log.set_logs.some((set: any) => !Number.isInteger(Number(set.reps)) || Number(set.reps) <= 0 || !Number.isFinite(Number(set.weight)) || Number(set.weight) < 0 || !['lb','kg'].includes(set.weight_unit || 'lb') || !Number.isFinite(new Date(set.completed_at).getTime())))) return NextResponse.json({error:'Review the confirmed sets before saving.'},{status:400})
+      if (log.set_logs !== undefined && (!Array.isArray(log.set_logs) || log.set_logs.length > 100 || log.set_logs.some((set: any) => !isValidCompletedSet(set) && !set?.skipped && set?.status !== 'skipped'))) return NextResponse.json({error:'Review the confirmed sets before saving.'},{status:400})
     }
     for (const log of logs) {
       if (!log.completed) continue
@@ -29,9 +29,21 @@ export async function POST(req: Request) {
     const day = getClientDayRange(client)
     const workoutDate = body.workout_date ? new Date(body.workout_date) : new Date()
     if (!Number.isFinite(workoutDate.getTime()) || getClientLocalDate(client, workoutDate) !== day.date) return NextResponse.json({ error: 'This session belongs to another day. Reload today’s workout.' }, { status: 400 })
+    let planned = body.planned_exercises
+    if (source === 'recommended') {
+      const keys = workoutSessionKeys(planned)
+      if (!matchingWorkoutPlan(logs, keys)) return NextResponse.json({ error: 'Keep the full prescribed plan when saving, including skipped exercises.' }, { status: 400 })
+      const history = await loadWorkoutHistory({ supabase, client, authUserId: user.id, startDate: day.date, dayName, source })
+      if (history.error) throw history.error
+      const saved = (history.data || []).find((row: any) => matchingWorkoutPlan(row.exercise_logs, keys))
+      if (saved && matchingWorkoutPlan(saved.planned_exercises, keys)) planned = saved.planned_exercises
+      else if ((history.data || []).some((row: any) => Array.isArray(row.planned_exercises) && row.planned_exercises.length > planned.length && keys.every(key => workoutSessionKeys(row.planned_exercises).includes(key)))) {
+        return NextResponse.json({ error: 'Reload the full saved workout before saving this session.' }, { status: 400 })
+      }
+    }
     const payload = { client_id: client.client_id, auth_user_id: user.id, program: client.program, day_name: dayName, workout_source: source,
-      workout_date: workoutDate.toISOString(), workout_local_date: day.date, planned_exercises: body.planned_exercises, exercise_logs: logs.map((log: any) => log.set_logs?.length ? { ...log, ...summarizeStrengthSets(log.set_logs) } : log),
-      completed: body.completed === true && workoutCompletion(logs).completed && (source === 'manual' || logs.length === body.planned_exercises.length), updated_at: new Date().toISOString() }
+      workout_date: workoutDate.toISOString(), workout_local_date: day.date, planned_exercises: planned, exercise_logs: logs.map((log: any) => log.set_logs?.length ? { ...log, ...summarizeStrengthSets(log.set_logs.filter(isValidCompletedSet)) } : log),
+      completed: workoutCompletion(logs, source === 'manual' ? manualWorkoutPlan(logs) : planned).completed, updated_at: new Date().toISOString() }
     const result = await supabase.rpc('save_daily_workout', { p_client_id: client.client_id, p_day_start: day.start.toISOString(), p_day_end: day.end.toISOString(), p_payload: payload })
     if (result.error) throw result.error
     invalidateDailyPlan(); return NextResponse.json({ success: true, completed: payload.completed, session: result.data })
@@ -56,5 +68,5 @@ export async function GET(request: Request) {
   const { data, error } = await loadWorkoutHistory({ supabase, client, authUserId: user.id, startDate: day.date, dayName: params.get('dayName') || 'Workout', source })
   if(error) return NextResponse.json({ error:'Saved progress could not be loaded.' }, { status:500 })
   const session = (data || []).find((row: any) => (row.workout_source || 'recommended') === source && (!planKeys || matchingWorkoutPlan(row.exercise_logs, planKeys)))
-  return NextResponse.json({ session: session ? { id: session.id, exercise_logs: session.exercise_logs, completed: session.completed, updated_at: session.updated_at } : null }, { headers: { 'Cache-Control': 'private, no-store' } })
+  return NextResponse.json({ session: session ? { id: session.id, exercise_logs: session.exercise_logs, planned_exercises: session.planned_exercises, completed: session.completed, updated_at: session.updated_at } : null }, { headers: { 'Cache-Control': 'private, no-store' } })
 }

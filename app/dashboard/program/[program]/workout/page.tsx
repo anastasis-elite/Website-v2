@@ -322,7 +322,7 @@ export default async function ProgramWorkoutPage({
     })
 
   return (
-    <PhoneAppFrame eyebrow="Workout" title="Your strength, one set at a time." subtitle={workoutTitle}><main className="aos-workout-page">
+    <PhoneAppFrame eyebrow="Workout" title="Your strength, one set at a time." subtitle={showInteractiveWorkout ? 'Your exercises are ready to log.' : workoutTitle}><main className="aos-workout-page">
       <div className="aos-workout-shell">
         <WorkoutDashboard
           timezone={getClientTimeZone(client)}
