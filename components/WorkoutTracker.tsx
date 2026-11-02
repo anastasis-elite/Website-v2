@@ -1,12 +1,16 @@
 'use client'
 
-import { useRef,useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { getClientLocalDate } from '@/lib/timezone'
 import { activityDose, isBodyweightExercise, summarizeStrengthSets } from '@/lib/workout/activity'
 import { manualSetStorageKey, parseStrengthSetInput } from '@/lib/workout/logging'
 import ActivityWorkoutTracker from '@/components/ActivityWorkoutTracker'
 import WorkoutSetEditor from '@/components/workout-dashboard/WorkoutSetEditor'
 import { useRouter } from 'next/navigation'
+import { manualDesiredSets, prescriptionSnapshot, readManualPrescriptionDraft, type ManualPrescriptionSnapshot } from '@/lib/workout/manualPrescriptionDraft'
+
+class ReselectPrescriptionError extends Error {}
 
 type ExerciseVariant = {
   id: string
@@ -60,6 +64,10 @@ type Exercise = {
   rest_seconds?: number
   rpe_target?: string
   duration_label?: string
+  prescription?: ManualPrescriptionSnapshot
+  recommendationStatus?: string
+  recommendationMessage?: string
+  recommendationSetupHref?: string
 }
 
 type WorkoutLog = {
@@ -121,6 +129,7 @@ type Props = {
   onExerciseFocus?: (exercise: Exercise) => void
   onExerciseBlur?: () => void
   onManualExerciseFinished?: (completed?: boolean) => void
+  onManualRecommendationReset?: () => void
 }
 
 type ManualSetLog = {
@@ -157,6 +166,7 @@ export default function WorkoutTracker(props: Props) {
         onExerciseFocus={props.onExerciseFocus}
         onExerciseBlur={props.onExerciseBlur}
         onManualExerciseFinished={props.onManualExerciseFinished}
+        onManualRecommendationReset={props.onManualRecommendationReset}
       />
     )
   }
@@ -243,7 +253,7 @@ function getLoadLabel(
 
 function getWorkoutSessionDate(timezone = 'America/Chicago'): string { return getClientLocalDate({timezone}) }
 
-function buildManualWorkoutLog(exercise: Exercise, sets: ManualSetLog[]): WorkoutLog {
+function buildManualWorkoutLog(exercise: Exercise, sets: ManualSetLog[], originalPlannedSets = Number(exercise.sets || 0), prescription: Readonly<ManualPrescriptionSnapshot> | null = null, desiredSetCount?: number): WorkoutLog {
   const totalReps = sets.reduce((sum, set) => sum + set.reps, 0)
   const actuals = summarizeStrengthSets(sets)
   const selectedVariant = exercise.available_variants?.find((variant) => variant.id === exercise.selected_variant_id)
@@ -264,9 +274,11 @@ function buildManualWorkoutLog(exercise: Exercise, sets: ManualSetLog[]): Workou
     selected_equipment: selectedVariant?.equipment || exercise.selected_equipment || null,
     load_type: selectedVariant?.load_type || exercise.load_type || 'total_load',
     available_variants: exercise.available_variants || [],
-    planned_sets: Number(exercise.sets || 0),
-    planned_reps: getRecommendedReps(exercise),
-    planned_weight: getRecommendedWeight(exercise),
+    planned_sets: originalPlannedSets,
+    planned_reps: prescription?.reps ?? getRecommendedReps(exercise),
+    planned_weight: prescription?.weightLb ?? getRecommendedWeight(exercise),
+    ...(prescription ? { prescription } : {}),
+    ...(desiredSetCount ? { user_intent: { desired_set_count: desiredSetCount } } : {}),
     baseline_reps: getBaselineReps(exercise),
     baseline_weight: getBaselineWeight(exercise),
     ...actuals,
@@ -295,6 +307,7 @@ function ManualSetLogger({
   onExerciseFocus,
   onExerciseBlur,
   onManualExerciseFinished,
+  onManualRecommendationReset,
   timezone = 'America/Chicago',
   weightUnit = 'lb',
 }: {
@@ -309,39 +322,66 @@ function ManualSetLogger({
   onExerciseFocus?: (exercise: Exercise) => void
   onExerciseBlur?: () => void
   onManualExerciseFinished?: (completed?: boolean) => void
+  onManualRecommendationReset?: () => void
 }) {
   const router = useRouter()
   const lock = useRef(false)
   const dose = activityDose(exercise, weightUnit)
   const storageKey = manualSetStorageKey(clientId, program, exercise, getWorkoutSessionDate(timezone))
+  const [restored] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try { return readManualPrescriptionDraft(JSON.parse(window.localStorage.getItem(storageKey) || 'null')) } catch { /* Invalid draft fields do not invent performed work. */ }
+    }
+    return readManualPrescriptionDraft(null)
+  })
+  const [prescription] = useState(() => restored.prescription || prescriptionSnapshot(exercise.prescription))
+  const originalPlannedSets = useRef(prescription?.sets || restored.originalPlannedSets || manualDesiredSets(exercise.sets) || 0)
   const [exerciseStartedAt] = useState(() => new Date().toISOString())
   const [setStartedAt, setSetStartedAt] = useState(() => new Date().toISOString())
-  const [weight, setWeight] = useState(() => String(dose.weight))
-  const [reps, setReps] = useState(() => String(getRecommendedReps(exercise) || 10))
-  const [sets, setSets] = useState<ManualSetLog[]>(() => {
-    if (typeof window === 'undefined') return []
-    try {
-      const parsed = JSON.parse(window.localStorage.getItem(storageKey) || '[]')
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
+  const unguided = ['unavailable', 'tracking_only'].includes(exercise.recommendationStatus || '')
+  const [weight, setWeight] = useState(() => {
+    if (restored.weight !== undefined) {
+      if (restored.weightUnit && restored.weightUnit !== weightUnit && restored.weight.trim() && Number.isFinite(Number(restored.weight))) {
+        return String(Math.round(Number(restored.weight) * (weightUnit === 'kg' ? 1 / 2.2046226218 : 2.2046226218) * 10) / 10)
+      }
+      return restored.weight
     }
+    return prescription ? String(Math.round(prescription.weightLb / (weightUnit === 'kg' ? 2.2046226218 : 1) * 10) / 10) : !unguided && (exercise.recommended_weight !== undefined || exercise.calculated_weight !== undefined || exercise.baseline_weight !== undefined) ? String(dose.weight) : ''
   })
+  const [reps, setReps] = useState(() => restored.reps ?? (prescription ? String(prescription.reps) : !unguided && getRecommendedReps(exercise) > 0 ? String(getRecommendedReps(exercise)) : ''))
+  const [desiredSetCount, setDesiredSetCount] = useState(() => restored.desiredSetCount ?? (originalPlannedSets.current ? String(originalPlannedSets.current) : ''))
+  const [sets, setSets] = useState<ManualSetLog[]>(() => restored.sets)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [needsReselect, setNeedsReselect] = useState(false)
 
   const bodyweight = isBodyweightExercise(exercise)
   const loadLabel = bodyweight ? 'no added load' : getLoadLabel(exercise.load_type || 'total_load')
   const nextSetNumber = sets.length + 1
 
+  function draft(nextSets: ManualSetLog[]) {
+    return { version: 3, sets: nextSets, weight, weightUnit, reps, desiredSetCount, originalPlannedSets: originalPlannedSets.current, prescription }
+  }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try { window.localStorage.setItem(storageKey, JSON.stringify({ version: 3, sets, weight, weightUnit, reps, desiredSetCount, originalPlannedSets: originalPlannedSets.current, prescription })) }
+    catch { /* A failed browser draft never changes server-confirmed history. */ }
+  }, [storageKey, sets, weight, weightUnit, reps, desiredSetCount, prescription])
+
   function persistDraft(nextSets: ManualSetLog[]) {
     if (typeof window === 'undefined') return true
-    try { window.localStorage.setItem(storageKey, JSON.stringify(nextSets)); return true }
+    try { window.localStorage.setItem(storageKey, JSON.stringify(draft(nextSets))); return true }
     catch { return false }
   }
 
   async function persistSets(nextSets: ManualSetLog[], finishedAt?: string) {
-    const exerciseLog = {...buildManualWorkoutLog(exercise, nextSets), completed: Boolean(finishedAt) && nextSets.length >= dose.sets, actual_weight_unit: 'lb'}
+    const desired = manualDesiredSets(desiredSetCount)
+    if (!desired) throw new Error('Choose a desired set count from 1 to 100.')
+    // Freeze the first explicit unguided target before an ambiguous save/retry.
+    // Guided prescriptions always retain their original denominator.
+    if (!originalPlannedSets.current) { originalPlannedSets.current = desired; persistDraft(sets) }
+    const exerciseLog = {...buildManualWorkoutLog(exercise, nextSets, originalPlannedSets.current, prescription, desired), completed: Boolean(finishedAt) && nextSets.length >= originalPlannedSets.current, actual_weight_unit: 'lb'}
     const response = await fetch('/api/workout-set-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -358,16 +398,20 @@ function ManualSetLogger({
         exercise_finished_at: finishedAt || null,
         exercise_logs: [exerciseLog],
         sets: nextSets,
-        completed: Boolean(finishedAt) && nextSets.length >= dose.sets,
+        completed: Boolean(finishedAt) && nextSets.length >= originalPlannedSets.current,
       }),
     })
 
     if (!response.ok) {
+      const result = await response.json().catch(() => null)
+      if (result?.code === 'prescription_changed') throw new ReselectPrescriptionError(result.error || 'Reselect the exercise to review a fresh recommendation. Your entries have not changed.')
       throw new Error('Set save failed')
     }
+    setNeedsReselect(false)
   }
 
   async function completeSet() {
+    if (!manualDesiredSets(desiredSetCount)) { setMessage('Choose a desired set count from 1 to 100.'); return }
     const values = parseStrengthSetInput(bodyweight ? 0 : weight, reps)
     if(!values){setMessage('Enter a nonnegative weight and a positive whole number of reps.');return}
     const completedAt = new Date().toISOString()
@@ -396,7 +440,8 @@ function ManualSetLogger({
       router.refresh()
     } catch (error) {
       console.error(error)
-      setMessage('Set could not be saved.')
+      if (error instanceof ReselectPrescriptionError) { setNeedsReselect(true); setMessage(error.message) }
+      else setMessage('Set could not be saved.')
     } finally {
       lock.current=false
       setSaving(false)
@@ -417,7 +462,8 @@ function ManualSetLogger({
       router.refresh()
     } catch (error) {
       console.error(error)
-      setMessage('Set update failed.')
+      if (error instanceof ReselectPrescriptionError) { setNeedsReselect(true); setMessage(error.message) }
+      else setMessage('Set update failed.')
     } finally {
       lock.current=false
       setSaving(false)
@@ -442,7 +488,8 @@ function ManualSetLogger({
       router.refresh()
     } catch (error) {
       console.error(error)
-      setMessage('Set delete failed.')
+      if (error instanceof ReselectPrescriptionError) { setNeedsReselect(true); setMessage(error.message) }
+      else setMessage('Set delete failed.')
     } finally {
       lock.current=false
       setSaving(false)
@@ -457,11 +504,12 @@ function ManualSetLogger({
       setSaving(true)
       await persistSets(sets, new Date().toISOString())
       try { if (typeof window !== 'undefined') window.localStorage.removeItem(storageKey) } catch { /* Server completion succeeded; browser cleanup is optional. */ }
-      onManualExerciseFinished?.(sets.length >= dose.sets)
+      onManualExerciseFinished?.(sets.length >= originalPlannedSets.current)
       router.refresh()
     } catch (error) {
       console.error(error)
-      setMessage('Exercise finish failed.')
+      if (error instanceof ReselectPrescriptionError) { setNeedsReselect(true); setMessage(error.message) }
+      else setMessage('Exercise finish failed.')
     } finally {
       lock.current=false
       setSaving(false)
@@ -483,6 +531,9 @@ function ManualSetLogger({
         <small>{exercise.selected_equipment ? `${exercise.selected_equipment} · ` : ''}{loadLabel}</small>
       </div>
 
+      {prescription ? <p data-testid="manual-recommendation"><strong>Recommended:</strong> {Math.round(prescription.weightLb / (weightUnit === 'kg' ? 2.2046226218 : 1) * 10) / 10} {weightUnit} ({loadLabel}) · {prescription.sets} sets · {prescription.reps} reps</p>
+        : <div data-testid="manual-recommendation"><p>{exercise.recommendationStatus === 'tracking_only' ? 'Manual logging without coaching guidance.' : 'Recommendation unavailable.'} {exercise.recommendationMessage || 'Enter the work you intend to do.'}</p>{exercise.recommendationSetupHref ? <Link href={exercise.recommendationSetupHref}>Review setup or assessment</Link> : null}</div>}
+
       {sets.length ? (
         <div className="manual-set-history" data-testid="manual-set-history">
           {sets.map((set) => (
@@ -499,6 +550,7 @@ function ManualSetLogger({
       <div className="manual-current-set">
         <strong>Set {nextSetNumber}</strong>
         <div>
+          <label>Desired sets<input type="number" inputMode="numeric" min="1" max="100" step="1" value={desiredSetCount} disabled={saving} onChange={event => setDesiredSetCount(event.target.value)} /></label>
           {!bodyweight ? <label>
             Weight ({weightUnit}, {loadLabel})
             <input
@@ -530,8 +582,9 @@ function ManualSetLogger({
       </div>
 
       {message ? <p className="manual-set-message" role="status">{message}</p> : null}
+      {needsReselect && onManualRecommendationReset ? <button type="button" disabled={saving} onClick={onManualRecommendationReset}>Reselect exercise</button> : null}
 
-      <p id="manual-finish-guidance">{sets.length === 0 ? 'Record at least one set before finishing this exercise.' : sets.length < dose.sets ? `${dose.sets - sets.length} prescribed set${dose.sets - sets.length === 1 ? '' : 's'} remain. Finish Exercise saves your partial work.` : 'All prescribed sets are recorded. Finish Exercise saves completion.'}</p>
+      <p id="manual-finish-guidance">{sets.length === 0 ? 'Record at least one set before finishing this exercise.' : sets.length < originalPlannedSets.current ? `${originalPlannedSets.current - sets.length} original planned sets remain. Finish Exercise saves your partial work.` : 'The original planned sets are recorded. Finish Exercise saves completion.'} Editing desired sets does not change the original completion target.</p>
 
       <div className="manual-session-actions">
         <button type="button" className="manual-secondary-button" onClick={finishExercise} disabled={saving || sets.length === 0} aria-describedby="manual-finish-guidance">
