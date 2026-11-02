@@ -44,7 +44,10 @@ function fixture({ tier = 'ignite', authenticated = true } = {}) {
         update(value) { mutation = { mode: 'update', value };return q }, upsert(value) { mutation = { mode: 'upsert', value };return q },
         maybeSingle: async () => execute(true), single: async () => execute(true), then(done, fail) { return Promise.resolve(execute(false)).then(done, fail) } }
       function execute(single) {
-        if (table === 'clients') return { data: [client, foreign].find(row => filters.every(filter => filter(row))) || null, error: null }
+        if (table === 'clients') {
+          assert.equal(mutation, undefined, 'Session equipment must never update saved client inventory.')
+          return { data: [client, foreign].find(row => filters.every(filter => filter(row))) || null, error: null }
+        }
         assert.ok(['workout_logs', 'workout_exercise_sessions'].includes(table), `Unexpected transport table ${table}`)
         if (mutation) {
           state.writes.push({ table, mode: mutation.mode, value: plain(mutation.value) })
@@ -79,7 +82,7 @@ function fixture({ tier = 'ignite', authenticated = true } = {}) {
     '@/lib/workout/resolveSelectedPrescription': { resolveSelectedPrescription: async args => {
       state.resolverCalls.push(args)
       if (state.resolverError) throw state.resolverError
-      if (args.exerciseId !== 'manual-dumbbell_lateral_raise' || args.variantId !== 'dumbbell_lateral_raise') {
+      if (args.exerciseId !== 'manual-dumbbell_lateral_raise' || !['dumbbell_lateral_raise', 'cable_lateral_raise', 'machine_lateral_raise'].includes(args.variantId)) {
         return { httpStatus: 400, response: { status: 'unavailable', message: 'Unknown synthetic catalog selection.' } }
       }
       return plain(state.outcome)
@@ -109,7 +112,17 @@ function fixture({ tier = 'ignite', authenticated = true } = {}) {
     day_name: 'Manual Workout', workout_date: new Clock().toISOString(), workout_source: 'manual', exercise: exercise(),
     exercise_finished_at: new Clock().toISOString(), exercise_logs: [log()], planned_exercises: [], sets: [set()], ...patch })
   const save = value => handler.POST(new Request('https://synthetic.invalid/api/workout-set-log', { method: 'POST', body: JSON.stringify(value) }))
-  return { client, db, state, body, save }
+  return { client, db, state, body, save, load }
+}
+
+const sessionContext = (equipment = 'cable') => ({ source: 'session_override', equipment, variantId: `${equipment}_lateral_raise` })
+function sessionEquipmentBody(app, context = sessionContext()) {
+  const loadType = context.equipment === 'cable' ? 'single_side' : context.equipment === 'machine' ? 'machine_total' : 'per_hand'
+  const recommendation = snapshot({ variantId: context.variantId, loadType, equipmentContext: plain(context) })
+  app.state.outcome = { httpStatus: 200, response: { status: 'available', prescription: recommendation } }
+  const chosen = exercise({ selected_variant_id: context.variantId, selected_equipment: context.equipment, load_type: loadType,
+    prescription: plain(recommendation) })
+  return app.body({ exercise: chosen, exercise_logs: [log({ ...chosen, prescription: plain(recommendation) })] })
 }
 
 test('first guided save resolves an authenticated owned catalog selection and stores only the trusted dose with edited actuals', async () => {
@@ -225,4 +238,147 @@ test('unverified historical guided metadata and mismatched stored verification c
     assert.equal(app.state.writes.length, 0)
     assert.deepEqual(plain(app.state.rows), before)
   }
+})
+
+test('explicit session equipment first save recomputes owner-bound context without changing saved equipment or planned denominator', async () => {
+  for (const equipment of ['cable', 'machine', 'dumbbell']) {
+    const app = fixture();app.client.equipment_access = ['bodyweight']
+    const beforeClient = plain(app.client), context = sessionContext(equipment), submitted = sessionEquipmentBody(app, context)
+    if (equipment === 'machine') {
+      submitted.exercise.equipmentContext = plain(context)
+      submitted.exercise_logs[0].equipment_context = plain(context)
+    }
+    const response = await app.save(submitted)
+    assert.equal(response.status, 200)
+    assert.equal(app.state.resolverCalls.length, 1)
+    const resolved = app.state.resolverCalls[0]
+    assert.equal(resolved.user.id, owner);assert.equal(resolved.clientId, app.client.client_id)
+    assert.equal(resolved.variantId, context.variantId)
+    assert.deepEqual(plain(resolved.equipmentContext), context)
+    const saved = app.state.rows[0].exercise_logs[0]
+    assert.deepEqual(saved.prescription.equipmentContext, context)
+    assert.deepEqual(saved.equipment_context, context)
+    assert.equal(saved.prescription_verification.auth_user_id, owner)
+    assert.equal(saved.prescription_verification.client_id, app.client.client_id)
+    assert.equal(saved.prescription_verification.variant_id, context.variantId)
+    assert.equal(saved.prescription_verification.session_equipment_source, 'session_override')
+    assert.equal(saved.prescription_verification.session_equipment, context.equipment)
+    assert.equal(saved.prescription_verification.session_variant_id, context.variantId)
+    assert.equal(saved.planned_sets, 3);assert.equal(saved.planned_reps, 10);assert.equal(saved.planned_weight, 25)
+    assert.equal(saved.user_intent.desired_set_count, 2)
+    assert.equal(saved.set_logs[0].weight, 8.5);assert.equal(saved.set_logs[0].weight_unit, 'kg')
+    assert.deepEqual(app.client, beforeClient)
+    assert.ok(app.state.writes.every(write => !['clients', 'client_current_profiles', 'program_outputs'].includes(write.table)))
+  }
+})
+
+test('session equipment snapshot and restored draft retain a frozen copy rather than a mutable context reference', () => {
+  const app = fixture(), { prescriptionSnapshot, readManualPrescriptionDraft } = app.load('lib/workout/manualPrescriptionDraft.ts')
+  const context = sessionContext(), input = snapshot({ variantId: context.variantId, loadType: 'single_side', equipmentContext: context })
+  const parsed = prescriptionSnapshot(input)
+  assert.ok(parsed);assert.deepEqual(plain(parsed.equipmentContext), context)
+  assert.equal(Object.isFrozen(parsed), true);assert.equal(Object.isFrozen(parsed.equipmentContext), true)
+  context.equipment = 'machine'
+  assert.equal(parsed.equipmentContext.equipment, 'cable')
+  const restored = readManualPrescriptionDraft({ version: 3, prescription: parsed, sets: [set()],
+    equipmentContext: sessionContext(), weight: '8.5', weightUnit: 'kg', reps: '7', desiredSetCount: '2', originalPlannedSets: 3 })
+  assert.deepEqual(plain(restored.prescription.equipmentContext), sessionContext())
+  assert.deepEqual(plain(restored.equipmentContext), sessionContext())
+  assert.equal(Object.isFrozen(restored.equipmentContext), true)
+  assert.equal(restored.originalPlannedSets, 3);assert.equal(restored.weight, '8.5');assert.equal(restored.reps, '7')
+  assert.equal(restored.weightUnit, 'kg');assert.equal(restored.desiredSetCount, '2')
+})
+
+test('verified session equipment retry keeps original dose and provenance while actuals and desired sets remain editable', async () => {
+  const app = fixture(), first = sessionEquipmentBody(app)
+  assert.equal((await app.save(first)).status, 200)
+  const original = plain(app.state.rows[0].exercise_logs[0]), originalClient = plain(app.client)
+  app.state.resolverError = new Error('A verified session retry must not recompute later readiness or inventory.')
+  const actual = [set(1, { weight: 6, reps: 5 }), set(2, { weight: 7, reps: 6 })]
+  const retry = sessionEquipmentBody(app)
+  delete retry.exercise.prescription.equipmentContext // A valid surviving draft copy still binds the same context.
+  retry.sets = actual
+  retry.exercise_logs[0].planned_sets = 1;retry.exercise_logs[0].planned_reps = 1;retry.exercise_logs[0].planned_weight = 1
+  retry.exercise_logs[0].prescription.sets = 1;retry.exercise_logs[0].prescription.reps = 1;retry.exercise_logs[0].prescription.weightLb = 1
+  retry.exercise_logs[0].user_intent = { desired_set_count: 1 }
+  retry.exercise_logs[0].prescription_verification = { ...original.prescription_verification, auth_user_id: other }
+  const response = await app.save(retry)
+  assert.equal(response.status, 200);assert.equal(app.state.resolverCalls.length, 1)
+  const saved = app.state.rows[0].exercise_logs[0]
+  assert.deepEqual(saved.prescription, original.prescription)
+  assert.deepEqual(saved.prescription_verification, original.prescription_verification)
+  assert.equal(saved.planned_sets, 3);assert.equal(saved.planned_reps, 10);assert.equal(saved.planned_weight, 25)
+  assert.deepEqual(saved.set_logs, actual);assert.equal(saved.user_intent.desired_set_count, 1)
+  assert.equal((await response.json()).progress.totalSets, 3)
+  assert.deepEqual(app.client, originalClient)
+})
+
+test('session equipment tampering or removal on a verified retry rejects before any write or resolver read', async () => {
+  const changes = [
+    body => { body.exercise_logs[0].prescription.equipmentContext.equipment = 'machine' },
+    body => { body.exercise.prescription.equipmentContext.variantId = 'machine_lateral_raise' },
+    body => { body.exercise_logs[0].prescription.equipmentContext = null },
+    body => { delete body.exercise.prescription.equipmentContext;delete body.exercise_logs[0].prescription.equipmentContext },
+    body => { body.exercise.selected_equipment = 'machine' },
+    body => { body.exercise_logs[0].selected_equipment = 'machine' },
+    body => { body.exercise.equipmentContext = sessionContext('machine') },
+    body => { body.exercise_logs[0].equipment_context = sessionContext('machine') },
+  ]
+  for (const alter of changes) {
+    const app = fixture();assert.equal((await app.save(sessionEquipmentBody(app))).status, 200)
+    const before = plain(app.state.rows), writes = app.state.writes.length, retry = sessionEquipmentBody(app)
+    alter(retry)
+    assert.equal((await app.save(retry)).status, 409)
+    assert.equal(app.state.writes.length, writes);assert.equal(app.state.resolverCalls.length, 1)
+    assert.deepEqual(plain(app.state.rows), before)
+  }
+})
+
+test('unsupported, wildcard, mismatched or untrusted-owner session context cannot become guided provenance', async () => {
+  const contexts = [
+    { ...sessionContext(), equipment: '*' }, { ...sessionContext(), equipment: 'free_weights' },
+    { ...sessionContext(), equipment: 'invented' }, { ...sessionContext(), source: 'saved_profile' },
+    { ...sessionContext(), variantId: 'machine_lateral_raise' }, { ...sessionContext(), auth_user_id: other },
+    { ...sessionContext(), equipment_modifier: 2 },
+  ]
+  for (const context of contexts) {
+    const app = fixture(), submitted = sessionEquipmentBody(app)
+    submitted.exercise.prescription.equipmentContext = plain(context)
+    submitted.exercise_logs[0].prescription.equipmentContext = plain(context)
+    assert.equal((await app.save(submitted)).status, 409)
+    assert.equal(app.state.writes.length, 0)
+  }
+  const foreign = fixture(), submitted = sessionEquipmentBody(foreign)
+  submitted.client_id = 'INTEGRITY-FOREIGN'
+  assert.equal((await foreign.save(submitted)).status, 404)
+  assert.equal(foreign.state.writes.length, 0);assert.equal(foreign.state.resolverCalls.length, 0)
+  const tracker = fixture({ tier: 'tracker' })
+  assert.equal((await tracker.save(sessionEquipmentBody(tracker))).status, 403)
+  assert.equal(tracker.state.writes.length, 0);assert.equal(tracker.state.resolverCalls.length, 0)
+})
+
+test('Tracker session equipment records only explicit actual context without guidance reads or saved-profile changes', async () => {
+  const app = fixture({ tier: 'tracker' });app.client.equipment_access = ['bodyweight']
+  const beforeClient = plain(app.client), context = sessionContext()
+  const chosen = exercise({ selected_variant_id: context.variantId, selected_equipment: context.equipment,
+    load_type: 'single_side', equipmentContext: context, sets: 2 })
+  const actual = log({ ...chosen, equipment_context: context, planned_sets: 2, planned_reps: 0, planned_weight: 0,
+    prescription_verification: { version: 'owner-resolved-v1', auth_user_id: other } })
+  delete actual.prescription
+  const response = await app.save(app.body({ exercise: chosen, exercise_logs: [actual] }))
+  assert.equal(response.status, 200)
+  assert.equal(app.state.resolverCalls.length, 0)
+  const saved = app.state.rows[0].exercise_logs[0]
+  assert.deepEqual(saved.equipment_context, context)
+  assert.equal(saved.selected_equipment, 'cable');assert.equal(saved.selected_variant_id, 'cable_lateral_raise')
+  assert.equal(saved.prescription, undefined);assert.equal(saved.prescription_verification, undefined)
+  assert.equal(saved.set_logs[0].weight, 8.5);assert.equal(saved.set_logs[0].weight_unit, 'kg')
+  assert.equal(saved.set_logs[0].reps, 7);assert.equal(saved.planned_sets, 2)
+  assert.deepEqual(app.client, beforeClient)
+  assert.ok(app.state.writes.every(write => !['clients', 'client_current_profiles', 'program_outputs'].includes(write.table)))
+  const beforeRows = plain(app.state.rows), writes = app.state.writes.length
+  const tampered = app.body({ exercise: { ...chosen, equipmentContext: sessionContext('machine') }, exercise_logs: [actual] })
+  assert.equal((await app.save(tampered)).status, 409)
+  assert.equal(app.state.writes.length, writes);assert.equal(app.state.resolverCalls.length, 0)
+  assert.deepEqual(plain(app.state.rows), beforeRows)
 })

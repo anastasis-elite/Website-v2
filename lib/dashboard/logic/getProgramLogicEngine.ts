@@ -1,6 +1,7 @@
 import { getClientTimeZone, getClientLocalDateOffset } from '@/lib/timezone'
 import { loadProgramLogicInputs } from './loadProgramLogicInputs'
 import { workoutLocalDate } from '@/lib/workout/history'
+import { recoveryCompletionEvidence } from '@/lib/recovery/todayCompletion'
 
 import {
   numeric,
@@ -786,6 +787,9 @@ export async function getProgramLogicEngine(
       assessmentComplete,
 
       recoveryComplete,
+
+      recoveryEvidence: recoveryCompletionEvidence({ userId: inputs.userId, clientId: inputs.client.client_id,
+        date: inputs.date, rows: inputs.todayRecoveryActivities, available: inputs.recoveryActivitiesAvailable !== false }),
 
       phoenixTaskPercent:
         Math.min(

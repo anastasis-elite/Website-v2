@@ -1,4 +1,5 @@
 import { workoutSessionKeys } from './session'
+import { isManualCardioExercise } from './manualCardio'
 
 export type ActivityKind = 'strength' | 'cardio' | 'breathing' | 'mobility'
 export type ActivityDose = { kind: ActivityKind; metric: 'reps' | 'breaths' | 'minutes' | 'seconds' | 'completion'; prescribed: number; sets: number; weight: number; increment: number; unit: 'lb' | 'kg'; loadLabel: string }
@@ -14,7 +15,7 @@ export function activityDose(exercise: any, preferredUnit: 'lb' | 'kg' = 'lb'): 
   const label = String(exercise.duration_label || exercise.reps || '')
   const durationMinutes = Number(exercise.duration_minutes || 0), durationSeconds = Number(exercise.duration_seconds || 0)
   const timeMatch = label.match(/(\d+(?:\.\d+)?)\s*(?:[-–]\s*\d+(?:\.\d+)?\s*)?(?:(?:slow|deep|controlled)\s+)?(min|sec|breath)/i)
-  const metric: ActivityDose['metric'] = kind === 'strength' ? 'reps' : durationMinutes > 0 ? 'minutes' : durationSeconds > 0 ? 'seconds' : timeMatch?.[2]?.startsWith('sec') ? 'seconds' : timeMatch?.[2]?.startsWith('min') ? 'minutes' : kind === 'breathing' ? 'breaths' : kind === 'cardio' ? 'minutes' : 'completion'
+  const metric: ActivityDose['metric'] = kind === 'strength' ? 'reps' : isManualCardioExercise(exercise) ? exercise.duration_unit : durationMinutes > 0 ? 'minutes' : durationSeconds > 0 ? 'seconds' : timeMatch?.[2]?.startsWith('sec') ? 'seconds' : timeMatch?.[2]?.startsWith('min') ? 'minutes' : kind === 'breathing' ? 'breaths' : kind === 'cardio' ? 'minutes' : 'completion'
   const rawReps = exercise.recommended_reps ?? exercise.reps ?? exercise.target_reps
   const prescribed = metric === 'completion' ? 1 : metric === 'reps' || metric === 'breaths' ? Number(rawReps ?? timeMatch?.[1] ?? 0) : metric === 'minutes' ? durationMinutes || Number(timeMatch?.[1] || 0) : durationSeconds || Number(timeMatch?.[1] || 0)
   const unit = preferredUnit

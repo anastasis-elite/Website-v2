@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import ActionArrow from '@/components/ActionArrow'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { buildTodayActivities, presentTodayActivities, type DailyGuideState, type TodayActivity, type TodayActivityId } from '@/lib/dashboard/todayActivities'
@@ -12,18 +11,19 @@ import { trackEvent } from '@/lib/analytics'
 import { recordTodayActionOpened, recordTodayActionCompletions } from '@/lib/analytics/todayJourney'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
+import { getRecoveryPresentation } from '@/lib/recovery/todayCompletion'
 
 const icons: Record<string, string> = { check_in: '☀', hydration: '◒', schedule: '▦', nutrition: '◡', workout: '↟', recovery: '♡', none: '✦' }
 const statusLabels: Record<string, string> = { available: 'Available', upcoming: 'Upcoming', in_progress: 'In progress', completed: 'Completed', deferred: 'Deferred', skipped: 'Skipped' }
 const tutorialIds: Partial<Record<TodayActivityId, string>> = { 'check-in': 'dashboard-daily-checkin', water: 'dashboard-water-progress', workout: 'dashboard-nav-workout', nutrition: 'dashboard-nav-nutrition', recovery: 'dashboard-nav-recovery' }
 type GuideAction = 'defer' | 'skip' | 'resume' | 'review'
-const activityCards: Partial<Record<TodayActivityId, { illustration: string; label: string; action: string }>> = {
-  water: { illustration: 'water', label: 'Today’s essential', action: 'Log water' },
-  schedule: { illustration: 'schedule', label: 'Your time', action: 'Open schedule' },
-  'check-in': { illustration: 'check-in', label: 'Start with you', action: 'Open check-in' },
-  nutrition: { illustration: 'nutrition', label: 'Nourishment', action: 'Open nutrition' },
-  workout: { illustration: 'training', label: 'Movement', action: 'Open workout' },
-  recovery: { illustration: 'recovery', label: 'Rest & recovery', action: 'Open recovery' },
+const activityCards: Partial<Record<TodayActivityId, { illustration: string; label: string }>> = {
+  water: { illustration: 'water', label: 'Today’s essential' },
+  schedule: { illustration: 'schedule', label: 'Your time' },
+  'check-in': { illustration: 'check-in', label: 'Start with you' },
+  nutrition: { illustration: 'nutrition', label: 'Nourishment' },
+  workout: { illustration: 'training', label: 'Movement' },
+  recovery: { illustration: 'recovery', label: 'Rest & recovery' },
 }
 
 function ActivityOptions({ activity, busy, onAction }: { activity: TodayActivity; busy: boolean; onAction: (id: TodayActivityId, action: GuideAction) => void }) {
@@ -63,7 +63,10 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
   const plan = buildDailyRecommendation(logic, activeSchedule)
   const primaryId = plan.primary.id === 'food-input' ? 'nutrition' : plan.primary.id
   const primary = plan.primary.id === 'safety' ? undefined : presentedActivities.find(activity => activity.id === primaryId)
-  useDailyScheduleRefresh(activeSchedule, true, logic.nutrition.pacing?.nextRefreshAt)
+  const recovery = logic.execution.recoveryEvidence ? getRecoveryPresentation({ evidence: logic.execution.recoveryEvidence, schedule: activeSchedule }) : null
+  const presentationBoundary = Math.min(...[logic.nutrition.pacing?.nextRefreshAt, logic.hydration.presentationPacing?.nextRefreshAt, recovery?.nextRefreshAt]
+    .flatMap(value => value && Number.isFinite(Date.parse(value)) ? [Date.parse(value)] : []))
+  useDailyScheduleRefresh(activeSchedule, true, Number.isFinite(presentationBoundary) ? new Date(presentationBoundary).toISOString() : undefined)
 
   // A held action becomes available at its explicit return time, including idle tabs.
   const returnAt = Math.min(...Object.values(activeSchedule.dailyGuide?.activities || {}).flatMap(value => value?.status === 'deferred' && value.until && Date.parse(value.until) > Date.now() ? [Date.parse(value.until)] : []))
@@ -129,7 +132,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
         <Link href={activity.href} onClick={() => openActivity(activity.id, today.activities.some(record => record.id === activity.id && record.status === 'completed'))} data-tutorial-id={tutorialIds[activity.id]}>
           {illustrated(activity.id) ? <img src={`/illustrations/today-${activityCards[activity.id]?.illustration}.svg`} width="360" height="180" alt="" className="today-card-illustration" /> : null}
           <span className="today-activity-icon" aria-hidden="true">{activity.status === 'completed' ? '✓' : icons[activity.category] || '▦'}</span>
-          <span className="today-activity-copy">{illustrated(activity.id) ? <span className="today-card-kicker">{activityCards[activity.id]?.label}</span> : null}<strong>{activity.title}{!activity.countsTowardProgress ? <span className="today-optional-label">Optional</span> : null}</strong>{quiet ? null : <small>{activity.detail}</small>}{illustrated(activity.id) ? <span className="today-card-action">{activityCards[activity.id]?.action} <ActionArrow className="today-action-arrow" /></span> : null}</span>
+          <span className="today-activity-copy">{illustrated(activity.id) ? <span className="today-card-kicker">{activityCards[activity.id]?.label}</span> : null}<strong>{activity.title}{!activity.countsTowardProgress ? <span className="today-optional-label">Optional</span> : null}</strong>{quiet ? null : <small>{activity.detail}</small>}</span>
           <span className="today-activity-state">{statusLabels[activity.status] || 'Available'}{activity.deferredUntil ? <small>Until {formatLocalTime(activity.deferredUntil, schedule.timezone)}</small> : null}</span>
         </Link>
         <ActivityOptions activity={activity} busy={busy !== null} onAction={updateActivity} />

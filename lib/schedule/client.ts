@@ -30,7 +30,7 @@ export function useDailyScheduleRefresh(schedule: Pick<DailyScheduleState, 'date
     // Refresh on daypart/greeting, event, or midnight boundaries without polling.
     const atBoundary = () => {
       if (document.visibilityState !== 'visible') return
-      // An exact calorie crossing must survive the ordinary focus/resume
+      // An exact presentation crossing must survive the ordinary focus/resume
       // debounce. Only the guided view supplies this single calculated boundary.
       if (boundary === paceBoundary) router.refresh()
       else refresh()

@@ -3,6 +3,7 @@ import type { ProgramLogicOutput, StreakItem } from './logic/types'
 import type { DailyScheduleState, ScheduleEventType } from '@/lib/schedule/types'
 import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 import { getScheduleStructureVersion, scheduleStructureTaskHref } from '@/lib/assessment/scheduleStructure'
+import { getRecoveryPresentation } from '@/lib/recovery/todayCompletion'
 
 export const TODAY_ACTIVITY_IDS = ['check-in', 'water', 'schedule', 'nutrition', 'workout', 'recovery'] as const
 export type TodayActivityId = typeof TODAY_ACTIVITY_IDS[number] | `assessment:${string}`
@@ -110,18 +111,41 @@ export function buildTodayActivities(logic: ProgramLogicOutput, schedule: Pick<D
   return { activities, completed: counted.filter(activity => activity.status === 'completed').length, total: counted.length }
 }
 
-// Keep recorded completion, progress and analytics intact. Calorie pacing only
-// changes which actions are presented now; one logged meal is not a full-day goal.
+// Keep recorded completion, progress and analytics intact. Waking-window pacing
+// changes only which actions are presented now, not the full-day goals.
 export function presentTodayActivities(logic: ProgramLogicOutput, schedule: Pick<DailyScheduleState, 'date' | 'timezone' | 'now' | 'events' | 'dailyGuide'>, activities = buildTodayActivities(logic, schedule).activities): TodayActivity[] {
-  const pacing = logic.nutrition.pacing
   const guide = readDailyGuide(schedule.dailyGuide, schedule.date)
+  const recovery = logic.execution.recoveryEvidence ? getRecoveryPresentation({ evidence: logic.execution.recoveryEvidence, schedule }) : null
   return activities.flatMap(activity => {
-    if (activity.id !== 'nutrition' || !pacing) return activity.status === 'completed' ? [] : [activity]
+    if (activity.id === 'recovery' && recovery && recovery.state !== 'no_event') {
+      if (recovery.complete || recovery.state === 'upcoming') return []
+      const event = schedule.events.find(item => item.id === recovery.eventId)
+      const scopedSchedule = { ...schedule, events: event ? [event] : [] }
+      const { preference, acceptedLater, skippedBySchedule, heldByGuide } = scheduleActivityIntent('recovery', scopedSchedule, guide, Date.parse(schedule.now))
+      const safetyRecovery = logic.symptoms.redFlag
+      let status: TodayActivityStatus = 'available'
+      let deferredUntil: string | undefined
+      if (!safetyRecovery) {
+        if (preference?.status === 'skipped' || skippedBySchedule) status = 'skipped'
+        else if (preference?.status === 'deferred' && Date.parse(preference.until!) > Date.parse(schedule.now)) {
+          status = 'deferred'; deferredUntil = preference.until
+        } else if (event?.status === 'deferred' || acceptedLater) {
+          status = 'deferred'; deferredUntil = event?.adjusted_start_at || event?.start_at
+        }
+      }
+      const detail = recovery.state === 'unavailable' ? 'Your saved recovery could not be confirmed. Open recovery to review it.'
+        : recovery.state === 'ambiguous' ? 'Your recovery activities remain saved. Review this recovery block in Schedule; its completion could not be linked.'
+        : 'This recovery block is available. Earlier saved activities remain in your history.'
+      return [{ ...activity, status, detail, canDefer: !safetyRecovery, canSkip: !activity.countsTowardProgress && !safetyRecovery,
+        canResume: !safetyRecovery && Boolean(heldByGuide) && recovery.state !== 'held' && !acceptedLater && !skippedBySchedule, deferredUntil }]
+    }
+    const pacing = activity.id === 'nutrition' ? logic.nutrition.pacing : activity.id === 'water' ? logic.hydration.presentationPacing : undefined
+    if (!pacing || (activity.id !== 'nutrition' && activity.id !== 'water')) return activity.status === 'completed' ? [] : [activity]
     if (['complete', 'on_pace', 'sleep'].includes(pacing.state)) return []
     // Logging can complete the canonical action while the calorie prompt becomes
     // due later. Its presentation must still respect the member's saved Schedule.
-    const { preference, acceptedLater, skippedBySchedule, heldByGuide } = scheduleActivityIntent('nutrition', schedule, guide, Date.parse(schedule.now))
-    let status: TodayActivityStatus = logic.nutrition.dataStatus === 'needs_input' ? 'available' : 'in_progress'
+    const { preference, acceptedLater, skippedBySchedule, heldByGuide } = scheduleActivityIntent(activity.id, schedule, guide, Date.parse(schedule.now))
+    let status: TodayActivityStatus = (activity.id === 'nutrition' ? logic.nutrition.dataStatus : logic.hydration.status) === 'needs_input' ? 'available' : 'in_progress'
     let deferredUntil: string | undefined
     if (preference?.status === 'skipped' || skippedBySchedule) status = 'skipped'
     else if (preference?.status === 'deferred' && Date.parse(preference.until!) > Date.parse(schedule.now)) {

@@ -33,7 +33,7 @@ function harness() {
     '@/components/ActionArrow': { __esModule: true, default: 'arrow' },
     '@/lib/recovery/activityDetails': validation,
     '@/lib/recovery/activityDisplay': display,
-    './RecoveryCards.module.css': { card: 'recovery-compact-card', arrow: 'recovery-arrow', dialog: 'recovery-dialog' },
+    './RecoveryCards.module.css': { card: 'recovery-compact-card', copy: 'recovery-copy', title: 'recovery-title', arrow: 'recovery-arrow', dialog: 'recovery-dialog' },
   }
   const compiled = ts.transpileModule(readFileSync('components/recovery/RecoveryActivitySheets.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
@@ -52,7 +52,7 @@ function harness() {
     for (const input of nodes(tree, node => node.type === 'input' && node.ref)) input.ref.current = { focus() {} }
     return tree
   }
-  const button = label => nodes(render(), node => node.type === 'button' && text(node) === label)[0]
+  const button = label => nodes(render(), node => node.type === 'button' && (node.props['aria-label'] || text(node)) === label)[0]
   const field = label => nodes(nodes(render(), node => node.type === 'label' && text(node).startsWith(label))[0], node => ['input', 'select'].includes(node.type))[0]
   return {
     render, calls, nativeDialog, button, field,
@@ -170,13 +170,15 @@ test('history preserves entered units, specific additions, and missing optional 
 
 test('compact sauna sheet starts blank, discloses coaching limits and requires actual duration and context', async () => {
   const view = harness()
-  const cards = nodes(view.render(), node => node.type === 'article')
+  const cards = nodes(view.render(), node => node.type === 'button' && node.props.className?.includes('recovery-compact-card'))
   assert.equal(cards.length, 3)
   for (const card of cards) {
     assert.equal(nodes(card, node => node.type === 'img' && node.props.alt === '').length, 1)
-    assert.equal(nodes(card, node => node.type === 'h3').length, 1)
+    assert.equal(nodes(card, node => node.type === 'span' && node.props.className === 'recovery-title').length, 1)
     assert.equal(nodes(card, node => node.type === 'button').length, 1)
     assert.equal(nodes(card, node => node.type === 'p').length, 0)
+    assert.equal(nodes(card, node => node.type === 'a').length, 0)
+    assert.equal(card.props.type, 'button')
   }
   view.open('sauna')
   assert.equal(view.field('Actual duration').props.value, '')

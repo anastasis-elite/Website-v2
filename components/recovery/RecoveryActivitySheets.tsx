@@ -108,10 +108,10 @@ export default function RecoveryActivitySheets({ clientId }: { clientId: string 
       ['slow_walk', 'Slow walk', 'training'],
       ['warm_soak', 'Warm soak', 'water'],
       ['sauna', 'Sauna', 'recovery'],
-    ] as const).map(([kind, label, illustration]) => <article className={cardStyles.card} key={kind}>
+    ] as const).map(([kind, label, illustration]) => <button className={cardStyles.card} key={kind} type="button" aria-label={`Log ${label.toLowerCase()}`} aria-haspopup="dialog" aria-controls={id} onClick={event => open(kind, event.currentTarget)}>
       <img src={`/illustrations/today-${illustration}.svg`} alt="" width="360" height="180" />
-      <div><h3>{label}</h3><button className="recovery-practice-trigger" type="button" aria-haspopup="dialog" aria-controls={id} onClick={event => open(kind, event.currentTarget)}>Log {label.toLowerCase()}<ActionArrow className={cardStyles.arrow} /></button></div>
-    </article>)}
+      <span className={cardStyles.copy}><span className={cardStyles.title}>{label}</span><ActionArrow className={cardStyles.arrow} /></span>
+    </button>)}
     <dialog ref={dialog} id={id} className={`phone-app-practice-dialog recovery-activity-sheet ${cardStyles.dialog}`} aria-labelledby={`${id}-title`} aria-describedby={`${id}-intro`} onCancel={event => { if (lock.current) event.preventDefault() }} onClose={() => trigger.current?.focus()}>
       <header><h2 id={`${id}-title`}>{title}</h2><button type="button" disabled={saving} onClick={close}>{saved ? 'Close' : 'Cancel'}</button></header>
       <p id={`${id}-intro`}>{practice === 'slow_walk' ? 'Take a gentle walk at your own pace, then record the walk you actually completed. All entries here are manual.' : practice === 'warm_soak' ? 'Record the warm soak you completed. Approximate temperature and additions are optional.' : 'Sauna is a separate recovery practice. It does not complete your workout or replace an active warmup. Record your actual duration and when you used it.'}</p>

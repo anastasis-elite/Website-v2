@@ -18,7 +18,7 @@ function harness() {
     '@/components/RecoveryLogger': {}, '@/components/recovery/RecoveryActivitySheets': {}, '@/lib/recovery/activityDisplay': {},
     '@/components/DailyCheckInForm': {}, '@/components/recovery/BreathingReset': {}, '@/lib/dashboard/dailyTraining': {},
     '@/lib/recovery/scoreExplanation': {}, '@/components/dashboard/useViewPreference': {},
-    '@/components/ActionArrow': { __esModule: true, default: 'arrow' }, './RecoveryCards.module.css': { card: 'compact-card', arrow: 'compact-arrow', dialog: 'compact-dialog' },
+    '@/components/ActionArrow': { __esModule: true, default: 'arrow' }, './RecoveryCards.module.css': { card: 'compact-card', copy: 'compact-copy', title: 'compact-title', arrow: 'compact-arrow', dialog: 'compact-dialog' },
     'next/link': { __esModule: true, default: 'a' },
   }
   const compiled = ts.transpileModule(readFileSync('components/recovery/RecoveryDashboardClient.tsx', 'utf8'), { compilerOptions: {
@@ -32,14 +32,17 @@ function harness() {
   return { render, open, nativeDialog, get dialog() { render();return dialogNode }, get focusReturns() { return focusReturns } }
 }
 
-test('compact guided cards expose image, name and accessible description control with native focus return', () => {
-  const view = harness(), cards = nodes(view.render(), node => node.type === 'article')
+test('compact guided tiles are whole native buttons with image, name and dialog focus return', () => {
+  const view = harness(), cards = nodes(view.render(), node => node.type === 'button' && node.props.className === 'compact-card')
   assert.equal(cards.length, 5)
   for (const card of cards) {
     assert.equal(nodes(card, node => node.type === 'img' && node.props.alt === '').length, 1)
-    assert.equal(nodes(card, node => node.type === 'h3').length, 1)
+    assert.equal(nodes(card, node => node.type === 'span' && node.props.className === 'compact-title').length, 1)
     assert.equal(nodes(card, node => node.type === 'p').length, 0)
-    const trigger = nodes(card, node => node.type === 'button')[0]
+    assert.equal(nodes(card, node => node.type === 'button').length, 1, 'The native tile is the only button; controls are not nested.')
+    assert.equal(nodes(card, node => node.type === 'a').length, 0)
+    const trigger = card
+    assert.equal(trigger.props.type, 'button')
     assert.equal(trigger.props['aria-haspopup'], 'dialog');assert.equal(trigger.props['aria-controls'], 'guided-practice')
   }
   view.open('Meditation')
@@ -80,6 +83,8 @@ test('Recovery layout is scoped, responsive and keeps full descriptions out of c
   assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/)
   assert.match(css, /max-width: 640px[\s\S]*repeat\(2, minmax\(0, 1fr\)\)/)
   assert.match(css, /min-height: 44px/)
+  assert.match(css, /\.card:focus-visible/)
+  assert.match(css, /height: 88px/)
   assert.match(css, /max-height: calc\(100dvh - 32px\); overflow: auto/)
   assert.doesNotMatch(css, /:global|animation|position: fixed/)
 })

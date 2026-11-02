@@ -8,6 +8,8 @@ import {
   filterManualExercises,
   getAvailableEquipmentForMuscles,
   getAvailableMovementFamilies,
+  getSessionEquipmentForMuscles,
+  filterSessionManualExercises,
   getReadinessSummaryForCanonicalMuscle,
   normalizeEquipmentList,
   sortManualExercisesByReadiness,
@@ -21,7 +23,8 @@ import {
   type MuscleReadiness,
 } from '@/lib/workout/muscleReadiness'
 import type { CanonicalMuscle } from '@/lib/workout-os/types'
-import type { SelectedExercisePrescription } from '@/lib/workout/selectedPrescriptionTypes'
+import type { SelectedExercisePrescription, SessionEquipmentContext } from '@/lib/workout/selectedPrescriptionTypes'
+import { MANUAL_CARDIO_OPTIONS, MANUAL_CARDIO_DAY_NAME, createManualCardioExercise, isManualCardioExercise, type ManualCardioExercise } from '@/lib/workout/manualCardio'
 import { getClientLocalDate } from '@/lib/timezone'
 import styles from './ManualSelectionDialog.module.css'
 
@@ -40,13 +43,28 @@ type Props = {
   onExerciseBlur?: () => void
 }
 
-type Step = 'muscle' | 'equipment' | 'exercise' | 'logging' | 'complete'
-type ActiveExercise = ManualWorkoutExercise & {
+type Step = 'muscle' | 'equipment' | 'exercise' | 'cardio' | 'logging' | 'complete'
+type ActiveExercise = (ManualWorkoutExercise | ManualCardioExercise) & {
   catalogExerciseId?: string
   prescription?: Readonly<SelectedExercisePrescription>
   recommendationStatus?: 'available' | 'unavailable' | 'tracking_only'
   recommendationMessage?: string
   recommendationSetupHref?: string
+  equipmentContext?: Readonly<SessionEquipmentContext>
+}
+
+const sessionEquipment = ['cable', 'machine', 'dumbbell', 'barbell', 'kettlebell', 'bodyweight'] as const
+const equipmentGroups = [
+  { label: 'Cable and machines', equipment: ['cable', 'machine'] },
+  { label: 'Free weights', equipment: ['dumbbell', 'barbell', 'kettlebell'] },
+  { label: 'Bodyweight', equipment: ['bodyweight'] },
+] as const
+
+function isCardio(exercise: ActiveExercise): exercise is ManualCardioExercise {
+  return isManualCardioExercise(exercise)
+}
+function immutablePrescription(prescription: SelectedExercisePrescription) {
+  return Object.freeze({ ...prescription, ...(prescription.equipmentContext ? { equipmentContext: Object.freeze({ ...prescription.equipmentContext }) } : {}) })
 }
 
 function titleCase(value: string) {
@@ -58,21 +76,25 @@ function regionToMuscles(regionId: MuscleId | null): CanonicalMuscle[] {
 function firstMuscleLabel(muscles: CanonicalMuscle[]) {
   return muscles[0] ? titleCase(muscles[0]) : 'Muscle'
 }
-function exerciseKey(exercise: ManualWorkoutExercise, index: number) {
-  return `${exercise.id}:${exercise.selected_variant_id}:${index}`
+function exerciseKey(exercise: ActiveExercise, index: number) {
+  return `${exercise.id}:${isCardio(exercise) ? exercise.manual_cardio_id : exercise.selected_variant_id}:${index}`
 }
-function summarizeExercise(exercise: ManualWorkoutExercise) {
+function summarizeExercise(exercise: ActiveExercise) {
+  if (isCardio(exercise)) return 'Manual cardio · duration-based logging'
   const secondary = exercise.secondary_muscles?.slice(0, 2).map(titleCase).join(', ')
   return [exercise.movement_family_label, titleCase(exercise.selected_equipment), secondary ? `Secondary: ${secondary}` : null].filter(Boolean).join(' · ')
 }
 function internalSetupHref(value: unknown) {
   return typeof value === 'string' && value.startsWith('/dashboard/') ? value : undefined
 }
-function confirmedPrescription(value: any, exerciseId: string, variantId: string): value is SelectedExercisePrescription {
+function confirmedPrescription(value: any, exerciseId: string, variantId: string, equipmentContext?: SessionEquipmentContext): value is SelectedExercisePrescription {
   return value && value.exerciseId === exerciseId && value.variantId === variantId &&
     Number.isInteger(value.sets) && value.sets > 0 && Number.isInteger(value.reps) && value.reps > 0 &&
     typeof value.weightLb === 'number' && Number.isFinite(value.weightLb) && value.weightLb >= 0 &&
-    typeof value.loadType === 'string' && value.version === 'founder-selected-v1'
+    typeof value.loadType === 'string' && value.version === 'founder-selected-v1' &&
+    (equipmentContext ? value.equipmentContext?.source === equipmentContext.source &&
+      value.equipmentContext?.equipment === equipmentContext.equipment && value.equipmentContext?.variantId === equipmentContext.variantId
+      : value.equipmentContext === undefined)
 }
 
 export default function ManualWorkoutBuilder({
@@ -82,6 +104,8 @@ export default function ManualWorkoutBuilder({
   const [step, setStep] = useState<Step>('muscle')
   const [selectedRegionId, setSelectedRegionId] = useState<MuscleId | null>(null)
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null)
+  const [equipmentMode, setEquipmentMode] = useState<'saved' | 'session'>('saved')
+  const [cardioUnit, setCardioUnit] = useState<'minutes' | 'seconds'>('minutes')
   const [selectedMovementFamily, setSelectedMovementFamily] = useState<string | null>(null)
   const [activeExercise, setActiveExercise] = useState<ActiveExercise | null>(null)
   const [completedExercises, setCompletedExercises] = useState<Array<ActiveExercise & { completion_status?: string }>>([])
@@ -116,17 +140,19 @@ export default function ManualWorkoutBuilder({
     dialog.current?.close()
     setLoading(false); setSelectionError(''); setBlocked(false); setSetupHref(undefined); setPendingExercise(null)
     setStep('muscle'); setActiveExercise(null); setCompletedExercises([])
-    setSelectedRegionId(null); setSelectedEquipment(null); setSelectedMovementFamily(null); setDraftMessage('')
+    setSelectedRegionId(null); setSelectedEquipment(null); setEquipmentMode('saved'); setSelectedMovementFamily(null); setDraftMessage('')
     try {
       const saved = JSON.parse(localStorage.getItem(draftKey) || 'null')
       if (saved?.version === 1) {
         const active = saved.activeExercise
-        const validActive = active && typeof active.id === 'string' && typeof active.exercise === 'string' && Array.isArray(active.available_variants)
+        const validActive = active && typeof active.id === 'string' && typeof active.exercise === 'string' &&
+          (Array.isArray(active.available_variants) || isManualCardioExercise(active))
         setCompletedExercises(Array.isArray(saved.completedExercises) ? saved.completedExercises.slice(0, 100).filter((exercise: any) => exercise && typeof exercise.exercise === 'string') : [])
         if (validActive) {
           const restored = { ...active }
-          if (active.prescription) restored.prescription = Object.freeze({ ...active.prescription })
-          if (!active.recommendationStatus) {
+          if (active.prescription) restored.prescription = immutablePrescription(active.prescription)
+          if (active.equipmentContext) restored.equipmentContext = Object.freeze({ ...active.equipmentContext })
+          if (!active.recommendationStatus && !isManualCardioExercise(active)) {
             restored.recommendationStatus = trackingOnly ? 'tracking_only' : 'unavailable'
             restored.recommendationMessage = 'Recommendation unavailable for this restored draft. Your saved entries are retained.'
           }
@@ -146,43 +172,50 @@ export default function ManualWorkoutBuilder({
   const selectedMuscles = useMemo(() => regionToMuscles(selectedRegionId), [selectedRegionId])
   const primaryMuscle = selectedMuscles[0]
   const readinessSummary = primaryMuscle ? getReadinessSummaryForCanonicalMuscle(readiness, primaryMuscle) : null
+  const catalogEquipment = useMemo(() => getAvailableEquipmentForMuscles(selectedMuscles), [selectedMuscles])
   const availableEquipment = useMemo(() => {
-    const derived = getAvailableEquipmentForMuscles(selectedMuscles)
+    const derived = catalogEquipment
     const member = normalizeEquipmentList(memberEquipment)
     if (!member.length || member.includes('*')) return derived
     const memberSet = new Set(member)
     const overlap = derived.filter((equipment) => memberSet.has(equipment))
     // Preserve the existing fallback without adding equipment or catalog entries.
     return overlap.length ? overlap : derived
-  }, [memberEquipment, selectedMuscles])
+  }, [memberEquipment, catalogEquipment])
+  const otherEquipment = useMemo(() => getSessionEquipmentForMuscles(selectedMuscles), [selectedMuscles])
   const movementFamilies = useMemo(() => selectedEquipment ? getAvailableMovementFamilies({ muscles: selectedMuscles, equipment: [selectedEquipment] }) : [], [selectedEquipment, selectedMuscles])
   const exercises = useMemo(() => {
     if (!selectedEquipment) return []
-    return sortManualExercisesByReadiness(filterManualExercises({ muscles: selectedMuscles, equipment: [selectedEquipment], movementFamily: selectedMovementFamily }), readinessSummary?.state || 'unknown')
-  }, [readinessSummary?.state, selectedEquipment, selectedMovementFamily, selectedMuscles])
+    const filter = equipmentMode === 'session' ? filterSessionManualExercises : filterManualExercises
+    return sortManualExercisesByReadiness(filter({ muscles: selectedMuscles, equipment: [selectedEquipment], movementFamily: selectedMovementFamily }), readinessSummary?.state || 'unknown')
+  }, [readinessSummary?.state, selectedEquipment, selectedMovementFamily, selectedMuscles, equipmentMode])
 
   function clearPending() {
     invalidateRequest(); setLoading(false); setSelectionError(''); setBlocked(false); setSetupHref(undefined); setPendingExercise(null)
   }
   function resetSelection(nextStep: Step = 'muscle') {
     clearPending(); dialog.current?.close()
-    setSelectedRegionId(null); setSelectedEquipment(null); setSelectedMovementFamily(null); setActiveExercise(null)
+    setSelectedRegionId(null); setSelectedEquipment(null); setEquipmentMode('saved'); setSelectedMovementFamily(null); setActiveExercise(null)
     setStep(nextStep); onExerciseBlur?.()
   }
   function dismissSelection() {
     clearPending(); dialog.current?.close(); setStep('muscle')
-    setSelectedRegionId(null); setSelectedEquipment(null); setSelectedMovementFamily(null)
+    setSelectedRegionId(null); setSelectedEquipment(null); setEquipmentMode('saved'); setSelectedMovementFamily(null)
     onExerciseBlur?.()
   }
   function chooseRegion(regionId: MuscleId) {
     clearPending()
     trigger.current = document.activeElement as HTMLElement | SVGElement | null
-    setSelectedRegionId(regionId); setSelectedEquipment(null); setSelectedMovementFamily(null); setStep('equipment')
+    setSelectedRegionId(regionId); setSelectedEquipment(null); setEquipmentMode('saved'); setSelectedMovementFamily(null); setStep('equipment')
     onExerciseFocus?.(getBilateralMuscleIds(regionId))
     dialog.current?.showModal(); dialogHeading.current?.focus()
   }
   function chooseEquipment(equipment: string) {
+    if (!(equipmentMode === 'session' ? otherEquipment : availableEquipment).includes(equipment)) return
     clearPending(); setSelectedEquipment(equipment); setSelectedMovementFamily(null); setStep('exercise')
+  }
+  function changeEquipmentMode(mode: 'saved' | 'session') {
+    clearPending(); setSelectedEquipment(null); setSelectedMovementFamily(null); setEquipmentMode(mode); setStep('equipment')
   }
   function changeEquipment() {
     clearPending(); setSelectedEquipment(null); setSelectedMovementFamily(null); setStep('equipment')
@@ -196,15 +229,31 @@ export default function ManualWorkoutBuilder({
       selected_equipment: variant.equipment, equipment: variant.equipment, load_type: variant.load_type,
       recommendationStatus: status, recommendationMessage: message, recommendationSetupHref: href,
     }
+    const equipmentContext = selectedEquipmentContext(variant.id)
+    if (equipmentContext) selected.equipmentContext = Object.freeze({ ...equipmentContext })
     // Catalog browsing defaults are not a personalized prescription.
     for (const field of ['sets', 'reps', 'target_reps', 'recommended_reps', 'baseline_reps', 'calculated_weight', 'recommended_weight', 'baseline_weight', 'rpe_target']) delete selected[field]
     if (prescription) {
-      selected.prescription = Object.freeze({ ...prescription })
+      selected.prescription = immutablePrescription(prescription)
       Object.assign(selected, { sets: prescription.sets, reps: prescription.reps, recommended_reps: prescription.reps,
         baseline_reps: prescription.reps, recommended_weight: prescription.weightLb, calculated_weight: prescription.weightLb,
         baseline_weight: prescription.weightLb, load_type: prescription.loadType, weight_unit: 'lb' })
     }
     clearPending(); dialog.current?.close(); setActiveExercise(selected); setStep('logging')
+  }
+  function selectedEquipmentContext(variantId: string): SessionEquipmentContext | undefined {
+    return equipmentMode === 'session' && selectedEquipment && sessionEquipment.includes(selectedEquipment as typeof sessionEquipment[number])
+      ? { source: 'session_override', equipment: selectedEquipment as SessionEquipmentContext['equipment'], variantId } : undefined
+  }
+  function openCardio(button: HTMLButtonElement) {
+    clearPending(); trigger.current = button
+    setSelectedRegionId(null); setSelectedEquipment(null); setEquipmentMode('saved'); setSelectedMovementFamily(null); setCardioUnit('minutes'); setStep('cardio')
+    onExerciseBlur?.(); dialog.current?.showModal(); dialogHeading.current?.focus()
+  }
+  function chooseCardio(id: typeof MANUAL_CARDIO_OPTIONS[number]['id']) {
+    clearPending()
+    const exercise = createManualCardioExercise(id, cardioUnit, crypto.randomUUID())
+    dialog.current?.close(); setActiveExercise(exercise); setStep('logging')
   }
   async function chooseExercise(exercise: ManualWorkoutExercise) {
     const variant = exercise.available_variants.find(item => item.equipment === selectedEquipment)
@@ -212,11 +261,12 @@ export default function ManualWorkoutBuilder({
     clearPending(); setPendingExercise(exercise)
     if (trackingOnly) { commitExercise(exercise, 'tracking_only', 'Manual logging without coaching guidance.'); return }
     const revision = requestRevision.current, startedContext = currentContext.current
+    const equipmentContext = selectedEquipmentContext(variant.id)
     const controller = new AbortController(); request.current = controller; setLoading(true)
     const current = () => mounted.current && requestRevision.current === revision && currentContext.current === startedContext
     try {
       const response = await fetch('/api/workout/prescription', { method: 'POST', credentials: 'same-origin', cache: 'no-store',
-        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ exerciseId: exercise.id, variantId: variant.id }), signal: controller.signal })
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ exerciseId: exercise.id, variantId: variant.id, ...(equipmentContext ? { equipmentContext } : {}) }), signal: controller.signal })
       const result = await response.json().catch(() => null)
       if (!current()) return
       const href = internalSetupHref(result?.setupHref)
@@ -224,7 +274,7 @@ export default function ManualWorkoutBuilder({
         setBlocked(true); setSetupHref(href); setSelectionError(result.message || 'Recommendation unavailable. Review the available guidance before continuing.'); return
       }
       if (!response.ok || !result) throw new Error('request_failed')
-      if (result.status === 'available' && confirmedPrescription(result.prescription, exercise.id, variant.id)) {
+      if (result.status === 'available' && confirmedPrescription(result.prescription, exercise.id, variant.id, equipmentContext)) {
         commitExercise(exercise, 'available', result.message, result.prescription); return
       }
       if (result.status === 'unavailable' || result.status === 'tracking_only') {
@@ -247,7 +297,7 @@ export default function ManualWorkoutBuilder({
     {step === 'logging' && activeExercise ? <WorkoutTracker
       key={`${draftKey}:${exerciseKey(activeExercise, completedExercises.length)}`}
       clientId={clientId} authUserId={authUserId} program={program} timezone={timezone} weightUnit={weightUnit}
-      dayName="Manual Workout" workoutSource="manual" plannedExercises={recommendedExercises} exercises={[activeExercise]}
+      dayName={isCardio(activeExercise) ? MANUAL_CARDIO_DAY_NAME : 'Manual Workout'} workoutSource="manual" plannedExercises={isCardio(activeExercise) ? [activeExercise] : recommendedExercises} exercises={[activeExercise]}
       onExerciseFocus={exercise => onExerciseFocus?.(getMuscleIdsForExercise(exercise))} onExerciseBlur={onExerciseBlur}
       onManualExerciseFinished={finishExercise}
       onManualRecommendationReset={() => resetSelection('muscle')}
@@ -257,11 +307,12 @@ export default function ManualWorkoutBuilder({
       </div>{!trackingOnly ? <small>Plan preserved: {recommendedDayName}</small> : null}</div>
       {completedExercises.length ? <ol className="manual-workout-list" data-testid="manual-workout-list">
         {completedExercises.map((exercise, index) => <li key={`${exercise.id}-${index}`}><span>{index + 1}</span><div>
-          <strong>{exercise.display_name}</strong><small>{String(exercise.completion_status || 'Saved')} · {summarizeExercise(exercise)}</small>
+          <strong>{isCardio(exercise) ? exercise.exercise : exercise.display_name}</strong><small>{String(exercise.completion_status || 'Saved')} · {summarizeExercise(exercise)}</small>
         </div></li>)}
       </ol> : null}
       {step !== 'complete' ? <MuscleReadinessMap readiness={readiness} selectedMuscleId={selectedRegionId} bilateralSelection
         onSelectMuscle={chooseRegion} heading="Choose muscle" eyebrow={trackingOnly ? 'Manual selection' : 'Readiness from your logs'} /> : null}
+      <button type="button" className="manual-secondary-button" onClick={event => openCardio(event.currentTarget)}>Add cardio</button>
       {step === 'complete' ? <div className="manual-session-actions">
         <button type="button" className="manual-primary-button" onClick={() => resetSelection('muscle')}>Add another exercise</button>
         <button type="button" className="manual-secondary-button" onClick={() => resetSelection('complete')}>Finish workout</button>
@@ -270,22 +321,42 @@ export default function ManualWorkoutBuilder({
 
     <dialog id={dialogId} ref={dialog} className={styles.dialog} aria-labelledby={`${dialogId}-title`} aria-describedby={`${dialogId}-description`}
       onCancel={event => { event.preventDefault(); dismissSelection() }} onClose={() => trigger.current?.focus()}>
-      <header className={styles.header}><h2 ref={dialogHeading} tabIndex={-1} id={`${dialogId}-title`}>{firstMuscleLabel(selectedMuscles)} · {step === 'equipment' ? 'Choose equipment' : 'Choose exercise'}</h2>
+      <header className={styles.header}><h2 ref={dialogHeading} tabIndex={-1} id={`${dialogId}-title`}>{step === 'cardio' ? 'Choose cardio' : `${firstMuscleLabel(selectedMuscles)} · ${step === 'equipment' ? 'Choose equipment' : 'Choose exercise'}`}</h2>
         <button type="button" className="manual-secondary-button" onClick={dismissSelection}>Close</button>
       </header>
-      <p id={`${dialogId}-description`}>Choose available equipment, then an exercise. Both matching sides stay selected; record one weight for the exercise.</p>
+      <p id={`${dialogId}-description`}>{step === 'cardio' ? 'Choose a cardio activity and record the duration you actually complete. No strength prescription, sets, reps or load are added.' : 'Choose available equipment, then an exercise. Both matching sides stay selected; record one weight for the exercise.'}</p>
       {!trackingOnly && readinessSummary ? <section className="manual-readiness-context" data-testid="manual-readiness-context">
         <span>{firstMuscleLabel(selectedMuscles)}</span><strong>{readinessSummary.label}</strong><small>{readinessSummary.guidance}</small>
         {readinessSummary.reason ? <small>{readinessSummary.reason}</small> : null}
       </section> : null}
       {step === 'equipment' ? <section className="manual-builder-section"><p className="manual-builder-label">Equipment</p>
-        <div className="manual-equipment-row" data-testid="manual-equipment-filter">
+        {equipmentMode === 'saved' ? <><p>Your saved equipment</p><div className="manual-equipment-row" data-testid="manual-equipment-filter">
           {availableEquipment.map(equipment => <button key={equipment} type="button" onClick={() => chooseEquipment(equipment)}>{titleCase(equipment)}</button>)}
-        </div>{availableEquipment.length ? null : <p role="status">No supported equipment options are available for this muscle.</p>}
+        </div><button type="button" className="manual-secondary-button" onClick={() => changeEquipmentMode('session')}>Use other equipment today</button>
+        {availableEquipment.length ? null : <p role="status">No supported equipment options are available for this muscle.</p>}</> : <>
+          <p role="status">Choose equipment available to you for this session only. Your saved equipment will not change.</p>
+          <div className={styles.equipmentGroups} data-testid="manual-session-equipment">
+            {equipmentGroups.map(group => {
+              const supported = group.equipment.filter(equipment => otherEquipment.includes(equipment))
+              return supported.length ? <section key={group.label}><h3>{group.label}</h3><div className="manual-equipment-row">
+                {supported.map(equipment => <button key={equipment} type="button" onClick={() => chooseEquipment(equipment)}>{titleCase(equipment)}</button>)}
+              </div></section> : null
+            })}
+          </div>{otherEquipment.length ? null : <p role="status">No other supported equipment variants are listed for this muscle.</p>}
+          <button type="button" className="manual-secondary-button" onClick={() => changeEquipmentMode('saved')}>Use saved equipment</button>
+        </>}
+      </section> : null}
+      {step === 'cardio' ? <section className="manual-builder-section" data-testid="manual-cardio-options">
+        <p>Manual cardio · duration-based logging</p>
+        <label className={styles.filter}>Duration unit<select value={cardioUnit} onChange={event => setCardioUnit(event.target.value === 'seconds' ? 'seconds' : 'minutes')}>
+          <option value="minutes">Minutes</option><option value="seconds">Seconds</option>
+        </select></label>
+        <div className="manual-equipment-row">{MANUAL_CARDIO_OPTIONS.map(option => <button key={option.id} type="button" onClick={() => chooseCardio(option.id)}>{option.label}</button>)}</div>
       </section> : null}
       {step === 'exercise' ? <section className="manual-builder-section" aria-busy={loading}>
         <button type="button" className="manual-secondary-button" onClick={changeEquipment}>Back · change equipment</button>
         <p className="manual-builder-label">{titleCase(selectedEquipment || '')} exercises</p>
+        {equipmentMode === 'session' ? <p className={styles.sessionNote}>Other equipment for this session only · saved profile unchanged</p> : null}
         <label className={styles.filter}>Movement family (optional)<select value={selectedMovementFamily || ''} data-testid="manual-movement-filter" disabled={loading}
           onChange={event => { clearPending(); setSelectedMovementFamily(event.target.value || null) }}>
           <option value="">All matching exercises</option>{movementFamilies.map(family => <option key={family.id} value={family.id}>{family.label}</option>)}

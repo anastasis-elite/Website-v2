@@ -10,6 +10,8 @@ import ts from 'typescript'
 const require = createRequire(import.meta.url)
 const stages = []
 const modules = new Map()
+const loadingStyles = { loading: 'loading', satin: 'satin', folds: 'folds', content: 'content', brand: 'brand', rule: 'rule' }
+const loadingCss = readFileSync('components/program-dashboard/DashboardLoadingShell.module.css', 'utf8')
 function load(path) {
   if (modules.has(path)) return modules.get(path).exports
   const module = { exports: {} }; modules.set(path, module)
@@ -20,6 +22,7 @@ function load(path) {
     if (name === '@/components/DashboardPerformance') return { __esModule: true, default: ({ stage }) => { stages.push(stage); return null } }
     if (name === '@/components/DashboardShellTiming') return { __esModule: true, default: () => null }
     if (name === './TodayPlanTheme.module.css') return { __esModule: true, default: { streakBadge: 'today-streak-badge' } }
+    if (name === './DashboardLoadingShell.module.css') return { __esModule: true, default: loadingStyles }
     if (name.startsWith('@/components/')) return load(name.slice(2) + '.tsx')
     return require(name)
   } }, { filename: path })
@@ -35,10 +38,36 @@ test('Anastasis loading feedback announces pending saved data without progress o
   assert.match(html, /Loading your saved day\./)
   assert.equal((html.match(/role="status"/g) || []).length, 1)
   assert.match(html, /aria-live="polite" aria-atomic="true" aria-busy="true"/)
-  assert.match(html, /var\(--anastasis-charcoal\)/)
-  assert.match(html, /var\(--anastasis-copper\)/)
-  assert.match(html, /var\(--anastasis-ivory\)/)
   assert.doesNotMatch(html, /<a\b|<button\b|role="progressbar"|aria-valuenow|0 days streak|animation:/)
+})
+
+test('loading reuses the live satin paths and warm palette without changing the header or adding blur', () => {
+  const header = readFileSync('components/program-dashboard/TodayDashboardHeader.tsx', 'utf8')
+  const livePaths = [...header.matchAll(/<path d="([^"]+)"/g)].map(match => match[1])
+  const html = render(Loading)
+  assert.deepEqual([...html.matchAll(/<path d="([^"]+)"/g)].map(match => match[1]), livePaths)
+  assert.match(html, /<svg[^>]+class="satin"[^>]+aria-hidden="true"[^>]+focusable="false"/)
+  assert.doesNotMatch(html, /class="today-satin/)
+  assert.match(html, /<g class="folds">/)
+  assert.doesNotMatch(html, /<filter|feGaussianBlur|filter=/)
+  const liveTheme = readFileSync('components/program-dashboard/TodayPlanTheme.module.css', 'utf8')
+  for (const color of ['#f4eee4', '#ad7c52', '#c28e63', '#c9b29a', '#20130b', '#170d07', '#24150c']) {
+    assert.ok(liveTheme.includes(color))
+    assert.ok(loadingCss.includes(color))
+  }
+  assert.doesNotMatch(loadingCss, /border-radius|filter\s*:|backdrop-filter/)
+})
+
+test('only one decorative satin group drifts slowly; reduced motion retains static composition and no delay', () => {
+  assert.equal((loadingCss.match(/animation:\s*satinDrift/g) || []).length, 1)
+  assert.match(loadingCss, /@media\s*\(prefers-reduced-motion: no-preference\)\s*\{\s*\.folds\s*\{\s*animation:\s*satinDrift 18s/)
+  assert.match(loadingCss, /@media\s*\(prefers-reduced-motion: reduce\)\s*\{\s*\.folds\s*\{\s*animation: none; transform: none;/)
+  const keyframes = loadingCss.slice(loadingCss.indexOf('@keyframes satinDrift'), loadingCss.indexOf('@media (prefers-reduced-motion: reduce)'))
+  const properties = [...keyframes.matchAll(/([a-z-]+)\s*:/g)].map(match => match[1])
+  assert.deepEqual([...new Set(properties)].sort(), ['opacity', 'transform'])
+  const source = readFileSync('components/program-dashboard/DashboardLoadingShell.tsx', 'utf8')
+  assert.doesNotMatch(source, /setTimeout|setInterval|requestAnimationFrame|useEffect|useState|canvas|video|window\./)
+  assert.doesNotMatch(loadingCss, /animation-delay|transition-delay/)
 })
 
 test('personalization fallback never resurfaces generic actions or prematurely marks the primary dashboard ready', () => {

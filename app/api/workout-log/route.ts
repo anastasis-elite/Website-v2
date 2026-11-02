@@ -8,6 +8,7 @@ import { isConfirmedActivity, isValidCompletedSet, manualWorkoutPlan, summarizeS
 import { matchingWorkoutPlan, workoutSessionKeys } from '@/lib/workout/session'
 import { loadWorkoutHistory } from '@/lib/workout/history'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { canonicalManualCardioLog, canonicalManualCardioPlan, MANUAL_CARDIO_DAY_NAME } from '@/lib/workout/manualCardio'
 export async function POST(req: Request) {
   try {
     const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser()
@@ -18,7 +19,20 @@ export async function POST(req: Request) {
     if (!membershipCan(client, 'workoutLogging') || (body.workout_source !== 'manual' && !membershipCan(client, 'generatedCoaching'))) return NextResponse.json({ error: 'This membership does not include this workout operation.' }, { status: 403 })
     if (body.program !== client.program) return NextResponse.json({ error: 'Workout does not match your program.' }, { status: 403 })
     if (!Array.isArray(body.exercise_logs) || !Array.isArray(body.planned_exercises) || !body.exercise_logs.length || body.exercise_logs.length > 100 || body.planned_exercises.length > 100) return NextResponse.json({ error: 'Review your exercises before saving.' }, { status: 400 })
-    const logs = body.exercise_logs
+    const source = body.workout_source === 'manual' ? 'manual' : 'recommended'
+    const dayName = String(body.day_name || 'Workout').slice(0, 200)
+    let logs = body.exercise_logs
+    let planned = body.planned_exercises
+    const manualCardio = dayName === MANUAL_CARDIO_DAY_NAME || [...logs, ...planned].some((item: any) => item?.manual_activity !== undefined)
+    if (manualCardio) {
+      const cardioLogs = logs.map(canonicalManualCardioLog), cardioPlan = planned.map(canonicalManualCardioPlan)
+      if (source !== 'manual' || dayName !== MANUAL_CARDIO_DAY_NAME || cardioLogs.some((log: any) => !log) || cardioPlan.some((log: any) => !log) ||
+        !matchingWorkoutPlan(cardioLogs, workoutSessionKeys(cardioPlan)) || cardioLogs.some((log: any, index: number) => log.duration_unit !== cardioPlan[index]?.duration_unit) ||
+        new Set(workoutSessionKeys(cardioLogs)).size !== cardioLogs.length) {
+        return NextResponse.json({ error: 'Review your manual cardio activity and confirmed duration before saving.' }, { status: 400 })
+      }
+      logs = cardioLogs; planned = cardioPlan
+    }
     for (const log of logs) {
       if (!log || typeof log !== 'object' || ['actual_weight','actual_reps','actual_breaths','actual_duration'].some(k => log[k] !== undefined && (!Number.isFinite(Number(log[k])) || Number(log[k]) < 0))) return NextResponse.json({ error: 'Activity values must be valid nonnegative numbers.' }, { status: 400 })
       if (log.set_logs !== undefined && (!Array.isArray(log.set_logs) || log.set_logs.length > 100 || log.set_logs.some((set: any) => !isValidCompletedSet(set) && !set?.skipped && set?.status !== 'skipped'))) return NextResponse.json({error:'Review the confirmed sets before saving.'},{status:400})
@@ -27,12 +41,9 @@ export async function POST(req: Request) {
       if (!log.completed) continue
       if (!isConfirmedActivity(log)) return NextResponse.json({ error: 'Confirm the work you completed before finishing the session.' }, { status: 400 })
     }
-    const source = body.workout_source === 'manual' ? 'manual' : 'recommended'
-    const dayName = String(body.day_name || 'Workout').slice(0, 200)
     const day = getClientDayRange(client)
     const workoutDate = body.workout_date ? new Date(body.workout_date) : new Date()
     if (!Number.isFinite(workoutDate.getTime()) || getClientLocalDate(client, workoutDate) !== day.date) return NextResponse.json({ error: 'This session belongs to another day. Reload today’s workout.' }, { status: 400 })
-    let planned = body.planned_exercises
     if (source === 'recommended') {
       const keys = workoutSessionKeys(planned)
       if (!matchingWorkoutPlan(logs, keys)) return NextResponse.json({ error: 'Keep the full prescribed plan when saving, including skipped exercises.' }, { status: 400 })

@@ -9,7 +9,8 @@ import { createClient } from '@/lib/supabase/server'
 import { loadWorkoutHistory } from '@/lib/workout/history'
 import { manualDesiredSets, prescriptionSnapshot } from '@/lib/workout/manualPrescriptionDraft'
 import { resolveSelectedPrescription } from '@/lib/workout/resolveSelectedPrescription'
-import { getManualWorkoutLibrary } from '@/lib/workout/manualWorkout'
+import { getManualWorkoutLibrary, isReferenceSessionVariant } from '@/lib/workout/manualWorkout'
+import { readSessionEquipmentContext, sameSessionEquipmentContext } from '@/lib/workout/selectedPrescriptionTypes'
 
 const changedPrescription = () => NextResponse.json({
   error: 'Your recommendation could not be verified or has changed. Reselect the exercise to review a fresh recommendation. Your actual entries and saved history have not been changed.',
@@ -17,7 +18,8 @@ const changedPrescription = () => NextResponse.json({
 }, { status: 409 })
 
 function samePrescription(left: any, right: any) {
-  return ['version', 'exerciseId', 'variantId', 'sets', 'reps', 'weightLb', 'loadType'].every(key => left[key] === right[key])
+  return ['version', 'exerciseId', 'variantId', 'sets', 'reps', 'weightLb', 'loadType'].every(key => left[key] === right[key]) &&
+    sameSessionEquipmentContext(left.equipmentContext, right.equipmentContext)
 }
 
 function exerciseId(exercise: any) {
@@ -74,16 +76,37 @@ export async function POST(req: Request) {
     for (const log of exerciseLogs) {
       const submittedGuidance = log.prescription !== undefined || body.exercise?.prescription !== undefined
       if (submittedGuidance && !membershipCan(client, 'generatedCoaching')) return NextResponse.json({ error: 'This membership supports manual logging without founder guidance metadata.' }, { status: 403 })
+      // A session choice is factual manual context, not a saved inventory edit
+      // or permission to supply a load. Every supplied copy must bind the same
+      // real catalog variant before either guided or actual-only logging.
+      const attemptedContexts = [body.exercise?.equipmentContext, log.equipment_context,
+        body.exercise?.prescription?.equipmentContext, log.prescription?.equipmentContext].filter(value => value !== undefined)
+      const contexts = attemptedContexts.map(value => readSessionEquipmentContext(value, body.exercise?.selected_variant_id))
+      if (contexts.some(value => !value) || contexts.some(value => !sameSessionEquipmentContext(value, contexts[0]))) return changedPrescription()
+      const equipmentContext = contexts[0] || null
+      const priorContext = prior?.equipment_context === undefined ? null : readSessionEquipmentContext(prior.equipment_context, prior.selected_variant_id)
+      if (prior && (prior.equipment_context !== undefined && !priorContext || !sameSessionEquipmentContext(priorContext, equipmentContext))) return changedPrescription()
+      if (equipmentContext) {
+        const catalog = getManualWorkoutLibrary().find(item => item.id === body.exercise?.catalogExerciseId)
+        const variant = catalog?.available_variants.find(item => item.id === equipmentContext.variantId && item.equipment === equipmentContext.equipment)
+        if (!catalog || !variant || !isReferenceSessionVariant(catalog, variant.id, variant.equipment) || typeof body.exercise?.id !== 'string' || log.id !== body.exercise.id ||
+          body.exercise.exercise !== catalog.exercise || log.exercise !== catalog.exercise ||
+          body.exercise.selected_variant_id !== variant.id || log.selected_variant_id !== variant.id ||
+          body.exercise.selected_equipment !== variant.equipment || log.selected_equipment !== variant.equipment) return changedPrescription()
+        log.equipment_context = equipmentContext
+      } else delete log.equipment_context
       const storedSnapshot = prior?.prescription ? prescriptionSnapshot(prior.prescription) : null
       const snapshot = storedSnapshot || (log.prescription !== undefined ? prescriptionSnapshot(log.prescription) : null)
       if (submittedGuidance || prior?.prescription) {
-        if (!snapshot) return changedPrescription()
+        if (!snapshot || !sameSessionEquipmentContext(snapshot.equipmentContext, equipmentContext)) return changedPrescription()
         const catalog = getManualWorkoutLibrary().find(item => item.id === snapshot.exerciseId)
         if (!catalog || typeof body.exercise?.id !== 'string' || log.id !== body.exercise.id ||
           body.exercise.catalogExerciseId !== snapshot.exerciseId || body.exercise.selected_variant_id !== snapshot.variantId ||
           log.selected_variant_id !== snapshot.variantId || body.exercise.exercise !== catalog.exercise || log.exercise !== catalog.exercise) return changedPrescription()
         const binding = { version: 'owner-resolved-v1', auth_user_id: user.id, client_id: client.client_id,
-          program: client.program, exercise_id: nextExerciseKey, catalog_exercise_id: snapshot.exerciseId, variant_id: snapshot.variantId }
+          program: client.program, exercise_id: nextExerciseKey, catalog_exercise_id: snapshot.exerciseId, variant_id: snapshot.variantId,
+          ...(equipmentContext ? { session_equipment_source: equipmentContext.source, session_equipment: equipmentContext.equipment,
+            session_variant_id: equipmentContext.variantId } : {}) }
         if (prior) {
           // Only server-verified provenance permits a retry without recalculating
           // today's changed readiness. Client flags never create this provenance.
@@ -94,7 +117,7 @@ export async function POST(req: Request) {
           const displayed = body.exercise.prescription === undefined ? null : prescriptionSnapshot(body.exercise.prescription)
           if (body.exercise.prescription !== undefined && (!displayed || !samePrescription(snapshot, displayed))) return changedPrescription()
           const current = await resolveSelectedPrescription({ supabase, user, clientId: client.client_id,
-            exerciseId: snapshot.exerciseId, variantId: snapshot.variantId })
+            exerciseId: snapshot.exerciseId, variantId: snapshot.variantId, equipmentContext: snapshot.equipmentContext })
           if (current.httpStatus !== 200 || current.response.status !== 'available' || !samePrescription(snapshot, current.response.prescription)) return changedPrescription()
           log.prescription = snapshot
           log.prescription_verification = binding

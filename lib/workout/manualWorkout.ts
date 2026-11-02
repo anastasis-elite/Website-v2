@@ -1,5 +1,6 @@
 import masterKey from '@/data/reference/masterKey.json'
 import exerciseVariants from '@/data/reference/exerciseVariants.json'
+import { SESSION_EQUIPMENT } from '@/lib/workout/selectedPrescriptionTypes'
 import type { CanonicalMuscle, WorkoutExercise } from '@/lib/workout-os/types'
 import {
   MUSCLE_REGIONS,
@@ -287,6 +288,27 @@ export function getAvailableEquipmentForMuscles(muscles: CanonicalMuscle[]) {
     filterManualExercises({ muscles, equipment: ['*'] })
       .flatMap((exercise) => exercise.available_variants.map((variant) => variant.equipment)),
   )).sort()
+}
+
+/** Explicit session equipment must have an existing reference variant. The
+ * older catalog's inferred actual-only fallbacks remain available separately. */
+export function isReferenceSessionVariant(exercise: ManualWorkoutExercise, variantId: string, equipment: string) {
+  return (SESSION_EQUIPMENT as readonly string[]).includes(equipment) && variantGroupsForExercise(exercise.exercise)
+    .some(group => (group.variants || []).some((variant: any) => variant.id === variantId && normalizeEquipmentName(variant.equipment) === equipment))
+}
+
+export function filterSessionManualExercises(args: Parameters<typeof filterManualExercises>[0]) {
+  const selected = args.equipment.map(normalizeEquipmentName)
+  return filterManualExercises(args).map(exercise => ({ ...exercise,
+    available_variants: exercise.available_variants.filter(variant => selected.includes(variant.equipment) &&
+      isReferenceSessionVariant(exercise, variant.id, variant.equipment)),
+  })).filter(exercise => exercise.available_variants.length > 0)
+}
+
+export function getSessionEquipmentForMuscles(muscles: CanonicalMuscle[]) {
+  return Array.from(new Set(filterManualExercises({ muscles, equipment: ['*'] })
+    .flatMap(exercise => exercise.available_variants.filter(variant => isReferenceSessionVariant(exercise, variant.id, variant.equipment))
+      .map(variant => variant.equipment)))).sort()
 }
 
 export function getAvailableMovementFamilies({
