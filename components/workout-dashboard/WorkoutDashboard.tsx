@@ -158,7 +158,9 @@ function RecoveryTab({ readiness, tier }: { readiness: MuscleReadiness[]; tier: 
     .slice(0, 8)
 
   return (
-    <div className="workout-recovery-table" data-testid="workout-recovery-tab" data-tier={tier}>
+    <div data-testid="workout-recovery-tab" data-tier={tier}>
+      <details className="phone-app-report"><summary>Heart-rate recovery · Unavailable</summary><p>No timestamped heart-rate stream or continuous exercise/rest intervals are connected to this session. Your recorded sets remain available. This screen does not establish a watch connection or a heart-rate readiness threshold.</p></details>
+      <div className="workout-recovery-table">
       {rows.length ? rows.map((item) => (
         <article key={item.muscleId}>
           <span>{titleCaseMuscle(item.muscleId)}</span>
@@ -166,6 +168,7 @@ function RecoveryTab({ readiness, tier }: { readiness: MuscleReadiness[]; tier: 
           <small>{item.reasons?.[0] || 'Tracking will refine as logs build.'}</small>
         </article>
       )) : <p className="tier-calendar-empty">Not enough muscle-specific recovery data yet.</p>}
+      </div>
     </div>
   )
 }
@@ -204,8 +207,6 @@ export default function WorkoutDashboard(props: Props) {
   return (
     <section className="workout-dashboard-workspace" data-tier={props.program}>
       {props.hasSafetyFlags ? <SafetyEscalationNotice flags={props.safetyFlags} embedded /> : null}
-      <details className="phone-app-report"><summary>Heart-rate recovery · Unavailable</summary><p>No timestamped heart-rate stream or continuous exercise/rest intervals are connected to this session. Your recorded sets remain available. This screen does not establish a watch connection or a heart-rate readiness threshold.</p></details>
-
       <div className="workout-dashboard-row">
         <details className="daily-disclosure"><summary>Muscle readiness details</summary><MuscleReadinessMap readiness={props.muscleReadiness} highlightedMuscleIds={highlightedMuscles} /></details>
 

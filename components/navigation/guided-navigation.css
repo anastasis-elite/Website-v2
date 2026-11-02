@@ -22,7 +22,17 @@
   overflow-wrap: normal;
 }
 .dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__item.active {
-  background: rgba(221, 117, 73, .09);
+  background: transparent;
+}
+/* Light catches the SVG strokes; the link remains a flat touch target. */
+.dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__icon svg {
+  color: #cda27a;
+  filter: drop-shadow(0 -1px 0 rgba(255, 241, 220, .2)) drop-shadow(0 2px 1px rgba(9, 5, 3, .8));
+}
+.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] .client-dashboard-nav__icon svg {
+  color: #f4eee4;
+  stroke-width: 2;
+  filter: drop-shadow(0 -1px 0 rgba(255, 249, 237, .5)) drop-shadow(0 2px 1px rgba(95, 53, 31, .8));
 }
 .dashboard-client-shell .client-dashboard-nav--guided .dashboard-more-menu > .dashboard-more-trigger {
   width: 100%;
