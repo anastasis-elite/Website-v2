@@ -7,6 +7,7 @@ import { getClientDayRange } from '@/lib/schedule/time'
 import { getClientTimeZone, recordLocalDate, getClientLocalDateOffset, addLocalDays } from '@/lib/timezone'
 import { loadWorkoutHistory, workoutLocalDate } from '@/lib/workout/history'
 import { getStrengthAssessmentStatus } from '@/lib/assessment/getStrengthAssessmentStatus'
+import { recordedHistoryMacros } from '@/lib/nutrition/todayPacing'
 
 function nullableNumber(value: unknown) {
   if (value === null || value === undefined || value === '') return null
@@ -74,7 +75,7 @@ export async function loadProgramLogicInputs({
 
   const [
     { data: todayAssessment }, { data: rawTodayRecovery }, { data: recentSymptoms },
-    { data: nutritionLogs }, { data: workoutHistory }, { data: strengthAssessments },
+    { data: nutritionLogs, error: nutritionLogsError }, { data: workoutHistory }, { data: strengthAssessments },
     { data: initialAssessment }, { data: measurementLogs }, { data: photoRecord },
     { data: phoenixTasks }, { data: recentTasks }, { data: todayWorkoutFeedback },
     { data: recoveryActivities }, { data: rawRecentRecovery }, { data: executionHistory, error: executionHistoryError },
@@ -137,7 +138,7 @@ export async function loadProgramLogicInputs({
   const passiveSleepHours = metricValue(todayHealthMetrics, 'sleep_duration')
   const todayRecovery=sleepStatus.logged?{...(rawTodayRecovery||{}),sleep_hours:sleepStatus.durationHours,sleep_quality:sleepStatus.quality,sleep_bedtime:sleepStatus.bedtime,sleep_wake_time:sleepStatus.wakeTime}:passiveSleepHours!==null?{...(rawTodayRecovery||{}),sleep_hours:passiveSleepHours,passive_source:'health_integration'}:rawTodayRecovery
   const paths = ['front_photo_url','back_photo_url','left_photo_url','right_photo_url'].map((key) => photoRecord?.[key]).filter(Boolean)
-  const [{ data: nutritionTotals }, { data: allMealEntries }, { data: allMacroEntries }, photoUrls] = await Promise.all([
+  const [{ data: nutritionTotals, error: nutritionTotalsError }, { data: allMealEntries, error: mealEntriesError }, { data: allMacroEntries, error: macroEntriesError }, photoUrls] = await Promise.all([
     nutritionIds.length
     ? supabase.from('nutrition_log_totals_by_block').select('*').in('nutrition_log_id', nutritionIds)
     : { data: [] },
@@ -287,6 +288,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
     completionPercent,
     adequatelyFueled:
       mealCount > 0 && completionPercent >= 70,
+    recordedMacros: recordedHistoryMacros(totalsForDay, macroEntriesForDay),
   }
 })
 
@@ -345,6 +347,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
     macroEntries,
     mealEntries,
     recentFuelingHistory,
+    nutritionHistoryAvailable: !nutritionLogsError && !nutritionTotalsError && !mealEntriesError && !macroEntriesError,
     workoutHistory: workoutHistory || [],
     strengthAssessments: strengthAssessments || [], initialAssessment, measurementLogs: measurementLogs || [],
     photoRecord, photoUrls, phoenixTaskIds: Array.from(automaticTaskIds), todayRecoveryActivities: recoveryActivities || [], missedDayCount, executionHistory: executionHistory || [],

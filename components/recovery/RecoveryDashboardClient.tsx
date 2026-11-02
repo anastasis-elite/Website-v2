@@ -1,6 +1,7 @@
 'use client'
 
-import { useId, useRef, type CSSProperties } from 'react'
+import { useId, useRef, useState, type CSSProperties } from 'react'
+import Link from 'next/link'
 
 import DailyCheckInForm from '@/components/DailyCheckInForm'
 import RecoveryLogger from '@/components/RecoveryLogger'
@@ -13,7 +14,8 @@ import type { SorenessRegionKey } from '@/lib/recovery/sorenessRegions'
 import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
 import { getRecoveryScoreExplanation } from '@/lib/recovery/scoreExplanation'
 import { useViewPreference } from '@/components/dashboard/useViewPreference'
-import { PhoneAppCard } from '@/components/phone-app/PhoneAppFrame'
+import ActionArrow from '@/components/ActionArrow'
+import cardStyles from './RecoveryCards.module.css'
 
 type ProgressTab = 'daily' | 'trends'
 type ActionTab = 'tools' | 'checkIn'
@@ -60,6 +62,36 @@ export function OwnPractice({ clientId }: { clientId: string }) {
       <RecoveryLogger clientId={clientId} />
     </dialog>
   </section>
+}
+
+const guidedPractices = [
+  { title: 'Meditation', illustration: 'recovery', description: 'Make a quiet moment for yourself with the silent meditation timer. Choose the duration that fits your own practice.', href: '/dashboard/meditation?practice=recovery-meditation', action: 'Open silent timer' },
+  { title: 'Yoga nidra', illustration: 'recovery', description: 'Yoga nidra is a guided resting practice. A guided recording is not available here; you can record a practice you complete elsewhere using your own practice logger.', unavailable: 'Guided recording unavailable' },
+  { title: 'Guided mobility', illustration: 'training', description: 'Choose movement that fits your capacity and your existing guidance. Guided mobility sessions are not available here. You can log your own completed practice.', unavailable: 'Guided sessions unavailable' },
+  { title: 'Yogic practices', illustration: 'recovery', description: 'A gentle practice at your own pace. Guided yogic recordings are not available here. Record your own completed practice if you choose one.', unavailable: 'Guided sessions unavailable' },
+  { title: 'Breathwork', illustration: 'recovery', description: 'Come back to center with the existing breathing timer. Use a comfortable practice and stop if you feel unwell.', href: '/dashboard/meditation?practice=breath-reset', action: 'Open breathing timer' },
+] as const
+
+export function GuidedRecoveryCards() {
+  const id = useId()
+  const dialog = useRef<HTMLDialogElement>(null)
+  const trigger = useRef<HTMLButtonElement | null>(null)
+  const [selected, setSelected] = useState(0)
+  const practice = guidedPractices[selected]
+  return <>
+    {guidedPractices.map((item, index) => <article className={cardStyles.card} key={item.title}>
+      <img src={`/illustrations/today-${item.illustration}.svg`} alt="" width="360" height="180" />
+      <div><h3>{item.title}</h3><button type="button" aria-label={`View ${item.title} details`} aria-haspopup="dialog" aria-controls={id} onClick={event => { trigger.current = event.currentTarget; setSelected(index); dialog.current?.showModal() }}>View details<ActionArrow className={cardStyles.arrow} /></button></div>
+    </article>)}
+    <dialog ref={dialog} id={id} className={`phone-app-practice-dialog ${cardStyles.dialog}`} aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`} onClose={() => trigger.current?.focus()}>
+      <header><h2 id={`${id}-title`}>{practice.title}</h2><button type="button" onClick={() => dialog.current?.close()}>Close</button></header>
+      <p id={`${id}-description`}>{practice.description}</p>
+      {'href' in practice ? <Link href={practice.href}>{practice.action}<ActionArrow className={cardStyles.arrow} /></Link> : <>
+        <p role="status">{practice.unavailable}</p>
+        <Link href="#own-practice" onClick={() => dialog.current?.close()}>Log your own practice</Link>
+      </>}
+    </dialog>
+  </>
 }
 
 function progressPercent(value: number | null | undefined) {
@@ -225,14 +257,10 @@ export default function RecoveryDashboardClient({
       <div className="aos-nutrition-shell recovery-dashboard-shell">
         <OwnPractice clientId={clientId} />
         <h2>Let us guide you.</h2>
-        <div className="phone-app-grid">
-          <PhoneAppCard title="Meditation" copy="Make a quiet moment for yourself." href="/dashboard/meditation?practice=recovery-meditation" action="Open silent timer" />
-          <PhoneAppCard title="Yoga nidra" copy="Deep rest for body and mind." unavailable="Guided recording unavailable" />
-          <PhoneAppCard title="Guided mobility" copy="Move with ease." illustration="training" unavailable="Guided sessions unavailable · log your own above" />
-          <PhoneAppCard title="Yogic practices" copy="A gentle practice, at your pace." unavailable="Guided sessions unavailable" />
-          <PhoneAppCard title="Breathwork" copy="Come back to center." href="/dashboard/meditation?practice=breath-reset" action="Open breathing timer" />
+        <div className={cardStyles.grid}>
+          <GuidedRecoveryCards />
         </div>
-        <h2>Simple ways to unwind.</h2><div className="phone-app-grid">
+        <h2>Simple ways to unwind.</h2><div className={cardStyles.grid}>
           <RecoveryActivitySheets clientId={clientId} />
         </div>
         <section className="recovery-dashboard-workspace" data-tier={logic.program}>

@@ -56,7 +56,7 @@
 .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-state) { position: static; display: block; flex: none; margin: 0; padding: 0 24px 12px; color: var(--soft); font-size: .8rem; text-align: left; }
 .surface :global(.today-card-action), .surface :global(.plan-overview-copy) > a { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; margin-top: auto; color: var(--anastasis-ivory); font-size: clamp(.8rem, 1.8vw, 1rem); font-weight: 600; text-decoration: none; }
 .surface :global(.today-action-arrow) { flex-shrink: 0; width: 32px; height: 32px; color: var(--anastasis-copper); }
-.surface :global(.plan-overview-copy) > a > span { display: grid; flex-shrink: 0; width: 40px; height: 40px; place-items: center; border: 1px solid var(--accent); border-radius: 50%; color: var(--accent); font: 300 1.8rem/1 Arial, sans-serif; }
+.surface :global(.plan-overview-arrow) { flex-shrink: 0; width: 40px; height: 40px; color: var(--accent); }
 .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-row-options), .surface :global(.today-activities) li[data-illustrated="true"] > button, .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-change-time) { margin: 0 16px 12px; }
 .surface :global(.today-row-options) summary { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid #bd895867; border-radius: 12px; color: var(--soft); }
 .surface :global(.today-row-options) button, .surface :global(.today-activities) li > button { border-color: #bd895867; color: var(--anastasis-ivory); }
@@ -100,7 +100,7 @@
   .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > small, .surface :global(.plan-overview-copy) > p:not(:global(.today-card-kicker)) { font-size: .83rem; margin-bottom: 12px; }
   .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-state) { padding: 0 12px 10px; font-size: .75rem; }
   .surface :global(.today-card-action), .surface :global(.plan-overview-copy) > a { min-height: 36px; font-size: .77rem; }
-  .surface :global(.plan-overview-copy) > a > span { width: 30px; height: 30px; font-size: 1.4rem; }
+  .surface :global(.plan-overview-arrow) { width: 30px; height: 30px; }
   .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-row-options), .surface :global(.today-activities) li[data-illustrated="true"] > button { margin-left: 10px; margin-right: 10px; }
 }
 @media (max-width: 350px) {

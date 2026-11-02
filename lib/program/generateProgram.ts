@@ -101,10 +101,13 @@ function normalizeEquipment(value: unknown) {
 
 function getClientEquipment(client: any, initialAssessment: any) {
   const assessment = initialAssessment?.data || initialAssessment || {}
-  const recorded = Array.isArray(client?.equipment_access) && client.equipment_access.length ? client.equipment_access
-    : client?.equipment_access || assessment.equipmentAccess || assessment.equipment_access || ''
-  const raw = Array.isArray(recorded) ? recorded : String(recorded).split(',')
-  const normalized = raw.map(normalizeEquipment).filter(Boolean).flatMap((item: string) => item === 'dumbbell band' ? ['dumbbell', 'band'] : [item]) as string[]
+  const inventory = (recorded: unknown) => (Array.isArray(recorded) ? recorded : String(recorded ?? '').split(','))
+    .map(normalizeEquipment).filter(Boolean).flatMap((item: string) => item === 'dumbbell band' ? ['dumbbell', 'band'] : [item]) as string[]
+  const profileEquipment = inventory(client?.equipment_access)
+  const assessmentEquipment = inventory(assessment.equipmentAccess)
+  // Empty profile arrays are not an explicit equipment restriction. Preserve
+  // any recorded restriction; only an absent/empty inventory uses the assessment.
+  const normalized = profileEquipment.length ? profileEquipment : assessmentEquipment.length ? assessmentEquipment : inventory(assessment.equipment_access)
   if (normalized.some((item) => ['gym', 'full gym', 'commercial gym', 'all equipment'].includes(item))) return ['*']
   return normalized
 }

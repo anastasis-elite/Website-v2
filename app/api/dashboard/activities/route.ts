@@ -3,7 +3,7 @@ import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { dashboardApiError } from '@/lib/dashboard/apiError'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
-import { buildTodayActivities, readDailyGuide, TODAY_ACTIVITY_IDS, type TodayActivityId } from '@/lib/dashboard/todayActivities'
+import { buildTodayActivities, presentTodayActivities, readDailyGuide, TODAY_ACTIVITY_IDS, type TodayActivityId } from '@/lib/dashboard/todayActivities'
 import { getDailyScheduleState } from '@/lib/schedule/service'
 import { getClientDayRange } from '@/lib/schedule/time'
 import { getClientLocalDate } from '@/lib/timezone'
@@ -35,7 +35,9 @@ export async function POST(request: Request) {
         execution_style: client.execution_style, carousel_style: client.carousel_style }
       const logic = await getProgramLogicForClient({ supabase, user, client: effectiveClient })
       const schedule = await getDailyScheduleState({ supabase, user, client: effectiveClient, logic })
-      const activity = buildTodayActivities(logic, schedule).activities.find(item => item.id === activityId)
+      const recorded = buildTodayActivities(logic, schedule)
+      const activity = (activityId === 'nutrition' ? presentTodayActivities(logic, schedule, recorded.activities).find(item => item.id === activityId) : undefined)
+        || recorded.activities.find(item => item.id === activityId)
       if (!activity) return NextResponse.json({ error: 'This activity is not in today’s plan.' }, { status: 409 })
       if (body.action !== 'resume' && activity.status === 'completed' && !(activityId === 'schedule' && body.action === 'review')) {
         return NextResponse.json({ error: 'Your saved activity is already complete.' }, { status: 409 })

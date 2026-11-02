@@ -4,7 +4,7 @@ import Link from 'next/link'
 import ActionArrow from '@/components/ActionArrow'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { buildTodayActivities, type DailyGuideState, type TodayActivity, type TodayActivityId } from '@/lib/dashboard/todayActivities'
+import { buildTodayActivities, presentTodayActivities, type DailyGuideState, type TodayActivity, type TodayActivityId } from '@/lib/dashboard/todayActivities'
 import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
 import { useDailyScheduleRefresh } from '@/lib/schedule/client'
 import { formatLocalTime } from '@/lib/schedule/time'
@@ -59,10 +59,11 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
   useEffect(() => { setMessage('') }, [schedule.date])
   const activeSchedule = { ...schedule, dailyGuide: savedGuide.date === schedule.date ? savedGuide.value : schedule.dailyGuide }
   const today = buildTodayActivities(logic, activeSchedule)
+  const presentedActivities = presentTodayActivities(logic, activeSchedule, today.activities)
   const plan = buildDailyRecommendation(logic, activeSchedule)
   const primaryId = plan.primary.id === 'food-input' ? 'nutrition' : plan.primary.id
-  const primary = plan.primary.id === 'safety' ? undefined : today.activities.find(activity => activity.id === primaryId)
-  useDailyScheduleRefresh(activeSchedule)
+  const primary = plan.primary.id === 'safety' ? undefined : presentedActivities.find(activity => activity.id === primaryId)
+  useDailyScheduleRefresh(activeSchedule, true, logic.nutrition.pacing?.nextRefreshAt)
 
   // A held action becomes available at its explicit return time, including idle tabs.
   const returnAt = Math.min(...Object.values(activeSchedule.dailyGuide?.activities || {}).flatMap(value => value?.status === 'deferred' && value.until && Date.parse(value.until) > Date.now() ? [Date.parse(value.until)] : []))
@@ -106,7 +107,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
   const inactiveWorkoutDay = workoutDayState === 'rest' || workoutDayState === 'unavailable'
   const illustrated = (id: TodayActivityId) => Boolean(activityCards[id])
   const highlighted = (id: TodayActivityId) => id === 'water' || id === 'schedule'
-  const displayActivities = [...today.activities.filter(activity => highlighted(activity.id)), ...today.activities.filter(activity => !highlighted(activity.id))]
+  const displayActivities = [...presentedActivities.filter(activity => highlighted(activity.id)), ...presentedActivities.filter(activity => !highlighted(activity.id))]
   return <div className="today-guide">
     {schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved activities are still recorded; check your calendar before choosing a time.</p> : null}
 
@@ -124,16 +125,21 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
 
     <section className="today-activities" data-testid="today-activities" aria-label="Your day at a glance" data-tutorial-id="dashboard-nutrition-progress">
       <div className="today-section-heading"><h2>At your pace.</h2><span>Go in your own order</span></div>
-      <ul>{displayActivities.map(activity => <li key={activity.id} data-activity-id={activity.id} data-status={activity.status} data-illustrated={illustrated(activity.id) ? 'true' : undefined}>
-        <Link href={activity.href} onClick={() => openActivity(activity.id, activity.status === 'completed')} data-tutorial-id={tutorialIds[activity.id]}>
+      {displayActivities.length ? <ul>{displayActivities.map(activity => <li key={activity.id} data-activity-id={activity.id} data-status={activity.status} data-illustrated={illustrated(activity.id) ? 'true' : undefined}>
+        <Link href={activity.href} onClick={() => openActivity(activity.id, today.activities.some(record => record.id === activity.id && record.status === 'completed'))} data-tutorial-id={tutorialIds[activity.id]}>
           {illustrated(activity.id) ? <img src={`/illustrations/today-${activityCards[activity.id]?.illustration}.svg`} width="360" height="180" alt="" className="today-card-illustration" /> : null}
           <span className="today-activity-icon" aria-hidden="true">{activity.status === 'completed' ? '✓' : icons[activity.category] || '▦'}</span>
           <span className="today-activity-copy">{illustrated(activity.id) ? <span className="today-card-kicker">{activityCards[activity.id]?.label}</span> : null}<strong>{activity.title}{!activity.countsTowardProgress ? <span className="today-optional-label">Optional</span> : null}</strong>{quiet ? null : <small>{activity.detail}</small>}{illustrated(activity.id) ? <span className="today-card-action">{activityCards[activity.id]?.action} <ActionArrow className="today-action-arrow" /></span> : null}</span>
           <span className="today-activity-state">{statusLabels[activity.status] || 'Available'}{activity.deferredUntil ? <small>Until {formatLocalTime(activity.deferredUntil, schedule.timezone)}</small> : null}</span>
         </Link>
         <ActivityOptions activity={activity} busy={busy !== null} onAction={updateActivity} />
-      </li>)}</ul>
+      </li>)}</ul> : <p role="status">{complete ? 'Your essentials are saved. You can revisit your progress and history anytime.' : 'Nothing else is due right now. Your saved activities are still available.'} <Link href="/dashboard/progress">View progress</Link></p>}
     </section>
+
+    {logic.nutrition.macroReminder ? <aside className="today-feedback" aria-label="Recent nutrition logs">
+      <p>{logic.nutrition.macroReminder.message}</p>
+      <Link href="/dashboard/nutrition">Review nutrition logs</Link>
+    </aside> : null}
 
     <section className="today-progress" data-testid="today-progress" aria-label={`Today's progress: ${today.completed} of ${today.total}`} data-tutorial-id="dashboard-progress-area">
       <div><h2>Today’s progress</h2><span>{today.total ? `${today.completed} of ${today.total}` : 'No essentials due'}</span></div>

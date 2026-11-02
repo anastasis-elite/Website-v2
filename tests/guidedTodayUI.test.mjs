@@ -14,6 +14,7 @@ const recommendations = await importTs('lib/dashboard/dailyRecommendation.ts')
 const timezone = await importTs('lib/timezone.ts')
 const scheduleTime = await importTs('lib/schedule/time.ts')
 const entitlements = await importTs('lib/entitlements.ts')
+const scheduleRefreshCalls = []
 const Link = ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children)
 function component(path, extra = {}, exportName = 'default') {
   const module = { exports: {} }
@@ -23,7 +24,7 @@ function component(path, extra = {}, exportName = 'default') {
     'next/navigation': { useRouter: () => ({ refresh() {} }), usePathname: () => '/dashboard/program/ignite' },
     '@/lib/dashboard/todayActivities': activities,
     '@/lib/dashboard/dailyRecommendation': recommendations,
-    '@/lib/schedule/client': { useDailyScheduleRefresh() {} },
+    '@/lib/schedule/client': { useDailyScheduleRefresh(...args) { scheduleRefreshCalls.push(args) } },
     '@/lib/schedule/time': scheduleTime,
     '@/lib/analytics': { trackEvent() {} },
     '@/lib/analytics/todayJourney': { recordTodayActionOpened() {}, recordTodayActionCompletions() {} },
@@ -37,6 +38,7 @@ const PhoneAppCard = component('components/phone-app/PhoneAppFrame.tsx', { '@/co
 const StreakBadge = component('components/program-dashboard/TodayStreakBadge.tsx', { './TodayPlanTheme.module.css': { streakBadge: 'today-streak-badge' } })
 const Header = component('components/program-dashboard/TodayDashboardHeader.tsx', { '@/components/program-dashboard/TodayStreakBadge': StreakBadge })
 const Plan = component('components/program-dashboard/PlanOverview.tsx', {
+  '@/components/ActionArrow': ActionArrow,
   '@/lib/entitlements': entitlements,
   './TodayDashboardHeader': Header,
   './TodayPlanTheme.module.css': { surface: 'today-surface' },
@@ -51,6 +53,27 @@ const fixture = (tier = 'ignite') => ({ program: tier, client: { id: 'QA-ONLY', 
   symptoms: { redFlag: false }, recoveryStatus: { reasoning: 'Review existing guidance.' } })
 const schedule = () => ({ date: '2026-10-13', timezone: 'America/Chicago', now: '2026-10-13T13:00:00Z', events: [], nextActionableEvent: null, dailyGuide: { date: '2026-10-13', activities: {} } })
 const render = (logic, state = schedule()) => renderToStaticMarkup(React.createElement(Today, { logic, schedule: state }))
+
+test('Plan action arrows use the shared decorative SVG while retaining all navigation and labels', () => {
+  for (const tier of ['ember', 'ignite', 'phoenix']) {
+    const html = renderToStaticMarkup(React.createElement(Plan, { logic: fixture(tier), schedule: schedule() }))
+    const cards = [...html.matchAll(/<article class="plan-overview-card">([\s\S]*?)<\/article>/g)].map(match => match[1])
+    assert.equal(cards.length, 4)
+    for (const [index, [href, label]] of [
+      [`/dashboard/program/${tier}/workout`, 'Explore sessions'], ['/dashboard/nutrition', 'View targets'],
+      ['/dashboard/recovery', 'View recovery'], ['/dashboard/schedule', 'Open schedule'],
+    ].entries()) {
+      assert.ok(cards[index].includes(`href="${href}">${label}<svg`))
+      assert.match(cards[index], /class="plan-overview-arrow"[^>]+stroke="currentColor"[^>]+aria-hidden="true"[^>]+focusable="false"/)
+      assert.equal((cards[index].match(/<circle\b/g) || []).length, 1)
+      assert.doesNotMatch(cards[index], /↗|<a[^>]*>[^<]*<span/)
+    }
+  }
+  const css = readFileSync('components/program-dashboard/TodayPlanTheme.module.css', 'utf8')
+  assert.match(css, /\.plan-overview-arrow\) \{[^}]*width: 40px; height: 40px;/)
+  assert.match(css, /\.plan-overview-arrow\) \{ width: 30px; height: 30px;/)
+  assert.doesNotMatch(css, /\.plan-overview-arrow\)[^{]*\{[^}]*border:/)
+})
 
 test('Today shows a confirmed zero and nonzero streak, while Plan omits the badge', () => {
   for (const count of [0, 1, 17]) {
@@ -74,7 +97,13 @@ test('missing, failed, invalid or loading streak data never renders a confirmed 
 })
 
 test('known Today loading shell keeps a flame placeholder without claiming zero', () => {
+  const DashboardLoadingContent = component('components/program-dashboard/DashboardLoadingShell.tsx', {
+    '@/components/program-dashboard/TodayStreakBadge': StreakBadge,
+    '@/components/DashboardPerformance': () => null,
+    '@/components/DashboardShellTiming': () => null,
+  }, 'DashboardLoadingContent')
   const Ready = component('components/program-dashboard/DashboardReadyShell.tsx', {
+    '@/components/program-dashboard/DashboardLoadingShell': { DashboardLoadingContent },
     '@/components/program-dashboard/TodayStreakBadge': StreakBadge,
     '@/components/DashboardPerformance': () => null,
     '@/components/DashboardShellTiming': () => null,
@@ -121,13 +150,83 @@ test('fresh Today has one primary action, persisted progress, and directly acces
     assert.doesNotMatch(html, /breakfast|supplements|streak/i)
   }
 })
-test('recorded check-in advances the single action and completed status is explicit', () => {
+test('recorded check-in advances the single action and hides its completed card while progress remains saved', () => {
   const logic = fixture(); logic.assessments.dailyCompleted = true
   const html = render(logic)
   assert.match(html, /aria-valuenow="1"/)
   assert.match(html, /data-activity-id="water" data-tutorial-id="dashboard-whats-next"/)
-  assert.match(html, /data-activity-id="check-in" data-status="completed"/)
+  assert.doesNotMatch(html, /data-activity-id="check-in"/)
   assert.doesNotMatch(html, /Start daily check-in/)
+  assert.equal(activities.buildTodayActivities(logic, schedule()).activities.find(item => item.id === 'check-in').status, 'completed')
+})
+
+test('submitted Schedule Structure disappears while its canonical assessment completion remains counted', () => {
+  const logic = fixture(); logic.assessments.dailyCompleted = true
+  const state = schedule()
+  state.events = [{ id: 'schedule-structure:2026-10', event_type: 'assessment', source: 'system', title: 'Schedule Structure Assessment',
+    action_route: '/dashboard/assessment/daily-structure?assessmentVersion=1', status: 'completed' }]
+  const html = render(logic, state)
+  assert.doesNotMatch(html, /data-activity-id="assessment:|Schedule Structure Assessment/)
+  assert.match(html, /aria-valuenow="2"/)
+  assert.equal(activities.buildTodayActivities(logic, state).activities.find(item => item.id === 'assessment:schedule-structure:2026-10').status, 'completed')
+})
+
+test('all-complete Today keeps saved progress and a history route without completed activity cards', () => {
+  const logic = fixture(), state = schedule()
+  logic.assessments.dailyCompleted = true
+  logic.hydration = { status: 'ready', target: 80, remaining: 0, consumed: 80 }
+  logic.execution = { workoutComplete: true, nutritionLogged: true, recoveryComplete: true }
+  logic.nutrition = { ...logic.nutrition, dataStatus: 'known', calories: { percent: 100 }, protein: { percent: 0 },
+    pacing: { state: 'complete', nextRefreshAt: null, prompt: 'Your recorded calories meet today’s target.' } }
+  state.dailyGuide.activities.schedule = { status: 'reviewed' }
+  const html = render(logic, state)
+  assert.doesNotMatch(html, /<li data-activity-id=/)
+  assert.match(html, /Your essentials are saved/)
+  assert.match(html, /aria-valuenow="4"/)
+  assert.match(html, /href="\/dashboard\/progress">View progress/)
+  assert.equal(activities.buildTodayActivities(logic, state).completed, 4)
+})
+
+test('calorie pacing hides an on-pace card then restores it when behind without changing recorded progress', () => {
+  const logic = fixture(), state = schedule()
+  logic.assessments.dailyCompleted = true
+  logic.hydration = { status: 'ready', target: 80, remaining: 0, consumed: 80 }
+  logic.execution.nutritionLogged = true
+  logic.nutrition = { ...logic.nutrition, dataStatus: 'known', calories: { percent: 40 }, protein: { percent: 0 },
+    pacing: { state: 'on_pace', nextRefreshAt: '2026-10-13T16:00:00.001Z', prompt: 'Your recorded calories are on pace.' } }
+  const ahead = render(logic, state)
+  assert.doesNotMatch(ahead, /data-activity-id="nutrition"/)
+  assert.equal(scheduleRefreshCalls.at(-1)[2], '2026-10-13T16:00:00.001Z')
+  const savedProgress = activities.buildTodayActivities(logic, state).completed
+  logic.nutrition.pacing = { state: 'behind', nextRefreshAt: '2026-10-14T02:00:00Z', prompt: 'Log what you’ve had, and consider a meal when it suits you.' }
+  const behind = render(logic, state)
+  assert.match(behind, /<li data-activity-id="nutrition" data-status="in_progress"/)
+  assert.match(behind, /Log what you’ve had/)
+  assert.equal(activities.buildTodayActivities(logic, state).completed, savedProgress)
+})
+
+test('sleep suppresses nutrition action cards and neutral input keeps a truthful logging option', () => {
+  const logic = fixture()
+  logic.nutrition.pacing = { state: 'sleep', nextRefreshAt: '2026-10-14T10:00:00Z', prompt: 'Nutrition reminders are paused during your sleep window.' }
+  assert.doesNotMatch(render(logic), /data-activity-id="nutrition"/)
+  logic.nutrition.pacing = { state: 'neutral', nextRefreshAt: null, prompt: 'Log what you’ve had. A saved waking schedule is needed to show your pace.' }
+  const neutral = render(logic)
+  assert.match(neutral, /<li data-activity-id="nutrition"/)
+  assert.match(neutral, /Log what you’ve had/)
+  assert.doesNotMatch(neutral, /you haven.t eaten|calorie deficit/i)
+})
+
+test('recent zero-macro note remains separate and does not restore an on-pace calorie card', () => {
+  const logic = fixture()
+  logic.nutrition.pacing = { state: 'on_pace', nextRefreshAt: '2026-10-13T16:00:00.001Z', prompt: 'Your recorded calories are on pace.' }
+  logic.nutrition.macroReminder = { macros: ['protein'], startDate: '2026-10-10', endDate: '2026-10-12',
+    message: 'Your recent logs show no recorded protein. Give that some attention in your food choices.' }
+  const html = render(logic)
+  assert.doesNotMatch(html, /data-activity-id="nutrition"/)
+  assert.match(html, /<aside class="today-feedback" aria-label="Recent nutrition logs">/)
+  assert.match(html, /Your recent logs show no recorded protein/)
+  assert.match(html, /href="\/dashboard\/nutrition">Review nutrition logs/)
+  assert.doesNotMatch(html, /role="alert"/)
 })
 test('all six activities keep their destinations and use the shared illustrated cards, with water and schedule first', () => {
   for (const tier of ['ember', 'ignite', 'phoenix']) {

@@ -2,7 +2,7 @@ import type { ProgramLogicOutput } from './logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
 import { getActionRouteForEvent } from '@/lib/schedule/engine'
 import { getDailyTraining, type DailyTraining } from './dailyTraining'
-import { buildTodayActivities, type TodayActivityId } from './todayActivities'
+import { buildTodayActivities, presentTodayActivities, type TodayActivityId } from './todayActivities'
 import { getLocalDaypart } from '@/lib/timezone'
 import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 
@@ -32,17 +32,21 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   const checkIn: DataAvailability = logic.assessments.dailyCompleted ? 'completed' : 'not_logged'
   const emptyWorkoutDay = ['rest', 'unavailable'].includes(logic.workoutDecision.assignedWorkout?.workout_state)
   const today = buildTodayActivities(logic, schedule)
+  const presented = presentTodayActivities(logic, schedule, today.activities)
+  const nutritionPacing = logic.nutrition.pacing
+  const nutritionDue = nutritionPacing ? presented.some(activity => activity.id === 'nutrition') : food === 'not_logged'
   const guideId = (id: string): TodayActivityId | undefined => id === 'food-input' ? 'nutrition' :
     ['check-in', 'water', 'schedule', 'workout', 'recovery'].includes(id) ? id as TodayActivityId : undefined
   const held = (id: string) => {
-    const activity = today.activities.find(item => item.id === guideId(id))
+    const activity = presented.find(item => item.id === guideId(id)) || today.activities.find(item => item.id === guideId(id))
     return activity?.status === 'deferred' || activity?.status === 'skipped'
   }
   const eventActivityId = (category: string) => category === 'check_in' ? 'check-in' : category === 'hydration' ? 'water' :
-    category === 'workout' || category === 'recovery' ? category : undefined
+    category === 'meal' || category === 'nutrition' ? 'nutrition' : category === 'workout' || category === 'recovery' ? category : undefined
   const eventUnavailable = (category: string) => {
     if (category === 'workout' && emptyWorkoutDay) return true
     if (category === 'hydration' && waterOnPace) return true
+    if (category === 'meal' || category === 'nutrition') return !nutritionDue || held('food-input')
     const id = eventActivityId(category)
     const activity = today.activities.find(item => item.id === id)
     return Boolean(id && (held(id) || activity?.status === 'completed'))
@@ -63,13 +67,13 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   if (!logic.workoutDecision.canTrain && !logic.symptoms.redFlag && !emptyWorkoutDay) {
     add('safety', 'recovery', 'Review today’s recovery guidance', logic.recoveryStatus.reasoning, '/dashboard/recovery', 'confirmed')
   }
-  const active = schedule.events.find(e => !(e.event_type === 'hydration' && waterOnPace) && e.flexibility_type === 'fixed' && e.status === 'scheduled' &&
+  const active = schedule.events.find(e => !eventUnavailable(e.event_type) && e.flexibility_type === 'fixed' && e.status === 'scheduled' &&
     new Date(e.adjusted_start_at || e.start_at) <= new Date(schedule.now) && new Date(e.adjusted_end_at || e.end_at) > new Date(schedule.now))
   if (active) add(active.id, active.event_type, active.title, `${active.source_label ? active.source_label + '. ' : ''}This is your current commitment. Keep your other actions flexible.`, getActionRouteForEvent(active, logic.program), 'confirmed', active.id)
 
-  if (food === 'not_logged') {
-    add('food-input', 'nutrition', logic.program === 'ember' ? 'Review your next meal' : 'Log your latest meal',
-      logic.program === 'ember' ? 'Your nutrition guidance is ready when you need it.' : 'No food is logged today. That does not tell us what you’ve eaten.', mealEntryHref(logic.program), 'not_logged')
+  if (nutritionDue) {
+    add('food-input', 'nutrition', nutritionPacing ? 'Log what you’ve had' : logic.program === 'ember' ? 'Review your next meal' : 'Log your latest meal',
+      nutritionPacing?.prompt || (logic.program === 'ember' ? 'Your nutrition guidance is ready when you need it.' : 'No food is logged today. That does not tell us what you’ve eaten.'), mealEntryHref(logic.program), food)
   }
   if (water !== 'completed' && !waterOnPace && !schedule.events.some(e => e.event_type === 'hydration' && e.status === 'skipped')) add('water', 'hydration', water === 'not_logged' ? 'Log the water you’ve had' : 'Have a little water when it suits you',
     water === 'not_logged' ? 'Water intake is not logged yet. Add what you’ve had so the plan can use it.' : `${Math.round(logic.hydration.consumed)} oz logged. Keep drinking steadily; you do not need to catch up all at once.`, WATER_ENTRY_HREF, water)
@@ -88,7 +92,7 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
     workout === 'completed' ? `A completed workout is recorded${logic.execution.completedWorkoutTitle ? `: ${logic.execution.completedWorkoutTitle}` : ' today'}. Recovery options are available.` : 'Choose from the recovery options already available in your plan.', '/dashboard/recovery', 'confirmed')
   // Commitments and overdue items remain actionable even when food is not logged.
   const next = schedule.nextActionableEvent
-  if (next && !next.suggested && !['hydration','meal'].includes(next.event_type) && !candidates.some(c => c.eventId === next.id) &&
+  if (next && !['completed','cancelled','skipped'].includes(next.status) && !next.suggested && !['hydration','meal'].includes(next.event_type) && !candidates.some(c => c.eventId === next.id) &&
     !eventUnavailable(next.event_type) && !(next.event_type === 'workout' && new Date(next.adjusted_start_at || next.start_at) > new Date(schedule.now) && next.adjusted_start_at)) {
     const overdue = new Date(next.adjusted_end_at || next.end_at) <= new Date(schedule.now)
     const action = { id: next.id, category: next.event_type, title: next.title, reason: schedule.nextAction?.id === next.id ? schedule.nextAction.reason : overdue ? 'This item is overdue. Review it, reschedule it, or record its outcome.' : 'This fits the next part of your schedule.',

@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sameRecoveryDetails, validateDetailedRecovery } from '@/lib/recovery/activityDetails'
 
-const allowed = new Set(['Full rest', 'Gentle walk', 'Mobility', 'Breathwork', 'Meditation', 'Warm soak'])
+const allowed = new Set(['Full rest', 'Gentle walk', 'Mobility', 'Breathwork', 'Meditation', 'Warm soak', 'Sauna'])
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -17,6 +17,7 @@ export async function POST(request: Request) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: 'Invalid recovery request.' }, { status: 400 })
   if (typeof body.clientId !== 'string' || !body.clientId.trim() || body.clientId.length > 200) return NextResponse.json({ error: 'Invalid recovery client.' }, { status: 400 })
   if (!allowed.has(body.activityType)) return NextResponse.json({ error: 'Invalid recovery activity.' }, { status: 400 })
+  if (body.activityType === 'Sauna' && body.details === undefined) return NextResponse.json({ error: 'Record sauna duration and context through its activity sheet.' }, { status: 400 })
 
   let detailed: ReturnType<typeof validateDetailedRecovery> | undefined
   if (body.details !== undefined) {

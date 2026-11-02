@@ -2,22 +2,25 @@
 
 import { useId, useRef, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import ActionArrow from '@/components/ActionArrow'
 import { calculateWalkPace, validateDetailedRecovery } from '@/lib/recovery/activityDetails'
 import { formatRecoveryDetails } from '@/lib/recovery/activityDisplay'
+import cardStyles from './RecoveryCards.module.css'
 
-type Practice = 'slow_walk' | 'warm_soak'
+type Practice = 'slow_walk' | 'warm_soak' | 'sauna'
 type Addition = 'epsom_salts' | 'herbs' | 'tea' | 'oats' | 'other' | 'none'
 type Draft = {
   minutes: string; distance: string; distanceUnit: 'mi' | 'km'; heartRate: string
   temperature: string; temperatureUnit: 'F' | 'C'; additions: Addition[]
   herbs: string; tea: string; other: string
+  context: '' | 'before_workout' | 'after_workout' | 'standalone'
 }
 type Submission = {
   clientId: string; activityType: string; minutes: number; requestId: string
   details: Record<string, unknown>
 }
-const emptyDraft = (): Draft => ({ minutes: '', distance: '', distanceUnit: 'mi', heartRate: '', temperature: '', temperatureUnit: 'F', additions: [], herbs: '', tea: '', other: '' })
+const emptyDraft = (): Draft => ({ minutes: '', distance: '', distanceUnit: 'mi', heartRate: '', temperature: '', temperatureUnit: 'F', additions: [], herbs: '', tea: '', other: '', context: '' })
 const additions: Array<[Addition, string]> = [['epsom_salts', 'Epsom salts'], ['herbs', 'Herbs'], ['tea', 'Teas'], ['oats', 'Oats'], ['other', 'Other'], ['none', 'None']]
 
 export default function RecoveryActivitySheets({ clientId }: { clientId: string }) {
@@ -35,7 +38,7 @@ export default function RecoveryActivitySheets({ clientId }: { clientId: string 
   const [attempted, setAttempted] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
-  const title = practice === 'slow_walk' ? 'Slow walk' : 'Warm soak'
+  const title = practice === 'slow_walk' ? 'Slow walk' : practice === 'warm_soak' ? 'Warm soak' : 'Sauna'
 
   function open(next: Practice, button: HTMLButtonElement) {
     if (lock.current) return
@@ -61,14 +64,17 @@ export default function RecoveryActivitySheets({ clientId }: { clientId: string 
     if (practice === 'slow_walk') {
       if (draft.distance.trim()) { details.distance = Number(draft.distance); details.distanceUnit = draft.distanceUnit }
       if (draft.heartRate.trim()) details.heartRateBpm = Number(draft.heartRate)
-    } else {
+    } else if (practice === 'warm_soak') {
       if (draft.temperature.trim()) { details.temperature = Number(draft.temperature); details.temperatureUnit = draft.temperatureUnit }
       details.additions = draft.additions
       for (const key of ['herbs', 'tea', 'other'] as const) {
         if (draft.additions.includes(key)) details[key] = draft[key].trim()
       }
+    } else {
+      details.context = draft.context
+      if (draft.heartRate.trim()) details.heartRateBpm = Number(draft.heartRate)
     }
-    return { clientId, activityType: practice === 'slow_walk' ? 'Gentle walk' : 'Warm soak', minutes: Number(draft.minutes), requestId: requestId.current, details }
+    return { clientId, activityType: practice === 'slow_walk' ? 'Gentle walk' : practice === 'warm_soak' ? 'Warm soak' : 'Sauna', minutes: Number(draft.minutes), requestId: requestId.current, details }
   }
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -99,16 +105,23 @@ export default function RecoveryActivitySheets({ clientId }: { clientId: string 
 
   return <>
     {([
-      ['slow_walk', 'Slow walk', 'Fresh air, a calmer mind.', 'training'],
-      ['warm_soak', 'Warm soak', 'A little warmth goes a long way.', 'water'],
-    ] as const).map(([kind, label, copy, illustration]) => <article className="phone-app-card" key={kind}>
+      ['slow_walk', 'Slow walk', 'training'],
+      ['warm_soak', 'Warm soak', 'water'],
+      ['sauna', 'Sauna', 'recovery'],
+    ] as const).map(([kind, label, illustration]) => <article className={cardStyles.card} key={kind}>
       <img src={`/illustrations/today-${illustration}.svg`} alt="" width="360" height="180" />
-      <div><h3>{label}</h3><p>{copy}</p><button className="recovery-practice-trigger" type="button" aria-haspopup="dialog" aria-controls={id} onClick={event => open(kind, event.currentTarget)}>Log {label.toLowerCase()}<ActionArrow className="phone-app-action-arrow" /></button></div>
+      <div><h3>{label}</h3><button className="recovery-practice-trigger" type="button" aria-haspopup="dialog" aria-controls={id} onClick={event => open(kind, event.currentTarget)}>Log {label.toLowerCase()}<ActionArrow className={cardStyles.arrow} /></button></div>
     </article>)}
-    <dialog ref={dialog} id={id} className="phone-app-practice-dialog recovery-activity-sheet" aria-labelledby={`${id}-title`} aria-describedby={`${id}-intro`} onCancel={event => { if (lock.current) event.preventDefault() }} onClose={() => trigger.current?.focus()}>
+    <dialog ref={dialog} id={id} className={`phone-app-practice-dialog recovery-activity-sheet ${cardStyles.dialog}`} aria-labelledby={`${id}-title`} aria-describedby={`${id}-intro`} onCancel={event => { if (lock.current) event.preventDefault() }} onClose={() => trigger.current?.focus()}>
       <header><h2 id={`${id}-title`}>{title}</h2><button type="button" disabled={saving} onClick={close}>{saved ? 'Close' : 'Cancel'}</button></header>
-      <p id={`${id}-intro`}>{practice === 'slow_walk' ? 'Record the walk you completed. All entries here are manual.' : 'Record the soak you completed. Temperature and additions are optional.'}</p>
+      <p id={`${id}-intro`}>{practice === 'slow_walk' ? 'Take a gentle walk at your own pace, then record the walk you actually completed. All entries here are manual.' : practice === 'warm_soak' ? 'Record the warm soak you completed. Approximate temperature and additions are optional.' : 'Sauna is a separate recovery practice. It does not complete your workout or replace an active warmup. Record your actual duration and when you used it.'}</p>
       {practice === 'slow_walk' ? <p className="recovery-manual-note">Watch connection is unavailable in this PWA. Watch workouts and heart rate cannot be imported here; native watch support is not available yet.</p> : null}
+      {practice === 'sauna' ? <div className="recovery-manual-note">
+        <p>Anastasis coaching limit: keep your heart rate below 105 bpm. This coaching limit is not a universally safe cutoff.</p>
+        <p>This PWA has no verified live heart-rate stream or automatic threshold alerts. A manual heart-rate entry is a snapshot, not continuous monitoring.</p>
+        <p>Leave if you feel unwell, regardless of heart rate. Hydrate before and after, following any individual fluid restrictions.</p>
+        <Link href="/dashboard/nutrition?log=water">Log water you’ve had</Link>
+      </div> : null}
       {saved ? <div role="status" className="recovery-save-confirmation"><p>{title} saved.</p>{formatRecoveryDetails(validateDetailedRecovery(submission.current!).details).map(line => <p key={line}>{line}</p>)}</div> : <form onSubmit={save} aria-busy={saving}>
         <fieldset disabled={saving || attempted}>
           <legend>Completed {title.toLowerCase()}</legend>
@@ -120,7 +133,7 @@ export default function RecoveryActivitySheets({ clientId }: { clientId: string 
             </div>
             <p role="status">{pace !== null ? `Calculated pace: ${pace.toFixed(2)} min/${draft.distanceUnit} (from your entries)` : 'Add a positive duration and distance to calculate pace.'}</p>
             <label>Heart rate (manual, optional, bpm)<input type="number" inputMode="numeric" min="1" max="300" step="1" value={draft.heartRate} onChange={event => update('heartRate', event.target.value)} /></label>
-          </> : <>
+          </> : practice === 'warm_soak' ? <>
             <div className="recovery-entry-row">
               <label>Approximate temperature (optional)<input type="number" inputMode="decimal" step="any" value={draft.temperature} onChange={event => update('temperature', event.target.value)} /></label>
               <label>Temperature unit<select value={draft.temperatureUnit} onChange={event => update('temperatureUnit', event.target.value as Draft['temperatureUnit'])}><option value="F">°F</option><option value="C">°C</option></select></label>
@@ -129,6 +142,9 @@ export default function RecoveryActivitySheets({ clientId }: { clientId: string 
               {additions.map(([value, label]) => <label key={value}><input type="checkbox" checked={draft.additions.includes(value)} onChange={() => toggleAddition(value)} />{label}</label>)}
             </fieldset>
             {(['herbs', 'tea', 'other'] as const).filter(key => draft.additions.includes(key)).map(key => <label key={key}>{key === 'herbs' ? 'Specific herbs' : key === 'tea' ? 'Specific teas' : 'Other addition'}<input type="text" maxLength={120} value={draft[key]} onChange={event => update(key, event.target.value)} required /></label>)}
+          </> : <>
+            <label>When did you use the sauna?<select required value={draft.context} onChange={event => update('context', event.target.value as Draft['context'])}><option value="">Choose context</option><option value="before_workout">Before workout</option><option value="after_workout">After workout</option><option value="standalone">Standalone recovery</option></select></label>
+            <label>Heart rate (manual, optional, bpm)<input type="number" inputMode="numeric" min="1" max="300" step="1" value={draft.heartRate} onChange={event => update('heartRate', event.target.value)} /></label>
           </>}
         </fieldset>
         {error ? <p role="alert">{error}</p> : null}

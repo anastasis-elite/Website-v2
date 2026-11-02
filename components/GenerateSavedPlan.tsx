@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as styles from '@/app/styles/globalstyles'
 
-export default function GenerateSavedPlan({ clientId, program }: { clientId: string; program: string }) {
+export default function GenerateSavedPlan({ clientId, program, repairOutputId }: { clientId: string; program: string; repairOutputId?: string }) {
   const router = useRouter()
   const locked = useRef(false)
   const [saving, setSaving] = useState(false)
@@ -15,9 +15,9 @@ export default function GenerateSavedPlan({ clientId, program }: { clientId: str
     setSaving(true)
     setError('')
     try {
-      const response = await fetch('/api/program/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: clientId }) })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Your plan could not be saved. Your assessments remain saved; try again.')
+      const response = await fetch('/api/program/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: clientId, ...(repairOutputId ? { repair_output_id: repairOutputId } : {}) }) })
+      const result = await response.json().catch(() => null)
+      if (!response.ok || result?.success !== true || !result.savedProgram?.id) throw new Error(result?.error || 'Your plan could not be saved. Your assessments remain saved; try again.')
       router.push(`/dashboard/program/${encodeURIComponent(program)}`)
       router.refresh()
     } catch (failure) {
@@ -27,5 +27,5 @@ export default function GenerateSavedPlan({ clientId, program }: { clientId: str
       setSaving(false)
     }
   }
-  return <><button type="button" disabled={saving} onClick={generate} style={styles.primaryButtonStyle}>{saving ? 'Creating your plan…' : 'Create Plan From Saved Assessments'}</button>{error ? <p role="alert" style={styles.bodyStyle}>{error}</p> : null}</>
+  return <div aria-busy={saving}><button type="button" disabled={saving} onClick={generate} style={styles.primaryButtonStyle}>{saving ? repairOutputId ? 'Repairing your saved plan…' : 'Creating your plan…' : repairOutputId ? 'Repair Plan From Saved Assessments' : 'Create Plan From Saved Assessments'}</button>{saving ? <p role="status" style={styles.bodyStyle}>Checking your saved assessments and available equipment. Keep this page open until saving is confirmed.</p> : null}{error ? <p role="alert" style={styles.bodyStyle}>{error}</p> : null}</div>
 }

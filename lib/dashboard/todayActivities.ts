@@ -46,6 +46,16 @@ const eventTypeById: Partial<Record<TodayActivityId, ScheduleEventType>> = {
   'check-in': 'check_in', water: 'hydration', nutrition: 'meal', workout: 'workout', recovery: 'recovery',
 }
 
+function scheduleActivityIntent(id: TodayActivityId, schedule: Pick<DailyScheduleState, 'events'>, guide: DailyGuideState, now: number) {
+  const preference = guide.activities[id]
+  const events = schedule.events.filter(event => event.event_type === eventTypeById[id] && event.status !== 'cancelled')
+  const acceptedLater = events.find(event => !['completed', 'skipped'].includes(event.status) && !event.suggested &&
+    Boolean(event.adjusted_start_at || event.status === 'deferred') && Date.parse(event.adjusted_start_at || event.start_at) > now)
+  const skippedBySchedule = events.length > 0 && events.every(event => event.status === 'skipped')
+  const heldByGuide = preference?.status === 'skipped' || (preference?.status === 'deferred' && Date.parse(preference.until!) > now)
+  return { preference, events, acceptedLater, skippedBySchedule, heldByGuide }
+}
+
 // A presentation adapter for recorded actions; it never changes targets or readiness.
 export function buildTodayActivities(logic: ProgramLogicOutput, schedule: Pick<DailyScheduleState, 'date' | 'timezone' | 'now' | 'events' | 'dailyGuide'>): TodayActivities {
   const capabilities = getTierCapabilities(logic.program)
@@ -57,12 +67,7 @@ export function buildTodayActivities(logic: ProgramLogicOutput, schedule: Pick<D
     const requirement = requirementById[id]
     const countsTowardProgress = Boolean(requirement && required[requirement])
     const safetyRecovery = id === 'recovery' && logic.symptoms.redFlag
-    const preference = guide.activities[id]
-    const events = schedule.events.filter(event => event.event_type === eventTypeById[id] && event.status !== 'cancelled')
-    const acceptedLater = events.find(event => !['completed', 'skipped'].includes(event.status) && !event.suggested &&
-      Boolean(event.adjusted_start_at || event.status === 'deferred') && Date.parse(event.adjusted_start_at || event.start_at) > now)
-    const skippedBySchedule = events.length > 0 && events.every(event => event.status === 'skipped')
-    const heldByGuide = preference?.status === 'skipped' || (preference?.status === 'deferred' && Date.parse(preference.until!) > now)
+    const { preference, events, acceptedLater, skippedBySchedule, heldByGuide } = scheduleActivityIntent(id, schedule, guide, now)
     let status: TodayActivityStatus = complete ? 'completed' : inProgress ? 'in_progress' : 'available'
     let deferredUntil: string | undefined
     if (!complete && !safetyRecovery) {
@@ -103,4 +108,30 @@ export function buildTodayActivities(logic: ProgramLogicOutput, schedule: Pick<D
   if (capabilities.recoveryBasic) add('recovery', 'Recovery', logic.execution.recoveryComplete ? 'Your recovery activity is saved.' : capabilities.recoveryRecommendation ? 'Choose from your existing recovery options.' : 'A quiet moment is available when you need it.', '/dashboard/recovery', logic.execution.recoveryComplete)
   const counted = activities.filter(activity => activity.countsTowardProgress)
   return { activities, completed: counted.filter(activity => activity.status === 'completed').length, total: counted.length }
+}
+
+// Keep recorded completion, progress and analytics intact. Calorie pacing only
+// changes which actions are presented now; one logged meal is not a full-day goal.
+export function presentTodayActivities(logic: ProgramLogicOutput, schedule: Pick<DailyScheduleState, 'date' | 'timezone' | 'now' | 'events' | 'dailyGuide'>, activities = buildTodayActivities(logic, schedule).activities): TodayActivity[] {
+  const pacing = logic.nutrition.pacing
+  const guide = readDailyGuide(schedule.dailyGuide, schedule.date)
+  return activities.flatMap(activity => {
+    if (activity.id !== 'nutrition' || !pacing) return activity.status === 'completed' ? [] : [activity]
+    if (['complete', 'on_pace', 'sleep'].includes(pacing.state)) return []
+    // Logging can complete the canonical action while the calorie prompt becomes
+    // due later. Its presentation must still respect the member's saved Schedule.
+    const { preference, acceptedLater, skippedBySchedule, heldByGuide } = scheduleActivityIntent('nutrition', schedule, guide, Date.parse(schedule.now))
+    let status: TodayActivityStatus = logic.nutrition.dataStatus === 'needs_input' ? 'available' : 'in_progress'
+    let deferredUntil: string | undefined
+    if (preference?.status === 'skipped' || skippedBySchedule) status = 'skipped'
+    else if (preference?.status === 'deferred' && Date.parse(preference.until!) > Date.parse(schedule.now)) {
+      status = 'deferred'
+      deferredUntil = preference.until
+    } else if (acceptedLater) {
+      status = 'deferred'
+      deferredUntil = acceptedLater.adjusted_start_at || acceptedLater.start_at
+    }
+    return [{ ...activity, status, detail: pacing.prompt, canDefer: true, canSkip: !activity.countsTowardProgress,
+      canResume: Boolean(heldByGuide) && !acceptedLater && !skippedBySchedule, deferredUntil }]
+  })
 }
