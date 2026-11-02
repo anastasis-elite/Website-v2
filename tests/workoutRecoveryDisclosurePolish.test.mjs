@@ -66,7 +66,7 @@ test('default workout keeps its panel and safety information without the top hea
   assert.doesNotMatch(html, /Muscle readiness details|informational-muscle-map/)
 })
 
-test('the existing Recovery tab contains exactly one informational map and the unchanged unavailable disclosure', () => {
+test('the existing Recovery tab retains the unavailable disclosure and points to the single Manual map', () => {
   const readiness = [{ muscleId: 'left_quadriceps', state: 'recovering', reasons: ['Existing muscle recovery note.'] }]
   const view = harness({ readiness })
   view.tab('recovery')
@@ -76,12 +76,9 @@ test('the existing Recovery tab contains exactly one informational map and the u
   assert.match(html, /data-testid="workout-recovery-tab"[^>]*><details class="phone-app-report"><summary>Heart-rate recovery · Unavailable<\/summary>/)
   assert.equal((html.match(/Heart-rate recovery · Unavailable/g) || []).length, 1)
   assert.ok(html.includes(explanation))
-  assert.equal((html.match(/data-testid="informational-muscle-map"/g) || []).length, 1)
-  const passed = view.mapCalls.at(-1)
-  assert.equal(passed.readiness, readiness)
-  assert.equal(passed.onSelectMuscle, undefined)
-  assert.equal(passed.bilateralSelection, undefined)
-  assert.deepEqual(Array.from(passed.highlightedMuscleIds), [])
+  assert.equal((html.match(/data-testid="informational-muscle-map"/g) || []).length, 0)
+  assert.equal(view.mapCalls.length, 0)
+  assert.match(html, /Inspect muscle readiness in the Manual workout map/)
   assert.doesNotMatch(html, /workout-recovery-table|Muscle readiness details/)
   view.tab('progress')
   assert.doesNotMatch(view.html(), /Heart-rate recovery|No timestamped heart-rate stream/)

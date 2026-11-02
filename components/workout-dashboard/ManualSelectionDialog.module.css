@@ -19,4 +19,9 @@
 .equipmentGroups section { min-width: 0; }
 .equipmentGroups h3 { margin: 0 0 8px; font-size: 1rem; }
 .sessionNote { color: var(--anastasis-ivory); font-size: .9rem; }
+.readinessMap { min-width: 0; }
+.readinessNote { margin: 0 0 12px; color: var(--text-muted, var(--anastasis-ivory)); font-size: .875rem; line-height: 1.5; }
+.readinessMap :global(.workout-map-exercise-choice) { display: grid; gap: 8px; }
+.readinessMap :global(.workout-map-exercise-choice) p { margin: 0; color: var(--text-muted, var(--anastasis-ivory)); font-size: .875rem; line-height: 1.5; }
+.readinessMap :global(.workout-map-exercise-choice) button { padding: 12px 13px; }
 @media (max-width: 480px) { .dialog { padding: 16px; } .header { gap: 8px; } }

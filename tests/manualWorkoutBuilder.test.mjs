@@ -26,9 +26,9 @@ test('switching to manual preserves the recommended workout snapshot', () => {
   assert.match(builder, /plannedExercises=\{recommendedExercises\}/)
 })
 
-test('manual builder starts from the live readiness map and derives no-dead-end filters', () => {
+test('manual builder uses the saved-readiness map with a separate exercise action and derives no-dead-end filters', () => {
   assert.match(builder, /MuscleReadinessMap/)
-  assert.match(builder, /onSelectMuscle=\{chooseRegion\}/)
+  assert.match(builder, /onChooseExercises=\{chooseRegion\}/)
   assert.match(builder, /getAvailableEquipmentForMuscles/)
   assert.match(builder, /getAvailableMovementFamilies/)
   assert.match(builder, /data-testid="manual-equipment-filter"/)
