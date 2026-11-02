@@ -10,6 +10,7 @@ import { getClientTimeZone, getLocalMinutes } from '@/lib/timezone'
 import { getWorkoutForToday, workoutFallbackAdjustmentLevel } from '@/lib/workout/getWorkoutForToday'
 import { getStreakRequirementDestinations } from '@/lib/dashboard/logic/streakRequirementDestinations'
 import { calculateHydrationPacing } from '@/lib/hydration/pacing'
+import { calculateTodayHydrationPacing } from '@/lib/hydration/todayPacing'
 import { getTierCapabilities } from '@/lib/entitlements'
 import { calculateTodayNutritionPacing, recentZeroMacroReminder } from '@/lib/nutrition/todayPacing'
 
@@ -171,6 +172,10 @@ export function runHydrationEngine(inputs: ProgramLogicInputs): HydrationResult 
   const consumed = Math.max(0, target - numeric(remaining.water, target))
   const percent = clamp((consumed / target) * 100)
   const dataKnown = inputs.nutritionLogs.some(row => row.log_date === inputs.date && Number(row.water_consumed_oz) > 0)
+  const currentWater = inputs.nutritionLogs.find(row => row.log_date === inputs.date)?.water_consumed_oz
+  const presentationPacing = calculateTodayHydrationPacing({ client: inputs.client, target: Number(targets.water),
+    consumed: currentWater === null || currentWater === undefined || currentWater === '' ? 0 : Number(currentWater),
+    hasLoggedIntake: dataKnown, available: inputs.hydrationHistoryAvailable !== false })
   const pacing = calculateHydrationPacing({
     consumed,
     target,
@@ -199,6 +204,7 @@ export function runHydrationEngine(inputs: ProgramLogicInputs): HydrationResult 
     dayElapsedPercent: pacing.dayElapsedPercent,
     prompt: status === 'needs_input' ? 'Log what you’ve had so today’s guidance can use it.' : pacing.prompt,
     recoverySupportNote: 'Logged water is one part of the picture. Keep drinking at your own pace and follow your individual fluid guidance.',
+    presentationPacing,
   }
 }
 

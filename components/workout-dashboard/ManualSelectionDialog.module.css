@@ -15,4 +15,8 @@
 .dialog p { line-height: 1.5; }
 .filter { display: grid; gap: 8px; }
 .filter select { width: 100%; padding: 8px; border: 1px solid var(--anastasis-copper); border-radius: 8px; background: var(--anastasis-charcoal); color: var(--anastasis-ivory); font: inherit; }
+.equipmentGroups { display: grid; gap: 16px; }
+.equipmentGroups section { min-width: 0; }
+.equipmentGroups h3 { margin: 0 0 8px; font-size: 1rem; }
+.sessionNote { color: var(--anastasis-ivory); font-size: .9rem; }
 @media (max-width: 480px) { .dialog { padding: 16px; } .header { gap: 8px; } }

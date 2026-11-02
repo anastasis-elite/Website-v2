@@ -4,7 +4,7 @@ import { importTs } from './typescriptModule.mjs'
 
 const { runHydrationEngine } = await importTs('lib/dashboard/logic/engines.ts')
 const { buildDailyRecommendation } = await importTs('lib/dashboard/dailyRecommendation.ts')
-const { buildTodayActivities } = await importTs('lib/dashboard/todayActivities.ts')
+const { buildTodayActivities, presentTodayActivities } = await importTs('lib/dashboard/todayActivities.ts')
 const { getClientLocalDate } = await importTs('lib/timezone.ts')
 
 mock.timers.enable({ apis: ['Date'], now: Date.parse('2026-10-31T18:00:00Z') })
@@ -43,19 +43,23 @@ test('logged water on pace advances Today while preserving the real daily goal a
   assert.equal(water.status, 'in_progress')
   assert.equal(water.href, '/dashboard/nutrition?log=water')
   assert.equal(water.countsTowardProgress, true)
+  assert.equal(presentTodayActivities(onPace.logic, onPace.schedule).some(activity => activity.id === 'water'), false)
   assert.equal(onPace.logic.hydration.remaining, 50)
   assert.equal(buildDailyRecommendation(onPace.logic, onPace.schedule).evidence.water, 'partial')
   assert.deepEqual(onPace, before, 'Recommendations must not mutate targets, logs or schedule.')
 })
 
-test('the existing pacing tolerance prevents immediate resurfacing but water can become due later', () => {
+test('Today resurfaces water immediately after its exact crossing while readiness keeps its existing tolerance', () => {
   mock.timers.setTime(Date.parse('2026-10-31T18:00:00Z'))
   const justSaved = fixture(50)
   assert.equal(buildDailyRecommendation(justSaved.logic, justSaved.schedule).primary.id, 'workout')
+  assert.equal(justSaved.logic.hydration.presentationPacing.nextRefreshAt, '2026-10-31T18:00:00.001Z')
   mock.timers.setTime(Date.parse('2026-10-31T18:01:00Z'))
   const afterSave = fixture(50)
   assert.equal(afterSave.logic.hydration.paceState, 'on_pace')
-  assert.equal(buildDailyRecommendation(afterSave.logic, afterSave.schedule).primary.id, 'workout')
+  assert.equal(afterSave.logic.hydration.presentationPacing.state, 'behind')
+  assert.equal(buildDailyRecommendation(afterSave.logic, afterSave.schedule).primary.id, 'water')
+  assert.ok(presentTodayActivities(afterSave.logic, afterSave.schedule).some(activity => activity.id === 'water'))
   mock.timers.setTime(Date.parse('2026-10-31T21:00:00Z')) // 16:00 local: 75% elapsed, still 50% logged.
   const later = fixture(50)
   assert.equal(later.logic.hydration.expectedPercent, 75)
@@ -86,13 +90,18 @@ test('the hydration engine uses member timezone, overnight waking days, sleep fa
   const overnight = fixture(50, { client: { wake_time: '19:00', bed_time: '07:00' } })
   assert.equal(overnight.logic.hydration.expectedPercent, 50)
   assert.equal(overnight.logic.hydration.paceState, 'on_pace')
-  assert.equal(recommendations(overnight.logic, overnight.schedule).some(action => action.category === 'hydration'), false)
+  assert.equal(overnight.logic.hydration.presentationPacing.state, 'neutral')
+  assert.equal(overnight.logic.hydration.presentationPacing.reason, 'overnight_unavailable')
+  assert.equal(recommendations(overnight.logic, overnight.schedule).some(action => action.category === 'hydration'), true)
+  assert.doesNotMatch(recommendations(overnight.logic, overnight.schedule).find(action => action.category === 'hydration').reason, /behind|drink more|catch up/i)
   mock.timers.setTime(Date.parse('2026-10-31T20:00:00Z')) // 15:00 Chicago.
   const sleepFallback = fixture(50, { client: { wake_time: null, bed_time: null }, recovery: { sleep_wake_time: '09:00', sleep_bedtime: '21:00' } })
   assert.equal(sleepFallback.logic.hydration.expectedPercent, 50)
   const defaults = fixture(60, { client: { wake_time: null, bed_time: null } })
   assert.equal(defaults.logic.hydration.expectedPercent, 52) // Existing 07:00–22:30 fallback.
   assert.equal(defaults.logic.hydration.paceState, 'on_pace')
+  assert.equal(defaults.logic.hydration.presentationPacing.state, 'neutral')
+  assert.equal(defaults.logic.hydration.presentationPacing.reason, 'missing_schedule')
 })
 
 test('unknown intake stays actionable and on-pace status never completes the daily water target', () => {

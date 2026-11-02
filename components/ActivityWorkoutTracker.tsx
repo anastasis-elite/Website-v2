@@ -7,6 +7,7 @@ import { initialWorkoutLogs, matchingWorkoutPlan, resumeWorkoutSession, workoutS
 import { exerciseOccurrenceLabel } from '@/lib/workout/logging'
 import WorkoutSetEditor from '@/components/workout-dashboard/WorkoutSetEditor'
 import { getClientLocalDate } from '@/lib/timezone'
+import { isManualCardioExercise } from '@/lib/workout/manualCardio'
 
 type Props = { clientId: string; authUserId: string; program: string; dayName: string; exercises: any[]; plannedExercises?: unknown[]; workoutSource?: 'manual' | 'recommended'; timezone?: string; weightUnit?: 'lb' | 'kg'; onManualExerciseFinished?: (completed?: boolean) => void; onExerciseFocus?: (exercise: any) => void; onExerciseBlur?: () => void }
 export default function ActivityWorkoutTracker({ clientId, program, dayName, exercises, plannedExercises = exercises, workoutSource = 'recommended', timezone = 'America/Chicago', weightUnit = 'lb', onExerciseFocus, onExerciseBlur, onManualExerciseFinished }: Props) {
@@ -16,6 +17,7 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
   const planKeys = JSON.stringify(workoutSessionKeys(exercises)); const key = `${legacyKey}:${workoutSource}:${planKeys}`
   const prescriptionKey = JSON.stringify(exercises.map(exercise => activityDose(exercise, weightUnit)))
   const initialize = () => initialWorkoutLogs(exercises)
+  const manualCardio = workoutSource === 'manual' && exercises.length > 0 && exercises.every(isManualCardioExercise)
   const [logs, setLogs] = useState(initialize); const [ready, setReady] = useState(false); const [saving, setSaving] = useState(false); const [message, setMessage] = useState(''); const [summary, setSummary] = useState(false)
   const [draft, setDraft] = useState(() => exercises.map(e => { const dose = activityDose(e, weightUnit); return { weight: dose.weight, amount: dose.prescribed } }))
   const [dirty, setDirty] = useState(false); const [modifiedAt, setModifiedAt] = useState<string | null>(null); const [retry, setRetry] = useState(0); const [loadFailed, setLoadFailed] = useState(false)
@@ -40,7 +42,7 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
         const fixedPlan = workoutSource === 'recommended' && matchingWorkoutPlan(result.session?.planned_exercises, workoutSessionKeys(exercises)) ? result.session.planned_exercises :
           workoutSource === 'recommended' && matchingWorkoutPlan(stored?.plannedExercises, workoutSessionKeys(exercises)) ? stored.plannedExercises : plannedExercises
         const resumed = resumeWorkoutSession(workoutSource === 'recommended' ? initialWorkoutLogs(fixedPlan) : initial, stored, result.session)
-        if (!cancelled) { setLogs(resumed.logs); setDraft(resumed.draft || exercises.map(e => { const dose = activityDose(e, weightUnit); return { weight: dose.weight, amount: dose.prescribed } })); setDirty(resumed.dirty); setModifiedAt(resumed.modifiedAt); setLoadFailed(false); setReady(true)
+        if (!cancelled) { setLogs(resumed.logs); setDraft(resumed.draft || resumed.logs.map((e: any) => { const dose = activityDose(e, weightUnit), actualDuration = Number(e.actual_duration || 0); return { weight: dose.weight, amount: isManualCardioExercise(e) ? actualDuration : dose.prescribed } })); setDirty(resumed.dirty); setModifiedAt(resumed.modifiedAt); setLoadFailed(false); setReady(true)
           setSessionPlan(fixedPlan)
           const savedIndex = resumed.logs.findIndex((log: { session_key: string }) => log.session_key === stored?.activeExerciseKey)
           const index = savedIndex >= 0 ? savedIndex : 0
@@ -84,8 +86,7 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
     {!ready ? <p role="status">{loadFailed ? 'Saved progress is unavailable. Retry before editing or saving.' : 'Loading your saved progress…'}</p> : null}
     {loadFailed ? <button type="button" onClick={() => setRetry(value => value + 1)}>Retry saved progress</button> : null}
     <p>{counts.complete} of {counts.total} exercises complete{counts.partial ? ` · ${counts.partial} in progress` : ''}{counts.skipped ? ` · ${counts.skipped} skipped` : ''}</p>
-    <p>{counts.completedSets} of {counts.totalSets} prescribed sets recorded{counts.totalSets > 0 ? ` · ${counts.requiredSets} needed for workout checkoff` : ' · No fixed set prescription is available.'}</p>
-    <p>Prescribed values are a starting point. Confirm each set or activity to record what you did.</p>
+    {manualCardio ? <p>Manual duration logging. Enter and confirm the time you actually completed. No duration target is prescribed. Distance and automatic readings are not recorded here.</p> : <><p>{counts.completedSets} of {counts.totalSets} prescribed sets recorded{counts.totalSets > 0 ? ` · ${counts.requiredSets} needed for workout checkoff` : ' · No fixed set prescription is available.'}</p><p>Prescribed values are a starting point. Confirm each set or activity to record what you did.</p></>}
     {logs.length ? <section className="activity-exercise-carousel" aria-label="Exercises" aria-roledescription="carousel">
       <div className="activity-carousel-controls">
         <button type="button" aria-label="Previous exercise" disabled={!ready || activeIndex === 0} onClick={() => showExercise(activeIndex - 1)}>Previous</button>
@@ -106,7 +107,7 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
       const dose = activityDose(log, weightUnit)
       return <article key={log.session_key} className="activity-exercise" data-activity={dose.kind} role="group" aria-roledescription="slide" aria-label={`Exercise ${index + 1} of ${logs.length}: ${exerciseOccurrenceLabel(logs, index)}`} aria-hidden={index !== activeIndex} ref={node => { if (node) node.inert = index !== activeIndex }} onFocus={() => { if (index !== activeIndex) showExercise(index); onExerciseFocus?.(log) }} onBlur={onExerciseBlur}>
         <div className="tier-panel-heading"><h3>{exerciseOccurrenceLabel(logs, index)}</h3><span>{log.completed ? 'Done' : log.skipped ? 'Skipped' : dose.kind === 'strength' ? `${log.set_logs.length}/${dose.sets} sets` : 'Available'}</span></div>
-        <p>Prescribed: {dose.metric === 'completion' ? `${log.duration_label || 'Complete the movement comfortably'} · record completion` : <>{dose.kind === 'strength' ? `${dose.sets} sets · ` : ''}{dose.prescribed || log.duration_label || 'Choose a comfortable amount'} {dose.prescribed ? dose.metric : ''}{dose.kind === 'strength' && dose.weight > 0 ? ` · ${dose.weight} ${dose.unit} ${dose.loadLabel}` : ''}</>}</p>
+        {isManualCardioExercise(log) ? <p>Record actual duration in {dose.metric}. This is a manual activity log.</p> : <p>Prescribed: {dose.metric === 'completion' ? `${log.duration_label || 'Complete the movement comfortably'} · record completion` : <>{dose.kind === 'strength' ? `${dose.sets} sets · ` : ''}{dose.prescribed || log.duration_label || 'Choose a comfortable amount'} {dose.prescribed ? dose.metric : ''}{dose.kind === 'strength' && dose.weight > 0 ? ` · ${dose.weight} ${dose.unit} ${dose.loadLabel}` : ''}</>}</p>}
         {dose.kind === 'strength' && dose.weight === 0 ? <p>{isBodyweightExercise(log) ? 'Bodyweight · no added load.' : [log.recommended_weight, log.cycle_adjusted_weight, log.calculated_weight, log.baseline_weight].some(value => value != null) ? `No added load prescribed. Record the ${dose.unit} you actually used, including zero.` : `No load baseline is available yet. Record the ${dose.unit} you actually used; zero means no added load.`}</p> : null}
         {log.available_variants?.length > 1 ? <details><summary>Exercise substitutions</summary><label>Variation<select value={log.selected_variant_id || ''} onChange={e => {
           const variant = log.available_variants.find((v: any) => v.id === e.target.value)
@@ -122,7 +123,7 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
         {!log.completed && !log.skipped ? <>
           <div className="activity-inputs">
             {dose.kind === 'strength' && !isBodyweightExercise(log) ? <label>Weight ({dose.unit}, {dose.loadLabel})<input type="number" disabled={!ready || saving} min="0" step={dose.increment} inputMode="decimal" value={Number.isFinite(draft[index].weight) ? draft[index].weight : ''} onChange={e => { markDirty(); setDraft(current => current.map((d,i) => i === index ? { ...d, weight: e.target.value === '' ? NaN : Number(e.target.value) } : d)) }}/></label> : null}
-            {dose.metric !== 'completion' ? <label>{dose.metric === 'minutes' ? 'Duration (minutes)' : dose.metric === 'seconds' ? 'Duration (seconds)' : dose.metric === 'breaths' ? 'Breaths completed' : 'Repetitions completed'}<input type="number" disabled={!ready || saving} min="0" step={dose.metric === 'minutes' ? 0.5 : 1} inputMode="decimal" value={draft[index].amount} onChange={e => { markDirty(); setDraft(current => current.map((d,i) => i === index ? { ...d, amount: Number(e.target.value) } : d)) }}/></label> : <p>Confirm when you have completed this movement.</p>}
+            {dose.metric !== 'completion' ? <label>{isManualCardioExercise(log) ? `Actual duration (${dose.metric})` : dose.metric === 'minutes' ? 'Duration (minutes)' : dose.metric === 'seconds' ? 'Duration (seconds)' : dose.metric === 'breaths' ? 'Breaths completed' : 'Repetitions completed'}<input type="number" disabled={!ready || saving} min="0" step={dose.metric === 'minutes' ? 0.5 : 1} inputMode="decimal" value={draft[index].amount} onChange={e => { markDirty(); setDraft(current => current.map((d,i) => i === index ? { ...d, amount: Number(e.target.value) } : d)) }}/></label> : <p>Confirm when you have completed this movement.</p>}
           </div>
           <div className="tier-action-row"><button type="button" onClick={() => confirm(index)} disabled={saving || !ready}>{dose.kind === 'strength' ? `Complete set ${log.set_logs.length+1}` : 'Confirm activity'}</button><button type="button" disabled={!ready || saving} onClick={() => patch(index, { skipped: true, completed: false })}>Skip exercise</button></div>
         </> : <button type="button" disabled={!ready || saving} onClick={() => patch(index, { completed: false, skipped: false })}>Edit activity</button>}
@@ -137,13 +138,13 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
       </div>
     </section> : null}
     <div className="tier-action-row"><button type="button" disabled={saving || !ready} onClick={() => void save()}>Save / pause</button><button type="button" className="tier-primary-action" disabled={saving || !ready} onClick={() => void save(true)}>{saving ? 'Saving…' : 'Finish and review'}</button></div>
-    {ready ? <p>{counts.completed ? 'Your recorded sets meet the workout checkoff threshold. Save your progress; you can continue with the remaining sets.' : 'Finish and review saves a partial session. Record at least half of all prescribed sets to qualify for workout checkoff.'}</p> : null}
+    {ready ? <p>{manualCardio ? counts.completed ? 'Your confirmed duration is ready to save in workout history.' : 'Save / pause retains this session. Confirm your actual duration before marking it complete.' : counts.completed ? 'Your recorded sets meet the workout checkoff threshold. Save your progress; you can continue with the remaining sets.' : 'Finish and review saves a partial session. Record at least half of all prescribed sets to qualify for workout checkoff.'}</p> : null}
     <p role="status">{message}</p>
     {summary ? <article className="daily-plan-card phone-app-session-summary" aria-label="Session summary" role="status">
       <span className="phone-app-save-mark" aria-hidden="true">✓</span><p className="phone-app-eyebrow">Session saved</p>
       <h3>{workoutSource === 'manual' ? counts.completed ? 'Exercise saved' : 'Partial exercise saved' : counts.completed ? 'You made time for strength.' : 'Partial session saved'}</h3>
       <p>{counts.complete} complete · {counts.partial} partial · {counts.skipped} skipped · {counts.total} planned</p><p>{totals.sets} strength sets · {totals.reps} reps · {Math.round(totals.minutes * 10) / 10} minutes · {totals.breaths} breaths · {totals.activities} movements completed</p>
-      <p>{counts.completedSets} of {counts.totalSets} prescribed sets recorded. {counts.completed ? 'Workout checkoff threshold met.' : 'Workout checkoff threshold not met yet.'}</p>
+      {manualCardio ? <p>{counts.completed ? 'Confirmed duration saved.' : 'This activity remains incomplete.'}</p> : <p>{counts.completedSets} of {counts.totalSets} prescribed sets recorded. {counts.completed ? 'Workout checkoff threshold met.' : 'Workout checkoff threshold not met yet.'}</p>}
       <p>Your confirmed work is saved. You can return to the remaining exercises.</p>
       <details><summary>Session overview · Recorded sets</summary>{logs.filter(log => log.set_logs.length).map(log => <section key={log.session_key}><h4>{log.display_name || log.exercise}</h4>{log.set_logs.map((set: any, index: number) => <p key={index}>Set {set.set_number}: {set.reps} reps · {set.weight} {set.weight_unit}{set.completed_at ? ` · ${new Date(set.completed_at).toLocaleTimeString([], { timeZone: timezone, hour: 'numeric', minute: '2-digit' })}` : ''}</p>)}</section>)}<p>Heart-rate readings and continuous set/rest intervals are unavailable. No watch connection is established by this screen.</p></details>
       <Link href={`/dashboard/program/${program}`}>Back to Today</Link>

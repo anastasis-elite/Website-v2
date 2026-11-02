@@ -13,6 +13,7 @@ const activities = await importTs('lib/dashboard/todayActivities.ts')
 const recommendations = await importTs('lib/dashboard/dailyRecommendation.ts')
 const timezone = await importTs('lib/timezone.ts')
 const scheduleTime = await importTs('lib/schedule/time.ts')
+const recoveryPresentation = await importTs('lib/recovery/todayCompletion.ts')
 const entitlements = await importTs('lib/entitlements.ts')
 const scheduleRefreshCalls = []
 const Link = ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children)
@@ -26,6 +27,7 @@ function component(path, extra = {}, exportName = 'default') {
     '@/lib/dashboard/dailyRecommendation': recommendations,
     '@/lib/schedule/client': { useDailyScheduleRefresh(...args) { scheduleRefreshCalls.push(args) } },
     '@/lib/schedule/time': scheduleTime,
+    '@/lib/recovery/todayCompletion': recoveryPresentation,
     '@/lib/analytics': { trackEvent() {} },
     '@/lib/analytics/todayJourney': { recordTodayActionOpened() {}, recordTodayActionCompletions() {} },
     '@/lib/timezone': timezone,
@@ -54,24 +56,26 @@ const fixture = (tier = 'ignite') => ({ program: tier, client: { id: 'QA-ONLY', 
 const schedule = () => ({ date: '2026-10-13', timezone: 'America/Chicago', now: '2026-10-13T13:00:00Z', events: [], nextActionableEvent: null, dailyGuide: { date: '2026-10-13', activities: {} } })
 const render = (logic, state = schedule()) => renderToStaticMarkup(React.createElement(Today, { logic, schedule: state }))
 
-test('Plan action arrows use the shared decorative SVG while retaining all navigation and labels', () => {
+test('compact Plan tiles are single image-and-content links with shared decorative SVG and unchanged destinations', () => {
   for (const tier of ['ember', 'ignite', 'phoenix']) {
     const html = renderToStaticMarkup(React.createElement(Plan, { logic: fixture(tier), schedule: schedule() }))
-    const cards = [...html.matchAll(/<article class="plan-overview-card">([\s\S]*?)<\/article>/g)].map(match => match[1])
+    const cards = [...html.matchAll(/<a href="([^"]+)" class="plan-overview-card">([\s\S]*?)<\/a>/g)]
     assert.equal(cards.length, 4)
-    for (const [index, [href, label]] of [
-      [`/dashboard/program/${tier}/workout`, 'Explore sessions'], ['/dashboard/nutrition', 'View targets'],
-      ['/dashboard/recovery', 'View recovery'], ['/dashboard/schedule', 'Open schedule'],
+    for (const [index, [href, title]] of [
+      [`/dashboard/program/${tier}/workout`, 'Your training'], ['/dashboard/nutrition', 'Your nutrition'],
+      ['/dashboard/recovery', 'Your recovery'], ['/dashboard/schedule', 'Your schedule'],
     ].entries()) {
-      assert.ok(cards[index].includes(`href="${href}">${label}<svg`))
-      assert.match(cards[index], /class="plan-overview-arrow"[^>]+stroke="currentColor"[^>]+aria-hidden="true"[^>]+focusable="false"/)
-      assert.equal((cards[index].match(/<circle\b/g) || []).length, 1)
-      assert.doesNotMatch(cards[index], /↗|<a[^>]*>[^<]*<span/)
+      assert.equal(cards[index][1], href)
+      assert.match(cards[index][2], /<img[^>]+alt=""/)
+      assert.ok(cards[index][2].includes(`<h3>${title}</h3>`))
+      assert.match(cards[index][2], /class="plan-overview-arrow"[^>]+stroke="currentColor"[^>]+aria-hidden="true"[^>]+focusable="false"/)
+      assert.equal((cards[index][2].match(/<circle\b/g) || []).length, 1)
+      assert.doesNotMatch(cards[index][2], /↗|<a\b|<button\b|Explore sessions|View targets|View recovery|Open schedule/)
     }
   }
   const css = readFileSync('components/program-dashboard/TodayPlanTheme.module.css', 'utf8')
-  assert.match(css, /\.plan-overview-arrow\) \{[^}]*width: 40px; height: 40px;/)
-  assert.match(css, /\.plan-overview-arrow\) \{ width: 30px; height: 30px;/)
+  assert.match(css, /\.plan-overview-arrow\) \{[^}]*width: 28px; height: 28px;/)
+  assert.match(css, /\.plan-overview-arrow\) \{ width: 24px; height: 24px;/)
   assert.doesNotMatch(css, /\.plan-overview-arrow\)[^{]*\{[^}]*border:/)
 })
 
@@ -98,6 +102,7 @@ test('missing, failed, invalid or loading streak data never renders a confirmed 
 
 test('known Today loading shell keeps a flame placeholder without claiming zero', () => {
   const DashboardLoadingContent = component('components/program-dashboard/DashboardLoadingShell.tsx', {
+    './DashboardLoadingShell.module.css': { loading: 'loading', satin: 'satin', folds: 'folds', content: 'content', brand: 'brand', rule: 'rule' },
     '@/components/program-dashboard/TodayStreakBadge': StreakBadge,
     '@/components/DashboardPerformance': () => null,
     '@/components/DashboardShellTiming': () => null,
@@ -228,7 +233,7 @@ test('recent zero-macro note remains separate and does not restore an on-pace ca
   assert.match(html, /href="\/dashboard\/nutrition">Review nutrition logs/)
   assert.doesNotMatch(html, /role="alert"/)
 })
-test('all six activities keep their destinations and use the shared illustrated cards, with water and schedule first', () => {
+test('compact Today cards keep one primary image-title-status link and separate activity options', () => {
   for (const tier of ['ember', 'ignite', 'phoenix']) {
     const html = render(fixture(tier))
     const cards = [...html.matchAll(/<li data-activity-id="([^"]+)"[^>]*data-illustrated="true"[^>]*>([\s\S]*?)<\/li>/g)]
@@ -241,10 +246,26 @@ test('all six activities keep their destinations and use the shared illustrated 
     cards.forEach((card, index) => {
       assert.ok(card[2].includes(`src="/illustrations/today-${targets[index][0]}.svg"`))
       assert.ok(card[2].includes(`href="${targets[index][1]}"`))
-      assert.match(card[2], /<svg class="today-action-arrow"[^>]+stroke="currentColor"[^>]+aria-hidden="true"[^>]+focusable="false"/)
-      assert.doesNotMatch(card[2], /↗/)
+      const primary = card[2].match(/^\s*<a\b[^>]*>([\s\S]*?)<\/a>/)?.[1]
+      assert.ok(primary)
+      assert.match(primary, /today-card-illustration/)
+      assert.match(primary, /<strong>/)
+      assert.match(primary, /today-activity-state/)
+      assert.doesNotMatch(primary, /<button\b|<details\b|<summary\b|today-card-action|today-action-arrow/)
+      const options = card[2].slice(card[2].indexOf('</a>') + 4)
+      assert.match(options, /<details class="today-row-options">/)
+      assert.doesNotMatch(card[2], /↗|today-card-action|today-action-arrow/)
     })
   }
+  const state = schedule();state.dailyGuide.activities.water = { status: 'skipped' }
+  const water = render(fixture(), state).match(/<li data-activity-id="water"[^>]*>([\s\S]*?)<\/li>/)[1]
+  assert.match(water, /<\/a><button[^>]+aria-label="Resume activity: Hydration"/)
+  assert.doesNotMatch(water.match(/^\s*<a\b[^>]*>([\s\S]*?)<\/a>/)[1], /<button\b/)
+  const css = readFileSync('components/program-dashboard/TodayPlanTheme.module.css', 'utf8')
+  assert.match(css, /height: clamp\(92px, 12vw, 132px\)/)
+  assert.match(css, /height: 86px/)
+  assert.match(css, /focus-visible[^}]*outline: 2px/)
+  assert.doesNotMatch(css, /\.today-card-action|\.today-action-arrow/)
 })
 
 test('Recovery action cards use the same decorative SVG without changing destinations or unavailable controls', () => {
@@ -326,4 +347,25 @@ test('partial schedule failure stays visible while core dashboard activities rem
   assert.match(html, /Your saved activities are still recorded/)
   assert.match(html, /Start daily check-in/)
   assert.match(html, /href="\/dashboard\/nutrition\?log=water"/)
+})
+
+test('GuidedToday schedules the earliest water, calorie or distinct recovery boundary without polling', () => {
+  const current = fixture(), state = schedule()
+  current.nutrition.pacing = { state: 'on_pace', nextRefreshAt: '2026-10-13T16:00:00.001Z' }
+  current.hydration.presentationPacing = { state: 'on_pace', nextRefreshAt: '2026-10-13T15:00:00.001Z' }
+  scheduleRefreshCalls.length = 0
+  render(current, state)
+  assert.equal(scheduleRefreshCalls.at(-1)[2], '2026-10-13T15:00:00.001Z')
+  current.hydration.presentationPacing.nextRefreshAt = 'invalid'
+  render(current, state)
+  assert.equal(scheduleRefreshCalls.at(-1)[2], '2026-10-13T16:00:00.001Z')
+  current.execution.recoveryEvidence = { ownerUserId: 'QA-OWNER', clientId: 'QA-ONLY', date: state.date,
+    available: true, completedAt: [], unlinkedRecordCount: 0 }
+  state.events = [{ id: 'later-recovery', user_id: 'QA-OWNER', client_id: 'QA-ONLY', event_type: 'recovery',
+    status: 'scheduled', start_at: '2026-10-13T14:00:00Z', end_at: '2026-10-13T14:15:00Z' }]
+  render(current, state)
+  assert.equal(scheduleRefreshCalls.at(-1)[2], '2026-10-13T14:00:00.000Z')
+  assert.equal(scheduleRefreshCalls.at(-1)[1], true)
+  const source = readFileSync('components/program-dashboard/GuidedToday.tsx', 'utf8')
+  assert.doesNotMatch(source, /setInterval/)
 })

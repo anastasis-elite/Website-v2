@@ -5,6 +5,8 @@ import type {
 } from '@/lib/workout-os/types'
 import type { StrengthAssessmentStatus } from '@/lib/assessment/getStrengthAssessmentStatus'
 import type { NutritionPacing, NutritionMacroReminder, RecordedHistoryMacros } from '@/lib/nutrition/todayPacing'
+import type { RecoveryCompletionEvidence } from '@/lib/recovery/todayCompletion'
+import type { TodayHydrationPacing } from '@/lib/hydration/todayPacing'
 
 export type ProgramTier = 'ember' | 'ignite' | 'phoenix'
 export type CapacityStatus = 'low_capacity' | 'moderate_capacity' | 'high_capacity'
@@ -56,6 +58,7 @@ export type ProgramLogicInputs = {
   mealEntries: any[]
   recentFuelingHistory: FuelingHistoryDay[]
   nutritionHistoryAvailable?: boolean
+  hydrationHistoryAvailable?: boolean
   workoutHistory: any[]
   strengthAssessments: any[]
   initialAssessment: any
@@ -64,6 +67,7 @@ export type ProgramLogicInputs = {
   photoUrls: string[]
   phoenixTaskIds: string[]
   todayRecoveryActivities: any[]
+  recoveryActivitiesAvailable?: boolean
   missedDayCount: number
   executionHistory: Array<{ log_date: string; streak_eligible: boolean }>
   executionHistoryAvailable?: boolean
@@ -89,7 +93,7 @@ export type ProgramLogicInputs = {
 export type CapacityResult = { status: CapacityStatus; score: number; drivers: string[]; presentationComplexity: 'minimal' | 'guided' | 'direct' }
 export type RecoveryResult = { status: RecoveryStatus; score: number; movementPreserved: boolean; reasoning: string; redFlags: string[] }
 export type FuelReadinessResult = { status: FuelStatus; displayStatus: FuelReadinessDisplayStatus; confidence: 'low' | 'medium' | 'high'; preWorkoutAction: string; workoutAdjustment: string; postWorkoutPriority: string; reasoning: string; currentBlock: DayBlock; timeZone: string; expectedThroughCurrentBlock: MacroSnapshot; consumedThroughCurrentBlock: MacroSnapshot; previousBlocksComplete: boolean; currentBlockOnTrack: boolean; blockCompletionPercent: number }
-export type HydrationResult = { consumed: number; target: number; remaining: number; percent: number; status: 'needs_input' | 'low' | 'building' | 'ready'; paceState: 'ahead_of_pace' | 'on_pace' | 'slightly_behind' | 'behind' | 'insufficient_data'; expectedPercent: number; dayElapsedPercent: number; prompt: string; recoverySupportNote: string }
+export type HydrationResult = { consumed: number; target: number; remaining: number; percent: number; status: 'needs_input' | 'low' | 'building' | 'ready'; paceState: 'ahead_of_pace' | 'on_pace' | 'slightly_behind' | 'behind' | 'insufficient_data'; expectedPercent: number; dayElapsedPercent: number; prompt: string; recoverySupportNote: string; presentationPacing?: TodayHydrationPacing }
 export type NutritionResult = { dataStatus: 'known' | 'needs_input'; calories: DailyMacro; protein: DailyMacro; carbs: DailyMacro; fats: DailyMacro; mealSuggestions: string[]; preWorkoutFuelPrompt: string; postWorkoutPriority: string; blockTargets: Record<DayBlock, MacroSnapshot>; blockConsumed: Record<DayBlock, MacroSnapshot>; pacing?: NutritionPacing; macroReminder?: NutritionMacroReminder | null }
 export type SymptomResult = { severity: 'none' | 'mild' | 'moderate' | 'severe'; clusters: string[]; possibleIntolerance: boolean; workoutModification: string | null; recoveryRecommendation: string; redFlag: boolean; trendInsight: string | null }
 export type CycleResult = { enabled: boolean; day: number | null; phase: string | null; trainingAdjustment: string; nutritionAdjustment: string; recoveryAdjustment: string; symptomPrediction: string[]; insight: string | null }
@@ -176,6 +180,6 @@ export type ProgramLogicOutput = {
     sources: string[]
   }
   trends: DashboardTrend[]
-  execution: { workoutInProgress?: boolean; completedWorkoutTitle?: string | null; completedWorkoutId?: string | null; completedWorkoutAt?: string | null; workoutComplete: boolean; nutritionLogged: boolean; assessmentComplete: boolean; recoveryComplete: boolean; phoenixTaskPercent: number }
+  execution: { workoutInProgress?: boolean; completedWorkoutTitle?: string | null; completedWorkoutId?: string | null; completedWorkoutAt?: string | null; workoutComplete: boolean; nutritionLogged: boolean; assessmentComplete: boolean; recoveryComplete: boolean; recoveryEvidence?: RecoveryCompletionEvidence; phoenixTaskPercent: number }
   presentation: { tier: ProgramTier; complexity: 'minimal' | 'guided' | 'direct'; maxTasksPerBlock: number; showTrends: boolean; showInsight: boolean }
 }

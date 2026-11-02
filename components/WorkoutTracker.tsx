@@ -9,6 +9,7 @@ import ActivityWorkoutTracker from '@/components/ActivityWorkoutTracker'
 import WorkoutSetEditor from '@/components/workout-dashboard/WorkoutSetEditor'
 import { useRouter } from 'next/navigation'
 import { manualDesiredSets, prescriptionSnapshot, readManualPrescriptionDraft, type ManualPrescriptionSnapshot } from '@/lib/workout/manualPrescriptionDraft'
+import { readSessionEquipmentContext, type SessionEquipmentContext } from '@/lib/workout/selectedPrescriptionTypes'
 
 class ReselectPrescriptionError extends Error {}
 
@@ -68,6 +69,7 @@ type Exercise = {
   recommendationStatus?: string
   recommendationMessage?: string
   recommendationSetupHref?: string
+  equipmentContext?: Readonly<SessionEquipmentContext>
 }
 
 type WorkoutLog = {
@@ -258,6 +260,7 @@ function buildManualWorkoutLog(exercise: Exercise, sets: ManualSetLog[], origina
   const actuals = summarizeStrengthSets(sets)
   const selectedVariant = exercise.available_variants?.find((variant) => variant.id === exercise.selected_variant_id)
   const firstSet = sets[0]
+  const equipmentContext = readSessionEquipmentContext(exercise.equipmentContext ?? prescription?.equipmentContext, exercise.selected_variant_id)
 
   return {
     id: exercise.id,
@@ -278,6 +281,7 @@ function buildManualWorkoutLog(exercise: Exercise, sets: ManualSetLog[], origina
     planned_reps: prescription?.reps ?? getRecommendedReps(exercise),
     planned_weight: prescription?.weightLb ?? getRecommendedWeight(exercise),
     ...(prescription ? { prescription } : {}),
+    ...(equipmentContext ? { equipment_context: equipmentContext } : {}),
     ...(desiredSetCount ? { user_intent: { desired_set_count: desiredSetCount } } : {}),
     baseline_reps: getBaselineReps(exercise),
     baseline_weight: getBaselineWeight(exercise),
@@ -335,6 +339,7 @@ function ManualSetLogger({
     return readManualPrescriptionDraft(null)
   })
   const [prescription] = useState(() => restored.prescription || prescriptionSnapshot(exercise.prescription))
+  const [equipmentContext] = useState(() => restored.equipmentContext || prescription?.equipmentContext || readSessionEquipmentContext(exercise.equipmentContext, exercise.selected_variant_id))
   const originalPlannedSets = useRef(prescription?.sets || restored.originalPlannedSets || manualDesiredSets(exercise.sets) || 0)
   const [exerciseStartedAt] = useState(() => new Date().toISOString())
   const [setStartedAt, setSetStartedAt] = useState(() => new Date().toISOString())
@@ -360,14 +365,14 @@ function ManualSetLogger({
   const nextSetNumber = sets.length + 1
 
   function draft(nextSets: ManualSetLog[]) {
-    return { version: 3, sets: nextSets, weight, weightUnit, reps, desiredSetCount, originalPlannedSets: originalPlannedSets.current, prescription }
+    return { version: 3, sets: nextSets, weight, weightUnit, reps, desiredSetCount, originalPlannedSets: originalPlannedSets.current, prescription, equipmentContext }
   }
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    try { window.localStorage.setItem(storageKey, JSON.stringify({ version: 3, sets, weight, weightUnit, reps, desiredSetCount, originalPlannedSets: originalPlannedSets.current, prescription })) }
+    try { window.localStorage.setItem(storageKey, JSON.stringify({ version: 3, sets, weight, weightUnit, reps, desiredSetCount, originalPlannedSets: originalPlannedSets.current, prescription, equipmentContext })) }
     catch { /* A failed browser draft never changes server-confirmed history. */ }
-  }, [storageKey, sets, weight, weightUnit, reps, desiredSetCount, prescription])
+  }, [storageKey, sets, weight, weightUnit, reps, desiredSetCount, prescription, equipmentContext])
 
   function persistDraft(nextSets: ManualSetLog[]) {
     if (typeof window === 'undefined') return true
@@ -381,7 +386,8 @@ function ManualSetLogger({
     // Freeze the first explicit unguided target before an ambiguous save/retry.
     // Guided prescriptions always retain their original denominator.
     if (!originalPlannedSets.current) { originalPlannedSets.current = desired; persistDraft(sets) }
-    const exerciseLog = {...buildManualWorkoutLog(exercise, nextSets, originalPlannedSets.current, prescription, desired), completed: Boolean(finishedAt) && nextSets.length >= originalPlannedSets.current, actual_weight_unit: 'lb'}
+    const sessionExercise = { ...exercise, ...(equipmentContext ? { equipmentContext } : {}) }
+    const exerciseLog = {...buildManualWorkoutLog(sessionExercise, nextSets, originalPlannedSets.current, prescription, desired), completed: Boolean(finishedAt) && nextSets.length >= originalPlannedSets.current, actual_weight_unit: 'lb'}
     const response = await fetch('/api/workout-set-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -393,7 +399,7 @@ function ManualSetLogger({
         workout_source: 'manual',
         workout_date: new Date().toISOString(),
         planned_exercises: plannedExercises,
-        exercise,
+        exercise: sessionExercise,
         exercise_started_at: exerciseStartedAt,
         exercise_finished_at: finishedAt || null,
         exercise_logs: [exerciseLog],

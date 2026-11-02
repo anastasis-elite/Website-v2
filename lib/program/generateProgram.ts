@@ -15,6 +15,8 @@ import phoenixWaistCincher from '@/data/template/phoenixWaistCincher.json'
 
 import { getEquipmentAdjustedLoad } from '@/lib/program/getEquipmentAdjustedLoad'
 import { getClientTimeZone } from '@/lib/timezone'
+import { readSessionEquipmentContext } from '@/lib/workout/selectedPrescriptionTypes'
+import { isReferenceSessionVariant } from '@/lib/workout/manualWorkout'
 
 function getTemplate(program: string) {
   switch (program) {
@@ -358,8 +360,8 @@ export function isApprovedPhoenixPrescriptionTrack(value: unknown): value is typ
 }
 
 /** Resolve one existing catalog selection; never creates or saves a full plan. */
-export function getFounderSelectedExercise({ client, initialAssessment, strengthAssessment, catalogExercise, variantId, phoenixTrack, now = new Date() }: {
-  client: any; initialAssessment: any; strengthAssessment: any; catalogExercise: any; variantId: string; phoenixTrack?: unknown; now?: Date
+export function getFounderSelectedExercise({ client, initialAssessment, strengthAssessment, catalogExercise, variantId, phoenixTrack, equipmentContext, now = new Date() }: {
+  client: any; initialAssessment: any; strengthAssessment: any; catalogExercise: any; variantId: string; phoenixTrack?: unknown; equipmentContext?: unknown; now?: Date
 }): { exercise: any; template: any } | null {
   // Only the caller's server-resolved saved-output track can select Phoenix
   // coefficients. Client/profile fields are not an authoritative track source.
@@ -379,7 +381,9 @@ export function getFounderSelectedExercise({ client, initialAssessment, strength
   const variant = group?.variants?.find((item: any) => item.id === variantId) ||
     (unloaded ? catalogExercise.available_variants.find((item: any) => item.id === variantId && item.load_type === 'bodyweight' && item.equipment === 'bodyweight') : null)
   if (!variant || !Number.isFinite(variant.equipment_modifier) || variant.equipment_modifier <= 0) return null
-  const equipment = getClientEquipment(client, initialAssessment)
+  const sessionContext = equipmentContext === undefined ? null : readSessionEquipmentContext(equipmentContext, variantId)
+  if (equipmentContext !== undefined && (!sessionContext || !isReferenceSessionVariant(catalogExercise, variantId, sessionContext.equipment))) return null
+  const equipment = sessionContext ? [sessionContext.equipment] : getClientEquipment(client, initialAssessment)
   if (!unloaded && !getEquipmentCompatibleVariants(group, equipment).some((item: any) => item.id === variantId)) return null
   const all = template.days.flatMap((day: any) => (day.exercises || []).map((exercise: any) => ({ day, exercise })))
   const exact = all.filter(({ exercise }: any) => normalizeName(exercise.exercise) === normalizeName(catalogName))

@@ -78,7 +78,7 @@ export async function loadProgramLogicInputs({
     { data: nutritionLogs, error: nutritionLogsError }, { data: workoutHistory }, { data: strengthAssessments },
     { data: initialAssessment }, { data: measurementLogs }, { data: photoRecord },
     { data: phoenixTasks }, { data: recentTasks }, { data: todayWorkoutFeedback },
-    { data: recoveryActivities }, { data: rawRecentRecovery }, { data: executionHistory, error: executionHistoryError },
+    { data: recoveryActivities, error: recoveryActivitiesError }, { data: rawRecentRecovery }, { data: executionHistory, error: executionHistoryError },
     { data: dailyHealthMetrics }, { data: latestBodySessions }, { data: activeBodySession },
     sleepStatus, { data: todayCycle }, strengthAssessment,
   ] = await Promise.all([
@@ -348,9 +348,11 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
     mealEntries,
     recentFuelingHistory,
     nutritionHistoryAvailable: !nutritionLogsError && !nutritionTotalsError && !mealEntriesError && !macroEntriesError,
+    hydrationHistoryAvailable: !nutritionLogsError,
     workoutHistory: workoutHistory || [],
     strengthAssessments: strengthAssessments || [], initialAssessment, measurementLogs: measurementLogs || [],
-    photoRecord, photoUrls, phoenixTaskIds: Array.from(automaticTaskIds), todayRecoveryActivities: recoveryActivities || [], missedDayCount, executionHistory: executionHistory || [],
+    photoRecord, photoUrls, phoenixTaskIds: Array.from(automaticTaskIds), todayRecoveryActivities: recoveryActivities || [],
+    recoveryActivitiesAvailable: !recoveryActivitiesError && Array.isArray(recoveryActivities), missedDayCount, executionHistory: executionHistory || [],
     executionHistoryAvailable: !executionHistoryError && Array.isArray(executionHistory),
     yesterday: {
   workoutComplete: Boolean(yesterdayWorkout?.completed),

@@ -39,7 +39,7 @@ function loader(mocks = {}) {
 const actual = loader()
 const { generateProgram, getFounderSelectedExercise } = actual('lib/program/generateProgram.ts')
 const { buildSelectedPrescription } = actual('lib/workout/selectedPrescription.ts')
-const { getManualWorkoutLibrary } = actual('lib/workout/manualWorkout.ts')
+const { getManualWorkoutLibrary, getSessionEquipmentForMuscles, filterSessionManualExercises, isReferenceSessionVariant } = actual('lib/workout/manualWorkout.ts')
 const { capabilityForPath, isProtectedApiPath, membershipCan } = actual('lib/membership/policy.ts')
 const catalog = name => getManualWorkoutLibrary().find(exercise => exercise.exercise === name)
 const client = () => ({ client_id: 'OWNED', auth_user_id: owner, program: 'ember', access: true, active: true,
@@ -298,4 +298,99 @@ test('Phoenix rejects caller track injection and foreign ownership; selected hel
   assert.equal(founder('Dumbbell Lateral Raise','dumbbell_lateral_raise',{client:phantomClient}),null)
   assert.equal(founder('Dumbbell Lateral Raise','dumbbell_lateral_raise',{client:phantomClient,phoenixTrack:'invented_track'}),null)
   assert.equal(app.state.writes,0)
+})
+
+const explicitEquipment = (equipment, variantId) => ({ source: 'session_override', equipment, variantId })
+
+test('explicit session equipment uses only real variants and the unchanged founder coefficients despite saved bodyweight inventory', () => {
+  for (const [name, variantId, equipment, loadType] of [
+    ['Dumbbell Lateral Raise', 'dumbbell_lateral_raise', 'dumbbell', 'per_hand'],
+    ['Dumbbell Lateral Raise', 'cable_lateral_raise', 'cable', 'single_side'],
+    ['Dumbbell Lateral Raise', 'machine_lateral_raise', 'machine', 'machine_total'],
+    ['Shoulder Press', 'barbell_shoulder_press', 'barbell', 'total_load'],
+  ]) {
+    const saved = { ...client(), equipment_access: ['bodyweight'] }, before = clone(saved)
+    const selected = founder(name, variantId, { client: saved, equipmentContext: explicitEquipment(equipment, variantId) })
+    const original = founder(name, variantId)
+    assert.ok(selected, `${equipment} must use an established real variant and template dose`);assert.ok(original)
+    assert.equal(selected.exercise.calculated_weight, original.exercise.calculated_weight)
+    assert.equal(selected.exercise.sets, original.exercise.sets);assert.equal(selected.exercise.reps, original.exercise.reps)
+    assert.equal(selected.exercise.load_type, loadType)
+    assert.equal(selected.exercise.intensity_factor, original.exercise.intensity_factor)
+    assert.equal(selected.exercise.rep_multiplier, original.exercise.rep_multiplier)
+    assert.deepEqual(saved, before)
+  }
+  assert.equal(founder('Dumbbell Lateral Raise', 'cable_lateral_raise', { client: { ...client(), equipment_access: ['bodyweight'] } }), null)
+  assert.equal(founder('Dumbbell Lateral Raise', 'kettlebell_lateral_raise', { equipmentContext: explicitEquipment('kettlebell', 'kettlebell_lateral_raise') }), null)
+  const bodyweight=catalog('Sumo Squat').available_variants.find(item=>item.equipment==='bodyweight')
+  assert.equal(founder('Sumo Squat',bodyweight.id,{equipmentContext:explicitEquipment('bodyweight',bodyweight.id)}),null,'An inferred catalog fallback is not a reference-backed override.')
+  assert.equal(founder('Sumo Squat',bodyweight.id).exercise.calculated_weight,0,'The existing saved-default bodyweight path keeps genuine zero added load.')
+})
+
+test('session equipment helpers exclude inferred combinations while saved-default catalog availability remains unchanged', () => {
+  const equipment=clone(getSessionEquipmentForMuscles([]))
+  assert.deepEqual(equipment,['barbell','cable','dumbbell','machine'])
+  assert.ok(getManualWorkoutLibrary().some(exercise=>exercise.available_variants.some(variant=>variant.equipment==='bodyweight')))
+  for(const choice of equipment) {
+    const results=filterSessionManualExercises({muscles:[],equipment:[choice]})
+    assert.ok(results.length>0)
+    for(const exercise of results)for(const variant of exercise.available_variants) {
+      assert.equal(variant.equipment,choice);assert.equal(isReferenceSessionVariant(exercise,variant.id,choice),true)
+    }
+  }
+  for(const unsupported of ['bodyweight','kettlebell','free_weights','*']) {
+    assert.equal(filterSessionManualExercises({muscles:[],equipment:[unsupported]}).length,0)
+  }
+})
+
+test('session preview carries a minimal canonical override through safety calculation without changing saved profile or assessments', async () => {
+  for (const equipment of ['dumbbell', 'cable', 'machine']) {
+    const app = routeFixture();app.state.client.equipment_access=['bodyweight'];app.state.profile.equipment_access=['bodyweight']
+    const before=clone({ client:app.state.client, profile:app.state.profile, initial:app.state.initial, strength:app.state.strength })
+    const variantId=`${equipment}_lateral_raise`, equipmentContext=explicitEquipment(equipment,variantId)
+    const response=await app.request({ ...selection(),variantId,equipmentContext })
+    assert.equal(response.status,200);const payload=await response.json();assert.equal(payload.status,'available')
+    assert.deepEqual(payload.prescription.equipmentContext,equipmentContext)
+    assert.equal(payload.prescription.variantId,variantId)
+    assert.deepEqual(clone({ client:app.state.client, profile:app.state.profile, initial:app.state.initial, strength:app.state.strength }),before)
+    assert.equal(app.state.writes,0)
+    assert.doesNotMatch(JSON.stringify(payload),/auth_user_id|equipment_modifier|lateral_raise_weight|injuries/)
+    const noOverride=await (await app.request({ ...selection(),variantId })).json()
+    assert.equal(noOverride.status,'unavailable','Saved inventory still controls requests without an explicit session override.')
+  }
+})
+
+test('session preview rejects malformed, wildcard, mismatched and fabricated context without inventing equipment or guidance', async () => {
+  for (const equipmentContext of [null,[], 'cable',
+    explicitEquipment('*','cable_lateral_raise'),explicitEquipment('free_weights','cable_lateral_raise'),
+    explicitEquipment('machine','cable_lateral_raise'),explicitEquipment('cable','machine_lateral_raise'),
+    { ...explicitEquipment('cable','cable_lateral_raise'), source:'saved_profile' },
+    { ...explicitEquipment('cable','cable_lateral_raise'), auth_user_id:'other-owner' },
+    { ...explicitEquipment('cable','cable_lateral_raise'), equipment_modifier:2 },
+  ]) {
+    const app=routeFixture(), response=await app.request({ ...selection(),variantId:'cable_lateral_raise',equipmentContext })
+    assert.equal(response.status,400);assert.equal(app.state.writes,0)
+    assert.equal(app.state.queries.some(query=>query.table!=='clients'),false)
+  }
+  const absent=routeFixture()
+  assert.equal((await absent.request({ ...selection(),variantId:'kettlebell_lateral_raise',equipmentContext:explicitEquipment('kettlebell','kettlebell_lateral_raise') })).status,400)
+  assert.equal(absent.state.writes,0)
+})
+
+test('session override cannot bypass ownership, tier, safety or Phoenix saved-track requirements', async () => {
+  const equipmentContext=explicitEquipment('cable','cable_lateral_raise'), selected={...selection(),variantId:'cable_lateral_raise',equipmentContext}
+  const foreign=routeFixture();foreign.state.client.auth_user_id='other-owner';assert.equal((await foreign.request(selected)).status,404)
+  for(const program of ['free','unknown']) {
+    const app=routeFixture();app.state.client.program=program;assert.equal((await app.request(selected)).status,403)
+    assert.equal(app.state.queries.some(query=>query.table!=='clients'),false)
+  }
+  const tracker=routeFixture();tracker.state.client.program='tracker'
+  const tracking=await tracker.request(selected);assert.equal(tracking.status,200);assert.equal((await tracking.json()).status,'tracking_only')
+  assert.equal(tracker.state.queries.some(query=>query.table!=='clients'),false)
+  assert.equal((await tracker.request({...selected,equipmentContext:{...equipmentContext,load:1}})).status,400)
+  const phoenix=routeFixture();phoenix.state.client.program='phoenix';phoenix.state.client.phoenix_track='phoenixStrength'
+  assert.equal((await (await phoenix.request(selected)).json()).status,'unavailable')
+  assert.equal(phoenix.state.queries.some(query=>['assessments','client_current_profiles'].includes(query.table)),false)
+  const base=founder('Dumbbell Lateral Raise','cable_lateral_raise',{client:{...client(),equipment_access:['bodyweight']},equipmentContext})
+  assert.equal(buildSelectedPrescription({inputs:inputs({todaySymptoms:[{severity:9,symptom_types:{name:'chest pain',category:'pain'}}]}),exercise:base.exercise,variantId:'cable_lateral_raise'}).status,'blocked')
 })

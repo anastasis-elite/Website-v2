@@ -42,22 +42,22 @@
 .surface :global(.today-later) { display: block; width: fit-content; margin: 10px auto -8px; color: var(--soft); font-size: .9rem; }
 .surface :global(.today-section-heading) h2, .surface :global(.plan-overview) > h2 { margin: 0 0 12px; font: 400 clamp(1.65rem, 4.3vw, 2.8rem)/1.13 Georgia, serif; letter-spacing: -.025em; }
 .surface :global(.today-section-heading) > span { color: var(--soft); font-size: .8rem; }
-.surface :global(.today-activities) ul, .surface :global(.plan-overview-grid) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.surface :global(.today-activities) { margin-top: 22px; }
+.surface :global(.today-activities) ul, .surface :global(.plan-overview-grid) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .surface :global(.today-activities) li { grid-column: 1 / -1; padding: 12px 18px; border: 1px solid #b3835045; border-radius: 18px; background: linear-gradient(130deg, #4d301d66, #302014aa); }
-.surface :global(.today-activities) li[data-illustrated="true"], .surface :global(.plan-overview-card) { position: relative; display: flex; flex-direction: column; grid-column: auto; overflow: hidden; min-width: 0; padding: 0; border: 1px solid #b383504d; border-radius: 22px; background: radial-gradient(ellipse at 75% 0, #8b542b45, transparent 80%), linear-gradient(135deg, #4b2f1b99, #352112c9); }
-.surface :global(.today-card-illustration) { display: block; width: 100%; height: auto; border-bottom: 1px solid #9e6a3f14; background: linear-gradient(125deg, #7b4b2933, #38231266); }
+.surface :global(.today-activities) li[data-illustrated="true"], .surface :global(.plan-overview-card) { position: relative; display: flex; flex-direction: column; grid-column: auto; overflow: hidden; min-width: 0; padding: 0; border: 1px solid #b383504d; border-radius: 18px; background: radial-gradient(ellipse at 75% 0, #8b542b45, transparent 80%), linear-gradient(135deg, #4b2f1b99, #352112c9); }
+.surface :global(.plan-overview-card) { min-height: 44px; color: inherit; text-decoration: none; }
+.surface :global(.today-card-illustration) { display: block; width: 100%; height: clamp(92px, 12vw, 132px); object-fit: contain; border-bottom: 1px solid #9e6a3f14; background: linear-gradient(125deg, #7b4b2933, #38231266); }
 .surface :global(.today-activities) li[data-illustrated="true"] > a:first-child { display: flex; flex: 1; flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
 .surface :global(.today-activities) li[data-illustrated="true"] > a > :global(.today-activity-icon) { display: none; }
-.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy), .surface :global(.plan-overview-copy) { display: flex; flex: 1; flex-direction: column; padding: 18px 24px 20px; }
+.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy), .surface :global(.plan-overview-copy) { display: flex; flex: 1; flex-direction: column; padding: 12px 16px; }
 .surface :global(.today-card-kicker) { display: block; margin: 0 0 7px; font-size: 10px; letter-spacing: .23em; }
-.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > strong, .surface :global(.plan-overview-copy) h3 { margin: 0; color: var(--anastasis-ivory); font: 400 clamp(1.35rem, 3.7vw, 2.3rem)/1.08 Georgia, serif; letter-spacing: -.02em; }
-.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > small, .surface :global(.plan-overview-copy) > p:not(:global(.today-card-kicker)) { margin: 10px 0 20px; color: var(--soft); font-size: clamp(.85rem, 2.1vw, 1.2rem); line-height: 1.45; }
+.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > strong, .surface :global(.plan-overview-copy) h3 { margin: 0; color: var(--anastasis-ivory); font: 400 clamp(1.25rem, 3.2vw, 1.75rem)/1.15 Georgia, serif; letter-spacing: -.02em; }
+.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > small, .surface :global(.plan-overview-copy) > p:not(:global(.today-card-kicker)) { margin: 6px 0 8px; color: var(--soft); font-size: clamp(.85rem, 1.8vw, 1rem); line-height: 1.45; }
 .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-optional-label) { display: block; margin: 6px 0 0; color: var(--soft); font: 400 .75rem Arial, sans-serif; }
-.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-state) { position: static; display: block; flex: none; margin: 0; padding: 0 24px 12px; color: var(--soft); font-size: .8rem; text-align: left; }
-.surface :global(.today-card-action), .surface :global(.plan-overview-copy) > a { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; margin-top: auto; color: var(--anastasis-ivory); font-size: clamp(.8rem, 1.8vw, 1rem); font-weight: 600; text-decoration: none; }
-.surface :global(.today-action-arrow) { flex-shrink: 0; width: 32px; height: 32px; color: var(--anastasis-copper); }
-.surface :global(.plan-overview-arrow) { flex-shrink: 0; width: 40px; height: 40px; color: var(--accent); }
-.surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-row-options), .surface :global(.today-activities) li[data-illustrated="true"] > button, .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-change-time) { margin: 0 16px 12px; }
+.surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-state) { position: static; display: block; flex: none; margin: 0; padding: 0 16px 10px; color: var(--soft); font-size: .8rem; text-align: left; }
+.surface :global(.plan-overview-arrow) { align-self: flex-end; flex-shrink: 0; width: 28px; height: 28px; margin-top: auto; color: var(--accent); }
+.surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-row-options), .surface :global(.today-activities) li[data-illustrated="true"] > button, .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-change-time) { margin: 0 12px 10px; }
 .surface :global(.today-row-options) summary { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid #bd895867; border-radius: 12px; color: var(--soft); }
 .surface :global(.today-row-options) button, .surface :global(.today-activities) li > button { border-color: #bd895867; color: var(--anastasis-ivory); }
 .surface :global(.today-progress) { margin-top: 28px; padding: 20px; border: 1px solid #b3835038; border-radius: 18px; background: #41291955; }
@@ -92,15 +92,15 @@
   .surface :global(.today-next) h2 { font-size: 1.75rem; }
   .surface :global(.today-next) > p { font-size: .9rem; margin-bottom: 16px; }
   .surface :global(.today-next) > :global(.tier-primary-action) { min-height: 46px; font-size: 1.15rem; }
-  .surface :global(.today-activities) ul, .surface :global(.plan-overview-grid) { gap: 10px; }
+  .surface :global(.today-activities) ul, .surface :global(.plan-overview-grid) { gap: 8px; }
   .surface :global(.today-activities) li[data-illustrated="true"], .surface :global(.plan-overview-card) { border-radius: 16px; }
-  .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy), .surface :global(.plan-overview-copy) { padding: 12px 12px 14px; }
+  .surface :global(.today-card-illustration) { height: 86px; }
+  .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy), .surface :global(.plan-overview-copy) { padding: 10px 12px; }
   .surface :global(.today-card-kicker) { font-size: 8px; letter-spacing: .16em; }
   .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > strong, .surface :global(.plan-overview-copy) h3 { font-size: 1.25rem; }
-  .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > small, .surface :global(.plan-overview-copy) > p:not(:global(.today-card-kicker)) { font-size: .83rem; margin-bottom: 12px; }
+  .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > small, .surface :global(.plan-overview-copy) > p:not(:global(.today-card-kicker)) { font-size: .83rem; margin-bottom: 6px; }
   .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-state) { padding: 0 12px 10px; font-size: .75rem; }
-  .surface :global(.today-card-action), .surface :global(.plan-overview-copy) > a { min-height: 36px; font-size: .77rem; }
-  .surface :global(.plan-overview-arrow) { width: 30px; height: 30px; }
+  .surface :global(.plan-overview-arrow) { width: 24px; height: 24px; }
   .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-row-options), .surface :global(.today-activities) li[data-illustrated="true"] > button { margin-left: 10px; margin-right: 10px; }
 }
 @media (max-width: 350px) {

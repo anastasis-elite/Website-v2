@@ -13,7 +13,8 @@ const nodes = (tree, match) => !tree || typeof tree !== 'object' ? [] : Array.is
 const deferred = () => { let resolve;const promise = new Promise(done => { resolve = done });return { promise, resolve } }
 const json = (value, ok = true) => ({ ok, json: async () => value })
 const prescription = (call, patch = {}) => ({ status: 'available', prescription: { exerciseId: call.body.exerciseId, variantId: call.body.variantId,
-  sets: 4, reps: 8, weightLb: 17.5, loadType: 'per_hand', version: 'founder-selected-v1', ...patch } })
+  sets: 4, reps: 8, weightLb: 17.5, loadType: 'per_hand', version: 'founder-selected-v1',
+  ...(call.body.equipmentContext ? { equipmentContext: call.body.equipmentContext } : {}), ...patch } })
 const clock = Date.parse('2026-11-02T18:00:00Z')
 class FixedDate extends Date { constructor(...args) { super(...(args.length ? args : [clock])) } static now() { return clock } }
 
@@ -91,6 +92,7 @@ function harness(overrides = {}, initialStorage = new Map()) {
     get props() { return props }, get focusReturns() { return activeElement.focusReturns }, get dialog() { render();return dialogNode },
     get draftKey() { return `aos-manual-builder:v1:${props.clientId}:${props.program}:2026-11-02` },
     open(region = 'left_pectoralis_major') { map().props.onSelectMuscle(region);render() },
+    openCardio() { button('Add cardio').props.onClick({ currentTarget: activeElement });render() },
     chooseEquipment(name = 'Dumbbell') { button(name).props.onClick();render() },
     choose(index = 0) { const result = resultButtons()[index].props.onClick();render();return result },
     async settle() { await new Promise(resolve => setImmediate(resolve));render() },
@@ -206,4 +208,97 @@ test('restored drafts do not fetch or lose original planned values, and account 
   response.resolve(json(prescription(pendingView.calls[0])));await pendingView.settle()
   assert.equal(pendingView.tracker(), undefined)
   assert.equal(pendingView.nativeDialog.open, false)
+})
+
+test('explicit equipment choices retain the saved default and expose only supported session catalog variants', () => {
+  const view = harness({ memberEquipment: [] });view.open()
+  const saved = nodes(view.render(), node => node.props?.['data-testid'] === 'manual-equipment-filter')[0]
+  assert.deepEqual(Array.from(nodes(saved, node => node.type === 'button'), node => text(node)), ['Bodyweight'])
+  view.button('Use other equipment today').props.onClick();view.render()
+  assert.match(text(view.dialog), /this session only/)
+  const session = nodes(view.render(), node => node.props?.['data-testid'] === 'manual-session-equipment')[0]
+  const expected = view.library.getSessionEquipmentForMuscles(['chest'])
+  assert.deepEqual(Array.from(nodes(session, node => node.type === 'button'), node => text(node)).sort(), Array.from(expected, value => value[0].toUpperCase() + value.slice(1)).sort())
+  assert.equal(view.button('Free weights'), undefined, 'Free weights is a heading, never a synthetic equipment choice.')
+  assert.ok(nodes(session, node => node.type === 'h3' && text(node) === 'Free weights').length)
+  assert.equal(view.button('Kettlebell'), undefined)
+  assert.equal(view.button('Bodyweight'), undefined, 'No reference-backed bodyweight override is invented.')
+  view.button('Use saved equipment').props.onClick();view.render()
+  const again = nodes(view.render(), node => node.props?.['data-testid'] === 'manual-equipment-filter')[0]
+  assert.deepEqual(Array.from(nodes(again, node => node.type === 'button'), node => text(node)), ['Bodyweight'])
+  assert.deepEqual(view.props.memberEquipment, [])
+})
+
+test('session equipment context is sent once and retained in frozen prescription and restored active draft', async () => {
+  const view = harness({ memberEquipment: [] });view.open();view.button('Use other equipment today').props.onClick();view.render()
+  view.chooseEquipment('Dumbbell');view.choose();await view.settle()
+  const call = view.calls[0], active = view.tracker().props.exercises[0]
+  assert.deepEqual(call.body.equipmentContext, { source: 'session_override', equipment: 'dumbbell', variantId: call.body.variantId })
+  assert.equal(active.selected_equipment, 'dumbbell');assert.equal(active.equipmentContext.equipment, 'dumbbell')
+  assert.equal(Object.isFrozen(active.equipmentContext), true)
+  assert.equal(Object.isFrozen(active.prescription.equipmentContext), true)
+  assert.equal(active.prescription.equipmentContext.variantId, active.selected_variant_id)
+  const restored = harness({ memberEquipment: [] }, view.storage), restoredActive = restored.tracker().props.exercises[0]
+  assert.equal(restored.calls.length, 0);assert.equal(restoredActive.id, active.id)
+  assert.equal(restoredActive.equipmentContext.equipment, 'dumbbell')
+  assert.equal(Object.isFrozen(restoredActive.prescription.equipmentContext), true)
+  assert.deepEqual(restored.props.memberEquipment, [])
+})
+
+test('session equipment context remains factual for Tracker and unavailable manual logging without creating guidance', async () => {
+  for (const tracker of [true, false]) {
+    const view = harness({ trackingOnly: tracker, memberEquipment: [] })
+    view.setSend(async () => json({ status: 'unavailable', message: 'Recommendation unavailable for this variant.' }))
+    view.open();view.button('Use other equipment today').props.onClick();view.render();view.chooseEquipment('Dumbbell');view.choose();await view.settle()
+    const active = view.tracker().props.exercises[0]
+    assert.equal(view.calls.length, tracker ? 0 : 1)
+    assert.equal(active.equipmentContext.source, 'session_override');assert.equal(active.equipmentContext.equipment, 'dumbbell')
+    assert.equal(active.prescription, undefined);assert.equal(active.sets, undefined);assert.equal(active.recommended_weight, undefined)
+    assert.equal(active.recommendationStatus, tracker ? 'tracking_only' : 'unavailable')
+    assert.deepEqual(view.props.memberEquipment, [])
+  }
+})
+
+test('equipment mode changes fence stale requests and reject mismatched contexts while retaining blocked safety state', async () => {
+  const view = harness({ memberEquipment: [] }), pending = []
+  view.setSend(call => { const result = deferred();pending.push({ ...result, call });return result.promise })
+  view.open();view.chooseEquipment('Bodyweight');view.choose()
+  view.button('Back · change equipment').props.onClick();view.render();view.button('Use other equipment today').props.onClick();view.render()
+  view.chooseEquipment('Dumbbell');view.choose()
+  pending[0].resolve(json(prescription(pending[0].call)));await view.settle()
+  assert.equal(view.tracker(), undefined);assert.equal(pending[0].call.options.signal.aborted, true)
+  pending[1].resolve(json(prescription(pending[1].call, { equipmentContext: { source: 'session_override', equipment: 'machine', variantId: pending[1].call.body.variantId } })))
+  await view.settle();assert.equal(view.tracker(), undefined);assert.match(text(view.dialog), /could not be loaded/)
+  view.setSend(async () => json({ status: 'blocked', message: 'Review existing safety guidance.', setupHref: '/dashboard/recovery' }, false))
+  view.button('Retry recommendation').props.onClick();await view.settle()
+  assert.equal(view.tracker(), undefined);assert.equal(view.button('Continue without recommendation'), undefined)
+  assert.match(text(view.dialog), /Review existing safety guidance/)
+  view.escape();view.open()
+  assert.ok(nodes(view.render(), node => node.props?.['data-testid'] === 'manual-equipment-filter').length)
+  assert.equal(nodes(view.render(), node => node.props?.['data-testid'] === 'manual-session-equipment').length, 0)
+})
+
+test('Add cardio works without a selected muscle and routes duration-only manual choices through the same tracker', async () => {
+  const view = harness();view.openCardio()
+  assert.equal(view.nativeDialog.open, true);assert.match(text(view.dialog), /Choose cardio/)
+  assert.match(text(view.dialog), /duration you actually complete/)
+  assert.equal(nodes(view.dialog, node => node.props?.['data-testid'] === 'manual-equipment-filter').length, 0)
+  const options = nodes(view.dialog, node => node.props?.['data-testid'] === 'manual-cardio-options')[0]
+  assert.deepEqual(Array.from(nodes(options, node => node.type === 'button'), node => text(node)), ['Walking', 'Running', 'Cycling', 'Treadmill'])
+  view.escape();assert.equal(view.focusReturns, 1);assert.equal(view.calls.length, 0)
+  view.openCardio()
+  const unit = nodes(view.dialog, node => node.type === 'select')[0]
+  assert.equal(unit.props.value, 'minutes')
+  unit.props.onChange({ target: { value: 'seconds' } });view.render()
+  view.button('Cycling').props.onClick();view.render()
+  const tracker = view.tracker(), active = tracker.props.exercises[0]
+  assert.equal(view.calls.length, 0);assert.equal(tracker.props.dayName, 'Manual Cardio')
+  assert.equal(active.manual_activity, 'cardio-duration-v1');assert.equal(active.duration_unit, 'seconds')
+  assert.equal(tracker.props.plannedExercises[0].session_key, active.session_key)
+  for (const key of ['prescription', 'sets', 'reps', 'recommended_weight', 'duration_minutes', 'duration_seconds']) assert.equal(active[key], undefined)
+  const restored = harness({}, view.storage)
+  assert.equal(restored.tracker().props.exercises[0].session_key, active.session_key);assert.equal(restored.calls.length, 0)
+  assert.equal(restored.tracker().props.exercises[0].duration_unit, 'seconds')
+  tracker.props.onManualExerciseFinished(false);view.render()
+  assert.ok(view.button('Add cardio'));assert.match(text(view.render()), /Partial exercise saved.*Manual cardio/s)
 })

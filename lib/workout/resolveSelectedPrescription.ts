@@ -1,5 +1,5 @@
 import { membershipCan } from '@/lib/membership/policy'
-import { getManualWorkoutLibrary } from '@/lib/workout/manualWorkout'
+import { getManualWorkoutLibrary, isReferenceSessionVariant } from '@/lib/workout/manualWorkout'
 import { selectedFounderBase, buildSelectedPrescription } from '@/lib/workout/selectedPrescription'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { loadProgramLogicInputs } from '@/lib/dashboard/logic/loadProgramLogicInputs'
@@ -10,6 +10,7 @@ import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 
 import { isApprovedPhoenixPrescriptionTrack } from '@/lib/program/generateProgram'
 import type { SelectedPrescriptionResponse } from './selectedPrescriptionTypes'
+import { readSessionEquipmentContext } from './selectedPrescriptionTypes'
 
 export type SelectedPrescriptionResolution = { httpStatus: number; response: SelectedPrescriptionResponse }
 const resolved = (response: SelectedPrescriptionResponse, httpStatus = 200): SelectedPrescriptionResolution => ({ httpStatus, response })
@@ -38,14 +39,16 @@ function checkedReadOnlyClient(supabase: any) {
  * The user must come from auth.getUser(); an optional client ID is still
  * freshly constrained to that authenticated owner before any tier or health read.
  */
-export async function resolveSelectedPrescription({ supabase, user, clientId, exerciseId, variantId }: {
-  supabase: any; user: { id: string } | null | undefined; clientId?: string; exerciseId: string; variantId: string
+export async function resolveSelectedPrescription({ supabase, user, clientId, exerciseId, variantId, equipmentContext }: {
+  supabase: any; user: { id: string } | null | undefined; clientId?: string; exerciseId: string; variantId: string; equipmentContext?: unknown
 }): Promise<SelectedPrescriptionResolution> {
   try {
     if (!user?.id) return resolved({ status: 'blocked', message: 'Sign in before choosing a prescription.' }, 401)
     if (typeof exerciseId !== 'string' || typeof variantId !== 'string' || !exerciseId || !variantId || exerciseId.length > 200 || variantId.length > 200) {
       return resolved({ status: 'unavailable', message: 'Choose an exercise and its equipment variant.' }, 400)
     }
+    const sessionContext = equipmentContext === undefined ? null : readSessionEquipmentContext(equipmentContext, variantId)
+    if (equipmentContext !== undefined && !sessionContext) return resolved({ status: 'unavailable', message: 'Review the equipment chosen for this session.' }, 400)
     let memberQuery = supabase.from('clients').select('*').eq('auth_user_id', user.id)
     if (clientId !== undefined) memberQuery = memberQuery.eq('client_id', clientId)
     const { data: client, error: clientError } = await memberQuery.maybeSingle()
@@ -55,7 +58,8 @@ export async function resolveSelectedPrescription({ supabase, user, clientId, ex
     if (client.program === 'tracker') return resolved({ status: 'tracking_only', message: 'Enter your own actual sets, repetitions and load. Guided prescriptions are not included.' })
     if (!membershipCan(client, 'generatedCoaching')) return resolved({ status: 'blocked', message: 'Guided prescriptions are unavailable for this membership.' }, 403)
     const catalog = getManualWorkoutLibrary().find(exercise => exercise.id === exerciseId)
-    if (!catalog || !catalog.available_variants.some(variant => variant.id === variantId)) {
+    const selectedVariant = catalog?.available_variants.find(variant => variant.id === variantId)
+    if (!catalog || !selectedVariant || sessionContext && !isReferenceSessionVariant(catalog, variantId, sessionContext.equipment)) {
       return resolved({ status: 'unavailable', message: 'The selected catalog exercise or variant is unavailable.' }, 400)
     }
     const reads = checkedReadOnlyClient(supabase)
@@ -78,18 +82,22 @@ export async function resolveSelectedPrescription({ supabase, user, clientId, ex
     if (!initialResult.data) return resolved({ status: 'unavailable', message: 'Recommendation unavailable. Complete your saved member assessment.', setupHref: '/dashboard/assessment/start' })
     if (!strengthResult.data) return resolved({ status: 'unavailable', message: 'Recommendation unavailable. Complete your strength assessment.', setupHref: '/dashboard/assessment/start2' })
     const effectiveClient = { ...client, ...(profileResult.data || {}), client_id: client.client_id, auth_user_id: user.id, program: client.program }
+    // Request-scoped calculation view only. No saved profile or assessment is
+    // changed when a member explicitly selects equipment available today.
+    const calculationClient = sessionContext ? { ...effectiveClient, equipment_access: [sessionContext.equipment] } : effectiveClient
     if (safetyFlags.length || evaluateSafetyEscalation({ client: effectiveClient, initialAssessment: initialResult.data.data, strengthAssessment: strengthResult.data.data }).length) {
       return resolved({ status: 'blocked', message: 'Review your existing safety and recovery guidance before training.', setupHref: '/dashboard/recovery' })
     }
-    const base = selectedFounderBase({ client: effectiveClient, initialAssessment: initialResult.data, strengthAssessment: strengthResult.data, catalogExercise: catalog, variantId: variantId, phoenixTrack })
+    const base = selectedFounderBase({ client: calculationClient, initialAssessment: initialResult.data, strengthAssessment: strengthResult.data, catalogExercise: catalog, variantId, phoenixTrack, equipmentContext: sessionContext || undefined })
     if (!base) return resolved({ status: 'unavailable', message: 'Recommendation unavailable. This selection needs an established template, supported equipment and valid assessment inputs.', setupHref: '/dashboard/assessment/start2' })
-    const dailyPlan = await getDailyExecutionPlan({ supabase: reads, client: effectiveClient })
-    const inputs = await loadProgramLogicInputs({ supabase: reads, user, client: effectiveClient, program: client.program,
-      dailyPlan, cycleStatus: getCycleStatus(effectiveClient), cycleAdjustment: getCycleTrainingAdjustment(effectiveClient),
+    const dailyPlan = await getDailyExecutionPlan({ supabase: reads, client: calculationClient })
+    const inputs = await loadProgramLogicInputs({ supabase: reads, user, client: calculationClient, program: client.program,
+      dailyPlan, cycleStatus: getCycleStatus(calculationClient), cycleAdjustment: getCycleTrainingAdjustment(calculationClient),
       plannedWorkout: { day_name: 'Selected exercise', day_intent: 'training', exercises: [base.exercise] },
       plannedExercises: [base.exercise], monthlyAssessmentsDueCount: 0 })
     reads.assertSuccessfulReads()
-    return resolved(buildSelectedPrescription({ inputs, exercise: base.exercise, variantId: variantId }))
+    const response = buildSelectedPrescription({ inputs, exercise: base.exercise, variantId })
+    return resolved(response.status === 'available' && sessionContext ? { ...response, prescription: { ...response.prescription, equipmentContext: sessionContext } } : response)
   } catch {
     return resolved({ status: 'unavailable', message: 'Recommendation unavailable. Your saved inputs could not be confirmed. Retry when connected.' }, 503)
   }

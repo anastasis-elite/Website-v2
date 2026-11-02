@@ -5,6 +5,7 @@ import { getDailyTraining, type DailyTraining } from './dailyTraining'
 import { buildTodayActivities, presentTodayActivities, type TodayActivityId } from './todayActivities'
 import { getLocalDaypart } from '@/lib/timezone'
 import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
+import { getRecoveryPresentation } from '@/lib/recovery/todayCompletion'
 
 export type DataAvailability = 'not_logged' | 'partial' | 'confirmed' | 'completed'
 export type DailyRecommendationAction = {
@@ -24,17 +25,20 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
     logic.nutrition.calories.percent >= 95 && logic.nutrition.protein.percent >= 90 ? 'confirmed' : 'partial'
   const water: DataAvailability = logic.hydration.status === 'needs_input' ? 'not_logged' :
     logic.hydration.remaining <= 0 ? 'completed' : 'partial'
-  // The hydration engine uses the member's waking schedule and timezone, with
-  // its existing pacing tolerance. Being on pace pauses prompts, not the goal.
-  const waterOnPace = water === 'partial' && logic.hydration.consumed > 0 &&
-    ['on_pace', 'ahead_of_pace'].includes(logic.hydration.paceState)
   const workout: DataAvailability = logic.execution.workoutComplete ? 'completed' : logic.execution.workoutInProgress ? 'partial' : 'not_logged'
   const checkIn: DataAvailability = logic.assessments.dailyCompleted ? 'completed' : 'not_logged'
   const emptyWorkoutDay = ['rest', 'unavailable'].includes(logic.workoutDecision.assignedWorkout?.workout_state)
   const today = buildTodayActivities(logic, schedule)
   const presented = presentTodayActivities(logic, schedule, today.activities)
+  const recovery = logic.execution.recoveryEvidence ? getRecoveryPresentation({ evidence: logic.execution.recoveryEvidence, schedule }) : null
+  const recoveryDue = presented.some(activity => activity.id === 'recovery')
   const nutritionPacing = logic.nutrition.pacing
   const nutritionDue = nutritionPacing ? presented.some(activity => activity.id === 'nutrition') : food === 'not_logged'
+  // The same presentation decision drives the water card and recommendation.
+  // Readiness pacing tolerances remain in their existing hydration engine.
+  const waterPacing = logic.hydration.presentationPacing
+  const waterDue = presented.some(activity => activity.id === 'water')
+  const waterActionAvailability = water === 'completed' && waterPacing && waterPacing.state !== 'complete' ? 'partial' : water
   const guideId = (id: string): TodayActivityId | undefined => id === 'food-input' ? 'nutrition' :
     ['check-in', 'water', 'schedule', 'workout', 'recovery'].includes(id) ? id as TodayActivityId : undefined
   const held = (id: string) => {
@@ -43,10 +47,14 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   }
   const eventActivityId = (category: string) => category === 'check_in' ? 'check-in' : category === 'hydration' ? 'water' :
     category === 'meal' || category === 'nutrition' ? 'nutrition' : category === 'workout' || category === 'recovery' ? category : undefined
-  const eventUnavailable = (category: string) => {
+  const eventUnavailable = (category: string, eventId?: string) => {
     if (category === 'workout' && emptyWorkoutDay) return true
-    if (category === 'hydration' && waterOnPace) return true
+    if (category === 'hydration') return !waterDue || held('water')
     if (category === 'meal' || category === 'nutrition') return !nutritionDue || held('food-input')
+    if (category === 'recovery' && recovery) {
+      if (recovery.state === 'no_event') return true
+      return !recoveryDue || held('recovery') || recovery.state !== 'due' || eventId !== recovery.eventId
+    }
     const id = eventActivityId(category)
     const activity = today.activities.find(item => item.id === id)
     return Boolean(id && (held(id) || activity?.status === 'completed'))
@@ -54,7 +62,7 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   const candidates: DailyRecommendationAction[] = []
   const add = (id: string, category: string, title: string, reason: string, href: string, availability: DataAvailability, eventId?: string) => {
     if (id !== 'safety' && held(id)) return
-    if (eventId && eventUnavailable(category)) return
+    if (eventId && eventUnavailable(category, eventId)) return
     if (schedule.dailyGuide && guideId(id) && !today.activities.some(activity => activity.id === guideId(id))) return
     candidates.push({ id, category, title, reason, href, availability, eventId, completed: availability === 'completed' })
   }
@@ -67,7 +75,7 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   if (!logic.workoutDecision.canTrain && !logic.symptoms.redFlag && !emptyWorkoutDay) {
     add('safety', 'recovery', 'Review today’s recovery guidance', logic.recoveryStatus.reasoning, '/dashboard/recovery', 'confirmed')
   }
-  const active = schedule.events.find(e => !eventUnavailable(e.event_type) && e.flexibility_type === 'fixed' && e.status === 'scheduled' &&
+  const active = schedule.events.find(e => !eventUnavailable(e.event_type, e.id) && e.flexibility_type === 'fixed' && e.status === 'scheduled' &&
     new Date(e.adjusted_start_at || e.start_at) <= new Date(schedule.now) && new Date(e.adjusted_end_at || e.end_at) > new Date(schedule.now))
   if (active) add(active.id, active.event_type, active.title, `${active.source_label ? active.source_label + '. ' : ''}This is your current commitment. Keep your other actions flexible.`, getActionRouteForEvent(active, logic.program), 'confirmed', active.id)
 
@@ -75,8 +83,8 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
     add('food-input', 'nutrition', nutritionPacing ? 'Log what you’ve had' : logic.program === 'ember' ? 'Review your next meal' : 'Log your latest meal',
       nutritionPacing?.prompt || (logic.program === 'ember' ? 'Your nutrition guidance is ready when you need it.' : 'No food is logged today. That does not tell us what you’ve eaten.'), mealEntryHref(logic.program), food)
   }
-  if (water !== 'completed' && !waterOnPace && !schedule.events.some(e => e.event_type === 'hydration' && e.status === 'skipped')) add('water', 'hydration', water === 'not_logged' ? 'Log the water you’ve had' : 'Have a little water when it suits you',
-    water === 'not_logged' ? 'Water intake is not logged yet. Add what you’ve had so the plan can use it.' : `${Math.round(logic.hydration.consumed)} oz logged. Keep drinking steadily; you do not need to catch up all at once.`, WATER_ENTRY_HREF, water)
+  if (waterDue) add('water', 'hydration', water === 'not_logged' ? 'Log the water you’ve had' : 'Water logging',
+    waterPacing?.prompt || (water === 'not_logged' ? 'Water intake is not logged yet. Add what you’ve had so the plan can use it.' : `${Math.round(logic.hydration.consumed)} oz logged. Follow your individual fluid guidance.`), WATER_ENTRY_HREF, waterActionAvailability)
   const scheduleReview = today.activities.find(activity => activity.id === 'schedule')
   if (schedule.dailyGuide && scheduleReview?.status !== 'completed' && schedule.events.some(event => !event.suggested &&
     ['work', 'school', 'appointment', 'medical', 'dental', 'personal', 'household', 'custom'].includes(event.event_type) && !['cancelled', 'skipped'].includes(event.status))) {
@@ -88,12 +96,14 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
       `/dashboard/program/${logic.program}/workout`, workout)
   }
   const evening = getLocalDaypart(new Date(schedule.now), schedule.timezone) === 'evening'
-  if ((workout === 'completed' || evening || logic.capacityStatus?.status === 'low_capacity') && !logic.execution.recoveryComplete) add('recovery', 'recovery', 'Choose a recovery moment',
+  const recoveryEventDue = recovery?.state === 'due'
+  const unscheduledRecoveryDue = (!recovery || recovery.state === 'no_event') && !logic.execution.recoveryComplete
+  if (recoveryDue && !candidates.some(action => action.category === 'recovery') && (recoveryEventDue || (workout === 'completed' || evening || logic.capacityStatus?.status === 'low_capacity') && unscheduledRecoveryDue)) add('recovery', 'recovery', 'Choose a recovery moment',
     workout === 'completed' ? `A completed workout is recorded${logic.execution.completedWorkoutTitle ? `: ${logic.execution.completedWorkoutTitle}` : ' today'}. Recovery options are available.` : 'Choose from the recovery options already available in your plan.', '/dashboard/recovery', 'confirmed')
   // Commitments and overdue items remain actionable even when food is not logged.
   const next = schedule.nextActionableEvent
   if (next && !['completed','cancelled','skipped'].includes(next.status) && !next.suggested && !['hydration','meal'].includes(next.event_type) && !candidates.some(c => c.eventId === next.id) &&
-    !eventUnavailable(next.event_type) && !(next.event_type === 'workout' && new Date(next.adjusted_start_at || next.start_at) > new Date(schedule.now) && next.adjusted_start_at)) {
+    !eventUnavailable(next.event_type, next.id) && !(next.event_type === 'workout' && new Date(next.adjusted_start_at || next.start_at) > new Date(schedule.now) && next.adjusted_start_at)) {
     const overdue = new Date(next.adjusted_end_at || next.end_at) <= new Date(schedule.now)
     const action = { id: next.id, category: next.event_type, title: next.title, reason: schedule.nextAction?.id === next.id ? schedule.nextAction.reason : overdue ? 'This item is overdue. Review it, reschedule it, or record its outcome.' : 'This fits the next part of your schedule.',
       href: getActionRouteForEvent(next, logic.program), availability: 'confirmed' as const, eventId: next.id, completed: false }
