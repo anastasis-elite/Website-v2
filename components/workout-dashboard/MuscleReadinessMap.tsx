@@ -160,6 +160,8 @@ export default function MuscleReadinessMap({
   highlightedMuscleIds = [],
   selectedMuscleId,
   onSelectMuscle,
+  onChooseExercises,
+  exerciseSelectionDisabled = false,
   heading = 'Readiness Map',
   eyebrow = 'Muscle Readiness',
   bilateralSelection = false,
@@ -168,6 +170,8 @@ export default function MuscleReadinessMap({
   highlightedMuscleIds?: MuscleId[]
   selectedMuscleId?: MuscleId | null
   onSelectMuscle?: (muscleId: MuscleId) => void
+  onChooseExercises?: (muscleId: MuscleId) => void
+  exerciseSelectionDisabled?: boolean
   heading?: string
   eyebrow?: string
   bilateralSelection?: boolean
@@ -176,21 +180,24 @@ export default function MuscleReadinessMap({
   const [hoveredId, setHoveredId] = useState<MuscleId | null>(null)
   const [view, setView] = useState<'front' | 'posterior'>(() => MUSCLE_REGIONS.find(region => region.id === selectedMuscleId)?.view || 'front')
   const byId = useMemo(() => new Map(readiness.map((item) => [item.muscleId, item])), [readiness])
-  const selectedId = selectedMuscleId ?? internalSelectedId
+  // In the combined map, inspection stays per side. The exercise choice is a
+  // separate action and can still highlight the bilateral selection.
+  const selectedId = onChooseExercises ? internalSelectedId : selectedMuscleId ?? internalSelectedId
   const selectedDefinition = MUSCLE_REGIONS.find(region => region.id === selectedId)
   const visibleSelectedId = selectedDefinition && muscleRegionIsVisible(selectedDefinition, view) ? selectedId : null
   const activeId = hoveredId || visibleSelectedId
   const activeDefinition = activeId ? MUSCLE_REGIONS.find((region) => region.id === activeId) : null
   const activeCanonical = activeDefinition?.canonicalMuscles[0]
-  const cautiousState = bilateralSelection && activeCanonical ? getReadinessForCanonicalMuscle(readiness, activeCanonical) : null
-  const active = cautiousState ? readiness.filter(item => item.state === cautiousState && MUSCLE_REGIONS.find(region => region.id === item.muscleId)?.canonicalMuscles.includes(activeCanonical!))
-    .sort((left, right) => (left.readinessScore ?? Infinity) - (right.readinessScore ?? Infinity))[0] || { muscleId: activeId!, state: cautiousState } : activeId ? byId.get(activeId) : null
-  const selectedIds = new Set(selectedId ? bilateralSelection ? getBilateralMuscleIds(selectedId) : [selectedId] : [])
+  const cautiousState = !onChooseExercises && bilateralSelection && activeCanonical ? getReadinessForCanonicalMuscle(readiness, activeCanonical) : null
+  const active: MuscleReadiness | null = cautiousState ? readiness.filter(item => item.state === cautiousState && MUSCLE_REGIONS.find(region => region.id === item.muscleId)?.canonicalMuscles.includes(activeCanonical!))
+    .sort((left, right) => (left.readinessScore ?? Infinity) - (right.readinessScore ?? Infinity))[0] || { muscleId: activeId!, state: cautiousState } : activeId ? byId.get(activeId) || { muscleId: activeId, state: 'unknown' as const } : null
+  const selectedIds = new Set(selectedId ? !onChooseExercises && bilateralSelection ? getBilateralMuscleIds(selectedId) : [selectedId] : [])
+  const exerciseSelectedIds = new Set(onChooseExercises && selectedMuscleId ? getBilateralMuscleIds(selectedMuscleId) : [])
   const highlighted = new Set(highlightedMuscleIds)
   const activePresentation = active ? getMuscleReadinessPresentation(active.state) : null
 
   function selectMuscle(regionId: MuscleId) {
-    if (onSelectMuscle) {
+    if (!onChooseExercises && onSelectMuscle) {
       onSelectMuscle(regionId)
       return
     }
@@ -225,7 +232,7 @@ export default function MuscleReadinessMap({
           {MUSCLE_REGIONS.filter(region => muscleRegionIsVisible(region, view)).map((region) => {
             const item = byId.get(region.id)
             const state = item?.state || 'unknown'
-            const isActive = selectedIds.has(region.id) || (bilateralSelection && activeId ? getBilateralMuscleIds(activeId).includes(region.id) : activeId === region.id)
+            const isActive = selectedIds.has(region.id) || exerciseSelectedIds.has(region.id) || (!onChooseExercises && bilateralSelection && activeId ? getBilateralMuscleIds(activeId).includes(region.id) : activeId === region.id)
             const isHighlighted = highlighted.has(region.id) || Boolean(item?.exercisesToday?.length)
             const geometry = view === 'posterior' ? posteriorMuscleMapGeometry[region.id] : muscleMapGeometry[region.id]
             if (!geometry) return null
@@ -239,6 +246,7 @@ export default function MuscleReadinessMap({
                 aria-label={`${region.label}: ${stateLabels[state]}`}
                 aria-pressed={selectedIds.has(region.id)}
                 data-muscle-id={region.id}
+                data-exercise-selected={exerciseSelectedIds.has(region.id) ? 'true' : undefined}
                 onMouseEnter={() => setHoveredId(region.id)}
                 onMouseLeave={() => setHoveredId(null)}
                 onFocus={() => setHoveredId(region.id)}
@@ -260,12 +268,12 @@ export default function MuscleReadinessMap({
       <div className="workout-muscle-detail" aria-live="polite">
         {active && activeDefinition ? (
           <>
-            <strong>{bilateralSelection && activeDefinition.side !== 'center' ? `${activeDefinition.label.replace(/^(Left|Right) /, '')} · Both sides` : activeDefinition.label}</strong>
-            <span>{active.readinessScore ? `${active.readinessScore}% readiness estimate · ` : ''}{stateLabels[active.state]}</span>
+            <strong>{!onChooseExercises && bilateralSelection && activeDefinition.side !== 'center' ? `${activeDefinition.label.replace(/^(Left|Right) /, '')} · Both sides` : activeDefinition.label}</strong>
+            <span>{Number.isFinite(active.readinessScore) ? `${active.readinessScore}% readiness estimate · ` : ''}{stateLabels[active.state]}</span>
             {formatLastTrained(active.lastTrainedAt) ? <small>Last trained: {formatLastTrained(active.lastTrainedAt)}</small> : null}
-            {active.exercisesToday?.length ? <small>Today: {active.exercisesToday.slice(0, 2).join(', ')}</small> : null}
+            {active.exercisesToday?.length ? <small>Today: {active.exercisesToday.join(', ')}</small> : null}
             {activePresentation ? <small>{activePresentation.guidance}</small> : null}
-            {active.reasons?.[0] ? <small>{active.reasons[0]}</small> : null}
+            {active.reasons?.map((reason, index) => <small key={`${index}:${reason}`}>{reason}</small>)}
           </>
         ) : (
           <>
@@ -274,6 +282,14 @@ export default function MuscleReadinessMap({
           </>
         )}
       </div>
+      {onChooseExercises ? <div className="workout-map-exercise-choice">
+        {visibleSelectedId && selectedDefinition ? <button type="button" className="manual-primary-button" disabled={exerciseSelectionDisabled}
+          onClick={() => onChooseExercises(visibleSelectedId)}>
+          Choose exercises for {selectedDefinition.label.replace(/^(Left|Right) /, '')}{selectedDefinition.side === 'center' ? '' : ' · both sides'}
+        </button> : <p>Select a muscle to inspect its readiness, then choose exercises.</p>}
+        {exerciseSelectionDisabled ? <p role="status">Your active exercise stays open. Inspect readiness here; finish that exercise before choosing another.</p>
+          : <p>Exercise choices use the more cautious readiness of both matching sides.</p>}
+      </div> : null}
     </section>
   )
 }

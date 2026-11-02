@@ -313,7 +313,7 @@ test('carousel follows native horizontal scrolling and reserves keyboard navigat
 test('manual builder resumes the same exercise occurrence after reload and picks the selected equipment', async () => {
   const storage = new Map(), builderProps = { ...props([]), recommendedDayName: 'Recommendation', recommendedExercises: [], memberEquipment: ['dumbbell'], readiness: [] }
   const app = mount(Builder, builderProps, storage); await app.flush()
-  nodes(app.tree, n => typeof n.props?.onSelectMuscle === 'function')[0].props.onSelectMuscle('left_quadriceps'); app.render()
+  nodes(app.tree, n => typeof n.props?.onChooseExercises === 'function')[0].props.onChooseExercises('left_quadriceps'); app.render()
   const dumbbell = button(app.tree, 'Dumbbell')
   assert.ok(dumbbell, content(app.tree))
   dumbbell.props.onClick(); app.render()
@@ -332,7 +332,7 @@ test('manual builder resumes the same exercise occurrence after reload and picks
 test('manual builder clears another client or tier session instead of copying it into a new draft key', async () => {
   const storage = new Map(), initialProps = { ...props([]), recommendedDayName: 'Recommendation', recommendedExercises: [], memberEquipment: ['bodyweight'], readiness: [] }
   const app = mount(Builder, initialProps, storage); await app.flush()
-  nodes(app.tree, n => typeof n.props?.onSelectMuscle === 'function')[0].props.onSelectMuscle('left_quadriceps'); app.render()
+  nodes(app.tree, n => typeof n.props?.onChooseExercises === 'function')[0].props.onChooseExercises('left_quadriceps'); app.render()
   button(app.tree, 'Bodyweight').props.onClick(); app.render()
   nodes(app.tree, n => n.type === 'button' && content(n) !== 'Back')[0].props.onClick(); app.render()
   button(app.tree, 'Open').props.onClick(); app.render()

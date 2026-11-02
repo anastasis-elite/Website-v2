@@ -9,10 +9,7 @@ import WorkoutTracker from '@/components/WorkoutTracker'
 import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
 import WorkoutFeedback from '@/components/workout-feedback/WorkoutFeedback'
 import ManualWorkoutBuilder from '@/components/workout-dashboard/ManualWorkoutBuilder'
-import MuscleReadinessMap from '@/components/workout-dashboard/MuscleReadinessMap'
 import {
-  getMuscleIdsForExercise,
-  type MuscleId,
   type MuscleReadiness,
 } from '@/lib/workout/muscleReadiness'
 import type { ProgramTier, ProgramLogicOutput } from '@/lib/dashboard/logic/types'
@@ -148,11 +145,11 @@ function StrengthTab({ showOffer, endDate, logic }: { showOffer: boolean; endDat
   )
 }
 
-function RecoveryTab({ readiness, tier, highlightedMuscles }: { readiness: MuscleReadiness[]; tier: ProgramTier; highlightedMuscles: MuscleId[] }) {
+function RecoveryTab({ tier }: { tier: ProgramTier }) {
   return (
     <div data-testid="workout-recovery-tab" data-tier={tier}>
       <details className="phone-app-report"><summary>Heart-rate recovery · Unavailable</summary><p>No timestamped heart-rate stream or continuous exercise/rest intervals are connected to this session. Your recorded sets remain available. This screen does not establish a watch connection or a heart-rate readiness threshold.</p></details>
-      <MuscleReadinessMap readiness={readiness} highlightedMuscleIds={highlightedMuscles} />
+      <p>Inspect muscle readiness in the Manual workout map.</p>
     </div>
   )
 }
@@ -175,7 +172,6 @@ export default function WorkoutDashboard(props: Props) {
   const [tab, setTab] = useState<Tab>('progress')
   const [workoutMode, setWorkoutMode] = useState<'recommended' | 'manual'>('recommended')
   const [restoredPreferenceKey, setRestoredPreferenceKey] = useState<string | null>(null)
-  const [highlightedMuscles, setHighlightedMuscles] = useState<MuscleId[]>([])
   const preferenceKey = `aos-workout-view:v1:${props.clientId}:${props.program}`
   useEffect(() => {
     let stored = null
@@ -244,8 +240,6 @@ export default function WorkoutDashboard(props: Props) {
                 recommendedExercises={props.assignedExercises}
                 memberEquipment={props.memberEquipment}
                 readiness={props.muscleReadiness}
-                onExerciseFocus={setHighlightedMuscles}
-                onExerciseBlur={() => setHighlightedMuscles([])}
               />
             ) : props.showInteractiveWorkout ? (
               <WorkoutTracker
@@ -258,8 +252,6 @@ export default function WorkoutDashboard(props: Props) {
                 workoutSource="recommended"
                 plannedExercises={props.assignedExercises}
                 exercises={props.assignedExercises}
-                onExerciseFocus={(exercise) => setHighlightedMuscles(getMuscleIdsForExercise(exercise))}
-                onExerciseBlur={() => setHighlightedMuscles([])}
               />
             ) : (
               <WorkoutPreview exercises={props.assignedExercises} previewTitle={props.previewTitle} previewMessage={props.previewMessage} />
@@ -277,7 +269,7 @@ export default function WorkoutDashboard(props: Props) {
         <div id="workout-information-panel" role="tabpanel" aria-labelledby={`workout-tab-${tab}`}>
         {tab === 'progress' ? <ProgressTab logic={props.logic} exercises={props.assignedExercises} /> : null}
         {tab === 'strength' ? <StrengthTab showOffer={props.showStrengthAssessmentOffer} endDate={props.strengthAssessmentWindowEndDate} logic={props.logic} /> : null}
-        {tab === 'recovery' ? <RecoveryTab readiness={props.muscleReadiness} tier={props.program} highlightedMuscles={highlightedMuscles} /> : null}
+        {tab === 'recovery' ? <RecoveryTab tier={props.program} /> : null}
         {tab === 'history' ? <HistoryTab history={props.workoutHistory} timezone={props.timezone} /> : null}
         </div>
       </section>

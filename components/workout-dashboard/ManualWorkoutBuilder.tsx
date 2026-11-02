@@ -118,6 +118,7 @@ export default function ManualWorkoutBuilder({
   const [pendingExercise, setPendingExercise] = useState<ManualWorkoutExercise | null>(null)
   const dialog = useRef<HTMLDialogElement>(null)
   const dialogHeading = useRef<HTMLHeadingElement>(null)
+  const mapContainer = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLElement | SVGElement | null>(null)
   const requestRevision = useRef(0)
   const request = useRef<AbortController | null>(null)
@@ -172,6 +173,11 @@ export default function ManualWorkoutBuilder({
   const selectedMuscles = useMemo(() => regionToMuscles(selectedRegionId), [selectedRegionId])
   const primaryMuscle = selectedMuscles[0]
   const readinessSummary = primaryMuscle ? getReadinessSummaryForCanonicalMuscle(readiness, primaryMuscle) : null
+  const cautiousReadinessReasons = primaryMuscle ? readiness.flatMap(item => {
+    const region = MUSCLE_REGIONS.find(region => region.id === item.muscleId)
+    return item.state === readinessSummary?.state && region?.canonicalMuscles.includes(primaryMuscle)
+      ? (item.reasons || []).map(reason => `${region.label}: ${reason}`) : []
+  }) : []
   const catalogEquipment = useMemo(() => getAvailableEquipmentForMuscles(selectedMuscles), [selectedMuscles])
   const availableEquipment = useMemo(() => {
     const derived = catalogEquipment
@@ -204,6 +210,7 @@ export default function ManualWorkoutBuilder({
     onExerciseBlur?.()
   }
   function chooseRegion(regionId: MuscleId) {
+    if (step === 'logging' && activeExercise) return
     clearPending()
     trigger.current = document.activeElement as HTMLElement | SVGElement | null
     setSelectedRegionId(regionId); setSelectedEquipment(null); setEquipmentMode('saved'); setSelectedMovementFamily(null); setStep('equipment')
@@ -310,24 +317,33 @@ export default function ManualWorkoutBuilder({
           <strong>{isCardio(exercise) ? exercise.exercise : exercise.display_name}</strong><small>{String(exercise.completion_status || 'Saved')} · {summarizeExercise(exercise)}</small>
         </div></li>)}
       </ol> : null}
-      {step !== 'complete' ? <MuscleReadinessMap readiness={readiness} selectedMuscleId={selectedRegionId} bilateralSelection
-        onSelectMuscle={chooseRegion} heading="Choose muscle" eyebrow={trackingOnly ? 'Manual selection' : 'Readiness from your logs'} /> : null}
       <button type="button" className="manual-secondary-button" onClick={event => openCardio(event.currentTarget)}>Add cardio</button>
       {step === 'complete' ? <div className="manual-session-actions">
         <button type="button" className="manual-primary-button" onClick={() => resetSelection('muscle')}>Add another exercise</button>
         <button type="button" className="manual-secondary-button" onClick={() => resetSelection('complete')}>Finish workout</button>
       </div> : null}
     </>}
+    <div ref={mapContainer} className={styles.readinessMap} data-testid="manual-readiness-map">
+      <p className={styles.readinessNote}>Readiness is estimated from saved training and recovery records. Save your activity or return to this page to see updated records.</p>
+      <MuscleReadinessMap key={contextKey} readiness={readiness} selectedMuscleId={selectedRegionId}
+        highlightedMuscleIds={activeExercise ? getMuscleIdsForExercise(activeExercise) : []}
+        onChooseExercises={chooseRegion} exerciseSelectionDisabled={step === 'logging' && Boolean(activeExercise)}
+        heading="Readiness and exercises" eyebrow={trackingOnly ? 'Manual selection' : 'Readiness from your logs'} />
+    </div>
 
     <dialog id={dialogId} ref={dialog} className={styles.dialog} aria-labelledby={`${dialogId}-title`} aria-describedby={`${dialogId}-description`}
-      onCancel={event => { event.preventDefault(); dismissSelection() }} onClose={() => trigger.current?.focus()}>
+      onCancel={event => { event.preventDefault(); dismissSelection() }} onClose={() => {
+        const target = trigger.current
+        if (target && !('disabled' in target && target.disabled)) target.focus()
+        else mapContainer.current?.querySelector<SVGElement>(selectedRegionId ? `[data-muscle-id="${selectedRegionId}"]` : '[data-muscle-id]')?.focus()
+      }}>
       <header className={styles.header}><h2 ref={dialogHeading} tabIndex={-1} id={`${dialogId}-title`}>{step === 'cardio' ? 'Choose cardio' : `${firstMuscleLabel(selectedMuscles)} · ${step === 'equipment' ? 'Choose equipment' : 'Choose exercise'}`}</h2>
         <button type="button" className="manual-secondary-button" onClick={dismissSelection}>Close</button>
       </header>
       <p id={`${dialogId}-description`}>{step === 'cardio' ? 'Choose a cardio activity and record the duration you actually complete. No strength prescription, sets, reps or load are added.' : 'Choose available equipment, then an exercise. Both matching sides stay selected; record one weight for the exercise.'}</p>
       {!trackingOnly && readinessSummary ? <section className="manual-readiness-context" data-testid="manual-readiness-context">
         <span>{firstMuscleLabel(selectedMuscles)}</span><strong>{readinessSummary.label}</strong><small>{readinessSummary.guidance}</small>
-        {readinessSummary.reason ? <small>{readinessSummary.reason}</small> : null}
+        {cautiousReadinessReasons.map((reason, index) => <small key={`${index}:${reason}`}>{reason}</small>)}
       </section> : null}
       {step === 'equipment' ? <section className="manual-builder-section"><p className="manual-builder-label">Equipment</p>
         {equipmentMode === 'saved' ? <><p>Your saved equipment</p><div className="manual-equipment-row" data-testid="manual-equipment-filter">

@@ -91,7 +91,7 @@ function harness(overrides = {}, initialStorage = new Map()) {
     library: load('lib/workout/manualWorkout.ts'), anatomy: load('lib/workout/muscleReadiness.ts'),
     get props() { return props }, get focusReturns() { return activeElement.focusReturns }, get dialog() { render();return dialogNode },
     get draftKey() { return `aos-manual-builder:v1:${props.clientId}:${props.program}:2026-11-02` },
-    open(region = 'left_pectoralis_major') { map().props.onSelectMuscle(region);render() },
+    open(region = 'left_pectoralis_major') { map().props.onChooseExercises(region);render() },
     openCardio() { button('Add cardio').props.onClick({ currentTarget: activeElement });render() },
     chooseEquipment(name = 'Dumbbell') { button(name).props.onClick();render() },
     choose(index = 0) { const result = resultButtons()[index].props.onClick();render();return result },
