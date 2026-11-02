@@ -7,6 +7,7 @@ import { AOSButton } from '@/components/aos-ui/AOSButton'
 import { AOSChip } from '@/components/aos-ui/AOSChip'
 import PostureLandmarkEditor from '@/components/PostureLandmarkEditor'
 import { POSTURE_VIEW_LABELS, postureInstructions, type AssessmentView } from '@/lib/posture/landmarks'
+import type { ManualLandmarkConfirmation } from '@/lib/posture/manualLandmarks'
 
 type PhotoKey = 'front' | 'back' | 'left' | 'right'
 type UploadedView = {
@@ -70,6 +71,7 @@ export default function AssessmentPhotoUpload({
   const [uploadedRecordId, setUploadedRecordId] = useState<string | null>(null)
   const [uploadedViews, setUploadedViews] = useState<UploadedView[]>([])
   const [activeViewIndex, setActiveViewIndex] = useState(0)
+  const [confirmedViews, setConfirmedViews] = useState<Partial<Record<AssessmentView, boolean>>>({})
 
   useEffect(()=>()=>{Object.values(previews).forEach((preview)=>{if(preview)URL.revokeObjectURL(preview)})},[previews])
 
@@ -118,6 +120,7 @@ export default function AssessmentPhotoUpload({
         setUploadedRecordId(data.record?.id || null)
         setUploadedViews(views)
         setActiveViewIndex(0)
+        setConfirmedViews({})
         setMessage(
           views.length
             ? 'Photos uploaded. Confirm each view before continuing.'
@@ -152,13 +155,19 @@ export default function AssessmentPhotoUpload({
     }
   }
 
-  function handleViewConfirmed() {
+  function handleViewConfirmed(confirmation: ManualLandmarkConfirmation) {
+    const activeView = uploadedViews[activeViewIndex]
+    if (!activeView) return
+    const completed = { ...confirmedViews, [activeView.view]: confirmation.complete }
+    setConfirmedViews(completed)
     if (activeViewIndex + 1 < uploadedViews.length) {
       setActiveViewIndex((index) => index + 1)
       return
     }
 
-    setMessage('Posture landmarks confirmed.')
+    setMessage(uploadedViews.every(item => completed[item.view])
+      ? 'Manual posture landmarks confirmed for each uploaded view.'
+      : 'Manual posture landmarks saved. Some points remain unplaced and unknown.')
     setUploadedViews([])
     setUploadedRecordId(null)
     setActiveViewIndex(0)
@@ -173,16 +182,17 @@ export default function AssessmentPhotoUpload({
         <div className="aos-posture-progress">
           <p className="aos-eyebrow">Posture review</p>
           <h2>Confirm {POSTURE_VIEW_LABELS[activeUploadedView.view]} landmarks</h2>
-          <p>Review the estimated landmarks and move any point that does not line up with your body in the photo.</p>
+          <p>Select a named landmark, then place it on your photo. Review the points you place and leave anything you cannot identify unknown.</p>
           <div className="aos-posture-view-steps" aria-label="Posture photo views">
             {uploadedViews.map((item, index) => (
-              <span key={item.path} className={index === activeViewIndex ? 'is-active' : index < activeViewIndex ? 'is-complete' : ''}>
-                {POSTURE_VIEW_LABELS[item.view]}
+              <span key={item.path} className={index === activeViewIndex ? 'is-active' : confirmedViews[item.view] ? 'is-complete' : index < activeViewIndex ? 'is-partial' : ''}>
+                {POSTURE_VIEW_LABELS[item.view]}{index < activeViewIndex && !confirmedViews[item.view] ? ' · partial' : ''}
               </span>
             ))}
           </div>
         </div>
         <PostureLandmarkEditor
+          key={`${uploadedRecordId}:${activeUploadedView.view}:${activeUploadedView.path}`}
           assessmentPhotoId={uploadedRecordId}
           view={activeUploadedView.view}
           imageUrl={activeUploadedView.signedUrl}

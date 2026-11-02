@@ -91,10 +91,6 @@ function exerciseDose(exercise: AssignedExercise) {
   return `${dose.kind === 'strength' ? `${dose.sets} sets · ` : ''}${dose.prescribed || 'Choose a comfortable amount'} ${dose.metric}${dose.weight > 0 ? ` · ${dose.weight} ${dose.unit}` : ''}`
 }
 
-function titleCaseMuscle(value: string) {
-  return value.replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase())
-}
-
 function formatAssessmentEnd(date?: string | null) {
   if (!date) return null
   return new Date(`${date}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
@@ -152,23 +148,11 @@ function StrengthTab({ showOffer, endDate, logic }: { showOffer: boolean; endDat
   )
 }
 
-function RecoveryTab({ readiness, tier }: { readiness: MuscleReadiness[]; tier: ProgramTier }) {
-  const rows = readiness
-    .filter((item) => item.state !== 'unknown' || item.exercisesToday?.length)
-    .slice(0, 8)
-
+function RecoveryTab({ readiness, tier, highlightedMuscles }: { readiness: MuscleReadiness[]; tier: ProgramTier; highlightedMuscles: MuscleId[] }) {
   return (
     <div data-testid="workout-recovery-tab" data-tier={tier}>
       <details className="phone-app-report"><summary>Heart-rate recovery · Unavailable</summary><p>No timestamped heart-rate stream or continuous exercise/rest intervals are connected to this session. Your recorded sets remain available. This screen does not establish a watch connection or a heart-rate readiness threshold.</p></details>
-      <div className="workout-recovery-table">
-      {rows.length ? rows.map((item) => (
-        <article key={item.muscleId}>
-          <span>{titleCaseMuscle(item.muscleId)}</span>
-          <strong>{item.state === 'unknown' ? 'Not enough data' : titleCaseMuscle(item.state)}</strong>
-          <small>{item.reasons?.[0] || 'Tracking will refine as logs build.'}</small>
-        </article>
-      )) : <p className="tier-calendar-empty">Not enough muscle-specific recovery data yet.</p>}
-      </div>
+      <MuscleReadinessMap readiness={readiness} highlightedMuscleIds={highlightedMuscles} />
     </div>
   )
 }
@@ -207,9 +191,6 @@ export default function WorkoutDashboard(props: Props) {
   return (
     <section className="workout-dashboard-workspace" data-tier={props.program}>
       {props.hasSafetyFlags ? <SafetyEscalationNotice flags={props.safetyFlags} embedded /> : null}
-      <div className="workout-dashboard-row">
-        <details className="daily-disclosure"><summary>Muscle readiness details</summary><MuscleReadinessMap readiness={props.muscleReadiness} highlightedMuscleIds={highlightedMuscles} /></details>
-
         <section className="workout-current-panel" data-testid="today-workout-panel">
           <div className="tier-panel-heading">
             <div className="workout-panel-title">
@@ -285,8 +266,6 @@ export default function WorkoutDashboard(props: Props) {
             )}
           </div>
         </section>
-      </div>
-
       <section className="tier-info-panel workout-info-panel" data-testid="workout-toggle-panel">
         <div className="tier-tab-list" role="tablist" aria-label="Workout information">
           {(['progress', 'strength', 'recovery', 'history'] as Tab[]).map((item) => (
@@ -298,7 +277,7 @@ export default function WorkoutDashboard(props: Props) {
         <div id="workout-information-panel" role="tabpanel" aria-labelledby={`workout-tab-${tab}`}>
         {tab === 'progress' ? <ProgressTab logic={props.logic} exercises={props.assignedExercises} /> : null}
         {tab === 'strength' ? <StrengthTab showOffer={props.showStrengthAssessmentOffer} endDate={props.strengthAssessmentWindowEndDate} logic={props.logic} /> : null}
-        {tab === 'recovery' ? <RecoveryTab readiness={props.muscleReadiness} tier={props.program} /> : null}
+        {tab === 'recovery' ? <RecoveryTab readiness={props.muscleReadiness} tier={props.program} highlightedMuscles={highlightedMuscles} /> : null}
         {tab === 'history' ? <HistoryTab history={props.workoutHistory} timezone={props.timezone} /> : null}
         </div>
       </section>

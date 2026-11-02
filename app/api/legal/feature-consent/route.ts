@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { FEATURE_CONSENT_TYPES, type FeatureConsentType } from '@/lib/legal/config'
+import { ACTIVE_FEATURE_CONSENT_TYPES, FEATURE_CONSENT_TYPES, type FeatureConsentType } from '@/lib/legal/config'
 import { authorizeComplianceOperation, ComplianceAccessError } from '@/lib/legal/complianceContext'
 
 export async function POST(request: Request) {
@@ -10,6 +10,10 @@ export async function POST(request: Request) {
     if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: 'Invalid feature consent event.' }, { status: 400 })
     if (!FEATURE_CONSENT_TYPES.includes(body.consentType as FeatureConsentType) || typeof body.granted !== 'boolean') {
       return NextResponse.json({ error: 'Invalid feature consent event.' }, { status: 400 })
+    }
+    // Explicit withdrawals remain possible for historical purposes; no new grant.
+    if (!(ACTIVE_FEATURE_CONSENT_TYPES as readonly string[]).includes(body.consentType) && body.granted) {
+      return NextResponse.json({ error: 'This consent purpose has been retired.' }, { status: 409 })
     }
     const { user, client, admin } = await authorizeComplianceOperation(supabase,
       body.userId === undefined && body.user_id === undefined ? undefined : String(body.userId ?? body.user_id),

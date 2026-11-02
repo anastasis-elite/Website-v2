@@ -14,6 +14,7 @@ const recommendations = await importTs('lib/dashboard/dailyRecommendation.ts')
 const timezone = await importTs('lib/timezone.ts')
 const scheduleTime = await importTs('lib/schedule/time.ts')
 const recoveryPresentation = await importTs('lib/recovery/todayCompletion.ts')
+const streakProgress = await importTs('lib/dashboard/logic/streakRequirementProgress.ts')
 const entitlements = await importTs('lib/entitlements.ts')
 const scheduleRefreshCalls = []
 const Link = ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children)
@@ -28,6 +29,7 @@ function component(path, extra = {}, exportName = 'default') {
     '@/lib/schedule/client': { useDailyScheduleRefresh(...args) { scheduleRefreshCalls.push(args) } },
     '@/lib/schedule/time': scheduleTime,
     '@/lib/recovery/todayCompletion': recoveryPresentation,
+    '@/lib/dashboard/logic/streakRequirementProgress': streakProgress,
     '@/lib/analytics': { trackEvent() {} },
     '@/lib/analytics/todayJourney': { recordTodayActionOpened() {}, recordTodayActionCompletions() {} },
     '@/lib/timezone': timezone,
@@ -35,7 +37,8 @@ function component(path, extra = {}, exportName = 'default') {
   return module.exports[exportName]
 }
 const ActionArrow = component('components/ActionArrow.tsx')
-const Today = component('components/program-dashboard/GuidedToday.tsx', { '@/components/ActionArrow': ActionArrow })
+const StreakRequirementsCard = component('components/program-dashboard/StreakRequirementsCard.tsx')
+const Today = component('components/program-dashboard/GuidedToday.tsx', { '@/components/ActionArrow': ActionArrow, '@/components/program-dashboard/StreakRequirementsCard': StreakRequirementsCard })
 const PhoneAppCard = component('components/phone-app/PhoneAppFrame.tsx', { '@/components/ActionArrow': ActionArrow, './phone-app.css': {} }, 'PhoneAppCard')
 const StreakBadge = component('components/program-dashboard/TodayStreakBadge.tsx', { './TodayPlanTheme.module.css': { streakBadge: 'today-streak-badge' } })
 const Header = component('components/program-dashboard/TodayDashboardHeader.tsx', { '@/components/program-dashboard/TodayStreakBadge': StreakBadge })
@@ -45,18 +48,24 @@ const Plan = component('components/program-dashboard/PlanOverview.tsx', {
   './TodayDashboardHeader': Header,
   './TodayPlanTheme.module.css': { surface: 'today-surface' },
 })
+const flame = (tier, completed = {}) => {
+  const requiredItems = { dailyCheckIn: true, hydration: true, nutrition: true, workoutOrMovement: true, recovery: tier === 'phoenix', sleep: false, customTasks: tier !== 'ember' }
+  const completedItems = Object.fromEntries(Object.keys(requiredItems).map(key => [key, completed[key] === true]))
+  const streakEligible = Object.keys(requiredItems).every(key => !requiredItems[key] || completedItems[key])
+  return { streakEligible, requirements: { date: '2026-10-13', programTier: tier, requiredItems, completedItems, streakEligible, completionScore: 0, resetMessage: null } }
+}
 const fixture = (tier = 'ignite') => ({ program: tier, client: { id: 'QA-ONLY', name: 'Maya' },
   capacityStatus: { status: 'moderate_capacity' }, assessments: { dailyCompleted: false },
   hydration: { status: 'needs_input', target: 80, remaining: 80, consumed: 0 },
   nutrition: { dataStatus: 'needs_input', calories: { percent: 0 }, protein: { percent: 0 } },
-  flameState: { requirements: { requiredItems: { dailyCheckIn: true, hydration: true, nutrition: true, workoutOrMovement: true, recovery: false } } },
+  flameState: flame(tier),
   execution: { workoutComplete: false, nutritionLogged: false, recoveryComplete: false },
   workout: { assigned: true, title: 'Assigned plan' }, workoutDecision: { canTrain: true, adjustmentLevel: 'level_0_full_plan', reasonForModification: 'Your assigned plan is available.' },
   symptoms: { redFlag: false }, recoveryStatus: { reasoning: 'Review existing guidance.' } })
 const schedule = () => ({ date: '2026-10-13', timezone: 'America/Chicago', now: '2026-10-13T13:00:00Z', events: [], nextActionableEvent: null, dailyGuide: { date: '2026-10-13', activities: {} } })
 const render = (logic, state = schedule()) => renderToStaticMarkup(React.createElement(Today, { logic, schedule: state }))
 
-test('compact Plan tiles are single image-and-content links with shared decorative SVG and unchanged destinations', () => {
+test('compact Plan tiles remain whole image-and-content links without arrows and with unchanged destinations', () => {
   for (const tier of ['ember', 'ignite', 'phoenix']) {
     const html = renderToStaticMarkup(React.createElement(Plan, { logic: fixture(tier), schedule: schedule() }))
     const cards = [...html.matchAll(/<a href="([^"]+)" class="plan-overview-card">([\s\S]*?)<\/a>/g)]
@@ -68,15 +77,12 @@ test('compact Plan tiles are single image-and-content links with shared decorati
       assert.equal(cards[index][1], href)
       assert.match(cards[index][2], /<img[^>]+alt=""/)
       assert.ok(cards[index][2].includes(`<h3>${title}</h3>`))
-      assert.match(cards[index][2], /class="plan-overview-arrow"[^>]+stroke="currentColor"[^>]+aria-hidden="true"[^>]+focusable="false"/)
-      assert.equal((cards[index][2].match(/<circle\b/g) || []).length, 1)
+      assert.doesNotMatch(cards[index][2], /<svg\b|<circle\b|plan-overview-arrow/)
       assert.doesNotMatch(cards[index][2], /↗|<a\b|<button\b|Explore sessions|View targets|View recovery|Open schedule/)
     }
   }
-  const css = readFileSync('components/program-dashboard/TodayPlanTheme.module.css', 'utf8')
-  assert.match(css, /\.plan-overview-arrow\) \{[^}]*width: 28px; height: 28px;/)
-  assert.match(css, /\.plan-overview-arrow\) \{ width: 24px; height: 24px;/)
-  assert.doesNotMatch(css, /\.plan-overview-arrow\)[^{]*\{[^}]*border:/)
+  const source = readFileSync('components/program-dashboard/PlanOverview.tsx', 'utf8')
+  assert.doesNotMatch(source, /ActionArrow|plan-overview-arrow/)
 })
 
 test('Today shows a confirmed zero and nonzero streak, while Plan omits the badge', () => {
@@ -152,11 +158,12 @@ test('fresh Today has one primary action, persisted progress, and directly acces
     assert.match(html, /Start daily check-in/)
     for (const href of ['/dashboard/check-in', '/dashboard/nutrition?log=water', '/dashboard/schedule', `/dashboard/program/${tier}/workout`, '/dashboard/recovery']) assert.ok(html.includes(`href="${href}"`))
     assert.ok(html.includes(`href="/dashboard/nutrition${tier === 'ember' ? '' : '?log=meal'}"`))
-    assert.doesNotMatch(html, /breakfast|supplements|streak/i)
+    assert.doesNotMatch(html, /breakfast|supplements/i)
   }
 })
 test('recorded check-in advances the single action and hides its completed card while progress remains saved', () => {
   const logic = fixture(); logic.assessments.dailyCompleted = true
+  logic.flameState = flame(logic.program, { dailyCheckIn: true })
   const html = render(logic)
   assert.match(html, /aria-valuenow="1"/)
   assert.match(html, /data-activity-id="water" data-tutorial-id="dashboard-whats-next"/)
@@ -167,12 +174,13 @@ test('recorded check-in advances the single action and hides its completed card 
 
 test('submitted Schedule Structure disappears while its canonical assessment completion remains counted', () => {
   const logic = fixture(); logic.assessments.dailyCompleted = true
+  logic.flameState = flame(logic.program, { dailyCheckIn: true })
   const state = schedule()
   state.events = [{ id: 'schedule-structure:2026-10', event_type: 'assessment', source: 'system', title: 'Schedule Structure Assessment',
     action_route: '/dashboard/assessment/daily-structure?assessmentVersion=1', status: 'completed' }]
   const html = render(logic, state)
   assert.doesNotMatch(html, /data-activity-id="assessment:|Schedule Structure Assessment/)
-  assert.match(html, /aria-valuenow="2"/)
+  assert.match(html, /aria-valuenow="1"/)
   assert.equal(activities.buildTodayActivities(logic, state).activities.find(item => item.id === 'assessment:schedule-structure:2026-10').status, 'completed')
 })
 
@@ -181,13 +189,15 @@ test('all-complete Today keeps saved progress and a history route without comple
   logic.assessments.dailyCompleted = true
   logic.hydration = { status: 'ready', target: 80, remaining: 0, consumed: 80 }
   logic.execution = { workoutComplete: true, nutritionLogged: true, recoveryComplete: true }
+  logic.flameState = flame(logic.program, { dailyCheckIn: true, hydration: true, nutrition: true, workoutOrMovement: true, recovery: true, customTasks: true })
   logic.nutrition = { ...logic.nutrition, dataStatus: 'known', calories: { percent: 100 }, protein: { percent: 0 },
     pacing: { state: 'complete', nextRefreshAt: null, prompt: 'Your recorded calories meet today’s target.' } }
   state.dailyGuide.activities.schedule = { status: 'reviewed' }
   const html = render(logic, state)
   assert.doesNotMatch(html, /<li data-activity-id=/)
-  assert.match(html, /Your essentials are saved/)
-  assert.match(html, /aria-valuenow="4"/)
+  assert.match(html, /Your recorded activities are saved/)
+  assert.match(html, /aria-valuenow="5"/)
+  assert.match(html, /Your streak is secured for today/)
   assert.match(html, /href="\/dashboard\/progress">View progress/)
   assert.equal(activities.buildTodayActivities(logic, state).completed, 4)
 })

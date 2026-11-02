@@ -14,7 +14,7 @@ const { hasCurrentLegalAcceptance } = await importTs('lib/legal/hasCurrentLegalA
 const config = await importTs('lib/legal/config.ts')
 const userId = 'qa-consent-user', clientId = 'QA-CONSENT-CLIENT'
 const req = body => new Request('http://qa.test/api/legal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-const acknowledgments = { terms: true, privacy: true, healthDisclaimer: true, aiDisclaimer: true }
+const acknowledgments = { terms: true, privacy: true, healthDisclaimer: true }
 
 function requestDb({ signedIn = true, authError = null, owned = true, clientError = null } = {}) {
   const reads = []
@@ -101,7 +101,7 @@ test('legal acceptance preserves all required server versions and explicitly dec
   requestDb()
   const admin = privilegedDb()
   const response = await accept.POST(req({ ...acknowledgments, researchConsent: true,
-    featureConsents: { ai_recommendations: true, anonymized_research_use: false },
+    featureConsents: { anonymized_research_use: false },
     terms_version: 'client-controlled', source: 'dashboard_legal_gate',
   }))
   assert.equal(response.status, 200)
@@ -110,13 +110,21 @@ test('legal acceptance preserves all required server versions and explicitly dec
   assert.equal(legal.terms_version, config.TERMS_VERSION)
   assert.equal(legal.privacy_version, config.PRIVACY_VERSION)
   assert.equal(legal.health_disclaimer_version, config.HEALTH_DISCLAIMER_VERSION)
-  assert.equal(legal.ai_disclaimer_version, config.AI_DISCLAIMER_VERSION)
+  assert.equal(legal.ai_disclaimer_version, null, 'A retired document is never recorded as accepted.')
+  assert.ok(!admin.tables.feature_consent_events.some(row => row.consent_type === 'ai_recommendations'))
   assert.equal(legal.research_consent_version, null)
   assert.equal(legal.acceptance_source, 'dashboard_legal_gate')
   assert.equal(admin.tables.feature_consent_events.find(row => row.consent_type === 'anonymized_research_use').granted, false)
   assert.ok(admin.tables.feature_consent_events.every(row => row.metadata.client_id === clientId && row.metadata.program === 'ember'))
   requestDb()
   assert.equal(await hasCurrentLegalAcceptance(globalThis.consentRequestDb, userId), true)
+  const current = structuredClone(admin.tables.legal_acceptances[0])
+  admin.tables.legal_acceptances[0].ai_disclaimer_version = 'historical-v1'
+  const historical = structuredClone(admin.tables.legal_acceptances[0])
+  assert.equal(await hasCurrentLegalAcceptance(globalThis.consentRequestDb, userId), true)
+  assert.deepEqual(admin.tables.legal_acceptances[0], historical, 'Verifying old acceptance never rewrites consent history.')
+  assert.ok(admin.reads.every(read => !read.filters.some(([key]) => key === 'ai_disclaimer_version')))
+  admin.tables.legal_acceptances[0] = current
   admin.tables.legal_acceptances[0].terms_version = 'old-version'
   assert.equal(await hasCurrentLegalAcceptance(globalThis.consentRequestDb, userId), false)
 })
@@ -154,6 +162,11 @@ test('invalid consent purpose, non-boolean grant and missing required legal ackn
     { consentType: 'cycle_tracking', granted: 'true' },
   ]) assert.equal((await feature.POST(req(body))).status, 400)
   assert.equal((await accept.POST(req({ ...acknowledgments, terms: 'true' }))).status, 400)
+  for (const key of ['terms', 'privacy', 'healthDisclaimer']) {
+    assert.equal((await accept.POST(req({ ...acknowledgments, [key]: false }))).status, 400)
+    const missing = { ...acknowledgments };delete missing[key]
+    assert.equal((await accept.POST(req(missing))).status, 400)
+  }
   assert.equal((await accept.POST(req({ ...acknowledgments, featureConsents: [] }))).status, 400)
   assert.equal(globalThis.consentAdminCreations, 0)
   assert.equal(admin.writes.length, 0)
@@ -165,7 +178,7 @@ test('compliance storage failures never report success or expose private databas
   let response = await feature.POST(req({ consentType: 'cycle_tracking', granted: true }))
   assert.equal(response.status, 503)
   assert.doesNotMatch(JSON.stringify(await response.json()), /Private storage detail/)
-  response = await accept.POST(req({ ...acknowledgments, featureConsents: { ai_recommendations: true } }))
+  response = await accept.POST(req({ ...acknowledgments, featureConsents: { anonymized_research_use: true } }))
   assert.equal(response.status, 503)
   assert.equal(globalThis.consentPrivilegedDb.tables.legal_acceptances.length, 0)
   requestDb()
@@ -174,4 +187,39 @@ test('compliance storage failures never report success or expose private databas
   assert.equal(response.status, 503)
   assert.doesNotMatch(JSON.stringify(await response.json()), /Private storage detail/)
   await assert.rejects(hasCurrentLegalAcceptance(globalThis.consentRequestDb, userId), /could not be verified/)
+})
+
+test('cached retired acknowledgments require a fresh form and cannot append legal or feature acceptance', async () => {
+  requestDb();const admin = privilegedDb()
+  for (const body of [
+    { ...acknowledgments, aiDisclaimer: true }, { ...acknowledgments, aiDisclaimer: false },
+    { ...acknowledgments, aiDisclaimer: null },
+    { ...acknowledgments, featureConsents: { ai_recommendations: true } },
+    { ...acknowledgments, featureConsents: { ai_recommendations: false } },
+  ]) {
+    const response = await accept.POST(req(body))
+    assert.equal(response.status, 409)
+    assert.equal((await response.json()).code, 'retired_acknowledgment')
+  }
+  assert.equal(globalThis.consentAdminCreations, 0)
+  assert.equal(admin.writes.length, 0)
+})
+
+test('retired feature grants fail while explicit withdrawal preserves historical consent and other purposes', async () => {
+  requestDb();const admin = privilegedDb()
+  admin.tables.feature_consent_events.push({ id: 'historical', user_id: userId, consent_type: 'ai_recommendations',
+    granted: true, consent_version: 'v1.0', recorded_at: '2026-07-01T12:00:00Z' })
+  const before = structuredClone(admin.tables.feature_consent_events[0])
+  let response = await feature.POST(req({ consentType: 'ai_recommendations', granted: true }))
+  assert.equal(response.status, 409);assert.equal(globalThis.consentAdminCreations, 0)
+  assert.equal((await getFeatureConsent(globalThis.consentRequestDb, userId, 'ai_recommendations')).granted, true)
+  response = await feature.POST(req({ consentType: 'ai_recommendations', granted: false }))
+  assert.equal(response.status, 200)
+  assert.equal((await getFeatureConsent(globalThis.consentRequestDb, userId, 'ai_recommendations')).granted, false)
+  assert.deepEqual(admin.tables.feature_consent_events[0], before)
+  assert.equal(admin.tables.feature_consent_events.length, 2)
+  assert.ok(config.FEATURE_CONSENT_TYPES.includes('ai_recommendations'), 'Historical purpose remains readable.')
+  assert.ok(!config.ACTIVE_FEATURE_CONSENT_TYPES.includes('ai_recommendations'), 'Retired purpose is not newly grantable.')
+  response = await feature.POST(req({ consentType: 'posture_assessment_photos', granted: true }))
+  assert.equal(response.status, 200, 'Actual photo permission remains distinct and explicit.')
 })

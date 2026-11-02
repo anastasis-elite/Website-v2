@@ -42,9 +42,6 @@ https://anastasiselite.com/conditions
 Health Disclaimer:
 https://anastasiselite.com/health-disclaimer
 
-AI Disclaimer:
-https://anastasiselite.com/ai-disclaimer
-
 Research & Data Consent:
 https://anastasiselite.com/consent/research
 

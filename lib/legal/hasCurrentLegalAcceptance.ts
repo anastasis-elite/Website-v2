@@ -12,7 +12,6 @@ export async function hasCurrentLegalAcceptance(supabase: SupabaseClient, userId
     .eq('terms_version', REQUIRED_LEGAL_VERSIONS.terms)
     .eq('privacy_version', REQUIRED_LEGAL_VERSIONS.privacy)
     .eq('health_disclaimer_version', REQUIRED_LEGAL_VERSIONS.healthDisclaimer)
-    .eq('ai_disclaimer_version', REQUIRED_LEGAL_VERSIONS.aiDisclaimer)
     .limit(1)
     .maybeSingle()
 

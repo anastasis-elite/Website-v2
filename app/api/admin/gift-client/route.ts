@@ -107,7 +107,6 @@ export async function POST(req: Request) {
     const termsLinks = {
       terms: `${appUrl}/terms`,
       healthDisclaimer: `${appUrl}/health-disclaimer`,
-      aiDisclaimer: `${appUrl}/ai-disclaimer`,
       conditions: `${appUrl}/conditions`,
       research: `${appUrl}/consent/research`,
     }
@@ -140,7 +139,6 @@ export async function POST(req: Request) {
         <ul>
           <li><a href="${termsLinks.terms}">Terms of Use</a></li>
           <li><a href="${termsLinks.healthDisclaimer}">Health Disclaimer</a></li>
-          <li><a href="${termsLinks.aiDisclaimer}">AI Disclaimer</a></li>
           <li><a href="${termsLinks.conditions}">Conditions</a></li>
           <li><a href="${termsLinks.research}">Research Consent</a></li>
         </ul>

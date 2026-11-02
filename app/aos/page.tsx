@@ -206,7 +206,7 @@ export default function AOSCommandCenterPage() {
               <div style={styles.cardStyle}>
                 <h3 style={styles.cardTitleStyle}>Bots</h3>
                 <p style={styles.cardTextStyle}>
-                  Automation systems, workflows, and future AI employees.
+                  Automation systems, workflows, and future operational support.
                 </p>
               </div>
             </Link>

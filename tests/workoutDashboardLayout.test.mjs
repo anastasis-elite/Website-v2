@@ -15,7 +15,7 @@ test('workout opens with the workout panel, keeps rest guidance and puts adaptat
   assert.match(dashboard, /Rest until breathing is comfortable/)
   assert.match(dashboard, /props\.logic\.workoutDecision\.intensityTarget/)
   assert.match(dashboard, /<WorkoutFeedback/)
-  assert.match(dashboard, /className="workout-dashboard-row"/)
+  assert.doesNotMatch(dashboard, /Muscle readiness details|className="workout-dashboard-row"/)
   assert.match(map, /data-testid="muscle-readiness-panel"/)
   assert.match(dashboard, /data-testid="today-workout-panel"/)
   assert.match(dashboard, /data-testid="workout-toggle-panel"/)

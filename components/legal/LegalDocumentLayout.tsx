@@ -1,8 +1,8 @@
 import * as styles from '@/app/styles/globalstyles'
 import { EFFECTIVE_DATE } from '@/lib/legal/config'
 
-export default function LegalDocumentLayout({ title, version, children }: { title: string; version: string; children: React.ReactNode }) {
-  return <main style={styles.pageStyle}><div style={{ ...styles.containerStyle, maxWidth: '900px' }}><p style={styles.eyebrowStyle}>Legal · {version}</p><h1 style={styles.heroTitleStyle}>{title}</h1><p style={styles.bodyStyle}><strong>Effective date:</strong> {EFFECTIVE_DATE}</p>{children}</div></main>
+export default function LegalDocumentLayout({ title, version, effectiveDate = EFFECTIVE_DATE, children }: { title: string; version: string; effectiveDate?: string; children: React.ReactNode }) {
+  return <main style={styles.pageStyle}><div style={{ ...styles.containerStyle, maxWidth: '900px' }}><p style={styles.eyebrowStyle}>Legal · {version}</p><h1 style={styles.heroTitleStyle}>{title}</h1><p style={styles.bodyStyle}><strong>Effective date:</strong> {effectiveDate}</p>{children}</div></main>
 }
 
 export function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {

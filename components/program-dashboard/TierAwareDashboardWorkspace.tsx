@@ -3,12 +3,9 @@
 import Link from 'next/link'
 import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 import GuidedToday from '@/components/program-dashboard/GuidedToday'
-import DailyDisplayPreferences from '@/components/DailyDisplayPreferences'
-import { useViewPreference } from '@/components/dashboard/useViewPreference'
 import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
 import { getDailyTraining } from '@/lib/dashboard/dailyTraining'
 import type { CSSProperties } from 'react'
-import { useMemo, useState } from 'react'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
@@ -17,15 +14,8 @@ import { getActionRouteForEvent } from '@/lib/schedule/engine'
 import { getTierCapabilities, type ProgramTier } from '@/lib/entitlements'
 import { getIgniteDashboardData } from '@/lib/dashboard/ignite/getIgniteDashboardData'
 import { getPhoenixDashboardData } from '@/lib/dashboard/phoenix/getPhoenixDashboardData'
-import dynamic from 'next/dynamic'
-import OptionalDashboardModule from '@/components/OptionalDashboardModule'
 import type { PlanBlock } from './dashboardWorkspaceTypes'
 import { getStrengthAssessmentDetail } from '@/lib/assessment/getStrengthAssessmentStatus'
-
-const DashboardCalendar = dynamic(() => import('./DashboardCalendar'), {
-  loading: () => <p role="status">Loading calendar details…</p>,
-})
-type PanelTab = 'progress' | 'assessments' | 'trends'
 
 function eventRange(event: ScheduleEvent, timezone: string) {
   if (event.all_day) return 'All day'
@@ -36,7 +26,7 @@ function progressPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)))
 }
 
-function buildPlanBlocks(tier: ProgramTier, logic: ProgramLogicOutput): PlanBlock[] {
+export function buildPlanBlocks(tier: ProgramTier, logic: ProgramLogicOutput): PlanBlock[] {
   if (tier === 'phoenix') {
     return getPhoenixDashboardData(logic, 'Personalized').plan.map((block) => ({
       ...block,
@@ -229,40 +219,15 @@ export default function TierAwareDashboardWorkspace({
   schedule: DailyScheduleState
   recipes?: PhoenixRecipe[]
 }) {
-  const [tab, setTab] = useViewPreference<PanelTab>(logic.client.id, 'home-panel', ['progress', 'assessments', 'trends'], 'progress')
-  const [calendarExpanded, setCalendarExpanded] = useState(false)
-  const [detailsExpanded, setDetailsExpanded] = useState(false)
-  const capabilities = getTierCapabilities(tier)
-  const planBlocks = useMemo(() => buildPlanBlocks(tier, logic), [tier, logic])
-
-  const plan = schedule.dailyRecommendation || buildDailyRecommendation(logic, schedule)
   const quiet = schedule.preferences?.carouselStyle === 'step'
-  const flexible = schedule.preferences?.executionStyle === 'flow'
-  const overdueIds = new Set(schedule.overdueEvents.map(event => event.id))
-  const preview = schedule.events.filter(event => !['cancelled','skipped'].includes(event.status) &&
-    (new Date(event.adjusted_end_at || event.end_at) > new Date(schedule.now) || overdueIds.has(event.id))).slice(0, 3)
   return (
     <section className="tier-dashboard-workspace daily-home" data-tier={tier} data-quiet={quiet}>
       <GuidedToday key={`${logic.client.id}:${schedule.date}`} logic={logic} schedule={schedule} />
-      <details className="daily-disclosure" data-tutorial-id="dashboard-calendar"><summary>Your schedule at a glance</summary><SchedulePreview preview={preview} flexible={flexible} schedule={schedule} logic={logic} plan={plan} /></details>
-      <DailyDisplayPreferences {...schedule.preferences} />
-      <details className="daily-disclosure" id="progress" onToggle={event => {
-        const open = event.currentTarget.open
-        setDetailsExpanded(open)
-        if (!open) setCalendarExpanded(false)
-      }}><summary>Progress, assessments, and details</summary>
-        {detailsExpanded ? <>
-        <div className="tier-tab-list" aria-label="Dashboard information">
-          {(['progress', 'assessments', 'trends'] as PanelTab[]).map(item => <button key={item} type="button" aria-pressed={tab === item} className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>{item}</button>)}
-        </div>
-        {tab === 'progress' ? <ProgressTab logic={logic} tier={tier} /> : tab === 'assessments' ? <AssessmentsTab logic={logic} capabilities={capabilities} /> : <TrendsTab logic={logic} />}
-        <details onToggle={event => setCalendarExpanded(event.currentTarget.open)}><summary>Detailed calendar</summary>{calendarExpanded ? <OptionalDashboardModule name="Calendar preview" href="/dashboard/schedule"><DashboardCalendar schedule={schedule} planBlocks={planBlocks} clientId={logic.client.id} /></OptionalDashboardModule> : null}</details>
-        </> : null}
-      </details>
     </section>
   )
 }
-function SchedulePreview({ preview, flexible, schedule, logic, plan }: { preview: ScheduleEvent[]; flexible: boolean; schedule: DailyScheduleState; logic: ProgramLogicOutput; plan: ReturnType<typeof buildDailyRecommendation> }) {
+
+export function SchedulePreview({ preview, flexible, schedule, logic, plan }: { preview: ScheduleEvent[]; flexible: boolean; schedule: DailyScheduleState; logic: ProgramLogicOutput; plan: ReturnType<typeof buildDailyRecommendation> }) {
     return <div className="daily-preview">
       <section aria-label="Schedule preview"><div className="tier-panel-heading"><h2>{flexible ? 'Room for your day' : 'Coming up'}</h2><Link href="/dashboard/schedule">Schedule</Link></div>
         {preview.length ? preview.map(event => <Link key={event.id} href={event.suggested ? `/dashboard/schedule#event-${event.id}` : getActionRouteForEvent(event, schedule.program || logic.program)}><time>{eventRange(event, schedule.timezone)}</time><strong>{event.title}</strong><small>{event.source_label || (event.source === 'external_calendar' ? event.external_calendar_source || 'Connected calendar' : 'Anastasis')} · {event.status === 'completed' ? 'Done' : schedule.overdueEvents.some(item => item.id === event.id) ? 'Overdue · review in Schedule' : event.suggested ? 'Suggested time · choose in Schedule' : event.flexibility_type === 'fixed' ? 'Fixed commitment' : 'Flexible'}</small></Link>) : <p>No more scheduled items. Leave this space open.</p>}
