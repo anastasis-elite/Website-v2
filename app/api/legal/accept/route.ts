@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { authorizeComplianceOperation, ComplianceAccessError } from '@/lib/legal/complianceContext'
 import {
-  AI_DISCLAIMER_VERSION,
+  ACTIVE_FEATURE_CONSENT_TYPES,
   FEATURE_CONSENT_VERSION,
-  FEATURE_CONSENT_TYPES,
   HEALTH_DISCLAIMER_VERSION,
   PRIVACY_VERSION,
   RESEARCH_CONSENT_VERSION,
@@ -18,11 +17,14 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => null)
     if (!body || typeof body !== 'object' || Array.isArray(body) ||
-        !['terms','privacy','healthDisclaimer','aiDisclaimer'].every(key => body[key] === true)) {
+        !['terms','privacy','healthDisclaimer'].every(key => body[key] === true)) {
       return NextResponse.json({ error: 'All required legal acknowledgments must be accepted.' }, { status: 400 })
     }
     if (body.featureConsents !== undefined && (!body.featureConsents || typeof body.featureConsents !== 'object' || Array.isArray(body.featureConsents))) {
       return NextResponse.json({ error: 'Choose valid feature consent preferences.' }, { status: 400 })
+    }
+    if (body.aiDisclaimer !== undefined || body.featureConsents?.ai_recommendations !== undefined) {
+      return NextResponse.json({ error: 'The acknowledgment form has changed. Reload this page and review the current agreements.', code: 'retired_acknowledgment' }, { status: 409 })
     }
     const { user, client, admin } = await authorizeComplianceOperation(supabase,
       body.userId === undefined && body.user_id === undefined ? undefined : String(body.userId ?? body.user_id),
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
     const featureConsents = body.featureConsents || {}
     const researchGranted = typeof featureConsents.anonymized_research_use === 'boolean'
       ? featureConsents.anonymized_research_use : body.researchConsent === true
-    const consentRows = FEATURE_CONSENT_TYPES.flatMap((consentType) => {
+    const consentRows = ACTIVE_FEATURE_CONSENT_TYPES.flatMap((consentType) => {
       const value = featureConsents[consentType as FeatureConsentType]
       if (typeof value !== 'boolean') return []
       return [{
@@ -60,7 +62,8 @@ export async function POST(request: Request) {
       terms_version: TERMS_VERSION,
       privacy_version: PRIVACY_VERSION,
       health_disclaimer_version: HEALTH_DISCLAIMER_VERSION,
-      ai_disclaimer_version: AI_DISCLAIMER_VERSION,
+      // NULL records no acceptance of a retired document. Historical rows stay unchanged.
+      ai_disclaimer_version: null,
       research_consent_version: researchGranted ? RESEARCH_CONSENT_VERSION : null,
       ip_address: ipAddress,
       user_agent: userAgent,

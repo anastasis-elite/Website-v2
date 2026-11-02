@@ -9,13 +9,19 @@ import { useAccountData, useClientProfile,  } from './hooks'
 import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
 import { normalizeProgramTier } from '@/lib/entitlements'
 import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
+import DailyDisplayPreferences from '@/components/DailyDisplayPreferences'
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
 }
 
 
-export default function AccountDashboard({ initialData, client, user }: { initialData: AccountData; client: AccountProfileFormData; user: { email: string | null } }) {
+export default function AccountDashboard({ initialData, client, user, displayPreferences = {} }: {
+  initialData: AccountData
+  client: AccountProfileFormData
+  user: { email: string | null }
+  displayPreferences?: { executionStyle?: string; carouselStyle?: string; transitionMinutes?: number }
+}) {
   const data = useAccountData(initialData)
   const profile = useClientProfile(data)
   const avatarStyle = profile.avatarUrl ? { backgroundImage: `linear-gradient(rgba(8,5,3,.08),rgba(8,5,3,.2)),url("${profile.avatarUrl}")` } : undefined
@@ -31,7 +37,7 @@ export default function AccountDashboard({ initialData, client, user }: { initia
             <div className="account-profile-copy"><h2>{profile.name}</h2><p className="account-program-label">{profile.program} program</p><a href="#personal-info" className="account-outline-button">Edit Profile</a></div>
           </article>
         </section>
-        <nav className="account-panel account-quick-panel" aria-label="Account preferences"><Link href="/dashboard/progress" className="account-outline-button">Progress</Link><Link href="/dashboard/assessment" className="account-outline-button">Assessment library</Link><Link href="/dashboard/assessment/daily-structure" className="account-outline-button">Daily Structure preferences</Link><Link href="/dashboard/settings/calendars" className="account-outline-button">Connected calendars</Link></nav>
+        <nav className="account-panel account-quick-panel" aria-label="Account preferences"><Link href="#daily-display-preferences" className="account-outline-button">Today display preferences</Link><Link href="/dashboard/progress" className="account-outline-button">Progress</Link><Link href="/dashboard/assessment" className="account-outline-button">Assessment library</Link><Link href="/dashboard/assessment/daily-structure" className="account-outline-button">Daily Structure preferences</Link><Link href="/dashboard/settings/calendars" className="account-outline-button">Connected calendars</Link></nav>
 
         {['ember','ignite','phoenix'].includes(profile.program) ? <DashboardMoreMenu program={normalizeProgramTier(profile.program)} /> : null}
         <nav className="account-panel account-quick-panel" aria-label="More account tools"><Link href="/dashboard/cycle" className="account-outline-button">Cycle</Link><Link href="/dashboard/support" className="account-outline-button">Support</Link><Link href="/dashboard/schedule/settings" className="account-outline-button">Schedule settings</Link><Link href="/dashboard/experience" className="account-outline-button">Experience check-ins</Link></nav>
@@ -41,6 +47,7 @@ export default function AccountDashboard({ initialData, client, user }: { initia
         </section>
 
         <section className="account-manage-grid" aria-label="Manage account details">
+          <section className="account-panel account-detail-panel" id="daily-display-preferences" aria-labelledby="daily-display-preferences-title"><h2 id="daily-display-preferences-title">Daily display preferences</h2><DailyDisplayPreferences key={data.profile.clientId} {...displayPreferences} /></section>
           <details className="account-panel account-detail-panel" id="personal-info"><summary>Personal Info <span>Open ›</span></summary><AccountProfileForm client={client} user={user} mode="profile" /><div className="account-detail-copy"><Link href="/dashboard/assessment/daily-structure" className="account-outline-button">Update Daily Structure</Link></div></details>
           <details className="account-panel account-detail-panel" id="security"><summary>Security <span>Open ›</span></summary><AccountProfileForm client={client} user={user} mode="security" /></details>
           <details className="account-panel account-detail-panel" id="notifications"><summary>Notifications <span>Open ›</span></summary><div className="account-detail-copy"><p>Your account email is <strong>{profile.email}</strong>.</p><p>Alerts and reminders are not available from this page.</p></div></details>

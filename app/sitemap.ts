@@ -14,7 +14,6 @@ const publicRoutes = [
   '/terms',
   '/privacy',
   '/health-disclaimer',
-  '/ai-disclaimer',
   '/refund-policy',
   '/research-consent',
   '/conditions',

@@ -4,13 +4,11 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as styles from '@/app/styles/globalstyles'
-import AIDisclaimer from '@/components/legal/AIDisclaimer'
 
 const required = [
   ['terms', 'I accept the Terms of Service.', '/terms'],
   ['privacy', 'I acknowledge the Privacy Policy.', '/privacy'],
   ['healthDisclaimer', 'I acknowledge the Health and Safety Disclaimer.', '/health-disclaimer'],
-  ['aiDisclaimer', 'I acknowledge the AI-Assisted Recommendations Disclaimer.', '/ai-disclaimer'],
 ] as const
 
 export default function LegalAcceptanceForm() {
@@ -22,34 +20,37 @@ export default function LegalAcceptanceForm() {
   const ready = required.every(([key]) => checks[key])
 
   async function submit() {
-    if (!ready) return
+    if (!ready || loading) return
     setLoading(true)
     setMessage('')
-    const response = await fetch('/api/legal/accept', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...checks,
-        researchConsent,
-        source: 'dashboard_legal_gate',
-        featureConsents: {
-          ai_recommendations: true,
-          anonymized_research_use: researchConsent,
-        },
-      }),
-    })
-    const data = await response.json()
-    if (!response.ok) {
-      setMessage(data.error || 'Acceptance could not be recorded.')
+    try {
+      const response = await fetch('/api/legal/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          terms: checks.terms === true,
+          privacy: checks.privacy === true,
+          healthDisclaimer: checks.healthDisclaimer === true,
+          researchConsent,
+          source: 'dashboard_legal_gate',
+          featureConsents: { anonymized_research_use: researchConsent },
+        }),
+      })
+      const data = await response.json().catch(() => null)
+      if (!response.ok || data?.success !== true) {
+        setMessage(data?.error || 'Acceptance could not be recorded.')
+        return
+      }
+      router.replace(data.redirect || '/dashboard')
+      router.refresh()
+    } catch {
+      setMessage('Acceptance could not be recorded. Check your connection and retry.')
+    } finally {
       setLoading(false)
-      return
     }
-    router.replace(data.redirect || '/dashboard')
-    router.refresh()
   }
 
   return <div style={{ display: 'grid', gap: '22px' }}>
-    <AIDisclaimer />
     <section style={styles.cartBoxStyle}>
       <p style={styles.eyebrowStyle}>Required</p>
       {required.map(([key, label, href]) => <label key={key} style={checkStyle}>
@@ -65,7 +66,7 @@ export default function LegalAcceptanceForm() {
       </label>
     </section>
     <button type="button" disabled={!ready || loading} onClick={submit} style={{ ...styles.primaryButtonStyle, opacity: ready && !loading ? 1 : .5 }}>{loading ? 'Recording…' : 'Accept and Continue'}</button>
-    {message ? <p style={styles.bodyStyle}>{message}</p> : null}
+    {message ? <p role="status" style={styles.bodyStyle}>{message}</p> : null}
   </div>
 }
 

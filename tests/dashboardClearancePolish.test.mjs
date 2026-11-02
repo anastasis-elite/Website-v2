@@ -106,7 +106,7 @@ test('short Plan and long Today flow models leave final footer content above fix
   }
 })
 
-test('public footer styles and every existing legal and support destination remain intact', () => {
+test('public footer styles and remaining legal and support destinations remain intact', () => {
   assert.deepEqual(declarations(globals, '.legal-footer'), [
     ['padding', '36px max(24px, env(safe-area-inset-left)) calc(36px + env(safe-area-inset-bottom))', false],
     ['color', 'var(--anastasis-ivory)', false], ['font-size', '.86rem', false], ['text-align', 'center', false],
@@ -123,7 +123,7 @@ test('public footer styles and every existing legal and support destination rema
   assert.match(html, /<footer class="legal-footer">/)
   assert.match(html, /<nav aria-label="Footer links">/)
   assert.deepEqual([...html.matchAll(/<a href="([^"]+)">/g)].map(match => match[1]), [
-    '/what-is-anastasis', '/program', '/about', '/terms', '/privacy', '/health-disclaimer', '/ai-disclaimer', '/refund-policy', '/research-consent', '/support',
+    '/what-is-anastasis', '/program', '/about', '/terms', '/privacy', '/health-disclaimer', '/refund-policy', '/research-consent', '/support',
   ])
   const rootLayout = readFileSync('app/layout.tsx', 'utf8')
   assert.ok(rootLayout.indexOf('{children}') < rootLayout.indexOf('<LegalFooter />'))

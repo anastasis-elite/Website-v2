@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { buildTodayActivities, presentTodayActivities, type DailyGuideState, type TodayActivity, type TodayActivityId } from '@/lib/dashboard/todayActivities'
 import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
@@ -12,6 +12,8 @@ import { recordTodayActionOpened, recordTodayActionCompletions } from '@/lib/ana
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
 import { getRecoveryPresentation } from '@/lib/recovery/todayCompletion'
+import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
+import { getStreakRequirementProgress } from '@/lib/dashboard/logic/streakRequirementProgress'
 
 const icons: Record<string, string> = { check_in: '☀', hydration: '◒', schedule: '▦', nutrition: '◡', workout: '↟', recovery: '♡', none: '✦' }
 const statusLabels: Record<string, string> = { available: 'Available', upcoming: 'Upcoming', in_progress: 'In progress', completed: 'Completed', deferred: 'Deferred', skipped: 'Skipped' }
@@ -55,10 +57,22 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
   const lock = useRef(false)
   const viewedDay = useRef('')
   const previousCompleted = useRef<{ date: string; ids: string[] } | null>(null)
+  const streakDialog = useRef<HTMLDialogElement>(null)
+  const streakTrigger = useRef<HTMLButtonElement | null>(null)
+  const streakHeading = useRef<HTMLHeadingElement>(null)
+  const streakDialogId = useId()
   useEffect(() => { setSavedGuide({ date: schedule.date, value: schedule.dailyGuide }) }, [schedule.date, schedule.dailyGuide])
   useEffect(() => { setMessage('') }, [schedule.date])
   const activeSchedule = { ...schedule, dailyGuide: savedGuide.date === schedule.date ? savedGuide.value : schedule.dailyGuide }
   const today = buildTodayActivities(logic, activeSchedule)
+  const streakProgress = getStreakRequirementProgress(logic.flameState, schedule.date, { programTier: logic.program, now: schedule.now, timezone: schedule.timezone })
+  const streakAvailable = streakProgress.available && streakProgress.requiredCount !== null && streakProgress.completedCount !== null
+  const requiredCount = streakProgress.requiredCount ?? 0
+  const requiredCompleted = streakProgress.completedCount ?? 0
+  const remainingRequirements = requiredCount - requiredCompleted
+  const streakMessage = !streakAvailable ? 'Your streak requirements could not be confirmed. Open details to review or retry.'
+    : streakProgress.secured ? 'Today’s required work is complete. Your streak is secured for today.'
+      : `${remainingRequirements} required ${remainingRequirements === 1 ? 'item remains' : 'items remain'} to secure today’s streak.`
   const presentedActivities = presentTodayActivities(logic, activeSchedule, today.activities)
   const plan = buildDailyRecommendation(logic, activeSchedule)
   const primaryId = plan.primary.id === 'food-input' ? 'nutrition' : plan.primary.id
@@ -136,7 +150,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
           <span className="today-activity-state">{statusLabels[activity.status] || 'Available'}{activity.deferredUntil ? <small>Until {formatLocalTime(activity.deferredUntil, schedule.timezone)}</small> : null}</span>
         </Link>
         <ActivityOptions activity={activity} busy={busy !== null} onAction={updateActivity} />
-      </li>)}</ul> : <p role="status">{complete ? 'Your essentials are saved. You can revisit your progress and history anytime.' : 'Nothing else is due right now. Your saved activities are still available.'} <Link href="/dashboard/progress">View progress</Link></p>}
+      </li>)}</ul> : <p role="status">{complete ? 'Your recorded activities are saved. You can revisit your progress and history anytime.' : 'Nothing else is due right now. Your saved activities are still available.'} <Link href="/dashboard/progress">View progress</Link></p>}
     </section>
 
     {logic.nutrition.macroReminder ? <aside className="today-feedback" aria-label="Recent nutrition logs">
@@ -144,12 +158,24 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
       <Link href="/dashboard/nutrition">Review nutrition logs</Link>
     </aside> : null}
 
-    <section className="today-progress" data-testid="today-progress" aria-label={`Today's progress: ${today.completed} of ${today.total}`} data-tutorial-id="dashboard-progress-area">
-      <div><h2>Today’s progress</h2><span>{today.total ? `${today.completed} of ${today.total}` : 'No essentials due'}</span></div>
-      <div className="today-progress-segments" role="progressbar" aria-valuemin={0} aria-valuemax={Math.max(1,today.total)} aria-valuenow={today.completed} aria-valuetext={`${today.completed} of ${today.total} applicable activities completed`}>
-        {Array.from({ length: today.total }, (_, index) => <i key={index} className={index < today.completed ? 'is-complete' : ''} />)}
-      </div>
-      <p>{complete ? 'Your essentials are saved. Leave a little room for yourself.' : 'Saved activities show your progress. Optional activities can wait.'}</p>
-    </section>
+    <button type="button" className="today-progress" data-testid="today-progress" aria-haspopup="dialog" aria-controls={streakDialogId}
+      aria-label={streakAvailable ? `Today's progress: ${requiredCompleted} of ${requiredCount} required items completed. ${streakMessage}` : 'Today’s progress: streak status unavailable. Open streak details.'}
+      data-tutorial-id="dashboard-progress-area" onClick={event => { streakTrigger.current = event.currentTarget; streakDialog.current?.showModal(); streakHeading.current?.focus() }}>
+      <span className="today-progress-heading"><span className="today-progress-title">Today’s progress</span><span>{streakAvailable ? `${requiredCompleted} of ${requiredCount}` : 'Status unavailable'}</span></span>
+      <span className="today-progress-segments" role="progressbar" aria-label="Required streak work"
+        aria-valuemin={streakAvailable ? 0 : undefined} aria-valuemax={streakAvailable ? Math.max(1, requiredCount) : undefined}
+        aria-valuenow={streakAvailable ? requiredCompleted : undefined}
+        aria-valuetext={streakAvailable ? `${requiredCompleted} of ${requiredCount} required items completed` : 'Streak requirements unavailable'}>
+        {Array.from({ length: streakAvailable ? requiredCount : 0 }, (_, index) => <i key={index} className={index < requiredCompleted ? 'is-complete' : ''} />)}
+      </span>
+      <span className="today-progress-copy">{streakMessage} Open streak details.</span>
+    </button>
+    <dialog ref={streakDialog} id={streakDialogId} className="today-streak-dialog" aria-labelledby={`${streakDialogId}-title`} aria-describedby={`${streakDialogId}-description`}
+      onCancel={event => { event.preventDefault(); streakDialog.current?.close() }} onClose={() => streakTrigger.current?.focus()}>
+      <header><h2 ref={streakHeading} tabIndex={-1} id={`${streakDialogId}-title`}>Today’s streak</h2><button type="button" onClick={() => streakDialog.current?.close()}>Close</button></header>
+      <p id={`${streakDialogId}-description`}>{streakAvailable ? 'These are the requirements that count toward today’s streak. Saved optional work does not replace an outstanding requirement.' : 'Your saved streak requirements are unavailable. Refresh before relying on a secured status.'}</p>
+      <StreakRequirementsCard flame={logic.flameState} expectedDate={schedule.date} now={schedule.now} timezone={schedule.timezone} progress={streakProgress} />
+      {!streakAvailable ? <button type="button" className="tier-primary-action" onClick={() => router.refresh()}>Refresh requirements</button> : null}
+    </dialog>
   </div>
 }

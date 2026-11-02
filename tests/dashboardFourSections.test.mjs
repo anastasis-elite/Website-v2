@@ -25,19 +25,16 @@ test('tier dashboards no longer render standalone removed dashboard sections', (
   }
 })
 
-test('shared home puts guided Today before secondary schedule and collapsed details', () => {
+test('shared home keeps guided Today while removed dropdowns leave dedicated detail modules intact', () => {
   const today = readFileSync('components/program-dashboard/GuidedToday.tsx', 'utf8')
   assert.match(workspace, /<GuidedToday[^\n]*logic=\{logic\} schedule=\{schedule\}/)
   assert.match(today, /aria-label="Your day at a glance"/)
   assert.match(today, /data-testid="today-progress"/)
   assert.match(today, /data-testid="guided-next-step"/)
-  assert.ok(today.indexOf('data-testid="today-progress"') < today.indexOf('data-testid="guided-next-step"'))
-  assert.ok(today.indexOf('data-testid="guided-next-step"') < today.indexOf('data-testid="today-activities"'))
-  assert.ok(workspace.indexOf('<GuidedToday') < workspace.indexOf('<summary>Your schedule at a glance'))
-  assert.match(workspace, /aria-label="Schedule preview"/)
-  assert.match(workspace, /aria-label="Progress summary"/)
   assert.match(workspace, /data-quiet=\{quiet\}/)
-  assert.match(workspace, /Progress, assessments, and details/)
+  for (const removed of ['<summary>Your schedule at a glance', '<DailyDisplayPreferences', '<summary>Progress, assessments, and details']) assert.equal(workspace.includes(removed), false)
+  for (const name of ['ProgressTab', 'AssessmentsTab', 'TrendsTab', 'SchedulePreview', 'buildPlanBlocks']) assert.match(workspace, new RegExp(`export function ${name}`))
+  assert.match(calendar, /export default function DashboardCalendar/)
 })
 
 test('calendar day view contains Today plan daypart switching', () => {

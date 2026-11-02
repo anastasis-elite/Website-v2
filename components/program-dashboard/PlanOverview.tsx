@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import ActionArrow from '@/components/ActionArrow'
 import { getTierCapabilities } from '@/lib/entitlements'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
@@ -21,7 +20,7 @@ export default function PlanOverview({ logic, schedule }: { logic: ProgramLogicO
     <section className="plan-overview" aria-labelledby="plan-overview"><h2 id="plan-overview">Your plan, at a glance.</h2>
       <div className="plan-overview-grid">{cards.map(card => <Link key={card.kind} className="plan-overview-card" href={card.href}>
         <img src={`/illustrations/today-${card.kind}.svg`} width="360" height="180" alt="" className="today-card-illustration" />
-        <div className="plan-overview-copy"><p className="today-card-kicker">{card.label}</p><h3>{card.title}</h3><p>{card.detail}</p><ActionArrow className="plan-overview-arrow" /></div>
+        <div className="plan-overview-copy"><p className="today-card-kicker">{card.label}</p><h3>{card.title}</h3><p>{card.detail}</p></div>
       </Link>)}</div>
     </section>
     <nav className="today-rhythm-links" aria-label="Plan settings"><Link href="/dashboard/schedule/settings">Schedule settings</Link><Link href="/dashboard/assessment/monthly">Due assessments</Link></nav>

@@ -1,26 +1,25 @@
 'use client'
 
 import Image from 'next/image'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AOSButton } from '@/components/aos-ui/AOSButton'
 import {
   POSTURE_VIEW_LABELS,
   connectionsForView,
   type AssessmentView,
   type NormalizedPoint,
-  type PoseDetectionResult,
   type PostureLandmark,
   type PostureLandmarkName,
 } from '@/lib/posture/landmarks'
-import { clamp01, pointChanged } from '@/lib/posture/geometry'
-import { estimatePostureLandmarks } from '@/lib/posture/poseDetection'
+import { clamp01 } from '@/lib/posture/geometry'
+import { createManualLandmarks, manualLandmarkSummary, updateManualLandmark, type ManualLandmarkConfirmation } from '@/lib/posture/manualLandmarks'
 
 type Props = {
   assessmentPhotoId: string
   view: AssessmentView
   imageUrl: string
   path: string
-  onConfirmed: () => void
+  onConfirmed: (confirmation: ManualLandmarkConfirmation) => void
 }
 
 type HistoryEntry = {
@@ -41,70 +40,61 @@ export default function PostureLandmarkEditor({
 }: Props) {
   const imageRef = useRef<HTMLImageElement | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'saving' | 'saved'>('loading')
-  const [message, setMessage] = useState('Estimating posture landmarks...')
-  const [result, setResult] = useState<PoseDetectionResult | null>(null)
-  const [activeName, setActiveName] = useState<PostureLandmarkName | null>(null)
+  const generation = useRef(0)
+  const saveLock = useRef(false)
+  const [status, setStatus] = useState<'loading' | 'ready' | 'saving' | 'saved' | 'error'>('loading')
+  const [message, setMessage] = useState('Loading your photo...')
+  const [landmarks, setLandmarks] = useState(() => createManualLandmarks(view))
+  const [activeName, setActiveName] = useState<PostureLandmarkName | null>(() => createManualLandmarks(view).find(landmark => landmark.visible)?.name || null)
   const [draggingName, setDraggingName] = useState<PostureLandmarkName | null>(null)
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 })
 
-  const landmarks = useMemo(() => result?.landmarks || [], [result?.landmarks])
   const activeLandmark = landmarks.find((landmark) => landmark.name === activeName) || null
   const landmarkMap = useMemo(
     () => new Map(landmarks.map((landmark) => [landmark.name, landmark])),
     [landmarks],
   )
 
-  const runDetection = useCallback(async () => {
+  const loadManualPhoto = useCallback(() => {
     const image = imageRef.current
     if (!image) return
 
-    setStatus('loading')
-    setMessage('Estimating posture landmarks...')
     setImageSize({
       width: image.naturalWidth || image.width,
       height: image.naturalHeight || image.height,
     })
 
-    const detection = await estimatePostureLandmarks(image, view)
-    setResult(detection)
-    const firstReviewPoint = detection.landmarks.find((landmark) => landmark.visible && landmark.lowConfidence)
-      || detection.landmarks.find((landmark) => landmark.visible)
-      || null
-    setActiveName(firstReviewPoint?.name || null)
     setStatus('ready')
+    setMessage('Select a named landmark, then tap the photo to place it. Leave points you cannot identify unplaced.')
+  }, [])
 
-    if (detection.status === 'multiple_people') {
-      setMessage('More than one person may be visible. Use a solo photo when possible, or correct the points manually.')
-    } else {
-      setMessage("We've estimated your posture landmarks. Adjust any point that doesn't line up with your body.")
-    }
-  }, [view])
+  useEffect(() => {
+    generation.current++
+    const empty = createManualLandmarks(view)
+    setLandmarks(empty)
+    setActiveName(empty.find(landmark => landmark.visible)?.name || null)
+    setDraggingName(null)
+    setHistory([])
+    setImageSize({ width: 0, height: 0 })
+    setStatus('loading')
+    setMessage('Loading your photo...')
+    // A cached photo can load before this passive effect. Read only its actual
+    // dimensions; manual landmarks still begin empty for every photo/view.
+    if (imageRef.current?.complete && imageRef.current.naturalWidth > 0) loadManualPhoto()
+    return () => { generation.current++ }
+  }, [assessmentPhotoId, path, view, imageUrl, loadManualPhoto])
 
   function updateLandmark(name: PostureLandmarkName, point: NormalizedPoint | null, trackHistory = true) {
-    setResult((current) => {
-      if (!current) return current
-      const previous = current.landmarks.find((landmark) => landmark.name === name)?.confirmed || null
-      if (trackHistory) setHistory((items) => [...items, { name, previous }].slice(-25))
-
-      return {
-        ...current,
-        landmarks: current.landmarks.map((landmark) => landmark.name === name
-          ? {
-              ...landmark,
-              confirmed: point,
-              manuallyAdjusted: pointChanged(point, landmark.automatic),
-              lowConfidence: !point || landmark.lowConfidence,
-            }
-          : landmark),
-      }
-    })
+    if (status !== 'ready') return
+    const previous = landmarks.find(landmark => landmark.name === name)?.confirmed || null
+    if (trackHistory) setHistory(items => [...items, { name, previous }].slice(-25))
+    setLandmarks(current => updateManualLandmark(current, name, point))
   }
 
   function pointFromEvent(event: React.PointerEvent<SVGSVGElement>) {
     const rect = svgRef.current?.getBoundingClientRect()
-    if (!rect) return null
+    if (!rect || rect.width <= 0 || rect.height <= 0) return null
     return {
       x: clamp01((event.clientX - rect.left) / rect.width),
       y: clamp01((event.clientY - rect.top) / rect.height),
@@ -112,7 +102,7 @@ export default function PostureLandmarkEditor({
   }
 
   function handleSvgPointerDown(event: React.PointerEvent<SVGSVGElement>) {
-    if (!activeName || draggingName) return
+    if (status !== 'ready' || !activeName || draggingName) return
     if ((event.target as Element).tagName.toLowerCase() !== 'svg') return
     const point = pointFromEvent(event)
     if (!point) return
@@ -120,6 +110,7 @@ export default function PostureLandmarkEditor({
   }
 
   function startDrag(name: PostureLandmarkName, event: React.PointerEvent<SVGCircleElement>) {
+    if (status !== 'ready') return
     event.preventDefault()
     event.stopPropagation()
     setActiveName(name)
@@ -150,9 +141,12 @@ export default function PostureLandmarkEditor({
     setActiveName(last.name)
   }
 
-  function resetAutomatic() {
-    if (!activeLandmark) return
-    updateLandmark(activeLandmark.name, activeLandmark.automatic)
+  function resetManual() {
+    if (status !== 'ready') return
+    setLandmarks(createManualLandmarks(view))
+    setHistory([])
+    setDraggingName(null)
+    setMessage('Manual points reset. Unplaced points remain unknown.')
   }
 
   function clearPoint() {
@@ -161,11 +155,14 @@ export default function PostureLandmarkEditor({
   }
 
   async function confirm() {
-    if (!result) return
+    const summary = manualLandmarkSummary(landmarks)
+    if (saveLock.current || status !== 'ready' || summary.confirmedCount === 0) return
+    saveLock.current = true
+    const requestGeneration = generation.current
     setStatus('saving')
     setMessage('Saving confirmed landmarks...')
-
-    const res = await fetch('/api/assessment-photos/landmarks', {
+    try {
+      const res = await fetch('/api/assessment-photos/landmarks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -174,26 +171,29 @@ export default function PostureLandmarkEditor({
         view,
         imageWidth: imageSize.width,
         imageHeight: imageSize.height,
-        detectionStatus: result.status,
-        detectionMessage: result.message || null,
-        rawLandmarks: result.rawLandmarks,
-        landmarks: result.landmarks,
+        detectionStatus: 'manual',
+        rawLandmarks: [],
+        landmarks,
       }),
     })
 
-    const data = await res.json()
-    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      if (requestGeneration !== generation.current) return
+      if (!res.ok || data?.success !== true || data.complete !== summary.complete || data.confirmedCount !== summary.confirmedCount || data.visibleCount !== summary.visibleCount) {
       setStatus('ready')
       setMessage(data?.error || 'Landmarks could not be saved.')
       return
-    }
+      }
 
-    setStatus('saved')
-    setMessage('Landmarks confirmed.')
-    onConfirmed()
+      setStatus('saved')
+      setMessage(data.complete ? 'Manual landmarks confirmed for this view.' : `Saved ${summary.confirmedCount} of ${summary.visibleCount} visible landmarks. Unplaced points remain unknown.`)
+      onConfirmed({ complete: data.complete, confirmedCount: data.confirmedCount, visibleCount: data.visibleCount })
+    } catch {
+      if (requestGeneration === generation.current) { setStatus('ready'); setMessage('Landmarks could not be saved. Your placed points are still here. Retry saving.') }
+    } finally { saveLock.current = false }
   }
 
-  const uncertainCount = landmarks.filter((landmark) => landmark.visible && landmark.lowConfidence).length
+  const summary = manualLandmarkSummary(landmarks)
 
   return (
     <section className="aos-landmark-editor" aria-label={`${POSTURE_VIEW_LABELS[view]} landmark editor`}>
@@ -215,9 +215,10 @@ export default function PostureLandmarkEditor({
             height={1200}
             unoptimized
             className="aos-landmark-image"
-            onLoad={runDetection}
+            onLoad={loadManualPhoto}
+            onError={() => { setMessage('Your photo could not be loaded. Reopen it to try again.'); setStatus('error') }}
           />
-          {result ? (
+          {status !== 'loading' && status !== 'error' ? (
             <svg
               ref={svgRef}
               className="aos-landmark-overlay"
@@ -251,7 +252,6 @@ export default function PostureLandmarkEditor({
                   className={[
                     'aos-landmark-point',
                     activeName === landmark.name ? 'is-active' : '',
-                    landmark.lowConfidence ? 'is-uncertain' : '',
                   ].filter(Boolean).join(' ')}
                   role="button"
                   aria-label={`Drag ${landmark.label}`}
@@ -267,15 +267,15 @@ export default function PostureLandmarkEditor({
         </div>
 
         <aside className="aos-landmark-panel">
-          {status === 'loading' ? <p className="aos-landmark-note">Estimating posture landmarks...</p> : null}
-          {uncertainCount ? <p className="aos-landmark-warning">{uncertainCount} point{uncertainCount === 1 ? '' : 's'} need closer review.</p> : null}
+          {status === 'loading' ? <p className="aos-landmark-note">Loading your photo...</p> : null}
+          <p className="aos-landmark-note">Manual placement · {summary.confirmedCount} of {summary.visibleCount} visible landmarks placed. Unplaced points remain unknown. Left and right refer to your anatomy.</p>
           <div className="aos-landmark-active">
             <strong>{activeLandmark?.label || 'Select a landmark'}</strong>
             <span>{activeLandmark?.confirmed ? 'Drag the point on the photo to adjust it.' : 'Tap the photo to place this point.'}</span>
           </div>
           <div className="aos-landmark-controls">
             <button type="button" onClick={undo} disabled={!history.length || status !== 'ready'}>Undo</button>
-            <button type="button" onClick={resetAutomatic} disabled={!activeLandmark || status !== 'ready'}>Reset</button>
+            <button type="button" onClick={resetManual} disabled={!summary.confirmedCount || status !== 'ready'}>Reset manual points</button>
             <button type="button" onClick={clearPoint} disabled={!activeLandmark || status !== 'ready'}>Clear</button>
           </div>
           <div className="aos-landmark-list">
@@ -285,16 +285,17 @@ export default function PostureLandmarkEditor({
                 key={landmark.name}
                 className={activeName === landmark.name ? 'is-active' : ''}
                 onClick={() => setActiveName(landmark.name)}
+                disabled={status !== 'ready'}
               >
                 <span>{landmark.label}</span>
                 <small>
-                  {landmark.manuallyAdjusted ? 'Adjusted' : landmark.lowConfidence ? 'Review' : 'Estimated'}
+                  {landmark.confirmed ? 'Placed manually' : 'Unplaced · unknown'}
                 </small>
               </button>
             ))}
           </div>
-          <AOSButton type="button" onClick={confirm} disabled={!result || status === 'loading' || status === 'saving'}>
-            {status === 'saving' ? 'Saving...' : 'Confirm landmarks'}
+          <AOSButton type="button" onClick={confirm} disabled={status !== 'ready' || !summary.confirmedCount}>
+            {status === 'saving' ? 'Saving...' : summary.complete ? 'Confirm landmarks' : 'Save placed landmarks'}
           </AOSButton>
         </aside>
       </div>

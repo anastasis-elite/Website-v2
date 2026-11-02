@@ -27,5 +27,10 @@ export default async function AccountPage() {
     workout_days_available: client.workout_days_available || null,
     current_workout_minutes_per_session: client.current_workout_minutes_per_session || null,
   }
-  return <AccountDashboard initialData={data} client={profileFormData} user={{ email: user.email || null }} />
+  const displayPreferences = {
+    executionStyle: client.execution_style || 'flow',
+    carouselStyle: client.carousel_style || 'section',
+    transitionMinutes: Number(client.onboarding_data?.transitionMinutes ?? 10),
+  }
+  return <AccountDashboard initialData={data} client={profileFormData} user={{ email: user.email || null }} displayPreferences={displayPreferences} />
 }

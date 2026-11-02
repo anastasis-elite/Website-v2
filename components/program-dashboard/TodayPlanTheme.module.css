@@ -55,14 +55,28 @@
 .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > small, .surface :global(.plan-overview-copy) > p:not(:global(.today-card-kicker)) { margin: 6px 0 8px; color: var(--soft); font-size: clamp(.85rem, 1.8vw, 1rem); line-height: 1.45; }
 .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-optional-label) { display: block; margin: 6px 0 0; color: var(--soft); font: 400 .75rem Arial, sans-serif; }
 .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-state) { position: static; display: block; flex: none; margin: 0; padding: 0 16px 10px; color: var(--soft); font-size: .8rem; text-align: left; }
-.surface :global(.plan-overview-arrow) { align-self: flex-end; flex-shrink: 0; width: 28px; height: 28px; margin-top: auto; color: var(--accent); }
 .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-row-options), .surface :global(.today-activities) li[data-illustrated="true"] > button, .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-change-time) { margin: 0 12px 10px; }
 .surface :global(.today-row-options) summary { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid #bd895867; border-radius: 12px; color: var(--soft); }
 .surface :global(.today-row-options) button, .surface :global(.today-activities) li > button { border-color: #bd895867; color: var(--anastasis-ivory); }
-.surface :global(.today-progress) { margin-top: 28px; padding: 20px; border: 1px solid #b3835038; border-radius: 18px; background: #41291955; }
+.surface :global(.today-progress) { display: grid; gap: 12px; width: 100%; margin-top: 28px; padding: 20px; border: 1px solid #b3835038; border-radius: 18px; color: var(--anastasis-ivory); background: #41291955; font: inherit; text-align: left; cursor: pointer; }
+.surface :global(.today-progress-heading) { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.surface :global(.today-progress-title) { font-weight: 600; }
+.surface :global(.today-progress-heading) > span:last-child { font-variant-numeric: tabular-nums; }
+.surface :global(.today-progress-copy) { color: var(--soft); font-size: .9rem; line-height: 1.5; }
+.surface :global(.today-progress-segments) { margin-top: 0; }
 .surface :global(.today-progress-segments) i { background: #81553555; }
 .surface :global(.today-progress-segments) i:global(.is-complete) { background: var(--accent); }
 .surface :global(.today-progress) > p, .surface :global(.today-feedback) { color: var(--soft); }
+.surface :global(.today-streak-dialog) { width: min(620px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 24px; border: 1px solid #b3835070; border-radius: 24px; color: var(--anastasis-ivory); background: #21140c; }
+.surface :global(.today-streak-dialog[open]) { display: grid; gap: 16px; }
+.surface :global(.today-streak-dialog)::backdrop { background: #0c0805cc; }
+.surface :global(.today-streak-dialog) > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.surface :global(.today-streak-dialog) h2 { margin: 0; font: 400 clamp(1.5rem, 4vw, 2rem)/1.2 Georgia, serif; }
+.surface :global(.today-streak-dialog) > p { margin: 0; color: var(--soft); line-height: 1.6; }
+.surface :global(.today-streak-dialog) button { min-width: 44px; min-height: 44px; color: var(--anastasis-ivory); }
+.surface :global(.today-streak-dialog) > header button { padding: 8px 12px; border: 1px solid #b3835070; border-radius: 12px; background: transparent; font: inherit; cursor: pointer; }
+.surface :global(.today-streak-dialog) :global(.streak-requirements-card) { width: 100%; margin: 0; padding: 16px; border-color: #b3835045; background: #352112; box-shadow: none; }
+.surface :global(.today-streak-dialog) :global(.streak-requirement-alternative) { display: flex; align-items: center; min-height: 44px; margin-top: 4px; color: var(--accent); }
 .surface :global(.today-workout-status) { display: grid; gap: 4px; margin: 0 0 20px; padding-block: 12px; border-block: 1px solid #b3835038; color: var(--soft); font-size: .85rem; line-height: 1.5; }
 .surface :global(.today-workout-status) strong { color: var(--anastasis-ivory); }
 .surface :global(.daily-disclosure), .surface :global(.daily-preferences), .surface :global(.daily-preview) section { border-color: #b3835038; background: linear-gradient(130deg, #4d301d66, #302014aa); }
@@ -99,7 +113,6 @@
   .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > strong, .surface :global(.plan-overview-copy) h3 { font-size: 1.25rem; }
   .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy) > small, .surface :global(.plan-overview-copy) > p:not(:global(.today-card-kicker)) { font-size: .83rem; margin-bottom: 6px; }
   .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-state) { padding: 0 12px 10px; font-size: .75rem; }
-  .surface :global(.plan-overview-arrow) { width: 24px; height: 24px; }
   .surface :global(.today-activities) li[data-illustrated="true"] > :global(.today-row-options), .surface :global(.today-activities) li[data-illustrated="true"] > button { margin-left: 10px; margin-right: 10px; }
 }
 @media (max-width: 350px) {

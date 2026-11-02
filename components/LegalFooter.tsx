@@ -3,7 +3,7 @@ import Link from 'next/link'
 const links = [
   ['What is Anastasis?', '/what-is-anastasis'], ['Programs', '/program'], ['About Anastasis', '/about'],
   ['Terms', '/terms'], ['Privacy', '/privacy'], ['Health Disclaimer', '/health-disclaimer'],
-  ['AI Disclaimer', '/ai-disclaimer'], ['Billing / Refunds', '/refund-policy'], ['Research Consent', '/research-consent'],
+  ['Billing / Refunds', '/refund-policy'], ['Research Consent', '/research-consent'],
   ['Customer support', '/support'],
 ]
 

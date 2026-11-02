@@ -1,4 +1,5 @@
 import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
+import { dayBlockHref, isDayBlockDate, type DayBlock } from '@/lib/day/dayBlockRoutes'
 import type {
   ProgramTier,
   StreakItem,
@@ -15,6 +16,7 @@ export function getProgramDashboardHref(programTier: ProgramTier) {
 
 export function getStreakRequirementDestinations(
   programTier: ProgramTier,
+  context: { date?: string; block?: DayBlock } = {},
 ): Partial<Record<StreakItem, StreakRequirementDestination>> {
   return {
     nutrition: {
@@ -48,9 +50,9 @@ export function getStreakRequirementDestinations(
         "Open Sleep to complete today's sleep logging streak requirement",
     },
     customTasks: {
-      href: getProgramDashboardHref(programTier),
+      href: isDayBlockDate(context.date) ? dayBlockHref(context.block || 'morning', context.date) : `/dashboard/day/${context.block || 'morning'}`,
       ariaLabel:
-        "Open Today to complete today's task streak requirement",
+        "Open the day-block checklist to complete today's task streak requirement",
     },
   }
 }

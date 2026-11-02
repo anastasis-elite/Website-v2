@@ -57,14 +57,14 @@ Rules:
 - Invite understanding before buying.
 `.trim()
 
-  // Temporary placeholder until AI call is connected.
+  // Temporary placeholder for the publishing workflow.
   const output = `
 PROMPT READY:
 
 ${prompt}
 
 Next step:
-Connect this route to your AI provider and return the model response here.
+Connect this route to your publishing workflow and return the prepared content here.
 `.trim()
 
   return NextResponse.json({ output })
