@@ -6,53 +6,53 @@ export default function AOSAnalyticsPage() {
   const funnelSteps = [
     {
       step: 'Homepage Viewed',
-      event: 'page_view:/',
-      status: 'Needs tracking',
+      event: 'landing_page_viewed',
+      status: 'Code implemented; acceptance pending',
     },
     {
       step: 'Audit Started',
       event: 'audit_started',
-      status: 'Needs tracking',
+      status: 'Code implemented; acceptance pending',
     },
     {
       step: 'Audit Completed',
-      event: 'audit_completed',
-      status: 'Partially active',
+      event: 'audit_page_completed',
+      status: 'Code implemented; acceptance pending',
     },
     {
       step: 'Results Viewed',
       event: 'audit_results_viewed',
-      status: 'Needs tracking',
+      status: 'Code implemented; acceptance pending',
     },
     {
       step: 'Program Viewed',
       event: 'program_viewed',
-      status: 'Needs tracking',
+      status: 'Code implemented; acceptance pending',
     },
     {
       step: 'Checkout Started',
       event: 'checkout_started',
-      status: 'Needs tracking',
+      status: 'Code implemented; acceptance pending',
     },
     {
-      step: 'Checkout Completed',
-      event: 'checkout_completed',
-      status: 'Needs Stripe webhook tracking',
+      step: 'Subscription Activated',
+      event: 'subscription_activated',
+      status: 'Durable server receipt; provider acceptance pending',
     },
     {
-      step: 'Login Created',
-      event: 'login_created',
-      status: 'Needs tracking',
+      step: 'First Workout Completed',
+      event: 'first_workout_completed',
+      status: 'Durable server receipt; acceptance pending',
     },
     {
       step: 'Onboarding Completed',
       event: 'onboarding_completed',
-      status: 'Needs tracking',
+      status: 'Code implemented; acceptance pending',
     },
     {
-      step: 'Dashboard Opened',
-      event: 'dashboard_viewed',
-      status: 'Needs tracking',
+      step: 'Today Viewed',
+      event: 'today_page_viewed',
+      status: 'Code implemented; acceptance pending',
     },
   ]
 

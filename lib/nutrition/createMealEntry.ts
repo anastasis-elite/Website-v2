@@ -1,8 +1,9 @@
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { recordConversion } from '@/lib/analytics/server'
 import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { NormalizedMealInput, MealEntryInsert } from '@/lib/nutrition/mealEntry'
-import { getTierCapabilities } from '@/lib/entitlements'
+import { membershipCan } from '@/lib/membership/policy'
 import { mealPeriodToDayBlock, normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
 import {
   normalizeNutritionEntrySource,
@@ -120,7 +121,7 @@ export async function createMealEntry(supabase: SupabaseClient, userId: string, 
 
   const { data: client, error: clientError } = await supabase
     .from('clients')
-    .select('client_id, program')
+    .select('client_id, program, access, active, verified_purchase, subscription_ends_at,membership_expires_at,onboarding_data,state,timezone')
     .eq('client_id', log.client_id)
     .eq('auth_user_id', userId)
     .maybeSingle()
@@ -138,8 +139,7 @@ export async function createMealEntry(supabase: SupabaseClient, userId: string, 
     return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
   }
 
-  const capabilities = getTierCapabilities(client.program)
-  if (!capabilities.nutritionTracking || !capabilities.nutritionMealLogging) {
+  if (!membershipCan(client, 'nutritionTracking') || !membershipCan(client, 'nutritionMealLogging')) {
     return NextResponse.json({ error: 'Food logging is not available for this tier.' }, { status: 403 })
   }
 
@@ -148,15 +148,15 @@ export async function createMealEntry(supabase: SupabaseClient, userId: string, 
     return NextResponse.json({ error: 'Invalid nutrition entry source.' }, { status: 400 })
   }
 
-  if (source === 'barcode' && !capabilities.nutritionBarcodeScanning) {
+  if (source === 'barcode' && !membershipCan(client, 'nutritionBarcodeScanning')) {
     return NextResponse.json({ error: 'Barcode scanning is not available for this tier.' }, { status: 403 })
   }
 
-  if (source === 'recurring' && !capabilities.nutritionAutomaticPreLogging) {
+  if (source === 'recurring' && !membershipCan(client, 'nutritionAutomaticPreLogging')) {
     return NextResponse.json({ error: 'Recurring food logging is not available for this tier.' }, { status: 403 })
   }
 
-  if (source === 'photo_estimate' && !capabilities.nutritionPhotoMacroEstimation) {
+  if (source === 'photo_estimate' && !membershipCan(client, 'nutritionPhotoMacroEstimation')) {
     return NextResponse.json({ error: 'Photo macro estimation is not available for this tier.' }, { status: 403 })
   }
 
@@ -406,6 +406,7 @@ export async function createMealEntry(supabase: SupabaseClient, userId: string, 
   }
 
   invalidateDailyPlan()
+  if (state === 'confirmed') await recordConversion(supabase, { userId, event: 'first_nutrition_completed' })
 
   return NextResponse.json({
     success: true,

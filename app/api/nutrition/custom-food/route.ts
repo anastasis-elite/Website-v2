@@ -1,7 +1,7 @@
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getTierCapabilities } from '@/lib/entitlements'
+import { membershipCan } from '@/lib/membership/policy'
 import {
   flattenFoodNutrition,
   foodWithNutritionSelect,
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
   const { data: client, error: clientError } = await supabase
     .from('clients')
-    .select('client_id, program')
+    .select('client_id, program, access, active, verified_purchase, subscription_ends_at,membership_expires_at,onboarding_data,state,timezone')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -73,11 +73,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
   }
 
-  if (!getTierCapabilities(client.program).nutritionMealLogging) {
+  if (!membershipCan(client, 'nutritionMealLogging')) {
     return NextResponse.json({ error: 'Nutrition tracking is not available for this tier.' }, { status: 403 })
   }
 
-  if (barcode && !getTierCapabilities(client.program).nutritionBarcodeScanning) {
+  if (barcode && !membershipCan(client, 'nutritionBarcodeScanning')) {
     return NextResponse.json({ error: 'Barcode scanning is not available for this tier.' }, { status: 403 })
   }
 

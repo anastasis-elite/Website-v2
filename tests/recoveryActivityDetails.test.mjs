@@ -10,6 +10,7 @@ const route = await importTs('app/api/recovery/activity/route.ts', {
   'next/server': 'export const NextResponse = { json: (body, init) => Response.json(body, init) }',
   '@/lib/supabase/server': 'export const createClient = async () => globalThis.recoveryActivityDb',
   '@/lib/timezone': 'export const getClientLocalDate = () => globalThis.recoveryActivityDate || "2026-10-30"',
+  '@/lib/analytics/server': 'export const recordConversion = async () => false',
   '@/lib/dashboard/invalidateDailyPlan': 'export const invalidateDailyPlan = () => { globalThis.recoveryActivityInvalidations++ }',
 })
 
@@ -87,7 +88,7 @@ function database({ signedIn = true, failInsert = false } = {}) {
       const filters = []
       const query = { select() { return query }, eq(key, value) { filters.push([key, value]); return query },
         async maybeSingle() {
-          const candidates = table === 'clients' ? [{ client_id: 'own-client', auth_user_id: owner }, { client_id: 'other-client', auth_user_id: other }] : rows
+          const candidates = table === 'clients' ? [{ client_id: 'own-client', auth_user_id: owner, program: 'ignite', access: true, active: true }, { client_id: 'other-client', auth_user_id: other }] : rows
           return { data: candidates.find(row => filters.every(([key, value]) => row[key] === value)) ?? null, error: null }
         },
         async insert(row) {

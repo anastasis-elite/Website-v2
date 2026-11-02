@@ -1,7 +1,9 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { getClientDayRange } from '@/lib/schedule/time'
 import { getClientLocalDate } from '@/lib/timezone'
 import { isValidCompletedSet, manualWorkoutPlan, prescribedSetCount, workoutCompletion } from '@/lib/workout/activity'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { recordConversion } from '@/lib/analytics/server'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { loadWorkoutHistory } from '@/lib/workout/history'
@@ -34,6 +36,7 @@ export async function POST(req: Request) {
 
     const {data:client} = await supabase.from('clients').select('*').eq('client_id',body.client_id).eq('auth_user_id',user.id).maybeSingle()
     if(!client)return NextResponse.json({error:'Client not found.'},{status:404})
+    if(!membershipCan(client, 'workoutLogging'))return NextResponse.json({error:'Workout logging is not available for this membership.'},{status:403})
     if(body.program !== client.program)return NextResponse.json({error:'Workout does not match your program.'},{status:403})
     const workoutDate = body.workout_date || new Date().toISOString()
     if(!Number.isFinite(new Date(workoutDate).getTime()) || getClientLocalDate(client,new Date(workoutDate)) !== getClientLocalDate(client))return NextResponse.json({error:'Reload today’s session before saving.'},{status:400})
@@ -131,6 +134,7 @@ export async function POST(req: Request) {
     }
 
     invalidateDailyPlan()
+    if (workoutPayload.completed) await recordConversion(supabase, { userId: user.id, event: 'first_workout_completed' })
 
     return NextResponse.json({ success: true, completed: workoutPayload.completed, progress: workoutCompletion(nextLogs, manualWorkoutPlan(nextLogs)), workout_log_id: workoutLogId, exercise_session_id: exerciseSessionId })
   } catch (error) {

@@ -66,3 +66,21 @@ export function memberNutritionLogColumns(program: unknown): string {
 export function memberNutritionRemainingColumns(program: unknown): string {
   return canTrackMicronutrients(program) ? '*' : 'nutrition_log_id,calories_remaining,protein_remaining_g,carbs_remaining_g,fat_remaining_g'
 }
+
+// The neutral tracking/history endpoint exposes recorded actuals, never saved
+// coaching targets or nested food data, including after a tier downgrade.
+export const memberManualNutritionLogColumns = 'id,client_id,log_date,water_consumed_oz,updated_at'
+export const memberManualMacroEntryColumns = 'id,nutrition_log_id,calories,protein_g,carbs_g,fat_g,day_block,meal_period,created_at'
+
+function pickManualFields(row: Record<string, unknown>, columns: string) {
+  return Object.fromEntries(columns.split(',').filter(key => Object.hasOwn(row, key)).map(key => [key, row[key]]))
+}
+
+export function memberManualNutritionLog(row: Record<string, unknown> | null, program: unknown) {
+  const projected = memberNutritionLog(row, program)
+  return projected ? pickManualFields(projected, memberManualNutritionLogColumns) : null
+}
+
+export function memberManualMacroEntry(row: Record<string, unknown>) {
+  return pickManualFields(row, memberManualMacroEntryColumns)
+}

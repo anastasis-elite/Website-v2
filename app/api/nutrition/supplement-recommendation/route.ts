@@ -1,3 +1,4 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { NextResponse } from 'next/server'
 import { getSupplementRecommendation } from '@/lib/nutrition/getSupplementRecommendation'
 import { safeErrorResponse } from '@/lib/security/http'
@@ -32,6 +33,8 @@ export async function GET(request: Request) {
     if (clientError || !client) {
       return safeErrorResponse('Client not found.', 404)
     }
+
+    if (!membershipCan(client, 'generatedCoaching')) return safeErrorResponse('Personalized recommendations are not included in this membership.', 403)
 
     // The service rechecks this owned row and keeps EMBER's existing protein
     // support separate from micronutrient coverage and recommendation inputs.

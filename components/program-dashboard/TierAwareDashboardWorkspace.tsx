@@ -189,6 +189,7 @@ export function AssessmentsTab({ logic, capabilities }: { logic: ProgramLogicOut
       <Link href="/dashboard/assessment/photos" data-tutorial-id="dashboard-progress-photos"><span>Progress Photos</span><strong>{logic.progress.photoUrls.length ? `${logic.progress.photoUrls.length} saved` : 'Available'}</strong><small>{logic.progress.photosDue ? 'Photo update available' : 'History available'}</small></Link>
       <Link href="/dashboard/assessment/photos"><span>Assessment Photos</span><strong>Available</strong><small>{postureCopy}</small></Link>
       <Link href={strengthAssessment.href} data-tutorial-id="dashboard-strength-assessment"><span>Strength Assessment</span><strong>{strengthAssessment.label}</strong><small>{getStrengthAssessmentDetail(strengthAssessment, logic.client)}</small><span>{strengthAssessment.actionLabel}</span></Link>
+      {strengthAssessment.previousDraft ? <Link href={strengthAssessment.previousDraft.href}><span>Earlier Strength Assessment</span><strong>Draft saved</strong><small>Your earlier measurements remain separate from this month.</small><span>Resume earlier assessment</span></Link> : null}
       <Link href={capabilities.postureAssessment ? '/dashboard/assessment/photos?type=posture' : '/dashboard/assessment/photos'} aria-disabled={!capabilities.postureAssessment}><span>Posture Assessment</span><strong>{capabilities.postureAssessment ? 'Available' : 'Ignite/Phoenix'}</strong><small>{capabilities.postureAssessment ? 'Confirm landmarks before saving' : 'Not included in Ember'}</small></Link>
     </div>
   )

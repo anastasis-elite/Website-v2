@@ -3,7 +3,7 @@ import { addLocalDays, getClientLocalDate, getClientTimeZone, localDateKey } fro
 import { getClientDayRange } from '@/lib/schedule/time'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getTierCapabilities } from '@/lib/entitlements'
+import { membershipCan } from '@/lib/membership/policy'
 import { mealPeriodToDayBlock, normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
 import { classifyRecurringMealPattern } from '@/lib/nutrition/recurringMealIntelligence'
 
@@ -34,7 +34,7 @@ export async function GET() {
 
   const { data: client, error: clientError } = await supabase
     .from('clients')
-    .select('client_id, program, timezone, onboarding_data, state')
+    .select('client_id, program, timezone, onboarding_data, state, access, active, verified_purchase, subscription_ends_at,membership_expires_at')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -42,8 +42,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
   }
 
-  const capabilities = getTierCapabilities(client.program)
-  if (!capabilities.nutritionRecurringFoodDetection) {
+  if (!membershipCan(client, 'nutritionRecurringFoodDetection')) {
     return NextResponse.json({ error: 'Recurring food detection is not available for this tier.' }, { status: 403 })
   }
 
@@ -193,7 +192,7 @@ export async function POST(request: Request) {
 
   const { data: client, error: clientError } = await supabase
     .from('clients')
-    .select('client_id, program')
+    .select('client_id, program, access, active, verified_purchase, subscription_ends_at,membership_expires_at,onboarding_data,state,timezone')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -201,8 +200,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
   }
 
-  const capabilities = getTierCapabilities(client.program)
-  if (!capabilities.nutritionAutomaticPreLogging) {
+  if (!membershipCan(client, 'nutritionAutomaticPreLogging')) {
     return NextResponse.json({ error: 'Automatic pre-logging is not available for this tier.' }, { status: 403 })
   }
 

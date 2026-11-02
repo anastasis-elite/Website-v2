@@ -1,0 +1,137 @@
+[
+  {
+    "name": "desktop",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "layout": {
+      "viewport": 1440,
+      "scroll": 1440,
+      "overflows": []
+    },
+    "imageInfo": {
+      "naturalWidth": 486,
+      "naturalHeight": 324,
+      "width": 486,
+      "height": 324,
+      "sizes": "(max-width: 760px) calc(100vw - 48px), (max-width: 1068px) 46vw, 486px",
+      "loading": "lazy",
+      "currentSrc": "http://127.0.0.1:3100/_next/image?url=%2Fimages%2Fhomepage%2Fevening-kitchen.webp&w=640&q=75"
+    },
+    "auditLinks": [
+      {
+        "href": "/audit",
+        "location": "hero"
+      },
+      {
+        "href": "/audit",
+        "location": "outcome"
+      },
+      {
+        "href": "/audit",
+        "location": "final_cta"
+      }
+    ],
+    "pageErrors": [],
+    "checks": [
+      "hero visible with reduced motion",
+      "story image responsive and lazy",
+      "no horizontal overflow including descendants",
+      "all three audit CTAs navigate",
+      "how-it-works anchor",
+      "navigation menu + program destination",
+      "closing program CTA"
+    ]
+  },
+  {
+    "name": "mobile",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "layout": {
+      "viewport": 390,
+      "scroll": 390,
+      "overflows": []
+    },
+    "imageInfo": {
+      "naturalWidth": 342,
+      "naturalHeight": 228,
+      "width": 342,
+      "height": 228,
+      "sizes": "(max-width: 760px) calc(100vw - 48px), (max-width: 1068px) 46vw, 486px",
+      "loading": "lazy",
+      "currentSrc": "http://127.0.0.1:3100/_next/image?url=%2Fimages%2Fhomepage%2Fevening-kitchen.webp&w=384&q=75"
+    },
+    "auditLinks": [
+      {
+        "href": "/audit",
+        "location": "hero"
+      },
+      {
+        "href": "/audit",
+        "location": "outcome"
+      },
+      {
+        "href": "/audit",
+        "location": "final_cta"
+      }
+    ],
+    "pageErrors": [],
+    "checks": [
+      "hero visible with reduced motion",
+      "story image responsive and lazy",
+      "no horizontal overflow including descendants",
+      "all three audit CTAs navigate",
+      "how-it-works anchor",
+      "navigation menu + program destination",
+      "closing program CTA"
+    ]
+  },
+  {
+    "name": "narrow-mobile",
+    "viewport": {
+      "width": 320,
+      "height": 740
+    },
+    "layout": {
+      "viewport": 320,
+      "scroll": 320,
+      "overflows": []
+    },
+    "imageInfo": {
+      "naturalWidth": 272,
+      "naturalHeight": 181,
+      "width": 272,
+      "height": 181,
+      "sizes": "(max-width: 760px) calc(100vw - 48px), (max-width: 1068px) 46vw, 486px",
+      "loading": "lazy",
+      "currentSrc": "http://127.0.0.1:3100/_next/image?url=%2Fimages%2Fhomepage%2Fevening-kitchen.webp&w=384&q=75"
+    },
+    "auditLinks": [
+      {
+        "href": "/audit",
+        "location": "hero"
+      },
+      {
+        "href": "/audit",
+        "location": "outcome"
+      },
+      {
+        "href": "/audit",
+        "location": "final_cta"
+      }
+    ],
+    "pageErrors": [],
+    "checks": [
+      "hero visible with reduced motion",
+      "story image responsive and lazy",
+      "no horizontal overflow including descendants",
+      "all three audit CTAs navigate",
+      "how-it-works anchor",
+      "navigation menu + program destination",
+      "closing program CTA"
+    ]
+  }
+]

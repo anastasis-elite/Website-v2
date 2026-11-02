@@ -1,7 +1,7 @@
 import 'server-only'
 import type Stripe from 'stripe'
 
-export type Program = 'ember' | 'ignite' | 'phoenix'
+export type Program = 'tracker' | 'ember' | 'ignite' | 'phoenix'
 export type Billing = 'subscription' | 'annual'
 export type PriceDetails = {
   available: boolean
@@ -17,19 +17,39 @@ export type PriceDetails = {
 
 export function parseProgram(value: unknown): Program | null {
   const program = typeof value === 'string' ? value.trim().toLowerCase() : ''
-  return program === 'ember' || program === 'ignite' || program === 'phoenix' ? program : null
+  return program === 'tracker' || program === 'ember' || program === 'ignite' || program === 'phoenix' ? program : null
 }
 export function parseBilling(value: unknown): Billing | null {
   return value === 'subscription' || value === 'annual' ? value : null
 }
 
 const priceVariables: Record<Program, Record<Billing, string>> = {
+  tracker: { subscription: 'TRACKER_SUB_PRICE', annual: 'TRACKER_YEAR_PRICE' },
   ember: { subscription: 'EMBER_SUB_PRICE', annual: 'EMBER_YEAR_PRICE' },
   ignite: { subscription: 'IGNITE_SUB_PRICE', annual: 'IGNITE_YEAR_PRICE' },
   phoenix: { subscription: 'PHOENIX_SUB_PRICE', annual: 'PHOENIX_YEAR_PRICE' },
 }
 export function configuredPriceId(program: Program, billing: Billing): string | undefined {
   return process.env[priceVariables[program][billing]]?.trim()
+}
+
+function uniquePriceSlot(priceId: unknown): { program: Program; billing: Billing } | null {
+  if (typeof priceId !== 'string' || !/^price_[a-zA-Z0-9]+$/.test(priceId)) return null
+  const matches = (Object.keys(priceVariables) as Program[]).flatMap(program =>
+    (['subscription', 'annual'] as Billing[]).filter(billing => configuredPriceId(program, billing) === priceId).map(billing => ({ program, billing })))
+  return matches.length === 1 ? matches[0] : null
+}
+
+/** A price must have exactly one server binding, including across billing modes. */
+export function subscriptionProgramForPrice(priceId: unknown): Program | null {
+  const slot = uniquePriceSlot(priceId)
+  return slot?.billing === 'subscription' ? slot.program : null
+}
+
+/** Mapping only: historical receipt verification remains the caller's responsibility. */
+export function annualProgramForPrice(priceId: unknown): Exclude<Program, 'tracker'> | null {
+  const slot = uniquePriceSlot(priceId)
+  return slot?.billing === 'annual' && slot.program !== 'tracker' ? slot.program : null
 }
 const zeroDecimalCurrencies = new Set(['bif','clp','djf','gnf','jpy','kmf','krw','mga','pyg','rwf','vnd','vuv','xaf','xof','xpf'])
 const threeDecimalCurrencies = new Set(['bhd','jod','kwd','omr','tnd'])
@@ -52,27 +72,26 @@ function amountDetails(price: Stripe.Price): PriceDetails {
   return { available: false, amount, currency, amountLabel, intervalLabel, mode: price.type === 'recurring' ? 'subscription' : 'payment' }
 }
 
-function accessMonths(price: Stripe.Price, product: Stripe.Product) {
-  const value = price.metadata?.access_months ?? product.metadata?.access_months
-  if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) return null
-  const months = Number(value)
-  return Number.isSafeInteger(months) && months > 0 && months <= 120 ? months : null
-}
-
 // This retrieves configured Stripe objects. No amounts, intervals, or access
 // periods are derived from product names, marketing text, or former checkout observations.
 export async function getPrice(stripe: Pick<Stripe, 'prices'>, program: Program, billing: Billing): Promise<{ price: Stripe.Price; details: PriceDetails }> {
+  if (program === 'tracker' && billing === 'annual') throw new PricingError('Tracker pay-in-full access is not approved.')
   const priceId = configuredPriceId(program, billing)
   if (!priceId || !/^price_[a-zA-Z0-9]+$/.test(priceId)) throw new PricingError('This payment option is not configured.')
   let price: Stripe.Price
   try { price = await stripe.prices.retrieve(priceId, { expand: ['product'] }) }
   catch { throw new PricingError() }
-  const product = typeof price.product === 'object' && !('deleted' in price.product) ? price.product : null
+  const product = price.product && typeof price.product === 'object' && !('deleted' in price.product) ? price.product : null
   if (price.id !== priceId || !product) return { price, details: { available: false, error: 'The configured product could not be confirmed.' } }
   const declaredPrograms = [price.metadata?.program, price.metadata?.program_tier, product.metadata?.program, product.metadata?.program_tier].filter(value => value !== undefined && value !== '')
   const mismatched = declaredPrograms.some(value => parseProgram(value) !== program)
-  const mappedPrograms = Object.entries(priceVariables).filter(([,vars]) => Object.values(vars).some(variable => process.env[variable]?.trim() === priceId)).map(([mapped]) => mapped)
-  if (mismatched || (!declaredPrograms.length && (mappedPrograms.length !== 1 || mappedPrograms[0] !== program))) return { price, details: { available: false, error: 'The configured price does not identify this program.' } }
+  const mappedProgram = billing === 'subscription' ? subscriptionProgramForPrice(priceId) : annualProgramForPrice(priceId)
+  if (mismatched || mappedProgram !== program) return { price, details: { available: false, error: 'The configured price does not identify this program and payment option unambiguously.' } }
+  if ((price.livemode !== undefined && typeof price.livemode !== 'boolean') ||
+    (product.livemode !== undefined && typeof product.livemode !== 'boolean') ||
+    (typeof price.livemode === 'boolean' && typeof product.livemode === 'boolean' && price.livemode !== product.livemode)) {
+    return { price, details: { available: false, error: 'The configured price and product payment environments do not match.' } }
+  }
   const details = amountDetails(price)
   if (details.amount === undefined) return { price, details }
   if (!price.active || !product.active) return { price, details: { ...details, error: 'This configured payment option is inactive.' } }
@@ -82,9 +101,9 @@ export async function getPrice(stripe: Pick<Stripe, 'prices'>, program: Program,
     return { price, details: { ...details, available: true, coverageLabel: 'Billed every month for ongoing program access.', accessMonths: 1 } }
   }
   if (price.type !== 'one_time' || price.recurring !== null) return { price, details: { ...details, error: 'Pay in full requires a one-time price; this configured price recurs.' } }
-  const months = accessMonths(price, product)
-  if (months === null) return { price, details: { ...details, coverageLabel: 'The access period has not been confirmed.', error: 'Pay-in-full access duration must be configured before checkout.' } }
-  return { price, details: { ...details, available: true, accessMonths: months, coverageLabel: `Includes ${months} month${months === 1 ? '' : 's'} of program access.` } }
+  // The approved full-year duration is server policy, never provider/client
+  // metadata. Prices and amounts still come only from validated server mappings.
+  return { price, details: { ...details, available: true, accessMonths: 12, coverageLabel: 'Includes 12 months of program access.' } }
 }
 
 export function publicPriceDetails(details: PriceDetails): Omit<PriceDetails, 'mode' | 'accessMonths'> {

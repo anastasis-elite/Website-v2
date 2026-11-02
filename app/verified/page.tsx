@@ -8,6 +8,7 @@ import { deliverPurchaseInvitation } from '@/lib/commerce/invitationDelivery'
 import { fulfillPurchase } from '@/lib/commerce/fulfillment'
 import { purchaseCookieName, verifyPurchaseProof } from '@/lib/commerce/purchaseProof'
 import { paymentEnvironmentError } from '@/lib/commerce/environment'
+import { bindAnalyticsOwner } from '@/lib/analytics/checkoutContext'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,14 +28,25 @@ export default async function VerifiedPage({ searchParams }: { searchParams?: Pr
     const cookieStore = await cookies()
     const proof = verifyPurchaseProof(cookieStore.get(purchaseCookieName(sessionId))?.value, session.metadata?.purchase_proof_hash)
     const receiptEmail = String(session.customer_details?.email || session.customer_email || '').trim().toLowerCase()
-    const signedOwner = Boolean(user && (session.metadata?.auth_user_id === user.id || (user.email_confirmed_at && user.email?.toLowerCase() === receiptEmail)))
-    if (!proof && !signedOwner) throw new Error('Open this confirmation in the browser where you completed checkout, or sign in with your purchase email.')
     const admin = createAdminClient()
+    const stored = await admin.from('checkout_purchases').select('client_id').eq('session_id', sessionId).maybeSingle()
+    if (stored.error) throw new Error('This purchase ownership could not be confirmed. Please retry.')
+    let storedOwner: string | null = null
+    if (stored.data) {
+      const profile = await admin.from('clients').select('auth_user_id').eq('client_id', stored.data.client_id).maybeSingle()
+      if (profile.error || !profile.data) throw new Error('This purchase ownership could not be confirmed. Please retry.')
+      storedOwner = profile.data.auth_user_id || null
+    }
+    const verifiedUser = Boolean(user?.email_confirmed_at && user.email)
+    const signedOwner = Boolean(verifiedUser && user && (storedOwner ? storedOwner === user.id : user.email!.trim().toLowerCase() === receiptEmail))
+    if (!proof && !signedOwner) throw new Error('Open this confirmation in the browser where you completed checkout, or sign in with your purchase email.')
+    if (signedOwner && user) await bindAnalyticsOwner(admin, new Request('https://analytics.invalid', { headers: { cookie: cookieStore.toString() } }), user.id)
     result = await fulfillPurchase({ stripe, supabase: admin, sessionId })
+    if (user && result.authUserId && result.authUserId !== user.id) throw new Error('This purchase is connected to another private login. Sign in with its verified owner to continue.')
     if (signedOwner && user && !result.authUserId) {
       if (!user.email_confirmed_at || !user.email) throw new Error('Sign in with your verified purchase email to connect this purchase.')
-      const { data, error } = await admin.rpc('claim_checkout_purchase', { p_session_id: sessionId, p_user_id: user.id, p_verified_email: user.email.trim().toLowerCase() })
-      if (error || !data) throw new Error('This returning purchase could not be connected. If you have an existing recurring subscription, support must reconcile the purchases. Contact support with both receipts.')
+      const { data, error } = await admin.rpc('claim_checkout_purchase_v4', { p_session_id: sessionId, p_user_id: user.id, p_verified_email: user.email.trim().toLowerCase() })
+      if (error || !data || data.auth_user_id !== user.id || typeof data.client_id !== 'string' || !data.client_id) throw new Error('This returning purchase could not be connected. If you have an existing recurring subscription, support must reconcile the purchases. Contact support with both receipts.')
       result = { clientId: data.client_id, email: data.email, program: data.program, authUserId: data.auth_user_id }
     }
     if (!result.authUserId) {
@@ -42,8 +54,7 @@ export default async function VerifiedPage({ searchParams }: { searchParams?: Pr
       if (error) throw error
       if (existingLogin) returningHref = '/login?redirect=' + encodeURIComponent('/verified?session_id=' + sessionId)
       else {
-        await deliverPurchaseInvitation({ supabase: admin, clientId: result.clientId, email: result.email, program: result.program, sessionId, origin: process.env.NEXT_PUBLIC_APP_URL || 'https://www.anastasiselite.com' })
-        emailSent = true
+        emailSent = await deliverPurchaseInvitation({ supabase: admin, clientId: result.clientId, email: result.email, program: result.program, sessionId, origin: process.env.NEXT_PUBLIC_APP_URL || 'https://www.anastasiselite.com' })
       }
     }
   } catch (error) { errorMessage = error instanceof Error ? error.message : 'This purchase could not be verified.'; result = null }

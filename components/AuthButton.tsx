@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { resetAnalyticsIdentity } from '@/lib/posthog'
 
 export default function AuthButton() {
   const pathname = usePathname()
@@ -57,8 +58,10 @@ export default function AuthButton() {
   }, [])
 
   async function handleLogout() {
+    if (!window.dispatchEvent(new Event('anastasis:before-assessment-navigation', { cancelable: true }))) return
     const supabase = createClient()
     await supabase.auth.signOut()
+    resetAnalyticsIdentity()
     window.location.href = '/'
   }
 

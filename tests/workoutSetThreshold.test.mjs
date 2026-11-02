@@ -8,6 +8,7 @@ const { loadWorkoutHistory } = await importTs('lib/workout/history.ts')
 const mocks = {
   'next/server': 'export const NextResponse = { json: (body, init) => Response.json(body, init) }',
   '@/lib/supabase/server': 'export const createClient = async () => globalThis.workoutThresholdDb',
+  '@/lib/analytics/server': 'export const recordConversion = async () => false',
   '@/lib/dashboard/invalidateDailyPlan': 'export const invalidateDailyPlan = () => {}',
 }
 const route = await importTs('app/api/workout-log/route.ts', mocks)
@@ -55,7 +56,7 @@ test('zero and unknown strength prescriptions stay unqualified; confirmed timed 
 })
 
 function database() {
-  const client = { client_id: 'SET-THRESHOLD-ONLY', auth_user_id: 'threshold-owner', program: 'ignite', timezone: 'Etc/UTC' }
+  const client = { client_id: 'SET-THRESHOLD-ONLY', auth_user_id: 'threshold-owner', program: 'ignite', access: true, active: true, timezone: 'Etc/UTC' }
   const rows = [], sets = new Map()
   const db = {
     auth: { getUser: async () => ({ data: { user: { id: client.auth_user_id } } }) },

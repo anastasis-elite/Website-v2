@@ -1,4 +1,6 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { getClientLocalDate } from '@/lib/timezone'
+import { recordConversion } from '@/lib/analytics/server'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { createPracticeTimeline } from '@/lib/meditation/practiceTiming'
 import { NextResponse } from 'next/server'
@@ -44,10 +46,11 @@ export async function POST(request: Request) {
   }
 
   const { data: client, error: clientError } = await supabase.from('clients')
-    .select('client_id,timezone,state,onboarding_data')
+    .select('client_id,timezone,state,onboarding_data,program,access,active,verified_purchase,subscription_ends_at,membership_expires_at')
     .eq('client_id', body.clientId).eq('auth_user_id', user.id).maybeSingle()
   if (clientError) return NextResponse.json({ error: 'Recovery could not be saved. Please try again.' }, { status: 500 })
   if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
+  if (!membershipCan(client, 'recoveryBasic')) return NextResponse.json({ error: 'Recovery tracking is not available for this membership.' }, { status: 403 })
   const { error } = await supabase.from('recovery_activity_logs').insert({
     user_id: user.id,
     client_id: client.client_id,
@@ -69,8 +72,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This save identifier already belongs to a different activity. Reopen the sheet to log another activity.' }, { status: 409 })
     }
     invalidateDailyPlan()
+    await recordConversion(supabase, { userId: user.id, event: 'first_recovery_completed' })
     return NextResponse.json({ success: true })
   }
-  if (!error) invalidateDailyPlan()
+  if (!error) {
+    invalidateDailyPlan()
+    await recordConversion(supabase, { userId: user.id, event: 'first_recovery_completed' })
+  }
   return error ? NextResponse.json({ error: error.message }, { status: 500 }) : NextResponse.json({ success: true })
 }

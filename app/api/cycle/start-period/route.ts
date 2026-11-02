@@ -1,3 +1,4 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { getClientLocalDate } from '@/lib/timezone'
 import { NextResponse } from 'next/server'
@@ -115,15 +116,7 @@ export async function POST(req: Request) {
       error: clientError,
     } = await supabase
       .from('clients')
-      .select(
-        `
-          client_id,
-          auth_user_id,
-          timezone, onboarding_data, state,
-          last_period_start,
-          average_cycle_length
-        `,
-      )
+      .select('*')
       .eq('client_id', client_id)
       .eq('auth_user_id', user.id)
       .maybeSingle()
@@ -144,6 +137,8 @@ export async function POST(req: Request) {
         { status: 404 },
       )
     }
+
+    if (!membershipCan(client, 'generatedCoaching')) return NextResponse.json({ error: 'Cycle coaching is not available for this membership.' }, { status: 403 })
 
     const today = getClientLocalDate(client)
     const updatedAt = new Date().toISOString()

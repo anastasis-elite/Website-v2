@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import * as styles from '../styles/globalstyles'
 import { createClient } from '../../lib/supabase/client'
+import Link from 'next/link'
 
 function LoginContent() {
   const router = useRouter()
@@ -116,6 +117,7 @@ function LoginContent() {
               </p>
             )}
           </form>
+          <p style={styles.bodyStyle}><Link href="/community/join">Join Free Community</Link></p>
         </section>
       </div>
     </main>

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { isClientOnboardingComplete } from '@/lib/dashboard/isClientOnboardingComplete'
 import { hasMemberAccess } from '@/lib/commerce/access'
 import { cache } from 'react'
+import { parseMembershipTier } from '@/lib/membership/policy'
 
 // React's cache lasts for one server render request. Layouts and pages share the
 // verified identity without persisting member data across requests or accounts.
@@ -76,7 +77,7 @@ export async function getDashboardContext({
   // Each caller still enforces its own gates, even when the layout permits
   // account/billing pages or incomplete onboarding.
   if (!allowInactiveAccess && !hasMemberAccess(context.client)) redirect('/dashboard/payment-issue')
-  if (!allowIncompleteOnboarding && !isClientOnboardingComplete(context.client)) {
+  if (!allowIncompleteOnboarding && ['ember','ignite','phoenix'].includes(parseMembershipTier(context.client.program) || '') && !isClientOnboardingComplete(context.client)) {
     redirect('/dashboard/onboarding/profile')
   }
   return context

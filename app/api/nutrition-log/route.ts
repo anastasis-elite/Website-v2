@@ -1,9 +1,9 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
 import { nutritionLogAuditFields } from '@/lib/nutrition/targetService'
 import { getClientLocalDate } from '@/lib/timezone'
-import { getTierCapabilities } from '@/lib/entitlements'
 import { canTrackMicronutrients, memberNutritionLog } from '@/lib/nutrition/memberNutrition'
 
 // Read through the member boundary so optional legacy calculation metadata can
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select(
-        'client_id, auth_user_id, program, birthdate, timezone, state, onboarding_data'
+        'client_id, auth_user_id, program, birthdate, timezone, state, onboarding_data, access, active, verified_purchase, subscription_ends_at,membership_expires_at'
       )
       .eq('client_id', client_id)
       .eq('auth_user_id', user.id)
@@ -113,10 +113,13 @@ export async function POST(req: Request) {
       )
     }
 
+    if (!membershipCan(client, 'generatedCoaching')) return NextResponse.json({ error: 'Use Tracker actual logging; personalized nutrition targets are not included.' }, { status: 403 })
+    if (!membershipCan(client, 'nutritionTracking')) return NextResponse.json({ error: 'Nutrition tracking is not included in this membership.' }, { status: 403 })
+
     if (meals !== undefined && !Array.isArray(meals)) {
       return NextResponse.json({ error: 'Meals must be an array.' }, { status: 400 })
     }
-    const canLogMeals = getTierCapabilities(client.program).nutritionMealLogging
+    const canLogMeals = membershipCan(client, 'nutritionMealLogging')
     if (Array.isArray(meals) && meals.length > 0 && !canLogMeals) {
       return NextResponse.json({ error: 'Food and meal logging require IGNITE or PHOENIX.' }, { status: 403 })
     }

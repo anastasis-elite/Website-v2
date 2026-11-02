@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getClientLocalDate } from '@/lib/timezone'
 import { readDirectEntryLog } from '@/lib/nutrition/directEntry'
 import { calculateClientNutritionTargets } from '@/lib/nutrition/targetService'
+import { membershipCan } from '@/lib/membership/policy'
 
 // Read-only: opening water entry must never create a nutrition log or intake.
 export async function GET(request: Request) {
@@ -20,6 +21,7 @@ export async function GET(request: Request) {
       .eq('client_id', clientId).eq('auth_user_id', user.id).maybeSingle()
     if (error) return reply({ error: 'Today’s hydration could not be loaded.' }, 500)
     if (!client) return reply({ error: 'Client not found.' }, 404)
+    if (!membershipCan(client, 'generatedCoaching')) return reply({ error: 'Personalized hydration targets require an active coaching membership.' }, 403)
     const stale = () => reply({ error: 'The logging day changed. Reload to open today’s water entry.' }, 409)
     if (getClientLocalDate(client) !== logDate) return stale()
     let log = await readDirectEntryLog(supabase, clientId, logDate)

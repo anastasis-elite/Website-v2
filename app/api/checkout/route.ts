@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getPrice, parseBilling, parseProgram } from '@/lib/commerce/catalog'
 import { paymentEnvironmentError } from '@/lib/commerce/environment'
 import { createPurchaseProof, hashPurchaseProof, purchaseCookieName } from '@/lib/commerce/purchaseProof'
+import { saveCheckoutAnalytics } from '@/lib/analytics/checkoutContext'
 
 export const runtime = 'nodejs'
 
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
     const environmentError = paymentEnvironmentError()
     if (environmentError) return NextResponse.json({ error: environmentError }, { status: 503 })
     if (!process.env.STRIPE_WEBHOOK_SECRET) return NextResponse.json({ error: 'Payment activation is not configured. Please contact support.' }, { status: 503 })
-    const { data: ready, error: readinessError } = await createAdminClient().rpc('commerce_configuration_ready', { p_contract_version: 2 })
+    const { data: ready, error: readinessError } = await createAdminClient().rpc('commerce_configuration_ready', { p_contract_version: 4 })
     if (readinessError || ready !== true) return NextResponse.json({ error: 'Payment activation needs administrator setup before checkout.' }, { status: 503 })
     const body = await req.json().catch(() => null)
     const program = parseProgram(body?.program), billing = parseBilling(body?.billing)
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
       subscription_data: billing === 'subscription' ? { metadata: { program, client_id: clientId, auth_user_id: user?.id || '' } } : undefined,
       payment_intent_data: billing === 'annual' ? { metadata: { program, billing } } : undefined,
     })
+    await saveCheckoutAnalytics(createAdminClient(), req, session.id, user?.id)
     const response = NextResponse.json({ url: session.url })
     response.cookies.set(purchaseCookieName(session.id), proof, { httpOnly: true, secure: new URL(req.url).protocol === 'https:', sameSite: 'lax', path: '/verified', maxAge: 7 * 86400 })
     return response

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import * as styles from '@/app/styles/globalstyles'
+import TrackEvent from '@/components/TrackEvent'
 
 type Price = {
   available: boolean
@@ -57,6 +58,7 @@ export function CartPriceDetails({ pricing, billing }: {
   const price = pricing.catalog?.[billing]
   return (
     <div aria-live="polite">
+      {price && billing === 'subscription' ? <TrackEvent event="pricing_viewed" properties={{ program: pricing.program, source: 'pricing' }} /> : null}
       <p style={{ ...styles.bodyStyle, fontSize: '1.4rem' }}>
         {price?.amountLabel || (pricing.catalog || pricing.error ? 'Price unavailable' : 'Checking current price…')}
         {price?.intervalLabel ? ` · ${price.intervalLabel}` : ''}

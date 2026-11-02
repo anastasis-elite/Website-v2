@@ -1,21 +1,8 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import ts from 'typescript'
 import { importTs } from './typescriptModule.mjs'
 
-async function importTypescriptModule(path) {
-  const source = readFileSync(path, 'utf8')
-  const { outputText } = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.ES2020,
-      target: ts.ScriptTarget.ES2022,
-    },
-  })
-  return import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`)
-}
-
-const { getTierCapabilities, normalizeProgramTier } = await importTypescriptModule('lib/entitlements.ts')
+const { getTierCapabilities, normalizeProgramTier } = await importTs('lib/entitlements.ts')
 const { buildWhatsNextState } = await importTs('lib/dashboard/whatsNext.ts')
 
 function logic(program = 'ignite') {
@@ -88,7 +75,7 @@ function schedule(category, overrides = {}) {
 
 test('tier capabilities normalize casing and expose predictable matrix', () => {
   assert.equal(normalizeProgramTier('Phoenix'), 'phoenix')
-  assert.equal(normalizeProgramTier('bad-value'), 'ember')
+  assert.throws(() => normalizeProgramTier('bad-value'))
   assert.equal(getTierCapabilities(null).nutritionMealLogging, false)
   assert.equal(getTierCapabilities('bad-value').nutritionPhotoMacroEstimation, false)
 
@@ -122,7 +109,7 @@ test('tier capabilities normalize casing and expose predictable matrix', () => {
   const phoenix = getTierCapabilities('phoenix')
   assert.equal(phoenix.nutritionMacroEntry, false)
   assert.equal(phoenix.nutritionRecommendedMeal, true)
-  assert.equal(phoenix.nutritionPhotoMacroEstimation, true)
+  assert.equal(phoenix.nutritionPhotoMacroEstimation, false)
   assert.equal(phoenix.recoveryDirectedNextAction, true)
   assert.equal(phoenix.workoutDisplay, true)
   assert.equal(phoenix.assessmentPhotoUpload, true)

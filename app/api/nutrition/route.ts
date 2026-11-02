@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { membershipCan } from '@/lib/membership/policy'
 import { createClient } from '@/lib/supabase/server'
 import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
 import { calculateClientNutritionTargets, normalizeCyclePhase } from '@/lib/nutrition/targetService'
@@ -20,16 +21,17 @@ export async function GET(req: Request) {
 
     const { data: client } = await supabase
       .from('clients')
-      .select('client_id,program')
+      .select('client_id,program,access,active,verified_purchase,subscription_ends_at,membership_expires_at,onboarding_data,state,timezone')
       .eq('client_id', client_id)
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
     if (!client) return safeErrorResponse('Client not found.', 404)
+    if (!membershipCan(client, 'generatedCoaching')) return safeErrorResponse('Personalized nutrition targets are not included in this membership.', 403)
 
     // Access normalizes the stored tier separately. Preserve the existing
     // calculation input for legacy stored values; a query cannot replace it.
-    const resolvedProgram = client.program || 'ember'
+    const resolvedProgram = client.program
     const nutrition = await calculateClientNutritionTargets({
       supabase,
       clientId: client.client_id,

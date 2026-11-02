@@ -146,6 +146,7 @@ function StrengthTab({ showOffer, endDate, logic }: { showOffer: boolean; endDat
         <small>{getStrengthAssessmentDetail(strength, logic.client)}</small>
         {strength.state === 'due' && showOffer && formatAssessmentEnd(endDate) ? <small>Available through {formatAssessmentEnd(endDate)}</small> : null}
         <Link href={strength.href} className="tier-secondary-action">{strength.actionLabel}</Link>
+        {strength.previousDraft ? <Link href={strength.previousDraft.href} className="tier-secondary-action">Resume earlier strength assessment</Link> : null}
       </article>
     </div>
   )

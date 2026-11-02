@@ -5,6 +5,8 @@ import { createRequire } from 'node:module'
 import vm from 'node:vm'
 import ts from 'typescript'
 import { PGlite } from '@electric-sql/pglite'
+import { importTs } from './typescriptModule.mjs'
+const membership = await importTs('lib/membership/policy.ts')
 const require=createRequire(import.meta.url)
 function load(path,mocks={}) {
  const module={exports:{}}
@@ -31,7 +33,7 @@ test('calendar context rejects cross-origin cookie writes and unverified session
   'next/server':{NextResponse:{}},'@/lib/supabase/server':{createClient:async()=>db},
   '@/lib/supabase/admin':{createAdminClient:()=>{adminCalls++;return {}}},
   '@/lib/mobile/auth':{createMobileRequestContext:async()=>mobileAllowed?{supabase:db,user,client:member}:{error:'Unauthorized',status:401}},
-  '@/lib/commerce/access':load('lib/commerce/access.ts'),
+  '@/lib/membership/policy':membership,
   './providers/types':{},
  })
  const request=(method,headers={})=>new Request('https://anastasis.test/api/calendars',{method,headers})

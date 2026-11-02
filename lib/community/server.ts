@@ -2,7 +2,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { hasMemberAccess } from '@/lib/commerce/access'
+import { membershipCan, parseMembershipTier } from '@/lib/membership/policy'
 import {
   COMMUNITY_BODY_LIMIT, COMMUNITY_CATEGORIES, COMMUNITY_MEDIA_BUCKET, COMMUNITY_MEDIA_FORMATS,
   COMMUNITY_REPORT_REASONS, communityMediaError, validCommunityId,
@@ -51,9 +51,9 @@ export async function communityIdentity(allowInactive = false): Promise<Identity
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) throw new CommunityError('Sign in to use the community.', 401, 'UNAUTHORIZED')
-  const { data: client, error } = await supabase.from('clients').select('client_id,auth_user_id,full_name,program,access,active,verified_purchase,subscription_ends_at').eq('auth_user_id', user.id).maybeSingle()
+  const { data: client, error } = await supabase.from('clients').select('client_id,auth_user_id,full_name,program,access,active,verified_purchase,subscription_ends_at,membership_expires_at,onboarding_data,state,timezone').eq('auth_user_id', user.id).maybeSingle()
   if (error) throw unavailable()
-  if (!client || (!allowInactive && !hasMemberAccess(client))) throw new CommunityError('An active membership is required for the community.', 403, 'MEMBERSHIP_REQUIRED')
+  if (!client || (!allowInactive && (!membershipCan(client, 'community') || (parseMembershipTier(client.program) === 'free' && !user.email_confirmed_at)))) throw new CommunityError('An active membership is required for the community.', 403, 'MEMBERSHIP_REQUIRED')
   return { supabase, user, client }
 }
 

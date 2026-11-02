@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { usePathname, useRouter } from 'next/navigation'
 import { trackEvent } from '@/lib/analytics'
+import { resetAnalyticsIdentity } from '@/lib/posthog'
 
 export default function DashboardMoreMenu({ program }: { program: 'ember' | 'ignite' | 'phoenix' }) {
   const router = useRouter()
@@ -54,11 +55,13 @@ export default function DashboardMoreMenu({ program }: { program: 'ember' | 'ign
   }, [open])
 
   async function logout() {
+    if (!window.dispatchEvent(new Event('anastasis:before-assessment-navigation', { cancelable: true }))) return
     setLoggingOut(true)
     setMessage('')
     try {
       const response = await fetch('/api/auth/logout', { method: 'POST' })
       if (!response.ok) throw new Error('Sign out failed')
+      resetAnalyticsIdentity()
       try {
         for (const key of Object.keys(window.sessionStorage)) {
           if (key.startsWith('anastasis:check-in-draft:v1:')) window.sessionStorage.removeItem(key)

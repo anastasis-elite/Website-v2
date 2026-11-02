@@ -1,3 +1,4 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 
@@ -152,6 +153,8 @@ export async function POST(request: Request) {
     if (!client) {
       return NextResponse.json({ error: 'Client not found for this user.' }, { status: 404 })
     }
+
+    if (!membershipCan(client, 'generatedCoaching')) return NextResponse.json({ error: 'Cycle coaching is not available for this membership.' }, { status: 403 })
 
     const logDate = typeof body.logDate === 'string' ? body.logDate : getClientLocalDate(client)
     const products = cleanProducts(body.products)

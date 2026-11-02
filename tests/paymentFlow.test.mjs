@@ -31,7 +31,7 @@ function session(billing = 'annual') {
 }
 function transport(value = session(), configuredPrice = price()) {
   const calls = []
-  const subscription = { id: 'sub_test_mock', status: 'active', current_period_start: Date.parse('2028-02-15T10:00:00Z') / 1000, current_period_end: Date.parse('2028-03-15T10:00:00Z') / 1000, cancel_at_period_end: false, items: { data: [] } }
+  const subscription = { id: 'sub_test_mock', status: 'active', current_period_start: Date.parse('2028-02-15T10:00:00Z') / 1000, current_period_end: Date.parse('2028-03-15T10:00:00Z') / 1000, cancel_at_period_end: false, items: { data: [{ quantity: 1, price: { id: 'price_MonthlyMock', type: 'recurring', recurring: { interval: 'month', interval_count: 1 } } }] } }
   const stripe = { checkout: { sessions: { retrieve: async (_id, options) => { assert.equal(JSON.stringify(options.expand), JSON.stringify(['line_items.data.price.product', 'subscription'])); return value } } }, prices: { retrieve: async () => configuredPrice }, subscriptions: { retrieve: async () => subscription } }
   const supabase = { rpc: async (name, args) => { calls.push({ name, args }); return { data: { client_id: 'AN-TEST', email: 'ember.customer@example.test', program: 'ember', auth_user_id: null, replayed: calls.length > 1 }, error: null } } }
   return { stripe, supabase, calls, subscription, sessionId: value.id }
@@ -87,13 +87,14 @@ test('pay-in-full fulfillment requires explicit duration and clamps calendar mon
   const input = transport()
   const first = await fulfillment.fulfillPurchase(input), retry = await fulfillment.fulfillPurchase(input)
   assert.equal(first.replayed, false); assert.equal(retry.replayed, true)
-  assert.equal(input.calls[0].name, 'fulfill_checkout_purchase')
+  assert.equal(input.calls[0].name, 'fulfill_checkout_purchase_v4')
   assert.equal(input.calls[0].args.p_purchase.period_start, '2028-01-31T16:00:00.000Z')
   assert.equal(input.calls[0].args.p_purchase.period_end, '2028-02-29T16:00:00.000Z')
   assert.equal(input.calls[0].args.p_purchase.email, 'ember.customer@example.test')
   assert.equal(JSON.stringify(input.calls[0].args), JSON.stringify(input.calls[1].args))
   assert.equal(input.calls[0].args.p_purchase.billing_status, 'paid_in_full')
   assert.equal(input.calls[0].args.p_purchase.access_active, true)
+  assert.equal(input.calls[0].args.p_purchase.membership_started_at, null)
 }))
 
 test('paid purchase snapshots preserve their original price and duration after catalog replacement or deactivation', () => isolated(async () => {
@@ -118,7 +119,7 @@ test('subscription fulfillment uses Stripe current period and status; canceled s
   assert.equal(input.calls[1].args.p_purchase.access_active, false)
   input.subscription.status = 'canceled'
   await fulfillment.syncSubscription({ ...input, subscriptionId: 'sub_test_mock', eventCreated: 100 })
-  assert.equal(input.calls[2].name, 'sync_member_subscription')
+  assert.equal(input.calls[2].name, 'sync_member_subscription_v3')
   assert.equal(input.calls[2].args.p_state.status, 'canceled'); assert.equal(input.calls[2].args.p_state.access, false)
   assert.equal(input.calls[2].args.p_state.event_created, 100)
   input.supabase.rpc = async () => ({ data: null, error: { message: 'private SQL detail' } })
@@ -126,8 +127,38 @@ test('subscription fulfillment uses Stripe current period and status; canceled s
   await assert.rejects(fulfillment.syncSubscription({ ...input, subscriptionId: 'sub_test_mock', eventCreated: 101 }), /Stripe should retry/)
 }))
 
+test('milestone fulfillment carries the verified original subscription start independently from renewal periods and untrusted metadata', () => isolated(async () => {
+  const checkout = session('subscription')
+  checkout.metadata.membership_started_at = '2000-01-01T00:00:00Z'
+  const input = transport(checkout, price('subscription'))
+  input.subscription.start_date = Date.parse('2028-01-31T16:45:30Z') / 1000
+  await fulfillment.fulfillPurchase(input)
+  input.subscription.current_period_start = Date.parse('2028-03-15T10:00:00Z') / 1000
+  input.subscription.current_period_end = Date.parse('2028-04-15T10:00:00Z') / 1000
+  await fulfillment.fulfillPurchase(input)
+  for (const call of input.calls) {
+    assert.equal(call.name, 'fulfill_checkout_purchase_v4')
+    assert.equal(call.args.p_purchase.membership_started_at, '2028-01-31T16:45:30.000Z')
+    assert.equal(call.args.p_purchase.membership_paid, true)
+  }
+  assert.notEqual(input.calls[0].args.p_purchase.period_start, input.calls[1].args.p_purchase.period_start)
+  assert.equal(input.calls[0].args.p_purchase.membership_started_at, input.calls[1].args.p_purchase.membership_started_at)
+}))
+
+test('missing original provider start and no-payment evidence cannot fabricate a paid milestone anchor', () => isolated(async () => {
+  const checkout = session('subscription'), input = transport(checkout, price('subscription'))
+  checkout.metadata.membership_started_at = '2026-01-01T00:00:00Z'
+  await fulfillment.fulfillPurchase(input)
+  assert.equal(input.calls[0].args.p_purchase.membership_started_at, null)
+  input.subscription.start_date = Date.parse('2028-01-31T16:45:30Z') / 1000
+  checkout.payment_status = 'no_payment_required'
+  await fulfillment.fulfillPurchase(input)
+  assert.equal(input.calls[1].args.p_purchase.membership_paid, false)
+  assert.equal(input.calls[1].args.p_purchase.membership_started_at, '2028-01-31T16:45:30.000Z')
+}))
+
 test('checkout rejects missing activation setup and forged client reference before creating Stripe checkout', () => isolated(async () => {
-  let ready = true, owner = null, createCalls = [], cookies = [], existingBilling = null, currentStatus = 'active'
+  let ready = true, owner = null, createCalls = [], cookies = [], contexts = [], existingBilling = null, currentStatus = 'active'
   class StripeMock {
     constructor() {
       this.prices = { retrieve: async () => price('subscription') }
@@ -138,7 +169,8 @@ test('checkout rejects missing activation setup and forged client reference befo
   const route = load('app/api/checkout/route.ts', {
     'next/server': { NextResponse: { json: (body, init) => { const response = Response.json(body, init); response.cookies = { set: (...args) => cookies.push(args) }; return response } } },
     stripe: StripeMock, '@/lib/commerce/catalog': catalog, '@/lib/commerce/environment': environment, '@/lib/commerce/purchaseProof': proof,
-    '@/lib/supabase/admin': { createAdminClient: () => ({ rpc: async (name, args) => { assert.equal(name, 'commerce_configuration_ready'); assert.equal(args.p_contract_version, 2); return { data: ready, error: null } } }) },
+    '@/lib/analytics/checkoutContext': { saveCheckoutAnalytics: async (_admin, _request, sessionId, userId) => { contexts.push({sessionId,userId}) } },
+    '@/lib/supabase/admin': { createAdminClient: () => ({ rpc: async (name, args) => { assert.equal(name, 'commerce_configuration_ready'); assert.equal(args.p_contract_version, 4); return { data: ready, error: null } } }) },
     '@/lib/supabase/server': { createClient: async () => ({ auth: { getUser: async () => ({ data: { user: owner } }) }, from: table => ({ select: () => ({ eq: (_field, value) => ({ maybeSingle: async () => { assert.equal(value, table === 'clients' ? owner.id : 'AN-OWNED'); return { data: table === 'clients' ? { client_id: 'AN-OWNED' } : existingBilling, error: null } } }) }) }) }) },
   })
   const request = body => new Request('https://isolated-test.invalid/api/checkout', { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } })
@@ -156,6 +188,7 @@ test('checkout rejects missing activation setup and forged client reference befo
   assert.equal((await route.POST(request({ ...body, client_id: 'AN-OTHER' }))).status, 403); assert.equal(createCalls.length, 0)
   const response = await route.POST(request({ ...body, client_id: 'AN-OWNED' }))
   assert.equal(response.status, 200); assert.equal(createCalls.length, 1)
+  assert.equal(contexts[0].sessionId, 'cs_test_owned_mock'); assert.equal(contexts[0].userId, owner.id)
   const purchase = createCalls[0]
   assert.equal(purchase.customer_email, owner.email)
   assert.equal(purchase.metadata.client_id, 'AN-OWNED'); assert.equal(purchase.metadata.auth_user_id, owner.id)

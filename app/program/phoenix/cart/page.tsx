@@ -2,6 +2,7 @@
 
 import * as styles from '../../../styles/globalstyles'
 import TrackEvent from '@/components/TrackEvent'
+import { trackEvent } from '@/lib/analytics'
 import { CartPriceDetails, useCartPricing } from '@/components/commerce/CartPriceDetails'
 
 async function startCheckout(billing: 'subscription' | 'annual') {
@@ -19,7 +20,8 @@ async function startCheckout(billing: 'subscription' | 'annual') {
 
   const data = await response.json()
 
-  if (data.url) {
+  if (response.ok && data.url) {
+    trackEvent('checkout_started', { program: 'phoenix', source: 'checkout' })
     window.location.href = data.url
   } else {
     alert(data.error || 'Unable to start checkout.')

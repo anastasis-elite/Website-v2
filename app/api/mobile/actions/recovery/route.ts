@@ -1,4 +1,5 @@
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { recordConversion } from '@/lib/analytics/server'
 import { NextResponse } from 'next/server'
 import { getClientLocalDateOffset } from '@/lib/timezone'
 import { createMobileRequestContext } from '@/lib/mobile/auth'
@@ -46,7 +47,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    invalidateDailyPlan();return NextResponse.json({ success: true })
+    invalidateDailyPlan()
+    await recordConversion(context.supabase, { userId: context.user.id, event: 'first_recovery_completed' })
+    return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json(
       {

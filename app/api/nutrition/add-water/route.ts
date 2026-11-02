@@ -1,10 +1,11 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { getClientLocalDate } from '@/lib/timezone'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calculateMicronutrientTargets } from '@/lib/nutrition/calculateMicronutrientTargets'
 import { calculateClientNutritionTargets, normalizeCyclePhase, nutritionLogAuditFields } from '@/lib/nutrition/targetService'
-import { canTrackMicronutrients, memberNutritionLog } from '@/lib/nutrition/memberNutrition'
+import { canTrackMicronutrients, memberManualNutritionLog, memberNutritionLog } from '@/lib/nutrition/memberNutrition'
 
 export async function POST(request: Request) {
   try {
@@ -47,9 +48,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
     }
 
+    if (!membershipCan(client, 'nutritionTracking')) return NextResponse.json({ error: 'Hydration logging is not available for this membership.' }, { status: 403 })
+
     const today = getClientLocalDate(client)
     const staleDate = () => NextResponse.json({ error: 'This water submission belongs to another local day. Review that day’s saved hydration before logging again.' }, { status: 409 })
     if (logDate !== today) return staleDate()
+    if (!membershipCan(client, 'generatedCoaching')) {
+      const tracked = await supabase.rpc('record_tracker_nutrition', { p_client_id: client.client_id, p_request_id: submissionId.toLowerCase(), p_log_date: today, p_values: { waterOz: ounces } })
+      if (tracked.error || !tracked.data) return NextResponse.json({ error: 'Water could not be confirmed. Retry with the same save identifier.', retryWithSameSubmission: true }, { status: tracked.error?.code === '23505' ? 409 : 503 })
+      invalidateDailyPlan()
+      return NextResponse.json({ success: true, nutritionLog: memberManualNutritionLog(tracked.data, client.program) })
+    }
     const { data: log, error: logError } = await supabase
       .from('nutrition_logs')
       .select('*')

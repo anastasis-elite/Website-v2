@@ -1,4 +1,6 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { NextResponse } from 'next/server'
+import { recordConversion } from '@/lib/analytics/server'
 import { createClient } from '@/lib/supabase/server'
 import { getClientDayRange } from '@/lib/schedule/time'
 import { getClientLocalDate } from '@/lib/timezone'
@@ -13,6 +15,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { data: client } = await supabase.from('clients').select('*').eq('client_id', body.client_id).eq('auth_user_id', user.id).maybeSingle()
     if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
+    if (!membershipCan(client, 'workoutLogging') || (body.workout_source !== 'manual' && !membershipCan(client, 'generatedCoaching'))) return NextResponse.json({ error: 'This membership does not include this workout operation.' }, { status: 403 })
     if (body.program !== client.program) return NextResponse.json({ error: 'Workout does not match your program.' }, { status: 403 })
     if (!Array.isArray(body.exercise_logs) || !Array.isArray(body.planned_exercises) || !body.exercise_logs.length || body.exercise_logs.length > 100 || body.planned_exercises.length > 100) return NextResponse.json({ error: 'Review your exercises before saving.' }, { status: 400 })
     const logs = body.exercise_logs
@@ -46,7 +49,9 @@ export async function POST(req: Request) {
       completed: workoutCompletion(logs, source === 'manual' ? manualWorkoutPlan(logs) : planned).completed, updated_at: new Date().toISOString() }
     const result = await supabase.rpc('save_daily_workout', { p_client_id: client.client_id, p_day_start: day.start.toISOString(), p_day_end: day.end.toISOString(), p_payload: payload })
     if (result.error) throw result.error
-    invalidateDailyPlan(); return NextResponse.json({ success: true, completed: payload.completed, session: result.data })
+    invalidateDailyPlan()
+    if (payload.completed) await recordConversion(supabase, { userId: user.id, event: 'first_workout_completed' })
+    return NextResponse.json({ success: true, completed: payload.completed, session: result.data })
   } catch(e) { return NextResponse.json({ error: e instanceof Error ? e.message : 'Session could not be saved. Your draft is still available.' }, { status: 500 }) }
 }
 
