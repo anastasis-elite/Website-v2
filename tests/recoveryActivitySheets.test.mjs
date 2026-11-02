@@ -29,9 +29,11 @@ function harness() {
       useRef(initial) { return refs[refIndex++] ||= { current: initial } },
     },
     'next/navigation': { useRouter: () => ({ refresh() { refreshes++ } }) },
+    'next/link': { __esModule: true, default: 'a' },
     '@/components/ActionArrow': { __esModule: true, default: 'arrow' },
     '@/lib/recovery/activityDetails': validation,
     '@/lib/recovery/activityDisplay': display,
+    './RecoveryCards.module.css': { card: 'recovery-compact-card', arrow: 'recovery-arrow', dialog: 'recovery-dialog' },
   }
   const compiled = ts.transpileModule(readFileSync('components/recovery/RecoveryActivitySheets.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
@@ -164,4 +166,82 @@ test('history preserves entered units, specific additions, and missing optional 
   assert.deepEqual(display.formatRecoveryDetails(walk), ['0.5 minutes · Manual entry'])
   const soak = validation.validateDetailedRecovery({ activityType: 'Warm soak', minutes: 11, requestId: randomUUID(), details: { kind: 'warm_soak', source: 'manual', temperature: 80, temperatureUnit: 'F', additions: ['none'] } }).details
   assert.deepEqual(display.formatRecoveryDetails(soak), ['11 minutes · Manual entry', 'Approximate temperature: 80 °F', 'Additions: None'])
+})
+
+test('compact sauna sheet starts blank, discloses coaching limits and requires actual duration and context', async () => {
+  const view = harness()
+  const cards = nodes(view.render(), node => node.type === 'article')
+  assert.equal(cards.length, 3)
+  for (const card of cards) {
+    assert.equal(nodes(card, node => node.type === 'img' && node.props.alt === '').length, 1)
+    assert.equal(nodes(card, node => node.type === 'h3').length, 1)
+    assert.equal(nodes(card, node => node.type === 'button').length, 1)
+    assert.equal(nodes(card, node => node.type === 'p').length, 0)
+  }
+  view.open('sauna')
+  assert.equal(view.field('Actual duration').props.value, '')
+  assert.equal(view.field('When did you use').props.value, '')
+  assert.equal(view.field('Heart rate (manual').props.value, '')
+  const copy = text(nodes(view.render(), node => node.type === 'dialog')[0])
+  assert.match(copy, /Anastasis coaching limit: keep your heart rate below 105 bpm/)
+  assert.match(copy, /not a universally safe cutoff/)
+  assert.match(copy, /no verified live heart-rate stream or automatic threshold alerts/)
+  assert.match(copy, /snapshot, not continuous monitoring/)
+  assert.match(copy, /Leave if you feel unwell, regardless of heart rate/)
+  assert.match(copy, /Hydrate before and after, following any individual fluid restrictions/)
+  assert.match(copy, /does not complete your workout or replace an active warmup/)
+  assert.doesNotMatch(copy, /below 105.{0,12}(?:is safe|means safe)|resting heart rate|extra.{0,10}(?:oz|litre|liter)/i)
+  assert.ok(nodes(view.render(), node => node.type === 'a').some(node => node.props.href === '/dashboard/nutrition?log=water'))
+  await view.submit()
+  assert.equal(view.calls.length, 0)
+  view.change('Actual duration', '10')
+  await view.submit()
+  assert.equal(view.calls.length, 0, 'Context is selected explicitly, never fabricated.')
+  view.change('When did you use', 'before_workout')
+  view.change('Actual duration', '0')
+  await view.submit()
+  assert.equal(view.calls.length, 0)
+  view.button('Cancel').props.onClick()
+  assert.equal(view.nativeDialog.open, false)
+  assert.equal(view.focused, 1)
+})
+
+test('sauna records actual duration, selected context and optional manual HR only after confirmed save', async () => {
+  const view = harness();view.open('sauna')
+  view.change('Actual duration', '10.5')
+  view.change('When did you use', 'after_workout')
+  view.change('Heart rate (manual', '106')
+  assert.doesNotMatch(text(view.render()), /Sauna saved/)
+  await view.submit()
+  assert.equal(view.calls.length, 1)
+  assert.equal(view.calls[0].url, '/api/recovery/activity')
+  assert.equal(view.calls[0].body.activityType, 'Sauna')
+  assert.equal(view.calls[0].body.minutes, 10.5)
+  assert.deepEqual(view.calls[0].body.details, { kind: 'sauna', source: 'manual', context: 'after_workout', heartRateBpm: 106 })
+  assert.match(text(view.render()), /Sauna saved/)
+  assert.match(text(view.render()), /10.5 minutes · Manual entry/)
+  assert.match(text(view.render()), /After workout/)
+  assert.match(text(view.render()), /Heart rate \(manual\): 106 bpm/)
+  assert.equal(view.refreshes, 1)
+  assert.equal(view.calls.filter(call => /water|workout/.test(call.url)).length, 0)
+})
+
+test('sauna retry retains the same UUID, context and actual duration without false completion or water logs', async () => {
+  const view = harness();view.open('sauna');view.change('Actual duration', '7');view.change('When did you use', 'standalone')
+  let finish
+  view.setSend(() => new Promise(resolve => { finish = resolve }))
+  const pending = view.submit();await view.submit();view.render()
+  assert.equal(view.calls.length, 1)
+  assert.equal(view.escape(), true)
+  assert.equal(view.button('Cancel').props.disabled, true)
+  finish({ ok: false, json: async () => ({ error: 'Save not confirmed. Retry.' }) });await pending
+  assert.equal(view.refreshes, 0)
+  assert.doesNotMatch(text(view.render()), /Sauna saved/)
+  view.setSend(async () => ({ ok: true, json: async () => ({ success: true }) }))
+  await view.submit()
+  assert.deepEqual(view.calls[1], view.calls[0])
+  assert.equal(view.calls[0].body.details.heartRateBpm, undefined)
+  assert.equal(view.refreshes, 1)
+  view.button('Close').props.onClick()
+  assert.equal(view.focused, 1)
 })

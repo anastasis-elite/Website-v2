@@ -278,26 +278,26 @@ export function getRecoveryWorkout(): WorkoutForToday {
   }
 }
 
-function hasUsableExercises(
+/** Shared saved-plan/workout gate: a training day needs a named strength action. */
+export function hasUsableTrainingExercises(
   exercises: unknown,
 ): exercises is any[] {
   if (!Array.isArray(exercises)) {
     return false
   }
 
-  return exercises.some((exercise) => {
+  return getStrengthExercises(exercises).some((exercise) => {
     if (!exercise) {
       return false
     }
 
-    const name = String(
+    const name =
       exercise.display_name ||
         exercise.name ||
         exercise.exercise ||
-        '',
-    ).trim()
+        ''
 
-    return name.length > 0
+    return typeof name === 'string' && name.trim().length > 0
   })
 }
 
@@ -521,8 +521,7 @@ export function getWorkoutForToday({
   if (
     !plannedWorkout ||
     plannedWorkout.day_intent === 'rest' ||
-    !hasUsableExercises(assignedExercises) ||
-    !getStrengthExercises(assignedExercises).length
+    !hasUsableTrainingExercises(assignedExercises)
   ) {
     return {
       type: 'unavailable',

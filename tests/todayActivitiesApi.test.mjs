@@ -61,6 +61,19 @@ function setup({ onboardingData = { kept: 'original', timezone: 'America/Chicago
   return { db, get attempts() { return attempts } }
 }
 
+test('calorie pacing can defer a returned nutrition prompt without changing the recorded meal completion', async () => {
+  const { db } = setup()
+  globalThis.todayLogic.execution.nutritionLogged = true
+  globalThis.todayLogic.nutrition = { dataStatus: 'known', pacing: { state: 'behind', prompt: 'Log what you’ve had.' } }
+  const result = await POST(req('nutrition', 'defer'))
+  assert.equal(result.status, 200)
+  assert.equal((await result.json()).dailyGuide.activities.nutrition.status, 'deferred')
+  assert.equal(globalThis.todayLogic.execution.nutritionLogged, true)
+  assert.equal(buildTodayActivities(globalThis.todayLogic, globalThis.todaySchedule(db.rows[0])).activities.find(item => item.id === 'nutrition').status, 'completed')
+  assert.deepEqual(Object.keys(db.writes[0]), ['onboarding_data'])
+  assert.equal(db.rows[1].onboarding_data.kept, 'other member')
+})
+
 test('guide saves persist across fresh readers, preserve unrelated preferences and do not touch another member', async () => {
   const { db } = setup(), otherBefore = structuredClone(db.rows[1])
   globalThis.todayContext.client.injuries = 'current profile override'

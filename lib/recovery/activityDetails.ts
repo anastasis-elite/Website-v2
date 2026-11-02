@@ -20,7 +20,14 @@ export type WarmSoakDetails = ManualRecoveryDetails & {
   tea?: string
   other?: string
 }
-export type RecoveryActivityDetails = SlowWalkDetails | WarmSoakDetails
+export const SAUNA_CONTEXTS = ['before_workout', 'after_workout', 'standalone'] as const
+export type SaunaContext = typeof SAUNA_CONTEXTS[number]
+export type SaunaDetails = ManualRecoveryDetails & {
+  kind: 'sauna'
+  context: SaunaContext
+  heartRateBpm?: number
+}
+export type RecoveryActivityDetails = SlowWalkDetails | WarmSoakDetails | SaunaDetails
 
 export function calculateWalkPace(minutes: number, distance: number): number | null {
   if (!Number.isFinite(minutes) || !Number.isFinite(distance) || minutes <= 0 || minutes > 1440 || distance <= 0 || distance > 1000) return null
@@ -114,6 +121,19 @@ export function validateDetailedRecovery(body: {
     for (const field of ['herbs', 'tea', 'other'] as const) {
       if (details.additions.includes(field)) details[field] = namedAddition(raw[field], field === 'other' ? 'other additions' : field)
       else if (raw[field] !== undefined) throw new Error(`Select ${field === 'other' ? 'Other' : field} before describing it.`)
+    }
+    return { requestId: body.requestId.toLowerCase(), durationMinutes: Math.floor(durationMinutes), details }
+  }
+  if (raw.kind === 'sauna' && body.activityType === 'Sauna') {
+    onlyKeys(raw, ['kind', 'source', 'context', 'heartRateBpm'])
+    if (typeof raw.context !== 'string' || !SAUNA_CONTEXTS.includes(raw.context as SaunaContext)) {
+      throw new Error('Choose before workout, after workout, or standalone for this sauna session.')
+    }
+    const details: SaunaDetails = { kind: 'sauna', source: 'manual', durationMinutes, context: raw.context as SaunaContext }
+    if (raw.heartRateBpm !== undefined) {
+      const heartRateBpm = number(raw.heartRateBpm, 'Manual heart rate', 1, 300)
+      if (!Number.isInteger(heartRateBpm)) throw new Error('Manual heart rate must be a whole number.')
+      details.heartRateBpm = heartRateBpm
     }
     return { requestId: body.requestId.toLowerCase(), durationMinutes: Math.floor(durationMinutes), details }
   }

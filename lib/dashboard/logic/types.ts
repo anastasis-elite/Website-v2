@@ -4,6 +4,7 @@ import type {
   RecoveryAction,
 } from '@/lib/workout-os/types'
 import type { StrengthAssessmentStatus } from '@/lib/assessment/getStrengthAssessmentStatus'
+import type { NutritionPacing, NutritionMacroReminder, RecordedHistoryMacros } from '@/lib/nutrition/todayPacing'
 
 export type ProgramTier = 'ember' | 'ignite' | 'phoenix'
 export type CapacityStatus = 'low_capacity' | 'moderate_capacity' | 'high_capacity'
@@ -30,6 +31,7 @@ export type FuelingHistoryDay = {
   consumedFats: number
   completionPercent: number
   adequatelyFueled: boolean
+  recordedMacros?: RecordedHistoryMacros
 }
 
 export type ProgramLogicInputs = {
@@ -53,6 +55,7 @@ export type ProgramLogicInputs = {
   macroEntries: any[]
   mealEntries: any[]
   recentFuelingHistory: FuelingHistoryDay[]
+  nutritionHistoryAvailable?: boolean
   workoutHistory: any[]
   strengthAssessments: any[]
   initialAssessment: any
@@ -87,7 +90,7 @@ export type CapacityResult = { status: CapacityStatus; score: number; drivers: s
 export type RecoveryResult = { status: RecoveryStatus; score: number; movementPreserved: boolean; reasoning: string; redFlags: string[] }
 export type FuelReadinessResult = { status: FuelStatus; displayStatus: FuelReadinessDisplayStatus; confidence: 'low' | 'medium' | 'high'; preWorkoutAction: string; workoutAdjustment: string; postWorkoutPriority: string; reasoning: string; currentBlock: DayBlock; timeZone: string; expectedThroughCurrentBlock: MacroSnapshot; consumedThroughCurrentBlock: MacroSnapshot; previousBlocksComplete: boolean; currentBlockOnTrack: boolean; blockCompletionPercent: number }
 export type HydrationResult = { consumed: number; target: number; remaining: number; percent: number; status: 'needs_input' | 'low' | 'building' | 'ready'; paceState: 'ahead_of_pace' | 'on_pace' | 'slightly_behind' | 'behind' | 'insufficient_data'; expectedPercent: number; dayElapsedPercent: number; prompt: string; recoverySupportNote: string }
-export type NutritionResult = { dataStatus: 'known' | 'needs_input'; calories: DailyMacro; protein: DailyMacro; carbs: DailyMacro; fats: DailyMacro; mealSuggestions: string[]; preWorkoutFuelPrompt: string; postWorkoutPriority: string; blockTargets: Record<DayBlock, MacroSnapshot>; blockConsumed: Record<DayBlock, MacroSnapshot> }
+export type NutritionResult = { dataStatus: 'known' | 'needs_input'; calories: DailyMacro; protein: DailyMacro; carbs: DailyMacro; fats: DailyMacro; mealSuggestions: string[]; preWorkoutFuelPrompt: string; postWorkoutPriority: string; blockTargets: Record<DayBlock, MacroSnapshot>; blockConsumed: Record<DayBlock, MacroSnapshot>; pacing?: NutritionPacing; macroReminder?: NutritionMacroReminder | null }
 export type SymptomResult = { severity: 'none' | 'mild' | 'moderate' | 'severe'; clusters: string[]; possibleIntolerance: boolean; workoutModification: string | null; recoveryRecommendation: string; redFlag: boolean; trendInsight: string | null }
 export type CycleResult = { enabled: boolean; day: number | null; phase: string | null; trainingAdjustment: string; nutritionAdjustment: string; recoveryAdjustment: string; symptomPrediction: string[]; insight: string | null }
 export type PostureResult = { flags: string[]; correctivePriorities: string[]; substitutions: Array<{ from: string; to: string; reason: string }>; avoidToday: string[] }

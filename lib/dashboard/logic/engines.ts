@@ -11,6 +11,7 @@ import { getWorkoutForToday, workoutFallbackAdjustmentLevel } from '@/lib/workou
 import { getStreakRequirementDestinations } from '@/lib/dashboard/logic/streakRequirementDestinations'
 import { calculateHydrationPacing } from '@/lib/hydration/pacing'
 import { getTierCapabilities } from '@/lib/entitlements'
+import { calculateTodayNutritionPacing, recentZeroMacroReminder } from '@/lib/nutrition/todayPacing'
 
 export function numeric(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -244,7 +245,10 @@ export function runNutritionEngine(inputs: ProgramLogicInputs): NutritionResult 
   }
   const dataStatus = currentLog && (inputs.mealEntries.length || (inputs.macroEntries || []).length) ? 'known' : 'needs_input'
   const suggestions = dataStatus === 'needs_input' ? ['Log the next meal to calculate what remains.'] : protein.percent < 50 ? ['Choose the easiest protein-forward meal available.'] : carbs.percent < 40 && inputs.plannedWorkout ? ['Add an easy carbohydrate source before training.'] : ['Build the next meal around what remains.']
-  return { dataStatus, calories, protein, carbs, fats, mealSuggestions: suggestions, preWorkoutFuelPrompt: dataStatus === 'needs_input' ? 'Log your latest meal to help us understand your fueling.' : protein.percent < 35 || carbs.percent < 25 ? 'Eat protein and an easy carbohydrate before training.' : 'Use normal pre-workout timing.', postWorkoutPriority: 'Prioritize protein, fluids, and enough total energy after training.', blockTargets, blockConsumed }
+  const pacing = calculateTodayNutritionPacing({ client: inputs.client, target: calories.target, consumed: calories.consumed,
+    hasLoggedIntake: dataStatus === 'known', available: inputs.nutritionHistoryAvailable !== false })
+  const macroReminder = recentZeroMacroReminder(inputs.date, inputs.recentFuelingHistory || [], inputs.nutritionHistoryAvailable !== false)
+  return { dataStatus, calories, protein, carbs, fats, mealSuggestions: suggestions, preWorkoutFuelPrompt: dataStatus === 'needs_input' ? 'Log your latest meal to help us understand your fueling.' : protein.percent < 35 || carbs.percent < 25 ? 'Eat protein and an easy carbohydrate before training.' : 'Use normal pre-workout timing.', postWorkoutPriority: 'Prioritize protein, fluids, and enough total energy after training.', blockTargets, blockConsumed, pacing, macroReminder }
 }
 
 export function runFuelReadinessEngine(inputs: ProgramLogicInputs, hydration: HydrationResult, nutrition: NutritionResult, recovery: RecoveryResult): FuelReadinessResult {

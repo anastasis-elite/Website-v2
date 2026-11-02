@@ -8,9 +8,10 @@ import { localDateKey } from '@/lib/timezone'
 import type { DailyScheduleState } from './types'
 import { requestDashboardRefresh } from '@/lib/dashboard/requestRefresh'
 
-export function useDailyScheduleRefresh(schedule: Pick<DailyScheduleState, 'date' | 'timezone' | 'events'>, enabled = true) {
+export function useDailyScheduleRefresh(schedule: Pick<DailyScheduleState, 'date' | 'timezone' | 'events'>, enabled = true, nextPaceBoundary?: string | null) {
   const router = useRouter()
-  const boundary = nextScheduleBoundary(schedule)
+  const paceBoundary = nextPaceBoundary ? Date.parse(nextPaceBoundary) : Infinity
+  const boundary = Math.min(nextScheduleBoundary(schedule), Number.isFinite(paceBoundary) ? paceBoundary : Infinity)
   const staleDate = schedule.date < localDateKey(new Date(), schedule.timezone)
   const refreshedStaleDate = useRef<string | null>(null)
   useEffect(() => {
@@ -27,7 +28,14 @@ export function useDailyScheduleRefresh(schedule: Pick<DailyScheduleState, 'date
       refresh()
     }
     // Refresh on daypart/greeting, event, or midnight boundaries without polling.
-    const timer = !staleDate && Number.isFinite(boundary) ? window.setTimeout(refresh, Math.max(0, boundary - Date.now()) + 50) : undefined
+    const atBoundary = () => {
+      if (document.visibilityState !== 'visible') return
+      // An exact calorie crossing must survive the ordinary focus/resume
+      // debounce. Only the guided view supplies this single calculated boundary.
+      if (boundary === paceBoundary) router.refresh()
+      else refresh()
+    }
+    const timer = !staleDate && Number.isFinite(boundary) ? window.setTimeout(atBoundary, Math.max(0, boundary - Date.now()) + 50) : undefined
     return () => {
       if (timer !== undefined) window.clearTimeout(timer)
       document.removeEventListener('visibilitychange', refresh)
@@ -35,5 +43,5 @@ export function useDailyScheduleRefresh(schedule: Pick<DailyScheduleState, 'date
       window.removeEventListener('calendar-events-updated', saved)
       window.removeEventListener('storage', storedChange)
     }
-  }, [router, boundary, staleDate, schedule.date, enabled])
+  }, [router, boundary, paceBoundary, staleDate, schedule.date, enabled])
 }

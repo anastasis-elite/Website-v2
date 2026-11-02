@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import PlanOverview from '@/components/program-dashboard/PlanOverview'
 import EmberDashboard from '@/components/program-dashboard/EmberDashboard'
 import IgniteDashboard from '@/components/program-dashboard/IgniteDashboard'
@@ -7,6 +8,7 @@ import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
+import { getSavedPlanState } from '@/lib/program/getSavedPlanState'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
 import { logRecommendationAudit } from '@/lib/legal/logRecommendationAudit'
@@ -87,7 +89,7 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
 }) {
 
   const cycleStatus = getCycleStatus(client)
-  const [dailyPlan, monthlyAssessment, { data: output }] = await Promise.all([
+  const [dailyPlan, monthlyAssessment, outputResult] = await Promise.all([
     getDailyExecutionPlan({ supabase, client }),
     getMonthlyAssessmentStatus(supabase, client),
     supabase
@@ -99,6 +101,9 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
       .limit(1)
       .maybeSingle(),
   ])
+  if (outputResult.error) throw new Error('We couldn’t load your saved training plan. Please retry.')
+  const output = outputResult.data
+  const savedPlanState = getSavedPlanState(output)
   const monthlyAssessmentsDueCount = monthlyAssessment.due ? 1 : 0
 
   const { programJson, todaysWorkout, cycleAdjustment, adjustedExercises } =
@@ -117,6 +122,10 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
     monthlyAssessmentsDueCount,
   })
 
+  // These transient presentation hints are not additional audit/analytics data.
+  const auditNutrition = { ...logic.nutrition }
+  delete auditNutrition.pacing
+  delete auditNutrition.macroReminder
   after(() => logRecommendationAudit({
     supabase,
     userId: user.id,
@@ -133,7 +142,7 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
     recommendationOutput: {
       workoutDecision: logic.workoutDecision,
       hydration: logic.hydration,
-      nutrition: logic.nutrition,
+      nutrition: auditNutrition,
       cycle: logic.cycle,
       insight: logic.insight,
       flameState: logic.flameState,
@@ -154,6 +163,11 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
 
   return (
     <>
+      {savedPlanState.status !== 'ready' ? <aside className="aos-card" role="status">
+        <h2>{savedPlanState.status === 'incomplete' ? 'Your saved training plan needs a retry.' : 'Your training plan is not saved yet.'}</h2>
+        <p>{savedPlanState.status === 'incomplete' ? 'Some training days are incomplete. Review your saved assessment and retry creating the plan. Your previous plans and workout history stay saved.' : 'Open plan setup to create your plan from your saved assessments.'}</p>
+        <Link href="/dashboard/onboarding/plan">{savedPlanState.status === 'incomplete' ? 'Review and retry plan' : 'Open plan setup'}</Link>
+      </aside> : null}
       <DashboardPerformance stage="shell" />
       <DashboardPerformance stage="primary" />
       <DashboardPerformance stage="secondary" snapshot={schedule.now} />

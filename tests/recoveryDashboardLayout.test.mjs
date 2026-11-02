@@ -56,6 +56,8 @@ test('compact own-practice button opens the existing logger and closing restores
     '@/components/DailyCheckInForm': {}, '@/components/recovery/BreathingReset': {},
     '@/lib/dashboard/dailyTraining': {}, '@/lib/recovery/scoreExplanation': {},
     '@/components/dashboard/useViewPreference': {}, '@/components/phone-app/PhoneAppFrame': {},
+    '@/components/ActionArrow': {}, './RecoveryCards.module.css': {},
+    'next/link': { __esModule: true, default: 'a' },
   }
   const compiled = ts.transpileModule(dashboard, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
   runInNewContext(compiled, { module, exports: module.exports, require: name => mocks[name] || nativeRequire(name) })
