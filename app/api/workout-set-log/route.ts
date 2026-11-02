@@ -7,6 +7,18 @@ import { recordConversion } from '@/lib/analytics/server'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { loadWorkoutHistory } from '@/lib/workout/history'
+import { manualDesiredSets, prescriptionSnapshot } from '@/lib/workout/manualPrescriptionDraft'
+import { resolveSelectedPrescription } from '@/lib/workout/resolveSelectedPrescription'
+import { getManualWorkoutLibrary } from '@/lib/workout/manualWorkout'
+
+const changedPrescription = () => NextResponse.json({
+  error: 'Your recommendation could not be verified or has changed. Reselect the exercise to review a fresh recommendation. Your actual entries and saved history have not been changed.',
+  code: 'prescription_changed', reselect: true,
+}, { status: 409 })
+
+function samePrescription(left: any, right: any) {
+  return ['version', 'exerciseId', 'variantId', 'sets', 'reps', 'weightLb', 'loadType'].every(key => left[key] === right[key])
+}
 
 function exerciseId(exercise: any) {
   return String(
@@ -60,10 +72,53 @@ export async function POST(req: Request) {
     const nextExerciseKey = exerciseId(body.exercise)
     const prior = existingLogs.find((log: any) => exerciseId(log) === nextExerciseKey)
     for (const log of exerciseLogs) {
+      const submittedGuidance = log.prescription !== undefined || body.exercise?.prescription !== undefined
+      if (submittedGuidance && !membershipCan(client, 'generatedCoaching')) return NextResponse.json({ error: 'This membership supports manual logging without founder guidance metadata.' }, { status: 403 })
+      const storedSnapshot = prior?.prescription ? prescriptionSnapshot(prior.prescription) : null
+      const snapshot = storedSnapshot || (log.prescription !== undefined ? prescriptionSnapshot(log.prescription) : null)
+      if (submittedGuidance || prior?.prescription) {
+        if (!snapshot) return changedPrescription()
+        const catalog = getManualWorkoutLibrary().find(item => item.id === snapshot.exerciseId)
+        if (!catalog || typeof body.exercise?.id !== 'string' || log.id !== body.exercise.id ||
+          body.exercise.catalogExerciseId !== snapshot.exerciseId || body.exercise.selected_variant_id !== snapshot.variantId ||
+          log.selected_variant_id !== snapshot.variantId || body.exercise.exercise !== catalog.exercise || log.exercise !== catalog.exercise) return changedPrescription()
+        const binding = { version: 'owner-resolved-v1', auth_user_id: user.id, client_id: client.client_id,
+          program: client.program, exercise_id: nextExerciseKey, catalog_exercise_id: snapshot.exerciseId, variant_id: snapshot.variantId }
+        if (prior) {
+          // Only server-verified provenance permits a retry without recalculating
+          // today's changed readiness. Client flags never create this provenance.
+          if (!storedSnapshot || !prior.prescription_verification || Object.entries(binding).some(([key, value]) => prior.prescription_verification[key] !== value)) return changedPrescription()
+          log.prescription = storedSnapshot
+          log.prescription_verification = prior.prescription_verification
+        } else {
+          const displayed = body.exercise.prescription === undefined ? null : prescriptionSnapshot(body.exercise.prescription)
+          if (body.exercise.prescription !== undefined && (!displayed || !samePrescription(snapshot, displayed))) return changedPrescription()
+          const current = await resolveSelectedPrescription({ supabase, user, clientId: client.client_id,
+            exerciseId: snapshot.exerciseId, variantId: snapshot.variantId })
+          if (current.httpStatus !== 200 || current.response.status !== 'available' || !samePrescription(snapshot, current.response.prescription)) return changedPrescription()
+          log.prescription = snapshot
+          log.prescription_verification = binding
+          log.planned_sets = snapshot.sets
+          log.planned_reps = snapshot.reps
+          log.planned_weight = snapshot.weightLb
+          if (log.sets !== undefined) log.sets = snapshot.sets
+        }
+      } else delete log.prescription_verification
+      if (log.user_intent !== undefined) {
+        const desired = manualDesiredSets(log.user_intent?.desired_set_count)
+        if (!desired) return NextResponse.json({ error: 'Choose a desired set count from 1 to 100.' }, { status: 400 })
+        log.user_intent = { desired_set_count: desired }
+      }
       // The submitted set snapshot replaces the same exercise occurrence on
       // retries. Retain its first known prescription instead of shrinking it.
       if (prior?.planned_sets !== undefined) log.planned_sets = prior.planned_sets
       if (prior?.sets !== undefined) log.sets = prior.sets
+      if (prior) {
+        for (const field of ['prescription', 'planned_reps', 'planned_weight', 'baseline_reps', 'baseline_weight']) {
+          if (prior[field] !== undefined) log[field] = prior[field]
+          else if (field === 'prescription') delete log[field]
+        }
+      }
       log.set_logs = sets
       const counts = workoutCompletion([log])
       log.completed = Boolean(body.exercise_finished_at) && prescribedSetCount(log) > 0 && counts.completedSets === counts.totalSets

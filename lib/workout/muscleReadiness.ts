@@ -21,6 +21,8 @@ export type MuscleId =
   | 'right_anterior_deltoid'
   | 'left_lateral_deltoid'
   | 'right_lateral_deltoid'
+  | 'left_posterior_deltoid'
+  | 'right_posterior_deltoid'
   | 'left_pectoralis_major'
   | 'right_pectoralis_major'
   | 'left_biceps'
@@ -55,6 +57,7 @@ export type MuscleRegionDefinition = {
   label: string
   canonicalMuscles: CanonicalMuscle[]
   view: 'front' | 'posterior'
+  additionalViews?: Array<'front' | 'posterior'>
   side?: 'left' | 'right' | 'center'
 }
 
@@ -104,12 +107,14 @@ type RecoverySignal = {
 }
 
 export const MUSCLE_REGIONS: MuscleRegionDefinition[] = [
-  { id: 'left_upper_traps', label: 'Left upper traps', canonicalMuscles: ['upper_traps'], view: 'front', side: 'left' },
-  { id: 'right_upper_traps', label: 'Right upper traps', canonicalMuscles: ['upper_traps'], view: 'front', side: 'right' },
+  { id: 'left_upper_traps', label: 'Left upper traps', canonicalMuscles: ['upper_traps'], view: 'front', additionalViews: ['posterior'], side: 'left' },
+  { id: 'right_upper_traps', label: 'Right upper traps', canonicalMuscles: ['upper_traps'], view: 'front', additionalViews: ['posterior'], side: 'right' },
   { id: 'left_anterior_deltoid', label: 'Left anterior deltoid', canonicalMuscles: ['shoulders'], view: 'front', side: 'left' },
   { id: 'right_anterior_deltoid', label: 'Right anterior deltoid', canonicalMuscles: ['shoulders'], view: 'front', side: 'right' },
   { id: 'left_lateral_deltoid', label: 'Left lateral deltoid', canonicalMuscles: ['shoulders'], view: 'front', side: 'left' },
   { id: 'right_lateral_deltoid', label: 'Right lateral deltoid', canonicalMuscles: ['shoulders'], view: 'front', side: 'right' },
+  { id: 'left_posterior_deltoid', label: 'Left posterior deltoid', canonicalMuscles: ['shoulders'], view: 'posterior', side: 'left' },
+  { id: 'right_posterior_deltoid', label: 'Right posterior deltoid', canonicalMuscles: ['shoulders'], view: 'posterior', side: 'right' },
   { id: 'left_pectoralis_major', label: 'Left pectoralis major', canonicalMuscles: ['chest'], view: 'front', side: 'left' },
   { id: 'right_pectoralis_major', label: 'Right pectoralis major', canonicalMuscles: ['chest'], view: 'front', side: 'right' },
   { id: 'left_biceps', label: 'Left biceps', canonicalMuscles: ['biceps'], view: 'front', side: 'left' },
@@ -123,7 +128,7 @@ export const MUSCLE_REGIONS: MuscleRegionDefinition[] = [
   { id: 'right_external_oblique', label: 'Right external oblique region', canonicalMuscles: ['core'], view: 'front', side: 'right' },
   { id: 'left_lat_region', label: 'Left latissimus region', canonicalMuscles: ['lats', 'upper_back'], view: 'posterior', side: 'left' },
   { id: 'right_lat_region', label: 'Right latissimus region', canonicalMuscles: ['lats', 'upper_back'], view: 'posterior', side: 'right' },
-  { id: 'erector_spinae_region', label: 'Erector-spinae region', canonicalMuscles: ['lower_back'], view: 'posterior', side: 'center' },
+  { id: 'erector_spinae_region', label: 'Lower back / lumbar erectors', canonicalMuscles: ['lower_back'], view: 'posterior', side: 'center' },
   { id: 'left_glute_max', label: 'Left gluteus maximus', canonicalMuscles: ['glutes'], view: 'posterior', side: 'left' },
   { id: 'right_glute_max', label: 'Right gluteus maximus', canonicalMuscles: ['glutes'], view: 'posterior', side: 'right' },
   { id: 'left_glute_medius', label: 'Left gluteus medius region', canonicalMuscles: ['glutes'], view: 'front', side: 'left' },
@@ -139,6 +144,19 @@ export const MUSCLE_REGIONS: MuscleRegionDefinition[] = [
   { id: 'left_tibialis_anterior', label: 'Left tibialis anterior region', canonicalMuscles: ['feet_ankles'], view: 'front', side: 'left' },
   { id: 'right_tibialis_anterior', label: 'Right tibialis anterior region', canonicalMuscles: ['feet_ankles'], view: 'front', side: 'right' },
 ]
+
+export function muscleRegionIsVisible(region: MuscleRegionDefinition, view: 'front' | 'posterior') {
+  return region.view === view || Boolean(region.additionalViews?.includes(view))
+}
+
+/** Pair the visual sides without creating extra exercise, set or load records. */
+export function getBilateralMuscleIds(regionId: MuscleId): MuscleId[] {
+  const region = MUSCLE_REGIONS.find(item => item.id === regionId)
+  if (!region || region.side === 'center') return region ? [region.id] : []
+  const otherId = regionId.replace(/^(left|right)_/, region.side === 'left' ? 'right_' : 'left_')
+  const other = MUSCLE_REGIONS.find(item => item.id === otherId)
+  return other ? [region.id, other.id] : [region.id]
+}
 
 export const MUSCLE_READINESS_PRESENTATION: Record<MuscleReadinessState, MuscleReadinessPresentation> = {
   ready: {

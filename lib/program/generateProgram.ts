@@ -14,6 +14,7 @@ import phoenixStrength from '@/data/template/phoenixStrength.json'
 import phoenixWaistCincher from '@/data/template/phoenixWaistCincher.json'
 
 import { getEquipmentAdjustedLoad } from '@/lib/program/getEquipmentAdjustedLoad'
+import { getClientTimeZone } from '@/lib/timezone'
 
 function getTemplate(program: string) {
   switch (program) {
@@ -174,9 +175,11 @@ function getAssessmentLift(key: string, data: any) {
 
   if (!mapped) return null
 
+  const supplied = (value: unknown) => typeof value === 'number' || typeof value === 'string' && value.trim() !== ''
   return {
     weight: Number(data?.[mapped.weight] || 0),
     reps: Number(data?.[mapped.reps] || 0),
+    recorded: supplied(data?.[mapped.weight]) && supplied(data?.[mapped.reps]),
   }
 }
 
@@ -207,6 +210,23 @@ function roundToNearest5(num: number) {
   }
 
   return Math.round(num / 5) * 5
+}
+
+// One calculation path for saved programs and bounded manual selections.
+function calculateFounderLoad({ lift, intensityFactor, repMultiplier, group, variant, bodyweight }: {
+  lift: { weight: number; reps: number }; intensityFactor: number; repMultiplier: number
+  group: any; variant: any; bodyweight: boolean
+}) {
+  const estimated1RM = estimate1RM(lift.weight, lift.reps)
+  const baseCalculatedWeight = roundToNearest5(estimated1RM * intensityFactor * repMultiplier)
+  const adjustedWeight = bodyweight ? 0 : getEquipmentAdjustedLoad({
+    baseWeight: baseCalculatedWeight,
+    fromEquipment: group?.base_equipment || variant?.equipment,
+    toEquipment: variant?.equipment,
+    category: group?.category || 'compound',
+    equipmentModifier: variant?.equipment_modifier,
+  })
+  return { estimated1RM, baseCalculatedWeight, adjustedWeight }
 }
 
 export function generateProgram({
@@ -278,25 +298,11 @@ export function generateProgram({
         }
       }
 
-      const estimated1RM = estimate1RM(
-        assessmentLift.weight,
-        assessmentLift.reps
-      )
-
       const intensityFactor = Number(keyRow[ifKey] || 0)
       const repMultiplier = getRepMultiplier(Number(exercise.reps))
-
-      const baseCalculatedWeight = roundToNearest5(
-        estimated1RM * intensityFactor * repMultiplier
-      )
-
       const bodyweight = unloaded || defaultVariant?.load_type === 'bodyweight' || defaultVariant?.equipment === 'bodyweight'
-      const adjustedWeight = bodyweight ? 0 : getEquipmentAdjustedLoad({
-        baseWeight: baseCalculatedWeight,
-        fromEquipment: variantGroup?.base_equipment || defaultVariant?.equipment,
-        toEquipment: defaultVariant?.equipment,
-        category: variantGroup?.category || 'compound',
-        equipmentModifier: defaultVariant?.equipment_modifier,
+      const { estimated1RM, baseCalculatedWeight, adjustedWeight } = calculateFounderLoad({
+        lift: assessmentLift, intensityFactor, repMultiplier, group: variantGroup, variant: defaultVariant, bodyweight,
       })
 
       return {
@@ -343,4 +349,70 @@ export function generateProgram({
     excluded_exercises: excludedExercises,
     equipment_note: restrictedEquipment && excludedExercises.length > 0 ? 'Some template movements need equipment you have not recorded. Your plan contains only supported movements; review your available equipment before adding others.' : null,
   }
+}
+
+export const PHOENIX_PRESCRIPTION_TRACKS = ['phoenixBodybuilding', 'phoenixEndurance', 'phoenixFullTransformation', 'phoenixGluteSculpt', 'phoenixHypertrophy', 'phoenixRecomposition', 'phoenixStrength', 'phoenixWaistCincher'] as const
+
+export function isApprovedPhoenixPrescriptionTrack(value: unknown): value is typeof PHOENIX_PRESCRIPTION_TRACKS[number] {
+  return typeof value === 'string' && (PHOENIX_PRESCRIPTION_TRACKS as readonly string[]).includes(value)
+}
+
+/** Resolve one existing catalog selection; never creates or saves a full plan. */
+export function getFounderSelectedExercise({ client, initialAssessment, strengthAssessment, catalogExercise, variantId, phoenixTrack, now = new Date() }: {
+  client: any; initialAssessment: any; strengthAssessment: any; catalogExercise: any; variantId: string; phoenixTrack?: unknown; now?: Date
+}): { exercise: any; template: any } | null {
+  // Only the caller's server-resolved saved-output track can select Phoenix
+  // coefficients. Client/profile fields are not an authoritative track source.
+  if (client.program === 'phoenix' && !isApprovedPhoenixPrescriptionTrack(phoenixTrack)) return null
+  const track = client.program === 'phoenix' ? phoenixTrack : client.program
+  const approved = ['ember', 'ignite', ...PHOENIX_PRESCRIPTION_TRACKS]
+  if (!approved.includes(track)) return null
+  const template = getTemplate(track)
+  const catalogName = catalogExercise.exercise
+  const calculationGroup = getVariantGroup(catalogName)
+  // The manual catalog also recognizes exact display/variant names. Resolve
+  // only that existing identity metadata, without creating movement aliases.
+  const group = calculationGroup || (exerciseVariants as any[]).find(item =>
+    [item.display_name, ...(item.aliases || []), ...(item.variants || []).map((entry: any) => entry.name)]
+      .some(name => normalizeName(name) === normalizeName(catalogName)))
+  const unloaded = !group && /^(?:side plank|single-leg glute bridge|walking lunge|reverse lunge|sumo squat|bulgarian split squat)$/i.test(catalogName)
+  const variant = group?.variants?.find((item: any) => item.id === variantId) ||
+    (unloaded ? catalogExercise.available_variants.find((item: any) => item.id === variantId && item.load_type === 'bodyweight' && item.equipment === 'bodyweight') : null)
+  if (!variant || !Number.isFinite(variant.equipment_modifier) || variant.equipment_modifier <= 0) return null
+  const equipment = getClientEquipment(client, initialAssessment)
+  if (!unloaded && !getEquipmentCompatibleVariants(group, equipment).some((item: any) => item.id === variantId)) return null
+  const all = template.days.flatMap((day: any) => (day.exercises || []).map((exercise: any) => ({ day, exercise })))
+  const exact = all.filter(({ exercise }: any) => normalizeName(exercise.exercise) === normalizeName(catalogName))
+  // A related movement pattern is not an established prescription for this
+  // catalog exercise. Only the template's actual named exercise supplies dose.
+  const matching = exact
+  const weekday = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: getClientTimeZone(client) })
+  const today = matching.filter(({ day }: any) => day.day_name === weekday)
+  const choices = today.length ? today : matching
+  const doses = new Set(choices.map(({ exercise }: any) => `${exercise.sets}:${exercise.reps}`))
+  if (!choices.length || doses.size !== 1) return null
+  const base = choices[0].exercise
+  if (!Number.isSafeInteger(base.sets) || base.sets <= 0 || !Number.isSafeInteger(base.reps) || base.reps <= 0) return null
+  const key = (masterKey as any[]).find(row => calculationGroup?.assessment_key ? row.assessment_key === calculationGroup.assessment_key : row.exercise === catalogName)
+  const assessmentKey = calculationGroup?.assessment_key || key?.assessment_key
+  const lift = getAssessmentLift(assessmentKey, strengthAssessment?.data || strengthAssessment)
+  const intensity = Number(key?.[getIfKey(track)])
+  const repRow = (hypertrophyChart as any[]).find(row => Number(row.reps) === base.reps)
+  const repMultiplier = Number(repRow?.multiplier)
+  const bodyweight = variant.load_type === 'bodyweight' || variant.equipment === 'bodyweight'
+  if (!key || !lift || !lift.recorded || !Number.isFinite(lift.weight) || lift.weight > 3000 || (bodyweight ? lift.weight < 0 : lift.weight <= 0) ||
+    !Number.isSafeInteger(lift.reps) || lift.reps <= 0 || lift.reps > 100 || !Number.isFinite(intensity) || intensity <= 0 ||
+    !Number.isFinite(repMultiplier) || repMultiplier <= 0) return null
+  const { estimated1RM, baseCalculatedWeight, adjustedWeight } = calculateFounderLoad({ lift, intensityFactor: intensity, repMultiplier, group, variant, bodyweight })
+  if (!Number.isFinite(adjustedWeight) || (!bodyweight && adjustedWeight <= 0)) return null
+  return { template, exercise: {
+    ...catalogExercise, ...base,
+    id: catalogExercise.id, exercise: catalogName, name: variant.name, display_name: variant.name,
+    selected_variant_id: variant.id, selected_variant_name: variant.name, selected_equipment: variant.equipment,
+    equipment: variant.equipment, load_type: bodyweight ? 'bodyweight' : variant.load_type,
+    // Keep this exact variant through the existing capacity/structural path.
+    available_variants: [variant], assessment_key: assessmentKey, estimated_1rm: Math.round(estimated1RM),
+    intensity_factor: intensity, rep_multiplier: repMultiplier, baseline_weight: baseCalculatedWeight,
+    calculated_weight: adjustedWeight, recommended_weight: adjustedWeight,
+  } }
 }

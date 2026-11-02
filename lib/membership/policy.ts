@@ -45,7 +45,7 @@ export function membershipCan(client: MembershipRecord | null | undefined, capab
 /** Member API families matched by middleware; public/auth/provider endpoints stay outside. */
 export const PROTECTED_API_PREFIXES = [
   '/api/nutrition', '/api/nutrition-log', '/api/today-meals',
-  '/api/workout-log', '/api/workout-set-log', '/api/workout-feedback', '/api/program',
+  '/api/workout-log', '/api/workout-set-log', '/api/workout-feedback', '/api/workout/prescription', '/api/program',
   '/api/recovery-log', '/api/recovery', '/api/assessment', '/api/assessment-strength',
   '/api/assessment-photos', '/api/assessment-window', '/api/schedule', '/api/onboarding',
   '/api/cycle', '/api/phoenix', '/api/check-access', '/api/membership', '/api/tracker',
@@ -76,6 +76,7 @@ export function capabilityForPath(path: string, method = 'GET', search?: Pick<UR
   if (/^\/(?:dashboard\/community|api\/community)(?:\/|$)/.test(path)) return 'community'
   if (path === '/dashboard' || path === '/dashboard/tracker') return 'accountData'
   if (/^\/api\/(?:workout-log|workout-set-log)$/.test(path)) return read ? 'accountData' : 'workoutLogging'
+  if (path === '/api/workout/prescription') return 'generatedCoaching'
   if (path === '/api/mobile/health/sync') return 'healthRecords'
   if (path === '/api/mobile/actions/recovery') return 'recoveryBasic'
   if (path === '/api/mobile/actions/water' || path === '/api/mobile/dashboard') return 'generatedCoaching'
