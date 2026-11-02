@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import ActionArrow from '@/components/ActionArrow'
 import type { ReactNode } from 'react'
 import './phone-app.css'
 
@@ -23,6 +24,6 @@ export function PhoneAppCard({ title, copy, illustration = 'recovery', href, act
 }) {
   return <article className="phone-app-card">
     <img src={`/illustrations/today-${illustration}.svg`} alt="" width="360" height="180" />
-    <div><h3>{title}</h3><p>{copy}</p>{href && !unavailable ? <Link href={href}>{action}<span aria-hidden="true">↗</span></Link> : <small className="phone-app-unavailable">{unavailable || 'Currently unavailable'}</small>}</div>
+    <div><h3>{title}</h3><p>{copy}</p>{href && !unavailable ? <Link href={href}>{action}<ActionArrow className="phone-app-action-arrow" /></Link> : <small className="phone-app-unavailable">{unavailable || 'Currently unavailable'}</small>}</div>
   </article>
 }

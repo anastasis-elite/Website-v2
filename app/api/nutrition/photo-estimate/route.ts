@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getTierCapabilities } from '@/lib/entitlements'
+import { membershipCan } from '@/lib/membership/policy'
 
 export const runtime = 'nodejs'
 
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
   const { data: client, error: clientError } = await supabase
     .from('clients')
-    .select('client_id, program')
+    .select('client_id, program, access, active, verified_purchase, subscription_ends_at,membership_expires_at,onboarding_data,state,timezone')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
   }
 
-  if (!getTierCapabilities(client.program).nutritionPhotoMacroEstimation) {
+  if (!membershipCan(client, 'nutritionPhotoMacroEstimation')) {
     return NextResponse.json({ error: 'Photo estimation is not available for this plan.' }, { status: 403 })
   }
 
@@ -53,8 +53,8 @@ export async function POST(request: Request) {
 export async function GET() {
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser()
  if(!user)return NextResponse.json({error:'Unauthorized'},{status:401})
- const {data:client}=await supabase.from('clients').select('client_id,program').eq('auth_user_id',user.id).maybeSingle()
+ const {data:client}=await supabase.from('clients').select('client_id,program,access,active,verified_purchase,subscription_ends_at,membership_expires_at,onboarding_data,state,timezone').eq('auth_user_id',user.id).maybeSingle()
  if(!client)return NextResponse.json({error:'Client not found.'},{status:404})
- if(!getTierCapabilities(client.program).nutritionPhotoMacroEstimation)return NextResponse.json({error:'Photo estimation is not available for this plan.'},{status:403})
+ if(!membershipCan(client, 'nutritionPhotoMacroEstimation'))return NextResponse.json({error:'Photo estimation is not available for this plan.'},{status:403})
  return NextResponse.json({available:false,message:'Photo estimation is not available yet. Search for your food or use a barcode to log this meal.'})
 }

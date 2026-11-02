@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createMobileRequestContext } from '@/lib/mobile/auth'
-import { hasMemberAccess } from '@/lib/commerce/access'
+import { membershipCan } from '@/lib/membership/policy'
 import { ProviderError } from './providers/types'
 
 export class CalendarHttpError extends Error {
@@ -30,7 +30,7 @@ export async function calendarContext(request: Request) {
   if(resultClient.error) throw new CalendarHttpError(503,'Your account could not be loaded.')
   client=resultClient.data
  }
- if(!hasMemberAccess(client)) throw new CalendarHttpError(403,'Active member access is required to manage connected calendars.')
+ if(!membershipCan(client, 'calendar')) throw new CalendarHttpError(403,'Connected calendars are not included in this membership.')
  return {supabase,user,client,admin:createAdminClient()}
 }
 export function calendarError(error: unknown) {

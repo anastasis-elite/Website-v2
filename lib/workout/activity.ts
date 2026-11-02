@@ -1,3 +1,5 @@
+import { workoutSessionKeys } from './session'
+
 export type ActivityKind = 'strength' | 'cardio' | 'breathing' | 'mobility'
 export type ActivityDose = { kind: ActivityKind; metric: 'reps' | 'breaths' | 'minutes' | 'seconds' | 'completion'; prescribed: number; sets: number; weight: number; increment: number; unit: 'lb' | 'kg'; loadLabel: string }
 export function isBodyweightExercise(exercise: any) {
@@ -47,17 +49,82 @@ export function summarizeActivityUnits(exercises: any[], actual = false) {
 export function isConfirmedActivity(log: any) {
   if (!log || log.skipped || !log.completed) return false
   const dose = activityDose(log)
-  if (dose.kind === 'strength') return Array.isArray(log.set_logs) && log.set_logs.length >= dose.sets && log.set_logs.every((set: any) => Number.isInteger(Number(set.reps)) && Number(set.reps) > 0 && Number.isFinite(Number(set.weight)) && Number(set.weight) >= 0 && Number.isFinite(new Date(set.completed_at).getTime()))
+  if (dose.kind === 'strength') {
+    const counts = workoutCompletion([log])
+    return counts.totalSets > 0 && counts.completedSets === counts.totalSets
+  }
   if (!Number.isFinite(new Date(log.confirmed_at).getTime())) return false
   if (dose.metric === 'completion') return log.activity_completed === true
   const value = Number(dose.metric === 'breaths' ? log.actual_breaths ?? log.actual_reps : log.actual_duration)
   return value > 0 && Number.isFinite(value) && (dose.metric !== 'breaths' || Number.isInteger(value)) && (dose.metric === 'breaths' || log.duration_unit === dose.metric)
 }
-export function workoutCompletion(logs: any[]) {
+export function prescribedSetCount(exercise: any): number {
+  const raw = exercise?.sets ?? exercise?.planned_sets
+  // Timed/breathing/mobility activities without a set prescription remain one
+  // confirmed activity. An explicit zero never becomes an invented set.
+  if (raw === undefined) return activityDose(exercise).kind === 'strength' ? 0 : 1
+  const count = typeof raw === 'number' || typeof raw === 'string' && raw.trim() ? Number(raw) : NaN
+  return Number.isSafeInteger(count) && count >= 0 && count <= 100 ? count : 0
+}
+
+export function isValidCompletedSet(set: any): boolean {
+  const numeric = (value: unknown) => typeof value === 'number' || typeof value === 'string' && value.trim() !== ''
+  return Boolean(set && !set.skipped && set.status !== 'skipped' &&
+    numeric(set.reps) && Number.isInteger(Number(set.reps)) && Number(set.reps) > 0 &&
+    numeric(set.weight) && Number.isFinite(Number(set.weight)) && Number(set.weight) >= 0 &&
+    ['lb', 'kg'].includes(set.weight_unit || 'lb') && typeof set.completed_at === 'string' && set.completed_at.trim() !== '' && Number.isFinite(new Date(set.completed_at).getTime()))
+}
+
+export function workoutCompletion(logs: any[], prescribed: any[] = logs) {
   const complete = logs.filter(log => log.completed === true).length
   const skipped = logs.filter(log => log.skipped === true).length
   const partial = logs.filter(log => !log.completed && !log.skipped && (log.set_logs?.length || Number(log.actual_duration || log.actual_breaths || log.actual_reps) > 0)).length
-  return { complete, skipped, partial, total: logs.length, completed: logs.length > 0 && complete === logs.length }
+  const keys = workoutSessionKeys(logs), planKeys = workoutSessionKeys(prescribed)
+  const seenExercises = new Set<string>()
+  let totalSets = 0, completedSets = 0
+  for (const [index, exercise] of prescribed.entries()) {
+    const setCount = prescribedSetCount(exercise), key = planKeys[index]
+    totalSets += setCount
+    // Duplicate log snapshots can describe the same prescribed occurrence;
+    // neither those snapshots nor a repeated explicit plan key earns more work.
+    if (!setCount || seenExercises.has(key)) continue
+    seenExercises.add(key)
+    const matching = logs.filter((_, position) => keys[position] === key)
+    if (activityDose(exercise).kind !== 'strength') {
+      if (matching.some(log => isConfirmedActivity(log))) completedSets += Math.min(1, setCount)
+      continue
+    }
+    const slots = new Set<number>(), identities = new Set<string>()
+    for (const log of matching) for (const set of Array.isArray(log.set_logs) ? log.set_logs : []) {
+      if (!isValidCompletedSet(set)) continue
+      const ordinal = set.set_number === undefined ? null : Number(set.set_number)
+      const identity = set.id ? `id:${set.id}` : ordinal !== null ? `slot:${ordinal}` : `${set.completed_at}:${set.reps}:${set.weight}:${set.weight_unit || 'lb'}`
+      if (ordinal !== null && (!Number.isInteger(ordinal) || ordinal < 1 || ordinal > setCount)) continue
+      if (identities.has(identity) || ordinal !== null && slots.has(ordinal)) continue
+      const slot = ordinal ?? Array.from({ length: setCount }, (_, position) => position + 1).find(value => !slots.has(value))
+      if (slot === undefined) continue
+      slots.add(slot); identities.add(identity)
+    }
+    completedSets += slots.size
+  }
+  const requiredSets = Math.ceil(totalSets / 2)
+  return { complete, skipped, partial, total: logs.length, totalSets, completedSets, requiredSets, completed: totalSets > 0 && completedSets >= requiredSets }
+}
+
+export function workoutRecordComplete(row: any): boolean {
+  const logs = Array.isArray(row?.exercise_logs) ? row.exercise_logs : []
+  const hasDetailedWork = logs.some((log: any) => Array.isArray(log?.set_logs) || log?.confirmed_at)
+  // Legacy history without individual confirmed sets cannot be reconstructed;
+  // retain its recorded result instead of inventing set counts.
+  if (!hasDetailedWork) return row?.completed === true
+  const planned = row.workout_source === 'manual' ? manualWorkoutPlan(logs) : Array.isArray(row.planned_exercises) ? row.planned_exercises : []
+  return workoutCompletion(logs, planned).completed
+}
+
+export function manualWorkoutPlan(logs: any[]): any[] {
+  // Custom manual exercises are independent of the retained recommended plan.
+  // Unknown strength prescriptions cannot supply a fabricated denominator.
+  return logs.every(log => activityDose(log).kind !== 'strength' || prescribedSetCount(log) > 0) ? logs : []
 }
 // Existing readiness reads reps per set and pounds. Keep that contract while
 // retaining each confirmed set and its original unit for performance history.

@@ -5,6 +5,7 @@ import AuthButton from '@/components/AuthButton'
 import DeferredAnalytics from '@/components/DeferredAnalytics'
 import PwaRegistration from '@/components/PwaRegistration'
 import LegalFooter from '@/components/LegalFooter'
+import StrengthHistoryGuardRoot from '@/components/assessments/StrengthHistoryGuardRoot'
 import {
   BRAND_DESCRIPTION,
   BRAND_NAME,
@@ -126,6 +127,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <StrengthHistoryGuardRoot />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

@@ -1,8 +1,9 @@
 import { memberNutritionRemaining } from '@/lib/nutrition/memberNutrition'
+import { recordConversion } from '@/lib/analytics/server'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getTierCapabilities } from '@/lib/entitlements'
+import { membershipCan } from '@/lib/membership/policy'
 import { mealPeriodToDayBlock, normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
 import { loadRecordedNutrition, nutritionRemainingWithRecordedIntake } from '@/lib/nutrition/progress'
 
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
 
   const { data: client, error: clientError } = await supabase
     .from('clients')
-    .select('client_id, program')
+    .select('client_id, program, access, active, verified_purchase, subscription_ends_at,membership_expires_at,onboarding_data,state,timezone')
     .eq('client_id', log.client_id)
     .eq('auth_user_id', user.id)
     .maybeSingle()
@@ -53,8 +54,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
   }
 
-  const capabilities = getTierCapabilities(client.program)
-  if (!capabilities.nutritionTracking || !capabilities.nutritionMacroEntry) {
+  if (!membershipCan(client, 'nutritionTracking') || !membershipCan(client, 'nutritionMacroEntry')) {
     return NextResponse.json({ error: 'Macro-only entry is not available for this tier.' }, { status: 403 })
   }
 
@@ -97,6 +97,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Macros could not be added. Please try again.' }, { status: 500 })
   }
 
+  await recordConversion(supabase, { userId: user.id, event: 'first_nutrition_completed' })
   let refreshStatus: 'success' | 'degraded' = 'success'
 
   const { error: logUpdateError } = await supabase

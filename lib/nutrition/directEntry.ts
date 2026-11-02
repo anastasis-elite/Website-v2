@@ -10,6 +10,21 @@ export type DirectEntryLog = {
 
 export const directEntryLogColumns = 'id,client_id,log_date,water_oz,water_consumed_oz'
 
+export type DirectWaterEntry = { clientId: string; logDate: string; target: number; consumed: number }
+
+export async function readDirectWaterEntry(clientId: string, logDate: string, signal?: AbortSignal, request = fetch): Promise<DirectWaterEntry> {
+  const response = await request(`/api/nutrition/hydration?clientId=${encodeURIComponent(clientId)}&logDate=${encodeURIComponent(logDate)}`, { signal, cache: 'no-store' })
+  const body = await response.json().catch(() => null)
+  if (!response.ok) throw new Error(body?.error || 'Today’s hydration could not be loaded.')
+  signal?.throwIfAborted()
+  if (body?.clientId !== clientId || body?.logDate !== logDate) throw new Error('The logging day changed. Reload to open today’s water entry.')
+  if (typeof body.target !== 'number' || !Number.isFinite(body.target) || body.target <= 0
+    || typeof body.consumed !== 'number' || !Number.isFinite(body.consumed) || body.consumed < 0) {
+    throw new Error('Today’s hydration target or saved intake could not be confirmed.')
+  }
+  return body
+}
+
 export async function readDirectEntryLog(supabase: any, clientId: string, logDate: string): Promise<DirectEntryLog | null> {
   const { data, error } = await supabase.from('nutrition_logs').select(directEntryLogColumns)
     .eq('client_id', clientId).eq('log_date', logDate).maybeSingle()

@@ -5,19 +5,19 @@ import { createRequire } from 'node:module'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { importTs } from './typescriptModule.mjs'
-const require=createRequire(import.meta.url),sleepMath=await importTs('lib/sleep/calculateSleepHours.ts'),tiers=await importTs('lib/entitlements.ts')
+const require=createRequire(import.meta.url),sleepMath=await importTs('lib/sleep/calculateSleepHours.ts'),tiers=await importTs('lib/entitlements.ts'),practiceTiming=await importTs('lib/meditation/practiceTiming.ts')
 const nodes=(tree,predicate)=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flatMap(child=>nodes(child,predicate)):[...(predicate(tree)?[tree]:[]),...nodes(tree.props?.children,predicate)]
 const text=tree=>typeof tree==='string'||typeof tree==='number'?String(tree):Array.isArray(tree)?tree.map(text).join(' '):tree&&typeof tree==='object'?text(tree.props?.children):''
 function load(path,mocks={},globals={}){const module={exports:{}};const {outputText}=ts.transpileModule(readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}});runInNewContext(outputText,{module,exports:module.exports,...globals,require:name=>name.endsWith('.css')?{}:mocks[name]||require(name)});return module.exports.default}
 const tick=()=>new Promise(setImmediate)
 function harness(path,props={},extraMocks={}){
  let index=0,refreshes=0,send=async()=>Response.json({success:true}),pathname='/dashboard/program/ignite',search=''
- const slots=[],effects=[],calls=[],timers=new Map(),navigation=[];let timerId=0
+ const slots=[],effects=[],calls=[],timers=new Map(),navigation=[];let timerId=0,now=0
  const hook=(initial)=>{const i=index++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return[slots[i],value=>slots[i]=typeof value==='function'?value(slots[i]):value]}
  const hooks={useState:hook,useRef(initial){return hook(()=>({current:initial}))[0]},useMemo(fn,deps){const i=index++;if(!slots[i]||deps.some((d,j)=>d!==slots[i].deps[j]))slots[i]={value:fn(),deps};return slots[i].value},useCallback(fn,deps){return hooks.useMemo(()=>fn,deps)},useEffect(fn,deps){const i=index++;if(!slots[i]||!deps||deps.some((d,j)=>d!==slots[i].deps[j])){const previous=slots[i];slots[i]={deps};effects.push(()=>{previous?.cleanup?.();slots[i].cleanup=fn()})}}}
  const window={location:{search:'',assign:url=>navigation.push(url)},setInterval(fn){timers.set(++timerId,fn);return timerId},clearInterval(id){timers.delete(id)}}
- const Component=load(path,{react:hooks,'react-dom':{createPortal:node=>node},'next/link':'a','next/image':'img','next/navigation':{useRouter:()=>({refresh:()=>refreshes++,push:url=>navigation.push(url),replace:url=>navigation.push(url)}),usePathname:()=>pathname,useSearchParams:()=>new URLSearchParams(search)},'@/lib/analytics':{trackEvent(){}},'@/lib/sleep/calculateSleepHours':sleepMath,'@/components/aos-ui/AOSButton':{AOSButton:'button'},'@/components/aos-ui/AOSInput':{AOSInput:'input'},'@/components/aos-ui/AOSChip':{AOSChip:'button'},'@/components/PostureLandmarkEditor':'div','@/lib/posture/landmarks':{postureInstructions:[],POSTURE_VIEW_LABELS:{front:'Front',back:'Back',left:'Left',right:'Right'}},...extraMocks},{window,document:{body:{style:{}},addEventListener(){},removeEventListener(){}},URL,URLSearchParams,FormData,console,alert(){},fetch:async(url,options)=>{calls.push({url,body:options.body instanceof FormData?options.body:JSON.parse(options.body)});return send(url,options)}})
- const view={render(){index=0;const tree=Component(props);effects.splice(0).forEach(fn=>fn());return tree},calls,navigation,setSend(fn){send=fn},setPath(path,query=''){pathname=path;search=query},get refreshes(){return refreshes},async advance(seconds){for(let n=0;n<seconds;n++){[...timers.values()].forEach(fn=>fn());view.render()}}}
+ const Component=load(path,{react:hooks,'react-dom':{createPortal:node=>node},'next/link':'a','next/image':'img','next/navigation':{useRouter:()=>({refresh:()=>refreshes++,push:url=>navigation.push(url),replace:url=>navigation.push(url)}),usePathname:()=>pathname,useSearchParams:()=>new URLSearchParams(search)},'@/lib/analytics':{trackEvent(){}},'@/lib/meditation/practiceTiming':practiceTiming,'@/lib/sleep/calculateSleepHours':sleepMath,'@/components/aos-ui/AOSButton':{AOSButton:'button'},'@/components/aos-ui/AOSInput':{AOSInput:'input'},'@/components/aos-ui/AOSChip':{AOSChip:'button'},'@/components/PostureLandmarkEditor':'div','@/lib/posture/landmarks':{postureInstructions:[],POSTURE_VIEW_LABELS:{front:'Front',back:'Back',left:'Left',right:'Right'}},...extraMocks},{window,performance:{now:()=>now},document:{body:{style:{}},addEventListener(){},removeEventListener(){}},URL,URLSearchParams,FormData,console,alert(){},fetch:async(url,options)=>{calls.push({url,body:options.body instanceof FormData?options.body:JSON.parse(options.body)});return send(url,options)}})
+ const view={render(){index=0;const tree=Component(props);effects.splice(0).forEach(fn=>fn());return tree},calls,navigation,setSend(fn){send=fn},setPath(path,query=''){pathname=path;search=query},get refreshes(){return refreshes},async advance(seconds){for(let n=0;n<seconds;n++){now+=1000;[...timers.values()].forEach(fn=>fn());view.render()}},advanceMs(milliseconds){now+=milliseconds;[...timers.values()].forEach(fn=>fn());return view.render()}}
  return view
 }
 
@@ -46,15 +46,15 @@ test('Sleep has no invented duration/quality, keeps edits after network failure 
  const reopened=harness('components/SleepLogger.tsx',{clientId:'owner',initial:{duration:8,quality:5,bedtime:'23:00',wakeTime:'07:00',notes:'Retain this note'}});assert.equal(nodes(reopened.render(),node=>node.props?.label==='Notes (optional)')[0].props.value,'Retain this note')
 })
 
-test('all four meditation practices preserve duration; early completion cannot fabricate a log; retry saves actual elapsed minutes',async()=>{
+test('approved meditation durations replace former presets; early completion is blocked and retry logs earned minutes',async()=>{
  const view=harness('components/meditation/MeditationPractice.tsx',{clientId:'owner',initialPractice:'breath-reset'})
- for(const label of ['2 min','5 min','10 min','8 min'])assert.ok(text(view.render()).replace(/ +/g,' ').includes(label))
+ for(const label of ['1m 54.5s','5 min','10m 6s','8 min'])assert.ok(text(view.render()).replace(/ +/g,' ').includes(label),label)
  nodes(view.render(),node=>node.type==='button'&&text(node)==='Start practice')[0].props.onClick();view.render()
  let complete=()=>nodes(view.render(),node=>node.type==='button'&&text(node)==='Complete')[0]
  await complete().props.onClick();assert.equal(view.calls.length,0);assert.equal(complete().props.disabled,true)
- await view.advance(120);assert.equal(complete().props.disabled,false)
+ view.advanceMs(114499);assert.equal(complete().props.disabled,true);view.advanceMs(1);assert.equal(complete().props.disabled,false)
  view.setSend(async()=>Response.json({error:'Offline fixture'},{status:503}));await complete().props.onClick();assert.equal(view.refreshes,0);assert.match(text(view.render()),/Offline fixture/)
- view.setSend(async()=>Response.json({success:true}));await complete().props.onClick();assert.equal(view.refreshes,1);assert.equal(view.calls.at(-1).body.minutes,2);assert.equal(view.calls.at(-1).body.activityType,'Breathwork');assert.match(text(view.render()),/Practice logged/)
+ view.setSend(async()=>Response.json({success:true}));await complete().props.onClick();assert.equal(view.refreshes,1);assert.equal(view.calls.at(-1).body.minutes,1);assert.equal(view.calls.at(-1).body.elapsedMs,114500);assert.equal(view.calls.at(-1).body.practiceId,'breath-reset');assert.equal(view.calls.at(-1).body.activityType,'Breathwork');assert.match(text(view.render()),/Practice logged/)
  assert.equal(nodes(view.render(),node=>node.type==='button'&&text(node)==='Logged')[0].props.disabled,true)
 })
 

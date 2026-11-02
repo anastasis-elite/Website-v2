@@ -3,6 +3,7 @@ import { isClientOnboardingComplete } from '@/lib/dashboard/isClientOnboardingCo
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enforceRateLimit } from '@/lib/auth/rateLimit'
 import { validateClientInvitation } from '@/lib/auth/clientInvitations'
+import { bindAnalyticsOwner } from '@/lib/analytics/checkoutContext'
 
 export const runtime = 'nodejs'
 
@@ -80,6 +81,7 @@ export async function POST(req: Request) {
       )
     }
 
+    await bindAnalyticsOwner(supabaseAdmin, req, userId)
     const { error: updateClientError } = await supabaseAdmin
       .from('clients')
       .update({

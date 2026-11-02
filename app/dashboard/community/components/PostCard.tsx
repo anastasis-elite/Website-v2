@@ -2,245 +2,55 @@
 
 import { useState } from 'react'
 import * as styles from '@/app/styles/globalstyles'
+import { COMMUNITY_REPORT_REASONS, type CommunityPost, type CommunityReportReason } from '@/lib/community/contracts'
+import { communityRequest } from '@/lib/community/browser'
 
-type Comment = {
-  id: string
-  name: string
-  body: string
-}
-
-type Post = {
-  id: string
-  name: string
-  badge: string
-  category: string
-  time: string
-  body: string
-  supports: number
-  comments: Comment[]
-}
-
-const blockedWords = ['stupid', 'idiot', 'ugly', 'worthless']
-
-function isSupportiveComment(comment: string) {
-  const lower = comment.toLowerCase()
-  return !blockedWords.some((word) => lower.includes(word))
-}
-
-export default function PostCard({ post }: { post: Post }) {
-  const [supported, setSupported] = useState(false)
-  const [comment, setComment] = useState('')
-  const [comments, setComments] = useState(post.comments)
+export default function PostCard({ post, viewerId, onDeleted }: { post: CommunityPost; viewerId: string; onDeleted: (id: string) => void }) {
+  const [busy, setBusy] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showReport, setShowReport] = useState(false)
+  const [reason, setReason] = useState<CommunityReportReason>('spam')
+  const [reported, setReported] = useState(false)
   const [error, setError] = useState('')
+  const [mediaError, setMediaError] = useState(false)
+  const [mediaVersion, setMediaVersion] = useState(0)
+  const ownPost = post.authorId === viewerId
 
-  function submitComment() {
-    setError('')
-
-    if (!comment.trim()) return
-
-    if (comment.length > 280) {
-      setError('Use 280 characters or fewer.')
-      return
-    }
-
-    if (!isSupportiveComment(comment)) {
-      setError('Please keep this sample reply respectful.')
-      return
-    }
-
-    setComments((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        name: 'You',
-        body: comment.trim(),
-      },
-    ])
-
-    setComment('')
+  async function remove() {
+    if (busy) return
+    setBusy(true); setError('')
+    try { await communityRequest(`/api/community/posts/${post.id}`, { method: 'DELETE' }); onDeleted(post.id) }
+    catch (failure) { setError(failure instanceof Error ? failure.message : 'This post could not be deleted. Please retry.') }
+    finally { setBusy(false) }
   }
 
-  return (
-    <article style={styles.cartBoxStyle}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: '18px',
-          alignItems: 'flex-start',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '14px' }}>
-          <div
-            style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '50%',
-              background:
-                'radial-gradient(circle at 35% 30%, rgba(197,139,87,0.95), rgba(72,40,26,0.9))',
-              display: 'grid',
-              placeItems: 'center',
-              color: '#0e0d0c',
-              fontWeight: 700,
-              flexShrink: 0,
-            }}
-          >
-            {post.name.charAt(0)}
-          </div>
+  async function report() {
+    if (busy) return
+    setBusy(true); setError('')
+    try {
+      await communityRequest(`/api/community/posts/${post.id}/report`, { method: 'POST', body: JSON.stringify({ reason }) })
+      setReported(true); setShowReport(false)
+    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Your report could not be saved. Please retry.') }
+    finally { setBusy(false) }
+  }
 
-          <div>
-            <h3
-              style={{
-                margin: 0,
-                color: '#f5f0e8',
-                fontSize: '1rem',
-                fontWeight: 500,
-              }}
-            >
-              {post.name}
-            </h3>
-
-            <p
-              style={{
-                margin: '4px 0 0',
-                color: 'rgba(215,199,182,0.62)',
-                fontSize: '0.78rem',
-              }}
-            >
-              {post.badge} · {post.time}
-            </p>
-          </div>
-        </div>
-
-        <span
-          style={{
-            border: '1px solid rgba(197,139,87,0.35)',
-            color: '#c58b57',
-            borderRadius: '999px',
-            padding: '6px 10px',
-            fontSize: '0.72rem',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {post.category}
-        </span>
-      </div>
-
-      <p
-        style={{
-          ...styles.bodyStyle,
-          marginTop: '18px',
-          color: 'rgba(245,240,232,0.88)',
-        }}
-      >
-        {post.body}
-      </p>
-
-      <div
-        style={{
-          display: 'flex',
-          gap: '12px',
-          alignItems: 'center',
-          marginTop: '18px',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setSupported((prev) => !prev)}
-          style={{
-            border: '1px solid rgba(245,240,232,0.14)',
-            background: supported
-              ? 'rgba(197,139,87,0.18)'
-              : 'rgba(255,255,255,0.03)',
-            color: supported ? '#c58b57' : 'rgba(245,240,232,0.76)',
-            borderRadius: '999px',
-            padding: '8px 12px',
-            cursor: 'pointer',
-          }}
-        >
-          Preview support · {post.supports + (supported ? 1 : 0)}
-        </button>
-
-        <span
-          style={{
-            color: 'rgba(215,199,182,0.48)',
-            fontSize: '0.82rem',
-          }}
-        >
-          {comments.length} preview replies
-        </span>
-      </div>
-
-      <div style={{ display: 'grid', gap: '10px', marginTop: '18px' }}>
-        {comments.map((item) => (
-          <div
-            key={item.id}
-            style={{
-              background: 'rgba(255,255,255,0.035)',
-              border: '1px solid rgba(245,240,232,0.08)',
-              borderRadius: '18px',
-              padding: '12px 14px',
-            }}
-          >
-            <p
-              style={{
-                margin: 0,
-                color: '#f5f0e8',
-                fontSize: '0.82rem',
-              }}
-            >
-              {item.name}
-            </p>
-
-            <p
-              style={{
-                margin: '5px 0 0',
-                color: 'rgba(215,199,182,0.72)',
-                fontSize: '0.86rem',
-                lineHeight: 1.5,
-              }}
-            >
-              {item.body}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <div
-        style={{
-          display: 'flex',
-          gap: '10px',
-          marginTop: '14px',
-        }}
-      >
-        <input
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Try a reply in this preview..."
-          style={styles.inputStyle}
-        />
-
-        <button
-          type="button"
-          onClick={submitComment}
-          style={styles.secondaryButtonStyle}
-        >
-          Reply
-        </button>
-      </div>
-
-      {error ? (
-        <p
-          style={{
-            ...styles.bodyStyle,
-            color: '#ffb4b4',
-            fontSize: '0.8rem',
-            marginTop: '10px',
-          }}
-        >
-          {error}
-        </p>
-      ) : null}
-    </article>
-  )
+  const mediaUrl = post.media ? `${post.media.url}${post.media.url.includes('?') ? '&' : '?'}retry=${mediaVersion}` : ''
+  return <article style={styles.cartBoxStyle} aria-busy={busy}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'flex-start' }}>
+      <div style={{ minWidth: 0 }}><h3 style={{ margin: 0, fontSize: '1rem', color: '#f5f0e8', overflowWrap: 'anywhere' }}>{post.authorName}{ownPost ? ' · You' : ''}</h3><p className="phone-app-community-note" style={{ marginTop: 5 }}><time dateTime={post.publishedAt}>{new Date(post.publishedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></p></div>
+      <span style={{ border: '1px solid rgba(197,139,87,.35)', color: '#c58b57', borderRadius: 999, padding: '6px 10px', fontSize: '.72rem' }}>{post.category}</span>
+    </div>
+    {post.body && <p style={{ ...styles.bodyStyle, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', color: '#f5f0e8', marginTop: 18 }}>{post.body}</p>}
+    {post.media && <div style={{ marginTop: 16 }}>
+      {post.media.type === 'video' ? <video key={mediaUrl} controls playsInline preload="metadata" src={mediaUrl} onError={() => setMediaError(true)} aria-label={`Video shared by ${post.authorName}`} style={{ display: 'block', width: '100%', maxHeight: 480, borderRadius: 12 }} /> : <img key={mediaUrl} src={mediaUrl} alt={`Photo shared by ${post.authorName}`} loading="lazy" onError={() => setMediaError(true)} style={{ display: 'block', width: '100%', maxHeight: 480, objectFit: 'contain', borderRadius: 12 }} />}
+      {mediaError && <div role="status"><p className="phone-app-community-note">{post.media.type === 'video' ? 'This video could not play. Your device may not support its codec, or the connection may have been interrupted.' : 'This photo could not load. Check your connection and try again.'}</p><button type="button" onClick={() => { setMediaError(false); setMediaVersion((value) => value + 1) }} style={styles.secondaryButtonStyle}>Retry media</button></div>}
+    </div>}
+    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 18 }}>
+      {ownPost ? <button type="button" disabled={busy} onClick={() => setConfirmDelete(true)} style={styles.secondaryButtonStyle}>Delete post</button> : <button type="button" disabled={busy || reported} onClick={() => setShowReport((value) => !value)} style={styles.secondaryButtonStyle}>{reported ? 'Report recorded' : 'Report post'}</button>}
+    </div>
+    {confirmDelete && <div style={{ marginTop: 14 }}><p className="phone-app-community-note">Delete this post and its attachment? This cannot be undone.</p><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}><button type="button" disabled={busy} onClick={remove} style={styles.primaryButtonStyle}>{busy ? 'Deleting…' : 'Yes, delete post'}</button><button type="button" disabled={busy} onClick={() => setConfirmDelete(false)} style={styles.secondaryButtonStyle}>Keep post</button></div></div>}
+    {showReport && <div style={{ marginTop: 14 }}><label htmlFor={`report-reason-${post.id}`} style={styles.labelStyle}>Reason for reporting</label><select id={`report-reason-${post.id}`} value={reason} disabled={busy} onChange={(event) => setReason(event.target.value as CommunityReportReason)} style={{ ...styles.inputStyle, margin: '8px 0', textTransform: 'capitalize' }}>{COMMUNITY_REPORT_REASONS.map((item) => <option key={item} value={item}>{item}</option>)}</select><p className="phone-app-community-note">Reports are recorded for the community owner. Reporting does not automatically remove a post or confirm that someone has reviewed it.</p><button type="button" disabled={busy} onClick={report} style={styles.primaryButtonStyle}>{busy ? 'Sending…' : 'Send report'}</button></div>}
+    {reported && <p role="status" className="phone-app-community-note">Your report was recorded. It has not been confirmed as reviewed.</p>}
+    {error && <p role="alert" style={{ color: '#ffb4b4', lineHeight: 1.5 }}>{error}</p>}
+  </article>
 }

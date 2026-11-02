@@ -32,6 +32,7 @@ type Props = {
   recommendedExercises: unknown[]
   memberEquipment: string[]
   readiness: MuscleReadiness[]
+  trackingOnly?: boolean
   onExerciseFocus?: (muscleIds: MuscleId[]) => void
   onExerciseBlur?: () => void
 }
@@ -74,6 +75,7 @@ export default function ManualWorkoutBuilder({
   recommendedExercises,
   memberEquipment,
   readiness,
+  trackingOnly = false,
   onExerciseFocus,
   onExerciseBlur,
 }: Props) {
@@ -229,9 +231,9 @@ export default function ManualWorkoutBuilder({
       <div className="manual-workout-summary">
         <div>
           <p className="tier-dashboard-label">Manual Workout</p>
-          <h3>{step === 'complete' ? 'Session in progress' : 'Choose from readiness'}</h3>
+          <h3>{step === 'complete' ? 'Session in progress' : trackingOnly ? 'Choose an exercise to log' : 'Choose from readiness'}</h3>
         </div>
-        <small>Plan preserved: {recommendedDayName}</small>
+        {!trackingOnly ? <small>Plan preserved: {recommendedDayName}</small> : null}
       </div>
 
       {completedExercises.length ? (
@@ -254,11 +256,11 @@ export default function ManualWorkoutBuilder({
           selectedMuscleId={selectedRegionId}
           onSelectMuscle={chooseRegion}
           heading="Choose muscle"
-          eyebrow="Readiness from your logs"
+          eyebrow={trackingOnly ? 'Manual selection' : 'Readiness from your logs'}
         />
       ) : null}
 
-      {selectedRegionId && readinessSummary ? (
+      {!trackingOnly && selectedRegionId && readinessSummary ? (
         <section className="manual-readiness-context" data-testid="manual-readiness-context">
           <span>{firstMuscleLabel(selectedMuscles)}</span>
           <strong>{typeof readinessSummary.score === 'number' ? `${readinessSummary.score}% readiness estimate` : readinessSummary.label}</strong>
@@ -341,7 +343,7 @@ export default function ManualWorkoutBuilder({
 
       {step !== 'muscle' && step !== 'complete' ? (
         <button type="button" className="manual-secondary-button" onClick={() => resetSelection('muscle')}>
-          Back to readiness map
+          {trackingOnly ? 'Back to muscle selection' : 'Back to readiness map'}
         </button>
       ) : null}
     </div>

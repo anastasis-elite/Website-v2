@@ -88,7 +88,7 @@ test('work, school, appointments and custom events route to details rather than 
     assert.equal(getActionRouteForEvent(event({ id: type, event_type: type })), `/dashboard/schedule#event-${type}`)
   }
   assert.equal(getActionRouteForEvent(event({ event_type: 'work', virtual: true, action_route: '/dashboard/assessment/daily-structure' })), '/dashboard/assessment/daily-structure')
-  assert.equal(getActionRouteForEvent(event({ event_type: 'work', calendar_event_id: 'calendar-a' })), '/dashboard/schedule#calendar-event-calendar-a')
+  assert.equal(getActionRouteForEvent(event({ event_type: 'work', calendar_event_id: 'calendar-a' })), '/dashboard/calendar?date=2026-08-17#calendar-event-calendar-a')
   assert.equal(getActionRouteForEvent(event({ event_type: 'meal', action_route: '/dashboard/nutrition#aos-food-logger' }), 'ember'), '/dashboard/nutrition')
 })
 

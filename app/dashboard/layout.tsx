@@ -11,6 +11,9 @@ import TutorialRenderer from '@/components/tutorial/TutorialRenderer'
 import { Suspense } from 'react'
 import DashboardLoadingShell from '@/components/program-dashboard/DashboardLoadingShell'
 import { getClientTimeZone } from '@/lib/timezone'
+import { parseMembershipTier } from '@/lib/membership/policy'
+import Link from 'next/link'
+import MembershipExperienceCard from '@/components/membership/MembershipExperienceCard'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<DashboardLoadingShell />}><AuthenticatedDashboardLayout>{children}</AuthenticatedDashboardLayout></Suspense>
@@ -30,12 +33,23 @@ async function AuthenticatedDashboardLayout({
     if (!accepted) redirect('/legal/acceptance')
   }
 
-  const program=(['ember','ignite','phoenix'].includes(client.program)?client.program:'ember') as 'ember'|'ignite'|'phoenix'
+  const tier = parseMembershipTier(client.program)
+  if (tier === 'free' || tier === 'tracker' || !tier) return <div className="dashboard-client-shell">
+    {children}
+    {tier === 'tracker' ? <MembershipExperienceCard key={client.client_id} clientId={client.client_id} /> : null}
+    <nav className="client-dashboard-nav" aria-label="Member navigation">
+      {tier === 'tracker' ? <Link className="client-dashboard-nav__item" href="/dashboard/tracker">Tracking</Link> : null}
+      {tier ? <Link className="client-dashboard-nav__item" href="/dashboard/community">Community</Link> : null}
+      <Link className="client-dashboard-nav__item" href="/dashboard/account">Account</Link>
+    </nav>
+  </div>
+  const program = tier
   return (
     <TutorialProvider tier={program}>
       <div className="dashboard-client-shell" data-tutorial-id="dashboard-shell">
         <DailyPlanRefresh timezone={getClientTimeZone(client)} />
         {children}
+        <MembershipExperienceCard key={client.client_id} clientId={client.client_id} />
         <ClientDashboardNav program={program}/>
         <TutorialRenderer/>
         <TutorialDevPanel/>

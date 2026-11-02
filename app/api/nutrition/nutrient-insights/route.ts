@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getNutrientInsights } from '@/lib/nutrition/getNutrientInsights'
 import { safeErrorResponse } from '@/lib/security/http'
 import { createClient } from '@/lib/supabase/server'
-import { canTrackMicronutrients } from '@/lib/nutrition/memberNutrition'
+import { membershipCan } from '@/lib/membership/policy'
 
 export async function GET(request: Request) {
   try {
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
     const { data: client } = await supabase
       .from('clients')
-      .select('client_id,program')
+      .select('client_id,program,access,active,verified_purchase,subscription_ends_at,membership_expires_at,onboarding_data,state,timezone')
       .eq('client_id', clientId)
       .eq('auth_user_id', user.id)
       .maybeSingle()
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     if (!client) {
       return safeErrorResponse('Client not found.', 404)
     }
-    if (!canTrackMicronutrients(client.program)) {
+    if (!membershipCan(client, 'nutritionMicronutrients')) {
       return safeErrorResponse('Micronutrient guidance requires IGNITE or PHOENIX.', 403)
     }
 

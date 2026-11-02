@@ -6,6 +6,7 @@
   "days": [
     {
       "day_name": "Monday",
+      "day_intent": "training",
       "focus": "",
       "exercises": [
         {
@@ -92,6 +93,7 @@
     },
     {
       "day_name": "Tuesday",
+      "day_intent": "training",
       "focus": "",
       "exercises": [
         {
@@ -178,11 +180,13 @@
     },
     {
       "day_name": "Wednesday",
+      "day_intent": "rest",
       "focus": "",
       "exercises": []
     },
     {
       "day_name": "Thursday",
+      "day_intent": "training",
       "focus": "",
       "exercises": [
         {
@@ -279,6 +283,7 @@
     },
     {
       "day_name": "Friday",
+      "day_intent": "training",
       "focus": "",
       "exercises": [
         {
@@ -365,6 +370,7 @@
     },
     {
       "day_name": "Saturday",
+      "day_intent": "rest",
       "focus": "",
       "exercises": []
     }

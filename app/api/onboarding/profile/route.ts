@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { recordConversion } from '@/lib/analytics/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTimezoneFromState } from '@/lib/timezone'
 import { applyExplicitPreferences, getDefaultCommunicationProfile } from '@/lib/accountability/communicationProfile'
@@ -145,6 +146,7 @@ export async function POST(req: Request) {
       )
     }
 
+    await recordConversion(supabase, { userId: user.id, event: 'onboarding_completed' })
     return NextResponse.json({
       success: true,
       clientId: existing.client_id,

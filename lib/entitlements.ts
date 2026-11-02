@@ -1,11 +1,15 @@
+import { parseMembershipTier, type MembershipTier } from './membership/tiers'
+
 export type ProgramTier = 'ember' | 'ignite' | 'phoenix'
 
 export type NutritionCapability =
+  | 'none'
   | 'macro_entry'
   | 'meal_logging'
   | 'recommended_meal'
 
 export type RecoveryCapability =
+  | 'none'
   | 'basic'
   | 'recommended'
   | 'directed'
@@ -34,7 +38,7 @@ export type TierCapability =
   | 'trendsView'
 
 export type TierCapabilities = Record<TierCapability, boolean> & {
-  tier: ProgramTier
+  tier: MembershipTier | 'unknown'
   nutrition: NutritionCapability
   recovery: RecoveryCapability
 }
@@ -43,7 +47,8 @@ const supportedProgramTiers = new Set(['ember', 'ignite', 'phoenix'])
 
 export function normalizeProgramTier(value: unknown): ProgramTier {
   const normalized = String(value || '').trim().toLowerCase()
-  return supportedProgramTiers.has(normalized) ? normalized as ProgramTier : 'ember'
+  if (!supportedProgramTiers.has(normalized)) throw new Error('A recognized coaching tier is required.')
+  return normalized as ProgramTier
 }
 
 // Macro-only totals are EMBER's established input. IGNITE/PHOENIX record
@@ -114,7 +119,7 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
     nutritionBarcodeScanning: true,
     nutritionRecurringFoodDetection: true,
     nutritionAutomaticPreLogging: true,
-    nutritionPhotoMacroEstimation: true,
+    nutritionPhotoMacroEstimation: false,
     nutritionRecommendedMeal: true,
     recipeFavorites: true,
     nutrition: 'recommended_meal',
@@ -131,7 +136,12 @@ const capabilitiesByTier: Record<ProgramTier, TierCapabilities> = {
 }
 
 export function getTierCapabilities(value: unknown): TierCapabilities {
-  return capabilitiesByTier[normalizeProgramTier(value)]
+  const tier = parseMembershipTier(value)
+  if (tier === 'ember' || tier === 'ignite' || tier === 'phoenix') return capabilitiesByTier[tier]
+  const denied = Object.fromEntries(Object.keys(capabilitiesByTier.ember).map(key => [key, false])) as unknown as TierCapabilities
+  const base: TierCapabilities = { ...denied, tier: tier || 'unknown', nutrition: 'none', recovery: 'none' }
+  return tier === 'tracker' ? { ...base, workoutDisplay: true, nutritionTracking: true, nutritionMacroEntry: true,
+    recoveryBasic: true, progressView: true, nutrition: 'macro_entry', recovery: 'basic' } : base
 }
 
 export function hasTierCapability(value: unknown, capability: TierCapability) {

@@ -670,7 +670,9 @@ export async function getProgramLogicEngine(
           : 'Recovery day'),
 
       type:
-        workoutDecision
+        ['rest', 'unavailable'].includes(workoutDecision.assignedWorkout?.workout_state)
+          ? workoutDecision.assignedWorkout.day_name
+          : workoutDecision
           .adjustmentLevel ===
         'level_0_full_plan'
           ? inputs.plannedWorkout

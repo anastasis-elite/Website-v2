@@ -35,21 +35,21 @@ function price(billing='subscription',overrides={}) {
 const stripe = value => ({prices:{retrieve:async(id,options)=>{assert.equal(id,value.id);assert.equal(JSON.stringify(options),JSON.stringify({expand:['product']}));return value}}})
 const request = program=>new Request(`https://local-test.invalid/api/pricing?program=${program}`)
 
-test('configured Stripe amount and month interval are shown; one-time amount remains visible without an invented access period',()=>configured(async()=>{
+test('configured Stripe amount and month interval are shown; approved one-time access covers twelve months',()=>configured(async()=>{
   const monthly=await getPrice(stripe(price()),'ember','subscription')
   assert.equal(monthly.details.available,true);assert.equal(monthly.details.amount,360);assert.equal(monthly.details.currency,'USD');assert.match(monthly.details.amountLabel,/360/);assert.equal(monthly.details.intervalLabel,'per month')
   const full=await getPrice(stripe(price('annual')),'ember','annual')
-  assert.equal(full.details.amount,3600);assert.equal(full.details.available,false);assert.equal(full.details.intervalLabel,'one-time payment');assert.equal(full.details.accessMonths,undefined)
-  assert.match(full.details.coverageLabel,/not been confirmed/);assert.doesNotMatch(full.details.coverageLabel,/12|year|savings/i)
+  assert.equal(full.details.amount,3600);assert.equal(full.details.available,true);assert.equal(full.details.intervalLabel,'one-time payment');assert.equal(full.details.accessMonths,12)
+  assert.equal(full.details.coverageLabel,'Includes 12 months of program access.')
 }))
 
-test('one-time access duration comes only from explicit positive integer Stripe metadata, with price-specific override',()=>configured(async()=>{
+test('approved full-year access remains twelve months regardless of provider duration metadata',()=>configured(async()=>{
   const value=price('annual');value.product.metadata.access_months='12'
-  let result=await getPrice(stripe(value),'ember','annual')
-  assert.equal(result.details.available,true);assert.equal(result.details.accessMonths,12);assert.equal(result.details.coverageLabel,'Includes 12 months of program access.')
-  value.metadata.access_months='6';result=await getPrice(stripe(value),'ember','annual');assert.equal(result.details.accessMonths,6)
-  for(const invalid of ['0','-3','12.0','one year','3.5','121','999999999999999999999']) {
-    value.metadata.access_months=invalid;result=await getPrice(stripe(value),'ember','annual');assert.equal(result.details.available,false);assert.equal(result.details.accessMonths,undefined)
+  for(const metadata of ['12','6','0','-3','one year']) {
+    value.metadata.access_months=metadata
+    const result=await getPrice(stripe(value),'ember','annual')
+    assert.equal(result.details.available,true);assert.equal(result.details.accessMonths,12)
+    assert.equal(result.details.coverageLabel,'Includes 12 months of program access.')
   }
 }))
 
@@ -90,7 +90,7 @@ test('currency amounts preserve Stripe minor units including zero- and three-dec
 test('public route retrieves expanded actual prices and exposes only the customer pricing projection',()=>configured(async()=>{
   globalThis.pricingObjects={price_EmberMonthly:price(),price_EmberFull:price('annual',{metadata:{program:'ember',access_months:'9',internal_review:'private'}})}
   const response=await route.GET(request('ember'));assert.equal(response.status,200);assert.match(response.headers.get('Cache-Control'),/no-store/)
-  const body=await response.json();assert.equal(body.program,'ember');assert.equal(body.subscription.available,true);assert.equal(body.annual.available,true);assert.equal(body.annual.coverageLabel,'Includes 9 months of program access.')
+  const body=await response.json();assert.equal(body.program,'ember');assert.equal(body.subscription.available,true);assert.equal(body.annual.available,false);assert.match(body.annual.coverageLabel,/not been confirmed/)
   assert.equal(globalThis.pricingRetrievals.length,2);assert.ok(globalThis.pricingRetrievals.every(call=>call.options.expand[0]==='product'))
   assert.doesNotMatch(JSON.stringify(body),/sk_test_|price_Ember|prod_Ember|private|internal_review|metadata|accessMonths|mode/)
   assert.deepEqual(JSON.parse(JSON.stringify(publicPriceDetails({available:true,amount:360,currency:'USD',mode:'subscription',accessMonths:1}))),{available:true,amount:360,currency:'USD'})

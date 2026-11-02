@@ -1,39 +1,70 @@
 'use client'
 
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
 import { formatLocalTime } from '@/lib/schedule/time'
-import DailyPlanCard from '@/components/DailyPlanCard'
-import ScheduleEventActions from '@/components/ScheduleEventActions'
-import CalendarWorkspace from '@/components/CalendarWorkspace'
-import Link from 'next/link'
+import { addLocalDays, localDateKey } from '@/lib/timezone'
 import { useDailyScheduleRefresh } from '@/lib/schedule/client'
-import { dayBlockHref, dayBlockLabels, type DayBlock } from '@/lib/day/dayBlockRoutes'
-import '@/components/phone-app/day-blocks.css'
-import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
+import { dayBlockHref, dayBlockLabels, isDayBlockDate, scheduleDayHref, type DayBlock } from '@/lib/day/dayBlockRoutes'
+import { getActionRouteForEvent } from '@/lib/schedule/engine'
+import { healthEventTypes } from '@/lib/schedule/actions'
+import ScheduleCheckoff from '@/components/ScheduleCheckoff'
+import styles from './schedule-review.module.css'
 
-function eventLabel(event: ScheduleEvent) {
-  if (event.flexibility_type === 'fixed') return 'Fixed'
-  if (event.flexibility_type === 'approval_required') return 'Approval'
-  return 'Flexible'
+function statusLabel(event: ScheduleEvent, now: string) {
+  if (event.status === 'completed') return 'Done'
+  if (event.status === 'cancelled') return 'Cancelled'
+  if (event.status === 'skipped') return 'Skipped'
+  if (event.suggested) return 'Suggested'
+  return Date.parse(event.adjusted_end_at || event.end_at) < Date.parse(now) ? 'Overdue' : 'Upcoming'
 }
 
 export default function ScheduleDashboardClient({ initialSchedule }: { initialSchedule: DailyScheduleState }) {
   const schedule = initialSchedule
+  const router = useRouter()
   useDailyScheduleRefresh(schedule)
-  return <PhoneAppFrame eyebrow="Schedule review" title="Make room for your day." subtitle="Your plan can move with you."><main className="schedule-page"><div className="schedule-shell">
-    <header className="schedule-hero"><div><p className="schedule-label">{schedule.date} · {schedule.timezone}</p><p>Keep appointments in view and choose time for what supports you.</p><Link href="/dashboard/schedule/settings">Schedule settings</Link></div></header>
-    {schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved events are still recorded. Time changes will be available when your full schedule loads.</p> : null}
-    {schedule.dailyRecommendation ? <DailyPlanCard plan={schedule.dailyRecommendation} compact autoRefresh={false} /> : null}
-    <CalendarWorkspace date={schedule.date} timezone={schedule.timezone} />
-    <nav className="schedule-day-blocks" aria-label="Parts of your selected day"><div><p className="phone-app-eyebrow">Your daily rhythm</p><h2>Morning, midday & evening</h2><p>Open a block for {schedule.date}. Day-block logging is available for today.</p></div><div className="schedule-day-block-links">{(Object.keys(dayBlockLabels) as DayBlock[]).map(block => <Link key={block} href={dayBlockHref(block,schedule.date)}><span aria-hidden="true">{block==='morning'?'☀':block==='midday'?'◉':'☾'}</span>{dayBlockLabels[block]}<b aria-hidden="true">›</b></Link>)}</div></nav>
-    <section className="schedule-panel" aria-label="Anastasis activities and daily structure">
-      <div className="schedule-section-heading"><h2>Anastasis activities and daily structure</h2><span>{schedule.date}</span></div>
-      <p>Suggestions stay here until you choose them. Use the calendar above to save an activity to a connected calendar.</p>
-      <div className="schedule-timeline">{schedule.events.filter(event => event.source !== 'external_calendar' && !event.calendar_event_id).map(event => <article id={`event-${event.id}`} className={`schedule-event schedule-${event.flexibility_type}`} key={event.id}>
-        <time>{formatLocalTime(event.adjusted_start_at || event.start_at, schedule.timezone)}{event.adjusted_start_at ? <small>Originally {formatLocalTime(event.start_at, schedule.timezone)}</small> : null}</time>
-        <div><h3>{event.title}</h3><p>{event.description || event.event_type.replaceAll('_', ' ')}</p><div><span>Anastasis</span><span>{eventLabel(event)}</span><span>{schedule.overdueEvents.some(item => item.id === event.id) ? 'Overdue · review or choose a new time' : event.suggested && event.status === 'scheduled' ? 'Suggested time' : event.status}</span></div></div>
-        <ScheduleEventActions event={event} program={schedule.program} timezone={schedule.timezone} canChangeTime={!schedule.unavailableSources?.length} suggestion={schedule.adjustments.find(item => item.event_id === event.id && !item.applied)} />
-      </article>)}</div>
+  const today = localDateKey(new Date(schedule.now), schedule.timezone)
+  const events = [...schedule.events].sort((a, b) => Number(b.all_day) - Number(a.all_day)
+    || Date.parse(a.adjusted_start_at || a.start_at) - Date.parse(b.adjusted_start_at || b.start_at)
+    || a.id.localeCompare(b.id))
+  return <main className={styles.page}>
+    <header className={styles.header}>
+      <Link href="/dashboard" className={styles.back}>‹ Today</Link>
+      <h1>Schedule</h1>
+      <Link href={`/dashboard/calendar?date=${schedule.date}`}>Calendar</Link>
+    </header>
+    <nav className={styles.dates} aria-label="Schedule date">
+      <Link href={scheduleDayHref(addLocalDays(schedule.date, -1))} aria-label="Previous day">‹</Link>
+      <label className={styles.dateLabel}><span className={styles.srOnly}>Select schedule date</span>
+        <input aria-label="Select schedule date" type="date" value={schedule.date} onChange={event => {
+          if (isDayBlockDate(event.target.value)) router.push(scheduleDayHref(event.target.value))
+        }} />
+      </label>
+      <Link href={scheduleDayHref(addLocalDays(schedule.date, 1))} aria-label="Next day">›</Link>
+      {schedule.date !== today ? <Link className={styles.today} href="/dashboard/schedule">Today</Link> : null}
+    </nav>
+    <div className={styles.meta}>
+      <small>{schedule.timezone.replaceAll('_', ' ')}</small>
+      <nav aria-label="Parts of your selected day">{(Object.keys(dayBlockLabels) as DayBlock[]).map(block =>
+        <Link key={block} href={dayBlockHref(block, schedule.date)}>{dayBlockLabels[block]}</Link>)}</nav>
+    </div>
+    {schedule.unavailableSources?.length ? <p className={styles.notice} role="status">Some schedule details could not load. Refresh to try again.</p> : null}
+    <section aria-label="Daily schedule">
+      {events.length ? <ol className={styles.events}>{events.map(event => {
+        const health = healthEventTypes.has(event.event_type)
+        const terminal = ['completed', 'cancelled', 'skipped'].includes(event.status)
+        return <li id={`event-${event.id}`} key={`${schedule.date}:${event.id}`} className={styles.row}>
+          <time dateTime={event.adjusted_start_at || event.start_at}>{event.all_day ? 'All day' : formatLocalTime(event.adjusted_start_at || event.start_at, schedule.timezone)}</time>
+          <div className={styles.activity}>
+            <Link className={styles.title} href={getActionRouteForEvent(event, schedule.program)}>{event.title}</Link>
+            <small>{statusLabel(event, schedule.now)}{event.source === 'external_calendar' ? ' · Calendar' : ''}</small>
+          </div>
+          {health ? terminal ? <span className={styles.healthDone} aria-label={`${event.title}: ${statusLabel(event, schedule.now)}`}>{event.status === 'completed' ? '✓' : '—'}</span>
+            : <Link className={styles.log} href={getActionRouteForEvent(event, schedule.program)} aria-label={`Open ${event.title} to log`}>Log</Link>
+            : <ScheduleCheckoff event={event} date={schedule.date} timezone={schedule.timezone} unavailable={schedule.unavailableSources?.includes('checkoffs')} />}
+        </li>
+      })}</ol> : <p className={styles.empty}>Nothing scheduled for this day.</p>}
     </section>
-  </div></main></PhoneAppFrame>
+  </main>
 }

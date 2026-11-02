@@ -85,6 +85,10 @@ export type ScheduleEvent = {
   virtual?: boolean
   suggested?: boolean
   action_route?: string | null
+  schedule_date?: string
+  // Anastasis-only evidence for this member's selected local-day occurrence.
+  // Health activity completion continues to come from its saved logs.
+  checkoff?: { completed: boolean; revision: number }
 }
 
 export type OpenWindow = {
@@ -122,7 +126,7 @@ export type NextScheduleAction = {
 }
 
 export type DailyScheduleState = {
-  unavailableSources?: Array<'saved_events' | 'recurring_commitments' | 'calendar'>
+  unavailableSources?: Array<'saved_events' | 'recurring_commitments' | 'calendar' | 'checkoffs'>
   program?: string
   date: string
   timezone: string

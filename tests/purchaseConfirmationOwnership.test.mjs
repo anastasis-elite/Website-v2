@@ -22,7 +22,7 @@ function fixture() {
   const page = load('app/verified/page.tsx', {
     stripe: Stripe, 'next/link': () => null, 'next/headers': { cookies: async () => ({ get: name => name === proof.purchaseCookieName(session.id) && state.cookie ? { value: state.cookie } : undefined }) }, '../styles/globalstyles': {},
     '@/lib/supabase/admin': { createAdminClient: () => db }, '@/lib/supabase/server': { createClient: async () => ({ auth: { getUser: async () => ({ data: { user: state.user } }) } }) },
-    '@/lib/commerce/invitationDelivery': { deliverPurchaseInvitation: async value => { state.invitations.push(value) } },
+    '@/lib/commerce/invitationDelivery': { deliverPurchaseInvitation: async value => { state.invitations.push(value); return true } },
     '@/lib/commerce/fulfillment': { fulfillPurchase: async () => { state.fulfills++; return { clientId: 'pending-owned', email: 'qa@example.test', program: 'ember', authUserId: null } } },
     '@/lib/commerce/purchaseProof': proof, '@/lib/commerce/environment': load('lib/commerce/environment.ts', {}, env),
   }, env).default

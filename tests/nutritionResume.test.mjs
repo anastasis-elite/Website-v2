@@ -43,7 +43,7 @@ test('same-day direct entry adopts refreshed water while retaining the same food
     '@/components/NutritionFoodLogger': { __esModule: true, default: 'food-entry' },
     '@/lib/entitlements': entitlements, '@/lib/supabase/client': { createClient: () => db }, '@/lib/nutrition/directEntry': {},
   }).default
-  let props = { clientId: 'own-client', program: 'ignite', timezone: 'America/Chicago', logDate: '2026-10-14', loggingIntent: { action: 'water' }, initialLog: { id: 'own-log', water_consumed_oz: 8, water_oz: 90 } }
+  let props = { clientId: 'own-client', program: 'ignite', timezone: 'America/Chicago', logDate: '2026-10-14', loggingIntent: { action: 'water' }, initialLog: { id: 'own-log', client_id: 'own-client', log_date: '2026-10-14', water_consumed_oz: 8, water_oz: 90 } }
   const render = () => state.render(Direct, props)
   const water = () => nodes(render()).find(node => node.type === 'water-entry')
   assert.equal(water().props.consumed, 8)
@@ -72,7 +72,7 @@ test('direct water exposes the actual inline entry without a second trigger', ()
     '@/lib/entitlements': entitlements, '@/lib/supabase/client': { createClient: () => ({}) }, '@/lib/nutrition/directEntry': {},
   }).default
   const tree = state.render(Direct, { clientId: 'own-client', program: 'ember', timezone: 'America/Chicago', logDate: '2026-10-14',
-    loggingIntent: { action: 'water' }, initialLog: { id: 'own-log', water_consumed_oz: 8, water_oz: 90 } })
+    loggingIntent: { action: 'water' }, initialLog: { id: 'own-log', client_id: 'own-client', log_date: '2026-10-14', water_consumed_oz: 8, water_oz: 90 } })
   const entries = nodes(tree).filter(node => node.type === 'water-entry')
   assert.equal(entries.length, 1)
   assert.equal(entries[0].props.inline, true)
@@ -91,7 +91,7 @@ test('direct water retains unavailable-total feedback and its read retry inside 
     '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: 'water-entry' },
     '@/components/NutritionFoodLogger': { __esModule: true, default: 'food-entry' },
     '@/lib/entitlements': entitlements, '@/lib/supabase/client': { createClient: () => ({}) },
-    '@/lib/nutrition/directEntry': { readDirectEntryLog: async () => { reads++; return { id: 'own-log', water_consumed_oz: 24, water_oz: 90 } } },
+    '@/lib/nutrition/directEntry': { readDirectWaterEntry: async () => { reads++; return { clientId: 'own-client', logDate: '2026-10-14', consumed: 24, target: 90 } } },
   }).default
   const props = { clientId: 'own-client', program: 'ember', timezone: 'America/Chicago', logDate: '2026-10-14', loggingIntent: { action: 'water' }, initialLog: null, initialError: 'Synthetic saved-total read failed' }
   const render = () => state.render(Direct, props)

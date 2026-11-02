@@ -51,11 +51,11 @@ export function strengthAssessmentStatusFromRecords({
   if (completed) return {
     state: 'completed', label: 'Completed', period, completedAt: completed.date,
     savedAt: completed.date, assessmentId: completed.id ? String(completed.id) : null,
-    actionLabel: 'Assessment Options', href: '/dashboard/assessment', unavailable: false, previousDraft: previous,
+    actionLabel: 'View Saved Results', href, unavailable: false, previousDraft: previous,
   }
   if (unavailable) return {
     state: 'unavailable', label: 'Status unavailable', period, completedAt: null,
-    savedAt: null, assessmentId: null, actionLabel: 'Assessment Options', href: '/dashboard/assessment',
+    savedAt: null, assessmentId: null, actionLabel: 'Retry Loading Assessment', href,
     unavailable: true, previousDraft: previous,
   }
   if (session?.status === 'draft' && validTimestamp(session.saved_at)) return {
@@ -77,17 +77,40 @@ export async function getStrengthAssessmentStatus(supabase: any, client: any, no
   const start = getClientDayRange(client, period).start.toISOString()
   const end = getClientDayRange(client, nextPeriod).start.toISOString()
   try {
-    // Published strength rows are final submissions. Completion recognition can
-    // use their existing metadata without the unpublished draft-schema migration.
-    const { data, error } = await supabase.from('assessments').select('id,submitted_at')
-      .eq('client_id', client.client_id).eq('auth_user_id', client.auth_user_id)
-      .eq('assessment_type', 'strength')
-      .gte('submitted_at', start).lt('submitted_at', end).lte('submitted_at', now.toISOString())
-      .order('submitted_at', { ascending: true }).limit(1).maybeSingle()
-    const submittedAt = validTimestamp(data?.submitted_at) ? Date.parse(data.submitted_at) : NaN
-    const assessment = submittedAt >= Date.parse(start) && submittedAt < Date.parse(end) && submittedAt <= now.getTime()
-      ? data : null
-    return strengthAssessmentStatusFromRecords({ period, assessment: error ? null : assessment, unavailable: Boolean(error) })
+    // Keep published final recognition independent of draft-table availability.
+    // A failed draft read must never hide a known, owned completed assessment.
+    const read = async (query: () => PromiseLike<{ data: any; error: any }>) => {
+      try { return await query() } catch { return { data: null, error: true } }
+    }
+    const [assessmentResult, sessionResult, previousResult] = await Promise.all([
+      read(() => supabase.from('assessments').select('id,submitted_at,assessment_period')
+        .eq('client_id', client.client_id).eq('auth_user_id', client.auth_user_id)
+        .eq('assessment_type', 'strength')
+        .or(`assessment_period.is.null,assessment_period.eq.${period}`)
+        .gte('submitted_at', start).lt('submitted_at', end).lte('submitted_at', now.toISOString())
+        .order('submitted_at', { ascending: true }).limit(1).maybeSingle()),
+      read(() => supabase.from('strength_assessment_sessions').select('period,status,saved_at,completed_at,assessment_id')
+        .eq('client_id', client.client_id).eq('auth_user_id', client.auth_user_id)
+        .eq('period', period).maybeSingle()),
+      read(() => supabase.from('strength_assessment_sessions').select('period,status,saved_at')
+        .eq('client_id', client.client_id).eq('auth_user_id', client.auth_user_id)
+        .eq('status', 'draft').lt('period', period).lte('saved_at', now.toISOString())
+        .order('period', { ascending: false }).limit(1).maybeSingle()),
+    ])
+    const withinCurrentMonth = (value: unknown) => validTimestamp(value) &&
+      Date.parse(value) >= Date.parse(start) && Date.parse(value) < Date.parse(end) && Date.parse(value) <= now.getTime()
+    const data = assessmentResult.data
+    const assessment = !assessmentResult.error && withinCurrentMonth(data?.submitted_at) &&
+      (data.assessment_period == null || data.assessment_period === period) ? data : null
+    const rawSession = sessionResult.data
+    const session = !sessionResult.error && rawSession?.period === period &&
+      (rawSession.status === 'completed' ? withinCurrentMonth(rawSession.completed_at) :
+        rawSession.status === 'draft' && withinCurrentMonth(rawSession.saved_at)) ? rawSession : null
+    const previousDraft = !previousResult.error && validTimestamp(previousResult.data?.saved_at) &&
+      Date.parse(previousResult.data.saved_at) <= now.getTime() ? previousResult.data : null
+    return strengthAssessmentStatusFromRecords({ period, assessment, session, previousDraft,
+      unavailable: Boolean(assessmentResult.error || sessionResult.error),
+    })
   } catch {
     return strengthAssessmentStatusFromRecords({ period, unavailable: true })
   }
@@ -102,8 +125,8 @@ export function formatStrengthAssessmentTimestamp(value: string | null, client: 
 }
 
 export function getStrengthAssessmentDetail(status: StrengthAssessmentStatus, client: any) {
-  if (status.state === 'completed') return `Completed ${formatStrengthAssessmentTimestamp(status.completedAt, client)}. Your strength baseline is saved.`
+  if (status.state === 'completed') return `Completed ${formatStrengthAssessmentTimestamp(status.completedAt, client)}. Saved results are available.`
   if (status.state === 'draft') return `Last saved ${formatStrengthAssessmentTimestamp(status.savedAt, client, true)}. Continue where you stopped.`
-  if (status.state === 'unavailable') return 'We couldn’t load your assessment status. Refresh this page to check your saved status before submitting again.'
+  if (status.state === 'unavailable') return 'We couldn’t load your assessment status. Open the assessment to retry before submitting again.'
   return 'Your strength assessment is due for this month.'
 }

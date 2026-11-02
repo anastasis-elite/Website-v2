@@ -46,7 +46,7 @@ export function buildAssessmentHub({ client, today, now, monthly, strength, body
       href: schedule.href, action: 'Open measurements', illustration: 'training',
     })
   }
-  return { due, unavailable }
+  return { due, unavailable, strength }
 }
 
 export async function getAssessmentHub(supabase: any, client: any, now = new Date()) {

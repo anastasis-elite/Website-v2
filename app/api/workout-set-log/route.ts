@@ -1,7 +1,9 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { getClientDayRange } from '@/lib/schedule/time'
 import { getClientLocalDate } from '@/lib/timezone'
-import { workoutCompletion } from '@/lib/workout/activity'
+import { isValidCompletedSet, manualWorkoutPlan, prescribedSetCount, workoutCompletion } from '@/lib/workout/activity'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
+import { recordConversion } from '@/lib/analytics/server'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { loadWorkoutHistory } from '@/lib/workout/history'
@@ -34,14 +36,15 @@ export async function POST(req: Request) {
 
     const {data:client} = await supabase.from('clients').select('*').eq('client_id',body.client_id).eq('auth_user_id',user.id).maybeSingle()
     if(!client)return NextResponse.json({error:'Client not found.'},{status:404})
+    if(!membershipCan(client, 'workoutLogging'))return NextResponse.json({error:'Workout logging is not available for this membership.'},{status:403})
     if(body.program !== client.program)return NextResponse.json({error:'Workout does not match your program.'},{status:403})
     const workoutDate = body.workout_date || new Date().toISOString()
     if(!Number.isFinite(new Date(workoutDate).getTime()) || getClientLocalDate(client,new Date(workoutDate)) !== getClientLocalDate(client))return NextResponse.json({error:'Reload today’s session before saving.'},{status:400})
     const day = getClientDayRange(client)
     const sets = Array.isArray(body.sets) ? body.sets : []
     const exerciseLogs = Array.isArray(body.exercise_logs) ? body.exercise_logs : []
-    if(sets.length>100 || sets.some((set:any)=>!Number.isFinite(Number(set.weight)) || Number(set.weight)<0 || !Number.isFinite(Number(set.reps)) || Number(set.reps)<=0 || !['lb','kg'].includes(set.weight_unit || 'lb') || !set.completed_at))return NextResponse.json({error:'Review the confirmed sets before saving.'},{status:400})
-    for(const log of exerciseLogs)log.completed=Boolean(body.exercise_finished_at) && sets.length >= Math.max(1,Number(body.exercise?.sets || 1))
+    if (exerciseLogs.length !== 1 || !exerciseLogs[0] || typeof exerciseLogs[0] !== 'object') return NextResponse.json({ error: 'Review the exercise before saving.' }, { status: 400 })
+    if(sets.length>100 || sets.some((set:any)=>!isValidCompletedSet(set)))return NextResponse.json({error:'Review the confirmed sets before saving.'},{status:400})
 
     const dayName = String(body.day_name || 'Manual Workout')
     const history = await loadWorkoutHistory({ supabase, client, authUserId: user.id, startDate: day.date, source: 'manual', dayName, limit: 1 })
@@ -55,6 +58,16 @@ export async function POST(req: Request) {
       ? existingResult.data.exercise_logs
       : []
     const nextExerciseKey = exerciseId(body.exercise)
+    const prior = existingLogs.find((log: any) => exerciseId(log) === nextExerciseKey)
+    for (const log of exerciseLogs) {
+      // The submitted set snapshot replaces the same exercise occurrence on
+      // retries. Retain its first known prescription instead of shrinking it.
+      if (prior?.planned_sets !== undefined) log.planned_sets = prior.planned_sets
+      if (prior?.sets !== undefined) log.sets = prior.sets
+      log.set_logs = sets
+      const counts = workoutCompletion([log])
+      log.completed = Boolean(body.exercise_finished_at) && prescribedSetCount(log) > 0 && counts.completedSets === counts.totalSets
+    }
     const nextLogs = [
       ...existingLogs.filter((log: any) => exerciseId(log) !== nextExerciseKey),
       ...exerciseLogs,
@@ -70,7 +83,7 @@ export async function POST(req: Request) {
       workout_started_at: existingResult.data ? existingResult.data.workout_started_at || null : new Date(workoutDate).toISOString(),
       planned_exercises: Array.isArray(body.planned_exercises) ? body.planned_exercises : [],
       exercise_logs: nextLogs,
-      completed: Array.isArray(body.planned_exercises) && body.planned_exercises.length === nextLogs.length && workoutCompletion(nextLogs).completed,
+      completed: workoutCompletion(nextLogs, manualWorkoutPlan(nextLogs)).completed,
       updated_at: new Date().toISOString(),
     }
 
@@ -121,8 +134,9 @@ export async function POST(req: Request) {
     }
 
     invalidateDailyPlan()
+    if (workoutPayload.completed) await recordConversion(supabase, { userId: user.id, event: 'first_workout_completed' })
 
-    return NextResponse.json({ success: true, workout_log_id: workoutLogId, exercise_session_id: exerciseSessionId })
+    return NextResponse.json({ success: true, completed: workoutPayload.completed, progress: workoutCompletion(nextLogs, manualWorkoutPlan(nextLogs)), workout_log_id: workoutLogId, exercise_session_id: exerciseSessionId })
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Set log failed' },

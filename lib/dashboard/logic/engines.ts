@@ -380,15 +380,16 @@ export function runWorkoutDecisionEngine(inputs: ProgramLogicInputs, capacity:Ca
     assignedExercises,
   })
   if (workoutForToday.type !== 'planned') {
-    // A starter plan fills a missing program; it must retain the readiness dose.
-    if (workoutForToday.type !== 'starter') adjustmentLevel = workoutFallbackAdjustmentLevel(workoutForToday.type)
+    // Empty days retain their readiness data without becoming training.
+    if (!['starter', 'rest', 'unavailable'].includes(workoutForToday.type)) adjustmentLevel = workoutFallbackAdjustmentLevel(workoutForToday.type)
     modifications.unshift(workoutForToday.reason)
   }
   const assignedWorkout = { ...(inputs.plannedWorkout || {}), day_name: workoutForToday.title, workout_state: workoutForToday.type, exercises: workoutForToday.exercises }
-  return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, displayWorkout:true,canTrain:workoutForToday.completionEligible&&os.canTrain,adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: `${workoutForToday.type === 'recovery' ? 'Recovery only' : workoutForToday.type === 'reduced' ? 'RPE 5–6' : os.dose.rpe} · Rest until breathing is comfortable.`, reasonForModification: modifications[0] || workoutForToday.reason, preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression,allowEnduranceProgression }
+  const emptyDay = workoutForToday.type === 'rest' || workoutForToday.type === 'unavailable'
+  return { plannedWorkout: inputs.plannedWorkout, assignedWorkout, displayWorkout:true,canTrain:workoutForToday.completionEligible&&os.canTrain,adjustmentLevel, modifications, exerciseSubstitutions: posture.substitutions, intensityTarget: emptyDay ? workoutForToday.title : `${workoutForToday.type === 'recovery' ? 'Recovery only' : workoutForToday.type === 'reduced' ? 'RPE 5–6' : os.dose.rpe} · Rest until breathing is comfortable.`, reasonForModification: modifications[0] || workoutForToday.reason, preWorkoutFuelPrompt: fuel.preWorkoutAction, postWorkoutPriority: fuel.postWorkoutPriority,allowLoadProgression:allowLoadProgression&&!emptyDay,allowEnduranceProgression:allowEnduranceProgression&&!emptyDay }
 }
 
-export function runFlameExecutionEngine({ inputs, hydration, nutrition, capacity }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult; capacity: CapacityResult }): FlameResult {
+export function runFlameExecutionEngine({ inputs, hydration, nutrition, capacity, workoutDecision }: { inputs: ProgramLogicInputs; hydration: HydrationResult; nutrition: NutritionResult; workoutDecision: WorkoutDecisionResult; capacity: CapacityResult }): FlameResult {
   const workoutComplete = Boolean(inputs.dailyPlan?.workoutCompleted)
   const assessmentComplete = Boolean(inputs.todayRecovery?.check_in_completed_at)
   const recoveryComplete = inputs.todayRecoveryActivities.length>0
@@ -397,7 +398,8 @@ export function runFlameExecutionEngine({ inputs, hydration, nutrition, capacity
   const sleepComplete=Boolean(inputs.todayRecovery?.sleep_hours||inputs.todayRecovery?.sleep_quality)
   const activityComplete=inputs.todayRecoveryActivities.length>0 || workoutComplete
   const lowestCapacity=capacity.status==='low_capacity'
-  const requiredItems={nutrition:!lowestCapacity&&inputs.missedDayCount<1,hydration:!lowestCapacity&&inputs.missedDayCount<2,workoutOrMovement:!lowestCapacity&&inputs.missedDayCount<3,dailyCheckIn:true,recovery:inputs.program==='phoenix'||lowestCapacity,sleep:false,customTasks:inputs.program!=='ember'&&!lowestCapacity&&inputs.missedDayCount<3}
+  const restDay=workoutDecision?.assignedWorkout?.workout_state==='rest'
+  const requiredItems={nutrition:!lowestCapacity&&inputs.missedDayCount<1,hydration:!lowestCapacity&&inputs.missedDayCount<2,workoutOrMovement:!restDay&&!lowestCapacity&&inputs.missedDayCount<3,dailyCheckIn:true,recovery:inputs.program==='phoenix'||lowestCapacity,sleep:false,customTasks:inputs.program!=='ember'&&!lowestCapacity&&inputs.missedDayCount<3}
   const completedItems={nutrition:nutrition.dataStatus==='known',hydration:hydration.percent>=80,workoutOrMovement:workoutComplete||activityComplete,dailyCheckIn:assessmentComplete,recovery:recoveryComplete,sleep:sleepComplete,customTasks:blockTaskCount>=1||phoenixTaskPercent>=80}
   const required=(Object.keys(requiredItems) as Array<keyof typeof requiredItems>).filter((key)=>requiredItems[key])
   const requiredCompleted=required.filter((key)=>completedItems[key]).length

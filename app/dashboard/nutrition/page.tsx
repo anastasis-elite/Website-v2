@@ -1,12 +1,10 @@
-import DailyPlanCard from '@/components/DailyPlanCard'
-import { getDailyScheduleState } from '@/lib/schedule/service'
 import NutritionDashboardClient from './NutritionDashboardClient'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
 import { getPhoenixRecipeRecommendations } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
-import { getTierCapabilities } from '@/lib/entitlements'
+import { getTierCapabilities, normalizeProgramTier } from '@/lib/entitlements'
 import { parseNutritionLoggingIntent } from '@/lib/nutrition/loggingIntent'
 import DirectNutritionEntry from '@/components/nutrition/DirectNutritionEntry'
 import { readDirectEntryLog } from '@/lib/nutrition/directEntry'
@@ -30,7 +28,7 @@ export default async function NutritionPage({ searchParams }: { searchParams: Pr
     const avoid = String(client.allergies || client.intolerances || '').toLowerCase()
     const recipe = capabilities.nutritionRecommendedMeal ? seedRecipes.find(item => item.id === loggingIntent.recipeId && item.allergens.every(allergen => !avoid.includes(allergen))) : undefined
     return <DirectNutritionEntry key={`${client.client_id}:${logDate}:${loggingIntent.action}`} clientId={client.client_id}
-      program={capabilities.tier} timezone={getClientTimeZone(client)} logDate={logDate} loggingIntent={loggingIntent}
+      program={normalizeProgramTier(client.program)} timezone={getClientTimeZone(client)} logDate={logDate} loggingIntent={loggingIntent}
       initialLog={initialLog} initialError={initialError}
       recipe={recipe ? { title: recipe.title, meal: normalizeMealPeriod(recipe.meal_type), ingredients: recipe.ingredients.map(item => `${item.quantity} ${item.name}`) } : undefined} />
   }
@@ -43,6 +41,5 @@ export default async function NutritionPage({ searchParams }: { searchParams: Pr
     })
   }
   const recipes=getTierCapabilities(logic.program).nutritionRecommendedMeal?getPhoenixRecipeRecommendations({logic,client}):[]
-  const schedule = await getDailyScheduleState({ supabase, user, client, logic })
-  return <PhoneAppFrame eyebrow={`Nutrition · ${logic.program}`} title="Nourish the life you’re building." subtitle="Clear targets. Less guesswork."><DailyPlanCard plan={schedule.dailyRecommendation!} schedule={schedule} compact /><NutritionDashboardClient logic={logic} recipes={recipes} loggingIntent={loggingIntent} /></PhoneAppFrame>
+  return <PhoneAppFrame eyebrow={`Nutrition · ${logic.program}`} title="Nourish the life you’re building." subtitle="Clear targets. Less guesswork."><NutritionDashboardClient logic={logic} recipes={recipes} loggingIntent={loggingIntent} /></PhoneAppFrame>
 }

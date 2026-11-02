@@ -1,4 +1,4 @@
-export type AccountProgram = 'ember' | 'ignite' | 'phoenix'
+export type AccountProgram = 'free' | 'tracker' | 'ember' | 'ignite' | 'phoenix' | 'unknown'
 
 export type JourneyMetric = {
   key: 'workouts' | 'nutrition' | 'hydration' | 'assessments' | 'recovery'

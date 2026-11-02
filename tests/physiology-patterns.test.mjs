@@ -216,8 +216,8 @@ test('high flow plus low energy can influence food priority without diagnosing a
     avoidTerms: [],
     recommendationEffects: effects.effects,
     candidates: [
-      { id: 'rice', name: 'White Rice', calories: 200, protein_g: 4, carbs_g: 45, fat_g: 0 },
-      { id: 'beef-orange', name: 'Beef and Orange Bowl', calories: 360, protein_g: 30, carbs_g: 35, fat_g: 10, iron_mg: 4, vitamin_c_mg: 55, potassium_mg: 500 },
+      { id: 'rice', name: 'White Rice', grams_per_serving: 100, calories: 200, protein_g: 4, carbs_g: 45, fat_g: 0 },
+      { id: 'beef-orange', name: 'Beef and Orange Bowl', grams_per_serving: 100, calories: 360, protein_g: 30, carbs_g: 35, fat_g: 10, iron_mg: 4, vitamin_c_mg: 55, potassium_mg: 500 },
     ],
   })
 
@@ -247,8 +247,8 @@ test('iron supplementation is not automatically recommended from flow burden sup
     avoidTerms: [],
     recommendationEffects: effects.effects,
     candidates: [
-      { id: 'iron-pill', name: 'Ferrous Iron Supplement Tablet', calories: 5, protein_g: 0, carbs_g: 0, fat_g: 0, iron_mg: 18 },
-      { id: 'lentil-pepper', name: 'Lentil and Pepper Bowl', calories: 380, protein_g: 22, carbs_g: 52, fat_g: 7, iron_mg: 6, vitamin_c_mg: 62 },
+      { id: 'iron-pill', name: 'Ferrous Iron Supplement Tablet', grams_per_serving: 100, calories: 5, protein_g: 0, carbs_g: 0, fat_g: 0, iron_mg: 18 },
+      { id: 'lentil-pepper', name: 'Lentil and Pepper Bowl', grams_per_serving: 100, calories: 380, protein_g: 22, carbs_g: 52, fat_g: 7, iron_mg: 6, vitamin_c_mg: 62 },
     ],
   })
 

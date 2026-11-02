@@ -7,8 +7,14 @@ const dashboard = readFileSync('components/workout-dashboard/WorkoutDashboard.ts
 const map = readFileSync('components/workout-dashboard/MuscleReadinessMap.tsx', 'utf8')
 const css = readFileSync('app/globals.css', 'utf8')
 
-test('workout dashboard uses objective, two-panel row, and full-width toggle panel', () => {
-  assert.match(dashboard, /data-testid="workout-objective"/)
+test('workout opens with the workout panel, keeps rest guidance and puts adaptations in an optional disclosure', () => {
+  assert.doesNotMatch(route, /DailyPlanCard/)
+  assert.doesNotMatch(dashboard, /workout-objective|training\.label|training\.readinessNote/)
+  assert.match(dashboard, /workout-session-guidance/)
+  assert.match(dashboard, /<summary>About today’s workout<\/summary>/)
+  assert.match(dashboard, /Rest until breathing is comfortable/)
+  assert.match(dashboard, /props\.logic\.workoutDecision\.intensityTarget/)
+  assert.match(dashboard, /<WorkoutFeedback/)
   assert.match(dashboard, /className="workout-dashboard-row"/)
   assert.match(map, /data-testid="muscle-readiness-panel"/)
   assert.match(dashboard, /data-testid="today-workout-panel"/)
@@ -36,7 +42,11 @@ test('route reuses existing workout engine and reads existing history and recove
 
 test('muscle map reuses existing body model and exposes interactive muscle labels', () => {
   assert.match(map, /src="\/woman-silhouette\.png"/)
-  assert.match(map, /viewBox="0 0 100 100"/)
+  assert.match(map, /const bodyImageSize = \{ width: 862, height: 1825 \}/)
+  assert.match(map, /width=\{bodyImageSize.width\}/)
+  assert.match(map, /height=\{bodyImageSize.height\}/)
+  assert.match(map, /viewBox=\{`0 0 \$\{bodyImageSize.width\} \$\{bodyImageSize.height\}`\}/)
+  assert.match(map, /preserveAspectRatio="xMidYMid meet"/)
   assert.match(map, /muscleMapGeometry/)
   assert.match(map, /mirror\(leftGeometry/)
   assert.match(map, /role="button"/)

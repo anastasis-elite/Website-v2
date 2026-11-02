@@ -17,20 +17,22 @@ type Props = {
   consumed: number
   consumedKnown?: boolean
   target: number
+  targetStatus?: 'loading' | 'ready' | 'error'
+  disabled?: boolean
   defaultOunces?: number
   minimumOunces?: number
   maximumOunces?: number
   stepOunces?: number
   initiallyOpen?: boolean
   inline?: boolean
-  onSaved?: (total: number) => void
+  onSaved?: (total: number, target?: number) => void
   onClosed?: () => void
   children?: ReactNode
   renderTrigger: (props: TriggerRenderProps) => ReactNode
 }
 
 export default function HydrationQuickAdd({
-  clientId, logDate, consumed, consumedKnown = true, target, defaultOunces = 8,
+  clientId, logDate, consumed, consumedKnown = true, target, targetStatus, disabled = false, defaultOunces = 8,
   minimumOunces = 4, maximumOunces = 64, stepOunces = 4,
   initiallyOpen = false, inline = false, onSaved, onClosed, children, renderTrigger,
 }: Props) {
@@ -123,7 +125,7 @@ export default function HydrationQuickAdd({
   const sliderMinimum = Math.min(minimum, sliderValue)
   const sliderMaximum = Math.max(maximum, sliderValue)
   const sliderStep = Number.isInteger((sliderValue - sliderMinimum) / step) ? step : 'any'
-  const controlsDisabled = addingWater || Boolean(pending)
+  const controlsDisabled = disabled || addingWater || Boolean(pending)
   const presets = [4, 8, 12, 16]
 
   function startToday() {
@@ -143,7 +145,7 @@ export default function HydrationQuickAdd({
   }
 
   async function addWater() {
-    if (lock.current || !clientId) return
+    if (lock.current || !clientId || disabled) return
     if (!validAmount) { setMessage('Enter the amount you drank.'); return }
     const submissionScope = scope
     lock.current = true
@@ -166,7 +168,8 @@ export default function HydrationQuickAdd({
       if (activeScope.current !== submissionScope) return
       setPending(null)
       setConfirmed({ scope: submissionScope, total })
-      onSaved?.(total)
+      const confirmedTarget = Number(payload.nutritionLog?.water_oz)
+      onSaved?.(total, Number.isFinite(confirmedTarget) && confirmedTarget > 0 ? confirmedTarget : undefined)
       setMessage(`${ounces} oz saved. ${total} oz logged today.`)
       router.refresh()
     } catch (error) {
@@ -179,7 +182,7 @@ export default function HydrationQuickAdd({
 
   const content = <>
       <div className="tier-panel-heading"><h2 id={`${id}-title`}>A little water, at your pace.</h2>{!inline ? <button type="button" onClick={() => setOpen(false)} aria-label="Close water entry">Close</button> : null}</div>
-      <p id={`${id}-summary`} className="water-entry-summary">{!totalKnown ? 'Saved water total unavailable' : logged > 0 ? `${logged} oz logged` : 'No water logged yet'}{Number.isFinite(target) && target > 0 ? ` · Daily target ${Math.round(target)} oz` : ' · Daily target unavailable'}</p>
+      <p id={`${id}-summary`} className="water-entry-summary" role="status" aria-live="polite">{!totalKnown ? 'Saved water total unavailable' : logged > 0 ? `${logged} oz logged` : '0 oz logged · No water logged yet'}{Number.isFinite(target) && target > 0 ? ` · Daily target ${Math.round(target)} oz` : targetStatus === 'loading' ? ' · Loading daily target…' : ' · Daily target unavailable'}</p>
       <p className="water-entry-help">Choose the amount you drank. Follow any fluid guidance from your care team.</p>
       {children}
       {pending && pending.logDate !== logDate ? <div className="water-earlier-save">
@@ -204,7 +207,7 @@ export default function HydrationQuickAdd({
           value={amount} onChange={event => setAmount(event.target.value)} disabled={controlsDisabled} />
       </label>
       <button type="button" className="tier-primary-action water-save-action"
-        disabled={addingWater || !clientId || !validAmount || Boolean(pending && pending.logDate !== logDate)}
+        disabled={disabled || addingWater || !clientId || !validAmount || Boolean(pending && pending.logDate !== logDate)}
         onClick={() => void addWater()}>{addingWater ? 'Saving…' : pending ? `Retry ${pending.ounces} oz save` : `${inline ? 'Add' : 'Log'} ${amount || 'water'} oz`}</button>
       <p className="water-entry-status" role="status" aria-live="polite">{message}</p>
       {archived.length ? <details className="water-earlier-receipts"><summary>Earlier water saves kept for review ({archived.length})</summary>

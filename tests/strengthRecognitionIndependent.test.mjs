@@ -21,15 +21,38 @@ function database(rows = [], options = {}) {
     if (!condition) { violations.push(message); throw new Error(message) }
   }
   const db = { reads, violations, history, from(table) {
+    if (table === 'strength_assessment_sessions') {
+      const filters = []; let projection, maximum, order
+      const q = {
+        select(columns) { projection = columns; requirePolicy(!columns.includes('values'), 'Draft recognition reads metadata only'); return q },
+        eq(key, value) { filters.push(['eq',key,value]); return q },
+        lt(key,value) { filters.push(['lt',key,value]); return q },
+        lte(key,value) { filters.push(['lte',key,value]); return q },
+        order(key,settings) { order=[key,settings.ascending]; return q },
+        limit(value) { maximum=value; return q },
+        async maybeSingle() {
+          requirePolicy(filters.some(([op,key,value])=>op==='eq'&&key==='client_id'&&value===client.client_id), 'Draft client scope missing')
+          requirePolicy(filters.some(([op,key,value])=>op==='eq'&&key==='auth_user_id'&&value===client.auth_user_id), 'Draft owner scope missing')
+          if(options.failSessions)return{data:null,error:{message:'Draft unavailable'}}
+          let results=(options.sessions||[]).filter(row=>filters.every(([op,key,value])=>op==='eq'?row[key]===value:op==='lt'?row[key]<value:row[key]<=value))
+          if(order)results=results.sort((a,b)=>String(a[order[0]]).localeCompare(String(b[order[0]]))*(order[1]?1:-1))
+          if(maximum)results=results.slice(0,maximum)
+          const found=results[0]
+          return{data:found?Object.fromEntries(projection.split(',').map(key=>[key,found[key]])):null,error:null}
+        },
+      }
+      return q
+    }
     requirePolicy(table === 'assessments', `Unexpected table: ${table}`)
     const filters = [], orders = []
     let projection, maximum
     const q = {
       select(columns) {
-        requirePolicy(columns === 'id,submitted_at', `Unexpected metadata projection: ${columns}`)
+        requirePolicy(columns === 'id,submitted_at,assessment_period', `Unexpected metadata projection: ${columns}`)
         requirePolicy(projection === undefined, 'Repeated projection')
         projection = columns; return q
       },
+      or(value) { requirePolicy(/^assessment_period\.is\.null,assessment_period\.eq\.\d{4}-\d{2}-01$/.test(value),'Unexpected period scope'); filters.push({operator:'period',key:'assessment_period',value:value.split('.eq.')[1]});return q },
       eq(key, value) {
         requirePolicy(['client_id', 'auth_user_id', 'assessment_type'].includes(key), `Unexpected equality filter: ${key}`)
         requirePolicy(!filters.some(filter => filter.operator === 'eq' && filter.key === key), `Repeated filter: ${key}`)
@@ -44,7 +67,7 @@ function database(rows = [], options = {}) {
       },
       limit(value) { requirePolicy(value === 1, 'Only one completion metadata row is needed'); maximum = value; return q },
       async maybeSingle() {
-        requirePolicy(projection === 'id,submitted_at', 'Projection missing')
+        requirePolicy(projection === 'id,submitted_at,assessment_period', 'Projection missing')
         const eq = Object.fromEntries(filters.filter(filter => filter.operator === 'eq').map(filter => [filter.key, filter.value]))
         requirePolicy(eq.client_id === client.client_id && eq.auth_user_id === client.auth_user_id && eq.assessment_type === 'strength', 'Missing owner/client/type scope')
         requirePolicy(['gte', 'lt', 'lte'].every(operator => filters.filter(filter => filter.operator === operator).length === 1), 'Missing month/future timestamp bounds')
@@ -55,13 +78,14 @@ function database(rows = [], options = {}) {
         if (Object.hasOwn(options, 'forcedData')) return { data: clone(options.forcedData), error: null }
         const found = history.filter(row => filters.every(({ operator, key, value }) => {
           if (operator === 'eq') return row[key] === value
+          if (operator === 'period') return row[key] == null || row[key] === value
           const stored = Date.parse(row[key]), boundary = Date.parse(value)
           return Number.isFinite(stored) && (operator === 'gte' ? stored >= boundary : operator === 'lt' ? stored < boundary : stored <= boundary)
         })).sort((left, right) => Date.parse(left.submitted_at) - Date.parse(right.submitted_at))
         const selected = found[0]
         // The actual response exposes neither health answers nor identifiers
         // beyond the two explicitly selected metadata fields.
-        return { data: selected ? { id: selected.id, submitted_at: selected.submitted_at } : null, error: null }
+        return { data: selected ? { id: selected.id, submitted_at: selected.submitted_at, assessment_period:selected.assessment_period } : null, error: null }
       },
     }
     function range(operator, key, value) {
@@ -126,7 +150,7 @@ test('the member-local month includes UTC next-month submissions before local mi
   assert.equal(october.state, 'completed'); assert.equal(october.period, '2026-10-01')
   const november = await getStrengthAssessmentStatus(db, client, new Date('2026-11-01T12:00:00Z'))
   assert.equal(november.period, '2026-11-01'); assert.equal(november.state, 'due')
-  const octoberBounds = db.reads[0].filters.filter(filter => filter.operator !== 'eq')
+  const octoberBounds = db.reads[0].filters.filter(filter => !['eq','period'].includes(filter.operator))
   assert.deepEqual(octoberBounds.map(({ operator, value }) => [operator, value]), [
     ['gte', '2026-10-01T05:00:00.000Z'], ['lt', '2026-11-01T05:00:00.000Z'], ['lte', lateOctober.toISOString()],
   ])
@@ -177,19 +201,40 @@ test('the reader defensively rejects out-of-range metadata even when a transport
   }
 })
 
-test('a completed baseline offers assessment options without claiming a blank form displays saved results', async () => {
+test('a completed baseline links directly to the now-restorable saved results', async () => {
   const db = database([assessment()]), status = await getStrengthAssessmentStatus(db, client, now)
-  assert.equal(status.href, '/dashboard/assessment'); assert.equal(status.actionLabel, 'Assessment Options')
+  assert.equal(status.href, '/dashboard/assessment/start2?period=2026-10-01'); assert.equal(status.actionLabel, 'View Saved Results')
   assert.match(getStrengthAssessmentDetail(status, client), /Completed October 16, 2026/)
-  assert.doesNotMatch(`${status.actionLabel} ${getStrengthAssessmentDetail(status, client)}`, /View Saved Results|results are available/i)
+  assert.match(getStrengthAssessmentDetail(status, client), /Saved results are available/)
   db.verify()
 })
 
-test('unavailable status guides a refresh rather than inviting an unconfirmed repeat submission', async () => {
+test('unavailable status opens the loader to retry before any repeat submission', async () => {
   const db = database([], { fail: true }), status = await getStrengthAssessmentStatus(db, client, now)
-  assert.equal(status.href, '/dashboard/assessment'); assert.equal(status.actionLabel, 'Assessment Options')
-  assert.match(getStrengthAssessmentDetail(status, client), /Refresh this page.*before submitting again/)
+  assert.equal(status.href, '/dashboard/assessment/start2?period=2026-10-01'); assert.equal(status.actionLabel, 'Retry Loading Assessment')
+  assert.match(getStrengthAssessmentDetail(status, client), /Open the assessment to retry.*before submitting again/)
   db.verify()
+})
+
+const draft = (changes={}) => ({client_id:client.client_id,auth_user_id:client.auth_user_id,period:'2026-10-01',status:'draft',saved_at:'2026-10-16T16:00:00Z',completed_at:null,assessment_id:null,...changes})
+test('owned current drafts resume with their saved timestamp and older drafts remain separate',async()=>{
+  const db=database([],{sessions:[draft(),draft({period:'2026-09-01',saved_at:'2026-09-20T16:00:00Z'}),draft({period:'2026-08-01',saved_at:'2026-08-20T16:00:00Z'}),draft({auth_user_id:'other-owner',period:'2026-09-01',saved_at:'2026-10-15T16:00:00Z'})]})
+  const status=await getStrengthAssessmentStatus(db,client,now)
+  assert.equal(status.state,'draft');assert.equal(status.actionLabel,'Resume Assessment');assert.equal(status.savedAt,'2026-10-16T16:00:00Z')
+  assert.deepEqual(status.previousDraft,{period:'2026-09-01',savedAt:'2026-09-20T16:00:00Z',href:'/dashboard/assessment/start2?period=2026-09-01'})
+  db.verify()
+})
+test('known owned final recognition survives draft outage and never becomes a writable draft',async()=>{
+  const db=database([assessment()],{failSessions:true})
+  const status=await getStrengthAssessmentStatus(db,client,now)
+  assert.equal(status.state,'completed');assert.equal(status.unavailable,false);assert.equal(status.actionLabel,'View Saved Results');db.verify()
+  const unavailable=database([],{failSessions:true})
+  assert.equal((await getStrengthAssessmentStatus(unavailable,client,now)).state,'unavailable');unavailable.verify()
+})
+test('period-bound completion, foreign drafts and future session metadata cannot complete another month',async()=>{
+  const db=database([assessment({assessment_period:'2026-09-01'})],{sessions:[draft({auth_user_id:'foreign'}),draft({status:'completed',completed_at:'2026-11-01T12:00:00Z',assessment_id:'future'}),draft({period:'2026-09-01',saved_at:'2027-01-01T12:00:00Z'})]})
+  const status=await getStrengthAssessmentStatus(db,client,now)
+  assert.equal(status.state,'due');assert.equal(status.completedAt,null);assert.equal(status.previousDraft,null);db.verify()
 })
 
 for (const path of ['components/program-dashboard/TierAwareDashboardWorkspace.tsx', 'components/workout-dashboard/WorkoutDashboard.tsx']) {

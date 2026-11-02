@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { buildLinkedFunnels, LINKED_FUNNEL_EVENTS } from '@/lib/analytics/funnel'
 
 export const runtime = 'nodejs'
 
@@ -19,13 +20,19 @@ const trackedEvents = [
   'program_page_viewed',
   'program_viewed',
   'audit_page_viewed',
-  'audit_submit_clicked',
+  'audit_started',
   'audit_page_completed',
   'audit_results_viewed',
   'checkout_started',
-  'checkout_completed',
-  'login_created',
-  'dashboard_viewed',
+  'pricing_viewed',
+  'subscription_activated',
+  'subscription_upgraded',
+  'subscription_cancelled',
+  'onboarding_completed',
+  'first_workout_completed',
+  'first_nutrition_completed',
+  'first_recovery_completed',
+  'today_page_viewed',
 ]
 
 export async function GET() {
@@ -71,9 +78,10 @@ export async function GET() {
     const eventQuery = `
       SELECT
         event,
-        count() AS total
+        count(DISTINCT distinct_id) AS total
       FROM events
       WHERE timestamp >= now() - INTERVAL 7 DAY
+        AND properties.analytics_environment = 'production'
         AND event IN (${eventList})
       GROUP BY event
       ORDER BY total DESC
@@ -81,19 +89,36 @@ export async function GET() {
 
     const sourceQuery = `
       SELECT
-        properties.$utm_source AS source,
-        count() AS total
+        properties.source AS source,
+        count(DISTINCT distinct_id) AS total
       FROM events
       WHERE timestamp >= now() - INTERVAL 7 DAY
+        AND properties.analytics_environment = 'production'
         AND event = 'landing_page_viewed'
       GROUP BY source
       ORDER BY total DESC
     `
 
-    const [eventRows, sourceRows] = await Promise.all([
+    // Fetch only explicit safe identifiers and event timestamps. No URL, answer,
+    // health, payment or person-property fields are part of this query.
+    const linkedQuery = `
+      SELECT event, timestamp, properties.journey_id, properties.member_id
+      FROM events
+      WHERE timestamp >= now() - INTERVAL 7 DAY
+        AND properties.analytics_environment = 'production'
+        AND event IN (${LINKED_FUNNEL_EVENTS.map(event => `'${event}'`).join(',')})
+      ORDER BY timestamp ASC
+      LIMIT 10000
+    `
+
+    const [eventRows, sourceRows, linkedRows] = await Promise.all([
       runPostHogQuery(eventQuery),
       runPostHogQuery(sourceQuery),
+      runPostHogQuery(linkedQuery),
     ])
+    const linked = buildLinkedFunnels(linkedRows.map((row: [string, string, string | null, string | null]) => ({
+      event: row[0], occurredAt: row[1], journeyId: row[2], memberId: row[3],
+    })))
 
     const rows: EventRow[] = eventRows.map((row: [string, number]) => ({
       event: row[0],
@@ -112,6 +137,8 @@ export async function GET() {
       period: 'last_7_days',
       rows,
       sources,
+      linkedFunnels: linked.funnels,
+      linkedQuality: { ...linked.quality, truncated: linkedRows.length >= 10000, limit: 10000 },
     })
   } catch (error) {
     return NextResponse.json(

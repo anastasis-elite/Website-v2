@@ -1,4 +1,6 @@
 import { trackEvent } from '@/lib/analytics'
+import { ANALYTICS_IDENTITY_READY_EVENT, canCaptureAnalytics } from '@/lib/posthog'
+import { ANALYTICS_CONSENT_STORAGE_KEY } from '@/lib/analytics/consent'
 
 export const HOMEPAGE_EXPERIMENT_ID = 'homepage_storytelling_v1'
 export const HOMEPAGE_VERSION = 'storytelling_v1'
@@ -31,23 +33,15 @@ const programLocations: Record<string, string> = {
 const measuredViews = new WeakMap<HTMLElement, Set<string>>()
 const handledClicks = new WeakSet<Event>()
 
-function hasAnalyticsConsent() {
-  try {
-    return window.localStorage.getItem('cookie_consent') === 'accepted'
-  } catch {
-    return false
-  }
-}
-
 function capture(event: string, properties: Record<string, string> = {}) {
-  if (!hasAnalyticsConsent()) return false
-  trackEvent(event, {
+  if (!canCaptureAnalytics()) return false
+  // Acceptance means collection eligibility, never external ingestion proof.
+  return trackEvent(event, {
     page: 'landing',
     experiment_id: HOMEPAGE_EXPERIMENT_ID,
     homepage_version: HOMEPAGE_VERSION,
     ...properties,
   })
-  return true
 }
 
 /** Homepage-only observer; it never reads audit answers, member data, or text. */
@@ -65,18 +59,30 @@ export function mountHomepageAnalytics(root: HTMLElement) {
     return true
   }
 
+  function isCurrentlyVisible(heading: HTMLElement) {
+    if (!heading.isConnected || !root.contains(heading)) return false
+    const bounds = heading.getBoundingClientRect()
+    if (bounds.width <= 0 || bounds.height <= 0) return false
+    const width = document.documentElement?.clientWidth || window.innerWidth
+    const height = document.documentElement?.clientHeight || window.innerHeight
+    const visibleWidth = Math.max(0, Math.min(bounds.right, width) - Math.max(bounds.left, 0))
+    const visibleHeight = Math.max(0, Math.min(bounds.bottom, height) - Math.max(bounds.top, 0))
+    return visibleWidth * visibleHeight / (bounds.width * bounds.height) >= 0.2
+  }
+
   function captureVisibleSections() {
-    if (disposed) return
+    if (disposed || !root.isConnected || !canCaptureAnalytics()) return
     captureOnce('landing_page_viewed')
     for (const heading of visibleHeadings) {
       const section = headingSections.get(heading)
-      if (section && captureOnce(sectionEvents[section])) observer?.unobserve(heading)
+      if (section && isCurrentlyVisible(heading) && captureOnce(sectionEvents[section])) observer?.unobserve(heading)
     }
   }
 
   const observer = typeof IntersectionObserver === 'undefined'
     ? null
     : new IntersectionObserver((entries) => {
+      if (disposed) return
       for (const entry of entries) {
         const heading = entry.target as HTMLElement
         if (entry.isIntersecting && entry.intersectionRatio >= 0.2) {
@@ -100,23 +106,13 @@ export function mountHomepageAnalytics(root: HTMLElement) {
   }
 
   function handleClick(event: MouseEvent) {
+    if (disposed || !root.isConnected) return
     // CookieBanner writes localStorage in its React click handler. Read the
     // decision after that handler, including for consent granted in this tab.
     queueMicrotask(captureVisibleSections)
     if (handledClicks.has(event) || !(event.target instanceof Element)) return
     const link = event.target.closest<HTMLAnchorElement>('a[href]')
     if (!link) return
-
-    const auditLocation = link.closest<HTMLElement>('[data-homepage-audit-cta]')
-      ?.dataset.homepageAuditCta as keyof typeof auditEvents | undefined
-    if (auditLocation && Object.hasOwn(auditEvents, auditLocation)) {
-      handledClicks.add(event)
-      capture(auditEvents[auditLocation], {
-        location: auditLocation,
-        cta_location: auditLocation,
-      })
-      return
-    }
 
     let url: URL
     try {
@@ -125,6 +121,17 @@ export function mountHomepageAnalytics(root: HTMLElement) {
       return
     }
     if (url.origin !== window.location.origin) return
+    const auditLocation = link.closest<HTMLElement>('[data-homepage-audit-cta]')
+      ?.dataset.homepageAuditCta as keyof typeof auditEvents | undefined
+    if (auditLocation && Object.hasOwn(auditEvents, auditLocation) && /^\/audit\/?$/.test(url.pathname)) {
+      handledClicks.add(event)
+      capture(auditEvents[auditLocation], {
+        location: auditLocation,
+        cta_location: auditLocation,
+      })
+      return
+    }
+
     const program = /^\/program(?:\/(ember|ignite|phoenix))?\/?$/.exec(url.pathname)
     if (!program) return
     handledClicks.add(event)
@@ -140,11 +147,13 @@ export function mountHomepageAnalytics(root: HTMLElement) {
   }
 
   function handleStorage(event: StorageEvent) {
-    if (event.key === 'cookie_consent') captureVisibleSections()
+    if (event.key === 'cookie_consent' || event.key === ANALYTICS_CONSENT_STORAGE_KEY) captureVisibleSections()
   }
 
   document.addEventListener('click', handleClick)
   window.addEventListener('storage', handleStorage)
+  window.addEventListener('analytics-consent-changed', captureVisibleSections)
+  window.addEventListener(ANALYTICS_IDENTITY_READY_EVENT, captureVisibleSections)
   captureVisibleSections()
 
   return () => {
@@ -154,5 +163,7 @@ export function mountHomepageAnalytics(root: HTMLElement) {
     headingSections.clear()
     document.removeEventListener('click', handleClick)
     window.removeEventListener('storage', handleStorage)
+    window.removeEventListener('analytics-consent-changed', captureVisibleSections)
+    window.removeEventListener(ANALYTICS_IDENTITY_READY_EVENT, captureVisibleSections)
   }
 }

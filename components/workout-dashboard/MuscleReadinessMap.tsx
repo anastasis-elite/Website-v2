@@ -14,31 +14,37 @@ type MuscleGeometry = {
   points: Array<[number, number]>
 }
 
+const bodyImageSize = { width: 862, height: 1825 } as const
+// The illustration's torso axis is slightly left of the image midpoint.
+const bodyCenterX = 425
+
 function mirror(points: MuscleGeometry['points']): MuscleGeometry['points'] {
-  return points.map(([x, y]) => [100 - x, y])
+  return points.map(([x, y]) => [2 * bodyCenterX - x, y])
 }
 
 function pointsToSvg(points: MuscleGeometry['points']) {
   return points.map(([x, y]) => `${x},${y}`).join(' ')
 }
 
+// Pixel coordinates in woman-silhouette.png, shared by the image and SVG.
+// Posterior regions use this same silhouette; there is no separate back asset.
 const leftGeometry = {
-  upperTrap: [[41.1, 25.7], [37.8, 26.4], [35.7, 27.6], [38.8, 28.6], [43.9, 27.6]],
-  anteriorDeltoid: [[35.8, 28.2], [32.6, 28.9], [30.6, 31.2], [30.7, 34.5], [33.8, 33.9], [36.7, 30.2]],
-  lateralDeltoid: [[31.0, 32.7], [28.7, 35.8], [27.8, 40.2], [28.8, 44.3], [31.2, 42.3], [32.4, 36.2]],
-  pectoralis: [[36.6, 31.0], [41.8, 30.4], [48.5, 31.4], [47.9, 35.0], [40.3, 35.1], [35.7, 33.5]],
-  biceps: [[30.2, 36.0], [28.4, 41.0], [28.2, 48.5], [30.0, 52.4], [32.2, 47.1], [32.3, 38.4]],
-  triceps: [[32.3, 36.9], [33.8, 41.7], [32.5, 48.9], [30.4, 52.2], [30.8, 44.3], [31.2, 38.2]],
-  forearms: [[29.6, 50.7], [27.6, 55.8], [27.8, 61.0], [29.8, 63.3], [31.0, 60.2], [31.1, 54.8]],
-  oblique: [[36.3, 35.1], [39.8, 36.9], [40.0, 45.1], [36.7, 48.1], [34.5, 42.9], [34.6, 37.7]],
-  lat: [[34.8, 34.3], [37.5, 38.4], [37.3, 46.5], [35.0, 50.2], [33.4, 43.3], [33.6, 37.2]],
-  gluteMax: [[37.5, 49.4], [43.1, 48.7], [48.6, 50.0], [48.2, 54.1], [42.0, 55.2], [36.2, 52.7]],
-  gluteMedius: [[35.4, 47.1], [40.4, 46.6], [44.8, 48.9], [40.4, 50.2], [35.4, 49.1]],
-  quadriceps: [[35.4, 53.0], [42.5, 52.7], [47.9, 57.8], [47.0, 70.5], [40.2, 69.7], [36.0, 61.1]],
-  hamstrings: [[36.4, 54.0], [41.6, 55.1], [44.9, 63.2], [43.7, 71.4], [39.0, 67.8], [35.4, 58.7]],
-  adductors: [[44.8, 54.5], [48.8, 55.3], [48.4, 72.0], [45.5, 69.5], [43.6, 61.2]],
-  calves: [[38.2, 71.8], [43.9, 74.1], [44.4, 85.8], [41.5, 89.0], [37.4, 84.4], [36.8, 76.5]],
-  tibialis: [[45.0, 71.5], [47.6, 74.8], [46.7, 87.0], [44.1, 89.2], [42.9, 81.4]],
+  upperTrap: [[381, 415], [364, 429], [342, 440], [371, 454], [404, 438]],
+  anteriorDeltoid: [[322, 450], [300, 455], [288, 478], [293, 518], [313, 530], [329, 490]],
+  lateralDeltoid: [[296, 456], [279, 472], [270, 499], [269, 537], [284, 550], [293, 516], [287, 482]],
+  pectoralis: [[338, 466], [378, 458], [416, 466], [416, 551], [353, 539], [327, 513]],
+  biceps: [[271, 548], [286, 553], [306, 535], [312, 575], [304, 620], [293, 667], [268, 677], [272, 620]],
+  triceps: [[271, 540], [293, 539], [313, 568], [307, 617], [295, 669], [268, 677], [272, 619]],
+  forearms: [[267, 689], [291, 683], [303, 710], [296, 750], [281, 804], [267, 861], [254, 898], [227, 897], [233, 839], [238, 788], [245, 739]],
+  oblique: [[329, 641], [376, 650], [381, 696], [393, 758], [394, 811], [356, 821], [307, 792], [322, 743], [337, 700]],
+  lat: [[324, 559], [385, 574], [395, 627], [383, 689], [376, 742], [341, 767], [339, 703], [330, 656]],
+  gluteMax: [[291, 858], [343, 850], [397, 875], [415, 931], [400, 971], [353, 973], [316, 947], [285, 917]],
+  gluteMedius: [[302, 809], [343, 826], [359, 850], [333, 881], [285, 888], [293, 846]],
+  quadriceps: [[290, 902], [333, 900], [350, 977], [374, 1056], [389, 1145], [393, 1186], [363, 1219], [328, 1187], [310, 1112], [291, 1034], [281, 967]],
+  hamstrings: [[292, 983], [343, 990], [391, 1000], [400, 1074], [393, 1186], [363, 1219], [328, 1187], [310, 1112], [291, 1034]],
+  adductors: [[353, 889], [397, 928], [411, 965], [411, 1050], [402, 1139], [391, 1091], [378, 1013], [351, 944]],
+  calves: [[323, 1265], [361, 1280], [393, 1267], [398, 1323], [392, 1390], [380, 1450], [366, 1517], [352, 1518], [343, 1467], [325, 1392], [316, 1329]],
+  tibialis: [[328, 1265], [360, 1282], [389, 1268], [391, 1332], [381, 1396], [368, 1469], [362, 1523], [353, 1523], [345, 1465], [331, 1387], [320, 1327]],
 } satisfies Record<string, MuscleGeometry['points']>
 
 export const muscleMapGeometry: Record<MuscleId, MuscleGeometry> = {
@@ -56,12 +62,12 @@ export const muscleMapGeometry: Record<MuscleId, MuscleGeometry> = {
   right_triceps: { points: mirror(leftGeometry.triceps) },
   left_forearms: { points: leftGeometry.forearms },
   right_forearms: { points: mirror(leftGeometry.forearms) },
-  rectus_abdominis: { points: [[45.4, 35.2], [54.6, 35.2], [55.7, 43.4], [52.5, 49.2], [50.0, 50.3], [47.5, 49.2], [44.3, 43.4]] },
+  rectus_abdominis: { points: [[388, 640], [461, 640], [466, 695], [452, 757], [446, 819], [425, 838], [404, 819], [399, 757], [385, 695]] },
   left_external_oblique: { points: leftGeometry.oblique },
   right_external_oblique: { points: mirror(leftGeometry.oblique) },
   left_lat_region: { points: leftGeometry.lat },
   right_lat_region: { points: mirror(leftGeometry.lat) },
-  erector_spinae_region: { points: [[47.5, 34.0], [52.5, 34.0], [53.7, 47.1], [50.0, 54.2], [46.3, 47.1]] },
+  erector_spinae_region: { points: [[405, 562], [445, 562], [450, 702], [441, 799], [425, 845], [409, 799], [400, 702]] },
   left_glute_max: { points: leftGeometry.gluteMax },
   right_glute_max: { points: mirror(leftGeometry.gluteMax) },
   left_glute_medius: { points: leftGeometry.gluteMedius },
@@ -147,12 +153,12 @@ export default function MuscleReadinessMap({
         <Image
           src="/woman-silhouette.png"
           alt=""
-          width={862}
-          height={1825}
+          width={bodyImageSize.width}
+          height={bodyImageSize.height}
           className="workout-body-image"
           priority={false}
         />
-        <svg className="workout-muscle-overlay" viewBox="0 0 100 100" role="img" aria-label={`Interactive muscle readiness map: ${view === 'front' ? 'front' : 'back'}`} preserveAspectRatio="none">
+        <svg className="workout-muscle-overlay" viewBox={`0 0 ${bodyImageSize.width} ${bodyImageSize.height}`} role="img" aria-label={`Interactive muscle readiness map: ${view === 'front' ? 'front' : 'back'}`} preserveAspectRatio="xMidYMid meet">
           {MUSCLE_REGIONS.filter(region => region.view === view).map((region) => {
             const item = byId.get(region.id)
             const state = item?.state || 'unknown'

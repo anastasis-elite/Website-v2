@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { refreshAnalyticsConsent, setAnalyticsConsent } from '@/lib/posthog'
+import { safeAnalyticsPath } from '@/lib/analytics/privacy'
 
 const GA_ID = 'G-TVXM35PHD0'
 
 function loadGoogleAnalytics() {
+  ;(window as unknown as Record<string, unknown>)[`ga-disable-${GA_ID}`] = false
   if (document.getElementById('ga-script')) return
 
   const script1 = document.createElement('script')
@@ -20,7 +23,12 @@ function loadGoogleAnalytics() {
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', '${GA_ID}', {
-      page_path: window.location.pathname,
+      send_page_view: false,
+      allow_google_signals: false,
+      allow_ad_personalization_signals: false,
+      page_path: ${JSON.stringify(safeAnalyticsPath(window.location.pathname) || '/')},
+      page_location: ${JSON.stringify(window.location.origin + (safeAnalyticsPath(window.location.pathname) || '/'))},
+      page_referrer: '',
     });
   `
   document.head.appendChild(script2)
@@ -30,25 +38,40 @@ export default function CookieBanner() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    const consent = localStorage.getItem('cookie_consent')
+    let consent: string | null = null
+    try { consent = localStorage.getItem('cookie_consent') } catch { /* Capture stays disabled without a stored choice. */ }
+    refreshAnalyticsConsent()
 
-    if (!consent) {
+    if (consent !== 'accepted' && consent !== 'declined') {
       setVisible(true)
     }
 
     if (consent === 'accepted') {
       loadGoogleAnalytics()
+    } else {
+      ;(window as unknown as Record<string, unknown>)[`ga-disable-${GA_ID}`] = true
     }
+    const syncGoogleConsent = () => {
+      let accepted = false
+      try { accepted = localStorage.getItem('cookie_consent') === 'accepted' } catch { /* No stored choice is not consent. */ }
+      if (accepted) loadGoogleAnalytics()
+      else (window as unknown as Record<string, unknown>)[`ga-disable-${GA_ID}`] = true
+    }
+    const storage = (event: StorageEvent) => { if (event.key === 'cookie_consent') syncGoogleConsent() }
+    window.addEventListener('analytics-consent-changed', syncGoogleConsent)
+    window.addEventListener('storage', storage)
+    return () => { window.removeEventListener('analytics-consent-changed', syncGoogleConsent); window.removeEventListener('storage', storage) }
   }, [])
 
   function accept() {
-    localStorage.setItem('cookie_consent', 'accepted')
+    setAnalyticsConsent('accepted')
     setVisible(false)
     loadGoogleAnalytics()
   }
 
   function decline() {
-    localStorage.setItem('cookie_consent', 'declined')
+    setAnalyticsConsent('declined')
+    ;(window as unknown as Record<string, unknown>)[`ga-disable-${GA_ID}`] = true
     setVisible(false)
   }
 

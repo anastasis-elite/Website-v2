@@ -121,8 +121,8 @@ test('activity prescriptions match strength, walking, breathing and mobility; pa
  const strength=activityDose({exercise:'Squat',sets:3,recommended_reps:8,recommended_weight:22.046226218,load_type:'per_hand',equipment_increment:2.5},'kg')
  assert.equal(strength.kind,'strength');assert.equal(strength.weight,10);assert.equal(strength.loadLabel,'per hand');assert.equal(strength.increment,1.134)
  const counts=workoutCompletion([{completed:true},{completed:false,set_logs:[{reps:8}]},{skipped:true}])
- assert.deepEqual(counts,{complete:1,partial:1,skipped:1,total:3,completed:false})
- assert.equal(workoutCompletion([{completed:true},{completed:true}]).completed,true)
+ assert.deepEqual(counts,{complete:1,partial:1,skipped:1,total:3,totalSets:0,completedSets:0,requiredSets:0,completed:false})
+ assert.equal(workoutCompletion([{completed:true},{completed:true}]).completed,false)
 })
 test('overnight recurring commitments and buffers leave real unallocated space', () => {
  const blocks=[{id:'sleep',block_type:'sleep',days_of_week:[3],start_time:'22:00',end_time:'07:00',active:true},{id:'work',block_type:'work',days_of_week:[4],start_time:'09:00',end_time:'17:00',active:true}]

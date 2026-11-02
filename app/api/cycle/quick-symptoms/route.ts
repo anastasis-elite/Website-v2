@@ -1,3 +1,4 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { getClientLocalDate } from '@/lib/timezone'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
@@ -55,6 +56,8 @@ export async function POST(req: Request) {
         { status: 404 }
       )
     }
+
+    if (!membershipCan(client, 'generatedCoaching')) return NextResponse.json({ error: 'Cycle coaching is not available for this membership.' }, { status: 403 })
 
     const cycleStatus = getCycleStatus(client)
     const today = getClientLocalDate(client)

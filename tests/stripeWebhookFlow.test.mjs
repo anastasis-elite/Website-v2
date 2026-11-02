@@ -13,7 +13,7 @@ function load(path, mocks, env) {
 }
 function fixture() {
   const env = { STRIPE_SECRET_KEY: 'sk_test_local', STRIPE_WEBHOOK_SECRET: 'whsec_local', PAYMENT_TEST_DATABASE_ISOLATED: 'true', EMBER_SUB_PRICE: 'price_monthly', EMBER_YEAR_PRICE: 'price_full' }
-  const state = { events: new Map(), purchases: new Map(), grantCount: 0, readFailures: 0, insertFailures: 0, rpcFailures: 0, syncs: [], subscription: { id: 'sub_owned', status: 'active', cancel_at_period_end: false, current_period_start: 2000000000, current_period_end: 2002678400, items: { data: [] } } }
+  const state = { events: new Map(), purchases: new Map(), grantCount: 0, readFailures: 0, insertFailures: 0, rpcFailures: 0, invitationFailures: 0, invitations: 0, syncs: [], subscription: { id: 'sub_owned', status: 'active', cancel_at_period_end: false, current_period_start: 2000000000, current_period_end: 2002678400, items: { data: [{ quantity: 1, price: { id: 'price_monthly', type: 'recurring', recurring: { interval: 'month', interval_count: 1 } } }] } } }
   const session = { id: 'cs_test_one', status: 'complete', payment_status: 'paid', livemode: false, created: 2000000000, mode: 'subscription', subscription: 'sub_owned', customer: 'cus_owned', customer_email: 'qa@example.test', metadata: { program: 'ember', billing: 'subscription' }, line_items: { data: [{ quantity: 1, price: { id: 'price_monthly' } }] } }
   const price = { id: 'price_monthly', active: true, product: { id: 'prod_ember', active: true, metadata: { program: 'ember' } }, unit_amount: 36000, currency: 'usd', billing_scheme: 'per_unit', metadata: {}, type: 'recurring', recurring: { interval: 'month', interval_count: 1, usage_type: 'licensed' } }
   class Stripe {
@@ -33,12 +33,13 @@ function fixture() {
       if (!state.purchases.has(purchase.session_id)) { state.purchases.set(purchase.session_id, purchase); state.grantCount++ }
       return { data: { client_id: 'qa-client', program: 'ember', email: 'qa@example.test', auth_user_id: null, replayed: state.grantCount > 1 }, error: null }
     }
-    assert.equal(name, 'sync_member_subscription'); state.syncs.push(args); return { error: null }
+    if (name === 'claim_subscription_reconciliation') return { data: { reconciled: true }, error: null }
+    assert.equal(name, 'sync_member_subscription_v3'); state.syncs.push(args); return { data: { accepted: true }, error: null }
   } }
   const catalog = load('lib/commerce/catalog.ts', {}, env)
   const fulfillment = load('lib/commerce/fulfillment.ts', { '@/lib/commerce/catalog': catalog }, env)
   const environment = load('lib/commerce/environment.ts', {}, env)
-  const route = load('app/api/webhooks/stripe/route.ts', { stripe: Stripe, 'next/server': { NextResponse: { json: (data, init) => new Response(JSON.stringify(data), init) } }, '@/lib/supabase/admin': { createAdminClient: () => db }, '@/lib/commerce/environment': environment, '@/lib/commerce/fulfillment': fulfillment }, env)
+  const route = load('app/api/webhooks/stripe/route.ts', { stripe: Stripe, 'next/server': { NextResponse: { json: (data, init) => new Response(JSON.stringify(data), init) } }, '@/lib/supabase/admin': { createAdminClient: () => db }, '@/lib/commerce/environment': environment, '@/lib/commerce/invitationDelivery': { deliverPurchaseInvitation: async () => { state.invitations++; if (state.invitationFailures-- > 0) throw new Error('Synthetic invitation retry'); return true } }, '@/lib/commerce/fulfillment': fulfillment }, env)
   const event = (id, type = 'checkout.session.completed', object = session) => ({ id, type, livemode: false, created: 2000000010, data: { object } })
   const send = (value, signature = 'valid') => route.POST(new Request('https://anastasis.test/api/webhooks/stripe', { method: 'POST', headers: signature ? { 'stripe-signature': signature } : {}, body: JSON.stringify(value) }))
   return { state, session, event, send, env }
@@ -75,6 +76,18 @@ test('unpaid completion does not grant access; later asynchronous success fulfil
   assert.equal(f.state.grantCount, 1)
   assert.equal((await f.send(f.event('evt_failed', 'checkout.session.async_payment_failed'))).status, 200)
   assert.equal(f.state.grantCount, 1)
+})
+test('payment webhook delivers without a return-page visit and preserves retry after invitation failure', async () => {
+  const f = fixture(); f.state.invitationFailures = 1
+  const paid = f.event('evt_invitation_retry')
+  assert.equal((await f.send(paid)).status, 500)
+  assert.equal(f.state.grantCount, 1)
+  assert.equal(f.state.events.has(paid.id), false)
+  assert.equal((await f.send(paid)).status, 200)
+  assert.equal(f.state.invitations, 2)
+  assert.equal(f.state.grantCount, 1)
+  await f.send(paid)
+  assert.equal(f.state.invitations, 2)
 })
 test('failed/successful invoices use current Stripe cancellation and never invent active status; unrelated subscriptions grant nothing', async () => {
   const f = fixture(); f.state.subscription.status = 'canceled'

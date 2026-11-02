@@ -1,3 +1,4 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { getClientLocalDate } from '@/lib/timezone'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
@@ -20,11 +21,13 @@ export async function POST(request: Request) {
 
   const { data: client } = await supabase
     .from('clients')
-    .select('client_id,timezone,state,onboarding_data')
+    .select('*')
     .eq('client_id', clientId)
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
+
+  if (!membershipCan(client, 'phoenixTasks')) return NextResponse.json({ error: 'Phoenix tasks require an active Phoenix membership.' }, { status: 403 })
 
   const today = getClientLocalDate(client)
   if (completed) {

@@ -33,7 +33,7 @@ export default function ClientDashboardNav({ program }: { program: 'ember' | 'ig
   const planView = pathname === `${today}/plan` || visualPage && searchParams.get('view') === 'plan'
   const items = [
     { id: 'today', label: 'Today', href: today, active: !planView && (pathname === today || pathname === '/dashboard' || pathname === '/dashboard/main'), tutorialId: 'client-dashboard-home', icon: <TodayIcon/> },
-    { id: 'plan', label: 'Plan', href: `${today}?view=plan`, active: planView || pathname.startsWith('/dashboard/schedule') || pathname === '/dashboard/settings/calendars', tutorialId: undefined, icon: <CalendarIcon/> },
+    { id: 'plan', label: 'Plan', href: `${today}?view=plan`, active: planView || pathname.startsWith('/dashboard/schedule') || pathname.startsWith('/dashboard/calendar') || pathname === '/dashboard/settings/calendars', tutorialId: undefined, icon: <CalendarIcon/> },
     { id: 'community', label: 'Community', href: '/dashboard/community', active: pathname.startsWith('/dashboard/community'), tutorialId: undefined, icon: <CommunityIcon/> },
     { id: 'progress', label: 'Progress', href: '/dashboard/progress', active: pathname.startsWith('/dashboard/progress') || pathname.startsWith('/dashboard/assessment'), tutorialId: 'dashboard-progress-navigation', icon: <ProgressIcon/> },
     { id: 'account', label: 'Account', href: '/dashboard/account', active: pathname.startsWith('/dashboard/account') || pathname.startsWith('/dashboard/cycle') || pathname === '/dashboard/support' || pathname === '/support', tutorialId: undefined, icon: <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20v-1a7 7 0 0 1 14 0v1"/></svg> },

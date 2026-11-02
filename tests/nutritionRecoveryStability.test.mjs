@@ -39,8 +39,8 @@ const memberNutrition = await import(moduleUrl('lib/nutrition/memberNutrition.ts
 const timezone = await import(moduleUrl('lib/timezone.ts'))
 const remaining = { calories_remaining: 1800, protein_remaining_g: 120, carbs_remaining_g: 200, fat_remaining_g: 60, fiber_remaining_g: 25 }
 const foods = [
-  { id: 'beans', name: 'Black beans', food_nutrients: { calories: 132, protein_g: 9, carbs_g: 24, fat_g: 1, fiber_g: 8 }, food_serving_options: [{ label: '100 g', is_default: true }] },
-  { id: 'yogurt', name: 'Greek yogurt', food_nutrients: { calories: 90, protein_g: 18, carbs_g: 5, fat_g: 0, calcium_mg: 110 }, allergens: ['milk'] },
+  { id: 'beans', name: 'Black beans', food_nutrients: { calories: 132, protein_g: 9, carbs_g: 24, fat_g: 1, fiber_g: 8 }, food_serving_options: [{ label: '100 g', grams: 100, is_default: true }] },
+  { id: 'yogurt', name: 'Greek yogurt', grams_per_serving: 100, food_nutrients: { calories: 90, protein_g: 18, carbs_g: 5, fat_g: 0, calcium_mg: 110 }, allergens: ['milk'] },
 ]
 
 function database({ tier = 'ignite', owner = 'qa-user', snapshot = remaining, mealIds = [], catalog = foods, signedIn = true, clientPresent = true, flowBurden = false } = {}) {
@@ -111,11 +111,39 @@ test('food suggestions distinguish missing targets, satisfied targets, and an em
   assert.equal((await response.json()).state, 'unavailable')
 })
 
+test('suggested-food API returns verified portion nutrients across tiers and no unsuitable fallback', async () => {
+  const dry = { id: 'dry-egg', name: 'Egg, white, dried', food_nutrients: { calories: 382, protein_g: 80 },
+    food_serving_options: [{ label: '1 large egg / equivalent', grams: 50 }] }
+  const prepared = { id: 'prepared', name: 'Cooked protein option', food_nutrients: { calories: 200, protein_g: 30, carbs_g: 10, fat_g: 4 },
+    food_serving_options: [{ label: 'Half portion', grams: 50, is_default: true }] }
+  const unknownServing = { id: 'unknown', name: 'Cooked beans', food_nutrients: { calories: 130, protein_g: 9 },
+    food_serving_options: [{ label: '100 grams' }] }
+  for (const tier of ['ember', 'ignite', 'phoenix']) {
+    const db = database({ tier, catalog: [dry, unknownServing, prepared] })
+    globalThis.nutritionRecoveryTestClient = db
+    const body = await (await suggestedRoute.GET(new Request('http://test/api/nutrition/suggested-foods?nutritionLogId=qa-log'))).json()
+    assert.equal(body.state, 'ready')
+    assert.deepEqual(body.suggestions.map(item => item.foodId), ['prepared'])
+    assert.equal(body.suggestions[0].servingGrams, 50)
+    assert.equal(body.suggestions[0].calories, 100)
+    assert.equal(body.suggestions[0].protein, 15)
+    assert.equal(body.suggestions[0].carbs, 5)
+    assert.equal(body.suggestions[0].fats, 2)
+    assert.equal(body.suggestions[0].contribution, '+15g protein')
+    assert.equal(db.writes.length, 0)
+
+    globalThis.nutritionRecoveryTestClient = database({ tier, catalog: [dry, unknownServing] })
+    const empty = await (await suggestedRoute.GET(new Request('http://test/api/nutrition/suggested-foods?nutritionLogId=qa-log'))).json()
+    assert.equal(empty.state, 'unavailable')
+    assert.deepEqual(empty.suggestions, [])
+  }
+})
+
 test('food ranking excludes logged foods, avoided foods, and supplement products', () => {
   const candidates = [
-    { id: 'beans', name: 'Black beans', calories: 132, protein_g: 9, fiber_g: 8 },
-    { id: 'yogurt', name: 'Greek yogurt', calories: 90, protein_g: 18, allergens: ['milk'] },
-    { id: 'pill', name: 'Protein supplement capsule', calories: 90, protein_g: 20 },
+    { id: 'beans', name: 'Black beans', grams_per_serving: 100, calories: 132, protein_g: 9, fiber_g: 8 },
+    { id: 'yogurt', name: 'Greek yogurt', grams_per_serving: 100, calories: 90, protein_g: 18, allergens: ['milk'] },
+    { id: 'pill', name: 'Protein supplement capsule', grams_per_serving: 100, calories: 90, protein_g: 20 },
   ]
   assert.deepEqual(buildSuggestedFoods({ remaining, candidates, loggedFoodIds: ['beans'], avoidTerms: ['milk'] }), [])
   assert.equal(buildSuggestedFoods({ remaining: null, candidates, avoidTerms: ['milk'] })[0].foodId, 'beans')
@@ -123,8 +151,8 @@ test('food ranking excludes logged foods, avoided foods, and supplement products
 
 test('EMBER suggestions ignore historical micro gaps and food values without changing entitled-tier ranking', async () => {
   const snapshot = { calories_remaining: 500, protein_remaining_g: 50, carbs_remaining_g: 50, fat_remaining_g: 20, magnesium_remaining_mg: 300, fiber_remaining_g: 20 }
-  const catalog = [{ id: 'a', name: 'Option A', food_nutrients: { calories: 100, protein_g: 10, carbs_g: 5, fat_g: 1 } },
-    { id: 'b', name: 'Option B', food_nutrients: { calories: 100, protein_g: 10, carbs_g: 5, fat_g: 1, magnesium_mg: 300, fiber_g: 20 } }]
+  const catalog = [{ id: 'a', name: 'Option A', grams_per_serving: 100, food_nutrients: { calories: 100, protein_g: 10, carbs_g: 5, fat_g: 1 } },
+    { id: 'b', name: 'Option B', grams_per_serving: 100, food_nutrients: { calories: 100, protein_g: 10, carbs_g: 5, fat_g: 1, magnesium_mg: 300, fiber_g: 20 } }]
   const request = () => new Request('http://test/api/nutrition/suggested-foods?nutritionLogId=qa-log&program=phoenix')
   let ember
   for (const tier of ['ember', 'unrecognized', 'ignite', 'phoenix']) {

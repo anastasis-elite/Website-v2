@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import * as styles from '../styles/globalstyles'
 import Button from '../../components/Button'
 import TrackEvent from '@/components/TrackEvent'
@@ -93,6 +93,12 @@ function ScrollChoice({
 }
 
 export default function ApplyPage() {
+  const started = useRef(false)
+  function markStarted() {
+    if (started.current) return
+    started.current = true
+    trackEvent('audit_started', { page: 'audit' })
+  }
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
     email: '',
@@ -111,6 +117,7 @@ export default function ApplyPage() {
   const [message, setMessage] = useState('')
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    markStarted()
     const { name, value, type } = e.target
     const checked = e.target.checked
 
@@ -121,6 +128,7 @@ export default function ApplyPage() {
   }
 
   function handleSelect(name: keyof FormData, value: string) {
+    markStarted()
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -129,6 +137,7 @@ export default function ApplyPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
   e.preventDefault()
+  markStarted()
 
   if (status === 'submitting') {
     return
@@ -203,9 +212,6 @@ export default function ApplyPage() {
 
     trackEvent('audit_page_completed', {
       page: 'audit',
-      recommended_program: data.recommendedProgram,
-      capacity_score: data.capacityScore,
-      audit_id: data.auditId,
     })
 
     window.location.assign(

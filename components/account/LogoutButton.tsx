@@ -2,14 +2,17 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { resetAnalyticsIdentity } from '@/lib/posthog'
 
 export default function LogoutButton() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
   async function logout() {
+    if (!window.dispatchEvent(new Event('anastasis:before-assessment-navigation', { cancelable: true }))) return
     setLoading(true)
     await fetch('/api/auth/logout', { method: 'POST' })
+    resetAnalyticsIdentity()
     router.replace('/login')
     router.refresh()
   }

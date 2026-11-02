@@ -1,3 +1,4 @@
+import { membershipCan } from '@/lib/membership/policy'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { parseJsonObject, safeErrorResponse } from '@/lib/security/http'
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
 
     const { data: client } = await supabase
       .from('clients')
-      .select('client_id')
+      .select('client_id,program,access,active,verified_purchase,subscription_ends_at,membership_expires_at,onboarding_data,state,timezone')
       .eq('client_id', clientId)
       .eq('auth_user_id', user.id)
       .maybeSingle()
@@ -37,6 +38,8 @@ export async function POST(req: Request) {
         { status: 404 }
       )
     }
+
+    if (!membershipCan(client, 'generatedCoaching')) return NextResponse.json({ error: 'Generated workouts are not included in this membership.' }, { status: 403 })
 
     const { data: latestProgram, error } = await supabase
       .from('program_outputs')

@@ -2,8 +2,7 @@ import { calculatePercentageExecutionScore } from '@/lib/dashboard/logic/calcula
 import type { AccountData, AccountProgram, JourneyMetric } from './types'
 import { getClientLocalDateOffset, getClientTimeZone } from '@/lib/timezone'
 import { workoutLocalDate } from '@/lib/workout/history'
-
-const supportedPrograms = new Set(['ember', 'ignite', 'phoenix'])
+import { parseMembershipTier } from '@/lib/membership/policy'
 
 function dateDaysAgo(days: number) {
   const value = new Date()
@@ -103,7 +102,7 @@ export async function getAccountData({ supabase, user, client }: { supabase: any
     if (number(row.recommendation_output?.flameState?.dailyScore) >= 75) completedDates.add(row.log_date)
   })
   if (!completedDates.size) workoutRows.forEach((row: any) => completedDates.add(workoutLocalDate(row, getClientTimeZone(client))))
-  const program = supportedPrograms.has(client.program) ? client.program as AccountProgram : 'ember'
+  const program: AccountProgram = parseMembershipTier(client.program) || 'unknown'
   const score = averageCompletionPercent
   const flame = score >= 100 ? ['roaring_flame', 'Week complete'] : score >= 75 ? ['strong_flame', 'Almost complete'] : score >= 50 ? ['steady_flame', 'Momentum is building'] : score >= 25 ? ['small_flame', 'You’re moving'] : ['spark', 'Start small']
 

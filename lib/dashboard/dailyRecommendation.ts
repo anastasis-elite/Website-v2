@@ -24,8 +24,13 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
     logic.nutrition.calories.percent >= 95 && logic.nutrition.protein.percent >= 90 ? 'confirmed' : 'partial'
   const water: DataAvailability = logic.hydration.status === 'needs_input' ? 'not_logged' :
     logic.hydration.remaining <= 0 ? 'completed' : 'partial'
+  // The hydration engine uses the member's waking schedule and timezone, with
+  // its existing pacing tolerance. Being on pace pauses prompts, not the goal.
+  const waterOnPace = water === 'partial' && logic.hydration.consumed > 0 &&
+    ['on_pace', 'ahead_of_pace'].includes(logic.hydration.paceState)
   const workout: DataAvailability = logic.execution.workoutComplete ? 'completed' : logic.execution.workoutInProgress ? 'partial' : 'not_logged'
   const checkIn: DataAvailability = logic.assessments.dailyCompleted ? 'completed' : 'not_logged'
+  const emptyWorkoutDay = ['rest', 'unavailable'].includes(logic.workoutDecision.assignedWorkout?.workout_state)
   const today = buildTodayActivities(logic, schedule)
   const guideId = (id: string): TodayActivityId | undefined => id === 'food-input' ? 'nutrition' :
     ['check-in', 'water', 'schedule', 'workout', 'recovery'].includes(id) ? id as TodayActivityId : undefined
@@ -36,6 +41,8 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   const eventActivityId = (category: string) => category === 'check_in' ? 'check-in' : category === 'hydration' ? 'water' :
     category === 'workout' || category === 'recovery' ? category : undefined
   const eventUnavailable = (category: string) => {
+    if (category === 'workout' && emptyWorkoutDay) return true
+    if (category === 'hydration' && waterOnPace) return true
     const id = eventActivityId(category)
     const activity = today.activities.find(item => item.id === id)
     return Boolean(id && (held(id) || activity?.status === 'completed'))
@@ -53,10 +60,10 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   if (checkIn !== 'completed') {
     add('check-in', 'check_in', 'Daily check-in', 'Start with your energy. Your answers help today’s plan fit your actual capacity.', '/dashboard/check-in', 'not_logged')
   }
-  if (!logic.workoutDecision.canTrain && !logic.symptoms.redFlag) {
+  if (!logic.workoutDecision.canTrain && !logic.symptoms.redFlag && !emptyWorkoutDay) {
     add('safety', 'recovery', 'Review today’s recovery guidance', logic.recoveryStatus.reasoning, '/dashboard/recovery', 'confirmed')
   }
-  const active = schedule.events.find(e => e.flexibility_type === 'fixed' && e.status === 'scheduled' &&
+  const active = schedule.events.find(e => !(e.event_type === 'hydration' && waterOnPace) && e.flexibility_type === 'fixed' && e.status === 'scheduled' &&
     new Date(e.adjusted_start_at || e.start_at) <= new Date(schedule.now) && new Date(e.adjusted_end_at || e.end_at) > new Date(schedule.now))
   if (active) add(active.id, active.event_type, active.title, `${active.source_label ? active.source_label + '. ' : ''}This is your current commitment. Keep your other actions flexible.`, getActionRouteForEvent(active, logic.program), 'confirmed', active.id)
 
@@ -64,7 +71,7 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
     add('food-input', 'nutrition', logic.program === 'ember' ? 'Review your next meal' : 'Log your latest meal',
       logic.program === 'ember' ? 'Your nutrition guidance is ready when you need it.' : 'No food is logged today. That does not tell us what you’ve eaten.', mealEntryHref(logic.program), 'not_logged')
   }
-  if (water !== 'completed' && !schedule.events.some(e => e.event_type === 'hydration' && e.status === 'skipped')) add('water', 'hydration', water === 'not_logged' ? 'Log the water you’ve had' : 'Have a little water when it suits you',
+  if (water !== 'completed' && !waterOnPace && !schedule.events.some(e => e.event_type === 'hydration' && e.status === 'skipped')) add('water', 'hydration', water === 'not_logged' ? 'Log the water you’ve had' : 'Have a little water when it suits you',
     water === 'not_logged' ? 'Water intake is not logged yet. Add what you’ve had so the plan can use it.' : `${Math.round(logic.hydration.consumed)} oz logged. Keep drinking steadily; you do not need to catch up all at once.`, WATER_ENTRY_HREF, water)
   const scheduleReview = today.activities.find(activity => activity.id === 'schedule')
   if (schedule.dailyGuide && scheduleReview?.status !== 'completed' && schedule.events.some(event => !event.suggested &&
