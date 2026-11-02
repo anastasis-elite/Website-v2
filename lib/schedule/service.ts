@@ -182,7 +182,7 @@ export async function getDailyScheduleState({
       category: (primary.category === 'nutrition' ? 'meal' : primary.category === 'none' ? 'custom' : primary.category) as any,
       reason: primary.reason, short_reason: primary.reason, action_route: primary.href,
       start_at: eventAction?.start_at || null, overdue: eventAction?.overdue || false,
-      urgency: eventAction?.urgency || (primary.completed ? 'none' : 'now'),
+      urgency: eventAction?.urgency || (primary.completed || primary.category === 'none' ? 'none' : 'now'),
       automatically_adjusted: eventAction?.automatically_adjusted || false,
       can_complete: eventAction?.can_complete || false, can_defer: eventAction?.can_defer || false }
   }

@@ -3,9 +3,10 @@ import type { DailyScheduleState } from '@/lib/schedule/types'
 import { getActionRouteForEvent } from '@/lib/schedule/engine'
 import { getDailyTraining, type DailyTraining } from './dailyTraining'
 import { buildTodayActivities, presentTodayActivities, type TodayActivityId } from './todayActivities'
-import { getLocalDaypart } from '@/lib/timezone'
+import { getLocalDaypart, localDateKey } from '@/lib/timezone'
 import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 import { getRecoveryPresentation } from '@/lib/recovery/todayCompletion'
+import { getStreakRequirementProgress } from './logic/streakRequirementProgress'
 
 export type DataAvailability = 'not_logged' | 'partial' | 'confirmed' | 'completed'
 export type DailyRecommendationAction = {
@@ -121,8 +122,11 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
       return rank(a) - rank(b)
     })
   }
-  const fallback: DailyRecommendationAction = { id: 'pause', category: 'none', title: 'Leave a little room for yourself',
-    reason: 'There is no additional action in your recorded plan right now. Leave the rest flexible.', href: '/dashboard/schedule', availability: 'completed', completed: true }
+  const streakProgress = getStreakRequirementProgress(logic.flameState, schedule.date, { programTier: logic.program, now: schedule.now, timezone: schedule.timezone })
+  const dayCompleted = streakProgress.available && streakProgress.secured && localDateKey(new Date(schedule.now), schedule.timezone) === schedule.date
+  const fallback: DailyRecommendationAction = { id: 'pause', category: 'none', title: dayCompleted ? 'Day completed' : 'Leave a little room for yourself',
+    reason: dayCompleted ? 'Reward yourself with a little treat.' : 'There is no additional action in your recorded plan right now. Leave the rest flexible.',
+    href: '/dashboard/schedule', availability: dayCompleted ? 'completed' : 'confirmed', completed: dayCompleted }
   return { date: schedule.date, timezone: schedule.timezone, generatedAt: schedule.now,
     primary: candidates[0] || fallback, supporting: candidates.slice(1, 4), training: getDailyTraining(logic), evidence: { food, water, workout, checkIn } }
 }
