@@ -1,6 +1,5 @@
 import Link from 'next/link'
-import { getStreakRequirementProgress, type StreakRequirementEntry, type StreakRequirementProgress } from '@/lib/dashboard/logic/streakRequirementProgress'
-import type { FlameResult } from '@/lib/dashboard/logic/types'
+import type { StreakRequirementEntry, StreakRequirementProgress } from '@/lib/dashboard/logic/streakRequirementProgressTypes'
 
 function Requirement({ entry }: { entry: StreakRequirementEntry }) {
   const content = <><span aria-hidden="true">{entry.complete ? '✓' : '○'}</span><span>{entry.label}<small>{entry.complete ? 'Completed' : 'Outstanding'}</small><small>{entry.description}</small></span></>
@@ -11,10 +10,10 @@ function Requirement({ entry }: { entry: StreakRequirementEntry }) {
   </li>
 }
 
-export default function StreakRequirementsCard({ flame, compact = false, expectedDate, now, timezone, progress }: {
-  flame?: FlameResult; compact?: boolean; expectedDate?: string; now?: string; timezone?: string; progress?: StreakRequirementProgress
+export default function StreakRequirementsCard({ compact = false, progress }: {
+  compact?: boolean; progress?: StreakRequirementProgress
 }) {
-  const current = progress || getStreakRequirementProgress(flame, expectedDate, { now, timezone })
+  const current = progress || { available: false as const, requiredCount: null, completedCount: null, secured: false, entries: [], resetMessage: null }
   if (!current.available) return <section className={`streak-requirements-card${compact ? ' is-compact' : ''}`}>
     <p role="status">Today’s streak requirements could not be confirmed. Refresh to try again.</p>
   </section>

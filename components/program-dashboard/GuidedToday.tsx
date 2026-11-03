@@ -3,17 +3,14 @@
 import Link from 'next/link'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { buildTodayActivities, presentTodayActivities, type DailyGuideState, type TodayActivity, type TodayActivityId } from '@/lib/dashboard/todayActivities'
-import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
+import type { TodayActivity, TodayActivityId } from '@/lib/dashboard/todayActivityTypes'
 import { useDailyScheduleRefresh } from '@/lib/schedule/client'
 import { formatLocalTime } from '@/lib/schedule/time'
 import { trackEvent } from '@/lib/analytics'
 import { recordTodayActionOpened, recordTodayActionCompletions } from '@/lib/analytics/todayJourney'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
-import { getRecoveryPresentation } from '@/lib/recovery/todayCompletion'
 import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
-import { getStreakRequirementProgress } from '@/lib/dashboard/logic/streakRequirementProgress'
 
 const icons: Record<string, string> = { check_in: '☀', hydration: '◒', schedule: '▦', nutrition: '◡', workout: '↟', recovery: '♡', none: '✦' }
 const statusLabels: Record<string, string> = { available: 'Available', upcoming: 'Upcoming', in_progress: 'In progress', completed: 'Completed', deferred: 'Deferred', skipped: 'Skipped' }
@@ -51,46 +48,40 @@ function ActivityOptions({ activity, busy, onAction }: { activity: TodayActivity
 
 export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOutput; schedule: DailyScheduleState }) {
   const router = useRouter()
-  const [savedGuide, setSavedGuide] = useState<{ date: string; value?: DailyGuideState }>(() => ({ date: schedule.date, value: schedule.dailyGuide }))
   const [busy, setBusy] = useState<TodayActivityId | null>(null)
   const [message, setMessage] = useState('')
   const lock = useRef(false)
   const viewedDay = useRef('')
   const previousCompleted = useRef<{ date: string; ids: string[] } | null>(null)
+  const missingModelRefresh = useRef<string | null>(null)
   const streakDialog = useRef<HTMLDialogElement>(null)
   const streakTrigger = useRef<HTMLButtonElement | null>(null)
   const streakHeading = useRef<HTMLHeadingElement>(null)
   const streakDialogId = useId()
-  useEffect(() => { setSavedGuide({ date: schedule.date, value: schedule.dailyGuide }) }, [schedule.date, schedule.dailyGuide])
   useEffect(() => { setMessage('') }, [schedule.date])
-  const activeSchedule = { ...schedule, dailyGuide: savedGuide.date === schedule.date ? savedGuide.value : schedule.dailyGuide }
-  const today = buildTodayActivities(logic, activeSchedule)
-  const streakProgress = getStreakRequirementProgress(logic.flameState, schedule.date, { programTier: logic.program, now: schedule.now, timezone: schedule.timezone })
-  const streakAvailable = streakProgress.available && streakProgress.requiredCount !== null && streakProgress.completedCount !== null
-  const requiredCount = streakProgress.requiredCount ?? 0
-  const requiredCompleted = streakProgress.completedCount ?? 0
-  const remainingRequirements = requiredCount - requiredCompleted
-  const streakMessage = !streakAvailable ? 'Your streak requirements could not be confirmed. Open details to review or retry.'
-    : streakProgress.secured ? 'Today’s required work is complete. Your streak is secured for today.'
-      : `${remainingRequirements} required ${remainingRequirements === 1 ? 'item remains' : 'items remain'} to secure today’s streak.`
-  const presentedActivities = presentTodayActivities(logic, activeSchedule, today.activities)
-  const plan = buildDailyRecommendation(logic, activeSchedule)
-  const primaryId = plan.primary.id === 'food-input' ? 'nutrition' : plan.primary.id
-  const primary = plan.primary.id === 'safety' ? undefined : presentedActivities.find(activity => activity.id === primaryId)
-  const recovery = logic.execution.recoveryEvidence ? getRecoveryPresentation({ evidence: logic.execution.recoveryEvidence, schedule: activeSchedule }) : null
-  const presentationBoundary = Math.min(...[logic.nutrition.pacing?.nextRefreshAt, logic.hydration.presentationPacing?.nextRefreshAt, recovery?.nextRefreshAt]
-    .flatMap(value => value && Number.isFinite(Date.parse(value)) ? [Date.parse(value)] : []))
-  useDailyScheduleRefresh(activeSchedule, true, Number.isFinite(presentationBoundary) ? new Date(presentationBoundary).toISOString() : undefined)
+  const candidate = schedule.todayViewModel
+  const model = candidate?.version === 1 && candidate.date === schedule.date && candidate.timezone === schedule.timezone &&
+    candidate.generatedAt === schedule.now && candidate.clientId === logic.client.id && candidate.tier === logic.program ? candidate : null
+  const hasModel = Boolean(model)
+  useDailyScheduleRefresh(schedule, true, model?.nextRefreshAt)
+  useEffect(() => {
+    const key = `${logic.client.id}:${schedule.date}`
+    if (!hasModel && missingModelRefresh.current !== key) {
+      missingModelRefresh.current = key
+      router.refresh()
+    }
+  }, [hasModel, logic.client.id, schedule.date, router])
 
   // A held action becomes available at its explicit return time, including idle tabs.
-  const returnAt = Math.min(...Object.values(activeSchedule.dailyGuide?.activities || {}).flatMap(value => value?.status === 'deferred' && value.until && Date.parse(value.until) > Date.now() ? [Date.parse(value.until)] : []))
+  const returnAt = model?.deferredReturnAt ? Date.parse(model.deferredReturnAt) : Infinity
   useEffect(() => {
     if (!Number.isFinite(returnAt)) return
     const timer = window.setTimeout(() => router.refresh(), Math.max(0, returnAt - Date.now()) + 50)
     return () => window.clearTimeout(timer)
   }, [returnAt, router])
-  const completedIds = today.activities.filter(activity => activity.status === 'completed').map(activity => activity.id).join(',')
+  const completedIds = model?.today.activities.filter(activity => activity.status === 'completed').map(activity => activity.id).join(',') || ''
   useEffect(() => {
+    if (!hasModel) return
     if (viewedDay.current !== schedule.date) {
       viewedDay.current = schedule.date
       trackEvent('today_page_viewed', { tier: logic.program })
@@ -99,7 +90,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
     const previous = previousCompleted.current
     recordTodayActionCompletions(logic.client.id, schedule.date, ids, previous?.date === schedule.date ? previous.ids : null, logic.program)
     previousCompleted.current = { date: schedule.date, ids }
-  }, [completedIds, schedule.date, logic.program, logic.client.id])
+  }, [completedIds, schedule.date, logic.program, logic.client.id, hasModel])
 
   async function updateActivity(activityId: TodayActivityId, action: GuideAction) {
     if (lock.current) return
@@ -108,7 +99,6 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
       const response = await fetch('/api/dashboard/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: schedule.date, activityId, action }) })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error || 'Your choice could not be saved. Try again.')
-      setSavedGuide({ date: schedule.date, value: payload.dailyGuide })
       setMessage(action === 'defer' ? 'Saved for later today. Take the next step when you have room.' : action === 'skip' ? 'Skipped for today. You can review your options here.' : action === 'resume' ? 'Ready when you are.' : 'Schedule review saved. Return to your next step when you’re ready.')
       if (action !== 'review') trackEvent(action === 'defer' ? 'activity_deferred' : action === 'skip' ? 'activity_skipped' : 'activity_resumed', { activity: activityId, tier: logic.program })
       router.refresh()
@@ -117,11 +107,25 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
     } finally { lock.current = false; setBusy(null) }
   }
 
-  const openActivity = (id: string, alreadyCompleted = false) => recordTodayActionOpened(logic.client.id, schedule.date, id, logic.program, alreadyCompleted)
-  const quiet = schedule.preferences?.carouselStyle === 'step'
+  if (!model) return <div className="today-guide">{schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved activities are still recorded; check your calendar before choosing a time.</p> : null}<p role="status">Your saved day could not be confirmed. Refresh to load your current actions.</p><button type="button" className="tier-primary-action" onClick={() => router.refresh()}>Refresh day</button></div>
+  const today = model.today
+  const plan = model.recommendation
+  const presentedActivities = model.presentedActivities
+  const primaryId = plan.primary.id === 'food-input' ? 'nutrition' : plan.primary.id
+  const primary = plan.primary.id === 'safety' ? undefined : presentedActivities.find(activity => activity.id === primaryId)
+  const streakProgress = model.streakProgress
+  const streakAvailable = streakProgress.available && streakProgress.requiredCount !== null && streakProgress.completedCount !== null
+  const requiredCount = streakProgress.requiredCount ?? 0
+  const requiredCompleted = streakProgress.completedCount ?? 0
+  const remainingRequirements = requiredCount - requiredCompleted
+  const streakMessage = !streakAvailable ? 'Your streak requirements could not be confirmed. Open details to review or retry.'
+    : streakProgress.secured ? 'Today’s required work is complete. Your streak is secured for today.'
+      : `${remainingRequirements} required ${remainingRequirements === 1 ? 'item remains' : 'items remain'} to secure today’s streak.`
+  const openActivity = (id: string, alreadyCompleted = false) => recordTodayActionOpened(model.clientId, schedule.date, id, model.tier, alreadyCompleted)
+  const quiet = model.quiet
   const complete = today.total > 0 && today.completed === today.total
-  const workoutDayState = logic.workoutDecision.assignedWorkout?.workout_state
-  const inactiveWorkoutDay = workoutDayState === 'rest' || workoutDayState === 'unavailable'
+  const workoutDayState = model.workout.state
+  const inactiveWorkoutDay = model.workout.inactive
   const illustrated = (id: TodayActivityId) => Boolean(activityCards[id])
   const highlighted = (id: TodayActivityId) => id === 'water' || id === 'schedule'
   const displayActivities = [...presentedActivities.filter(activity => highlighted(activity.id)), ...presentedActivities.filter(activity => !highlighted(activity.id))]
@@ -133,12 +137,12 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
       <div className="today-next-heading"><p className="tier-dashboard-label">Your next step</p><span className="today-activity-icon" aria-hidden="true">{icons[plan.primary.category] || '▦'}</span></div>
       <h2>{plan.primary.id === 'check-in' ? 'Let’s start with you.' : plan.primary.title}</h2>
       <p data-tutorial-id="dashboard-daily-insight">{plan.primary.id === 'check-in' ? 'How’s your energy today? A quick check-in is enough to begin.' : plan.primary.reason}</p>
-      <Link className="tier-primary-action" href={plan.primary.href} onClick={() => openActivity(plan.primary.id, plan.primary.completed)}>{plan.primary.id === 'check-in' ? 'Start daily check-in' : plan.primary.id === 'water' ? 'Log water' : plan.primary.id === 'workout' ? logic.execution.workoutInProgress ? 'Resume workout' : 'Open workout' : plan.primary.id === 'recovery' ? 'Open recovery' : plan.primary.category === 'assessment' ? 'Open assessment' : plan.primary.category === 'nutrition' ? logic.program === 'ember' ? 'Open nutrition guidance' : 'Log meal' : 'Open schedule'}</Link>
+      <Link className="tier-primary-action" href={plan.primary.href} onClick={() => openActivity(plan.primary.id, plan.primary.completed)}>{plan.primary.id === 'check-in' ? 'Start daily check-in' : plan.primary.id === 'water' ? 'Log water' : plan.primary.id === 'workout' ? model.workout.inProgress ? 'Resume workout' : 'Open workout' : plan.primary.id === 'recovery' ? 'Open recovery' : plan.primary.category === 'assessment' ? 'Open assessment' : plan.primary.category === 'nutrition' ? model.tier === 'ember' ? 'Open nutrition guidance' : 'Log meal' : 'Open schedule'}</Link>
       {primary?.canDefer ? <button className="today-later" type="button" disabled={busy !== null} onClick={() => updateActivity(primary.id, 'defer')}>{busy === primary.id ? 'Saving…' : 'Later today'}</button> : null}
     </article>
     <p className="today-feedback" role="status" aria-live="polite">{message}</p>
 
-    {inactiveWorkoutDay ? <p className="today-workout-status" role="status" data-workout-state={workoutDayState}><strong>{logic.workout.title}</strong><span>{logic.workoutDecision.reasonForModification}</span></p> : null}
+    {inactiveWorkoutDay ? <p className="today-workout-status" role="status" data-workout-state={workoutDayState}><strong>{model.workout.title}</strong><span>{model.workout.reason}</span></p> : null}
 
     <section className="today-activities" data-testid="today-activities" aria-label="Your day at a glance" data-tutorial-id="dashboard-nutrition-progress">
       <div className="today-section-heading"><h2>At your pace.</h2><span>Go in your own order</span></div>
@@ -153,8 +157,8 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
       </li>)}</ul> : <p role="status">{complete ? 'Your recorded activities are saved. You can revisit your progress and history anytime.' : 'Nothing else is due right now. Your saved activities are still available.'} <Link href="/dashboard/progress">View progress</Link></p>}
     </section>
 
-    {logic.nutrition.macroReminder ? <aside className="today-feedback" aria-label="Recent nutrition logs">
-      <p>{logic.nutrition.macroReminder.message}</p>
+    {model.macroReminder ? <aside className="today-feedback" aria-label="Recent nutrition logs">
+      <p>{model.macroReminder}</p>
       <Link href="/dashboard/nutrition">Review nutrition logs</Link>
     </aside> : null}
 
@@ -174,7 +178,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
       onCancel={event => { event.preventDefault(); streakDialog.current?.close() }} onClose={() => streakTrigger.current?.focus()}>
       <header><h2 ref={streakHeading} tabIndex={-1} id={`${streakDialogId}-title`}>Today’s streak</h2><button type="button" onClick={() => streakDialog.current?.close()}>Close</button></header>
       <p id={`${streakDialogId}-description`}>{streakAvailable ? 'These are the requirements that count toward today’s streak. Saved optional work does not replace an outstanding requirement.' : 'Your saved streak requirements are unavailable. Refresh before relying on a secured status.'}</p>
-      <StreakRequirementsCard flame={logic.flameState} expectedDate={schedule.date} now={schedule.now} timezone={schedule.timezone} progress={streakProgress} />
+      <StreakRequirementsCard progress={streakProgress} />
       {!streakAvailable ? <button type="button" className="tier-primary-action" onClick={() => router.refresh()}>Refresh requirements</button> : null}
     </dialog>
   </div>

@@ -1,6 +1,6 @@
 import { importedScheduleEvents } from '@/lib/calendar/service'
-import { buildDailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
-import { buildTodayActivities, readDailyGuide } from '@/lib/dashboard/todayActivities'
+import { buildTodayViewModel } from '@/lib/dashboard/buildTodayViewModel'
+import { readDailyGuide } from '@/lib/dashboard/todayActivities'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
 import { getScheduleStructureSubmission, getScheduleStructureVersion, scheduleStructureMonthlyTask, SCHEDULE_STRUCTURE_PATH } from '@/lib/assessment/scheduleStructure'
@@ -8,7 +8,7 @@ import { getClientLocalDate } from '@/lib/timezone'
 import { getClientDayRange, zonedDateTimeToUtc } from './time'
 import { buildDailyScheduleState, buildNextAction } from './engine'
 import { dailyPlanToScheduleEvents, fixedCommitmentsForDate } from './dailyPlanAdapter'
-import { applyScheduleCheckoffs, loadScheduleCheckoffs } from './checkoffs'
+import { applyScheduleCheckoffs, loadScheduleCheckoffs, type ScheduleCheckoff } from './checkoffs'
 import type { DailyScheduleState, ScheduleEvent } from './types'
 
 export async function loadScheduleEventsForDay({
@@ -39,25 +39,29 @@ export async function loadScheduleEventsForDay({
     new Date(event.adjusted_end_at || event.end_at) > dayStart)
 }
 
-export async function getDailyScheduleState({
-  supabase,
-  user,
-  client,
-  date,
-  includeVirtualPlan = true,
-  logic,
-  dailyPlan: providedDailyPlan,
-  sourceTimeoutMs,
-}: {
+type ScheduleSourceContext = {
   supabase: any
   user: any
   client: any
   date?: string
-  includeVirtualPlan?: boolean
-  logic?: any
-  dailyPlan?: Awaited<ReturnType<typeof getDailyExecutionPlan>>
   sourceTimeoutMs?: number
-}): Promise<DailyScheduleState> {
+}
+
+export type DailyScheduleSources = {
+  reader: any
+  userId: string
+  clientId: string
+  day: ReturnType<typeof getClientDayRange>
+  persistedEvents: ScheduleEvent[]
+  blocks: any[]
+  calendarEvents: ScheduleEvent[]
+  checkoffs: ScheduleCheckoff[]
+  unavailableSources: NonNullable<DailyScheduleState['unavailableSources']>
+}
+
+/** Start only after the caller has authorized this owner. These optional reads
+ * are independent of health logic and contain no writes or global cache. */
+export function loadDailyScheduleSources({ supabase, user, client, date, sourceTimeoutMs }: ScheduleSourceContext): Promise<DailyScheduleSources> {
   const day = getClientDayRange(client, date)
   const unavailableSources: NonNullable<DailyScheduleState['unavailableSources']> = []
   // Schedule integrations are optional to the daily health dashboard. Keep the
@@ -77,8 +81,7 @@ export async function getDailyScheduleState({
       if (timer) clearTimeout(timer)
     }
   }
-  const dailyPlanPromise = includeVirtualPlan ? Promise.resolve(providedDailyPlan || getDailyExecutionPlan({ supabase, client })) : Promise.resolve(null)
-  const [persistedEvents, blocks, calendarEvents, dailyPlan, effectiveLogic, checkoffs] = await Promise.all([
+  return Promise.all([
     optionalSource('saved_events', () => loadScheduleEventsForDay({
     supabase,
     userId: user.id,
@@ -92,11 +95,37 @@ export async function getDailyScheduleState({
     return data || []
   }, []),
   optionalSource('calendar', () => importedScheduleEvents(supabase, user.id, client.client_id, day.start.toISOString(), day.end.toISOString(), day.timezone), []),
-  dailyPlanPromise,
-  logic || (includeVirtualPlan ? dailyPlanPromise.then(dailyPlan => getProgramLogicForClient({ supabase, user, client, dailyPlan: dailyPlan || undefined })) : null),
   optionalSource('checkoffs', () => loadScheduleCheckoffs({ supabase, userId: user.id, clientId: client.client_id, date: day.date }), []),
+  ]).then(([persistedEvents, blocks, calendarEvents, checkoffs]) => ({
+    reader: supabase, userId: user.id, clientId: client.client_id, day,
+    persistedEvents, blocks, calendarEvents, checkoffs, unavailableSources,
+  }))
+}
+
+export async function getDailyScheduleState({
+  supabase, user, client, date, includeVirtualPlan = true, logic,
+  dailyPlan: providedDailyPlan, sourceTimeoutMs, sources: providedSources,
+}: ScheduleSourceContext & {
+  includeVirtualPlan?: boolean
+  logic?: any
+  dailyPlan?: Awaited<ReturnType<typeof getDailyExecutionPlan>>
+  sources?: DailyScheduleSources | Promise<DailyScheduleSources>
+}): Promise<DailyScheduleState> {
+  const dailyPlanPromise = includeVirtualPlan ? Promise.resolve(providedDailyPlan || getDailyExecutionPlan({ supabase, client })) : Promise.resolve(null)
+  const [loaded, dailyPlan, effectiveLogic] = await Promise.all([
+    providedSources || loadDailyScheduleSources({ supabase, user, client, date, sourceTimeoutMs }),
+    dailyPlanPromise,
+    logic || (includeVirtualPlan ? dailyPlanPromise.then(plan => getProgramLogicForClient({ supabase, user, client, dailyPlan: plan || undefined })) : null),
   ])
-  persistedEvents.push(...calendarEvents)
+  // Assembly can occur after a slow health load. A selected historical day is
+  // fixed; an implicit Today follows the current member-local calendar date.
+  const day = getClientDayRange(client, date)
+  if (loaded.reader !== supabase || loaded.userId !== user.id || loaded.clientId !== client.client_id || loaded.day.timezone !== day.timezone ||
+    date !== undefined && loaded.day.date !== day.date) throw new Error('Schedule sources do not match this account and selected day.')
+  const currentSources = loaded.day.date === day.date ? loaded
+    : await loadDailyScheduleSources({ supabase, user, client, date: day.date, sourceTimeoutMs })
+  const { blocks, checkoffs, unavailableSources } = currentSources
+  const persistedEvents = [...currentSources.persistedEvents, ...currentSources.calendarEvents]
   const commitments = fixedCommitmentsForDate({ userId: user.id, client, date: day.date, timezone: day.timezone, blocks: blocks || [] })
     .map(event => {
       // Preserve the existing per-occurrence outcome reader as profile anchors
@@ -172,8 +201,10 @@ export async function getDailyScheduleState({
   state.program = client.program || 'ignite'
   state.dailyGuide = readDailyGuide(client.onboarding_data?.dailyGuide, day.date)
   if (effectiveLogic && dailyPlan?.date === day.date) {
-    state.todayActivities = buildTodayActivities(effectiveLogic, state)
-    state.dailyRecommendation = buildDailyRecommendation(effectiveLogic, state)
+    const model = buildTodayViewModel(effectiveLogic, state)
+    state.todayViewModel = model
+    state.todayActivities = model.today
+    state.dailyRecommendation = model.recommendation
     const primary = state.dailyRecommendation.primary
     const event = primary.eventId ? state.events.find(item => item.id === primary.eventId) || null : null
     const eventAction = event ? buildNextAction({ nextActionableEvent: event, adjustments: state.adjustments,

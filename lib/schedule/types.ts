@@ -126,6 +126,7 @@ export type NextScheduleAction = {
 }
 
 export type DailyScheduleState = {
+  todayViewModel?: import('@/lib/dashboard/todayViewModelTypes').TodayViewModel
   unavailableSources?: Array<'saved_events' | 'recurring_commitments' | 'calendar' | 'checkoffs'>
   program?: string
   date: string
@@ -142,9 +143,9 @@ export type DailyScheduleState = {
   adjustments: ScheduleAdjustment[]
   nextEvent: ScheduleEvent | null
   nextActionableEvent: ScheduleEvent | null
-  dailyRecommendation?: import('@/lib/dashboard/dailyRecommendation').DailyRecommendation
-  dailyGuide?: import('@/lib/dashboard/todayActivities').DailyGuideState
-  todayActivities?: import('@/lib/dashboard/todayActivities').TodayActivities
+  dailyRecommendation?: import('@/lib/dashboard/dailyRecommendationTypes').DailyRecommendation
+  dailyGuide?: import('@/lib/dashboard/todayActivityTypes').DailyGuideState
+  todayActivities?: import('@/lib/dashboard/todayActivityTypes').TodayActivities
   preferences?: { executionStyle: string; carouselStyle: string; transitionMinutes: number }
   nextAction: NextScheduleAction
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import type { DailyRecommendation } from '@/lib/dashboard/dailyRecommendation'
+import type { DailyRecommendation } from '@/lib/dashboard/dailyRecommendationTypes'
 import { formatLocalTime } from '@/lib/schedule/time'
 import { useDailyScheduleRefresh } from '@/lib/schedule/client'
 import type { DailyScheduleState } from '@/lib/schedule/types'

@@ -1,3 +1,5 @@
+import 'server-only'
+
 import type {
   CapacityResult, CycleResult, DayBlock, FlameResult, FuelReadinessDisplayStatus, FuelReadinessResult,
   HydrationResult, MacroSnapshot, NutritionResult, PostureResult, ProgramLogicInputs,

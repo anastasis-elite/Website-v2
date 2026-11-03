@@ -1,3 +1,5 @@
+import 'server-only'
+
 export const NUTRITION_FORMULA_VERSION = 'nutrition-target-v2.0.0'
 
 export const ACTIVITY_FACTORS = {

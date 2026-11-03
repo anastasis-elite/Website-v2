@@ -1,7 +1,7 @@
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
 import { getTierCapabilities } from '@/lib/entitlements'
-import { ProgressTab, AssessmentsTab, TrendsTab } from '@/components/program-dashboard/TierAwareDashboardWorkspace'
+import { ProgressTab, AssessmentsTab, TrendsTab } from '@/components/program-dashboard/DashboardDetailPanels'
 import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 import ProgressOverview from '@/components/program-dashboard/ProgressOverview'
 import { loadProgressOverview, progressRange } from '@/lib/dashboard/progressOverview'

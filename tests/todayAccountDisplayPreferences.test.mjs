@@ -17,6 +17,7 @@ function load(path, mocks = {}) {
   runInNewContext(source, { module, exports: module.exports, fetch: (...args) => globalThis.fetch(...args), require(name) {
     if (Object.hasOwn(mocks, name)) return mocks[name]
     if (name === 'next/link') return Link
+    if (name === 'server-only') return {}
     return require(name)
   } }, { filename: path })
   return module.exports
@@ -32,7 +33,7 @@ const Preferences = load('components/DailyDisplayPreferences.tsx', { 'next/navig
 test('Today mounts only guided content while dedicated progress, assessment, history and schedule modules remain', () => {
   const Guided = () => React.createElement('div', { 'data-testid': 'preserved-guided-today' }, 'Today progress and actions')
   const workspace = load('components/program-dashboard/TierAwareDashboardWorkspace.tsx', {
-    '@/components/program-dashboard/GuidedToday': Guided,
+    './GuidedToday': Guided,
     '@/lib/nutrition/loggingRoutes': { mealEntryHref: () => '/dashboard/nutrition', WATER_ENTRY_HREF: '/dashboard/nutrition?log=water' },
     '@/lib/dashboard/dailyRecommendation': {}, '@/lib/dashboard/dailyTraining': {}, '@/lib/schedule/time': {},
     '@/lib/schedule/engine': {}, '@/lib/entitlements': {}, '@/lib/dashboard/ignite/getIgniteDashboardData': {},
@@ -45,7 +46,12 @@ test('Today mounts only guided content while dedicated progress, assessment, his
     assert.match(html, /data-quiet="true"/)
     assert.doesNotMatch(html, /<details|Your schedule at a glance|How would you like to see your day|Progress, assessments, and details/)
   }
-  for (const name of ['ProgressTab', 'AssessmentsTab', 'TrendsTab', 'SchedulePreview', 'buildPlanBlocks']) assert.equal(typeof workspace[name], 'function')
+  const panels = load('components/program-dashboard/DashboardDetailPanels.tsx', {
+    '@/lib/nutrition/loggingRoutes': {}, '@/lib/dashboard/dailyTraining': {}, '@/lib/schedule/time': {},
+    '@/lib/schedule/engine': {}, '@/lib/entitlements': {}, '@/lib/dashboard/ignite/getIgniteDashboardData': {},
+    '@/lib/dashboard/phoenix/getPhoenixDashboardData': {}, '@/lib/assessment/getStrengthAssessmentStatus': {},
+  })
+  for (const name of ['ProgressTab', 'AssessmentsTab', 'TrendsTab', 'SchedulePreview', 'buildPlanBlocks']) assert.equal(typeof panels[name], 'function')
   for (const path of ['app/dashboard/schedule/page.tsx', 'app/dashboard/progress/page.tsx', 'app/dashboard/assessment/page.tsx',
     'components/program-dashboard/DashboardCalendar.tsx', 'components/LegalFooter.tsx']) assert.equal(existsSync(path), true, path)
 })

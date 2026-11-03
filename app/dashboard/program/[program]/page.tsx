@@ -15,7 +15,8 @@ import { logRecommendationAudit } from '@/lib/legal/logRecommendationAudit'
 import { getProgramLogicEngine } from '@/lib/dashboard/logic/getProgramLogicEngine'
 import type { ProgramTier } from '@/lib/dashboard/logic/types'
 import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
-import { getDailyScheduleState } from '@/lib/schedule/service'
+import { getDailyScheduleState, loadDailyScheduleSources } from '@/lib/schedule/service'
+import { createDashboardRequestReads } from '@/lib/dashboard/requestReads'
 import { getPhoenixRecipeRecommendations } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import { Suspense } from 'react'
 import { after } from 'next/server'
@@ -88,9 +89,11 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
   supabase: any; user: any; client: any; program: ProgramTier; view: 'today' | 'plan'
 }) {
 
+  const requestReads = createDashboardRequestReads({ supabase, user, client })
+  const scheduleSources = loadDailyScheduleSources({ supabase, user, client, sourceTimeoutMs: 2000 })
   const cycleStatus = getCycleStatus(client)
   const [dailyPlan, monthlyAssessment, outputResult] = await Promise.all([
-    getDailyExecutionPlan({ supabase, client }),
+    getDailyExecutionPlan({ supabase, client, requestReads }),
     getMonthlyAssessmentStatus(supabase, client),
     supabase
       .from('program_outputs')
@@ -120,6 +123,7 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
     plannedWorkout: todaysWorkout,
     plannedExercises: adjustedExercises,
     monthlyAssessmentsDueCount,
+    requestReads,
   })
 
   // These transient presentation hints are not additional audit/analytics data.
@@ -157,6 +161,7 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
     logic,
     dailyPlan,
     sourceTimeoutMs: 2000,
+    sources: scheduleSources,
   })
   if (view === 'plan') return <PlanOverview logic={logic} schedule={schedule} />
   const phoenixRecipes = program === 'phoenix' ? getPhoenixRecipeRecommendations({ logic, client }) : []

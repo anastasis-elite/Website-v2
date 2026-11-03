@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
-const workspace = readFileSync('components/program-dashboard/TierAwareDashboardWorkspace.tsx', 'utf8')
+const home = readFileSync('components/program-dashboard/TierAwareDashboardWorkspace.tsx', 'utf8')
+const workspace = readFileSync('components/program-dashboard/DashboardDetailPanels.tsx', 'utf8')
 const calendar = readFileSync('components/program-dashboard/DashboardCalendar.tsx', 'utf8')
 const ember = readFileSync('components/program-dashboard/EmberDashboard.tsx', 'utf8')
 const ignite = readFileSync('components/program-dashboard/IgniteDashboard.tsx', 'utf8')
@@ -27,12 +28,12 @@ test('tier dashboards no longer render standalone removed dashboard sections', (
 
 test('shared home keeps guided Today while removed dropdowns leave dedicated detail modules intact', () => {
   const today = readFileSync('components/program-dashboard/GuidedToday.tsx', 'utf8')
-  assert.match(workspace, /<GuidedToday[^\n]*logic=\{logic\} schedule=\{schedule\}/)
+  assert.match(home, /<GuidedToday[^\n]*logic=\{logic\} schedule=\{schedule\}/)
   assert.match(today, /aria-label="Your day at a glance"/)
   assert.match(today, /data-testid="today-progress"/)
   assert.match(today, /data-testid="guided-next-step"/)
-  assert.match(workspace, /data-quiet=\{quiet\}/)
-  for (const removed of ['<summary>Your schedule at a glance', '<DailyDisplayPreferences', '<summary>Progress, assessments, and details']) assert.equal(workspace.includes(removed), false)
+  assert.match(home, /data-quiet=\{quiet\}/)
+  for (const removed of ['<summary>Your schedule at a glance', '<DailyDisplayPreferences', '<summary>Progress, assessments, and details']) assert.equal(home.includes(removed), false)
   for (const name of ['ProgressTab', 'AssessmentsTab', 'TrendsTab', 'SchedulePreview', 'buildPlanBlocks']) assert.match(workspace, new RegExp(`export function ${name}`))
   assert.match(calendar, /export default function DashboardCalendar/)
 })

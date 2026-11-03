@@ -9,6 +9,7 @@ import { importTs } from './typescriptModule.mjs'
 
 const require = createRequire(import.meta.url)
 const activities = await importTs('lib/dashboard/todayActivities.ts')
+const { buildTodayViewModel } = await importTs('lib/dashboard/buildTodayViewModel.ts')
 const recommendations = await importTs('lib/dashboard/dailyRecommendation.ts')
 const time = await importTs('lib/schedule/time.ts')
 const recovery = await importTs('lib/recovery/todayCompletion.ts')
@@ -57,7 +58,7 @@ function harness(current = fixture(), state = schedule()) {
   const nativeDialog = { open: false, showModal() { this.open = true }, close() { this.open = false;dialogNode.props.onClose() } }
   function render() {
     stateIndex = refIndex = 0
-    const tree = Today({ logic: current, schedule: state })
+    const tree = Today({ logic: current, schedule: { ...state, todayViewModel: buildTodayViewModel(current, state) } })
     dialogNode = nodes(tree, node => node.type === 'dialog')[0]
     dialogNode.ref.current = nativeDialog
     nodes(dialogNode, node => node.type === 'h2')[0].ref.current = { focus() { headingFocus++ } }
