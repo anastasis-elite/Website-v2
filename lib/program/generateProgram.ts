@@ -1,3 +1,5 @@
+import 'server-only'
+
 import masterKey from '@/data/reference/masterKey.json'
 import hypertrophyChart from '@/data/reference/hypertrophyChart_normalized.json'
 import exerciseVariants from '@/data/reference/exerciseVariants.json'

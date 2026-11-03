@@ -237,7 +237,7 @@ test('period-bound completion, foreign drafts and future session metadata cannot
   assert.equal(status.state,'due');assert.equal(status.completedAt,null);assert.equal(status.previousDraft,null);db.verify()
 })
 
-for (const path of ['components/program-dashboard/TierAwareDashboardWorkspace.tsx', 'components/workout-dashboard/WorkoutDashboard.tsx']) {
+for (const path of ['components/program-dashboard/DashboardDetailPanels.tsx', 'components/workout-dashboard/WorkoutDashboard.tsx']) {
   test(`${path} strength card uses its own recognition instead of the monthly check-in count`, () => {
     const source = readFileSync(path, 'utf8')
     assert.match(source, /logic\.assessments\.strength/)

@@ -1,32 +1,13 @@
+import 'server-only'
 import { isDayBlockDate } from '@/lib/day/dayBlockRoutes'
 import { getLocalDaypart } from '@/lib/timezone'
 import { getStreakRequirementDestinations } from './streakRequirementDestinations'
-import type { ProgramTier, StreakItem, StreakRequirementDestination } from './types'
+import type { ProgramTier, StreakItem } from './types'
 
 export const STREAK_REQUIREMENT_ITEMS: readonly StreakItem[] = ['dailyCheckIn', 'nutrition', 'hydration', 'workoutOrMovement', 'recovery', 'sleep', 'customTasks']
 
-export type StreakRequirementEntry = {
-  id: StreakItem
-  label: string
-  description: string
-  complete: boolean
-  destination?: StreakRequirementDestination
-  alternativeDestinations?: StreakRequirementDestination[]
-}
-export type StreakRequirementProgress = ({
-  available: true
-  requiredCount: number
-  completedCount: number
-  secured: boolean
-} | {
-  available: false
-  requiredCount: null
-  completedCount: null
-  secured: false
-}) & {
-  entries: StreakRequirementEntry[]
-  resetMessage: string | null
-}
+import type { StreakRequirementProgress } from './streakRequirementProgressTypes'
+export type { StreakRequirementEntry, StreakRequirementProgress } from './streakRequirementProgressTypes'
 
 const content: Record<StreakItem, { label: string; description: string }> = {
   dailyCheckIn: { label: 'Daily check-in', description: 'Complete today’s daily check-in.' },

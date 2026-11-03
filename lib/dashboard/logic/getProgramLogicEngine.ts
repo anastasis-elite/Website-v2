@@ -1,7 +1,10 @@
+import 'server-only'
+
 import { getClientTimeZone, getClientLocalDateOffset } from '@/lib/timezone'
 import { loadProgramLogicInputs } from './loadProgramLogicInputs'
 import { workoutLocalDate } from '@/lib/workout/history'
 import { recoveryCompletionEvidence } from '@/lib/recovery/todayCompletion'
+import type { DashboardRequestReads } from '@/lib/dashboard/requestReads'
 
 import {
   numeric,
@@ -388,6 +391,7 @@ export async function getProgramLogicEngine(
     plannedWorkout: any
     plannedExercises: any[]
     monthlyAssessmentsDueCount: number
+    requestReads?: DashboardRequestReads
   },
 ): Promise<ProgramLogicOutput> {
   const inputs =

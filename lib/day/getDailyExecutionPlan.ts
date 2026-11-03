@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { getRecoveryTools } from '@/lib/recovery/getRecoveryTools'
 import {
   getNutritionBlockTargets,
@@ -7,6 +9,7 @@ import { getLocalDaypart, getClientLocalDate, getClientTimeZone } from '@/lib/ti
 import { calculateClientNutritionTargets } from '@/lib/nutrition/targetService'
 import { loadWorkoutHistory } from '@/lib/workout/history'
 import { calculateRecordedNutrition, loadRecordedNutrition } from '@/lib/nutrition/progress'
+import type { DashboardRequestReads } from '@/lib/dashboard/requestReads'
 
 type DailyCard = {
   id: string
@@ -97,9 +100,11 @@ function pickCurrentCard(cards: DailyCard[]) {
 export async function getDailyExecutionPlan({
   supabase,
   client,
+  requestReads,
 }: {
   supabase: any
   client: any
+  requestReads?: DashboardRequestReads
 }) {
   const now = new Date()
   const timeZone = getClientTimeZone(client)
@@ -132,7 +137,7 @@ export async function getDailyExecutionPlan({
   const eveningMinutes = bedMinutes !== null ? bedMinutes - 240 : 18 * 60
 
   const [nutritionTargets, { data: todayNutritionLog }, { data: completedWorkouts }, { data: todayRecoveryLog }] = await Promise.all([
-    calculateClientNutritionTargets({ supabase, clientId: client.client_id, program: client.program }),
+    calculateClientNutritionTargets({ supabase, clientId: client.client_id, program: client.program, requestReads }),
     supabase.from('nutrition_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle(),
     loadWorkoutHistory({ supabase, client, startDate: today, completed: true, limit: 1 }),
     supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle(),

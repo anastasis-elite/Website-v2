@@ -1,27 +1,20 @@
+import 'server-only'
 import type { ProgramLogicOutput } from './logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
 import { getActionRouteForEvent } from '@/lib/schedule/engine'
-import { getDailyTraining, type DailyTraining } from './dailyTraining'
+import { getDailyTraining } from './dailyTraining'
 import { buildTodayActivities, presentTodayActivities, type TodayActivityId } from './todayActivities'
 import { getLocalDaypart, localDateKey } from '@/lib/timezone'
 import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 import { getRecoveryPresentation } from '@/lib/recovery/todayCompletion'
 import { getStreakRequirementProgress } from './logic/streakRequirementProgress'
 
-export type DataAvailability = 'not_logged' | 'partial' | 'confirmed' | 'completed'
-export type DailyRecommendationAction = {
-  id: string; category: string; title: string; reason: string; href: string
-  availability: DataAvailability; eventId?: string; completed: boolean
-}
-export type DailyRecommendation = {
-  date: string; timezone: string; generatedAt: string
-  primary: DailyRecommendationAction; supporting: DailyRecommendationAction[]
-  training: DailyTraining
-  evidence: { food: DataAvailability; water: DataAvailability; workout: DataAvailability; checkIn: DataAvailability }
-}
+import type { DailyRecommendation, DailyRecommendationAction, DataAvailability } from './dailyRecommendationTypes'
+import type { TodayActivities, TodayActivity } from './todayActivityTypes'
+export type { DailyRecommendation, DailyRecommendationAction, DataAvailability } from './dailyRecommendationTypes'
 
 // This coordinates existing decisions. It does not calculate a health score or change doses.
-export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: DailyScheduleState): DailyRecommendation {
+export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: DailyScheduleState, prepared?: { today: TodayActivities; presented: TodayActivity[] }): DailyRecommendation {
   const food: DataAvailability = logic.nutrition.dataStatus === 'needs_input' ? 'not_logged' :
     logic.nutrition.calories.percent >= 95 && logic.nutrition.protein.percent >= 90 ? 'confirmed' : 'partial'
   const water: DataAvailability = logic.hydration.status === 'needs_input' ? 'not_logged' :
@@ -29,8 +22,8 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   const workout: DataAvailability = logic.execution.workoutComplete ? 'completed' : logic.execution.workoutInProgress ? 'partial' : 'not_logged'
   const checkIn: DataAvailability = logic.assessments.dailyCompleted ? 'completed' : 'not_logged'
   const emptyWorkoutDay = ['rest', 'unavailable'].includes(logic.workoutDecision.assignedWorkout?.workout_state)
-  const today = buildTodayActivities(logic, schedule)
-  const presented = presentTodayActivities(logic, schedule, today.activities)
+  const today = prepared?.today || buildTodayActivities(logic, schedule)
+  const presented = prepared?.presented || presentTodayActivities(logic, schedule, today.activities)
   const recovery = logic.execution.recoveryEvidence ? getRecoveryPresentation({ evidence: logic.execution.recoveryEvidence, schedule }) : null
   const recoveryDue = presented.some(activity => activity.id === 'recovery')
   const nutritionPacing = logic.nutrition.pacing

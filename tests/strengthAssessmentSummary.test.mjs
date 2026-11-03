@@ -25,5 +25,5 @@ test('current shared assessment sections use the same status and do not duplicat
   const month=readFileSync('app/dashboard/assessment/monthly/page.tsx','utf8')
   assert.match(month,/<StrengthAssessmentSummary status=\{strength\} client=\{client\}/)
   assert.match(month,/due\.filter\(item => item\.id !== 'strength'\)/)
-  for(const file of ['components/workout-dashboard/WorkoutDashboard.tsx','components/program-dashboard/TierAwareDashboardWorkspace.tsx'])assert.match(readFileSync(file,'utf8'),/previousDraft\.href/)
+  for(const file of ['components/workout-dashboard/WorkoutDashboard.tsx','components/program-dashboard/DashboardDetailPanels.tsx'])assert.match(readFileSync(file,'utf8'),/previousDraft\.href/)
 })

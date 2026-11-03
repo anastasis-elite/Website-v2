@@ -10,6 +10,7 @@ import { importTs } from './typescriptModule.mjs'
 
 const require = createRequire(import.meta.url)
 const activities = await importTs('lib/dashboard/todayActivities.ts')
+const { buildTodayViewModel } = await importTs('lib/dashboard/buildTodayViewModel.ts')
 const recommendations = await importTs('lib/dashboard/dailyRecommendation.ts')
 const timezone = await importTs('lib/timezone.ts')
 const scheduleTime = await importTs('lib/schedule/time.ts')
@@ -63,7 +64,7 @@ const fixture = (tier = 'ignite') => ({ program: tier, client: { id: 'QA-ONLY', 
   workout: { assigned: true, title: 'Assigned plan' }, workoutDecision: { canTrain: true, adjustmentLevel: 'level_0_full_plan', reasonForModification: 'Your assigned plan is available.' },
   symptoms: { redFlag: false }, recoveryStatus: { reasoning: 'Review existing guidance.' } })
 const schedule = () => ({ date: '2026-10-13', timezone: 'America/Chicago', now: '2026-10-13T13:00:00Z', events: [], nextActionableEvent: null, dailyGuide: { date: '2026-10-13', activities: {} } })
-const render = (logic, state = schedule()) => renderToStaticMarkup(React.createElement(Today, { logic, schedule: state }))
+const render = (logic, state = schedule()) => renderToStaticMarkup(React.createElement(Today, { logic, schedule: { ...state, todayViewModel: buildTodayViewModel(logic, state) } }))
 
 test('compact Plan tiles remain whole image-and-content links without arrows and with unchanged destinations', () => {
   for (const tier of ['ember', 'ignite', 'phoenix']) {

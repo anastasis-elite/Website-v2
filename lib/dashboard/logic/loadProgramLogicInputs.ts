@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { mergeDailySymptoms } from '@/lib/dashboard/dailySignals'
 import type { ProgramLogicInputs, ProgramTier } from './types'
 import { getSleepStatusForDashboard } from '@/lib/sleep/getSleepStatusForDashboard'
@@ -8,6 +10,7 @@ import { getClientTimeZone, recordLocalDate, getClientLocalDateOffset, addLocalD
 import { loadWorkoutHistory, workoutLocalDate } from '@/lib/workout/history'
 import { getStrengthAssessmentStatus } from '@/lib/assessment/getStrengthAssessmentStatus'
 import { recordedHistoryMacros } from '@/lib/nutrition/todayPacing'
+import type { DashboardRequestReads } from '@/lib/dashboard/requestReads'
 
 function nullableNumber(value: unknown) {
   if (value === null || value === undefined || value === '') return null
@@ -55,10 +58,12 @@ function mapMetricsByType(rows: any[] | null) {
 export async function loadProgramLogicInputs({
   supabase, user, client, program, dailyPlan, cycleStatus, cycleAdjustment,
   plannedWorkout, plannedExercises, monthlyAssessmentsDueCount,
+  requestReads,
 }: {
   supabase: any; user: any; client: any; program: ProgramTier; dailyPlan: any
   cycleStatus: any; cycleAdjustment: any; plannedWorkout: any
   plannedExercises: any[]; monthlyAssessmentsDueCount: number
+  requestReads?: DashboardRequestReads
 }): Promise<ProgramLogicInputs> {
   const today = getClientLocalDateOffset(client)
   const yesterday = getClientLocalDateOffset(client, -1)
@@ -88,7 +93,7 @@ export async function loadProgramLogicInputs({
     supabase.from('nutrition_logs').select('*').eq('client_id', client.client_id).gte('log_date', fourteenDaysAgo).lte('log_date', today).order('log_date'),
     loadWorkoutHistory({ supabase, client, startDate: ninetyDaysAgo, endDateExclusive: addLocalDays(today, 1), authUserId: user.id, limit: 100 }),
     supabase.from('assessments').select('*').eq('client_id', client.client_id).eq('assessment_type', 'strength').order('submitted_at', { ascending: false }).limit(5),
-    supabase.from('assessments').select('*').eq('client_id', client.client_id).eq('assessment_type', 'initial').order('submitted_at', { ascending: false }).limit(1).maybeSingle(),
+    requestReads ? requestReads.readLatestInitialAssessment({ supabase, clientId: client.client_id }) : supabase.from('assessments').select('*').eq('client_id', client.client_id).eq('assessment_type', 'initial').order('submitted_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('measurement_logs').select('*').eq('client_id', client.client_id).order('log_date', { ascending: false }).limit(2),
     supabase.from('assessment_photos').select('*').eq('client_id', client.client_id).order('uploaded_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('phoenix_daily_task_completions').select('task_id').eq('user_id', user.id).eq('client_id', client.client_id).eq('log_date', today),

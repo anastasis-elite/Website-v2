@@ -36,7 +36,7 @@ runInNewContext(code, { module, exports: module.exports, require(name) {
   return require(name)
 } })
 const Card = module.exports.default
-const render = (flame, props = {}) => renderToStaticMarkup(React.createElement(Card, { flame, expectedDate: date, now, timezone, ...props }))
+const render = (flame, props = {}) => renderToStaticMarkup(React.createElement(Card, { progress: summary(flame), ...props }))
 
 test('required-only progress reads the actual tier engine flags rather than activity counts', () => {
   for (const [tier, count] of [['ember', 4], ['ignite', 5], ['phoenix', 6]]) {

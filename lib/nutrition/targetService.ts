@@ -1,4 +1,7 @@
+import 'server-only'
+
 import { calculateNutritionTargets, inchesToCm, poundsToKg, type NutritionTargetResult, type WearableDayInput } from './targetEngine'
+import type { DashboardRequestReads } from '@/lib/dashboard/requestReads'
 
 type QueryResult<T> = { data: T | null; error?: { message: string } | null }
 
@@ -181,11 +184,13 @@ export async function calculateClientNutritionTargets({
   clientId,
   program,
   failOnReadError = false,
+  requestReads,
 }: {
   supabase: SupabaseReader
   clientId: string
   program?: string
   failOnReadError?: boolean
+  requestReads?: DashboardRequestReads
 }) {
   const now = new Date()
   const startDate = dateOffset(21, now)
@@ -206,7 +211,7 @@ export async function calculateClientNutritionTargets({
       .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
-    table<AssessmentRow>(supabase, 'assessments')
+    requestReads ? requestReads.readLatestInitialAssessment({ supabase, clientId }) : table<AssessmentRow>(supabase, 'assessments')
       .select('*')
       .eq('client_id', clientId)
       .eq('assessment_type', 'initial')

@@ -51,10 +51,10 @@ const { getDailyScheduleState } = await importTs('lib/schedule/service.ts', {
   '@/lib/calendar/service': 'export const importedScheduleEvents = () => globalThis.scheduleStartupFixture.read("calendar")',
   '@/lib/day/getDailyExecutionPlan': 'export const getDailyExecutionPlan = async () => { globalThis.scheduleStartupFixture.dailyPlanReads++; return globalThis.scheduleStartupFixture.dailyPlan }',
   '@/lib/dashboard/logic/getProgramLogicForClient': 'export const getProgramLogicForClient = async ({ dailyPlan }) => { globalThis.scheduleStartupFixture.logicPlan = dailyPlan; return {} }',
-  '@/lib/schedule/dailyPlanAdapter': 'export const dailyPlanToScheduleEvents = () => []; export const recurringCommitmentsToEvents = () => []',
-  '@/lib/schedule/engine': 'export const buildNextAction = () => null; export const buildDailyScheduleState = args => ({...args, now: args.now.toISOString(), openWindows: [{ minutes: 60 }], adjustments: [{ event_id: "test" }], nextAction: { can_defer: true }})',
-  '@/lib/dashboard/todayActivities': 'export const buildTodayActivities = () => ({ activities: [] }); export const readDailyGuide = () => undefined',
-  '@/lib/dashboard/dailyRecommendation': 'export const buildDailyRecommendation = () => ({primary: {id: "check-in", title: "Daily check-in", category: "check_in", reason: "Start with you", href: "/dashboard/check-in"}})',
+  './dailyPlanAdapter': 'export const dailyPlanToScheduleEvents = () => []; export const fixedCommitmentsForDate = () => []',
+  './engine': 'export const buildNextAction = () => null; export const buildDailyScheduleState = args => ({...args, now: args.now.toISOString(), openWindows: [{ minutes: 60 }], adjustments: [{ event_id: "test" }], nextAction: { can_defer: true }})',
+  '@/lib/dashboard/todayActivities': 'export const readDailyGuide = () => undefined',
+  '@/lib/dashboard/buildTodayViewModel': 'export const buildTodayViewModel = () => ({today: {activities: [], completed: 0, total: 0}, recommendation: {primary: {id: "check-in", title: "Daily check-in", category: "check_in", reason: "Start with you", href: "/dashboard/check-in"}}})',
 })
 
 function scheduleFixture() {
@@ -78,7 +78,7 @@ test('independent schedule sources start together and reuse the already-loaded d
   const fixture = scheduleFixture()
   const result = getDailyScheduleState({ ...scheduleArgs, supabase: fixture.db, dailyPlan: fixture.dailyPlan })
   await new Promise(setImmediate)
-  assert.deepEqual(new Set(fixture.started), new Set(['anastasis_schedule_events', 'client_schedule_blocks', 'calendar']))
+  assert.deepEqual(new Set(fixture.started), new Set(['anastasis_schedule_events', 'client_schedule_blocks', 'calendar', 'schedule_occurrence_checkoffs']))
   assert.equal(fixture.dailyPlanReads, 0)
   for (const source of fixture.started) fixture.finish(source)
   const state = await result
@@ -91,7 +91,7 @@ test('a stalled optional calendar cannot block daily actions or claim conflict-f
   const fixture = scheduleFixture()
   const result = getDailyScheduleState({ ...scheduleArgs, supabase: fixture.db, dailyPlan: fixture.dailyPlan, sourceTimeoutMs: 20 })
   await new Promise(setImmediate)
-  fixture.finish('anastasis_schedule_events'); fixture.finish('client_schedule_blocks')
+  fixture.finish('anastasis_schedule_events'); fixture.finish('client_schedule_blocks'); fixture.finish('schedule_occurrence_checkoffs')
   const state = await result
   assert.deepEqual(state.unavailableSources, ['calendar'])
   assert.deepEqual(state.openWindows, [])
