@@ -26,6 +26,7 @@ import type { CanonicalMuscle } from '@/lib/workout-os/types'
 import type { SelectedExercisePrescription, SessionEquipmentContext } from '@/lib/workout/selectedPrescriptionTypes'
 import { MANUAL_CARDIO_OPTIONS, MANUAL_CARDIO_DAY_NAME, createManualCardioExercise, isManualCardioExercise, type ManualCardioExercise } from '@/lib/workout/manualCardio'
 import { getClientLocalDate } from '@/lib/timezone'
+import { confirmedManualSummary, summaryContainsSavedExercises, type ManualSaveEvidence, type ManualWorkoutSummary } from '@/lib/workout/manualFinish'
 import styles from './ManualSelectionDialog.module.css'
 
 type Props = {
@@ -43,7 +44,7 @@ type Props = {
   onExerciseBlur?: () => void
 }
 
-type Step = 'muscle' | 'equipment' | 'exercise' | 'cardio' | 'logging' | 'complete'
+type Step = 'muscle' | 'equipment' | 'exercise' | 'cardio' | 'logging' | 'complete' | 'finished'
 type ActiveExercise = (ManualWorkoutExercise | ManualCardioExercise) & {
   catalogExerciseId?: string
   prescription?: Readonly<SelectedExercisePrescription>
@@ -51,6 +52,7 @@ type ActiveExercise = (ManualWorkoutExercise | ManualCardioExercise) & {
   recommendationMessage?: string
   recommendationSetupHref?: string
   equipmentContext?: Readonly<SessionEquipmentContext>
+  saveEvidence?: ManualSaveEvidence
 }
 
 const sessionEquipment = ['cable', 'machine', 'dumbbell', 'barbell', 'kettlebell', 'bodyweight'] as const
@@ -116,6 +118,10 @@ export default function ManualWorkoutBuilder({
   const [blocked, setBlocked] = useState(false)
   const [setupHref, setSetupHref] = useState<string | undefined>()
   const [pendingExercise, setPendingExercise] = useState<ManualWorkoutExercise | null>(null)
+  const [savedSummary, setSavedSummary] = useState<ManualWorkoutSummary | null>(null)
+  const [checkingSaved, setCheckingSaved] = useState(false)
+  const [finishing, setFinishing] = useState(false)
+  const [finishError, setFinishError] = useState('')
   const dialog = useRef<HTMLDialogElement>(null)
   const dialogHeading = useRef<HTMLHeadingElement>(null)
   const mapContainer = useRef<HTMLDivElement>(null)
@@ -123,8 +129,17 @@ export default function ManualWorkoutBuilder({
   const requestRevision = useRef(0)
   const request = useRef<AbortController | null>(null)
   const mounted = useRef(true)
+  const summaryRequest = useRef<AbortController | null>(null)
+  const summaryRevision = useRef(0)
+  const finishLock = useRef(false)
+  const interactionRevision = useRef(0)
+  const activeRef = useRef(activeExercise)
+  const stepRef = useRef(step)
+  const completedRef = useRef(completedExercises)
+  activeRef.current = activeExercise; stepRef.current = step; completedRef.current = completedExercises
   const dialogId = useId()
-  const draftKey = `aos-manual-builder:v1:${clientId}:${program}:${getClientLocalDate({ timezone })}`
+  const sessionDate = getClientLocalDate({ timezone })
+  const draftKey = `aos-manual-builder:v1:${clientId}:${program}:${sessionDate}`
   const contextKey = `${authUserId}:${draftKey}`
   const currentContext = useRef(contextKey)
   currentContext.current = contextKey
@@ -135,9 +150,14 @@ export default function ManualWorkoutBuilder({
     request.current?.abort()
     request.current = null
   }
+  function invalidateSummary() {
+    summaryRevision.current++; summaryRequest.current?.abort(); summaryRequest.current = null; finishLock.current = false
+  }
   useEffect(() => {
     mounted.current = true
     invalidateRequest()
+    invalidateSummary(); interactionRevision.current++
+    setSavedSummary(null); setCheckingSaved(false); setFinishing(false); setFinishError('')
     dialog.current?.close()
     setLoading(false); setSelectionError(''); setBlocked(false); setSetupHref(undefined); setPendingExercise(null)
     setStep('muscle'); setActiveExercise(null); setCompletedExercises([])
@@ -162,13 +182,66 @@ export default function ManualWorkoutBuilder({
       }
     } catch { /* A damaged local draft must not prevent a new manual workout. */ }
     setRestoredDraftKey(draftKey)
-    return () => { mounted.current = false; invalidateRequest() }
+    return () => { mounted.current = false; invalidateRequest(); invalidateSummary() }
   }, [draftKey, authUserId, trackingOnly])
   useEffect(() => {
     if (!draftLoaded) return
     try { localStorage.setItem(draftKey, JSON.stringify({ version: 1, activeExercise, completedExercises })) }
     catch { setDraftMessage('This browser could not retain the manual workout view. Your saved sets remain in workout history.') }
   }, [draftKey, draftLoaded, activeExercise, completedExercises])
+  useEffect(() => {
+    // Open after the selected muscle/equipment heading has committed, so the
+    // existing dialog announces the current selection instead of stale data.
+    if (step !== 'equipment' || !selectedRegionId || !dialog.current || dialog.current.open) return
+    dialog.current.showModal()
+    dialogHeading.current?.focus()
+  }, [step, selectedRegionId])
+  useEffect(() => {
+    if (!draftLoaded) return
+    void verifySavedWorkout(false)
+    // A fresh owner/day context is the only automatic restoration trigger.
+    // User interaction and active drafts always win over a pending read.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextKey, draftLoaded])
+
+  async function verifySavedWorkout(final: boolean) {
+    if (finishLock.current || final && activeRef.current) return
+    if (getClientLocalDate({ timezone }) !== sessionDate) { setFinishError('A new day has started. Reopen Workout to review the saved day.'); return }
+    invalidateSummary()
+    const revision = summaryRevision.current, startedContext = currentContext.current, interaction = interactionRevision.current
+    const expected = [...completedRef.current]
+    const controller = new AbortController(); summaryRequest.current = controller
+    if (final) { finishLock.current = true; setFinishing(true) } else setCheckingSaved(true)
+    setFinishError('')
+    const current = () => mounted.current && summaryRevision.current === revision && currentContext.current === startedContext
+    try {
+      const response = await fetch(`/api/workout-log?${new URLSearchParams({ manualSummary: '1', clientId, date: sessionDate, program })}`, {
+        method: 'GET', credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
+      })
+      const value = await response.json().catch(() => null)
+      if (!current()) return
+      if (getClientLocalDate({ timezone }) !== sessionDate) throw new Error('day_changed')
+      if (!response.ok || !confirmedManualSummary(value, { clientId, authUserId, program, date: sessionDate }) ||
+        !summaryContainsSavedExercises(value, expected)) throw new Error('unconfirmed')
+      if (!value.sessions.length) {
+        if (final || expected.length) throw new Error('unconfirmed')
+        setSavedSummary(null); return
+      }
+      setSavedSummary(value)
+      if (final || interactionRevision.current === interaction && !activeRef.current && ['muscle', 'complete', 'finished'].includes(stepRef.current)) {
+        setStep('finished'); onExerciseBlur?.()
+      }
+    } catch (error) {
+      if (current()) {
+        setSavedSummary(null)
+        setFinishError(error instanceof Error && error.message === 'day_changed'
+          ? 'A new day has started. Reopen Workout to review the saved day.'
+          : 'Your saved workout could not be confirmed. Your draft and history are unchanged. Retry checking the saved records.')
+      }
+    } finally {
+      if (current()) { summaryRequest.current = null; finishLock.current = false; setFinishing(false); setCheckingSaved(false) }
+    }
+  }
 
   const selectedMuscles = useMemo(() => regionToMuscles(selectedRegionId), [selectedRegionId])
   const primaryMuscle = selectedMuscles[0]
@@ -200,22 +273,27 @@ export default function ManualWorkoutBuilder({
     invalidateRequest(); setLoading(false); setSelectionError(''); setBlocked(false); setSetupHref(undefined); setPendingExercise(null)
   }
   function resetSelection(nextStep: Step = 'muscle') {
+    interactionRevision.current++
+    setFinishError('')
     clearPending(); dialog.current?.close()
     setSelectedRegionId(null); setSelectedEquipment(null); setEquipmentMode('saved'); setSelectedMovementFamily(null); setActiveExercise(null)
     setStep(nextStep); onExerciseBlur?.()
   }
   function dismissSelection() {
+    interactionRevision.current++
     clearPending(); dialog.current?.close(); setStep('muscle')
     setSelectedRegionId(null); setSelectedEquipment(null); setEquipmentMode('saved'); setSelectedMovementFamily(null)
     onExerciseBlur?.()
   }
-  function chooseRegion(regionId: MuscleId) {
+  function chooseRegion(regionId: MuscleId, source?: HTMLElement | SVGElement) {
     if (step === 'logging' && activeExercise) return
+    if (finishing) return
+    interactionRevision.current++
+    setFinishError('')
     clearPending()
-    trigger.current = document.activeElement as HTMLElement | SVGElement | null
+    trigger.current = source || document.activeElement as HTMLElement | SVGElement | null
     setSelectedRegionId(regionId); setSelectedEquipment(null); setEquipmentMode('saved'); setSelectedMovementFamily(null); setStep('equipment')
     onExerciseFocus?.(getBilateralMuscleIds(regionId))
-    dialog.current?.showModal(); dialogHeading.current?.focus()
   }
   function chooseEquipment(equipment: string) {
     if (!(equipmentMode === 'session' ? otherEquipment : availableEquipment).includes(equipment)) return
@@ -253,6 +331,8 @@ export default function ManualWorkoutBuilder({
       ? { source: 'session_override', equipment: selectedEquipment as SessionEquipmentContext['equipment'], variantId } : undefined
   }
   function openCardio(button: HTMLButtonElement) {
+    if (finishing) return
+    interactionRevision.current++
     clearPending(); trigger.current = button
     setSelectedRegionId(null); setSelectedEquipment(null); setEquipmentMode('saved'); setSelectedMovementFamily(null); setCardioUnit('minutes'); setStep('cardio')
     onExerciseBlur?.(); dialog.current?.showModal(); dialogHeading.current?.focus()
@@ -292,8 +372,10 @@ export default function ManualWorkoutBuilder({
       if (current()) { setSelectionError('Recommendation could not be loaded. Retry, or continue with manual logging without guidance.'); setBlocked(false) }
     } finally { if (current()) { setLoading(false); request.current = null } }
   }
-  function finishExercise(completed = true) {
-    if (activeExercise) setCompletedExercises(previous => [...previous, { ...activeExercise, completion_status: completed ? 'Complete' : 'Partial exercise saved' }])
+  function finishExercise(completed = true, evidence?: ManualSaveEvidence) {
+    if (!mounted.current || currentContext.current !== contextKey || getClientLocalDate({ timezone }) !== sessionDate || activeRef.current?.id !== activeExercise?.id) return
+    invalidateSummary(); interactionRevision.current++; setSavedSummary(null); setCheckingSaved(false); setFinishError('')
+    if (activeExercise) setCompletedExercises(previous => [...previous, { ...activeExercise, ...(evidence ? { saveEvidence: evidence } : {}), completion_status: completed ? 'Complete' : 'Partial exercise saved' }])
     setActiveExercise(null); setStep('complete'); onExerciseBlur?.()
   }
 
@@ -301,6 +383,24 @@ export default function ManualWorkoutBuilder({
 
   return <div className={`manual-workout-builder${step === 'logging' ? ' manual-workout-builder--logging' : ''}`} data-testid="manual-workout-builder">
     {draftMessage ? <p role="status">{draftMessage}</p> : null}
+    {checkingSaved ? <p role="status">Checking your saved manual workout…</p> : null}
+    {checkingSaved || finishing ? <button type="button" onClick={() => { invalidateSummary(); setCheckingSaved(false); setFinishing(false); interactionRevision.current++ }}>Cancel check</button> : null}
+    {finishError ? <div role="alert"><p>{finishError}</p>{!activeExercise ? <button type="button" disabled={finishing || checkingSaved} onClick={() => { void verifySavedWorkout(true) }}>Retry saved workout</button> : null}</div> : null}
+    {step === 'finished' && savedSummary ? <section className="daily-plan-card phone-app-session-summary" role="status" aria-live="polite" data-testid="manual-workout-finished">
+      <p className="phone-app-eyebrow">Saved manual workout · {savedSummary.date}</p>
+      <h3>{savedSummary.completed ? 'Workout saved' : 'Partial workout saved'}</h3>
+      <p>{savedSummary.completed ? 'A saved session meets the existing workout checkoff threshold.' : 'Your recorded work is saved as partial. Finishing does not add completed credit.'}</p>
+      <p>This confirmation comes from your saved records. No extra exercise or workout entry was added.</p>
+      {savedSummary.sessions.map(session => <details key={session.id}><summary>{session.dayName} · {session.completed ? 'Checkoff threshold met' : 'Partial saved session'}</summary>
+        <p>Last saved: {new Date(session.updatedAt).toLocaleString(undefined, { timeZone: timezone })}</p>
+        {session.progress.totalSets > 0 && session.exercises.every(exercise => exercise.kind === 'strength') ? <p>{session.progress.completedSets} of {session.progress.totalSets} original prescribed sets recorded · {session.progress.requiredSets} needed for checkoff.</p> : null}
+        {session.exercises.map(exercise => <article key={exercise.id}><h4>{exercise.name}</h4>
+          {exercise.kind === 'strength' ? <>{exercise.setLogs.length ? exercise.setLogs.map((set, index) => <p key={`${set.setNumber}:${index}`}>Set {set.setNumber}: {set.reps} reps · {set.weight} {set.unit}</p>) : <p>Individual set details are unavailable in this saved record.</p>}</>
+            : exercise.duration !== null && exercise.durationUnit ? <p>Recorded duration: {exercise.duration} {exercise.durationUnit}</p> : <p>Saved activity record; no duration is confirmed.</p>}
+        </article>)}
+      </details>)}
+      <div className="manual-session-actions"><Link href="/dashboard" className="manual-primary-button">Back to Today</Link><button type="button" className="manual-secondary-button" onClick={() => resetSelection('muscle')}>Add another exercise</button></div>
+    </section> : null}
     {step === 'logging' && activeExercise ? <WorkoutTracker
       key={`${draftKey}:${exerciseKey(activeExercise, completedExercises.length)}`}
       clientId={clientId} authUserId={authUserId} program={program} timezone={timezone} weightUnit={weightUnit}
@@ -308,7 +408,7 @@ export default function ManualWorkoutBuilder({
       onExerciseFocus={exercise => onExerciseFocus?.(getMuscleIdsForExercise(exercise))} onExerciseBlur={onExerciseBlur}
       onManualExerciseFinished={finishExercise}
       onManualRecommendationReset={() => resetSelection('muscle')}
-    /> : <>
+    /> : step !== 'finished' ? <>
       <div className="manual-workout-summary"><div><p className="tier-dashboard-label">Manual Workout</p>
         <h3>{step === 'complete' ? 'Session in progress' : trackingOnly ? 'Choose an exercise to log' : 'Choose from readiness'}</h3>
       </div>{!trackingOnly ? <small>Plan preserved: {recommendedDayName}</small> : null}</div>
@@ -317,17 +417,19 @@ export default function ManualWorkoutBuilder({
           <strong>{isCardio(exercise) ? exercise.exercise : exercise.display_name}</strong><small>{String(exercise.completion_status || 'Saved')} · {summarizeExercise(exercise)}</small>
         </div></li>)}
       </ol> : null}
-      <button type="button" className="manual-secondary-button" onClick={event => openCardio(event.currentTarget)}>Add cardio</button>
-      {step === 'complete' ? <div className="manual-session-actions">
-        <button type="button" className="manual-primary-button" onClick={() => resetSelection('muscle')}>Add another exercise</button>
-        <button type="button" className="manual-secondary-button" onClick={() => resetSelection('complete')}>Finish workout</button>
+      <button type="button" className="manual-secondary-button" disabled={finishing} onClick={event => openCardio(event.currentTarget)}>Add cardio</button>
+      {step === 'complete' || step === 'muscle' && completedExercises.length > 0 ? <div className="manual-session-actions">
+        <button type="button" className="manual-primary-button" disabled={finishing} onClick={() => resetSelection('muscle')}>Add another exercise</button>
+        <button type="button" className="manual-secondary-button" disabled={finishing} onClick={() => { void verifySavedWorkout(true) }}>{finishing ? 'Checking saved workout…' : 'Finish workout'}</button>
+        <p>Finish checks the saved records before confirming this workout.</p>
       </div> : null}
-    </>}
+      {step === 'muscle' && savedSummary ? <button type="button" disabled={finishing} onClick={() => { void verifySavedWorkout(true) }}>Review saved workout</button> : null}
+    </> : null}
     <div ref={mapContainer} className={styles.readinessMap} data-testid="manual-readiness-map">
       <p className={styles.readinessNote}>Readiness is estimated from saved training and recovery records. Save your activity or return to this page to see updated records.</p>
       <MuscleReadinessMap key={contextKey} readiness={readiness} selectedMuscleId={selectedRegionId}
         highlightedMuscleIds={activeExercise ? getMuscleIdsForExercise(activeExercise) : []}
-        onChooseExercises={chooseRegion} exerciseSelectionDisabled={step === 'logging' && Boolean(activeExercise)}
+        onChooseExercises={chooseRegion} exerciseSelectionDisabled={finishing || step === 'logging' && Boolean(activeExercise)}
         heading="Readiness and exercises" eyebrow={trackingOnly ? 'Manual selection' : 'Readiness from your logs'} />
     </div>
 

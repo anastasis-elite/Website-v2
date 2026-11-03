@@ -170,7 +170,7 @@ export default function MuscleReadinessMap({
   highlightedMuscleIds?: MuscleId[]
   selectedMuscleId?: MuscleId | null
   onSelectMuscle?: (muscleId: MuscleId) => void
-  onChooseExercises?: (muscleId: MuscleId) => void
+  onChooseExercises?: (muscleId: MuscleId, trigger?: HTMLElement | SVGElement) => void
   exerciseSelectionDisabled?: boolean
   heading?: string
   eyebrow?: string
@@ -180,8 +180,8 @@ export default function MuscleReadinessMap({
   const [hoveredId, setHoveredId] = useState<MuscleId | null>(null)
   const [view, setView] = useState<'front' | 'posterior'>(() => MUSCLE_REGIONS.find(region => region.id === selectedMuscleId)?.view || 'front')
   const byId = useMemo(() => new Map(readiness.map((item) => [item.muscleId, item])), [readiness])
-  // In the combined map, inspection stays per side. The exercise choice is a
-  // separate action and can still highlight the bilateral selection.
+  // Focus/hover inspection stays per side. Activating a region chooses its
+  // bilateral exercise flow, unless an existing exercise is still open.
   const selectedId = onChooseExercises ? internalSelectedId : selectedMuscleId ?? internalSelectedId
   const selectedDefinition = MUSCLE_REGIONS.find(region => region.id === selectedId)
   const visibleSelectedId = selectedDefinition && muscleRegionIsVisible(selectedDefinition, view) ? selectedId : null
@@ -196,7 +196,12 @@ export default function MuscleReadinessMap({
   const highlighted = new Set(highlightedMuscleIds)
   const activePresentation = active ? getMuscleReadinessPresentation(active.state) : null
 
-  function selectMuscle(regionId: MuscleId) {
+  function selectMuscle(regionId: MuscleId, trigger?: HTMLElement | SVGElement) {
+    if (onChooseExercises && !exerciseSelectionDisabled) {
+      setInternalSelectedId(regionId)
+      onChooseExercises(regionId, trigger)
+      return
+    }
     if (!onChooseExercises && onSelectMuscle) {
       onSelectMuscle(regionId)
       return
@@ -245,14 +250,15 @@ export default function MuscleReadinessMap({
                 role="button"
                 aria-label={`${region.label}: ${stateLabels[state]}`}
                 aria-pressed={selectedIds.has(region.id)}
+                aria-haspopup={onChooseExercises && !exerciseSelectionDisabled ? 'dialog' : undefined}
                 data-muscle-id={region.id}
                 data-exercise-selected={exerciseSelectedIds.has(region.id) ? 'true' : undefined}
                 onMouseEnter={() => setHoveredId(region.id)}
                 onMouseLeave={() => setHoveredId(null)}
                 onFocus={() => setHoveredId(region.id)}
                 onBlur={() => setHoveredId(null)}
-                onClick={() => selectMuscle(region.id)}
-                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectMuscle(region.id) } }}
+                onClick={event => selectMuscle(region.id, event?.currentTarget)}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (!event.repeat) selectMuscle(region.id, event.currentTarget) } }}
               />
             )
           })}
@@ -284,9 +290,9 @@ export default function MuscleReadinessMap({
       </div>
       {onChooseExercises ? <div className="workout-map-exercise-choice">
         {visibleSelectedId && selectedDefinition ? <button type="button" className="manual-primary-button" disabled={exerciseSelectionDisabled}
-          onClick={() => onChooseExercises(visibleSelectedId)}>
+          onClick={event => onChooseExercises(visibleSelectedId, event?.currentTarget)}>
           Choose exercises for {selectedDefinition.label.replace(/^(Left|Right) /, '')}{selectedDefinition.side === 'center' ? '' : ' · both sides'}
-        </button> : <p>Select a muscle to inspect its readiness, then choose exercises.</p>}
+        </button> : <p>{exerciseSelectionDisabled ? 'Select a muscle to inspect its readiness.' : 'Select a muscle to choose equipment and exercises. Focus or hover to inspect readiness.'}</p>}
         {exerciseSelectionDisabled ? <p role="status">Your active exercise stays open. Inspect readiness here; finish that exercise before choosing another.</p>
           : <p>Exercise choices use the more cautious readiness of both matching sides.</p>}
       </div> : null}

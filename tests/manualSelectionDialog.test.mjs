@@ -15,21 +15,24 @@ const json = (value, ok = true) => ({ ok, json: async () => value })
 const prescription = (call, patch = {}) => ({ status: 'available', prescription: { exerciseId: call.body.exerciseId, variantId: call.body.variantId,
   sets: 4, reps: 8, weightLb: 17.5, loadType: 'per_hand', version: 'founder-selected-v1',
   ...(call.body.equipmentContext ? { equipmentContext: call.body.equipmentContext } : {}), ...patch } })
-const clock = Date.parse('2026-11-02T18:00:00Z')
+let clock = Date.parse('2026-11-02T18:00:00Z')
 class FixedDate extends Date { constructor(...args) { super(...(args.length ? args : [clock])) } static now() { return clock } }
 
 function harness(overrides = {}, initialStorage = new Map()) {
-  const states = [], refs = [], effects = [], memo = [], modules = new Map(), storage = initialStorage, calls = [], focused = []
+  const states = [], mapStates = [], refs = [], effects = [], memo = [], modules = new Map(), storage = initialStorage, calls = [], summaryCalls = [], focused = [], headingFocusTexts = []
+  let renderingMap = false, mapStateIndex = 0
   let stateIndex = 0, refIndex = 0, effectIndex = 0, dirty = false, queued = [], tree, dialogNode, sends = 0
   let props = { clientId: 'synthetic-client', authUserId: 'synthetic-owner', program: 'ignite', timezone: 'America/Chicago', weightUnit: 'lb',
     recommendedDayName: 'Monday', recommendedExercises: [{ id: 'original-plan' }], memberEquipment: ['dumbbells'], readiness: [],
     onExerciseFocus: ids => focused.push(ids), ...overrides }
   let send = async call => json(prescription(call))
+  let summarySend = async () => json({ version: 1, clientId: props.clientId, authUserId: props.authUserId, program: props.program, date: '2026-11-02', sessions: [], completed: false })
   const activeElement = { focusReturns: 0, focus() { this.focusReturns++ } }
   const react = {
     useId: () => 'manual-selection',
-    useState(initial) { const index = stateIndex++;if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial
-      return [states[index], value => { const next = typeof value === 'function' ? value(states[index]) : value;if (!Object.is(next, states[index])) { states[index] = next;dirty = true } }] },
+    useState(initial) { const values = renderingMap ? mapStates : states, index = renderingMap ? mapStateIndex++ : stateIndex++
+      if (!(index in values)) values[index] = typeof initial === 'function' ? initial() : initial
+      return [values[index], value => { const next = typeof value === 'function' ? value(values[index]) : value;if (!Object.is(next, values[index])) { values[index] = next;dirty = true } }] },
     useRef(initial) { return refs[refIndex++] ||= { current: initial } },
     useMemo(callback) { return callback() },
     useEffect(callback, dependencies) { const index = effectIndex++, prior = effects[index]
@@ -38,7 +41,7 @@ function harness(overrides = {}, initialStorage = new Map()) {
       }
     },
   }
-  const nativeDialog = { open: false, showModal() { this.open = true }, close() { if (!this.open) return;this.open = false;dialogNode?.props.onClose() } }
+  const nativeDialog = { open: false, shows: 0, showModal() { this.shows++;this.open = true }, close() { if (!this.open) return;this.open = false;dialogNode?.props.onClose() } }
   function load(path) {
     path = resolve(path)
     if (modules.has(path)) return modules.get(path).exports
@@ -47,9 +50,12 @@ function harness(overrides = {}, initialStorage = new Map()) {
     const code = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: {
       module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
     } }).outputText
-    runInNewContext(code, { module, exports: module.exports, Date: FixedDate, Error, Object, Number, Set, Map, AbortController,
+    runInNewContext(code, { module, exports: module.exports, Date: FixedDate, Error, Object, Number, Set, Map, AbortController, URLSearchParams,
       crypto: { randomUUID }, document: { activeElement }, localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
-      fetch(url, options) { const call = { url, options, body: JSON.parse(options.body) };calls.push(call);sends++;return send(call, sends) },
+      fetch(url, options) {
+        if (options.method === 'GET') { const call = { url, options };summaryCalls.push(call);return summarySend(call) }
+        const call = { url, options, body: JSON.parse(options.body) };calls.push(call);sends++;return send(call, sends)
+      },
       require(name) {
         if (name === 'react') return react
         if (name === 'next/link') return { __esModule: true, default: 'a' }
@@ -77,17 +83,31 @@ function harness(overrides = {}, initialStorage = new Map()) {
       dialogNode = nodes(tree, node => node.type === 'dialog')[0]
       if (dialogNode) dialogNode.ref.current = nativeDialog
       const heading = nodes(tree, node => node.type === 'h2' && node.ref)[0]
-      if (heading) heading.ref.current = { focus() {} }
+      if (heading) heading.ref.current = { focus() { headingFocusTexts.push(text(heading)) } }
       const run = queued;queued = [];run.forEach(callback => callback())
     } while (dirty)
     return tree
   }
   const button = label => nodes(render(), node => node.type === 'button' && text(node) === label)[0]
   const map = () => nodes(render(), node => node.type === 'muscle-map')[0]
+  const MapComponent = load('components/workout-dashboard/MuscleReadinessMap.tsx').default
+  function mapTree() {
+    const props = map().props
+    renderingMap = true;mapStateIndex = 0
+    try { return MapComponent(props) } finally { renderingMap = false }
+  }
+  function activateRegion(id, key, repeat = false) {
+    const region = nodes(mapTree(), node => node.props?.['data-muscle-id'] === id)[0]
+    if (!region) throw new Error(`Missing map region ${id}`)
+    const target = { focusReturns: 0, focus() { this.focusReturns++;region.props.onFocus() } }
+    const event = { currentTarget: target, key, repeat, preventDefault() {} }
+    if (key) region.props.onKeyDown(event);else region.props.onClick(event)
+    render();return target
+  }
   const resultButtons = () => nodes(nodes(render(), node => node.props?.['data-testid'] === 'manual-exercise-results')[0], node => node.type === 'button')
   const tracker = () => nodes(render(), node => node.type === 'tracker')[0]
   return {
-    render, button, calls, storage, focused, nativeDialog, tracker,
+    render, button, calls, summaryCalls, storage, focused, nativeDialog, tracker, mapTree, activateRegion, headingFocusTexts,
     library: load('lib/workout/manualWorkout.ts'), anatomy: load('lib/workout/muscleReadiness.ts'),
     get props() { return props }, get focusReturns() { return activeElement.focusReturns }, get dialog() { render();return dialogNode },
     get draftKey() { return `aos-manual-builder:v1:${props.clientId}:${props.program}:2026-11-02` },
@@ -98,6 +118,7 @@ function harness(overrides = {}, initialStorage = new Map()) {
     async settle() { await new Promise(resolve => setImmediate(resolve));render() },
     filter(value) { nodes(render(), node => node.type === 'select')[0].props.onChange({ target: { value } });render() },
     setSend(fn) { send = fn },
+    setSummarySend(fn) { summarySend = fn },
     setProps(next) { props = { ...props, ...next };render() },
     escape() { let prevented = false;dialogNode.props.onCancel({ preventDefault() { prevented = true } });render();return prevented },
     unmount() { for (const effect of effects) effect?.cleanup?.() },
@@ -301,4 +322,217 @@ test('Add cardio works without a selected muscle and routes duration-only manual
   assert.equal(restored.tracker().props.exercises[0].duration_unit, 'seconds')
   tracker.props.onManualExerciseFinished(false);view.render()
   assert.ok(view.button('Add cardio'));assert.match(text(view.render()), /Partial exercise saved.*Manual cardio/s)
+})
+
+test('actual muscle activation opens the same equipment dialog after the current heading commits, without adding or saving', () => {
+  const view = harness({ readiness: [
+    { muscleId: 'left_pectoralis_major', state: 'ready', readinessScore: 95, reasons: ['Left side ready.'] },
+    { muscleId: 'right_pectoralis_major', state: 'rest', readinessScore: 10, reasons: ['Right side still recovering.'] },
+  ] })
+  view.render();const draftBefore = view.storage.get(view.draftKey)
+  const target = view.activateRegion('left_pectoralis_major')
+  assert.equal(view.nativeDialog.open, true);assert.equal(view.nativeDialog.shows, 1)
+  assert.equal(nodes(view.render(), node => node.type === 'dialog').length, 1)
+  assert.equal(view.headingFocusTexts.at(-1), 'Chest · Choose equipment')
+  assert.match(text(view.dialog), /Right pectoralis major: Right side still recovering/)
+  assert.deepEqual(Array.from(view.focused.at(-1)), ['left_pectoralis_major', 'right_pectoralis_major'])
+  for (const id of ['left_pectoralis_major', 'right_pectoralis_major']) assert.equal(nodes(view.mapTree(), node => node.props?.['data-muscle-id'] === id)[0].props['data-exercise-selected'], 'true')
+  view.chooseEquipment()
+  assert.match(text(view.dialog), /Dumbbell\s+exercises/)
+  assert.equal(nodes(view.render(), node => node.type === 'article').length, view.library.filterManualExercises({ muscles: ['chest'], equipment: ['dumbbell'] }).length)
+  view.button('Back · change equipment').props.onClick();view.render()
+  assert.match(text(view.dialog), /Chest.*Choose equipment/)
+  view.button('Close').props.onClick();view.render()
+  assert.equal(view.nativeDialog.open, false);assert.equal(target.focusReturns, 1)
+  assert.equal(view.nativeDialog.shows, 1, 'Returning focus to the muscle must not reopen the dialog')
+  assert.equal(view.calls.length, 0);assert.equal(view.tracker(), undefined)
+  assert.equal(view.storage.get(view.draftKey), draftBefore)
+})
+
+test('keyboard and repeated real-map selections reopen current muscle data once, while focus and held keys do not open', () => {
+  const view = harness()
+  const region = nodes(view.mapTree(), node => node.props?.['data-muscle-id'] === 'left_biceps')[0]
+  region.props.onFocus();view.render()
+  assert.equal(view.nativeDialog.open, false);assert.equal(view.calls.length, 0)
+  view.activateRegion('left_biceps', 'Enter', true)
+  assert.equal(view.nativeDialog.open, false)
+  const first = view.activateRegion('left_biceps', 'Enter')
+  assert.equal(view.nativeDialog.shows, 1);assert.equal(view.headingFocusTexts.at(-1), 'Biceps · Choose equipment')
+  assert.equal(view.escape(), true);assert.equal(first.focusReturns, 1);assert.equal(view.nativeDialog.open, false)
+  view.activateRegion('left_biceps', ' ')
+  assert.equal(view.nativeDialog.shows, 2);assert.equal(view.headingFocusTexts.at(-1), 'Biceps · Choose equipment')
+  view.chooseEquipment()
+  const replacement = view.activateRegion('right_pectoralis_major')
+  assert.equal(view.nativeDialog.shows, 2, 'A queued newer muscle activation reuses the open dialog')
+  assert.match(text(view.dialog), /Chest.*Choose equipment/)
+  assert.equal(nodes(view.render(), node => node.props?.['data-testid'] === 'manual-exercise-results').length, 0)
+  view.escape();assert.equal(replacement.focusReturns, 1);assert.equal(view.nativeDialog.open, false)
+  assert.equal(view.nativeDialog.shows, 2);assert.equal(view.calls.length, 0)
+})
+
+test('real-map activation inspects an active draft without replacing it, and picker dismissal preserves saved completed exercises', () => {
+  const seed = harness(), source = seed.library.getManualWorkoutLibrary()[0]
+  const active = { ...source, id: 'saved-occurrence', sets: 6, reps: 12 }
+  const completed = [{ ...source, id: 'saved-completed', completion_status: 'Complete' }]
+  const view = harness({}, new Map([[seed.draftKey, JSON.stringify({ version: 1, activeExercise: active, completedExercises: completed })]]))
+  view.render();const activeBefore = JSON.stringify(view.tracker().props.exercises[0]), draftBefore = view.storage.get(view.draftKey)
+  view.activateRegion('right_pectoralis_major', 'Enter')
+  assert.equal(view.nativeDialog.open, false);assert.equal(view.nativeDialog.shows, 0)
+  assert.equal(JSON.stringify(view.tracker().props.exercises[0]), activeBefore)
+  assert.match(text(view.mapTree()), /Your active exercise stays open/)
+  assert.equal(view.storage.get(view.draftKey), draftBefore);assert.equal(view.calls.length, 0)
+  const finished = harness({}, new Map([[seed.draftKey, JSON.stringify({ version: 1, activeExercise: null, completedExercises: completed })]]))
+  finished.render();const completedBefore = finished.storage.get(finished.draftKey)
+  finished.activateRegion('left_biceps');assert.equal(finished.nativeDialog.open, true)
+  finished.escape();assert.equal(finished.nativeDialog.open, false)
+  assert.equal(finished.storage.get(finished.draftKey), completedBefore)
+  assert.equal(nodes(finished.render(), node => node.type === 'li').length, 1)
+  assert.equal(finished.calls.length, 0)
+})
+
+// Finish uses the real Builder with synthetic authenticated read responses. The
+// server/API and tracker tests separately verify the evidence behind this data.
+function savedFinishSummary(view, exercise, { completed = true, signature = 'saved-actuals', cardio = false } = {}) {
+  return { version: 1, clientId: view.props.clientId, authUserId: view.props.authUserId, program: view.props.program, date: '2026-11-02', completed,
+    sessions: [{ id: 'saved-row', dayName: cardio ? 'Manual Cardio' : 'Manual Workout', updatedAt: '2026-11-02T17:59:00Z', completed,
+      progress: { completedSets: completed ? 2 : 1, totalSets: 4, requiredSets: 2 },
+      exercises: [{ id: exercise.id, name: exercise.exercise, signature, kind: cardio ? 'cardio' : 'strength', completed,
+        plannedSets: cardio ? 0 : 4, setLogs: cardio ? [] : [{ setNumber: 1, reps: 8, weight: 17.5, unit: 'lb', completedAt: '2026-11-02T17:58:00Z' }],
+        duration: cardio ? 12 : null, durationUnit: cardio ? 'minutes' : null }] }] }
+}
+async function finishableView() {
+  const view = harness();view.open();view.chooseEquipment();view.choose();await view.settle()
+  const exercise = view.tracker().props.exercises[0]
+  const evidence = { workoutLogId: 'saved-row', exerciseId: exercise.id, dayName: 'Manual Workout', signature: 'saved-actuals' }
+  view.tracker().props.onManualExerciseFinished(false, evidence);view.render()
+  return { view, exercise, evidence }
+}
+
+test('Finish reads confirmed actuals and opens a distinct saved state without another workout write', async () => {
+  const { view, exercise } = await finishableView(), before = view.calls.length
+  view.setSummarySend(async () => json(savedFinishSummary(view, exercise)))
+  view.button('Finish workout').props.onClick();await view.settle()
+  assert.equal(nodes(view.render(), node => node.props?.['data-testid'] === 'manual-workout-finished').length, 1)
+  assert.match(text(view.render()), /Workout saved/);assert.match(text(view.render()), /8\s+reps ·\s+17.5\s+lb/)
+  assert.match(text(view.render()), /2\s+of\s+4\s+original prescribed sets recorded ·\s+2\s+needed/)
+  assert.equal(view.button('Finish workout'), undefined);assert.equal(view.calls.length, before)
+  const read = view.summaryCalls.at(-1)
+  assert.match(read.url, /manualSummary=1/);assert.equal(read.options.credentials, 'same-origin');assert.equal(read.options.cache, 'no-store')
+  assert.equal(nodes(view.render(), node => node.type === 'a' && node.props.href === '/dashboard').length, 1)
+})
+
+test('Finish below the original 50 percent threshold stays a partial saved session', async () => {
+  const { view, exercise } = await finishableView()
+  view.setSummarySend(async () => json(savedFinishSummary(view, exercise, { completed: false })))
+  view.button('Finish workout').props.onClick();await view.settle()
+  assert.match(text(view.render()), /Partial workout saved/)
+  assert.match(text(view.render()), /Finishing does not add completed credit/)
+  assert.match(text(view.render()), /1\s+of\s+4\s+original prescribed sets/)
+  assert.doesNotMatch(text(view.render()), /Checkoff threshold met/)
+})
+
+test('Finish pending reads deduplicate clicks and cancellation fences late confirmation while retaining the draft', async () => {
+  const { view, exercise } = await finishableView(), pending = deferred(), before = view.summaryCalls.length
+  view.setSummarySend(() => pending.promise)
+  const click = view.button('Finish workout').props.onClick
+  click();click();view.render()
+  assert.equal(view.summaryCalls.length, before + 1)
+  assert.equal(view.button('Checking saved workout…').props.disabled, true)
+  assert.equal(nodes(view.render(), node => node.props?.['data-testid'] === 'manual-workout-finished').length, 0)
+  view.button('Cancel check').props.onClick();view.render()
+  assert.equal(view.summaryCalls.at(-1).options.signal.aborted, true)
+  pending.resolve(json(savedFinishSummary(view, exercise)));await view.settle()
+  assert.equal(nodes(view.render(), node => node.props?.['data-testid'] === 'manual-workout-finished').length, 0)
+  assert.ok(JSON.parse(view.storage.get(view.draftKey)).completedExercises.some(item => item.id === exercise.id))
+  view.setSummarySend(async () => json(savedFinishSummary(view, exercise)))
+  view.button('Finish workout').props.onClick();await view.settle();assert.match(text(view.render()), /Workout saved/)
+})
+
+test('Finish save-read failures and mismatched receipts retain local work and permit an explicit successful retry', async () => {
+  const { view, exercise } = await finishableView()
+  view.setSummarySend(async () => { throw new Error('private transport detail') })
+  view.button('Finish workout').props.onClick();await view.settle()
+  assert.match(text(view.render()), /could not be confirmed/);assert.doesNotMatch(text(view.render()), /private transport/)
+  view.setSummarySend(async () => json(savedFinishSummary(view, exercise, { signature: 'older-actuals' })))
+  view.button('Retry saved workout').props.onClick();await view.settle()
+  assert.equal(nodes(view.render(), node => node.props?.['data-testid'] === 'manual-workout-finished').length, 0)
+  view.setSummarySend(async () => json(savedFinishSummary(view, exercise)))
+  view.button('Retry saved workout').props.onClick();await view.settle()
+  assert.match(text(view.render()), /Workout saved/)
+})
+
+test('Finish reload restores the saved server actuals and classification without a browser finished flag', async () => {
+  const view = harness(), exercise = { id: 'existing-occurrence', exercise: 'Saved exercise' }
+  view.setSummarySend(async () => json(savedFinishSummary(view, exercise, { completed: false })))
+  view.render();await view.settle()
+  assert.match(text(view.render()), /Partial workout saved/);assert.match(text(view.render()), /8\s+reps ·\s+17.5\s+lb/)
+  assert.equal(view.calls.length, 0)
+  assert.equal(JSON.parse(view.storage.get(view.draftKey)).completedExercises.length, 0)
+  view.button('Add another exercise').props.onClick();view.render();assert.ok(view.button('Add cardio'))
+})
+
+test('Finish stale account responses cannot restore another account summary or accept its old child callback', async () => {
+  const { view, exercise } = await finishableView(), pending = deferred()
+  view.setSummarySend(() => pending.promise);view.button('Finish workout').props.onClick();view.render()
+  const oldSummary = savedFinishSummary(view, exercise)
+  view.setSummarySend(async () => json({ ...savedFinishSummary(view, exercise), sessions: [], completed: false, authUserId: 'next-owner', clientId: 'next-client' }))
+  view.setProps({ authUserId: 'next-owner', clientId: 'next-client' })
+  pending.resolve(json(oldSummary));await view.settle()
+  assert.equal(nodes(view.render(), node => node.props?.['data-testid'] === 'manual-workout-finished').length, 0)
+  assert.doesNotMatch(text(view.render()), /Saved exercise|8 reps/)
+  const active = harness();active.open();active.chooseEquipment();active.choose();await active.settle()
+  const staleCallback = active.tracker().props.onManualExerciseFinished
+  active.setProps({ authUserId: 'another-owner', clientId: 'another-client' })
+  staleCallback(true, { workoutLogId: 'old-row', exerciseId: 'old-occurrence', dayName: 'Manual Workout', signature: 'old' });await active.settle()
+  assert.equal(JSON.parse(active.storage.get(active.draftKey)).completedExercises.length, 0)
+})
+
+test('Finish day rollover refuses late confirmation and asks to reopen the saved day', async () => {
+  const { view, exercise } = await finishableView(), pending = deferred()
+  view.setSummarySend(() => pending.promise);view.button('Finish workout').props.onClick();view.render()
+  try {
+    clock = Date.parse('2026-11-03T18:00:00Z')
+    pending.resolve(json(savedFinishSummary(view, exercise)));await view.settle()
+    assert.equal(nodes(view.render(), node => node.props?.['data-testid'] === 'manual-workout-finished').length, 0)
+    await view.settle()
+    assert.doesNotMatch(text(view.render()), /Checkoff threshold met/)
+    assert.ok(view.storage.has('aos-manual-builder:v1:synthetic-client:ignite:2026-11-02'))
+  } finally { clock = Date.parse('2026-11-02T18:00:00Z') }
+})
+
+test('Finish restoration does not interrupt an active draft or a picker opened during the saved-record read', async () => {
+  const view = harness(), pending = deferred(), exercise = { id: 'older', exercise: 'Older saved work' }
+  view.setSummarySend(() => pending.promise);view.render();view.open();view.chooseEquipment();view.choose();await view.settle()
+  const activeId = view.tracker().props.exercises[0].id
+  pending.resolve(json(savedFinishSummary(view, exercise)));await view.settle()
+  assert.equal(view.tracker().props.exercises[0].id, activeId)
+  assert.equal(nodes(view.render(), node => node.props?.['data-testid'] === 'manual-workout-finished').length, 0)
+  const restored = harness({}, view.storage)
+  restored.setSummarySend(async () => json(savedFinishSummary(restored, exercise)));restored.render();await restored.settle()
+  assert.equal(restored.tracker().props.exercises[0].id, activeId)
+})
+
+test('Finish remains reachable after reopening and dismissing the muscle picker without adding an exercise', async () => {
+  const { view, exercise } = await finishableView()
+  view.open();view.escape()
+  assert.ok(view.button('Finish workout'));assert.equal(view.tracker(), undefined)
+  view.setSummarySend(async () => json(savedFinishSummary(view, exercise)))
+  view.button('Finish workout').props.onClick();await view.settle();assert.match(text(view.render()), /Workout saved/)
+})
+
+test('Finish cannot turn empty or unconfirmed saved evidence into a finished state', async () => {
+  const { view } = await finishableView()
+  for (const result of [{ success: true }, { version: 1, clientId: view.props.clientId, authUserId: view.props.authUserId, program: view.props.program, date: '2026-11-02', sessions: [], completed: false }]) {
+    view.setSummarySend(async () => json(result));view.button('Finish workout').props.onClick();await view.settle()
+    assert.equal(nodes(view.render(), node => node.props?.['data-testid'] === 'manual-workout-finished').length, 0)
+    assert.match(text(view.render()), /could not be confirmed/)
+  }
+})
+
+test('Finish cardio restoration shows actual duration without strength sets or invented credit', async () => {
+  const view = harness(), exercise = { id: 'manual-cardio:walking:synthetic', exercise: 'Walking' }
+  view.setSummarySend(async () => json(savedFinishSummary(view, exercise, { cardio: true, completed: false })))
+  view.render();await view.settle()
+  assert.match(text(view.render()), /Partial workout saved/);assert.match(text(view.render()), /Recorded duration:\s+12\s+minutes/)
+  assert.doesNotMatch(text(view.render()), /prescribed sets|reps ·|original prescribed units/)
 })

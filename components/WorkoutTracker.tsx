@@ -10,6 +10,7 @@ import WorkoutSetEditor from '@/components/workout-dashboard/WorkoutSetEditor'
 import { useRouter } from 'next/navigation'
 import { manualDesiredSets, prescriptionSnapshot, readManualPrescriptionDraft, type ManualPrescriptionSnapshot } from '@/lib/workout/manualPrescriptionDraft'
 import { readSessionEquipmentContext, type SessionEquipmentContext } from '@/lib/workout/selectedPrescriptionTypes'
+import { manualExerciseSignature, type ManualSaveEvidence } from '@/lib/workout/manualFinish'
 
 class ReselectPrescriptionError extends Error {}
 
@@ -130,7 +131,7 @@ type Props = {
   plannedExercises?: unknown[]
   onExerciseFocus?: (exercise: Exercise) => void
   onExerciseBlur?: () => void
-  onManualExerciseFinished?: (completed?: boolean) => void
+  onManualExerciseFinished?: (completed?: boolean, evidence?: ManualSaveEvidence) => void
   onManualRecommendationReset?: () => void
 }
 
@@ -325,13 +326,14 @@ function ManualSetLogger({
   weightUnit?: 'lb' | 'kg'
   onExerciseFocus?: (exercise: Exercise) => void
   onExerciseBlur?: () => void
-  onManualExerciseFinished?: (completed?: boolean) => void
+  onManualExerciseFinished?: (completed?: boolean, evidence?: ManualSaveEvidence) => void
   onManualRecommendationReset?: () => void
 }) {
   const router = useRouter()
   const lock = useRef(false)
   const dose = activityDose(exercise, weightUnit)
-  const storageKey = manualSetStorageKey(clientId, program, exercise, getWorkoutSessionDate(timezone))
+  const sessionDate = useRef(getWorkoutSessionDate(timezone))
+  const storageKey = manualSetStorageKey(clientId, program, exercise, sessionDate.current)
   const [restored] = useState(() => {
     if (typeof window !== 'undefined') {
       try { return readManualPrescriptionDraft(JSON.parse(window.localStorage.getItem(storageKey) || 'null')) } catch { /* Invalid draft fields do not invent performed work. */ }
@@ -380,7 +382,8 @@ function ManualSetLogger({
     catch { return false }
   }
 
-  async function persistSets(nextSets: ManualSetLog[], finishedAt?: string) {
+  async function persistSets(nextSets: ManualSetLog[], finishedAt?: string): Promise<ManualSaveEvidence | undefined> {
+    if (getWorkoutSessionDate(timezone) !== sessionDate.current) throw new Error('A new day has started. Reopen Workout before saving this session.')
     const desired = manualDesiredSets(desiredSetCount)
     if (!desired) throw new Error('Choose a desired set count from 1 to 100.')
     // Freeze the first explicit unguided target before an ambiguous save/retry.
@@ -412,6 +415,14 @@ function ManualSetLogger({
       const result = await response.json().catch(() => null)
       if (result?.code === 'prescription_changed') throw new ReselectPrescriptionError(result.error || 'Reselect the exercise to review a fresh recommendation. Your entries have not changed.')
       throw new Error('Set save failed')
+    }
+    if (finishedAt) {
+      const result = await response.json().catch(() => null)
+      const signature = manualExerciseSignature(exerciseLog)
+      if (result?.success !== true || typeof result.workout_log_id !== 'string' || !result.workout_log_id ||
+        typeof result.exercise_session_id !== 'string' || !result.exercise_session_id || !signature) throw new Error('Exercise save could not be confirmed.')
+      setNeedsReselect(false)
+      return { workoutLogId: result.workout_log_id, exerciseId: String(exercise.id), dayName, signature }
     }
     setNeedsReselect(false)
   }
@@ -508,9 +519,10 @@ function ManualSetLogger({
       if(lock.current)return
       lock.current=true
       setSaving(true)
-      await persistSets(sets, new Date().toISOString())
+      const evidence = await persistSets(sets, new Date().toISOString())
+      if (!evidence || getWorkoutSessionDate(timezone) !== sessionDate.current) throw new Error('Exercise save could not be confirmed for this day.')
       try { if (typeof window !== 'undefined') window.localStorage.removeItem(storageKey) } catch { /* Server completion succeeded; browser cleanup is optional. */ }
-      onManualExerciseFinished?.(sets.length >= originalPlannedSets.current)
+      onManualExerciseFinished?.(sets.length >= originalPlannedSets.current, evidence)
       router.refresh()
     } catch (error) {
       console.error(error)

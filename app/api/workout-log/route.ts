@@ -9,6 +9,7 @@ import { matchingWorkoutPlan, workoutSessionKeys } from '@/lib/workout/session'
 import { loadWorkoutHistory } from '@/lib/workout/history'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { canonicalManualCardioLog, canonicalManualCardioPlan, MANUAL_CARDIO_DAY_NAME } from '@/lib/workout/manualCardio'
+import { getManualWorkoutSummary } from '@/lib/workout/getManualWorkoutSummary'
 export async function POST(req: Request) {
   try {
     const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser()
@@ -67,12 +68,31 @@ export async function POST(req: Request) {
 }
 
 export async function GET(request: Request) {
-  const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const params = new URL(request.url).searchParams
+  const summaryHeaders = params.get('manualSummary') === '1' ? { 'Cache-Control': 'private, no-store' } : undefined
+  const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: summaryHeaders })
   const { data: client } = await supabase.from('clients').select('*').eq('client_id',params.get('clientId')).eq('auth_user_id',user.id).maybeSingle()
-  if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
+  if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404, headers: summaryHeaders })
   const day = getClientDayRange(client)
+  if (params.get('manualSummary') === '1') {
+    const date = params.get('date') || ''
+    const headers = { 'Cache-Control': 'private, no-store' }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date) {
+      return NextResponse.json({ error: 'Choose a valid workout day.' }, { status: 400, headers })
+    }
+    if (date !== day.date || params.get('program') !== client.program) {
+      return NextResponse.json({ error: 'Your account, program or local day changed. Reload the workout before finishing.' }, { status: 409, headers })
+    }
+    try {
+      const summary = await getManualWorkoutSummary({ supabase, user, client, date })
+      // A request crossing local midnight must not confirm yesterday as today.
+      if (getClientLocalDate(client) !== date) return NextResponse.json({ error: 'A new day started. Reload the workout before finishing.' }, { status: 409, headers })
+      return NextResponse.json(summary, { headers })
+    } catch {
+      return NextResponse.json({ error: 'Your saved manual workout could not be verified. Retry or review workout history.' }, { status: 503, headers })
+    }
+  }
   let planKeys: string[] | null = null
   if (params.has('planKeys')) {
     try { planKeys = JSON.parse(params.get('planKeys') || 'null') } catch { return NextResponse.json({ error: 'Invalid workout plan.' }, { status: 400 }) }
