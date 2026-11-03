@@ -623,6 +623,7 @@ function MeasurementDiagram({
           <GuideLine y={225} color={lineColor('bust_chest')} label="Chest" />
           <GuideLine y={240} color={lineColor('underbust')} label="Underbust" />
           <GuideLine y={275} color={lineColor('waist')} label="Waist" />
+          <GuideLine y={310} color={lineColor('lower_waist')} label="Lower Abd." />
           <GuideLine y={325} color={lineColor('high_hip')} label="High Hip" />
           <GuideLine y={350} color={lineColor('hips_glutes')} label="Hips" />
 
@@ -649,8 +650,8 @@ function MeasurementDiagram({
           <line
             x1="72"
             x2="118"
-            y1="292"
-            y2="292"
+            y1="230"
+            y2="230"
             stroke={lineColor('left_upper_arm')}
             strokeWidth="4"
             strokeLinecap="round"
@@ -659,8 +660,8 @@ function MeasurementDiagram({
           <line
             x1="242"
             x2="288"
-            y1="292"
-            y2="292"
+            y1="230"
+            y2="230"
             stroke={lineColor('right_upper_arm')}
             strokeWidth="4"
             strokeLinecap="round"
@@ -669,8 +670,8 @@ function MeasurementDiagram({
           <line
             x1="68"
             x2="112"
-            y1="400"
-            y2="400"
+            y1="300"
+            y2="300"
             stroke={lineColor('left_forearm')}
             strokeWidth="4"
             strokeLinecap="round"
@@ -679,8 +680,8 @@ function MeasurementDiagram({
           <line
             x1="248"
             x2="292"
-            y1="400"
-            y2="400"
+            y1="300"
+            y2="300"
             stroke={lineColor('right_forearm')}
             strokeWidth="4"
             strokeLinecap="round"
