@@ -8,12 +8,14 @@ import { exerciseOccurrenceLabel } from '@/lib/workout/logging'
 import WorkoutSetEditor from '@/components/workout-dashboard/WorkoutSetEditor'
 import { getClientLocalDate } from '@/lib/timezone'
 import { isManualCardioExercise } from '@/lib/workout/manualCardio'
+import { manualExerciseSignature, manualExerciseIdentity, type ManualSaveEvidence } from '@/lib/workout/manualFinish'
 
-type Props = { clientId: string; authUserId: string; program: string; dayName: string; exercises: any[]; plannedExercises?: unknown[]; workoutSource?: 'manual' | 'recommended'; timezone?: string; weightUnit?: 'lb' | 'kg'; onManualExerciseFinished?: (completed?: boolean) => void; onExerciseFocus?: (exercise: any) => void; onExerciseBlur?: () => void }
+type Props = { clientId: string; authUserId: string; program: string; dayName: string; exercises: any[]; plannedExercises?: unknown[]; workoutSource?: 'manual' | 'recommended'; timezone?: string; weightUnit?: 'lb' | 'kg'; onManualExerciseFinished?: (completed?: boolean, evidence?: ManualSaveEvidence) => void; onExerciseFocus?: (exercise: any) => void; onExerciseBlur?: () => void }
 export default function ActivityWorkoutTracker({ clientId, program, dayName, exercises, plannedExercises = exercises, workoutSource = 'recommended', timezone = 'America/Chicago', weightUnit = 'lb', onExerciseFocus, onExerciseBlur, onManualExerciseFinished }: Props) {
   const router = useRouter(); const lock = useRef(false)
   const carousel = useRef<HTMLDivElement | null>(null)
-  const date = getClientLocalDate({ timezone }); const legacyKey = `anastasis-session:${clientId}:${program}:${dayName}:${date}`
+  const manualDate = useRef(getClientLocalDate({ timezone }))
+  const date = workoutSource === 'manual' ? manualDate.current : getClientLocalDate({ timezone }); const legacyKey = `anastasis-session:${clientId}:${program}:${dayName}:${date}`
   const planKeys = JSON.stringify(workoutSessionKeys(exercises)); const key = `${legacyKey}:${workoutSource}:${planKeys}`
   const prescriptionKey = JSON.stringify(exercises.map(exercise => activityDose(exercise, weightUnit)))
   const initialize = () => initialWorkoutLogs(exercises)
@@ -75,10 +77,20 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
   async function save(final = false) {
     if (lock.current) return; lock.current = true; setSaving(true); setMessage('')
     try {
+      if (workoutSource === 'manual' && getClientLocalDate({ timezone }) !== date) throw new Error('A new day has started. Reopen Workout before saving this session.')
       const response = await fetch('/api/workout-log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: clientId, program, day_name: dayName, workout_source: workoutSource,
         workout_date: new Date().toISOString(), planned_exercises: workoutSource === 'manual' ? plannedExercises : sessionPlan, exercise_logs: logs, completed: counts.completed }) })
       const payload = await response.json(); if (!response.ok) throw new Error(payload.error || 'Session could not be saved.')
-      setDirty(false); setModifiedAt(payload.session?.updated_at || new Date().toISOString()); setMessage(final ? 'Session saved. Your recorded progress is available in workout history.' : 'Progress saved. You can resume here.'); setSummary(final); router.refresh(); if(final && workoutSource === 'manual') onManualExerciseFinished?.(payload.completed === true)
+      let evidence: ManualSaveEvidence | undefined
+      if (final && workoutSource === 'manual') {
+        const signature = logs.length === 1 ? manualExerciseSignature(logs[0]) : null
+        if (payload.success !== true || typeof payload.session?.id !== 'string' || !payload.session.id || !signature ||
+          !matchingWorkoutPlan(payload.session.exercise_logs, workoutSessionKeys(logs)) ||
+          manualExerciseSignature(payload.session.exercise_logs[0]) !== signature) throw new Error('Exercise save could not be confirmed. Your draft remains available.')
+        if (getClientLocalDate({ timezone }) !== date) throw new Error('A new day has started. Reopen Workout to review your saved activity.')
+        evidence = { workoutLogId: payload.session.id, exerciseId: manualExerciseIdentity(logs[0]), dayName, signature }
+      }
+      setDirty(false); setModifiedAt(payload.session?.updated_at || new Date().toISOString()); setMessage(final ? 'Session saved. Your recorded progress is available in workout history.' : 'Progress saved. You can resume here.'); setSummary(final); router.refresh(); if(final && workoutSource === 'manual') onManualExerciseFinished?.(payload.completed === true, evidence)
     } catch(e) { setMessage(e instanceof Error ? e.message : 'Session could not be saved. Your draft is still here.') }
     finally { lock.current = false; setSaving(false) }
   }
