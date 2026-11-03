@@ -55,25 +55,86 @@ function mapMetricsByType(rows: any[] | null) {
   }, {})
 }
 
-export async function loadProgramLogicInputs({
-  supabase, user, client, program, dailyPlan, cycleStatus, cycleAdjustment,
-  plannedWorkout, plannedExercises, monthlyAssessmentsDueCount,
-  requestReads,
-}: {
+export type ProgramLogicInputArgs = {
   supabase: any; user: any; client: any; program: ProgramTier; dailyPlan: any
   cycleStatus: any; cycleAdjustment: any; plannedWorkout: any
   plannedExercises: any[]; monthlyAssessmentsDueCount: number
   requestReads?: DashboardRequestReads
-}): Promise<ProgramLogicInputs> {
-  const today = getClientLocalDateOffset(client)
-  const yesterday = getClientLocalDateOffset(client, -1)
-  const fourteenDaysAgo = getClientLocalDateOffset(client, -13)
-  const fourDaysAgo = getClientLocalDateOffset(client, -4)
-  const sevenDaysAgo = getClientLocalDateOffset(client, -7)
-  const recentRecoveryDates = Array.from({ length: 7 }, (_, index) =>
-    getClientLocalDateOffset(client, -(index + 1))
+}
+
+type ProgramLogicSourceArgs = Pick<ProgramLogicInputArgs, 'supabase' | 'user' | 'client' | 'program' | 'requestReads'>
+
+export class DashboardLocalDayChangedError extends Error {
+  constructor() {
+    super('The member local day changed while loading Today.')
+    this.name = 'DashboardLocalDayChangedError'
+  }
+}
+
+export type PreparedProgramLogicInputs = {
+  ready: Promise<void>
+  resolve: (args: ProgramLogicInputArgs) => Promise<ProgramLogicInputs>
+  assertCurrent: (args: ProgramLogicInputArgs) => void
+}
+
+/** Request-owned read preparation only. Attach rejection handling immediately,
+ * then join the saved daily plan before assembling its dependent completion
+ * signals or running any engine/persistence work. */
+export function prepareProgramLogicInputs(args: ProgramLogicSourceArgs): PreparedProgramLogicInputs {
+  const { supabase, user, client, program, requestReads } = args
+  if (!supabase || !user?.id || !client?.client_id || client.auth_user_id !== user.id || (client.program || 'ignite') !== program) {
+    throw new Error('Prepared Today inputs require the verified member owner and program.')
+  }
+  const userId = user.id, clientId = client.client_id
+  const effectiveClient = JSON.stringify(client)
+  const timeZone = getClientTimeZone(client), now = new Date()
+  const date = getClientLocalDateOffset(client, 0, now)
+  const settled = readProgramLogicSources(args, now).then(
+    value => ({ ok: true as const, value }),
+    error => ({ ok: false as const, error }),
   )
-  const ninetyDaysAgo = getClientLocalDateOffset(client, -90)
+  function assertCurrent(current: ProgramLogicInputArgs) {
+    if (current.supabase !== supabase || current.user !== user || current.user?.id !== userId ||
+      current.client !== client || current.client?.client_id !== clientId || current.client?.auth_user_id !== userId ||
+      current.program !== program || (current.client.program || 'ignite') !== program || current.requestReads !== requestReads ||
+      JSON.stringify(current.client) !== effectiveClient || getClientTimeZone(current.client) !== timeZone) {
+      throw new Error('Prepared Today input scope changed.')
+    }
+    if (current.dailyPlan?.date !== date || getClientLocalDateOffset(current.client) !== date) {
+      throw new DashboardLocalDayChangedError()
+    }
+  }
+  return {
+    // Timing may observe completion without accessing source data or swallowing
+    // the original failure, which is rethrown only when resolve joins the plan.
+    ready: settled.then(() => undefined),
+    assertCurrent,
+    async resolve(current) {
+      assertCurrent(current)
+      const result = await settled
+      assertCurrent(current)
+      if (!result.ok) throw result.error
+      const inputs = assembleProgramLogicInputs(current, result.value)
+      assertCurrent(current)
+      return inputs
+    },
+  }
+}
+
+export async function loadProgramLogicInputs(args: ProgramLogicInputArgs): Promise<ProgramLogicInputs> {
+  return assembleProgramLogicInputs(args, await readProgramLogicSources(args))
+}
+
+async function readProgramLogicSources({ supabase, user, client, requestReads }: ProgramLogicSourceArgs, now?: Date) {
+  const today = getClientLocalDateOffset(client, 0, now)
+  const yesterday = getClientLocalDateOffset(client, -1, now)
+  const fourteenDaysAgo = getClientLocalDateOffset(client, -13, now)
+  const fourDaysAgo = getClientLocalDateOffset(client, -4, now)
+  const sevenDaysAgo = getClientLocalDateOffset(client, -7, now)
+  const recentRecoveryDates = Array.from({ length: 7 }, (_, index) =>
+    getClientLocalDateOffset(client, -(index + 1), now)
+  )
+  const ninetyDaysAgo = getClientLocalDateOffset(client, -90, now)
   const dayRange = getClientDayRange(client, today)
   const start = dayRange.start.toISOString(), end = dayRange.end.toISOString()
   const timeZone = getClientTimeZone(client)
@@ -133,7 +194,7 @@ export async function loadProgramLogicInputs({
       .maybeSingle(),
     getSleepStatusForDashboard(supabase, client.client_id, today),
     supabase.from('cycle_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle(),
-    getStrengthAssessmentStatus(supabase, client),
+    getStrengthAssessmentStatus(supabase, client, now),
   ])
 
   const nutritionIds = (nutritionLogs || []).map((row: any) => row.id)
@@ -174,6 +235,30 @@ export async function loadProgramLogicInputs({
   })).then(urls => urls.filter((url): url is string => Boolean(url))),
   ])
 
+  return {
+    today, yesterday, recentRecoveryDates, timeZone, todayHealthMetrics, todayRecovery,
+    todayAssessment, todayCycle, recentSymptoms, nutritionLogs, nutritionLogsError, workoutHistory,
+    strengthAssessments, initialAssessment, measurementLogs, photoRecord, phoenixTasks,
+    recentTasks, todayWorkoutFeedback, recoveryActivities, recoveryActivitiesError,
+    rawRecentRecovery, executionHistory, executionHistoryError, dailyHealthMetrics,
+    latestBodySessions, activeBodySession, strengthAssessment, nutritionTotals,
+    nutritionTotalsError, allMealEntries, mealEntriesError, allMacroEntries, macroEntriesError, photoUrls,
+  }
+}
+
+function assembleProgramLogicInputs({ user, client, program, dailyPlan, cycleStatus, cycleAdjustment,
+  plannedWorkout, plannedExercises, monthlyAssessmentsDueCount }: ProgramLogicInputArgs,
+  sources: Awaited<ReturnType<typeof readProgramLogicSources>>): ProgramLogicInputs {
+  const {
+    today, yesterday, recentRecoveryDates, timeZone, todayHealthMetrics, todayRecovery,
+    todayAssessment, todayCycle, recentSymptoms, nutritionLogs, nutritionLogsError, workoutHistory,
+    strengthAssessments, initialAssessment, measurementLogs, photoRecord, phoenixTasks,
+    recentTasks, todayWorkoutFeedback, recoveryActivities, recoveryActivitiesError,
+    rawRecentRecovery, executionHistory, executionHistoryError, dailyHealthMetrics,
+    latestBodySessions, activeBodySession, strengthAssessment, nutritionTotals,
+    nutritionTotalsError, allMealEntries, mealEntriesError, allMacroEntries, macroEntriesError, photoUrls,
+  } = sources
+
   const todayNutrition = (nutritionLogs || []).find((row: any) => String(row.log_date) === today)
 
 const mealEntries = todayNutrition?.id
@@ -189,7 +274,7 @@ const macroEntries = todayNutrition?.id
   : []
 
 const recentFuelingHistory = [-1, -2, -3].map((offset) => {
-  const date = getClientLocalDateOffset(client, offset)
+  const date = addLocalDays(today, offset)
 
   const nutritionLog = (nutritionLogs || []).find(
     (row: any) => String(row.log_date) === date
@@ -319,7 +404,7 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
   for (const row of workoutHistory || []) { const logDate=workoutLocalDate(row, timeZone); if(row.completed&&logDate<today) activityByDate.set(logDate,(activityByDate.get(logDate)||0)+1) }
   let missedDayCount=0
   for (let offset = 1; offset <= 4; offset++) {
-  const date = getClientLocalDateOffset(client, -offset)
+  const date = addLocalDays(today, -offset)
 
   const recorded = (executionHistory || []).find(
     (row: any) => String(row.log_date) === date

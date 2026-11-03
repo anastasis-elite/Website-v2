@@ -17,6 +17,8 @@ import type { ProgramTier } from '@/lib/dashboard/logic/types'
 import { getMonthlyAssessmentStatus } from '@/lib/assessment/getMonthlyAssessmentStatus'
 import { getDailyScheduleState, loadDailyScheduleSources } from '@/lib/schedule/service'
 import { createDashboardRequestReads } from '@/lib/dashboard/requestReads'
+import { DashboardLocalDayChangedError, prepareProgramLogicInputs } from '@/lib/dashboard/logic/loadProgramLogicInputs'
+import { createDashboardRequestTiming } from '@/lib/performance/dashboardRequest'
 import { getPhoenixRecipeRecommendations } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
 import { Suspense } from 'react'
 import { after } from 'next/server'
@@ -56,21 +58,23 @@ export default async function ProgramPage({
   params: Promise<{ program: string }>
   searchParams?: Promise<{ view?: string }>
 }) {
-  const { program } = await params
-  const view = (await searchParams)?.view === 'plan' ? 'plan' : 'today'
+  const timings = createDashboardRequestTiming()
+  const { program, view } = await timings.measure('routing', async () => ({
+    ...(await params), view: (await searchParams)?.view === 'plan' ? 'plan' as const : 'today' as const,
+  }))
 
   if (!supportedPrograms.includes(program as any)) {
     redirect('/dashboard')
   }
 
-  const { supabase, user, client } = await getDashboardContext()
+  const { supabase, user, client } = await timings.measure('context', () => getDashboardContext())
   const subscribedProgram = client.program || 'ignite'
 
   if (program !== subscribedProgram) {
     redirect(`/dashboard/program/${subscribedProgram}`)
   }
 
-  const safetyFlags = await getRecentSafetyFlags(supabase, client.client_id)
+  const safetyFlags = await timings.measure('safety', () => getRecentSafetyFlags(supabase, client.client_id))
   if (safetyFlags.length) {
     after(() => logRecommendationAudit({
       supabase, userId: user.id, clientId: client.client_id, recommendationType: 'dashboard_safety_escalation',
@@ -81,19 +85,35 @@ export default async function ProgramPage({
   }
 
   return <main className={styles.page}><Suspense fallback={<DashboardReadyShell program={program as ProgramTier} showStreak={view === 'today'} />}>
-    <PersonalizedDashboard supabase={supabase} user={user} client={client} program={program as ProgramTier} view={view} />
+    <PersonalizedDashboard supabase={supabase} user={user} client={client} program={program as ProgramTier} view={view} timings={timings} />
   </Suspense></main>
 }
 
-async function PersonalizedDashboard({ supabase, user, client, program, view }: {
+type PersonalizedDashboardProps = {
   supabase: any; user: any; client: any; program: ProgramTier; view: 'today' | 'plan'
-}) {
+  timings: ReturnType<typeof createDashboardRequestTiming>
+}
+
+async function PersonalizedDashboard(props: PersonalizedDashboardProps) {
+  // A request that crosses local midnight must reload the plan and its sources
+  // together. Never combine yesterday's saved targets with today's checkoffs.
+  try { return await loadPersonalizedDashboard(props) }
+  catch (error) {
+    if (!(error instanceof DashboardLocalDayChangedError)) throw error
+    return loadPersonalizedDashboard(props)
+  }
+}
+
+async function loadPersonalizedDashboard({ supabase, user, client, program, view, timings }: PersonalizedDashboardProps) {
 
   const requestReads = createDashboardRequestReads({ supabase, user, client })
-  const scheduleSources = loadDailyScheduleSources({ supabase, user, client, sourceTimeoutMs: 2000 })
+  const stopSourceTiming = timings.start('logic-sources')
+  const preparedInputs = prepareProgramLogicInputs({ supabase, user, client, program, requestReads })
+  void preparedInputs.ready.then(stopSourceTiming)
+  const scheduleSources = timings.measure('schedule-sources', () => loadDailyScheduleSources({ supabase, user, client, sourceTimeoutMs: 2000 }))
   const cycleStatus = getCycleStatus(client)
   const [dailyPlan, monthlyAssessment, outputResult] = await Promise.all([
-    getDailyExecutionPlan({ supabase, client, requestReads }),
+    timings.measure('plan', () => getDailyExecutionPlan({ supabase, client, requestReads })),
     getMonthlyAssessmentStatus(supabase, client),
     supabase
       .from('program_outputs')
@@ -112,7 +132,7 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
   const { programJson, todaysWorkout, cycleAdjustment, adjustedExercises } =
     getProgramWorkout({ client, output })
 
-  const logic = await getProgramLogicEngine({
+  const logic = await timings.measure('logic', () => getProgramLogicEngine({
     supabase,
     user,
     client,
@@ -124,7 +144,9 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
     plannedExercises: adjustedExercises,
     monthlyAssessmentsDueCount,
     requestReads,
-  })
+    preparedInputs,
+    timings,
+  }))
 
   // These transient presentation hints are not additional audit/analytics data.
   const auditNutrition = { ...logic.nutrition }
@@ -154,7 +176,7 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
     confidenceLevel: 'rules_based',
   }))
 
-  const schedule = await getDailyScheduleState({
+  const schedule = await timings.measure('schedule', () => getDailyScheduleState({
     supabase,
     user,
     client,
@@ -162,9 +184,12 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
     dailyPlan,
     sourceTimeoutMs: 2000,
     sources: scheduleSources,
-  })
+  }))
   if (view === 'plan') return <PlanOverview logic={logic} schedule={schedule} />
   const phoenixRecipes = program === 'phoenix' ? getPhoenixRecipeRecommendations({ logic, client }) : []
+  const todayModel = schedule.todayViewModel
+  const actionable = todayModel?.version === 1 && todayModel.date === schedule.date && todayModel.timezone === schedule.timezone &&
+    todayModel.generatedAt === schedule.now && todayModel.clientId === logic.client.id && todayModel.tier === logic.program
 
   return (
     <>
@@ -174,7 +199,7 @@ async function PersonalizedDashboard({ supabase, user, client, program, view }: 
         <Link href="/dashboard/onboarding/plan">{savedPlanState.status === 'incomplete' ? 'Review and retry plan' : 'Open plan setup'}</Link>
       </aside> : null}
       <DashboardPerformance stage="shell" />
-      <DashboardPerformance stage="primary" />
+      <DashboardPerformance stage="primary" timings={timings.snapshot()} actionable={actionable} />
       <DashboardPerformance stage="secondary" snapshot={schedule.now} />
       {program === 'ember' && (
         <EmberDashboard logic={logic} schedule={schedule} />

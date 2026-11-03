@@ -86,6 +86,8 @@ test('authorized page starts all schedule reads before health logic resolves, an
     '@/lib/dashboard/getDashboardContext': { getDashboardContext: () => auth.promise },
     '@/lib/safety/getRecentSafetyFlags': { getRecentSafetyFlags: () => safety.promise },
     '@/lib/dashboard/requestReads': { createDashboardRequestReads(args) { assert.equal(args.user, user); assert.equal(args.client, client); return requestReads } },
+    '@/lib/dashboard/logic/loadProgramLogicInputs': { DashboardLocalDayChangedError: class extends Error {},
+      prepareProgramLogicInputs: () => ({ ready: Promise.resolve(), resolve: async () => ({}), assertCurrent() {} }) },
     '@/lib/day/getDailyExecutionPlan': { getDailyExecutionPlan(args) { assert.equal(args.requestReads, requestReads); calls.push('dailyPlan'); return plan.promise } },
     '@/lib/dashboard/logic/getProgramLogicEngine': { getProgramLogicEngine(args) { assert.equal(args.requestReads, requestReads); calls.push('logic'); return logic.promise } },
     '@/lib/cycle/getCycleStatus': { getCycleStatus: () => ({}) },

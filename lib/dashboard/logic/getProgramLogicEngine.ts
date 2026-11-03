@@ -1,10 +1,11 @@
 import 'server-only'
 
 import { getClientTimeZone, getClientLocalDateOffset } from '@/lib/timezone'
-import { loadProgramLogicInputs } from './loadProgramLogicInputs'
+import { loadProgramLogicInputs, type PreparedProgramLogicInputs } from './loadProgramLogicInputs'
 import { workoutLocalDate } from '@/lib/workout/history'
 import { recoveryCompletionEvidence } from '@/lib/recovery/todayCompletion'
 import type { DashboardRequestReads } from '@/lib/dashboard/requestReads'
+import type { createDashboardRequestTiming } from '@/lib/performance/dashboardRequest'
 
 import {
   numeric,
@@ -393,10 +394,12 @@ export async function getProgramLogicEngine(
     plannedExercises: any[]
     monthlyAssessmentsDueCount: number
     requestReads?: DashboardRequestReads
+    preparedInputs?: PreparedProgramLogicInputs
+    timings?: ReturnType<typeof createDashboardRequestTiming>
   },
 ): Promise<ProgramLogicOutput> {
   const inputs =
-    await loadProgramLogicInputs(args)
+    await (args.preparedInputs ? args.preparedInputs.resolve(args) : loadProgramLogicInputs(args))
 
   // A final strength test is the scheduled workout, with its own published
   // completion evidence. Ordinary workouts still use their unchanged set/
@@ -856,6 +859,10 @@ export async function getProgramLogicEngine(
     },
   }
 
+  // Reject a stale prepared owner/day before either existing write. The two
+  // persistence operations below keep their sequential order and fallbacks.
+  args.preparedInputs?.assertCurrent(args)
+  const stopRecommendationTiming = args.timings?.start('recommendation-persistence')
   try {
     const { error } =
       await args.supabase
@@ -918,11 +925,14 @@ export async function getProgramLogicEngine(
     }
   } catch (error) {
     console.error('Dashboard recommendation persistence failed:', error instanceof Error ? error.message : 'Persistence request failed.')
+  } finally {
+    stopRecommendationTiming?.()
   }
 
   const requirements =
     flameState.requirements
 
+  const stopExecutionTiming = args.timings?.start('execution-persistence')
   try {
     const { error: executionError } =
       await args.supabase
@@ -982,6 +992,8 @@ export async function getProgramLogicEngine(
     }
   } catch (error) {
     console.error('Daily execution persistence failed:', error instanceof Error ? error.message : 'Persistence request failed.')
+  } finally {
+    stopExecutionTiming?.()
   }
 
   return output
