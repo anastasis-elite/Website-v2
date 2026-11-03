@@ -10,6 +10,7 @@ import { buildDailyScheduleState, buildNextAction } from './engine'
 import { dailyPlanToScheduleEvents, fixedCommitmentsForDate } from './dailyPlanAdapter'
 import { applyScheduleCheckoffs, loadScheduleCheckoffs, type ScheduleCheckoff } from './checkoffs'
 import type { DailyScheduleState, ScheduleEvent } from './types'
+import { projectStrengthWorkout } from '@/lib/assessment/strengthWorkout'
 
 export async function loadScheduleEventsForDay({
   supabase,
@@ -173,9 +174,15 @@ export async function getDailyScheduleState({
     now: new Date(),
     dayStart: client.wake_time && (!client.bed_time || client.wake_time < client.bed_time) ? zonedDateTimeToUtc(day.date, client.wake_time, day.timezone) : day.start,
     dayEnd: client.bed_time && (!client.wake_time || client.wake_time < client.bed_time) ? zonedDateTimeToUtc(day.date, client.bed_time, day.timezone) : day.end,
-    events: applyScheduleCheckoffs([...commitments, ...persistedEvents.map(event => {
+    events: applyScheduleCheckoffs(projectStrengthWorkout({ status: effectiveLogic?.assessments?.strength,
+      userId: user.id, client, date: day.date, events: [...commitments, ...persistedEvents.map(event => {
       if (event.status !== 'scheduled' || !effectiveLogic || dailyPlan?.date !== day.date) return event
-      const confirmed = event.event_type === 'workout' ? effectiveLogic.execution.workoutComplete : event.event_type === 'check_in' ? effectiveLogic.assessments.dailyCompleted : event.event_type === 'hydration' ? effectiveLogic.hydration.status !== 'needs_input' && effectiveLogic.hydration.remaining <= 0 : false
+      // The projection below links a final assessment to its workout slot.
+      // Do not also mark an unperformed regular workout complete from that
+      // assessment; ordinary session completion still comes from its own log.
+      const confirmed = event.event_type === 'workout' ? dailyPlan.workoutCompleted ||
+        effectiveLogic.execution.workoutComplete && !effectiveLogic.assessments.strength?.completedToday
+        : event.event_type === 'check_in' ? effectiveLogic.assessments.dailyCompleted : event.event_type === 'hydration' ? effectiveLogic.hydration.status !== 'needs_input' && effectiveLogic.hydration.remaining <= 0 : false
       return confirmed ? { ...event, status: 'completed' as const } : event
     }), ...virtualEvents.map(event => {
       const override = client.onboarding_data?.scheduleOverrides?.[event.id]
@@ -189,7 +196,7 @@ export async function getDailyScheduleState({
         action_route: `${SCHEDULE_STRUCTURE_PATH}?assessmentVersion=${submission.assessmentVersion}` }
       // A task is complete only when its matching assessment version was saved.
       return event.status === 'completed' ? { ...event, status: 'scheduled' as const, completed_at: null } : event
-    }).map(event => ({ ...event, schedule_date: day.date })), checkoffs),
+    }).map(event => ({ ...event, schedule_date: day.date })) }), checkoffs),
     transitionMinutes: Number(client.onboarding_data?.transitionMinutes ?? 10),
     logic: effectiveLogic,
     program: client.program || 'ignite',

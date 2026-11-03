@@ -24,6 +24,8 @@ export type StrengthResponse = {
   planStatus?: 'generated' | 'safety_paused' | 'existing' | 'retry'
   retryRoute?: string
   code?: string
+  eligibleDate?: string | null
+  canComplete?: boolean
   history?: Array<{ assessmentId: string; assessmentDate: string; status: 'completed'; period: string }>
 }
 
@@ -52,6 +54,8 @@ export type StrengthSessionSnapshot = {
   assessmentId: string | null
   history: NonNullable<StrengthResponse['history']>
   monthChanged: boolean
+  eligibleDate: string | null
+  canComplete: boolean
 }
 
 type ResponsePayload = StrengthResponse & { error?: string }
@@ -98,6 +102,7 @@ function safeFailure(error: unknown, action: 'load' | 'save' | 'submit') {
   if (code === 'conflict') return 'A newer version of this assessment is saved in your account. Your entered values are still here. Review the saved assessment before continuing.'
   if (code === 'period_changed') return 'A new assessment month has started. Your entered values are still here. Choose Save entered values for the new month to continue.'
   if (code === 'validation') return 'Check your height and current weight. For each strength test, enter both a valid load and whole-number repetitions, or leave both blank.'
+  if (code === 'not_eligible') return 'Your next strength reassessment is not eligible yet. Your entered values are still here and your saved draft is preserved. Reopen the assessment on the eligible date.'
   return action === 'load'
     ? 'We couldn’t load your previous assessment. Retry.'
     : action === 'save'
@@ -118,7 +123,7 @@ export class StrengthDraftSession {
     this.persistedValues = { ...defaults }
     this.snapshot = {
       values: { ...defaults }, loaded: false, loading: false, saving: false, submitting: false,
-      unsaved: false, status: null, period: null, currentPeriod: null, revision: 0,
+      unsaved: false, status: null, period: null, currentPeriod: null, revision: 0, eligibleDate: null, canComplete: true,
       savedAt: null, completedAt: null, assessmentDate: null, previousDraft: null,
       loadError: null, saveError: null, submitError: null, conflict: false, planStatus: null, redirect: null, confirmedWrites: 0, assessmentId: null, history: [], monthChanged: false,
     }
@@ -148,6 +153,8 @@ export class StrengthDraftSession {
       confirmedWrites: this.snapshot.confirmedWrites + (fromWrite ? 1 : 0),
       assessmentId: saved?.assessmentId || null, history: payload.history || this.snapshot.history,
       monthChanged: false,
+      eligibleDate: payload.eligibleDate === undefined ? this.snapshot.eligibleDate : payload.eligibleDate,
+      canComplete: payload.canComplete === undefined ? this.snapshot.canComplete : payload.canComplete,
     })
   }
 
@@ -223,6 +230,9 @@ export class StrengthDraftSession {
         return true
       } catch (error) {
         this.update({ submitError: safeFailure(error, 'submit'), conflict: error instanceof StrengthRequestError && error.code === 'conflict' })
+        if (error instanceof StrengthRequestError && error.code === 'not_eligible') {
+          this.update({ canComplete: false, eligibleDate: error.payload?.eligibleDate || this.snapshot.eligibleDate })
+        }
         this.acceptChangedMonth(error)
         return false
       } finally {

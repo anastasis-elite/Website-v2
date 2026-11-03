@@ -5,6 +5,7 @@ import type { DailyScheduleState, ScheduleEventType } from '@/lib/schedule/types
 import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 import { getScheduleStructureVersion, scheduleStructureTaskHref } from '@/lib/assessment/scheduleStructure'
 import { getRecoveryPresentation } from '@/lib/recovery/todayCompletion'
+import { isStrengthWorkout, strengthTrainingPaused } from '@/lib/assessment/strengthWorkoutState'
 
 import { TODAY_ACTIVITY_IDS, type TodayActivityId, type TodayActivityStatus, type DailyGuideState, type TodayActivity, type TodayActivities } from './todayActivityTypes'
 export * from './todayActivityTypes'
@@ -86,9 +87,22 @@ export function buildTodayActivities(logic: ProgramLogicOutput, schedule: Pick<D
       countsTowardProgress: true, canSkip: false, canDefer: false, canResume: false })
   }
   if (capabilities.nutritionTracking) add('nutrition', capabilities.nutritionMealLogging ? 'Meal logging' : 'Nutrition', logic.execution.nutritionLogged ? 'Today’s intake is saved. You can add more whenever you need.' : capabilities.nutritionMealLogging ? 'Log your next meal or reuse a saved entry.' : 'Your guidance and quick macro entry are available.', mealEntryHref(logic.program), logic.execution.nutritionLogged)
-  if (capabilities.workoutDisplay && (logic.execution.workoutComplete || (logic.workout.assigned && logic.workoutDecision.canTrain))) {
+  const strength = logic.assessments.strength
+  const scheduledStrength = isStrengthWorkout(strength, schedule.date)
+  const strengthPaused = strengthTrainingPaused(logic)
+  const strengthWorkout = scheduledStrength && (!strengthPaused || strength.completedToday)
+  if (capabilities.workoutDisplay && strengthWorkout) {
+    add('workout', 'Strength assessment', strength.completedToday ? 'Your completed strength assessment is saved.' :
+      'Your eligible strength assessment is today’s workout. Your usual workout remains in your saved plan.', strength.href,
+      Boolean(strength.completedToday), strength.state === 'draft')
+  } else if (!scheduledStrength && capabilities.workoutDisplay && (logic.execution.workoutComplete || (logic.workout.assigned && logic.workoutDecision.canTrain))) {
     add('workout', 'Movement', logic.execution.workoutComplete ? 'Your completed workout is saved.' : logic.execution.workoutInProgress ? 'Your saved workout is ready to resume.' : logic.workoutDecision.reasonForModification,
       `/dashboard/program/${logic.program}/workout`, logic.execution.workoutComplete, Boolean(logic.execution.workoutInProgress))
+  }
+  if (!strengthPaused && capabilities.workoutDisplay && strength?.eligible && !strengthWorkout && !strength.unavailable && ['due', 'draft'].includes(strength.state)) {
+    activities.push({ id: 'assessment:strength', category: 'assessment', title: 'Strength assessment',
+      detail: 'Your strength reassessment is eligible. Its workout day is shown in your assessment details.', href: strength.href,
+      status: strength.state === 'draft' ? 'in_progress' : 'available', countsTowardProgress: false, canSkip: false, canDefer: false, canResume: false })
   }
   if (capabilities.recoveryBasic) add('recovery', 'Recovery', logic.execution.recoveryComplete ? 'Your recovery activity is saved.' : capabilities.recoveryRecommendation ? 'Choose from your existing recovery options.' : 'A quiet moment is available when you need it.', '/dashboard/recovery', logic.execution.recoveryComplete)
   const counted = activities.filter(activity => activity.countsTowardProgress)

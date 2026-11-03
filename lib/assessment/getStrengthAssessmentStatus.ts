@@ -1,5 +1,6 @@
 import { getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
-import { getClientDayRange } from '@/lib/schedule/time'
+import { strengthCadence } from './strengthCadence'
+import { loadWorkoutHistory, workoutLocalDate } from '@/lib/workout/history'
 
 export type StrengthAssessmentStatus = {
   state: 'due' | 'draft' | 'completed' | 'unavailable'
@@ -12,6 +13,14 @@ export type StrengthAssessmentStatus = {
   href: string
   unavailable: boolean
   previousDraft: { period: string; savedAt: string; href: string } | null
+  eligibleDate?: string | null
+  scheduledDate?: string | null
+  latestCompletedAt?: string | null
+  eligible?: boolean
+  isWorkoutDay?: boolean
+  completedToday?: boolean
+  completedDate?: string | null
+  workoutHref?: string
 }
 
 export function getStrengthAssessmentPeriod(client: any, now = new Date()) {
@@ -72,48 +81,52 @@ export function strengthAssessmentStatusFromRecords({
 export async function getStrengthAssessmentStatus(supabase: any, client: any, now = new Date()): Promise<StrengthAssessmentStatus> {
   const period = getStrengthAssessmentPeriod(client, now)
   if (!client?.client_id || !client?.auth_user_id) return strengthAssessmentStatusFromRecords({ period, unavailable: true })
-  const [year, month] = period.split('-').map(Number)
-  const nextPeriod = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10)
-  const start = getClientDayRange(client, period).start.toISOString()
-  const end = getClientDayRange(client, nextPeriod).start.toISOString()
-  try {
-    // Keep published final recognition independent of draft-table availability.
-    // A failed draft read must never hide a known, owned completed assessment.
-    const read = async (query: () => PromiseLike<{ data: any; error: any }>) => {
-      try { return await query() } catch { return { data: null, error: true } }
-    }
-    const [assessmentResult, sessionResult, previousResult] = await Promise.all([
-      read(() => supabase.from('assessments').select('id,submitted_at,assessment_period')
-        .eq('client_id', client.client_id).eq('auth_user_id', client.auth_user_id)
-        .eq('assessment_type', 'strength')
-        .or(`assessment_period.is.null,assessment_period.eq.${period}`)
-        .gte('submitted_at', start).lt('submitted_at', end).lte('submitted_at', now.toISOString())
-        .order('submitted_at', { ascending: true }).limit(1).maybeSingle()),
-      read(() => supabase.from('strength_assessment_sessions').select('period,status,saved_at,completed_at,assessment_id')
-        .eq('client_id', client.client_id).eq('auth_user_id', client.auth_user_id)
-        .eq('period', period).maybeSingle()),
-      read(() => supabase.from('strength_assessment_sessions').select('period,status,saved_at')
-        .eq('client_id', client.client_id).eq('auth_user_id', client.auth_user_id)
-        .eq('status', 'draft').lt('period', period).lte('saved_at', now.toISOString())
-        .order('period', { ascending: false }).limit(1).maybeSingle()),
-    ])
-    const withinCurrentMonth = (value: unknown) => validTimestamp(value) &&
-      Date.parse(value) >= Date.parse(start) && Date.parse(value) < Date.parse(end) && Date.parse(value) <= now.getTime()
-    const data = assessmentResult.data
-    const assessment = !assessmentResult.error && withinCurrentMonth(data?.submitted_at) &&
-      (data.assessment_period == null || data.assessment_period === period) ? data : null
-    const rawSession = sessionResult.data
-    const session = !sessionResult.error && rawSession?.period === period &&
-      (rawSession.status === 'completed' ? withinCurrentMonth(rawSession.completed_at) :
-        rawSession.status === 'draft' && withinCurrentMonth(rawSession.saved_at)) ? rawSession : null
-    const previousDraft = !previousResult.error && validTimestamp(previousResult.data?.saved_at) &&
-      Date.parse(previousResult.data.saved_at) <= now.getTime() ? previousResult.data : null
-    return strengthAssessmentStatusFromRecords({ period, assessment, session, previousDraft,
-      unavailable: Boolean(assessmentResult.error || sessionResult.error),
-    })
-  } catch {
-    return strengthAssessmentStatusFromRecords({ period, unavailable: true })
+  const read = async (query: () => PromiseLike<{ data: any; error: any }>) => {
+    try { return await query() } catch { return { data: null, error: true } }
   }
+  const [latestResult, sessionResult, previousResult] = await Promise.all([
+    read(() => supabase.from('assessments').select('id,submitted_at,assessment_period')
+      .eq('client_id', client.client_id).eq('auth_user_id', client.auth_user_id).eq('assessment_type', 'strength')
+      .lte('submitted_at', now.toISOString()).order('submitted_at', { ascending: false }).limit(1).maybeSingle()),
+    read(() => supabase.from('strength_assessment_sessions').select('period,status,saved_at,completed_at,assessment_id')
+      .eq('client_id', client.client_id).eq('auth_user_id', client.auth_user_id).eq('period', period).maybeSingle()),
+    read(() => supabase.from('strength_assessment_sessions').select('period,status,saved_at')
+      .eq('client_id', client.client_id).eq('auth_user_id', client.auth_user_id).eq('status', 'draft')
+      .lt('period', period).lte('saved_at', now.toISOString()).order('period', { ascending: false }).limit(1).maybeSingle()),
+  ])
+  const notFuture = (value: unknown): value is string => validTimestamp(value) && Date.parse(value) <= now.getTime()
+  const latest = !latestResult.error && notFuture(latestResult.data?.submitted_at) ? latestResult.data : null
+  const savedPeriod = latest ? /^\d{4}-(0[1-9]|1[0-2])-01$/.test(latest.assessment_period || '')
+    ? latest.assessment_period : getStrengthAssessmentPeriod(client, new Date(latest.submitted_at)) : null
+  const rawSession = sessionResult.data
+  const session = !sessionResult.error && rawSession?.period === period &&
+    (rawSession.status === 'completed' ? notFuture(rawSession.completed_at) : rawSession.status === 'draft' && notFuture(rawSession.saved_at)) ? rawSession : null
+  const previousDraft = !previousResult.error && notFuture(previousResult.data?.saved_at) && previousResult.data?.period !== savedPeriod ? previousResult.data : null
+  const fallback = strengthAssessmentStatusFromRecords({ period, session, previousDraft, unavailable: true })
+  // A failed final-history read cannot establish the latest completion/cadence.
+  if (latestResult.error || latestResult.data && !latest) return { ...fallback, unavailable: true }
+  let cadence = strengthCadence(client, latest?.submitted_at || null, now)
+  if (latest && cadence.monday && cadence.monday <= getClientLocalDate(client, now)) {
+    const history = await loadWorkoutHistory({ supabase, client, authUserId: client.auth_user_id,
+      startDate: cadence.monday, completed: true, limit: 1 }).catch(() => ({ data: null, error: true }))
+    if (history.error) return { ...fallback, unavailable: true }
+    const mondayCompleted = history.data?.some((row: any) => row.completed &&
+      workoutLocalDate(row, getClientTimeZone(client)) === cadence.monday &&
+      (!row.workout_started_at || notFuture(row.workout_started_at))) || false
+    cadence = strengthCadence(client, latest.submitted_at, now, mondayCompleted)
+  }
+  const timing = { eligibleDate: cadence.eligibleDate, scheduledDate: cadence.scheduledDate,
+    eligible: cadence.eligible, isWorkoutDay: cadence.isWorkoutDay, completedToday: cadence.completedToday,
+    completedDate: cadence.completedDate,
+    workoutHref: `/dashboard/assessment/start2?period=${cadence.scheduledDate.slice(0, 7)}-01`,
+    latestCompletedAt: latest?.submitted_at || null }
+  if (session?.status === 'draft' && savedPeriod !== period) return { ...strengthAssessmentStatusFromRecords({ period, session, previousDraft }), ...timing }
+  if (latest && (!cadence.eligible || cadence.completedToday)) {
+    const status = strengthAssessmentStatusFromRecords({ period: savedPeriod!, assessment: latest, previousDraft })
+    return { ...status, ...timing, previousDraft: fallback.previousDraft, href: `${status.href}&assessmentId=${encodeURIComponent(latest.id)}` }
+  }
+  return { ...strengthAssessmentStatusFromRecords({ period, session, previousDraft,
+    unavailable: Boolean(sessionResult.error) }), ...timing }
 }
 
 export function formatStrengthAssessmentTimestamp(value: string | null, client: any, includeTime = false) {
@@ -125,8 +138,8 @@ export function formatStrengthAssessmentTimestamp(value: string | null, client: 
 }
 
 export function getStrengthAssessmentDetail(status: StrengthAssessmentStatus, client: any) {
-  if (status.state === 'completed') return `Completed ${formatStrengthAssessmentTimestamp(status.completedAt, client)}. Saved results are available.`
+  if (status.state === 'completed') return `Completed ${formatStrengthAssessmentTimestamp(status.completedAt, client)}. Saved results are available.${status.eligibleDate ? ` Next eligible date: ${formatStrengthAssessmentTimestamp(status.eligibleDate + 'T12:00:00Z', { timezone: 'UTC' })}.` : ''}`
   if (status.state === 'draft') return `Last saved ${formatStrengthAssessmentTimestamp(status.savedAt, client, true)}. Continue where you stopped.`
   if (status.state === 'unavailable') return 'We couldn’t load your assessment status. Open the assessment to retry before submitting again.'
-  return 'Your strength assessment is due for this month.'
+  return status.scheduledDate ? `Your strength assessment is available.${status.eligibleDate ? ` Scheduled as your workout on ${formatStrengthAssessmentTimestamp(status.scheduledDate + 'T12:00:00Z', { timezone: 'UTC' })}.` : ' Complete your first strength baseline to establish your starting point.'}` : 'Your strength baseline is available.'
 }

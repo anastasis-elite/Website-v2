@@ -172,3 +172,33 @@ test('conflicts, rollover and failed or unconfirmed atomic replies never report 
   }
   assert.equal(state.invalidations,0); assert.equal(state.commits,0)
 })
+
+test('three-month eligibility gates only final submission; current and earlier drafts, owned history and confirmed retries remain usable', async () => {
+  const state = fixture()
+  state.tables.assessments.push({ id:'latest-final', client_id:'OWN', auth_user_id:owner, assessment_type:'strength', submitted_at:'2026-09-01T12:00:00Z', assessment_period:'2026-09-01', data:valid })
+  let response = await get()
+  let data = await response.json()
+  assert.equal(data.eligibleDate,'2026-12-01'); assert.equal(data.canComplete,false)
+  const partial = { weight:'150', height_in:'65', squat_weight:'12.' }
+  assert.equal((await route.PUT(req(envelope(partial),'PUT'))).status,200)
+  const before = structuredClone(state.session)
+  response = await route.POST(req(envelope(valid,{revision:1})))
+  assert.equal(response.status,409); data = await response.json(); assert.equal(data.code,'not_eligible')
+  assert.equal(data.eligibleDate,'2026-12-01'); assert.deepEqual(state.session,before)
+  assert.equal(state.generated.length,0); assert.equal(state.commits,0)
+  assert.equal((await get('?assessmentId=latest-final')).status,200)
+  // A final session committed before a response was lost is still checked by
+  // the atomic RPC, rather than rejected by its newly established cadence.
+  state.session = { ...before, status:'completed', values:valid, assessment_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', completed_at:stamp }
+  assert.equal((await route.POST(req(envelope()))).status,200)
+  assert.equal(state.commits,0)
+})
+
+test('local calendar eligibility is inclusive on the three-month date; failed timing reads cannot generate or write', async () => {
+  let state = fixture()
+  state.tables.assessments.push({ id:'old-final', client_id:'OWN', auth_user_id:owner, assessment_type:'strength', submitted_at:'2026-08-15T23:30:00Z', assessment_period:'2026-08-01', data:valid })
+  assert.equal((await route.POST(req(envelope()))).status,200)
+  state = fixture(); state.queryError = 'strength_assessment_sessions'
+  const response = await route.POST(req(envelope()))
+  assert.equal(response.status,503); assert.equal(state.generated.length,0); assert.equal(state.rpcCalls.length,0)
+})

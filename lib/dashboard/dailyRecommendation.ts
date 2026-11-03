@@ -8,6 +8,7 @@ import { getLocalDaypart, localDateKey } from '@/lib/timezone'
 import { mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 import { getRecoveryPresentation } from '@/lib/recovery/todayCompletion'
 import { getStreakRequirementProgress } from './logic/streakRequirementProgress'
+import { isStrengthWorkout, strengthTrainingPaused } from '@/lib/assessment/strengthWorkoutState'
 
 import type { DailyRecommendation, DailyRecommendationAction, DataAvailability } from './dailyRecommendationTypes'
 import type { TodayActivities, TodayActivity } from './todayActivityTypes'
@@ -21,7 +22,10 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
     logic.hydration.remaining <= 0 ? 'completed' : 'partial'
   const workout: DataAvailability = logic.execution.workoutComplete ? 'completed' : logic.execution.workoutInProgress ? 'partial' : 'not_logged'
   const checkIn: DataAvailability = logic.assessments.dailyCompleted ? 'completed' : 'not_logged'
-  const emptyWorkoutDay = ['rest', 'unavailable'].includes(logic.workoutDecision.assignedWorkout?.workout_state)
+  const scheduledStrength = isStrengthWorkout(logic.assessments.strength, schedule.date)
+  const strengthPaused = scheduledStrength && strengthTrainingPaused(logic)
+  const strengthWorkout = scheduledStrength && !strengthPaused
+  const emptyWorkoutDay = !strengthWorkout && ['rest', 'unavailable'].includes(logic.workoutDecision.assignedWorkout?.workout_state)
   const today = prepared?.today || buildTodayActivities(logic, schedule)
   const presented = prepared?.presented || presentTodayActivities(logic, schedule, today.activities)
   const recovery = logic.execution.recoveryEvidence ? getRecoveryPresentation({ evidence: logic.execution.recoveryEvidence, schedule }) : null
@@ -42,6 +46,7 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   const eventActivityId = (category: string) => category === 'check_in' ? 'check-in' : category === 'hydration' ? 'water' :
     category === 'meal' || category === 'nutrition' ? 'nutrition' : category === 'workout' || category === 'recovery' ? category : undefined
   const eventUnavailable = (category: string, eventId?: string) => {
+    if (category === 'workout' && strengthPaused) return true
     if (category === 'workout' && emptyWorkoutDay) return true
     if (category === 'hydration') return !waterDue || held('water')
     if (category === 'meal' || category === 'nutrition') return !nutritionDue || held('food-input')
@@ -66,7 +71,7 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   if (checkIn !== 'completed') {
     add('check-in', 'check_in', 'Daily check-in', 'Start with your energy. Your answers help today’s plan fit your actual capacity.', '/dashboard/check-in', 'not_logged')
   }
-  if (!logic.workoutDecision.canTrain && !logic.symptoms.redFlag && !emptyWorkoutDay) {
+  if (!logic.symptoms.redFlag && (strengthPaused || !scheduledStrength && !logic.workoutDecision.canTrain && !emptyWorkoutDay)) {
     add('safety', 'recovery', 'Review today’s recovery guidance', logic.recoveryStatus.reasoning, '/dashboard/recovery', 'confirmed')
   }
   const active = schedule.events.find(e => !eventUnavailable(e.event_type, e.id) && e.flexibility_type === 'fixed' && e.status === 'scheduled' &&
@@ -84,7 +89,10 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
     ['work', 'school', 'appointment', 'medical', 'dental', 'personal', 'household', 'custom'].includes(event.event_type) && !['cancelled', 'skipped'].includes(event.status))) {
     add('schedule', 'schedule', 'Make a little room in your day', 'Review your saved commitments and choose what can wait.', '/dashboard/schedule', 'confirmed')
   }
-  if (workout !== 'completed' && !schedule.events.some(e => e.event_type === 'workout' && e.status === 'skipped') && logic.workout.assigned && logic.workoutDecision.canTrain) {
+  if (workout !== 'completed' && strengthWorkout && !schedule.events.some(e => e.event_type === 'workout' && e.status === 'skipped')) {
+    add('workout', 'workout', 'Strength assessment', 'Your eligible strength assessment takes the place of today’s workout. Record only the movements you test.',
+      logic.assessments.strength.href, logic.assessments.strength.state === 'draft' ? 'partial' : 'not_logged')
+  } else if (!scheduledStrength && workout !== 'completed' && !schedule.events.some(e => e.event_type === 'workout' && e.status === 'skipped') && logic.workout.assigned && logic.workoutDecision.canTrain) {
     add('workout', 'workout', workout === 'partial' ? 'Resume today’s workout' : food === 'not_logged' ? 'Review today’s workout' : logic.workoutDecision.adjustmentLevel === 'level_0_full_plan' ? 'Open today’s workout' : 'A lighter workout fits today',
       logic.program === 'ember' ? `${logic.workoutDecision.reasonForModification} Meal intake is not tracked in EMBER; use your meal guidance and how you feel.` : food === 'not_logged' ? 'Food is not logged yet. Review the workout options and choose what fits how you feel.' : food === 'partial' ? 'Food is partly logged. Check that the plan fits how you feel before starting.' : logic.workoutDecision.reasonForModification,
       `/dashboard/program/${logic.program}/workout`, workout)

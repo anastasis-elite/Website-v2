@@ -68,7 +68,7 @@ export default function Start2Content({ client, history, period, assessmentId, t
   }
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!canEdit) return
+    if (!canEdit || !state.canComplete) return
     if (await session.submit()) setSubmittedHere(true)
   }
   function reviewSaved() {
@@ -86,7 +86,8 @@ export default function Start2Content({ client, history, period, assessmentId, t
         <p className="assessment-history">{history.completedAt
           ? `Last completed: ${new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(history.completedAt))}`
           : history.unavailable ? 'Previous assessment could not be loaded. Your new results remain blank.' : 'Your first completed assessment will become your comparison baseline.'}</p>
-        <details className="assessment-notice"><summary>About assessment timing</summary><p>Strength testing is best during your ovulatory window when possible. If you do not know your window, complete what you can. You can still continue today and update your assessment later.</p></details>
+        <details className="assessment-notice"><summary>About assessment timing</summary><p>Your first strength baseline is available now. Reassessment becomes eligible three calendar months after your latest completed strength assessment and is scheduled as your workout on the next Monday, including that day when it is Monday. If Monday’s workout is already completed, the assessment moves to Tuesday. Your saved draft stays available.</p></details>
+        {!completed && state.eligibleDate && !state.canComplete ? <p role="status" className="assessment-notice">Your next strength reassessment is eligible on {displayDate(state.eligibleDate, timeZone, false)}. You can keep saving your draft.</p> : null}
         {state.period ? <p className="assessment-history">Assessment month: {displayPeriod(state.period)}</p> : null}
         {completed ? <p role="status">Completed · Original assessment date: <time dateTime={state.assessmentDate || state.completedAt || undefined}>{displayDate(state.assessmentDate || state.completedAt, timeZone, false)}</time></p> : null}
         {state.loading ? <p role="status">Loading your saved assessment…</p> : null}
@@ -155,7 +156,7 @@ export default function Start2Content({ client, history, period, assessmentId, t
             </label>
           </fieldset>
           <p className="assessment-notice">Record only the movements you tested. Leave untested weight and reps blank.</p>
-          {!completed ? <button type="submit" disabled={disabled || state.conflict} className="assessment-action">{state.submitting ? 'Submitting…' : state.submitError ? 'Retry Submission' : 'Submit Assessment'}</button> : <div><Link href="/dashboard" className="assessment-action">Return to Dashboard</Link> <Link href="/dashboard/progress" className="assessment-action">View Progress</Link></div>}
+          {!completed ? <button type="submit" disabled={disabled || state.conflict || !state.canComplete} className="assessment-action">{state.submitting ? 'Submitting…' : state.submitError ? 'Retry Submission' : 'Submit Assessment'}</button> : <div><Link href="/dashboard" className="assessment-action">Return to Dashboard</Link> <Link href="/dashboard/progress" className="assessment-action">View Progress</Link></div>}
           {completed && submittedHere && state.planStatus === 'safety_paused' ? <p role="status">Your assessment is saved. Your training plan needs a safety review before you continue.</p> : null}
           {completed && submittedHere && state.planStatus === 'retry' ? <p role="status">Your assessment is saved. <Link href="/dashboard/onboarding/plan">Retry creating your training plan from your saved assessments.</Link></p> : null}
         </form>

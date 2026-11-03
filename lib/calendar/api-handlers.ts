@@ -16,6 +16,7 @@ import { getDailyScheduleState } from '@/lib/schedule/service'
 import { getClientTimeZone } from '@/lib/timezone'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { getCommitmentCalendarRange } from '@/lib/schedule/commitmentCalendar'
+import { strengthCalendarEvents } from '@/lib/assessment/strengthCalendar'
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const datePattern = /^\d{4}-\d{2}-\d{2}$/
@@ -146,11 +147,13 @@ export async function eventsGET(request:Request) {
  try {const c=await calendarContext(request),url=new URL(request.url),start=url.searchParams.get('start')||new Date().toISOString(),end=url.searchParams.get('end')||new Date(Date.now()+31*86400000).toISOString()
   if(!Number.isFinite(Date.parse(start))||!Number.isFinite(Date.parse(end))||Date.parse(end)<=Date.parse(start)||Date.parse(end)-Date.parse(start)>400*86400000) throw new CalendarHttpError(400,'Choose a calendar range of up to 400 days.')
   const timezone=validTimezone(url.searchParams.get('timezone')||getClientTimeZone(c.client))
-  const [events,commitments]=await Promise.all([
-   listUnifiedEvents(c.admin,c.user.id,start,end,timezone),
+  const eventsPromise=listUnifiedEvents(c.admin,c.user.id,start,end,timezone)
+  const [events,commitments,strength]=await Promise.all([
+   eventsPromise,
    getCommitmentCalendarRange({supabase:c.supabase,user:c.user,client:c.client,start,end}),
+   strengthCalendarEvents({supabase:c.supabase,user:c.user,client:c.client,start,end,events:eventsPromise.then(result=>result.events)}),
   ])
-  return ok({...events,...commitments})
+  return ok({...events,events:strength.sort((a,b)=>a.start_at.localeCompare(b.start_at)),...commitments})
  }catch(e){return calendarError(e)}
 }
 export async function availabilityGET(request:Request) {

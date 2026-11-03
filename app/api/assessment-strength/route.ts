@@ -8,6 +8,7 @@ import { getClientTimeZone, localDateKey } from '@/lib/timezone'
 import { zonedDateTimeToUtc } from '@/lib/schedule/time'
 import { savedLegacyStrength, savedStrengthSession, strengthValues, validateStrengthCompletion } from '@/lib/assessments/strengthAssessment'
 import { membershipCan } from '@/lib/membership/policy'
+import { strengthCadence } from '@/lib/assessment/strengthCadence'
 
 export const dynamic = 'force-dynamic'
 const json = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: { 'Cache-Control': 'private, no-store' } })
@@ -48,12 +49,14 @@ export async function GET(req: Request) {
     if (historyResult.error || selectedResult.error || sessionResult.error || previousResult.error) return fail(503, 'load_failed', 'We couldn’t load your previous assessment. Retry.')
     const rowPeriod = (row: any) => validPeriod(row.assessment_period) ? row.assessment_period : localDateKey(new Date(row.submitted_at), zone).slice(0, 7) + '-01'
     const history = (historyResult.data || []).filter((row: any) => row.submitted_at).map((row: any) => ({ ...row, period: rowPeriod(row) }))
+    const cadence = strengthCadence(client, history[0]?.submitted_at || null, new Date(readAt))
     const selected = selectedResult.data ? { ...selectedResult.data, period: rowPeriod(selectedResult.data) } : null
     if (assessmentId && !selected) return fail(404, 'not_found', 'That assessment could not be found.')
     const session = sessionResult.data
     const previous = previousResult.data && !history.some((record: any) => record.period === previousResult.data.period) ? previousResult.data : null
     return json({ period: selected?.period || period, currentPeriod, clientId: client.client_id, assessment: selected ? savedLegacyStrength(selected, selected.period) : session ? savedStrengthSession(session) : null,
       previousDraft: previous ? savedStrengthSession(previous) : null,
+      eligibleDate: cadence.eligibleDate, canComplete: cadence.eligible,
       history: history.map((row: any) => ({ assessmentId: row.id, assessmentDate: row.submitted_at, period: row.period, status: 'completed' })),
     })
   } catch { return fail(503, 'load_failed', 'We couldn’t load your previous assessment. Retry.') }
@@ -72,6 +75,19 @@ async function save(req: Request, complete: boolean) {
     if (!validPeriod(period) || !Number.isSafeInteger(revision) || revision < 0 || !values) return fail(400, 'validation', 'Check your assessment values and try again.')
     if (complete) { const error = validateStrengthCompletion(values); if (error) return fail(400, 'validation', error) }
 
+    if (complete) {
+      const [latest, existing] = await Promise.all([
+        supabase.from('assessments').select('id,submitted_at').eq('client_id', client.client_id).eq('auth_user_id', user.id)
+          .eq('assessment_type', 'strength').lte('submitted_at', new Date().toISOString()).order('submitted_at', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('strength_assessment_sessions').select('status').eq('client_id', client.client_id).eq('auth_user_id', user.id).eq('period', period).maybeSingle(),
+      ])
+      if (latest.error || existing.error) return fail(503, 'load_failed', 'Your strength assessment timing could not be verified. Your entered values are still here. Retry.')
+      const cadence = strengthCadence(client, latest.data?.submitted_at || null)
+      // Completed-session retries still reach the atomic RPC, which compares
+      // the original values and recognizes the same final submission.
+      if (existing.data?.status !== 'completed' && !cadence.eligible) return fail(409, 'not_eligible', 'Your next strength reassessment is not eligible yet. Your draft remains saved.', { eligibleDate: cadence.eligibleDate })
+    }
+
     let programJson = null, planStatus = 'existing', safetyFlags: ReturnType<typeof evaluateSafetyEscalation> = []
     if (complete) {
       const [initial, profile] = await Promise.all([
@@ -89,7 +105,7 @@ async function save(req: Request, complete: boolean) {
     if (error || !data || typeof data.success !== 'boolean') return fail(503, 'save_failed', complete ? 'Your assessment hasn’t been confirmed as complete yet. Retry submission.' : 'Your changes haven’t been saved yet. Retry saving.')
     if (data.success !== true) {
       const status = data.status || 409, code = data.code === 'already_completed' ? 'conflict' : data.code || 'conflict'
-      return fail(status, code, code === 'period_changed' ? 'A new month has started. Reload to start this month’s assessment.' : code === 'validation' ? 'Check your measurements before completing the assessment.' : 'Your saved assessment changed in another session. Review it before saving again.', { currentPeriod: data.currentPeriod || currentPeriod, ...(data.assessment ? { assessment: savedStrengthSession(data.assessment) } : {}) })
+      return fail(status, code, code === 'period_changed' ? 'A new month has started. Reload to start this month’s assessment.' : code === 'not_eligible' ? 'Your next strength reassessment is not eligible yet. Your draft remains saved.' : code === 'validation' ? 'Check your measurements before completing the assessment.' : 'Your saved assessment changed in another session. Review it before saving again.', { currentPeriod: data.currentPeriod || currentPeriod, ...(data.eligibleDate ? { eligibleDate: data.eligibleDate } : {}), ...(data.assessment ? { assessment: savedStrengthSession(data.assessment) } : {}) })
     }
     const confirmed = data.assessment, confirmedValues = strengthValues(confirmed?.values)
     if (!confirmed || confirmed.client_id !== client.client_id || confirmed.auth_user_id !== user.id ||
