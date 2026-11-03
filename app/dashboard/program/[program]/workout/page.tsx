@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation'
 import WorkoutDashboard from '@/components/workout-dashboard/WorkoutDashboard'
 import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 
-import { getAssessmentWindow } from '@/lib/assessments/getAssessmentWindow'
+import { isStrengthWorkout, strengthTrainingPaused } from '@/lib/assessment/strengthWorkoutState'
+import { getClientLocalDate } from '@/lib/timezone'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
@@ -102,18 +103,6 @@ function getWorkoutStateLabel(
   return 'Today’s Workout'
 }
 
-function getAssessmentWindowStart(
-  date: string,
-): string {
-  return `${date}T00:00:00.000Z`
-}
-
-function getAssessmentWindowEnd(
-  date: string,
-): string {
-  return `${date}T23:59:59.999Z`
-}
-
 export default async function ProgramWorkoutPage({
   params,
 }: ProgramWorkoutPageProps) {
@@ -140,28 +129,10 @@ export default async function ProgramWorkoutPage({
     )
   }
 
-  const strengthAssessmentWindow =
-    getAssessmentWindow(client)
-
-  const strengthWindowStart =
-    strengthAssessmentWindow.estimatedStartDate
-      ? getAssessmentWindowStart(
-          strengthAssessmentWindow.estimatedStartDate,
-        )
-      : null
-
-  const strengthWindowEnd =
-    strengthAssessmentWindow.estimatedEndDate
-      ? getAssessmentWindowEnd(
-          strengthAssessmentWindow.estimatedEndDate,
-        )
-      : null
-
   const [
     outputResult,
     safetyFlags,
     dailyPlan,
-    strengthAssessmentResult,
     workoutHistoryResult,
     recoverySignalsResult,
   ] = await Promise.all([
@@ -186,35 +157,6 @@ export default async function ProgramWorkoutPage({
       client,
     }),
 
-    strengthAssessmentWindow.isOpen &&
-    strengthWindowStart &&
-    strengthWindowEnd
-      ? supabase
-          .from('assessments')
-          .select('id, submitted_at')
-          .eq('client_id', client.client_id)
-          .eq(
-            'assessment_type',
-            'strength',
-          )
-          .gte(
-            'submitted_at',
-            strengthWindowStart,
-          )
-          .lte(
-            'submitted_at',
-            strengthWindowEnd,
-          )
-          .order('submitted_at', {
-            ascending: false,
-          })
-          .limit(1)
-          .maybeSingle()
-      : Promise.resolve({
-          data: null,
-          error: null,
-        }),
-
     loadWorkoutHistory({ supabase, client, authUserId: user.id, allHistory: true, limit: 30 }),
 
     supabase
@@ -230,13 +172,6 @@ export default async function ProgramWorkoutPage({
   ])
 
   const output = outputResult.data
-
-  const strengthAssessmentCompletedThisWindow =
-    Boolean(strengthAssessmentResult.data)
-
-  const showStrengthAssessmentOffer =
-    strengthAssessmentWindow.isOpen &&
-    !strengthAssessmentCompletedThisWindow
 
   const cycleStatus = getCycleStatus(client)
 
@@ -262,6 +197,11 @@ export default async function ProgramWorkoutPage({
     monthlyAssessmentsDueCount: 0,
   })
 
+  const hasSafetyFlags = safetyFlags.length > 0
+  const scheduledStrength = isStrengthWorkout(logic.assessments.strength, getClientLocalDate(client))
+  const strengthPaused = scheduledStrength && strengthTrainingPaused(logic, hasSafetyFlags)
+  const strengthWorkout = scheduledStrength && (!strengthPaused || logic.assessments.strength.completedToday)
+
   const assignedWorkout =
     logic.workoutDecision.assignedWorkout
 
@@ -270,29 +210,27 @@ export default async function ProgramWorkoutPage({
       []) as AssignedExercise[]
 
   const workoutStateLabel =
-    getWorkoutStateLabel(
+    strengthPaused ? 'Training paused' : strengthWorkout ? 'Strength assessment' : getWorkoutStateLabel(
       assignedWorkout?.workout_state,
     )
 
   const workoutTitle =
-    assignedWorkout?.day_name ||
+    strengthPaused ? 'Recovery guidance' : strengthWorkout ? 'Strength assessment' : assignedWorkout?.day_name ||
     logic.workout.title ||
     workoutStateLabel
-
-  const hasSafetyFlags =
-    safetyFlags.length > 0
 
   const hasAssignedExercises =
     assignedExercises.length > 0
 
   const showInteractiveWorkout =
+    !scheduledStrength &&
     hasAssignedExercises &&
     logic.workoutDecision.displayWorkout &&
     logic.workoutDecision.canTrain &&
     !hasSafetyFlags
 
   const previewTitle =
-    hasSafetyFlags
+    hasSafetyFlags || strengthPaused
       ? 'Safety support first'
       : assignedWorkout?.workout_state === 'rest'
         ? 'Rest day'
@@ -302,7 +240,9 @@ export default async function ProgramWorkoutPage({
             ? 'Safety support first'
             : 'Recovery movement'
 
-  const previewMessage = hasSafetyFlags
+  const previewMessage = strengthPaused
+    ? 'Strength testing is paused. Review today’s recovery guidance. Your saved assessment and draft remain available in Strength.'
+    : hasSafetyFlags
     ? 'The assigned plan is listed below, but completion is paused until the safety message is resolved.'
     : logic.workoutDecision
         .reasonForModification
@@ -352,16 +292,11 @@ export default async function ProgramWorkoutPage({
           outputProgram={output?.program}
           muscleReadiness={muscleReadiness}
           workoutHistory={workoutHistory}
+          strengthAssessmentWorkout={strengthWorkout}
           memberEquipment={
             Array.isArray(client.equipment_access)
               ? client.equipment_access
               : []
-          }
-          showStrengthAssessmentOffer={
-            showStrengthAssessmentOffer
-          }
-          strengthAssessmentWindowEndDate={
-            strengthAssessmentWindow.estimatedEndDate
           }
         />
       </div>

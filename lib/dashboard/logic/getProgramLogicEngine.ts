@@ -31,6 +31,7 @@ import { evaluateCapacityHistory } from '@/lib/workout-os/evaluateCapacityHistor
 import { buildRecoveryActions } from '@/lib/workout-os/buildRecoveryActions'
 import { getBodyAssessmentScheduleStatus } from '@/lib/body-assessment/schedule'
 import { getStrengthAssessmentPeriod, strengthAssessmentStatusFromRecords } from '@/lib/assessment/getStrengthAssessmentStatus'
+import { strengthCompletionForDay } from '@/lib/assessment/strengthWorkout'
 
 export const DASHBOARD_ENGINE_VERSION =
   'aos_daily_logic_v1.0.0'
@@ -396,6 +397,15 @@ export async function getProgramLogicEngine(
 ): Promise<ProgramLogicOutput> {
   const inputs =
     await loadProgramLogicInputs(args)
+
+  // A final strength test is the scheduled workout, with its own published
+  // completion evidence. Ordinary workouts still use their unchanged set/
+  // duration rules; no synthetic workout log or historical completion is saved.
+  if (strengthCompletionForDay(inputs.strengthAssessment, inputs.client, inputs.date)) {
+    inputs.dailyPlan = { ...inputs.dailyPlan, workoutCompleted: true,
+      completedWorkoutAt: inputs.strengthAssessment!.latestCompletedAt,
+      completedWorkoutTitle: 'Strength assessment' }
+  }
 
   const symptoms =
     runSymptomEngine(inputs)

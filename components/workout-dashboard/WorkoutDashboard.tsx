@@ -1,6 +1,7 @@
 'use client'
 
 import { getStrengthAssessmentDetail } from '@/lib/assessment/getStrengthAssessmentStatus'
+import { strengthTrainingPaused } from '@/lib/assessment/strengthWorkoutState'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -73,8 +74,7 @@ type Props = {
   timezone?: string
   weightUnit?: 'lb' | 'kg'
   memberEquipment: string[]
-  showStrengthAssessmentOffer: boolean
-  strengthAssessmentWindowEndDate?: string | null
+  strengthAssessmentWorkout?: boolean
 }
 
 function exerciseName(exercise: AssignedExercise) {
@@ -86,11 +86,6 @@ function exerciseDose(exercise: AssignedExercise) {
   const dose = activityDose(exercise)
   if (dose.metric === 'completion') return 'Complete the movement comfortably'
   return `${dose.kind === 'strength' ? `${dose.sets} sets · ` : ''}${dose.prescribed || 'Choose a comfortable amount'} ${dose.metric}${dose.weight > 0 ? ` · ${dose.weight} ${dose.unit}` : ''}`
-}
-
-function formatAssessmentEnd(date?: string | null) {
-  if (!date) return null
-  return new Date(`${date}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
 }
 
 function WorkoutPreview({ exercises, previewTitle, previewMessage }: { exercises: AssignedExercise[]; previewTitle: string; previewMessage: string }) {
@@ -129,7 +124,7 @@ function ProgressTab({ logic, exercises }: { logic: ProgramLogicOutput; exercise
   )
 }
 
-function StrengthTab({ showOffer, endDate, logic }: { showOffer: boolean; endDate?: string | null; logic: ProgramLogicOutput }) {
+function StrengthTab({ logic, paused }: { logic: ProgramLogicOutput; paused: boolean }) {
   const strength = logic.assessments.strength
   return (
     <div className="workout-tab-grid" data-testid="workout-strength-tab">
@@ -137,8 +132,8 @@ function StrengthTab({ showOffer, endDate, logic }: { showOffer: boolean; endDat
         <span>Strength Assessment</span>
         <strong>{strength.label}</strong>
         <small>{getStrengthAssessmentDetail(strength, logic.client)}</small>
-        {strength.state === 'due' && showOffer && formatAssessmentEnd(endDate) ? <small>Available through {formatAssessmentEnd(endDate)}</small> : null}
-        <Link href={strength.href} className="tier-secondary-action">{strength.actionLabel}</Link>
+        {paused && !strength.completedToday ? <small>Training is paused. Your saved assessment and draft remain available to review.</small> : null}
+        <Link href={strength.href} className="tier-secondary-action">{paused && !strength.completedToday ? strength.state === 'draft' ? 'Review saved draft' : 'Review assessment' : strength.actionLabel}</Link>
         {strength.previousDraft ? <Link href={strength.previousDraft.href} className="tier-secondary-action">Resume earlier strength assessment</Link> : null}
       </article>
     </div>
@@ -173,6 +168,9 @@ export default function WorkoutDashboard(props: Props) {
   const [workoutMode, setWorkoutMode] = useState<'recommended' | 'manual'>('recommended')
   const [restoredPreferenceKey, setRestoredPreferenceKey] = useState<string | null>(null)
   const preferenceKey = `aos-workout-view:v1:${props.clientId}:${props.program}`
+  const strengthPaused = strengthTrainingPaused(props.logic, props.hasSafetyFlags)
+  const strengthSaved = props.logic.assessments.strength.completedToday && props.logic.assessments.strength.state === 'completed'
+  const recommendedInteractive = props.showInteractiveWorkout && !(props.strengthAssessmentWorkout && strengthPaused)
   useEffect(() => {
     let stored = null
     try { stored = localStorage.getItem(preferenceKey) } catch { /* The workout remains available without browser preferences. */ }
@@ -217,7 +215,7 @@ export default function WorkoutDashboard(props: Props) {
               ))}
             </div>
           </div>
-          {props.showInteractiveWorkout && workoutMode === 'recommended' ? <>
+          {recommendedInteractive && workoutMode === 'recommended' ? <>
             <p>Rest until breathing is comfortable.</p>
             <details className="workout-session-guidance">
               <summary>About today’s workout</summary>
@@ -241,7 +239,9 @@ export default function WorkoutDashboard(props: Props) {
                 memberEquipment={props.memberEquipment}
                 readiness={props.muscleReadiness}
               />
-            ) : props.showInteractiveWorkout ? (
+            ) : props.strengthAssessmentWorkout && (!strengthPaused || strengthSaved) ? (
+              <article className="aos-workout-preview" data-testid="strength-assessment-workout"><h3>Strength assessment</h3><p>{getStrengthAssessmentDetail(props.logic.assessments.strength, props.logic.client)}</p><Link href={props.logic.assessments.strength.href} className={strengthSaved ? 'tier-secondary-action' : 'tier-primary-action'}>{props.logic.assessments.strength.actionLabel}</Link></article>
+            ) : recommendedInteractive ? (
               <WorkoutTracker
                 timezone={props.timezone}
                 weightUnit={props.weightUnit}
@@ -268,7 +268,7 @@ export default function WorkoutDashboard(props: Props) {
         </div>
         <div id="workout-information-panel" role="tabpanel" aria-labelledby={`workout-tab-${tab}`}>
         {tab === 'progress' ? <ProgressTab logic={props.logic} exercises={props.assignedExercises} /> : null}
-        {tab === 'strength' ? <StrengthTab showOffer={props.showStrengthAssessmentOffer} endDate={props.strengthAssessmentWindowEndDate} logic={props.logic} /> : null}
+        {tab === 'strength' ? <StrengthTab logic={props.logic} paused={strengthPaused} /> : null}
         {tab === 'recovery' ? <RecoveryTab tier={props.program} /> : null}
         {tab === 'history' ? <HistoryTab history={props.workoutHistory} timezone={props.timezone} /> : null}
         </div>

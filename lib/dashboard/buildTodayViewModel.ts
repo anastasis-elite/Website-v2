@@ -7,6 +7,7 @@ import { buildTodayActivities, presentTodayActivities } from './todayActivities'
 import { buildDailyRecommendation } from './dailyRecommendation'
 import { getStreakRequirementProgress } from './logic/streakRequirementProgress'
 import { getRecoveryPresentation } from '@/lib/recovery/todayCompletion'
+import { isStrengthWorkout, strengthTrainingPaused } from '@/lib/assessment/strengthWorkoutState'
 
 export function buildTodayViewModel(logic: ProgramLogicOutput, schedule: DailyScheduleState): TodayViewModel {
   const today = buildTodayActivities(logic, schedule)
@@ -20,14 +21,17 @@ export function buildTodayViewModel(logic: ProgramLogicOutput, schedule: DailySc
   const returnAt = Math.min(...Object.values(schedule.dailyGuide?.activities || {}).flatMap(value =>
     value?.status === 'deferred' && value.until && Date.parse(value.until) > now ? [Date.parse(value.until)] : []))
   const state = logic.workoutDecision.assignedWorkout?.workout_state || null
+  const scheduledStrength = isStrengthWorkout(logic.assessments.strength, schedule.date)
+  const strengthPaused = scheduledStrength && strengthTrainingPaused(logic)
+  const strengthWorkout = scheduledStrength && !strengthPaused
   return {
     version: 1, date: schedule.date, timezone: schedule.timezone, generatedAt: schedule.now,
     clientId: logic.client.id, tier: logic.program, today, presentedActivities, recommendation, streakProgress,
     nextRefreshAt: Number.isFinite(presentationBoundary) ? new Date(presentationBoundary).toISOString() : null,
     deferredReturnAt: Number.isFinite(returnAt) ? new Date(returnAt).toISOString() : null,
     quiet: schedule.preferences?.carouselStyle === 'step',
-    workout: { state, inactive: state === 'rest' || state === 'unavailable', title: logic.workout.title,
-      reason: logic.workoutDecision.reasonForModification, inProgress: Boolean(logic.execution.workoutInProgress) },
+    workout: { state: strengthPaused ? 'recovery' : strengthWorkout ? 'assessment' : state, inactive: strengthPaused || !strengthWorkout && (state === 'rest' || state === 'unavailable'), title: strengthPaused ? 'Training paused' : strengthWorkout ? 'Strength assessment' : logic.workout.title,
+      reason: strengthPaused ? 'Strength testing is paused. Review today’s recovery guidance.' : logic.workoutDecision.reasonForModification, inProgress: strengthWorkout ? logic.assessments.strength.state === 'draft' && !logic.assessments.strength.completedToday : Boolean(logic.execution.workoutInProgress) },
     macroReminder: logic.nutrition.macroReminder?.message || null,
   }
 }
