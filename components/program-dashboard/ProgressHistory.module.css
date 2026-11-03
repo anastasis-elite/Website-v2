@@ -1,0 +1,25 @@
+.history {display:grid;gap:22px;min-width:0;color:#f1e9dc;}
+.panel {min-width:0;border:1px solid #b3855952;border-radius:22px;padding:22px;background:linear-gradient(135deg,#4a301c70,#261a12);}
+.panel h2 {font:400 clamp(1.45rem,3vw,2rem)/1.2 Georgia,serif;margin:0 0 14px;}
+.panel p {line-height:1.6;margin:10px 0;color:#d1bda7;}
+.notice {padding:12px 15px;border-left:3px solid #bd916b;color:#e0c8ae;line-height:1.5;}
+.filter {display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin-bottom:18px;}
+.filter label {display:grid;gap:8px;flex:1;min-width:min(100%,220px);}
+.filter select {width:100%;min-height:44px;border:1px solid #ac845e80;border-radius:12px;background:#291c13;color:#f1e9dc;padding:10px;font:inherit;}
+.filter button,.retry {display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid #ba9067;border-radius:12px;background:#62432d;color:#f5eadb;font:inherit;text-decoration:none;}
+.filter :is(select,button):focus-visible,.retry:focus-visible,.session > summary:focus-visible {outline:2px solid #ead2b4;outline-offset:3px;}
+.chart {max-width:680px;margin:18px 0;}
+.tableScroll {max-width:100%;overflow-x:auto;margin-top:16px;}
+.tableScroll:focus-visible {outline:2px solid #ead2b4;outline-offset:3px;}
+.table {border-collapse:collapse;width:100%;font-size:.9rem;line-height:1.5;}
+.table caption {text-align:left;color:#d0b797;padding-bottom:10px;}
+.table :is(th,td) {padding:10px 12px;text-align:left;border-bottom:1px solid #b385592e;vertical-align:top;}
+.table th {color:#e6c7a6;font-weight:500;}
+.table td {color:#d8c7b3;}
+.session {border-top:1px solid #b3855940;padding:8px 0;}
+.session > summary {min-height:44px;cursor:pointer;padding:12px 0;line-height:1.5;}
+.session > summary span {margin-left:12px;color:#d1bda7;}
+.entries {padding-left:20px;}
+.entries li {margin:10px 0;line-height:1.6;overflow-wrap:anywhere;}
+.entries li strong {display:block;font-weight:500;}
+@media(max-width:600px) {.panel{padding:18px 15px;}.filter button{width:100%;}.table :is(th,td){padding:9px 7px;}.session > summary span{display:block;margin-left:0;}}

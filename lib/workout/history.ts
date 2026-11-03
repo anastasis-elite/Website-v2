@@ -18,11 +18,15 @@ type HistoryOptions = {
   source?: 'manual' | 'recommended'
   allHistory?: boolean
   limit?: number
+  // Opt-in bounded source reads for read-only history drill-downs. Existing
+  // callers retain their original query and response behavior.
+  sourceLimit?: number
 }
 
 // New sessions retain an actual timestamp. Legacy DATE rows retain their civil
 // date; never compare that column to a timestamptz or invent historical times.
-export async function loadWorkoutHistory({ supabase, client, startDate = getClientLocalDate(client), endDateExclusive = addLocalDays(startDate, 1), authUserId, completed, dayName, source, allHistory = false, limit = 100 }: HistoryOptions) {
+export async function loadWorkoutHistory({ supabase, client, startDate = getClientLocalDate(client), endDateExclusive = addLocalDays(startDate, 1), authUserId, completed, dayName, source, allHistory = false, limit = 100, sourceLimit }: HistoryOptions) {
+  if (sourceLimit !== undefined && (!Number.isSafeInteger(sourceLimit) || sourceLimit < 1 || sourceLimit > 10000)) throw new Error('Invalid workout history source limit.')
   const start = getClientDayRange(client, startDate).start.toISOString()
   const end = getClientDayRange(client, endDateExclusive).start.toISOString()
   const timeZone = getClientTimeZone(client)
@@ -32,10 +36,13 @@ export async function loadWorkoutHistory({ supabase, client, startDate = getClie
     if (dayName !== undefined) query = query.eq('day_name', dayName)
     return query
   }
-  const [timed, dated] = await Promise.all([
-    (allHistory ? base() : base().gte('workout_started_at', start).lt('workout_started_at', end)).order('workout_started_at', { ascending: false }).limit(completed === undefined ? limit : Math.max(limit, 100)),
-    (allHistory ? base() : base().gte('workout_date', startDate).lt('workout_date', endDateExclusive)).order('workout_date', { ascending: false }),
-  ])
+  let timedQuery = (allHistory ? base() : base().gte('workout_started_at', start).lt('workout_started_at', end)).order('workout_started_at', { ascending: false, ...(sourceLimit === undefined ? {} : { nullsFirst: false }) })
+  let datedQuery = (allHistory ? base() : base().gte('workout_date', startDate).lt('workout_date', endDateExclusive)).order('workout_date', { ascending: false })
+  if (sourceLimit !== undefined) {
+    timedQuery = timedQuery.order('id', { ascending: false }).limit(sourceLimit)
+    datedQuery = datedQuery.order('id', { ascending: false }).limit(sourceLimit)
+  } else timedQuery = timedQuery.limit(completed === undefined ? limit : Math.max(limit, 100))
+  const [timed, dated] = await Promise.all([timedQuery, datedQuery])
   const missingTimestamp = timed.error && ['42703', 'PGRST204'].includes(timed.error.code) && String(timed.error.message).includes('workout_started_at')
   if (dated.error || (timed.error && !missingTimestamp)) return { data: null, error: dated.error || timed.error }
   const byId = new Map<string, any>()
@@ -49,7 +56,8 @@ export async function loadWorkoutHistory({ supabase, client, startDate = getClie
     const aDate = workoutLocalDate(a, timeZone), bDate = workoutLocalDate(b, timeZone)
     if (aDate !== bDate) return bDate.localeCompare(aDate)
     const aTime = a.workout_started_at || a.updated_at || '', bTime = b.workout_started_at || b.updated_at || ''
-    return String(bTime).localeCompare(String(aTime))
+    const timeOrder = String(bTime).localeCompare(String(aTime))
+    return timeOrder || (sourceLimit !== undefined ? String(b.id).localeCompare(String(a.id)) : 0)
   }).slice(0, limit)
-  return { data, error: null }
+  return { data, error: null, ...(sourceLimit === undefined ? {} : { sourceCapped: (timed.data?.length || 0) >= sourceLimit || (dated.data?.length || 0) >= sourceLimit || byId.size > limit }) }
 }
