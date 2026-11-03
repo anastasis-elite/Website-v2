@@ -101,7 +101,7 @@ test('four whole-card links retain full-detail routes in every tier and missing 
   for (const program of ['ember', 'ignite', 'phoenix']) {
     const html = renderToStaticMarkup(React.createElement(Overview, { data: buildProgressOverview(empty()), program }))
     assert.equal((html.match(/class="phone-app-card card"/g) || []).length, 4)
-    for (const href of [`/dashboard/program/${program}/workout#workout-information-panel`, '/dashboard/assessment/measurements', '/dashboard/recovery', '#progress-details']) assert.ok(html.includes(`href="${href}"`))
+    for (const href of ['/dashboard/progress/strength?range=4w', '/dashboard/progress/body?range=4w', '/dashboard/recovery', '#progress-details']) assert.ok(html.includes(`href="${href}"`))
     assert.match(html, /href="\/dashboard\/progress\?range=12w"/)
     assert.match(html, /No completed workout sessions in this period/)
     assert.doesNotMatch(html, /class="spark"|class="bars"/)
