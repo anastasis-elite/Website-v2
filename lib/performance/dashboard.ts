@@ -1,5 +1,7 @@
 'use client'
 
+import { DASHBOARD_TIMING_STAGES, sanitizeDashboardTimings, type DashboardTimingEntry } from './dashboardTimingTypes'
+
 // Local User Timing entries only: no account identifiers, health data, network
 // requests, or persistent browser storage. Read these with performance.getEntries.
 export function markDashboardStage(stage: 'shell' | 'primary' | 'secondary' | 'resume') {
@@ -18,5 +20,38 @@ export function markDashboardStage(stage: 'shell' | 'primary' | 'secondary' | 'r
     if (stage !== 'resume') performance.measure(`anastasis:navigation-to-${stage}`, { start: 0, end: name })
   } catch {
     // Unsupported/restricted timing APIs must not interfere with daily actions.
+  }
+}
+
+const requestTimingNames = DASHBOARD_TIMING_STAGES.map(stage => `anastasis:today:server:${stage}`)
+const actionableTimingName = 'anastasis:today:actionable'
+let timingOwner: object | null = null
+
+// Only the currently mounted primary render owns these bounded, local records.
+// Legacy shell/resume markers above retain their existing behavior. Server
+// offsets stay in numeric detail; their clock is not the browser's clock.
+export function publishDashboardRequestTimings(timings: readonly DashboardTimingEntry[] | undefined, actionable = false): () => void {
+  const owner = {}
+  timingOwner = owner
+  const clear = () => {
+    for (const name of [...requestTimingNames, actionableTimingName]) {
+      try { performance.clearMarks(name) } catch { /* Optional local diagnostics. */ }
+    }
+  }
+  clear()
+  try {
+    if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+      for (const entry of sanitizeDashboardTimings(timings)) {
+        performance.mark(`anastasis:today:server:${entry.stage}`, { detail: { startMs: entry.startMs, durationMs: entry.durationMs } })
+      }
+      if (actionable === true) performance.mark(actionableTimingName)
+    }
+  } catch {
+    // Unsupported/restricted timing APIs must not interfere with daily actions.
+  }
+  return () => {
+    if (timingOwner !== owner) return
+    clear()
+    timingOwner = null
   }
 }
