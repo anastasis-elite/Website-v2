@@ -10,17 +10,21 @@ import DashboardMoreMenu from '@/components/navigation/DashboardMoreMenu'
 import { normalizeProgramTier } from '@/lib/entitlements'
 import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 import DailyDisplayPreferences from '@/components/DailyDisplayPreferences'
+import AppleHealthExportImport from './AppleHealthExportImport'
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
 }
 
 
-export default function AccountDashboard({ initialData, client, user, displayPreferences = {} }: {
+export default function AccountDashboard({ initialData, client, user, displayPreferences = {}, importTimezone = '', importEligible = false, importUserId = '' }: {
   initialData: AccountData
   client: AccountProfileFormData
   user: { email: string | null }
   displayPreferences?: { executionStyle?: string; carouselStyle?: string; transitionMinutes?: number }
+  importTimezone?: string
+  importEligible?: boolean
+  importUserId?: string
 }) {
   const data = useAccountData(initialData)
   const profile = useClientProfile(data)
@@ -53,7 +57,7 @@ export default function AccountDashboard({ initialData, client, user, displayPre
           <details className="account-panel account-detail-panel" id="notifications"><summary>Notifications <span>Open ›</span></summary><div className="account-detail-copy"><p>Your account email is <strong>{profile.email}</strong>.</p><p>Alerts and reminders are not available from this page.</p></div></details>
           <details className="account-panel account-detail-panel" id="billing"><summary>Billing & Subscriptions <span>Open ›</span></summary><div className="account-detail-copy"><p>Current status: <strong>{profile.subscriptionStatus || 'Contact support to confirm'}</strong></p><BillingControls connected={data.billing.connected} billingType={data.billing.billingType} /><div className="account-inline-actions"><Link href="/refund-policy">Billing policy</Link><Link href="/dashboard/support">Contact billing support</Link></div></div></details>
         </section>
-        <section className="account-panel"><h2>Connections &amp; privacy</h2><p>Devices &amp; health apps: connection management is unavailable here.</p><p>Community visibility, profile sharing, data export and deletion requests are not managed on this screen.</p><Link href="/dashboard/settings/calendars" className="account-outline-button">Manage existing calendars</Link><Link href="/dashboard/support" className="account-outline-button">Privacy and data support</Link></section>
+        <section className="account-panel"><h2>Connections &amp; privacy</h2><p>Devices &amp; health apps: native connection management is unavailable here.</p><p>Community visibility, profile sharing, data export and deletion requests are not managed on this screen.</p><Link href="/dashboard/settings/calendars" className="account-outline-button">Manage existing calendars</Link><Link href="/dashboard/support" className="account-outline-button">Privacy and data support</Link><AppleHealthExportImport key={`${importUserId}:${data.profile.clientId}`} clientId={data.profile.clientId} userId={importUserId} timeZone={importTimezone} eligible={importEligible} /></section>
 
       </div>
     </main></PhoneAppFrame>

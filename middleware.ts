@@ -75,7 +75,7 @@ export const config = {
     '/api/check-access', '/api/membership/:path*', '/api/tracker/:path*',
     '/api/workout-set-log', '/api/workout-feedback', '/api/workout/prescription', '/api/assessment-photos/:path*',
     '/api/calendars/:path*', '/api/daily-check-in',
-    '/api/phoenix/:path*', '/api/mobile/:path*', '/api/account/:path*', '/api/billing/:path*',
+    '/api/phoenix/:path*', '/api/mobile/:path*', '/api/account/:path*', '/api/billing/:path*', '/api/health/:path*',
     '/api/assessment-window/:path*',
   ],
 }

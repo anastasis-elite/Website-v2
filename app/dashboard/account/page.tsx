@@ -1,6 +1,8 @@
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getAccountData } from '@/lib/dashboard/account/getAccountData'
 import AccountDashboard from '@/components/account/AccountDashboard'
+import { getClientTimeZone } from '@/lib/timezone'
+import { membershipCan } from '@/lib/membership/policy'
 
 export default async function AccountPage() {
   const { client, user, supabase } = await getDashboardContext({ allowInactiveAccess: true, allowIncompleteOnboarding: true })
@@ -32,5 +34,6 @@ export default async function AccountPage() {
     carouselStyle: client.carousel_style || 'section',
     transitionMinutes: Number(client.onboarding_data?.transitionMinutes ?? 10),
   }
-  return <AccountDashboard initialData={data} client={profileFormData} user={{ email: user.email || null }} displayPreferences={displayPreferences} />
+  return <AccountDashboard initialData={data} client={profileFormData} user={{ email: user.email || null }} displayPreferences={displayPreferences}
+    importTimezone={getClientTimeZone(client)} importEligible={membershipCan(client, 'healthRecords')} importUserId={user.id} />
 }
