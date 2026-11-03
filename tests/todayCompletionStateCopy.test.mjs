@@ -8,8 +8,8 @@ const { getStreakRequirementProgress } = await importTs('lib/dashboard/logic/str
 const date = '2026-11-02'
 const completeTitle = 'Day completed'
 const completeReason = 'Reward yourself with a little treat.'
-const neutralTitle = 'Leave a little room for yourself'
-const neutralReason = 'There is no additional action in your recorded plan right now. Leave the rest flexible.'
+const neutralTitle = 'A little moment, just for you.'
+const neutralReason = 'You’ve made space for yourself today. Enjoy a warm cup of coffee or tea, a little dessert, or whatever feels like a treat to you. You deserve to enjoy it.'
 
 function flame({ program = 'ignite', day = date, required = {}, completed = {} } = {}) {
   const requiredItems = { dailyCheckIn: true, nutrition: true, hydration: true, workoutOrMovement: false,

@@ -196,7 +196,10 @@ test('all-complete Today keeps saved progress and a history route without comple
   state.dailyGuide.activities.schedule = { status: 'reviewed' }
   const html = render(logic, state)
   assert.doesNotMatch(html, /<li data-activity-id=/)
-  assert.match(html, /Your recorded activities are saved/)
+  assert.ok(html.includes('Your recorded activities are saved. You can revisit your progress and history anytime.'))
+  assert.match(html, /<h2>Day completed<\/h2>/)
+  assert.ok(html.includes('Reward yourself with a little treat.'))
+  assert.doesNotMatch(html, /A little moment, just for you|Look at you showing up for yourself/)
   assert.match(html, /aria-valuenow="5"/)
   assert.match(html, /Your streak is secured for today/)
   assert.match(html, /href="\/dashboard\/progress">View progress/)
@@ -379,4 +382,38 @@ test('GuidedToday schedules the earliest water, calorie or distinct recovery bou
   assert.equal(scheduleRefreshCalls.at(-1)[1], true)
   const source = readFileSync('components/program-dashboard/GuidedToday.tsx', 'utf8')
   assert.doesNotMatch(source, /setInterval/)
+})
+
+test('approved incomplete copy maps the treat invitation to next step and encouragement to At your pace while progress stays visible', () => {
+  const logic = fixture(), state = schedule()
+  logic.assessments.dailyCompleted = true
+  logic.hydration = { status: 'ready', target: 80, consumed: 40, remaining: 40, presentationPacing: { state: 'on_pace' } }
+  logic.nutrition = { ...logic.nutrition, dataStatus: 'known', calories: { percent: 50 }, pacing: { state: 'on_pace', nextRefreshAt: null } }
+  logic.execution = { workoutComplete: true, nutritionLogged: false, recoveryComplete: true }
+  logic.flameState = flame(logic.program, { dailyCheckIn: true, workoutOrMovement: true, customTasks: true })
+  state.dailyGuide.activities.schedule = { status: 'reviewed' }
+  const html = render(logic, state)
+  const emptySection = /<section class="today-activities"[\s\S]*?<\/section>/.exec(html)?.[0]
+  assert.ok(emptySection)
+  assert.match(html, /<h2>A little moment, just for you\.<\/h2>/)
+  assert.ok(html.includes('You’ve made space for yourself today. Enjoy a warm cup of coffee or tea, a little dessert, or whatever feels like a treat to you. You deserve to enjoy it.'))
+  assert.ok(emptySection.includes('<h2>At your pace.</h2>'))
+  assert.ok(emptySection.includes('<p role="status"><strong>Look at you showing up for yourself.</strong>'))
+  assert.ok(emptySection.includes('You’re making space for your well-being today, and that matters. Take a breath and enjoy this moment. You’re doing beautifully.'))
+  assert.doesNotMatch(emptySection, /A little moment, just for you|warm cup of coffee|Nothing else is due/)
+  assert.match(emptySection, /href="\/dashboard\/progress">View progress<\/a>/)
+  assert.match(html, /aria-valuenow="3"/)
+  assert.match(html, /2 required items remain/)
+  assert.doesNotMatch(html, /Day completed|Your streak is secured|Your recorded activities are saved/)
+})
+
+test('approved empty copy never replaces actionable activity cards or their original destinations', () => {
+  const logic = fixture(), state = schedule(), html = render(logic, state)
+  assert.match(html, /data-activity-id="check-in"/)
+  assert.match(html, /href="\/dashboard\/check-in"/)
+  assert.match(html, /Start daily check-in/)
+  assert.match(html, /<li data-activity-id="water"/)
+  assert.match(html, /<li data-activity-id="nutrition"/)
+  assert.match(html, /<h2>At your pace\.<\/h2>/)
+  assert.doesNotMatch(html, /A little moment, just for you|Look at you showing up for yourself|warm cup of coffee|You’re doing beautifully/)
 })

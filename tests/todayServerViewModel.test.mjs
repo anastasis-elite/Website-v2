@@ -179,7 +179,7 @@ test('only authoritative required completion secures the model; optional score, 
   assert.equal(model.today.completed, model.today.total)
   assert.equal(model.presentedActivities.length, 0)
   assert.equal(model.streakProgress.secured, false)
-  assert.equal(model.recommendation.primary.title, 'Leave a little room for yourself')
+  assert.equal(model.recommendation.primary.title, 'A little moment, just for you.')
   current.logic.flameState = flame('ignite', { dailyCheckIn: true, nutrition: true, hydration: true, workoutOrMovement: true, recovery: true, sleep: true, customTasks: true })
   model = buildTodayViewModel(current.logic, current.schedule)
   assert.equal(model.streakProgress.secured, true)
@@ -221,7 +221,7 @@ test('member-local midnight changes completion copy only after a fresh server mo
   current.schedule.now = '2026-11-04T05:59:59.000Z'
   assert.equal(buildTodayViewModel(current.logic, current.schedule).recommendation.primary.title, 'Day completed')
   current.schedule.now = '2026-11-04T06:00:00.000Z'
-  assert.equal(buildTodayViewModel(current.logic, current.schedule).recommendation.primary.title, 'Leave a little room for yourself')
+  assert.equal(buildTodayViewModel(current.logic, current.schedule).recommendation.primary.title, 'A little moment, just for you.')
   current.schedule.date = '2026-11-04'
   current.schedule.dailyGuide.date = current.schedule.date
   current.logic.flameState.requirements.date = current.schedule.date
