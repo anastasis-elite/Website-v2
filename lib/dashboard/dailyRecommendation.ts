@@ -125,8 +125,8 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   }
   const streakProgress = getStreakRequirementProgress(logic.flameState, schedule.date, { programTier: logic.program, now: schedule.now, timezone: schedule.timezone })
   const dayCompleted = streakProgress.available && streakProgress.secured && localDateKey(new Date(schedule.now), schedule.timezone) === schedule.date
-  const fallback: DailyRecommendationAction = { id: 'pause', category: 'none', title: dayCompleted ? 'Day completed' : 'Leave a little room for yourself',
-    reason: dayCompleted ? 'Reward yourself with a little treat.' : 'There is no additional action in your recorded plan right now. Leave the rest flexible.',
+  const fallback: DailyRecommendationAction = { id: 'pause', category: 'none', title: dayCompleted ? 'Day completed' : 'A little moment, just for you.',
+    reason: dayCompleted ? 'Reward yourself with a little treat.' : 'You’ve made space for yourself today. Enjoy a warm cup of coffee or tea, a little dessert, or whatever feels like a treat to you. You deserve to enjoy it.',
     href: '/dashboard/schedule', availability: dayCompleted ? 'completed' : 'confirmed', completed: dayCompleted }
   return { date: schedule.date, timezone: schedule.timezone, generatedAt: schedule.now,
     primary: candidates[0] || fallback, supporting: candidates.slice(1, 4), training: getDailyTraining(logic), evidence: { food, water, workout, checkIn } }

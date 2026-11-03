@@ -154,7 +154,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
           <span className="today-activity-state">{statusLabels[activity.status] || 'Available'}{activity.deferredUntil ? <small>Until {formatLocalTime(activity.deferredUntil, schedule.timezone)}</small> : null}</span>
         </Link>
         <ActivityOptions activity={activity} busy={busy !== null} onAction={updateActivity} />
-      </li>)}</ul> : <p role="status">{complete ? 'Your recorded activities are saved. You can revisit your progress and history anytime.' : 'Nothing else is due right now. Your saved activities are still available.'} <Link href="/dashboard/progress">View progress</Link></p>}
+      </li>)}</ul> : <p role="status">{complete ? 'Your recorded activities are saved. You can revisit your progress and history anytime.' : <><strong>Look at you showing up for yourself.</strong>{' '}You’re making space for your well-being today, and that matters. Take a breath and enjoy this moment. You’re doing beautifully.</>} <Link href="/dashboard/progress">View progress</Link></p>}
     </section>
 
     {model.macroReminder ? <aside className="today-feedback" aria-label="Recent nutrition logs">
