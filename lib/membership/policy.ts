@@ -49,7 +49,7 @@ export const PROTECTED_API_PREFIXES = [
   '/api/recovery-log', '/api/recovery', '/api/assessment', '/api/assessment-strength',
   '/api/assessment-photos', '/api/assessment-window', '/api/schedule', '/api/onboarding',
   '/api/cycle', '/api/phoenix', '/api/check-access', '/api/membership', '/api/tracker',
-  '/api/calendars', '/api/daily-check-in', '/api/account', '/api/billing', '/api/mobile',
+  '/api/calendars', '/api/daily-check-in', '/api/account', '/api/billing', '/api/mobile', '/api/health',
 ] as const
 
 export function isProtectedApiPath(path: string): boolean {
@@ -78,6 +78,7 @@ export function capabilityForPath(path: string, method = 'GET', search?: Pick<UR
   if (/^\/api\/(?:workout-log|workout-set-log)$/.test(path)) return read ? 'accountData' : 'workoutLogging'
   if (path === '/api/workout/prescription') return 'generatedCoaching'
   if (path === '/api/mobile/health/sync') return 'healthRecords'
+  if (path === '/api/health/apple-export') return 'healthRecords'
   if (path === '/api/mobile/actions/recovery') return 'recoveryBasic'
   if (path === '/api/mobile/actions/water' || path === '/api/mobile/dashboard') return 'generatedCoaching'
   if (/^\/api\/mobile\/schedule(?:\/[^/]+\/(?:complete|defer))?$/.test(path)) return 'calendar'
