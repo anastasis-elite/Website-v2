@@ -26,7 +26,7 @@ function selectWorkout(output, instant = '2026-10-28T12:00:00Z', timezone = 'Etc
   finally { globalThis.Date = OriginalDate }
 }
 
-const plannedExercise = { exercise: 'Squat', exercise_category: 'strength', sets: 3, reps: 8 }
+const plannedExercise = { exercise: 'Bodyweight squat', exercise_category: 'strength', sets: 3, reps: 8, load_type: 'bodyweight' }
 const readiness = { recoveryStatus: 'normal_training_day', fuelReadiness: { status: 'well_fueled' }, capacityStatus: 'high_capacity' }
 function today(plannedWorkout, assignedExercises = plannedWorkout?.exercises || [], changes = {}) {
   return getWorkoutForToday({ inputs: { client: { timezone: 'Etc/UTC' } }, ...readiness, plannedWorkout, assignedExercises, ...changes })

@@ -68,6 +68,9 @@ const syntheticVerifiedAdapter = {
 }
 const { getProgramWorkout, projectWeekdayProgram } = loader({
   ...syntheticVerifiedAdapter,
+  // Calculation provenance is covered by savedPrescriptionPreservation. These
+  // synthetic invented names isolate source placement and cycle ordering only.
+  '@/lib/program/savedPrescription': { projectSavedExercisePrescription: exercise => exercise, hasUnconfirmedPrescription: () => false },
   '@/lib/cycle/getCycleTrainingAdjustment': {
     getCycleTrainingAdjustment: () => ({ unchangedCycleAdjustment: true }),
     applyCycleTrainingAdjustment: ({ exercise, adjustment }) => { cycleCalls.push({ exercise, adjustment });return { ...exercise, cycle_applied: true } },

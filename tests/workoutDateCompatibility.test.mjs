@@ -23,7 +23,7 @@ async function database({ timestampColumn = true } = {}) {
   const pg = new PGlite()
   await pg.exec(`create role anon;create role authenticated;create schema auth;
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
-    create table clients(client_id text primary key,auth_user_id uuid,program text,timezone text,state text,onboarding_data jsonb default '{}');
+    create table clients(client_id text primary key,auth_user_id uuid,program text,timezone text,access boolean,state text,onboarding_data jsonb default '{}');
     create table workout_logs(id uuid primary key default gen_random_uuid(),client_id text,auth_user_id uuid,program text,day_name text,
       workout_source text,workout_date date,${timestampColumn ? 'workout_started_at timestamptz,' : ''}planned_exercises jsonb,exercise_logs jsonb,completed boolean,updated_at timestamptz);
     alter table clients enable row level security;alter table workout_logs enable row level security;
@@ -31,7 +31,7 @@ async function database({ timestampColumn = true } = {}) {
     create policy workout_owner on workout_logs to authenticated using(auth_user_id=auth.uid()) with check(auth_user_id=auth.uid());
     grant usage on schema public,auth to authenticated;grant execute on function auth.uid() to authenticated;
     grant select,update on clients to authenticated;grant select,insert,update on workout_logs to authenticated;`)
-  await pg.query('insert into clients(client_id,auth_user_id,program,timezone) values($1,$2,$3,$4)', [client.client_id, owner, client.program, client.timezone])
+  await pg.query('insert into clients(client_id,auth_user_id,program,timezone,access) values($1,$2,$3,$4,true)', [client.client_id, owner, client.program, client.timezone])
   await pg.query('insert into workout_logs(id,client_id,auth_user_id,program,day_name,workout_date,exercise_logs,planned_exercises,completed,updated_at) values($1,$2,$3,$4,$5,$6,$7,$7,true,$8)',
     [legacyId, client.client_id, owner, 'ember', 'Night workout', '2026-10-13', JSON.stringify([walk('legacy-walk')]), '2026-10-13T18:00:00Z'])
   await pg.query("insert into workout_logs(client_id,auth_user_id,program,day_name,workout_date,exercise_logs,completed) values($1,$2,'ember','Night workout','2026-10-12','[]',true),($1,$3,'ember','Night workout','2026-10-13','[]',true)", [client.client_id, owner, other])

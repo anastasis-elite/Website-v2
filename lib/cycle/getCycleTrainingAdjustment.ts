@@ -1,4 +1,5 @@
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
+import { hasNoCalculatedLoad } from '@/lib/workout/loadGuidance'
 
 type CycleTrainingAdjustment = {
   cycleStatus: any
@@ -9,7 +10,7 @@ type CycleTrainingAdjustment = {
   cautionActive: boolean
 }
 
-function roundRecommendedWeight(weight: number) {
+export function roundRecommendedWeight(weight: number) {
   if (!weight || weight <= 0) return null
 
   const lowWeightOptions = [1, 2, 2.5, 5, 8, 10, 12]
@@ -129,10 +130,10 @@ export function applyCycleTrainingAdjustment({
 }) {
   const baselineWeight =
     Number(
-      exercise.calculated_weight ||
-        exercise.recommended_weight ||
-        exercise.weight ||
-        exercise.weight_goal ||
+      exercise.calculated_weight ??
+        exercise.recommended_weight ??
+        exercise.weight ??
+        exercise.weight_goal ??
         0
     ) || 0
 
@@ -155,6 +156,20 @@ export function applyCycleTrainingAdjustment({
     ? Math.max(1, baselineReps + adjustment.repAdjustment)
     : null
 
+  // A missing or unverified load is not a new zero-load recommendation. Keep
+  // saved load fields intact while retaining the existing cycle rep guidance.
+  if (hasNoCalculatedLoad(exercise)) return {
+    ...exercise,
+    baseline_reps: baselineReps || null,
+    cycle_adjusted_reps: adjustedReps,
+    recommended_reps: adjustedReps || baselineReps || null,
+    cycle_adjustment_label: adjustment.label,
+    cycle_adjustment_note: adjustment.note,
+    cycle_caution_active: adjustment.cautionActive,
+    cycle_weight_multiplier: adjustment.weightMultiplier,
+    cycle_rep_adjustment: adjustment.repAdjustment,
+  }
+
   return {
     ...exercise,
 
@@ -170,5 +185,7 @@ export function applyCycleTrainingAdjustment({
     cycle_adjustment_label: adjustment.label,
     cycle_adjustment_note: adjustment.note,
     cycle_caution_active: adjustment.cautionActive,
+    cycle_weight_multiplier: adjustment.weightMultiplier,
+    cycle_rep_adjustment: adjustment.repAdjustment,
   }
 }

@@ -16,7 +16,7 @@ const workout = await importTs('app/api/workout-log/route.ts', {
 
 function database() {
   const state = { user: { id: 'fresh-ember-test-user' }, rows: [], writes: 0 }
-  const client = { client_id: 'fresh-ember-test-customer', auth_user_id: state.user.id, program: 'ember', timezone: 'America/Chicago' }
+  const client = { client_id: 'fresh-ember-test-customer', auth_user_id: state.user.id, program: 'ember', access: true, timezone: 'America/Chicago' }
   globalThis.workoutJourneyDb = {
     auth: { getUser: async () => ({ data: { user: state.user } }) },
     from(table) {

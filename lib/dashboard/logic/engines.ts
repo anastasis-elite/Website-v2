@@ -15,6 +15,9 @@ import { calculateHydrationPacing } from '@/lib/hydration/pacing'
 import { calculateTodayHydrationPacing } from '@/lib/hydration/todayPacing'
 import { getTierCapabilities } from '@/lib/entitlements'
 import { calculateTodayNutritionPacing, recentZeroMacroReminder } from '@/lib/nutrition/todayPacing'
+import { changePrescriptionVariant } from '@/lib/workout/changePrescriptionVariant'
+import { hasNoCalculatedLoad } from '@/lib/workout/loadGuidance'
+import { activityDose } from '@/lib/workout/activity'
 
 export function numeric(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -336,10 +339,31 @@ function prioritizeForGoal(exercises:any[],goal:GoalObjective){const terms:Parti
 function normalizeEquipmentName(value: unknown){return String(value||'').trim().toLowerCase().replace(/dumbbells/g,'dumbbell').replace(/kettlebells/g,'kettlebell').replace(/resistance bands|bands/g,'band').replace(/cables/g,'cable').replace(/machines/g,'machine').replace(/\s+/g,' ')}
 function equipmentMatchesVariant(variant:any,availableEquipment:string[]){if(!availableEquipment.length||availableEquipment.includes('*'))return true;const equipment=normalizeEquipmentName(variant?.equipment);return availableEquipment.some((item)=>equipment.includes(item)||item.includes(equipment))}
 function equipmentCompatibleVariants(exercise:any,availableEquipment:string[]){const variants=Array.isArray(exercise.available_variants)?exercise.available_variants:[];if(!variants.length)return [];const compatible=variants.filter((variant:any)=>equipmentMatchesVariant(variant,availableEquipment));if(compatible.length)return compatible;if(!availableEquipment.length||availableEquipment.includes('*'))return variants;const bodyweight=variants.filter((variant:any)=>normalizeEquipmentName(variant.equipment)==='bodyweight');if(bodyweight.length)return bodyweight;const selected=variants.find((variant:any)=>variant.id===exercise.selected_variant_id);return selected?[selected]:variants.slice(0,1)}
-function applyPreferredEquipmentVariant(exercise:any,availableEquipment:string[]){const variants=equipmentCompatibleVariants(exercise,availableEquipment);if(!variants.length)return exercise;const current=variants.find((variant:any)=>variant.id===exercise.selected_variant_id);const selected=current||variants[0];const baseline=numeric(exercise.baseline_weight||exercise.calculated_weight||exercise.recommended_weight);const adjusted=baseline?baseline*numeric(selected.equipment_modifier,1):numeric(exercise.recommended_weight||exercise.calculated_weight);return {...exercise,display_name:selected.name||exercise.display_name||exercise.exercise,name:selected.name||exercise.name,selected_variant_id:selected.id||exercise.selected_variant_id,selected_variant_name:selected.name||exercise.selected_variant_name||exercise.exercise,selected_equipment:selected.equipment||exercise.selected_equipment,load_type:selected.load_type||exercise.load_type,available_variants:variants,equipment:selected.equipment||exercise.equipment,equipment_modifier:selected.equipment_modifier??exercise.equipment_modifier,calculated_weight:adjusted||exercise.calculated_weight,recommended_weight:adjusted||exercise.recommended_weight}}
+function applyPreferredEquipmentVariant(exercise: any, availableEquipment: string[]) {
+  if (hasNoCalculatedLoad(exercise)) return exercise
+  const variants = equipmentCompatibleVariants(exercise, availableEquipment)
+  if (!variants.length) return exercise
+  const current = variants.find((variant: any) => variant.id === exercise.selected_variant_id)
+  const selected = current || variants[0]
+  // The current load already includes equipment conversion and today's cycle
+  // adjustment. Selecting its metadata must not calculate that load again.
+  const converted = current ? exercise : changePrescriptionVariant({ ...exercise, prescription_safety_multiplier: 1 }, selected.id)
+  if (!converted) return { ...exercise, load_guidance_status: 'unverified',
+    load_guidance_reason: 'The equipment change needs a verified prescription. Contact your coach to review this exercise load.' }
+  return { ...converted, display_name: selected.name || exercise.display_name || exercise.exercise,
+    name: selected.name || exercise.name, selected_variant_id: selected.id,
+    selected_variant_name: selected.name || exercise.selected_variant_name || exercise.exercise,
+    selected_equipment: selected.equipment || exercise.selected_equipment,
+    load_type: selected.load_type || exercise.load_type, available_variants: variants,
+    equipment: selected.equipment || exercise.equipment,
+    equipment_modifier: selected.equipment_modifier ?? exercise.equipment_modifier }
+}
 function modifyExercises(exercises: any[], level: WorkoutDecisionResult['adjustmentLevel'], fuel:FuelReadinessResult, hydration:HydrationResult, recovery:RecoveryResult, allowLoadProgression:boolean, allowEnduranceProgression:boolean, structural:StructuralFilter,dose:CapacityDose,clientCues:string[],goal:GoalObjective,availableEquipment:string[]) {
   const ordered=prioritizeForGoal(exercises,goal);const visible=dose.timeMinutes<=20?ordered.slice(0,2):ordered
   return visible.map((exercise,index) => {
+    // Existing timed, breathing and mobility doses are activities, not lifting
+    // prescriptions. Keep their recorded duration/units and load fields intact.
+    if (activityDose(exercise).kind !== 'strength') return { ...exercise }
     const next = applyPreferredEquipmentVariant({ ...exercise },availableEquipment)
     const requiredEquipment=String(next.equipment||next.equipment_required||'').toLowerCase()
     if(availableEquipment.length&&requiredEquipment&&!availableEquipment.some((item)=>requiredEquipment.includes(item)||item.includes(requiredEquipment))){const equipmentSwap=Array.isArray(next.regression_options)?next.regression_options[0]:null;if(equipmentSwap){next.exercise=equipmentSwap;next.name=equipmentSwap;next.display_name=equipmentSwap;next.equipment_adjusted=true}}
@@ -349,14 +373,17 @@ function modifyExercises(exercises: any[], level: WorkoutDecisionResult['adjustm
     else if(fuel.status==='slightly_under_fueled'||fuel.status==='unknown_needs_input')reps=Math.max(3,plannedReps-1)
     else if(hydration.status==='ready'&&fuel.status==='well_fueled'&&['normal_training_day','push_day'].includes(recovery.status))reps=plannedReps+1
     reps=Math.max(3,Math.min(reps,dose.reps));next.recommended_reps=reps;next.reps=reps
-    let load=numeric(next.recommended_weight||next.cycle_adjusted_weight||next.calculated_weight||next.baseline_weight)
-    if(level==='level_1_slight_modify')load*=.9
-    if(level==='level_2_moderate_modify'){next.sets=Math.max(1,numeric(next.sets,3)-1);load*=.8}
-    if(level==='level_3_recovery_training'){next.sets=Math.min(2,numeric(next.sets,2));load*=.6}
-    if(level==='level_0_full_plan'&&allowLoadProgression&&hydration.status==='ready'&&fuel.status==='well_fueled')load*=1.025
+    let load=numeric(next.recommended_weight??next.cycle_adjusted_weight??next.calculated_weight??next.baseline_weight)
+    let safetyMultiplier=1
+    if(level==='level_1_slight_modify')safetyMultiplier*=.9
+    if(level==='level_2_moderate_modify'){next.sets=Math.max(1,numeric(next.sets,3)-1);safetyMultiplier*=.8}
+    if(level==='level_3_recovery_training'){next.sets=Math.min(2,numeric(next.sets,2));safetyMultiplier*=.6}
+    if(level==='level_0_full_plan'&&allowLoadProgression&&hydration.status==='ready'&&fuel.status==='well_fueled')safetyMultiplier*=1.025
+    load*=safetyMultiplier
     const plannedSets=Math.max(1,numeric(next.sets,dose.sets));next.sets=index===0?Math.min(plannedSets,dose.sets):Math.min(plannedSets,dose.keepAccessories?Math.max(2,dose.sets-1):2)
     if(level==='level_0_full_plan'&&allowEnduranceProgression)next.sets=Math.min(5,numeric(next.sets,3)+1)
-    next.recommended_weight=(load*structural.modifier)||null;next.client_cues=clientCues;next.rest_seconds=dose.restSeconds;next.rpe_target=dose.rpe
+    if(!hasNoCalculatedLoad(next))next.recommended_weight=(load*structural.modifier)||null
+    next.prescription_safety_multiplier=safetyMultiplier*structural.modifier;next.client_cues=clientCues;next.rest_seconds=dose.restSeconds;next.rpe_target=dose.rpe
     return next
   })
 }
