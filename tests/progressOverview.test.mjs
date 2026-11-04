@@ -8,10 +8,10 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
 import { importTs } from './typescriptModule.mjs'
 
-const { buildProgressOverview, loadProgressOverview, progressRange } = await importTs('lib/dashboard/progressOverview.ts')
+const { assertProgressOverviewAccess, buildProgressOverview, loadProgressOverview, progressRange } = await importTs('lib/dashboard/progressOverview.ts')
 const empty = () => ({ range: '4w', today: '2026-10-28', timeZone: 'America/Chicago', workouts: { data: [] }, measurements: { data: [] }, recovery: { data: [] } })
 const workout = (day, exercises = [], extra = {}) => ({ workout_date: day, completed: true, exercise_logs: exercises, ...extra })
-const lift = (weight, unit = 'lb') => ({ exercise: 'Recorded press', load_type: 'per_hand', set_logs: [{ weight, reps: 8, weight_unit: unit }] })
+const lift = (weight, unit = 'lb') => ({ exercise: 'Recorded press', load_type: 'per_hand', set_logs: [{ weight, reps: 8, weight_unit: unit, completed_at: '2026-10-01T12:00:00Z' }] })
 
 test('successful empty history confirms zero sessions; failed or missing reads remain unavailable', () => {
   const data = buildProgressOverview(empty())
@@ -67,7 +67,7 @@ test('periods and consistency buckets respect member-local dates and ignore futu
   assert.equal(data.consistency.at(-1).end, '2026-10-28')
   assert.equal(buildProgressOverview({ ...empty(), range: '12w' }).consistency.length, 12)
   assert.equal(buildProgressOverview({ ...empty(), range: 'all', workouts: { data: [workout('2025-01-01')] } }).completedSessions, 1)
-  assert.equal(buildProgressOverview({ ...empty(), workouts: { data: Array.from({ length: 500 }, () => workout('2026-10-01')) } }).workoutsCapped, true)
+  assert.equal(buildProgressOverview({ ...empty(), workouts: { data: Array.from({ length: 501 }, () => workout('2026-10-01')) } }).workoutsCapped, true)
   for (const value of [undefined, 'invalid', ['12w']]) assert.equal(progressRange(value), '4w')
   assert.equal(progressRange('12w'), '12w'); assert.equal(progressRange('all'), 'all')
 })
@@ -80,16 +80,92 @@ test('Progress reads reuse owned existing sources, apply date bounds, and fail i
     const query = { select() { return query }, eq(key, value) { record.filters.push(['eq', key, value]); return query }, lte(key, value) { record.filters.push(['lte', key, value]); return query }, gte(key, value) { record.filters.push(['gte', key, value]); return query }, lt(key, value) { record.filters.push(['lt', key, value]); return query }, order() { return query }, limit(value) { record.limit = value; return query }, then(done) { return Promise.resolve({ data: table === 'recovery_logs' ? null : [], error: table === 'recovery_logs' ? { message: 'Synthetic read failure' } : null }).then(done) } }
     return query
   } }
-  const data = await loadProgressOverview({ supabase, client: { client_id: 'owner-client', timezone: 'America/Chicago' }, userId: 'owner-user', range: '4w' })
+  const data = await loadProgressOverview({ supabase, client: { client_id: 'owner-client', auth_user_id: 'owner-user', program: 'ember', access: true, timezone: 'America/Chicago' }, userId: 'owner-user', range: '4w' })
   assert.equal(data.completedSessions, 0); assert.equal(data.energy.unavailable, true)
   assert.equal(reads.length, 4)
   for (const read of reads) assert.ok(read.filters.some(filter => filter[1] === 'client_id' && filter[2] === 'owner-client'))
-  for (const read of reads.filter(read => read.table === 'workout_logs')) assert.ok(read.filters.some(filter => filter[1] === 'auth_user_id' && filter[2] === 'owner-user'))
+  for (const read of reads) assert.ok(read.filters.some(filter => filter[1] === 'auth_user_id' && filter[2] === 'owner-user'))
   assert.ok(reads.every(read => read.filters.some(filter => filter[0] === 'gte')))
+  assert.ok(reads.every(read => read.limit === 501))
   reads.length = 0
-  await loadProgressOverview({ supabase, client: { client_id: 'owner-client', timezone: 'America/Chicago' }, userId: 'owner-user', range: 'all' })
+  await loadProgressOverview({ supabase, client: { client_id: 'owner-client', auth_user_id: 'owner-user', program: 'ember', access: true, timezone: 'America/Chicago' }, userId: 'owner-user', range: 'all' })
   assert.equal(reads.length, 4)
   assert.ok(reads.every(read => !read.filters.some(filter => filter[0] === 'gte')))
+})
+
+test('completed counts deduplicate saved sessions while retaining separate same-day sessions', () => {
+  const data = buildProgressOverview({ ...empty(), workouts: { data: [
+    workout('2026-10-05', [], { id: 'first', updated_at: '2026-10-05T10:00:00Z', completed: false }),
+    workout('2026-10-05', [], { id: 'first', updated_at: '2026-10-05T11:00:00Z' }),
+    workout('2026-10-05', [], { id: 'second' }),
+  ] } })
+  assert.equal(data.completedSessions, 2)
+  assert.equal(data.consistency.reduce((sum, item) => sum + item.count, 0), 2)
+  const partial = buildProgressOverview({ ...empty(), range: 'all', workouts: { data: [workout('2026-10-05')], sourceCapped: true } })
+  assert.equal(partial.workoutsCapped, true)
+  assert.equal(partial.strength.capped, true)
+  assert.equal(partial.periodLabel, 'All-time range')
+})
+
+test('unconfirmed, skipped and invalid sets never produce recorded load trends', () => {
+  const exercise = lift(100)
+  const data = buildProgressOverview({ ...empty(), workouts: { data: [workout('2026-10-05', [
+    { ...exercise, skipped: true },
+    { ...exercise, set_logs: [{ weight: 100, reps: 8, weight_unit: 'lb' }] },
+    { ...exercise, set_logs: [{ ...exercise.set_logs[0], skipped: true }] },
+    { ...exercise, set_logs: [{ ...exercise.set_logs[0], reps: 1.5 }] },
+  ])] } })
+  assert.deepEqual(data.strength.points, [])
+})
+
+test('overview denies foreign, expired and unsupported tiers before any data read', async () => {
+  const client = { client_id: 'owner-client', auth_user_id: 'owner-user', program: 'ember', access: true }
+  for (const program of ['ember', 'ignite', 'phoenix']) assert.doesNotThrow(() => assertProgressOverviewAccess('owner-user', { ...client, program }))
+  for (const change of [{ auth_user_id: 'someone-else' }, { access: false }, { active: false }, { program: 'free' }, { program: 'tracker' }, { program: 'unknown' }, { membership_expires_at: '2026-01-01T00:00:00Z' }]) {
+    await assert.rejects(loadProgressOverview({ supabase: { from() { assert.fail('unauthorized read') } }, userId: 'owner-user', client: { ...client, ...change }, range: '4w', now: new Date('2026-10-28T12:00:00Z') }), /not available/)
+  }
+})
+
+test('reader validates ownership of every returned source and fails sources independently', async () => {
+  const client = { client_id: 'owner-client', auth_user_id: 'owner-user', program: 'ember', access: true, timezone: 'America/Chicago' }
+  const mock = { from(table) {
+    const query = { select() { return query }, eq() { return query }, lte() { return query }, gte() { return query }, lt() { return query }, order() { return query }, limit() { return query }, then(done) { return Promise.resolve({ data: table === 'measurement_logs' ? [{ client_id: 'foreign', auth_user_id: 'owner-user', log_date: '2026-10-05', measurements: { waist: 36 } }] : [], error: null }).then(done) } }
+    return query
+  } }
+  const data = await loadProgressOverview({ supabase: mock, client, userId: 'owner-user', range: '4w', now: new Date('2026-10-28T12:00:00Z') })
+  assert.equal(data.body.unavailable, true)
+  assert.deepEqual(data.body.points, [])
+  assert.equal(data.energy.unavailable, false)
+  assert.equal(data.completedSessions, 0)
+})
+
+test('same-day conflicting body and energy records do not invent a daily trend value', () => {
+  const data = buildProgressOverview({ ...empty(), measurements: { data: [
+    { log_date: '2026-10-05', measurements: { waist: 35 } }, { log_date: '2026-10-05', measurements: { waist: 36 } },
+    { log_date: '2026-10-06', measurements: { waist: 34 } }, { log_date: '2026-10-06', measurements: { waist: 34 } },
+  ] }, recovery: { data: [
+    { log_date: '2026-10-05', energy_level: 5 }, { log_date: '2026-10-05', energy_level: 7 },
+    { log_date: '2026-10-06', energy_level: 6 }, { log_date: '2026-10-06', energy_level: 6 },
+  ] } })
+  assert.deepEqual(data.body.points, [{ date: '2026-10-06', value: 34 }])
+  assert.deepEqual(data.energy.points, [{ date: '2026-10-06', value: 6 }])
+})
+
+test('loader honors member-local midnight and source caps even after duplicate workout snapshots collapse', async () => {
+  const reads = [], client = { client_id: 'owner-client', auth_user_id: 'owner-user', program: 'ember', access: true, timezone: 'America/Chicago' }
+  const mock = { from(table) {
+    const filters = []; reads.push({ table, filters })
+    const query = { select() { return query }, eq() { return query }, lte(key, value) { filters.push([key, value]); return query }, gte(key, value) { filters.push([key, value]); return query }, lt() { return query }, order() { return query }, limit() { return query }, then(done) { return Promise.resolve({ data: table === 'workout_logs' ? Array.from({ length: 501 }, () => workout('2026-10-05', [], { id: 'one', client_id: 'owner-client', auth_user_id: 'owner-user' })) : [], error: null }).then(done) } }
+    return query
+  } }
+  const data = await loadProgressOverview({ supabase: mock, client, userId: 'owner-user', range: '4w', now: new Date('2026-10-29T02:00:00Z') })
+  assert.equal(data.completedSessions, 1)
+  assert.equal(data.workoutsCapped, true)
+  assert.equal(data.strength.capped, true)
+  for (const read of reads.filter(read => read.table !== 'workout_logs')) {
+    assert.ok(read.filters.some(([key, value]) => key === 'log_date' && value === '2026-10-01'))
+    assert.ok(read.filters.some(([key, value]) => key === 'log_date' && value === '2026-10-28'))
+  }
 })
 
 const require = createRequire(import.meta.url)
@@ -105,6 +181,8 @@ test('four whole-card links retain full-detail routes in every tier and missing 
     assert.match(html, /href="\/dashboard\/progress\?range=12w"/)
     assert.match(html, /No completed workout sessions in this period/)
     assert.doesNotMatch(html, /class="spark"|class="bars"/)
+    assert.doesNotMatch(html, /Small steps\. Real progress\./)
+    assert.match(html, /Getting stronger.*0.*completed workouts/)
     let depth = 0
     for (const tag of html.match(/<\/?a(?:\s[^>]*|)>/g) || []) { depth += tag.startsWith('</') ? -1 : 1; assert.ok(depth <= 1) }
     assert.equal(depth, 0)
@@ -115,8 +193,24 @@ test('card glimpses show actual values and break energy lines across missing che
   const data = buildProgressOverview({ ...empty(), workouts: { data: [workout('2026-10-05', [lift(7)]), workout('2026-10-12', [lift(12)])] } })
   const html = renderToStaticMarkup(React.createElement(Overview, { data, program: 'ember' }))
   assert.match(html, /Recorded press · 7 → 12 lb/)
+  assert.match(html, /Getting stronger.*2.*completed workouts/)
   assert.match(html, /class="spark"/); assert.match(html, /class="bars"/)
   const gap = renderToStaticMarkup(React.createElement(Sparkline, { points: [{ date: '2026-10-01', value: 6 }, { date: '2026-10-03', value: 8 }], label: 'Energy', gaps: true }))
   assert.doesNotMatch(gap, /<polyline/)
   assert.equal((gap.match(/<circle/g) || []).length, 2)
+})
+
+test('recovery card retains verified zero, missing minutes and unavailable sources as distinct states', () => {
+  const data = buildProgressOverview(empty())
+  const render = recovery => renderToStaticMarkup(React.createElement(Overview, { data, program: 'ember', recovery }))
+  const base = { daysCompleted: 1, recordedMinutes: 0, checkinDays: 0, activitiesCapped: false, checkinsCapped: false, minutesIncomplete: false, excludedActivityCount: 0 }
+  const zero = render(base)
+  assert.match(zero, /Recorded minutes<\/dt><dd>0<\/dd>/)
+  assert.match(zero, /Check-in days<\/dt><dd>0<\/dd>/)
+  assert.match(render({ ...base, recordedMinutes: null }), /Recorded minutes<\/dt><dd>Not recorded<\/dd>/)
+  assert.match(render({ ...base, daysCompleted: null, recordedMinutes: null }), /Recorded minutes<\/dt><dd>Unavailable<\/dd>/)
+  const partial = render({ ...base, activitiesCapped: true, minutesIncomplete: true })
+  assert.match(partial, /Recovery days shown/)
+  assert.match(partial, /latest 500 records per source/)
+  assert.match(partial, /verified records only/)
 })

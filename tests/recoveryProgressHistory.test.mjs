@@ -238,3 +238,140 @@ test('workout comparison keeps canonical confirmed completion and local-day evid
   assert.doesNotMatch(JSON.stringify(result), /set_logs|user_intent|planned_sets|recommended/)
   db.verify()
 })
+
+const loadSummary = async (db, overrides = {}) => (await module()).loadRecoveryProgressSummary({ supabase: db.supabase, user, client, range: '4w', now, ...overrides })
+
+test('recovery summary counts distinct completed action and explicitly completed check-in days, with no sleep query', async () => {
+  const request = '00000000-0000-4000-8000-000000000003'
+  const first = activity({ id: 'first', request_id: request, duration_minutes: 12 })
+  const complete = checkin({ check_in_completed_at: '2026-11-03T01:00:00Z' })
+  const db = database({
+    recovery_activity_logs: [first, { ...first, id: 'retry' }, activity({ id: 'second', duration_minutes: 3 }),
+      activity({ id: 'rest', activity_type: 'Full rest', duration_minutes: null, log_date: '2026-11-01', created_at: '2026-11-02T01:00:00Z' })],
+    recovery_logs: [complete, { ...complete },
+      checkin({ log_date: '2026-11-01', energy_level: null, check_in_completed_at: '2026-11-02T01:00:00Z' }),
+      checkin({ log_date: '2026-10-31', updated_at: '2026-11-01T01:00:00Z' })],
+    sleep_logs: [sleep({ log_date: '2026-10-30' })],
+  })
+  const result = await loadSummary(db)
+  assert.deepEqual(result, { daysCompleted: 2, recordedMinutes: 15, checkinDays: 1,
+    activitiesCapped: false, checkinsCapped: false, minutesIncomplete: false, excludedActivityCount: 0 })
+  assert.deepEqual(db.reads.map(read => read.table).sort(), ['recovery_activity_logs', 'recovery_logs'])
+  assert.ok(db.reads.find(read => read.table === 'recovery_logs').columns.includes('check_in_completed_at'))
+  db.verify()
+})
+
+test('summary excludes conflicting or unlinked completion and marks partial minute coverage', async () => {
+  const request = '00000000-0000-4000-8000-000000000004'
+  const first = activity({ id: 'conflict-one', request_id: request, duration_minutes: 12 })
+  const db = database({ recovery_activity_logs: [first, { ...first, id: 'conflict-two', duration_minutes: 20 },
+    activity({ id: 'valid', duration_minutes: 4 }),
+    activity({ id: 'missing-time', created_at: null, duration_minutes: 100 }),
+    activity({ id: 'future-time', created_at: '2026-11-03T06:00:00Z', duration_minutes: 100 }),
+    activity({ id: 'date-only-time', created_at: '2026-11-02', duration_minutes: 100 }),
+    activity({ id: 'invalid-time', created_at: '2026-11-02T25:00:00Z', duration_minutes: 100 }),
+    activity({ id: 'missing-duration', duration_minutes: null }),
+    activity({ id: 'invalid-duration', duration_minutes: -1 }),
+  ], recovery_logs: [
+    checkin({ energy_level: null, check_in_completed_at: '2026-11-03T01:00:00Z' }),
+    checkin({ energy_level: 0, check_in_completed_at: '2026-11-03T01:00:00Z' }),
+    checkin({ check_in_completed_at: '2026-11-02T25:00:00Z' }),
+    checkin({ check_in_completed_at: '2026-11-03T06:00:00Z' }),
+    checkin({ check_in_completed_at: '2026-11-02' }),
+    checkin(),
+  ] })
+  const result = await loadSummary(db)
+  assert.equal(result.daysCompleted, 1); assert.equal(result.recordedMinutes, 4); assert.equal(result.checkinDays, 0)
+  assert.equal(result.minutesIncomplete, true); assert.equal(result.excludedActivityCount, 6)
+  assert.doesNotMatch(JSON.stringify(result), /2026-|activity_type|energy|stress|synthetic|duration_minutes/)
+  db.verify()
+})
+
+test('historical completion stays on its saved date after state or timezone changes', async () => {
+  const recordedAt = '2026-11-03T06:30:00Z', later = new Date('2026-11-04T18:00:00Z')
+  const transitions = [
+    [{ timezone: undefined, state: 'CA' }, { timezone: undefined, state: 'NY' }],
+    [{ timezone: 'America/Los_Angeles' }, { timezone: 'America/New_York' }],
+  ]
+  for (const transition of transitions) for (const profile of transition) {
+    const db = database({ recovery_logs: [checkin({ check_in_completed_at: recordedAt })],
+      recovery_activity_logs: [activity({ created_at: recordedAt })] })
+    const options = { client: { ...client, ...profile }, now: later }
+    const history = await load(db, options)
+    assert.equal(history.checkins.records[0].date, '2026-11-02')
+    assert.equal(history.activities.records[0].date, '2026-11-02')
+    assert.equal(history.checkins.records[0].completed, true)
+    assert.equal(history.activities.records[0].completed, true)
+    const summary = await loadSummary(db, options)
+    assert.equal(summary.checkinDays, 1)
+    assert.equal(summary.daysCompleted, 1)
+    assert.equal(summary.recordedMinutes, 10)
+    db.verify()
+  }
+})
+
+test('historical completion retains valid timestamp, future-time and recorded-date safeguards', async () => {
+  const later = new Date('2026-11-04T18:00:00Z')
+  for (const recordedAt of [null, '', 'invalid', '2026-11-02', '2026-11-02T20:00:00',
+    '2026-11-02T25:00:00Z', '2026-02-30T20:00:00Z', '2026-11-05T01:00:00Z']) {
+    const db = database({ recovery_logs: [checkin({ check_in_completed_at: recordedAt })],
+      recovery_activity_logs: [activity({ created_at: recordedAt })] })
+    const summary = await loadSummary(db, { client: { ...client, timezone: undefined, state: 'NY' }, now: later })
+    assert.equal(summary.checkinDays, 0, String(recordedAt))
+    assert.equal(summary.daysCompleted, 0, String(recordedAt))
+    assert.equal(summary.recordedMinutes, null, String(recordedAt))
+    db.verify()
+  }
+  const invalidDay = database({ recovery_logs: [checkin({ log_date: '2026-02-30', check_in_completed_at: '2026-03-01T01:00:00Z' })],
+    recovery_activity_logs: [activity({ log_date: '2026-02-30', created_at: '2026-03-01T01:00:00Z' })] })
+  const summary = await loadSummary(invalidDay, { range: 'all', now: later })
+  assert.equal(summary.checkinDays, 0)
+  assert.equal(summary.daysCompleted, 0)
+  invalidDay.verify()
+})
+
+test('summary keeps unavailable, missing duration and a genuine zero distinct', async () => {
+  const empty = await loadSummary(database())
+  assert.equal(empty.daysCompleted, 0); assert.equal(empty.recordedMinutes, 0); assert.equal(empty.checkinDays, 0)
+  const restOnly = await loadSummary(database({ recovery_activity_logs: [activity({ activity_type: 'Full rest', duration_minutes: null })] }))
+  assert.equal(restOnly.daysCompleted, 1); assert.equal(restOnly.recordedMinutes, null); assert.equal(restOnly.minutesIncomplete, false)
+  const zero = await loadSummary(database({ recovery_activity_logs: [activity({ duration_minutes: 0 })] }))
+  assert.equal(zero.recordedMinutes, 0); assert.equal(zero.daysCompleted, 1)
+  const missing = await loadSummary(database({ recovery_activity_logs: [activity({ duration_minutes: null })] }))
+  assert.equal(missing.recordedMinutes, null); assert.equal(missing.minutesIncomplete, true)
+  const unavailable = await loadSummary(database({}, { thrown: ['recovery_activity_logs'], failed: ['recovery_logs'] }))
+  assert.equal(unavailable.daysCompleted, null); assert.equal(unavailable.recordedMinutes, null); assert.equal(unavailable.checkinDays, null)
+})
+
+test('All Time summary uses the sentinel cap and reports only the displayed records', async () => {
+  const activities = Array.from({ length: 501 }, (_, index) => activity({ id: `record-${index}`, duration_minutes: 1 }))
+  const checkins = Array.from({ length: 501 }, (_, index) => {
+    const log_date = new Date(Date.parse('2026-11-02T00:00:00Z') - index * 86400000).toISOString().slice(0, 10)
+    return checkin({ log_date, check_in_completed_at: `${log_date}T20:00:00Z` })
+  })
+  const db = database({ recovery_activity_logs: activities, recovery_logs: checkins })
+  const result = await loadSummary(db, { range: 'all' })
+  assert.equal(result.daysCompleted, 1); assert.equal(result.recordedMinutes, 500); assert.equal(result.checkinDays, 500)
+  assert.equal(result.activitiesCapped, true); assert.equal(result.checkinsCapped, true); assert.equal(result.minutesIncomplete, true)
+  assert.ok(db.reads.every(read => read.limit === 501))
+  db.verify()
+})
+
+test('summary preserves the history authorization and member-local range boundaries', async () => {
+  const db = database({ recovery_activity_logs: [
+    activity({ id: 'first-in-range', log_date: '2026-10-06', created_at: '2026-10-06T20:00:00Z', duration_minutes: 1 }),
+    activity({ id: 'before-range', log_date: '2026-10-05', created_at: '2026-10-05T20:00:00Z', duration_minutes: 50 }),
+  ] })
+  const recent = await loadSummary(db)
+  assert.equal(recent.recordedMinutes, 1); assert.equal(recent.daysCompleted, 1)
+  const twelve = await loadSummary(db, { range: '12w' })
+  assert.equal(twelve.recordedMinutes, 51); assert.equal(twelve.daysCompleted, 2)
+  for (const program of ['ember', 'ignite', 'phoenix']) await loadSummary(database(), { client: { ...client, program } })
+  for (const overrides of [{ user: { id: 'foreign' } }, { client: { ...client, program: 'tracker' } }, { client: { ...client, program: 'free' } }]) {
+    const denied = database()
+    await assert.rejects(loadSummary(denied, overrides)); assert.equal(denied.reads.length, 0)
+  }
+  const foreign = await loadSummary(database({ recovery_activity_logs: [activity({ user_id: 'foreign' })] }, { unsafe: ['recovery_activity_logs'] }))
+  assert.equal(foreign.daysCompleted, null); assert.equal(foreign.recordedMinutes, null)
+  db.verify()
+})
