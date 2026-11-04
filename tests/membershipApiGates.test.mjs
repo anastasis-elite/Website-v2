@@ -9,6 +9,7 @@ const mocks = {
   '@/lib/supabase/admin': 'export const createAdminClient = () => { globalThis.membershipAdminCalls++; return {} }',
   '@/lib/dashboard/invalidateDailyPlan': 'export const invalidateDailyPlan = () => {}',
   '@/lib/analytics/server': 'export const recordConversion = async (_db, value) => { globalThis.membershipConversions.push(value); return true }',
+  '@/lib/program/getProgramWorkout': 'export const projectWeekdayProgram = () => { throw new Error("Denied members must not reach weekday projection") }',
   '@/lib/nutrition/targetService': 'export const calculateClientNutritionTargets = async () => { throw new Error("Tracker must not calculate personalized targets") }; export const normalizeCyclePhase = value => value; export const nutritionLogAuditFields = () => ({})',
 }
 const tracker = await importTs('app/api/tracker/nutrition/route.ts', mocks)
