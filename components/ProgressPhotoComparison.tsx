@@ -1,10 +1,25 @@
+'use client'
+
+import { useState } from 'react'
 import Image from 'next/image'
 import type { PhotoComparison, PhotoSet, PhotoView } from '@/lib/assessment/photoComparison'
 
 export function PhotoSetView({ set, view, label }: { set: PhotoSet | null; view: PhotoView; label: string }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
   const url = set?.views[view]
   return <figure className="assessment-photo-view">
-    {url ? <Image src={url} alt={`${label} · ${new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(set!.date))}`} width={360} height={480} />
+    {url ? failedUrl === url ? <div className="assessment-photo-missing">
+      <p role="status">This photo couldn’t load. Refresh to try again.</p>
+      <button type="button" className="assessment-action" onClick={() => window.location.reload()}>Refresh photos</button>
+    </div> : <Image
+      src={url}
+      alt={`${label} · ${new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(set!.date))}`}
+      width={360}
+      height={480}
+      // Keep private, short-lived signed URLs out of the image optimizer.
+      unoptimized
+      onError={() => setFailedUrl(url)}
+    />
       : <div className="assessment-photo-missing">{set ? `${label} unavailable in this set` : 'No photo set yet'}</div>}
     <figcaption>{label}</figcaption>
   </figure>

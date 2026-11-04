@@ -109,11 +109,11 @@ test('missing angles are never filled from another set or opposite side; one set
 })
 
 const require=createRequire(import.meta.url),React=require('react')
-function loadUI(path,mocks={},globals={}) {
+function loadUI(path,mocks={},globals={},exportName='default') {
   const module={exports:{}}
   const {outputText}=ts.transpileModule(readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}})
   runInNewContext(outputText,{module,exports:module.exports,...globals,require:name=>name.endsWith('.css')?{}:mocks[name]||require(name)})
-  return module.exports.default
+  return module.exports[exportName]
 }
 const nodes=(tree,predicate)=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flatMap(child=>nodes(child,predicate)):[...(predicate(tree)?[tree]:[]),...nodes(tree.props?.children,predicate)]
 function harness(path,props) {
@@ -188,6 +188,41 @@ test('photo cards keep front and the exact selected side in both columns and sho
   assert.deepEqual(nodes(tree,node=>node.props?.view).map(node=>node.props.view),['front','left','front','left'])
   assert.match(treeText(Component({comparison:{first,latest:null,side:'left',unavailable:false}})),/One set saved/)
   assert.match(treeText(Component({comparison:{first:null,latest:null,side:'left',unavailable:true}})),/could not be loaded/)
+})
+
+test('private comparison photos render their exact signed URLs without the Next image optimizer',()=>{
+  const PhotoSetView=loadUI('components/ProgressPhotoComparison.tsx',{}, {}, 'PhotoSetView')
+  const {renderToStaticMarkup}=require('react-dom/server')
+  const url='https://fixture.supabase.co/storage/v1/object/sign/assessment_photos/fixture-client/front.jpg?token=fixture-only'
+  const set={id:'fixture',date:'2026-10-25T12:00:00Z',type:'progress',views:{front:url}}
+  const html=renderToStaticMarkup(React.createElement(PhotoSetView,{set,view:'front',label:'Front view'}))
+  assert.ok(html.includes(`src="${url}"`))
+  assert.doesNotMatch(html,/_next\/image|srcSet=/i)
+  assert.match(html,/Front view · October 25, 2026/)
+  assert.match(html,/width="360" height="480"/)
+})
+
+test('failed photos offer a fresh-page retry, recover for new URLs, and keep missing views distinct',()=>{
+  let failedUrl=null,refreshes=0
+  const PhotoSetView=loadUI('components/ProgressPhotoComparison.tsx',{
+    react:{useState:()=>[failedUrl,value=>failedUrl=value]},
+    'next/image':{__esModule:true,default:'img'},
+  },{window:{location:{reload(){refreshes++}}}},'PhotoSetView')
+  const set={id:'fixture',date:'2026-10-25T12:00:00Z',type:'progress',views:{front:'https://fixture.invalid/front?token=old'}}
+  const render=(photoSet=set,view='front')=>PhotoSetView({set:photoSet,view,label:'Front view'})
+  nodes(render(),node=>node.type==='img')[0].props.onError()
+  const failed=render()
+  assert.equal(nodes(failed,node=>node.type==='img').length,0)
+  assert.match(treeText(nodes(failed,node=>node.props?.role==='status')[0]),/couldn’t load.*Refresh/)
+  const retry=nodes(failed,node=>node.type==='button')[0]
+  assert.equal(retry.props.type,'button');assert.equal(treeText(retry),'Refresh photos')
+  retry.props.onClick();assert.equal(refreshes,1)
+  const refreshed=render({...set,views:{front:'https://fixture.invalid/front?token=new'}})
+  assert.equal(nodes(refreshed,node=>node.type==='img').length,1)
+  assert.equal(nodes(refreshed,node=>node.type==='button').length,0)
+  assert.match(treeText(render(set,'left')),/Front view unavailable in this set/)
+  assert.match(treeText(render(null)),/No photo set yet/)
+  assert.equal(nodes(render(set,'left'),node=>node.type==='button').length,0)
 })
 
 test('Monthly Review shows saved choices, edits one section and confirms without resetting untouched values',async()=>{
