@@ -54,8 +54,7 @@ export default function CommunityFeed() {
   }, [load])
 
   const filtered = activeCategory === 'All' ? posts : posts.filter((post) => post.category === activeCategory)
-  return <PhoneAppFrame eyebrow="Together" title="Community" subtitle="Room for every part of your day."><main className="phone-app-community">
-    <p className="phone-app-community-note">Share with other members. Only share photos and videos you want this community to see. Assessment photos stay separate.</p>
+  return <PhoneAppFrame compactHeader><main className="phone-app-community" aria-label="Community">
     <nav className="phone-app-topics" aria-label="Community topics">
       {(['All', ...COMMUNITY_CATEGORIES] as const).map((category) => <button key={category} type="button" aria-pressed={activeCategory === category} onClick={() => setActiveCategory(category)}>
         <span className="phone-app-topic-icon" aria-hidden="true">{category === 'All' ? '◎' : <img alt="" src={`/illustrations/today-${category === 'Progress' || category === 'Transformation' ? 'training' : category === 'Wins' ? 'check-in' : category === 'Questions' ? 'schedule' : 'recovery'}.svg`} />}</span><span>{category}</span>
