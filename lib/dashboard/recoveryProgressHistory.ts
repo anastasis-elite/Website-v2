@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { membershipCan } from '@/lib/membership/policy'
 import { addLocalDays, getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
 import { loadWorkoutHistory, workoutLocalDate } from '@/lib/workout/history'
+import { recoveryCompletionEvidence } from '@/lib/recovery/todayCompletion'
 import { progressRange, type ProgressRange } from './progressOverview'
 
 const DISPLAY_LIMIT = 500
@@ -17,11 +18,11 @@ export const recoveryProgressFields = [
 ] as const
 export type RecoveryFieldKey = typeof recoveryProgressFields[number]['key']
 export type RecoveryHistoryValue = { status: 'recorded' | 'missing' | 'invalid'; value: number | null }
-export type RecoveryCheckinRecord = { key: string; date: string; values: Record<RecoveryFieldKey, RecoveryHistoryValue> }
+export type RecoveryCheckinRecord = { key: string; date: string; completed: boolean; values: Record<RecoveryFieldKey, RecoveryHistoryValue> }
 export type RecoverySleepRecord = { key: string; date: string; duration: RecoveryHistoryValue; quality: RecoveryHistoryValue }
 export type RecoveryActivityRecord = {
   key: string; date: string; label: string; duration: RecoveryHistoryValue
-  durationSource: 'saved_minutes' | 'manual_details' | 'none'; ambiguous: boolean
+  durationSource: 'saved_minutes' | 'manual_details' | 'none'; ambiguous: boolean; completed: boolean
 }
 export type RecoveryWorkoutRecord = { key: string; date: string; title: string; completed: boolean }
 export type RecoveryHistorySource<T> = {
@@ -32,6 +33,10 @@ export type RecoveryProgressHistoryData = {
   fields: typeof recoveryProgressFields
   checkins: RecoveryHistorySource<RecoveryCheckinRecord>; sleep: RecoveryHistorySource<RecoverySleepRecord>
   activities: RecoveryHistorySource<RecoveryActivityRecord>; workouts: RecoveryHistorySource<RecoveryWorkoutRecord>
+}
+export type RecoveryProgressSummary = {
+  daysCompleted: number | null; recordedMinutes: number | null; checkinDays: number | null
+  activitiesCapped: boolean; checkinsCapped: boolean; minutesIncomplete: boolean; excludedActivityCount: number
 }
 
 function source<T>(): RecoveryHistorySource<T> { return { unavailable: false, capped: false, invalidCount: 0, ambiguousDates: [], records: [] } }
@@ -84,13 +89,22 @@ export function assertRecoveryProgressAccess(user: any, client: any, includeWork
 
 /** Read saved, owner-scoped records only. Sleep/check-in copies remain separate;
  * no historical readiness score, causal conclusion or recovery-minute proxy is created. */
-export async function loadRecoveryProgressHistory({ supabase, user, client, range: requestedRange, includeWorkouts = false, now = new Date() }: {
-  supabase: any; user: any; client: any; range: ProgressRange; includeWorkouts?: boolean; now?: Date
+export async function loadRecoveryProgressHistory({ supabase, user, client, range: requestedRange, includeWorkouts = false, includeSleep = true, now = new Date() }: {
+  supabase: any; user: any; client: any; range: ProgressRange; includeWorkouts?: boolean; includeSleep?: boolean; now?: Date
 }): Promise<RecoveryProgressHistoryData> {
   assertRecoveryProgressAccess(user, client, includeWorkouts, now)
   const range = progressRange(requestedRange), today = getClientLocalDate(client, now), timeZone = getClientTimeZone(client)
   const start = range === 'all' ? '' : addLocalDays(today, range === '12w' ? -83 : -27)
   const inRange = (date: string) => Boolean(date) && date >= start && date <= today
+  const hasCompletionTimestamp = (value: unknown) => {
+    // log_date is the local day persisted when the owned record was saved.
+    // No historical timezone is stored: a later profile change must not
+    // reinterpret that day. Still require a valid, nonfuture timestamp.
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return false
+    if (!civilDate(value.slice(0, 10))) return false
+    const at = new Date(value)
+    return Number.isFinite(at.getTime()) && at <= now
+  }
   const result: RecoveryProgressHistoryData = {
     range, periodLabel: range === 'all' ? 'All-time range' : `Last ${range === '12w' ? 12 : 4} weeks`, today, timeZone, includeWorkouts,
     fields: recoveryProgressFields, checkins: source(), sleep: source(), activities: source(), workouts: source(),
@@ -107,8 +121,8 @@ export async function loadRecoveryProgressHistory({ supabase, user, client, rang
     } catch { return { data: [], unavailable: true } }
   }
   const [checkins, sleep, activities, workouts] = await Promise.all([
-    read('recovery_logs', 'client_id,auth_user_id,log_date,updated_at,sleep_hours,sleep_quality,stress_level,soreness_level,energy_level,mood_level,hunger_level', 'auth_user_id', 'updated_at'),
-    read('sleep_logs', 'id,client_id,user_id,log_date,updated_at,duration_hours,quality', 'user_id', 'updated_at'),
+    read('recovery_logs', 'client_id,auth_user_id,log_date,updated_at,check_in_completed_at,sleep_hours,sleep_quality,stress_level,soreness_level,energy_level,mood_level,hunger_level', 'auth_user_id', 'updated_at'),
+    includeSleep ? read('sleep_logs', 'id,client_id,user_id,log_date,updated_at,duration_hours,quality', 'user_id', 'updated_at') : Promise.resolve({ data: [], unavailable: false }),
     read('recovery_activity_logs', 'id,client_id,user_id,log_date,created_at,activity_type,duration_minutes,activity_details,request_id', 'user_id', 'created_at'),
     includeWorkouts ? (async () => {
       try {
@@ -134,7 +148,11 @@ export async function loadRecoveryProgressHistory({ supabase, user, client, rang
       return [field.key, value]
     })) as RecoveryCheckinRecord['values']
     const updated = timestamp(row.updated_at), digest = hash([date, updated, values])
-    checkinRows.push({ date, values, updated, digest })
+    // The current form explicitly marks completion and requires energy only.
+    // Mirrored sleep, optional answers, and timestamps on their own are not a
+    // completed check-in. Never combine separate partial rows into completion.
+    const completed = hasCompletionTimestamp(row.check_in_completed_at) && values.energy.status === 'recorded'
+    checkinRows.push({ date, values, completed, updated, digest })
   }
   result.checkins.ambiguousDates = duplicateDates(checkinRows)
   result.checkins.records = keyed(ordered(checkinRows))
@@ -153,6 +171,13 @@ export async function loadRecoveryProgressHistory({ supabase, user, client, rang
 
   type PreparedActivity = Omit<RecoveryActivityRecord, 'key'> & { updated: string; digest: string; id: string; request: string }
   const activityRows: PreparedActivity[] = []
+  const activitiesByDate = new Map<string, any[]>()
+  for (const row of activities.data) {
+    const date = civilDate(row.log_date)
+    if (inRange(date)) activitiesByDate.set(date, [...(activitiesByDate.get(date) || []), row])
+  }
+  const completionByDate = new Map([...activitiesByDate].map(([date, rows]) => [date,
+    recoveryCompletionEvidence({ userId: user.id, clientId: client.client_id, date, rows, available: !activities.unavailable })]))
   for (const row of activities.data) {
     const date = civilDate(row.log_date), id = text(row.id)
     if (!date || !id) { result.activities.invalidCount++; continue }
@@ -174,7 +199,9 @@ export async function loadRecoveryProgressHistory({ supabase, user, client, rang
     // Compare only the saved activity's displayed identity and dose. Metadata,
     // hold timings, rounds, HR and device readings never become minutes.
     const digest = hash([date, label, duration, durationSource])
-    activityRows.push({ id, request, date, label, duration, durationSource, ambiguous: false, updated, digest })
+    const evidence = completionByDate.get(date)
+    const completed = Boolean(text(row.activity_type)) && Boolean(evidence?.available && evidence.completedAt.includes(row.created_at)) && hasCompletionTimestamp(row.created_at)
+    activityRows.push({ id, request, date, label, duration, durationSource, completed, ambiguous: false, updated, digest })
   }
   const parents = activityRows.map((_, index) => index), ids = new Map<string, number>(), requests = new Map<string, number>()
   function find(index: number): number { if (parents[index] !== index) parents[index] = find(parents[index]); return parents[index] }
@@ -195,6 +222,7 @@ export async function loadRecoveryProgressHistory({ supabase, user, client, rang
     for (const row of versions.values()) {
       if (ambiguous) ambiguousActivityDates.add(row.date)
       deduped.push({ date: row.date, label: row.label, duration: row.duration, durationSource: row.durationSource,
+        completed: group.some(version => version.digest === row.digest && version.completed),
         ambiguous, updated: row.updated, digest: hash([identity, row.digest]) })
     }
   }
@@ -208,4 +236,29 @@ export async function loadRecoveryProgressHistory({ supabase, user, client, rang
     result.workouts.records.push({ key: hash(['saved-workout', row.id]), date, title: text(row.day_name) || 'Saved workout', completed: row.completed === true })
   }
   return result
+}
+
+/** Summary of saved evidence, never sleep/check-in rows as activity proxies.
+ * Capped values describe only the displayed source records; callers must label
+ * that coverage rather than present an all-time total. */
+export function buildRecoveryProgressSummary(data: RecoveryProgressHistoryData): RecoveryProgressSummary {
+  const completed = data.activities.records.filter(row => row.completed && !row.ambiguous)
+  const timed = completed.filter(row => row.duration.status === 'recorded')
+  const excludedActivityCount = data.activities.records.length - completed.length
+  const minutesIncomplete = data.activities.capped || data.activities.invalidCount > 0 || excludedActivityCount > 0 ||
+    completed.some(row => row.duration.status !== 'recorded' && row.label !== 'Full rest')
+  return {
+    daysCompleted: data.activities.unavailable ? null : new Set(completed.map(row => row.date)).size,
+    recordedMinutes: data.activities.unavailable ? null : timed.length ? timed.reduce((sum, row) => sum + row.duration.value!, 0)
+      : data.activities.records.length || data.activities.invalidCount ? null : 0,
+    checkinDays: data.checkins.unavailable ? null : new Set(data.checkins.records.filter(row => row.completed).map(row => row.date)).size,
+    activitiesCapped: data.activities.capped, checkinsCapped: data.checkins.capped,
+    minutesIncomplete, excludedActivityCount,
+  }
+}
+
+export async function loadRecoveryProgressSummary(options: {
+  supabase: any; user: any; client: any; range: ProgressRange; now?: Date
+}): Promise<RecoveryProgressSummary> {
+  return buildRecoveryProgressSummary(await loadRecoveryProgressHistory({ ...options, includeSleep: false, includeWorkouts: false }))
 }

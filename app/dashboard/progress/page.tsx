@@ -1,19 +1,30 @@
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
-import { getProgramLogicForClient } from '@/lib/dashboard/logic/getProgramLogicForClient'
-import { getTierCapabilities } from '@/lib/entitlements'
-import { ProgressTab, AssessmentsTab, TrendsTab } from '@/components/program-dashboard/DashboardDetailPanels'
+import { notFound } from 'next/navigation'
 import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 import ProgressOverview from '@/components/program-dashboard/ProgressOverview'
 import { loadProgressOverview, progressRange } from '@/lib/dashboard/progressOverview'
+import { loadNutritionProgress } from '@/lib/dashboard/nutritionProgress'
+import { loadCycleProgress } from '@/lib/dashboard/cycleProgress'
+import { loadRecoveryProgressSummary } from '@/lib/dashboard/recoveryProgressHistory'
+import { NutritionProgressCard, CycleProgressCard } from '@/components/program-dashboard/ProgressTrends'
+import { membershipCan } from '@/lib/membership/policy'
 import styles from '@/components/program-dashboard/ProgressOverview.module.css'
+
+export const dynamic = 'force-dynamic'
+
 export default async function ProgressPage({ searchParams }: { searchParams: Promise<{ range?: string | string[] }> }) {
- const {supabase,user,client} = await getDashboardContext()
- const range = progressRange((await searchParams).range)
- const [logic, overview] = await Promise.all([getProgramLogicForClient({supabase,user,client}), loadProgressOverview({supabase,userId:user.id,client,range})])
- return <PhoneAppFrame eyebrow="Progress" title="Look how far you’ve come." subtitle="There’s more to progress than a number."><main className={styles.content}>
-   <ProgressOverview data={overview} program={logic.program}/>
-   <details className={`daily-disclosure ${styles.details}`} id="progress-details" open><summary>Daily progress and consistency details</summary><ProgressTab logic={logic} tier={logic.program}/></details>
-   <details className={`daily-disclosure ${styles.details}`}><summary>Assessments and requirements</summary><AssessmentsTab logic={logic} capabilities={getTierCapabilities(logic.program)}/></details>
-   <details className={`daily-disclosure ${styles.details}`}><summary>Detailed trends</summary><TrendsTab logic={logic}/></details>
- </main></PhoneAppFrame>
+  const { supabase, user, client } = await getDashboardContext()
+  if (!user?.id || client?.auth_user_id !== user.id || !membershipCan(client, 'generatedCoaching') ||
+    !membershipCan(client, 'progressView') || !membershipCan(client, 'trendsView')) notFound()
+  const range = progressRange((await searchParams).range)
+  const [overview, nutrition, cycle, recovery] = await Promise.all([
+    loadProgressOverview({ supabase, userId: user.id, client, range }),
+    loadNutritionProgress({ supabase, user, client, range }),
+    loadCycleProgress({ supabase, user, client, range }),
+    loadRecoveryProgressSummary({ supabase, user, client, range }),
+  ])
+  return <PhoneAppFrame eyebrow="Progress" title="Look how far you’ve come." subtitle="There’s more to progress than a number."><main className={styles.content}>
+    <ProgressOverview data={overview} program={client.program} recovery={recovery} />
+    <div className={styles.trends}><NutritionProgressCard data={nutrition} /><CycleProgressCard data={cycle} /></div>
+  </main></PhoneAppFrame>
 }
