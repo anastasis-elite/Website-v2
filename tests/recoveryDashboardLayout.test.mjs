@@ -7,43 +7,79 @@ import ts from 'typescript'
 
 const route = readFileSync('app/dashboard/recovery/page.tsx', 'utf8')
 const dashboard = readFileSync('components/recovery/RecoveryDashboardClient.tsx', 'utf8')
-const checkIn = readFileSync('components/DailyCheckInForm.tsx', 'utf8')
-const css = readFileSync('app/globals.css', 'utf8')
+const nativeRequire = createRequire(import.meta.url)
+const nodes = (tree, predicate) => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(child => nodes(child, predicate)) : [...(predicate(tree) ? [tree] : []), ...nodes(tree.props?.children, predicate)]
+const text = tree => typeof tree === 'string' ? tree : Array.isArray(tree) ? tree.map(text).join(' ') : tree && typeof tree === 'object' ? text(tree.props?.children) : ''
 
-test('recovery dashboard uses objective, two-panel row, and full-width management panel', () => {
-  assert.match(dashboard, /data-testid="recovery-objective"/)
-  assert.match(dashboard, /className="recovery-dashboard-row"/)
-  assert.match(dashboard, /data-testid="recovery-progress-panel"/)
-  assert.match(dashboard, /data-testid="recovery-actions-panel"/)
-  assert.match(dashboard, /data-testid="recovery-management-panel"/)
-  assert.match(css, /\.recovery-dashboard-row\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/)
-  assert.match(css, /@media\(max-width:860px\).*\.recovery-dashboard-row.*grid-template-columns:1fr/s)
+function compile(source, mocks) {
+  const module = { exports: {} }
+  const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
+  runInNewContext(compiled, { module, exports: module.exports, require: name => mocks[name] || nativeRequire(name) })
+  return module.exports
+}
+
+function clientModule() {
+  return compile(dashboard, {
+    '@/components/RecoveryLogger': { __esModule: true, default: 'recovery-logger' },
+    '@/components/recovery/RecoveryActivitySheets': { __esModule: true, default: 'recovery-activities' },
+    '@/components/ActionArrow': {}, './RecoveryCards.module.css': {},
+    'next/link': { __esModule: true, default: 'a' },
+  })
+}
+
+test('Recovery page keeps its activity cards and own-practice logging with the current member', () => {
+  const module = clientModule()
+  const tree = module.default({ clientId: 'synthetic-current-member' })
+  assert.equal(tree.type, 'main')
+  assert.equal(tree.props.className, 'aos-nutrition-page recovery-dashboard-page')
+  const ownPractice = nodes(tree, node => node.type === module.OwnPractice)
+  assert.equal(ownPractice.length, 1)
+  assert.equal(ownPractice[0].props.clientId, 'synthetic-current-member')
+  assert.equal(nodes(tree, node => node.type === module.GuidedRecoveryCards).length, 1)
+  const activitySheets = nodes(tree, node => node.type === 'recovery-activities')
+  assert.equal(activitySheets.length, 1)
+  assert.equal(activitySheets[0].props.clientId, 'synthetic-current-member')
+  assert.equal(text(tree).trim(), 'Let us guide you.  Simple ways to unwind.')
 })
 
-test('recovery dashboard exposes daily, trends, tools, check-in, and management tabs', () => {
-  assert.match(dashboard, /type ProgressTab = 'daily' \| 'trends'/)
-  assert.match(dashboard, /type ActionTab = 'tools' \| 'checkIn'/)
-  assert.match(dashboard, /type ManagementTab = 'assessment' \| 'history' \| 'insights'/)
-  assert.match(dashboard, /data-testid="recovery-daily-tab"/)
-  assert.match(dashboard, /data-testid="recovery-trends-tab"/)
-  assert.match(dashboard, /data-testid="recovery-tools-tab"/)
-  assert.match(dashboard, /data-testid="recovery-check-in-tab"/)
-  assert.match(dashboard, /data-testid="recovery-assessment-tab"/)
-  assert.match(dashboard, /className="tier-tab-list recovery-panel-tabs"/)
-  assert.match(dashboard, /className="tier-tab-list recovery-management-tabs"/)
+test('Recovery Status and every lower panel are absent without removing shared navigation or footer', () => {
+  const tree = clientModule().default({ clientId: 'synthetic-current-member' })
+  assert.equal(nodes(tree, node => node.props?.['data-testid']?.startsWith('recovery-')).length, 0)
+  assert.doesNotMatch(text(tree), /Recovery Status|Daily Recovery|Trends|Check-In|History|Insights|Recovery Tools|Recovery Assessment/)
+  assert.doesNotMatch(dashboard, /DailyCheckInForm|BreathingReset|formatRecoveryDetails|getRecoveryScoreExplanation|getDailyTraining|useViewPreference|RecoveryTrend|CheckInInitial|recentActivities/)
+  assert.match(readFileSync('app/dashboard/layout.tsx', 'utf8'), /<ClientDashboardNav program=\{program\}\/>/)
+  assert.match(readFileSync('app/layout.tsx', 'utf8'), /<LegalFooter \/>/)
 })
 
-test('recovery dashboard reuses existing recovery logic, logger, check-in, and history sources', () => {
-  assert.match(route, /getProgramLogicForClient/)
-  assert.match(route, /\.from\('recovery_logs'\)/)
-  assert.match(route, /\.from\('recovery_activity_logs'\)/)
-  assert.match(dashboard, /RecoveryLogger/)
-  assert.match(dashboard, /DailyCheckInForm/)
-  assert.match(dashboard, /BreathingReset/)
-  assert.match(dashboard, /logic\.recoveryStatus/)
-  assert.match(dashboard, /logic\.recoveryActions/)
-  assert.match(checkIn, /stayOnSave/)
-  assert.doesNotMatch(dashboard, /Math\.random|placeholder/i)
+test('Recovery route authenticates, awaits the existing logic pipeline, and removes only panel-specific reads', async () => {
+  const client = { client_id: 'synthetic-current-member', program: 'ignite' }, user = { id: 'synthetic-owner' }
+  const order = []
+  const supabase = { from() { assert.fail('Removed panels must not trigger page-only recovery history/check-in reads.') } }
+  let releaseLogic, receivedContext, markLogicStarted
+  const logicStarted = new Promise(resolve => { markLogicStarted = resolve })
+  const pendingLogic = new Promise(resolve => { releaseLogic = resolve })
+  const module = compile(route, {
+    '@/lib/dashboard/getDashboardContext': { async getDashboardContext() { order.push('authenticated');return { client, user, supabase } } },
+    '@/lib/dashboard/logic/getProgramLogicForClient': { getProgramLogicForClient(context) { receivedContext = context;order.push('logic');markLogicStarted();return pendingLogic } },
+    '@/components/recovery/RecoveryDashboardClient': { __esModule: true, default: 'recovery-dashboard' },
+    '@/components/phone-app/PhoneAppFrame': { __esModule: true, default: 'recovery-frame' },
+  })
+  let resolved = false
+  const pendingPage = module.default().then(tree => { resolved = true;return tree })
+  await logicStarted
+  assert.deepEqual(order, ['authenticated', 'logic'])
+  assert.equal(receivedContext.client, client);assert.equal(receivedContext.user, user);assert.equal(receivedContext.supabase, supabase)
+  assert.equal(resolved, false, 'The existing persistence-capable pipeline is awaited before rendering.')
+  releaseLogic({ program: 'ignite' })
+  const tree = await pendingPage
+  assert.equal(tree.type, 'recovery-frame')
+  assert.equal(tree.props.eyebrow, 'Recovery')
+  assert.equal(tree.props.title, 'A little room to restore.')
+  assert.equal(tree.props.subtitle, 'Choose what feels right today.')
+  assert.equal(tree.props.children.type, 'recovery-dashboard')
+  assert.deepEqual(Object.keys(tree.props.children.props), ['clientId'])
+  assert.equal(tree.props.children.props.clientId, client.client_id)
+  assert.doesNotMatch(route, /\.from\(|getClientLocalDateOffset|isSorenessRegionKey|buildTrend|checkInInitial|recentActivities/)
 })
 
 test('compact own-practice button opens the existing logger and closing restores trigger focus', () => {
