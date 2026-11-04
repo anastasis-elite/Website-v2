@@ -21,6 +21,8 @@ const prepareRoute = await importTs('app/api/nutrition-log/route.ts', {
   '@/lib/nutrition/calculateMicronutrientTargets': 'export const calculateMicronutrientTargets=()=>({iron_target_mg:18})',
   '@/lib/nutrition/targetService': 'export const nutritionLogAuditFields=()=>({})',
 })
+const dailyMetrics = await importTs('lib/nutrition/dailyMacroMetrics.ts')
+const viewPreferences = await importTs('lib/dashboard/viewPreferences.ts')
 const progress = await importTs('lib/nutrition/progress.ts')
 const micronutrientProgress = await importTs('lib/nutrition/micronutrientProgress.ts')
 const entitlements = await importTs('lib/entitlements.ts')
@@ -31,7 +33,7 @@ const nextFood = await importTs('lib/nutrition/nextFoodGuidance.ts')
 const { getDailyExecutionPlan } = await importTs('lib/day/getDailyExecutionPlan.ts')
 const { calculateClientNutritionTargets } = await importTs('lib/nutrition/targetService.ts')
 const { buildWhatsNextState } = await importTs('lib/dashboard/whatsNext.ts')
-const client = { client_id: 'QA-MACROS', auth_user_id: 'qa-owner', program: 'ember', timezone: 'America/Chicago', birthdate: '1990-01-01' }
+const client = { client_id: 'QA-MACROS', auth_user_id: 'qa-owner', program: 'ember', access: true, active: true, timezone: 'America/Chicago', birthdate: '1990-01-01' }
 const log = { id: 'qa-log', client_id: client.client_id, auth_user_id: client.auth_user_id, log_date: '2026-10-13', calories: 2000, protein: 100, carbs: 250, fats: 60, water_oz: 100 }
 
 function database({ program = 'ember', store, failTable } = {}) {
@@ -122,6 +124,9 @@ function dashboard(db, { request = async url => { throw new Error(`Unexpected sy
   }
   const dependencies = {
     react: fakeReact,
+    '@/lib/nutrition/dailyMacroMetrics': dailyMetrics,
+    '@/lib/dashboard/viewPreferences': viewPreferences,
+    '@/components/nutrition/MacroQuickAdd': { __esModule: true, default: () => null },
     '@/lib/supabase/client': { createClient: () => db },
     '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: () => null },
     '@/components/NutritionFoodLogger': { __esModule: true, default: () => null },
@@ -189,7 +194,7 @@ test('saved EMBER macros survive a fresh transport and update Nutrition, daily b
   assert.match(freshPage.render(), /500 \/ 2000 cal/)
 })
 
-test('EMBER saved-log GET keeps Goals and calculation status metadata after a fresh transport', async () => {
+test('EMBER saved-log GET keeps calculation status and stored assessment metadata while hiding removed Goals UI', async () => {
   const db = database()
   Object.assign(db.tables.nutrition_logs[0], {
     calculation_status: 'manual_override', formula_version: 'synthetic-saved-formula', iron_target_mg: 18,
@@ -202,10 +207,7 @@ test('EMBER saved-log GET keeps Goals and calculation status metadata after a fr
   await page.load()
   const html = page.render()
   assert.match(html, /Synthetic saved assessment/)
-  assert.match(html, /Synthetic saved goal/)
-  assert.match(html, /28%/)
-  assert.match(html, /54 kg lean mass used/)
-  assert.match(html, /30% \/ 40% \/ 30%/)
+  assert.doesNotMatch(html, /Synthetic saved goal|BMI Context|54 kg lean mass used|Goals \/ Assessment/)
   assert.equal(page.requests[0].status, 200)
   assert.deepEqual(db.tables, before)
   assert.deepEqual(db.writes, [])
