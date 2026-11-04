@@ -5,6 +5,7 @@ import AuthButton from '@/components/AuthButton'
 import DeferredAnalytics from '@/components/DeferredAnalytics'
 import PwaRegistration from '@/components/PwaRegistration'
 import LegalFooter from '@/components/LegalFooter'
+import PublicSiteFooter from '@/components/PublicSiteFooter'
 import StrengthHistoryGuardRoot from '@/components/assessments/StrengthHistoryGuardRoot'
 import {
   BRAND_DESCRIPTION,
@@ -138,7 +139,7 @@ export default function RootLayout({
 
         {children}
 
-        <LegalFooter />
+        <PublicSiteFooter><LegalFooter /></PublicSiteFooter>
 
         <CookieBanner />
         <PwaRegistration />

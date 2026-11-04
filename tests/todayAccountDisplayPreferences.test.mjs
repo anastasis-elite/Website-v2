@@ -86,6 +86,8 @@ test('Account settings mounts the existing preference form with stored values an
     '@/components/navigation/DashboardMoreMenu': { __esModule: true, default: () => null },
     '@/lib/entitlements': { normalizeProgramTier: value => value },
     '@/components/phone-app/PhoneAppFrame': { __esModule: true, default: ({ children }) => React.createElement('div', null, children) },
+    './AppleHealthExportImport': { __esModule: true, default: () => null },
+    './AccountInformationLinks': load('components/account/AccountInformationLinks.tsx'),
   }).default
   const props = { initialData, client: {}, user: { email: null }, displayPreferences: { executionStyle: 'schedule', carouselStyle: 'step', transitionMinutes: 0 } }
   const tree = Account(props), form = descendants(tree).find(node => node.type === Preferences)

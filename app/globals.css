@@ -1399,16 +1399,44 @@ a {
   text-align: center;
 }
 
-/* Dashboard pages reserve fixed navigation space after the final legal link. */
+/* The dashboard shell reserves fixed navigation space once, after all content. */
 body:has(.dashboard-client-shell .client-dashboard-nav--guided) {
   --dashboard-nav-height: 78px;
   --dashboard-nav-elevation: 0px;
 }
-body:has(.dashboard-client-shell .client-dashboard-nav) > .legal-footer {
-  padding-top: 16px;
+.dashboard-client-shell:has(.client-dashboard-nav) {
   padding-bottom: var(--dashboard-nav-clearance);
 }
-body:has(.dashboard-client-shell .client-dashboard-nav) > .legal-footer > p:last-child { margin-bottom: 0; }
+.dashboard-client-shell:has(.client-dashboard-nav) .phone-app-surface,
+.dashboard-client-shell:has(.client-dashboard-nav) .phone-app-surface main {
+  min-height: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.account-information { margin-top: 16px; }
+.account-information h2 { margin: 0 0 16px; }
+.account-information-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.account-information-links a {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--anastasis-copper);
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.account-information-links a:focus-visible {
+  outline: 2px solid var(--anastasis-copper);
+  outline-offset: 3px;
+}
 
 .legal-footer-brand {
   margin: 0 auto 14px;
