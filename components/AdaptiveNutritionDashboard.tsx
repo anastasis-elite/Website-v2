@@ -4,16 +4,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import HydrationQuickAdd from '@/components/hydration/HydrationQuickAdd'
+import MacroQuickAdd from '@/components/nutrition/MacroQuickAdd'
+import { buildDailyMacroMetrics } from '@/lib/nutrition/dailyMacroMetrics'
+import { viewPreferenceKey } from '@/lib/dashboard/viewPreferences'
 import NutritionFoodLogger from '@/components/NutritionFoodLogger'
 import MicronutrientProgressRing from '@/components/nutrition/MicronutrientProgressRing'
 import { useRouter } from 'next/navigation'
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { PhoenixRecipe } from '@/lib/nutrition/recipes/getPhoenixRecipeRecommendations'
-import { useFuelReadinessEngine, useNutritionEngine, usePhoenixRecipes } from '@/components/nutrition/hooks'
+import { useNutritionEngine, usePhoenixRecipes } from '@/components/nutrition/hooks'
 import { canLogFood, normalizeProgramTier } from '@/lib/nutrition/canLogFood'
-import { getClientLocalDateOffset } from '@/lib/timezone'
+import { getClientLocalDateOffset, getClientTimeZone } from '@/lib/timezone'
 import { getTierCapabilities } from '@/lib/entitlements'
-import { getMealPeriodForLocalDate, normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
+import { normalizeMealPeriod } from '@/lib/nutrition/mealPeriod'
 import { trackEvent } from '@/lib/analytics'
 import { useViewPreference } from '@/components/dashboard/useViewPreference'
 import { getNextFoodGuidance } from '@/lib/nutrition/nextFoodGuidance'
@@ -100,9 +103,8 @@ type Remaining = {
   b12_remaining_mcg?: number | null
 }
 
-type ProgressTab = 'daily' | 'trends'
 type IntakeTab = 'water' | 'meal' | 'suggested'
-type ManagementTab = 'goals' | 'micros' | 'recipes'
+type ManagementTab = 'micros' | 'recipes'
 
 type SuggestedFood = {
   foodId: string
@@ -148,25 +150,6 @@ function roundValue(value: number | string | null | undefined) {
   return Math.round(Number(value || 0))
 }
 
-function TrendLine({ values }: { values: Array<number | null> }) {
-  const points = values
-    .map((value, index) => ({ value, index }))
-    .filter((point): point is { value: number; index: number } => point.value !== null)
-
-  if (points.length < 2) {
-    return <span className="tier-no-trend">Keep logging to build this trend.</span>
-  }
-
-  const raw = points.map((point) => point.value)
-  const min = Math.min(...raw)
-  const range = Math.max(...raw) - min || 1
-  const coordinates = points
-    .map((point) => `${(point.index / Math.max(1, values.length - 1)) * 100},${44 - ((point.value - min) / range) * 36}`)
-    .join(' ')
-
-  return <svg className="tier-trend-line" viewBox="0 0 100 48" role="img"><polyline points={coordinates} /></svg>
-}
-
 export default function AdaptiveNutritionDashboard({
   program,
   logic,
@@ -181,7 +164,6 @@ export default function AdaptiveNutritionDashboard({
   const router=useRouter()
   const supabase = useMemo(() => createClient(), [])
   const engineNutrition=useNutritionEngine(logic)
-  const fuel=useFuelReadinessEngine(logic)
   const phoenixRecipes=usePhoenixRecipes(recipes)
 
   const tier = normalizeProgramTier(program || logic.program || logic.client.program)
@@ -201,24 +183,14 @@ export default function AdaptiveNutritionDashboard({
   const directEntry = Boolean(loggingIntent?.action)
   const directRecipe = isPhoenix ? recipes.find(recipe => recipe.id === loggingIntent?.recipeId) : undefined
 
-  const [calorieTarget, setCalorieTarget] = useState(0)
-  const [proteinTarget, setProteinTarget] = useState('')
-  const [carbTarget, setCarbTarget] = useState('')
-  const [fatTarget, setFatTarget] = useState('')
-
   const [message, setMessage] = useState('')
-  const [macroEntry, setMacroEntry] = useState({
-    calories: '',
-    protein: '',
-    carbs: '',
-    fats: '',
-  })
-  const [savingMacros, setSavingMacros] = useState(false)
+  const [entryFromHash, setEntryFromHash] = useState<'water' | 'macros' | null>(null)
   // Guidance belongs to one member, tier and local day, including in-flight reads.
   const guidanceScope = `${logic.client.id}:${tier}:${getClientLocalDateOffset(logic.client)}`
   const guidanceContext = useRef(guidanceScope)
   const nutritionReadRequest = useRef<symbol | null>(null)
   const publishedNutritionScope = useRef('')
+  const publishedRemainingScope = useRef('')
   const nutrientInsightRequest = useRef<symbol | null>(null)
   const supplementRequest = useRef<symbol | null>(null)
   const suggestedFoodRequest = useRef<symbol | null>(null)
@@ -229,9 +201,8 @@ export default function AdaptiveNutritionDashboard({
   const nutritionLogIsCurrent = publishedNutritionScope.current === guidanceScope &&
     nutritionLog?.client_id === logic.client.id && nutritionLog?.log_date === getClientLocalDateOffset(logic.client)
 
-  const [progressTab, setProgressTab] = useViewPreference<ProgressTab>(logic.client.id, 'nutrition-progress', ['daily', 'trends'], 'daily')
-  const [intakeTab, setIntakeTab] = useViewPreference<IntakeTab>(logic.client.id, 'nutrition-intake', ['water', 'meal', 'suggested'], 'meal')
-  const [managementTab, setManagementTab] = useViewPreference<ManagementTab>(logic.client.id, `nutrition-management-${tier}`, isPhoenix ? ['goals', 'micros', 'recipes'] : micronutrientsEnabled ? ['goals', 'micros'] : ['goals'], 'goals')
+  const [intakeTab, setIntakeTab] = useViewPreference<IntakeTab>(logic.client.id, 'nutrition-intake', isEmber ? ['water', 'meal'] : ['water', 'meal', 'suggested'], 'meal')
+  const [managementTab, setManagementTab] = useViewPreference<ManagementTab>(logic.client.id, `nutrition-management-${tier}`, isPhoenix ? ['micros', 'recipes'] : ['micros'], 'micros')
   const [suggestedFoods, setSuggestedFoods] = useState<SuggestedFood[]>([])
   const [suggestedFoodsState, setSuggestedFoodsState] = useState<'idle' | 'loading' | 'ready' | 'unavailable' | 'complete' | 'error'>('idle')
   const [suggestedFoodsBasis, setSuggestedFoodsBasis] = useState<'remaining' | 'targets' | 'general'>('remaining')
@@ -252,6 +223,15 @@ export default function AdaptiveNutritionDashboard({
     setSupplementShownKey('')
   }, [guidanceScope])
 
+  useEffect(() => {
+    try {
+      window.localStorage.removeItem(viewPreferenceKey(logic.client.id, 'nutrition-progress'))
+      if (isEmber) window.localStorage.removeItem(viewPreferenceKey(logic.client.id, 'nutrition-intake'))
+    } catch {
+      // Display preferences are optional in restricted browsers.
+    }
+  }, [logic.client.id, isEmber])
+
   useEffect(() => setWaterConsumed(logic.hydration.consumed), [logic.hydration.consumed])
 
   useEffect(() => {
@@ -261,8 +241,13 @@ export default function AdaptiveNutritionDashboard({
 
   useEffect(() => {
     const followHash = () => {
-      if (window.location.hash === '#hydration') setIntakeTab('water')
-      else if (['#aos-food-logger', '#aos-macro-entry'].includes(window.location.hash)) setIntakeTab('meal')
+      if (window.location.hash === '#hydration') {
+        setIntakeTab('water')
+        setEntryFromHash('water')
+      } else if (['#aos-food-logger', '#aos-macro-entry'].includes(window.location.hash)) {
+        setIntakeTab('meal')
+        setEntryFromHash('macros')
+      } else setEntryFromHash(null)
     }
     followHash()
     window.addEventListener('hashchange', followHash)
@@ -274,7 +259,7 @@ export default function AdaptiveNutritionDashboard({
       return publishedNutritionScope.current === guidanceScope && nutritionLog?.client_id === logic.client.id &&
         nutritionLog?.log_date === getClientLocalDateOffset(logic.client)
     }
-    if (!nutritionLog?.id || guidanceContext.current !== guidanceScope || !logMatchesCurrentMemberDay()) return
+    if (isEmber || !nutritionLog?.id || guidanceContext.current !== guidanceScope || !logMatchesCurrentMemberDay()) return
     const request = Symbol('suggested-foods')
     suggestedFoodRequest.current = request
     const isCurrent = () => guidanceContext.current === guidanceScope && suggestedFoodRequest.current === request && logMatchesCurrentMemberDay()
@@ -301,7 +286,7 @@ export default function AdaptiveNutritionDashboard({
       setSuggestedFoodsState('error')
       setSuggestedFoodsMessage(error instanceof Error ? error.message : 'Suggested foods could not be loaded.')
     }
-  }, [nutritionLog, logic.client, guidanceScope])
+  }, [nutritionLog, logic.client, guidanceScope, isEmber])
 
   const loadNutrientInsights = useCallback(async () => {
     const clientId = logic.client.id
@@ -356,12 +341,13 @@ export default function AdaptiveNutritionDashboard({
   async function handleFoodUpdated(updatedRemaining?: Remaining | null, action: 'added' | 'removed' = 'added') {
     if (guidanceContext.current !== guidanceScope) return
     if (updatedRemaining) {
+      publishedRemainingScope.current = guidanceScope
       setRemaining(memberNutritionRemaining(updatedRemaining, tier))
     }
 
     setIntakeRevision(current => current + 1)
     try {
-      await loadToday()
+      if (!await loadToday()) throw new Error('Saved totals could not be refreshed yet.')
       if (guidanceContext.current !== guidanceScope) return
       setMessage(
         action === 'removed'
@@ -376,46 +362,9 @@ export default function AdaptiveNutritionDashboard({
     if (guidanceContext.current === guidanceScope) router.refresh()
   }
 
-  async function handleMacroSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    if (!nutritionLog?.id) return
-
-    setSavingMacros(true)
-    setMessage('')
-
-    try {
-      const response = await fetch('/api/nutrition/add-macros', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nutritionLogId: nutritionLog.id,
-          calories: Number(macroEntry.calories || 0),
-          protein: Number(macroEntry.protein || 0),
-          carbs: Number(macroEntry.carbs || 0),
-          fats: Number(macroEntry.fats || 0),
-          mealPeriod: getMealPeriodForLocalDate(new Date(), logic.client.timezone),
-        }),
-      })
-      const payload = await response.json().catch(() => null)
-      if (!response.ok) throw new Error(payload?.error || 'Macros could not be saved.')
-      setMacroEntry({ calories: '', protein: '', carbs: '', fats: '' })
-      if (payload?.remaining) {
-        setRemaining(memberNutritionRemaining(payload.remaining, tier))
-      }
-      await loadToday()
-      setMessage(payload?.refreshStatus === 'degraded' ? 'Macros logged. Today’s remaining totals are refreshing.' : 'Macros logged.')
-      router.refresh()
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Macros could not be saved.')
-    } finally {
-      setSavingMacros(false)
-    }
-  }
-
-
   useEffect(() => {
-    if (!directEntry) void loadSuggestedFoods()
-  }, [loadSuggestedFoods, remaining, directEntry])
+    if (!isEmber && !directEntry) void loadSuggestedFoods()
+  }, [loadSuggestedFoods, remaining, directEntry, isEmber])
 
   useEffect(() => {
     if (!directEntry && micronutrientsEnabled) void loadNutrientInsights()
@@ -452,16 +401,8 @@ export default function AdaptiveNutritionDashboard({
     }
   }, [tier, program, logic.program, logic.client.program, foodLoggingEnabled])
 
-  function calculateCalories(protein: string, carbs: string, fat: string) {
-    return Math.round(
-      Number(protein || 0) * 4 +
-        Number(carbs || 0) * 4 +
-        Number(fat || 0) * 9
-    )
-  }
-
   const loadToday = useCallback(async () => {
-    if (guidanceContext.current !== guidanceScope) return
+    if (guidanceContext.current !== guidanceScope) return false
     const request = Symbol('nutrition-read')
     nutritionReadRequest.current = request
     const isCurrent = () => guidanceContext.current === guidanceScope && nutritionReadRequest.current === request
@@ -471,12 +412,12 @@ export default function AdaptiveNutritionDashboard({
     const {
       data: { user },
     } = await supabase.auth.getUser()
-    if (!isCurrent()) return
+    if (!isCurrent()) return false
 
     if (!user) {
       setMessage('Please log in to view nutrition.')
       setLoading(false)
-      return
+      return false
     }
 
     const clientId = logic.client.id
@@ -484,7 +425,7 @@ export default function AdaptiveNutritionDashboard({
     if (!clientId) {
       setMessage('No client profile found yet.')
       setLoading(false)
-      return
+      return false
     }
 
     const today = getClientLocalDateOffset(logic.client)
@@ -504,7 +445,7 @@ export default function AdaptiveNutritionDashboard({
     }
     const { data: savedLog, error: logError } = await readMemberLog()
 
-    if (!isCurrent()) return
+    if (!isCurrent()) return false
     if (logError) throw new Error('Today’s saved nutrition could not be loaded. Try again before preparing a new log.')
     let log = memberNutritionLog(savedLog, tier)
 
@@ -516,7 +457,7 @@ export default function AdaptiveNutritionDashboard({
   )
 
   const targets = await targetResponse.json().catch(() => null)
-  if (!isCurrent()) return
+  if (!isCurrent()) return false
 
   if (!targetResponse.ok) {
     if (process.env.NODE_ENV === 'development') {
@@ -534,7 +475,7 @@ export default function AdaptiveNutritionDashboard({
       targets?.error || 'Today’s nutrition targets could not be prepared.'
     )
     setLoading(false)
-    return
+    return false
   }
 
   const protein = Number(targets?.protein)
@@ -565,7 +506,7 @@ export default function AdaptiveNutritionDashboard({
 
     setMessage('Today’s nutrition targets could not be prepared.')
     setLoading(false)
-    return
+    return false
   }
 
   const createResponse = await fetch('/api/nutrition-log', {
@@ -590,7 +531,7 @@ export default function AdaptiveNutritionDashboard({
   })
 
   const createPayload = await createResponse.json().catch(() => null)
-  if (!isCurrent()) return
+  if (!isCurrent()) return false
 
   if (!createResponse.ok) {
     if (process.env.NODE_ENV === 'development') {
@@ -609,12 +550,12 @@ export default function AdaptiveNutritionDashboard({
         'Today’s nutrition plan could not be prepared yet.'
     )
     setLoading(false)
-    return
+    return false
   }
 
   const created = await readMemberLog()
 
-  if (!isCurrent()) return
+  if (!isCurrent()) return false
   if (created.error) {
     if (process.env.NODE_ENV === 'development') {
       console.error('[AOS Nutrition] created log could not be reloaded', {
@@ -628,7 +569,7 @@ export default function AdaptiveNutritionDashboard({
 
     setMessage('Today’s nutrition plan was created but could not be loaded.')
     setLoading(false)
-    return
+    return false
   }
 
   log = memberNutritionLog(created.data, tier)
@@ -637,9 +578,12 @@ export default function AdaptiveNutritionDashboard({
     if (!log) {
   setMessage('Today’s nutrition plan could not be prepared yet.')
   setLoading(false)
-  return
+  return false
 }
 
+// A target refresh must not pair newly loaded targets with older remaining
+// values if the following progress read fails.
+publishedRemainingScope.current = ''
 publishedNutritionScope.current = guidanceScope
 setNutritionLog(log)
     const [{ data: remainingData, error: remainingError }, recorded] = await Promise.all([
@@ -650,21 +594,14 @@ setNutritionLog(log)
       .maybeSingle<Remaining>(),
       loadRecordedNutrition(supabase, log.id),
     ])
-    if (!isCurrent()) return
+    if (!isCurrent()) return false
     if (remainingError) throw new Error('Saved nutrition progress could not be loaded.')
 
+    publishedRemainingScope.current = guidanceScope
     setRemaining(memberNutritionRemaining(nutritionRemainingWithRecordedIntake(log, remainingData, recorded), tier))
 
-    const initialProtein = String(log.protein || remainingData?.protein_remaining_g || '')
-    const initialCarbs = String(log.carbs || remainingData?.carbs_remaining_g || '')
-    const initialFat = String(log.fats || remainingData?.fat_remaining_g || '')
-
-    setProteinTarget(initialProtein)
-    setCarbTarget(initialCarbs)
-    setFatTarget(initialFat)
-    setCalorieTarget(Number(log.calories || calculateCalories(initialProtein, initialCarbs, initialFat)))
-
     setLoading(false)
+    return true
   }, [supabase, logic.client, tier, guidanceScope, micronutrientsEnabled])
 
   useEffect(() => {
@@ -705,53 +642,53 @@ setNutritionLog(log)
     age: logic.client.age ?? null,
   }) : []
 
-  const macroMetrics = [
-    {
-      label: 'Calories',
-      target: Number(nutritionLog?.calories ?? calorieTarget ?? logic.nutrition.calories.target),
-      remaining: Number(remaining?.calories_remaining ?? logic.nutrition.calories.remaining),
-      unit: 'cal',
-    },
-    {
-      label: 'Protein',
-      target: Number(nutritionLog?.protein ?? proteinTarget ?? logic.nutrition.protein.target),
-      remaining: Number(remaining?.protein_remaining_g ?? logic.nutrition.protein.remaining),
-      unit: 'g',
-    },
-    {
-      label: 'Carbohydrates',
-      target: Number(nutritionLog?.carbs ?? carbTarget ?? logic.nutrition.carbs.target),
-      remaining: Number(remaining?.carbs_remaining_g ?? logic.nutrition.carbs.remaining),
-      unit: 'g',
-    },
-    {
-      label: 'Fat',
-      target: Number(nutritionLog?.fats ?? fatTarget ?? logic.nutrition.fats.target),
-      remaining: Number(remaining?.fat_remaining_g ?? logic.nutrition.fats.remaining),
-      unit: 'g',
-    },
-  ].map((metric) => {
-    const consumed = Math.max(0, metric.target - metric.remaining)
-    return {
-      ...metric,
-      consumed,
-      percent: metric.target ? progressPercent((consumed / metric.target) * 100) : 0,
-    }
-  })
-
-  const nutritionTrends = logic.trends.filter((trend) => ['calories', 'protein', 'water'].includes(trend.key))
+  const macroMetrics = buildDailyMacroMetrics(
+    nutritionLogIsCurrent ? nutritionLog : null,
+    publishedRemainingScope.current === guidanceScope ? remaining : null,
+  )
   const managementTabs: Array<{ key: ManagementTab; label: string }> = [
-    { key: 'goals', label: 'Goals / Assessment' },
     ...(micronutrientsEnabled ? [{ key: 'micros' as ManagementTab, label: 'Micronutrients' }] : []),
     ...(isPhoenix && phoenixRecipes.length ? [{ key: 'recipes' as ManagementTab, label: 'Recipes' }] : []),
   ]
+
+  async function refreshSavedNutrition() {
+    try {
+      const refreshed = await loadToday()
+      if (!refreshed) throw new Error('Saved totals could not be refreshed yet.')
+      router.refresh()
+    } finally {
+      if (guidanceContext.current === guidanceScope) setLoading(false)
+    }
+  }
+
+  const macroEntry = isEmber ? <MacroQuickAdd
+    clientId={logic.client.id} logDate={getClientLocalDateOffset(logic.client)} timezone={getClientTimeZone(logic.client)}
+    initiallyOpen={entryFromHash === 'macros'}
+    loading={loading}
+    nutritionLogId={nutritionLogIsCurrent ? nutritionLog?.id || null : null}
+    disabled={loading || !nutritionLogIsCurrent}
+    onRefresh={refreshSavedNutrition}
+    onSaved={async updatedRemaining => {
+      if (guidanceContext.current !== guidanceScope) return
+      if (updatedRemaining) {
+        publishedRemainingScope.current = guidanceScope
+        setRemaining(memberNutritionRemaining(updatedRemaining, tier))
+      }
+      await refreshSavedNutrition()
+    }}
+    renderTrigger={({ toggle, triggerRef, open }) => <button ref={triggerRef} type="button"
+      className="phone-app-card nutrition-entry-card" aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
+      <img src="/illustrations/today-nutrition.svg" width="360" height="180" alt="" />
+      <span className="nutrition-entry-card-copy"><strong>Add Macros</strong><span>Record calories, protein, carbohydrates and fat for a meal or block.</span></span>
+    </button>}
+  /> : null
 
   const nutritionStatus =
     nutritionLog?.nutrition_calculation?.statusLabel ||
     (nutritionLog?.calculation_status === 'manual_override'
       ? 'Manually overridden target'
       : 'Estimated nutrition target')
-  const currentSuggestedFoods = suggestedFoodScope.current === guidanceScope ? suggestedFoods : []
+  const currentSuggestedFoods = !isEmber && suggestedFoodScope.current === guidanceScope ? suggestedFoods : []
   const currentSuggestedFoodsState = suggestedFoodScope.current === guidanceScope ? suggestedFoodsState : 'idle'
   const nextFoodGuidance = getNextFoodGuidance({
     dataStatus: engineNutrition.dataStatus,
@@ -825,34 +762,6 @@ setNutritionLog(log)
                     />
                   ) : null}
 
-                  {isEmber && nutritionLog ? (
-                    <form onSubmit={handleMacroSubmit} className="nutrition-macro-form">
-                      <p>Enter the totals you want to record for this meal or block.</p>
-                      <div className="nutrition-macro-entry-grid">
-                        {([
-                          ['calories', 'Calories'],
-                          ['protein', 'Protein (g)'],
-                          ['carbs', 'Carbs (g)'],
-                          ['fats', 'Fat (g)'],
-                        ] as const).map(([key, label]) => (
-                          <label key={key}>
-                            <span>{label}</span>
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={macroEntry[key]}
-                              onChange={(event) => setMacroEntry((current) => ({ ...current, [key]: event.target.value }))}
-                            />
-                          </label>
-                        ))}
-                      </div>
-                      <button type="submit" disabled={savingMacros} className="tier-primary-action">
-                        {savingMacros ? 'Saving Macros...' : 'Add Macros'}
-                      </button>
-                    </form>
-                  ) : null}
-
                   {!nutritionLog?.id ? (
                     <p className="tier-calendar-empty">
                       {loading ? 'Preparing nutrition entry...' : message || 'Nutrition entry could not be prepared yet.'}
@@ -871,7 +780,7 @@ setNutritionLog(log)
         </div>
         {loggingIntent?.action !== 'water' && isEmber ? <p>EMBER includes macro targets, macro entry and water logging. Food and meal logging are not included.</p> : null}
         {loggingIntent?.action !== 'water' && directRecipe ? <details className="nutrition-entry-recipe-context"><summary>Recipe: {directRecipe.title}</summary><p>Log the foods and portions you ate from this recipe.</p><ul>{directRecipe.ingredientLines.map(ingredient => <li key={ingredient}>{ingredient}</li>)}</ul></details> : null}
-        {loggingIntent?.action === 'water' ? waterEntry : foodEntry}
+        {loggingIntent?.action === 'water' ? waterEntry : isEmber ? macroEntry : foodEntry}
         {message ? <p className="nutrition-status" role="status">{message}</p> : null}
         {!loading && !nutritionLog && loggingIntent?.action !== 'water' ? <button className="tier-secondary-action" type="button" onClick={() => void loadToday().catch(() => setMessage('Today’s nutrition could not be loaded. Try again.'))}>Retry loading food entry</button> : null}
       </section>
@@ -881,54 +790,40 @@ setNutritionLog(log)
   return (
     <main className="aos-nutrition-page">
       <div className="aos-nutrition-shell">
-        <section className="phone-app-targets" aria-label="Your daily nutrition targets">
+        <section className="phone-app-targets nutrition-daily-targets" aria-label="Your daily nutrition targets">
           <h2>Your daily targets</h2>
-          {loading ? <p role="status">Loading your targets…</p> : nutritionLog ? <><strong>{roundValue(macroMetrics[0].target)} <small>kcal</small></strong><p>Daily energy target</p><div>{macroMetrics.slice(1).map(metric => <div key={metric.label}><span>{metric.label}</span><b>{roundValue(metric.target)} g</b></div>)}</div><small>{nutritionStatus}</small></> : <p>Today’s targets are unavailable. Retry using the nutrition controls below.</p>}
+          {loading ? <p role="status">Loading your targets…</p> : <>
+            <div className="nutrition-progress-grid" data-testid="nutrition-daily-progress-tab">
+              {macroMetrics.map(metric => <article key={metric.label} className="tier-metric-card">
+                <div className="tier-metric-ring" aria-hidden="true" style={{ '--tier-progress': `${(metric.percent ?? 0) * 3.6}deg` } as CSSProperties}>
+                  <strong>{metric.percent === null ? '—' : `${metric.percent}%`}</strong>
+                </div>
+                <span>{metric.label}</span>
+                <small>{metric.consumed === null ? 'Logged amount unavailable' : `${roundValue(metric.consumed)} / ${roundValue(metric.target)} ${metric.unit}`}</small>
+                {metric.target === null ? <small>Target unavailable</small> : metric.consumed === null ? <small>Target {roundValue(metric.target)} {metric.unit}</small> : null}
+                {metric.consumed !== null && metric.remaining !== null ? <small>{roundValue(Math.abs(metric.remaining))} {metric.unit} {metric.remaining < 0 ? 'over target' : 'remaining'}</small> : null}
+              </article>)}
+            </div>
+            {nutritionLogIsCurrent ? <small>{nutritionStatus}</small> : <p>Today’s targets are unavailable.</p>}
+          </>}
         </section>
-        <h2>Keep it simple today.</h2><div className="phone-app-grid">
-          <article className="phone-app-card"><img src="/illustrations/today-nutrition.svg" width="360" height="180" alt=""/><div><h3>Start with protein</h3><p>{!loading && nutritionLog ? `Your daily protein target is ${roundValue(macroMetrics[1].target)} g.` : 'Your personalized protein target will appear when available.'}</p></div></article>
-          <article className="phone-app-card"><img src="/illustrations/today-nutrition.svg" width="360" height="180" alt=""/><div><h3>Build a balanced plate</h3><p>{nextFoodGuidance.copy}</p></div></article>
+        <h2>Keep it simple today.</h2>
+        <div className="phone-app-grid">
+          {isEmber ? <>
+            {macroEntry}
+            <HydrationQuickAdd initiallyOpen={entryFromHash === 'water'} clientId={logic.client.id} logDate={getClientLocalDateOffset(logic.client)} consumed={waterConsumed} target={logic.hydration.target} onSaved={setWaterConsumed}
+              renderTrigger={({ toggle, triggerRef, open }) => <button ref={triggerRef} type="button" className="phone-app-card nutrition-entry-card" aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
+                <img src="/illustrations/today-nutrition.svg" width="360" height="180" alt="" />
+                <span className="nutrition-entry-card-copy"><strong>Log Water</strong><span>{roundValue(waterConsumed)} / {roundValue(logic.hydration.target)} oz logged today</span></span>
+              </button>} />
+          </> : <>
+            <article className="phone-app-card"><img src="/illustrations/today-nutrition.svg" width="360" height="180" alt=""/><div><h3>Start with protein</h3><p>{!loading && nutritionLogIsCurrent && macroMetrics[1].target !== null ? `Your daily protein target is ${roundValue(macroMetrics[1].target)} g.` : 'Your personalized protein target will appear when available.'}</p></div></article>
+            <article className="phone-app-card"><img src="/illustrations/today-nutrition.svg" width="360" height="180" alt=""/><div><h3>Build a balanced plate</h3><p>{nextFoodGuidance.copy}</p></div></article>
+          </>}
         </div>
         <section className="nutrition-dashboard-workspace" data-tier={tier}>
-          <article className="tier-daily-insight workout-objective nutrition-objective" data-testid="nutrition-objective">
-            <p className="tier-dashboard-label">
-              {isEmber ? 'Nutrition Targets' : 'Nutrition Intelligence'}
-            </p>
-            <div>
-              <h2>{isEmber ? 'Today’s Targets' : 'Today’s Intake'}</h2>
-              {(foodLoggingEnabled || isEmber) && nutritionLog?.id ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (foodLoggingEnabled) { router.push('/dashboard/nutrition?log=food'); return }
-                    setIntakeTab('meal')
-                    requestAnimationFrame(() => document.getElementById(foodLoggingEnabled ? 'aos-food-logger' : 'aos-macro-entry')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-                  }}
-                  className="tier-primary-action"
-                >
-              {foodLoggingEnabled ? 'Log Food' : 'Add Macros'}
-                </button>
-              ) : null}
-            </div>
-            <p>{fuel.displayStatus}. {fuel.reasoning}</p>
-            <small>What to eat next: {nextFoodGuidance.copy}</small>
-            {nextFoodGuidance.showSuggestedAction ? <button
-              type="button"
-              className="tier-secondary-action"
-              onClick={() => {
-                setIntakeTab('suggested')
-                requestAnimationFrame(() => document.getElementById('nutrition-suggested-foods')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-              }}
-            >Explore Suggested Foods</button> : null}
-            <div className="nutrition-objective-metrics">
-              <article><span>Calories</span><strong>{roundValue(macroMetrics[0]?.consumed)} / {roundValue(macroMetrics[0]?.target)} cal</strong></article>
-              <article><span>Remaining</span><strong>{roundValue(macroMetrics[0]?.remaining)} cal</strong></article>
-              <article><span>Water</span><strong>{roundValue(waterConsumed)} / {roundValue(logic.hydration.target)} oz</strong></article>
-            </div>
-          </article>
-
-          {loading && <p className="nutrition-status">Loading...</p>}
-          {message && <p className="nutrition-status">{message}</p>}
+          {message ? <p className="nutrition-status" role="status">{message}</p> : null}
+          {!loading && (!nutritionLogIsCurrent || macroMetrics.some(metric => metric.consumed === null)) ? <button type="button" className="tier-secondary-action" onClick={() => void refreshSavedNutrition().catch(() => setMessage('Today’s nutrition could not be loaded. Try again.'))}>Retry loading nutrition</button> : null}
 
           {micronutrientsEnabled && nutrientInsightScope.current === guidanceScope && nutrientInsights.length ? (
             <section className="nutrition-dashboard-panel nutrient-insight-card" data-testid="nutrient-insight-card">
@@ -1013,53 +908,7 @@ setNutritionLog(log)
             </section>
           ) : null}
 
-          <div className="nutrition-dashboard-row">
-            <section className="nutrition-dashboard-panel" data-testid="nutrition-progress-panel">
-              <div className="tier-panel-heading">
-                <div>
-                  <p className="tier-dashboard-label">Nutrition Progress</p>
-                  <h2>{progressTab === 'daily' ? 'Daily Progress' : 'Weekly Trends'}</h2>
-                </div>
-                <div className="tier-tab-list nutrition-panel-tabs" role="tablist" aria-label="Nutrition progress">
-                  {([
-                    ['daily', 'Daily Progress'],
-                    ['trends', 'Trends'],
-                  ] as const).map(([key, label]) => (
-                    <button key={key} type="button" className={progressTab === key ? 'is-active' : ''} onClick={() => setProgressTab(key)}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {progressTab === 'daily' ? (
-                <div className="nutrition-progress-grid" data-testid="nutrition-daily-progress-tab">
-                  {macroMetrics.map((metric) => (
-                    <article key={metric.label} className="tier-metric-card">
-                      <div className="tier-metric-ring" style={{ '--tier-progress': `${metric.percent * 3.6}deg` } as CSSProperties}>
-                        <strong>{metric.percent}%</strong>
-                      </div>
-                      <span>{metric.label}</span>
-                      <small>{roundValue(metric.consumed)} / {roundValue(metric.target)} {metric.unit}</small>
-                      <small>{roundValue(metric.remaining)} {metric.unit} remaining</small>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-
-              {progressTab === 'trends' ? (
-                <div className="tier-trends-layout nutrition-trends-layout" data-testid="nutrition-trends-tab">
-                  {nutritionTrends.length ? nutritionTrends.map((trend) => (
-                    <article key={trend.key}>
-                      <div><span>{trend.label}</span><strong>{trend.currentAverage === null ? 'No data' : `${Math.round(trend.currentAverage)}${trend.unit}`}</strong></div>
-                      <TrendLine values={trend.values} />
-                      <small>{trend.comparisonPercent === null ? 'Current history stays connected here.' : `${trend.comparisonPercent}% vs prior period`}</small>
-                    </article>
-                  )) : <p className="tier-calendar-empty">Keep logging meals and water to build weekly nutrition trends.</p>}
-                </div>
-              ) : null}
-            </section>
-
+          {!isEmber ? (
             <section className="nutrition-dashboard-panel nutrition-intake-panel" data-testid="nutrition-intake-panel">
               <div className="tier-panel-heading">
                 <div>
@@ -1119,9 +968,9 @@ setNutritionLog(log)
                 </div>
               ) : null}
             </section>
-          </div>
+          ) : null}
 
-          <section className="tier-info-panel nutrition-management-panel" data-testid="nutrition-management-panel">
+          {micronutrientsEnabled ? <section className="tier-info-panel nutrition-management-panel" data-testid="nutrition-management-panel">
             <div className="tier-tab-list nutrition-management-tabs" role="tablist" aria-label="Nutrition management">
               {managementTabs.map((item) => (
                 <button key={item.key} type="button" className={managementTab === item.key ? 'is-active' : ''} onClick={() => setManagementTab(item.key)}>
@@ -1129,23 +978,6 @@ setNutritionLog(log)
                 </button>
               ))}
             </div>
-
-            {managementTab === 'goals' ? (
-              <div className="tier-info-grid nutrition-goals-grid" data-testid="nutrition-goals-assessment-tab">
-                <article><span>Goal</span><strong>{nutritionLog?.nutrition_calculation?.normalizedGoal || logic.client.goal || 'Recomp'}</strong><small>{nutritionStatus}</small></article>
-                <article><span>Calories</span><strong>{roundValue(macroMetrics[0]?.target)} cal</strong><small>{roundValue(macroMetrics[0]?.remaining)} remaining today</small></article>
-                <article><span>Protein</span><strong>{roundValue(macroMetrics[1]?.target)}g</strong><small>{roundValue(macroMetrics[1]?.consumed)}g logged</small></article>
-                <article><span>Carbohydrates</span><strong>{roundValue(macroMetrics[2]?.target)}g</strong><small>{roundValue(macroMetrics[2]?.consumed)}g logged</small></article>
-                <article><span>Fat</span><strong>{roundValue(macroMetrics[3]?.target)}g</strong><small>{roundValue(macroMetrics[3]?.consumed)}g logged</small></article>
-                <article><span>Hydration</span><strong>{roundValue(logic.hydration.target)} oz</strong><small>{logic.hydration.recoverySupportNote}</small></article>
-                {nutritionLog?.nutrition_calculation?.bmi ? <article><span>BMI Context</span><strong>{nutritionLog.nutrition_calculation.bmi}</strong><small>Assessment-derived context</small></article> : null}
-                {nutritionLog?.nutrition_calculation?.bodyFatPercentUsed ? <article><span>Body Fat</span><strong>{nutritionLog.nutrition_calculation.bodyFatPercentUsed}%</strong><small>{nutritionLog.nutrition_calculation.leanBodyMassKg ? `${nutritionLog.nutrition_calculation.leanBodyMassKg} kg lean mass used` : 'Used in target calculation'}</small></article> : null}
-                {nutritionLog?.nutrition_calculation?.activityFactor ? <article><span>Activity</span><strong>{nutritionLog.nutrition_calculation.activityFactor}</strong><small>{nutritionLog.nutrition_calculation.calculationMode === 'wearable' ? 'Connected activity mode' : 'Assessment activity factor'}</small></article> : null}
-                {nutritionLog?.nutrition_calculation?.finalMacroPercentages ? (
-                  <article><span>Macro Split</span><strong>{nutritionLog.nutrition_calculation.finalMacroPercentages.protein}% / {nutritionLog.nutrition_calculation.finalMacroPercentages.carbs}% / {nutritionLog.nutrition_calculation.finalMacroPercentages.fats}%</strong><small>Protein / carbs / fat</small></article>
-                ) : null}
-              </div>
-            ) : null}
 
             {micronutrientsEnabled && nutritionLogIsCurrent && managementTab === 'micros' ? (
               <div data-testid="nutrition-micronutrients-tab">
@@ -1166,7 +998,7 @@ setNutritionLog(log)
                 {phoenixRecipes.map((recipe)=><Recipe key={recipe.id} recipe={recipe}/>)}
               </div>
             ) : null}
-          </section>
+          </section> : null}
         </section>
 
       </div>

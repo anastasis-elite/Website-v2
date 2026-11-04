@@ -3,13 +3,14 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import test from 'node:test'
 import vm from 'node:vm'
+import { dirname, resolve } from 'node:path'
 import ts from 'typescript'
 
 const nativeRequire = createRequire(import.meta.url)
 function load(path, mocks = {}, environment = {}) {
   const module = { exports: {} }
   const code = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText
-  vm.runInNewContext(code, { module, exports: module.exports, console, Date, Error, Promise, process: { env: { NODE_ENV: 'test' } }, ...environment, require: key => mocks[key] || nativeRequire(key) })
+  vm.runInNewContext(code, { module, exports: module.exports, console, Date, Error, Promise, process: { env: { NODE_ENV: 'test' } }, ...environment, require: key => mocks[key] || (key.endsWith('.css') ? {} : key === '@/components/phone-app/PhoneAppFrame' ? { __esModule: true, default: 'phone-app-frame' } : key.startsWith('.') ? load(resolve(dirname(path), key) + '.ts', mocks, environment) : nativeRequire(key)) })
   return module.exports
 }
 const entitlements = load('lib/entitlements.ts')
@@ -45,6 +46,9 @@ function fixture({ program = 'ember', request = async () => Response.json({}), f
   const Dashboard = load('components/AdaptiveNutritionDashboard.tsx', {
     react: state.react, 'next/navigation': { useRouter: () => ({ refresh() {}, push() {} }) }, '@/lib/supabase/client': { createClient: () => db },
     '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: 'water-entry' }, '@/components/NutritionFoodLogger': { __esModule: true, default: 'food-entry' },
+    '@/components/nutrition/MacroQuickAdd': { __esModule: true, default: 'macro-entry' },
+    '@/lib/nutrition/dailyMacroMetrics': load('lib/nutrition/dailyMacroMetrics.ts'),
+    '@/lib/dashboard/viewPreferences': load('lib/dashboard/viewPreferences.ts'),
     '@/components/nutrition/MicronutrientProgressRing': { __esModule: true, default: 'micro-ring' },
     '@/components/nutrition/hooks': { useNutritionEngine: value => value.nutrition, useFuelReadinessEngine: value => value.fuelReadiness, usePhoenixRecipes: value => value },
     '@/lib/nutrition/canLogFood': tiers, '@/lib/entitlements': entitlements, '@/lib/nutrition/memberNutrition': memberNutrition,
@@ -64,18 +68,26 @@ function fixture({ program = 'ember', request = async () => Response.json({}), f
 const microInsight = { nutrientKey: 'iron', nutrientName: 'IRON_LEAK', message: 'MICRO_GUIDANCE_LEAK', why: ['mineral explanation'] }
 const recommendation = name => ({ productId: name, productName: name, productUrl: null, category: 'general_nutrition', recommendationCopy: name, disclaimerCopy: '', why: { nutrition: name, trend: '', reason: '', disclaimer: '' } })
 
-for (const tier of ['ember', 'unknown', null]) test(`${tier} excludes micronutrient loads and stale preference display while retaining macros and water`, async () => {
+test('Ember excludes micronutrient loads and stale preference display while retaining macros and water', async () => {
+  const tier = 'ember'
   const f = fixture({ program: tier, forcedMicros: true })
   f.render(); const tree = await f.settle()
   assert.equal(f.requests.some(url => url.includes('nutrient-insights')), false)
   assert.equal(f.intakeLoads, 0)
   assert.equal(f.calculations, 0)
   assert.equal(nodes(tree).some(node => node.type === 'micro-ring' || node.props?.['data-testid'] === 'nutrition-micronutrients-tab'), false)
-  assert.match(text(tree), /Water/)
-  assert.match(text(tree), /Add Macros/)
+  assert.ok(nodes(tree).some(node => node.type === 'water-entry'))
+  assert.ok(nodes(tree).some(node => node.type === 'macro-entry'))
   for (const read of f.reads) assert.equal(read.selection.includes('*') || /iron|fiber|vitamin|micronutrient/.test(read.selection), false)
   assert.equal(f.state.slots[2].iron_target_mg, undefined)
   assert.equal(f.state.slots[3].iron_remaining_mg, undefined)
+})
+
+for (const program of ['unknown', null]) test(`${program} rejects unrecognized coaching tiers before loading member nutrition`, () => {
+  const f = fixture({ program, forcedMicros: true })
+  assert.throws(() => f.render(), /recognized coaching tier/)
+  assert.equal(f.requests.length, 0)
+  assert.equal(f.reads.length, 0)
 })
 
 for (const tier of ['ignite', 'phoenix']) test(`${tier} retains insight guidance, full persisted targets and confirmed circles`, async () => {
@@ -109,7 +121,7 @@ test('downgrade hides old guidance before effect cleanup and rejects late insigh
   assert.doesNotMatch(text(tree), /MICRO_GUIDANCE_LEAK|MINERAL_SUPPORT|MICRO_FOOD_REASON/)
   assert.match(text(tree), /PROTEIN_SUPPORT/)
   assert.equal(nodes(tree).some(node => node.type === 'micro-ring'), false)
-  assert.ok(f.guidance.at(-1).suggestedFoods.every(food => food.reason === 'MACRO_GUIDANCE'))
+  assert.equal(f.guidance.at(-1).suggestedFoods.length, 0)
   assert.equal(f.analytics.some(args => JSON.stringify(args).includes('MINERAL_SUPPORT')), false)
 })
 
@@ -194,13 +206,13 @@ test('direct nutrient detail denies excluded tiers before any nutrient reads or 
 test('direct nutrient detail remains available to IGNITE and PHOENIX', async () => {
   for (const program of ['ignite', 'phoenix']) {
     const queries = []
-    const db = { from(table) { queries.push(table); const query = { select() { return query }, eq() { return query }, maybeSingle: async () => ({ data: { id: 'iron', canonical_name: 'Iron', review_status: 'reviewed' } }), limit: async () => ({ data: [] }) }; return query } }
+    const db = { from(table) { queries.push(table); const query = { select() { return query }, eq() { return query }, not() { return query }, maybeSingle: async () => ({ data: { id: 'iron', canonical_name: 'Iron', review_status: 'reviewed' } }), limit: async () => ({ data: [] }) }; return query } }
     const Page = load('app/dashboard/nutrition/nutrients/[nutrient]/page.tsx', {
       'next/link': { __esModule: true, default: 'link' }, 'next/navigation': { notFound() { throw new Error('NOT_FOUND') } },
       '@/lib/dashboard/getDashboardContext': { getDashboardContext: async () => ({ user: { id: 'owner' }, client: { client_id: 'own-client', program }, supabase: db }) },
       '@/lib/nutrition/getNutrientInsights': { getNutrientInsights: async () => [] }, '@/lib/nutrition/memberNutrition': memberNutrition,
     }).default
-    assert.match(text(await Page({ params: Promise.resolve({ nutrient: 'iron' }) })), /Iron/)
+    assert.equal((await Page({ params: Promise.resolve({ nutrient: 'iron' }) })).props.title, 'Iron')
     assert.deepEqual(queries, ['nutrients', 'nutrient_interactions'])
   }
 })
@@ -210,9 +222,9 @@ test('EMBER reload retains stored macro calculation metadata through the project
   const f = fixture()
   f.render(); const tree = await f.settle()
   assert.match(text(tree), /Saved macro context/)
-  assert.match(text(tree), /Saved recomp goal/)
-  assert.match(text(tree), /BMI Context/)
-  assert.match(text(tree), /25\s*%\s*\/\s*45\s*%\s*\/\s*30\s*%/)
+  assert.doesNotMatch(text(tree), /Saved recomp goal|BMI Context|Goals \/ Assessment/)
+  assert.equal(f.state.slots[2].nutrition_calculation.normalizedGoal, 'Saved recomp goal')
+  assert.equal(f.state.slots[2].nutrition_calculation.bmi, 23)
   assert.ok(f.requests.some(url => url.startsWith('/api/nutrition-log?')))
   assert.equal(f.reads.some(read => read.table === 'nutrition_logs'), false, 'EMBER never requests raw log columns from the browser SDK')
   assert.equal(f.state.slots[2].nutrition_calculation.micronutrientTargets, undefined)

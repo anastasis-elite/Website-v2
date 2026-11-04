@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { dirname, resolve } from 'node:path'
 import test from 'node:test'
 import ts from 'typescript'
 import vm from 'node:vm'
@@ -18,6 +19,7 @@ function moduleUrl(path) {
     if (specifier === 'next/server') url = `data:text/javascript;base64,${Buffer.from('export const NextResponse = { json: (body, init) => Response.json(body, init) }').toString('base64')}`
     else if (specifier === '@/lib/supabase/server') url = `data:text/javascript;base64,${Buffer.from('export const createClient = async () => globalThis.nutritionRecoveryTestClient').toString('base64')}`
     else if (specifier.startsWith('@/')) url = moduleUrl(`${specifier.slice(2)}.ts`)
+    else if (specifier.startsWith('.')) url = moduleUrl(resolve(dirname(path), specifier) + '.ts')
     else return match
     return `from '${url}'`
   })
@@ -33,6 +35,7 @@ const preference = await import(moduleUrl('lib/dashboard/viewPreferences.ts'))
 const { getRecoveryScoreExplanation } = await import(moduleUrl('lib/recovery/scoreExplanation.ts'))
 const tierHelpers = await import(moduleUrl('lib/nutrition/canLogFood.ts'))
 const nextFoodGuidance = await import(moduleUrl('lib/nutrition/nextFoodGuidance.ts'))
+const dailyMetrics = await import(moduleUrl('lib/nutrition/dailyMacroMetrics.ts'))
 const nutritionProgress = await import(moduleUrl('lib/nutrition/progress.ts'))
 const micronutrientProgress = await import(moduleUrl('lib/nutrition/micronutrientProgress.ts'))
 const memberNutrition = await import(moduleUrl('lib/nutrition/memberNutrition.ts'))
@@ -335,7 +338,7 @@ test('view preferences survive revisits, reject invalid values, and stay client 
   assert.doesNotThrow(() => preference.writeViewPreference(blocked, key, 'water'))
 })
 
-test('zero-log nutrition hero provides an actionable food starting point across tiers', () => {
+test('nutrition cleanup keeps higher-tier food guidance and replaces Ember guidance with entry cards', () => {
   const nativeRequire = createRequire(import.meta.url)
   const module = { exports: {} }
   const output = ts.transpileModule(readFileSync('components/AdaptiveNutritionDashboard.tsx', 'utf8'), {
@@ -343,6 +346,9 @@ test('zero-log nutrition hero provides an actionable food starting point across 
   }).outputText
   const mocks = {
     '@/lib/supabase/client': { createClient: () => ({}) },
+    '@/lib/nutrition/dailyMacroMetrics': dailyMetrics,
+    '@/lib/dashboard/viewPreferences': preference,
+    '@/components/nutrition/MacroQuickAdd': { __esModule: true, default: () => null },
     '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: () => null },
     '@/components/NutritionFoodLogger': { __esModule: true, default: () => null },
     '@/components/nutrition/MicronutrientProgressRing': { __esModule: true, default: () => null },
@@ -368,11 +374,10 @@ test('zero-log nutrition hero provides an actionable food starting point across 
       hydration: { consumed: 0, target: 100, recoverySupportNote: 'QA' },
     }
     const html = renderToStaticMarkup(React.createElement(module.exports.default, { program, logic, recipes: [] }))
-    const hero = html.match(/<article[^>]*data-testid="nutrition-objective"[\s\S]*?<\/article>/)?.[0]
-    assert.ok(hero)
-    assert.doesNotMatch(hero, /Log the next meal to calculate/)
-    assert.match(hero, /Explore Suggested Foods/)
-    assert.match(hero, /No prior meal logs needed/)
+    assert.doesNotMatch(html, /nutrition-objective/)
+    assert.match(html, /Your daily targets/)
+    if (program === 'ember') assert.doesNotMatch(html, /Start with protein|Build a balanced plate|Suggested Foods/)
+    else assert.match(html, /Start with protein|Build a balanced plate/)
   }
 })
 

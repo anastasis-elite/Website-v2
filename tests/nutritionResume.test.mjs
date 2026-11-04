@@ -3,13 +3,14 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import test from 'node:test'
 import vm from 'node:vm'
+import { dirname, resolve } from 'node:path'
 import ts from 'typescript'
 
 const nativeRequire = createRequire(import.meta.url)
 function load(path, mocks, environment = {}) {
   const module = { exports: {} }
   const compiled = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText
-  vm.runInNewContext(compiled, { module, exports: module.exports, console, Date, Error, Promise, AbortController, process: { env: { NODE_ENV: 'test' } }, ...environment, require: name => mocks[name] || (name === '@/components/phone-app/PhoneAppFrame' ? { __esModule: true, default: 'phone-app-frame' } : nativeRequire(name)) })
+  vm.runInNewContext(compiled, { module, exports: module.exports, console, Date, Error, Promise, AbortController, process: { env: { NODE_ENV: 'test' } }, ...environment, require: name => mocks[name] || (name.startsWith('.') ? load(resolve(dirname(path), name) + '.ts', mocks, environment) : name === '@/components/phone-app/PhoneAppFrame' ? { __esModule: true, default: 'phone-app-frame' } : nativeRequire(name)) })
   return module.exports
 }
 function hooks() {
@@ -152,9 +153,12 @@ test('visible micronutrient rings reload other-device persisted intake after res
   const Dashboard = load('components/AdaptiveNutritionDashboard.tsx', {
     react: state.react, 'next/navigation': { useRouter: () => router }, '@/lib/supabase/client': { createClient: () => db },
     '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: 'water-entry' }, '@/components/NutritionFoodLogger': { __esModule: true, default: 'food-entry' },
+    '@/components/nutrition/MacroQuickAdd': { __esModule: true, default: 'macro-entry' },
+    '@/lib/nutrition/dailyMacroMetrics': load('lib/nutrition/dailyMacroMetrics.ts', {}),
+    '@/lib/dashboard/viewPreferences': load('lib/dashboard/viewPreferences.ts', {}),
     '@/components/nutrition/MicronutrientProgressRing': { __esModule: true, default: 'micro-ring' },
     '@/components/nutrition/hooks': { useNutritionEngine: value => value.nutrition, useFuelReadinessEngine: value => value.fuelReadiness, usePhoenixRecipes: value => value },
-    '@/lib/nutrition/canLogFood': { canLogFood: () => true, normalizeProgramTier: () => 'ignite' }, '@/lib/timezone': { getClientLocalDateOffset: () => '2026-10-14' },
+    '@/lib/nutrition/canLogFood': { canLogFood: () => true, normalizeProgramTier: () => 'ignite' }, '@/lib/timezone': { getClientLocalDateOffset: () => '2026-10-14', getClientTimeZone: () => 'UTC' },
     '@/lib/entitlements': entitlements, '@/lib/nutrition/memberNutrition': load('lib/nutrition/memberNutrition.ts', { '@/lib/entitlements': entitlements }), '@/lib/nutrition/mealPeriod': periods, '@/lib/analytics': { trackEvent() {} },
     '@/components/dashboard/useViewPreference': { useViewPreference: (_id, scope, _allowed, fallback) => [scope.startsWith('nutrition-management') ? 'micros' : fallback, () => {}] },
     '@/lib/nutrition/nextFoodGuidance': { getNextFoodGuidance: () => ({ copy: '' }) },
