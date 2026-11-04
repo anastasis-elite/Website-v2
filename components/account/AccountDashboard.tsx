@@ -11,6 +11,7 @@ import { normalizeProgramTier } from '@/lib/entitlements'
 import PhoneAppFrame from '@/components/phone-app/PhoneAppFrame'
 import DailyDisplayPreferences from '@/components/DailyDisplayPreferences'
 import AppleHealthExportImport from './AppleHealthExportImport'
+import AccountInformationLinks from './AccountInformationLinks'
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
@@ -59,6 +60,7 @@ export default function AccountDashboard({ initialData, client, user, displayPre
         </section>
         <section className="account-panel"><h2>Connections &amp; privacy</h2><p>Devices &amp; health apps: native connection management is unavailable here.</p><p>Community visibility, profile sharing, data export and deletion requests are not managed on this screen.</p><Link href="/dashboard/settings/calendars" className="account-outline-button">Manage existing calendars</Link><Link href="/dashboard/support" className="account-outline-button">Privacy and data support</Link><AppleHealthExportImport key={`${importUserId}:${data.profile.clientId}`} clientId={data.profile.clientId} userId={importUserId} timeZone={importTimezone} eligible={importEligible} /></section>
 
+        <AccountInformationLinks />
       </div>
     </main></PhoneAppFrame>
   )

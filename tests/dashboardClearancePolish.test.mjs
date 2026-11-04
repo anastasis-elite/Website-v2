@@ -14,7 +14,7 @@ const theme = postcss.parse(readFileSync('components/program-dashboard/TodayPlan
 const guided = postcss.parse(readFileSync('components/navigation/guided-navigation.css', 'utf8'))
 function declarations(ast, selector) {
   const rows = []
-  ast.walkRules(rule => { if (rule.selector === selector) rule.walkDecls(decl => rows.push([decl.prop, decl.value, Boolean(decl.important)])) })
+  ast.walkRules(rule => { if (rule.selectors.includes(selector)) rule.walkDecls(decl => rows.push([decl.prop, decl.value, Boolean(decl.important)])) })
   return rows
 }
 function value(ast, selector, prop) { return declarations(ast, selector).filter(row => row[0] === prop).at(-1)?.[1] }
@@ -53,22 +53,30 @@ function pixels(expression, variables, safeArea) {
   return Function(`return (${expanded})`)()
 }
 
-test('dashboard footer alone owns navigation clearance without nested viewport floors or clipped content', () => {
+test('dashboard shell alone owns navigation clearance without nested viewport floors or clipped content', () => {
   const consumers = []
   globals.walkRules(rule => rule.walkDecls(decl => {
     if (/^padding(?:-bottom)?$/.test(decl.prop) && decl.value.includes('var(--dashboard-nav-clearance)')) consumers.push(rule.selector)
   }))
-  assert.deepEqual(consumers, ['body:has(.dashboard-client-shell .client-dashboard-nav) > .legal-footer'])
+  assert.deepEqual(consumers, ['.dashboard-client-shell:has(.client-dashboard-nav)'])
   assert.equal(value(globals, '.dashboard-client-shell', 'padding-bottom'), '0')
+  assert.equal(value(globals, '.dashboard-client-shell:has(.client-dashboard-nav)', 'padding-bottom'), 'var(--dashboard-nav-clearance)')
   assert.equal(value(globals, '.dashboard-client-shell>main', 'padding-bottom'), '0')
   assert.equal(value(globals, '.dashboard-client-shell', 'min-height'), '0')
   assert.equal(value(globals, '.dashboard-client-shell>main', 'min-height'), '0')
   assert.equal(value(globals, '.dashboard-client-shell .today-dashboard', 'min-height'), '0')
   assert.equal(value(theme, '.surface', 'min-height'), undefined)
   assert.equal(value(theme, '.surface :global(.today-shell)', 'padding'), '0')
-  assert.equal(value(globals, 'body:has(.dashboard-client-shell .client-dashboard-nav) > .legal-footer', 'padding-top'), '16px')
-  assert.equal(value(globals, 'body:has(.dashboard-client-shell .client-dashboard-nav) > .legal-footer > p:last-child', 'margin-bottom'), '0')
-  assert.equal(value(globals, 'body:has(.dashboard-client-shell) > .legal-footer', 'padding-bottom'), undefined, 'Hidden-navigation dashboard routes retain normal footer spacing.')
+  for (const selector of [
+    '.dashboard-client-shell:has(.client-dashboard-nav) .phone-app-surface',
+    '.dashboard-client-shell:has(.client-dashboard-nav) .phone-app-surface main',
+  ]) {
+    assert.equal(value(globals, selector, 'min-height'), '0')
+    assert.ok(declarations(globals, selector).some(([prop, amount, important]) => prop === 'padding-bottom' && amount === '0' && important), 'Nested phone surfaces must not add another bottom gap.')
+  }
+  globals.walkRules(rule => {
+    assert.ok(!(rule.selector.includes('.dashboard-client-shell') && rule.selector.includes('.legal-footer')), 'The removed dashboard footer must not own any spacing.')
+  })
   assert.equal(value(globals, '.manual-session-actions', 'bottom'), 'var(--dashboard-nav-clearance,0px)')
   for (const selector of ['.dashboard-client-shell', '.dashboard-client-shell>main', '.dashboard-client-shell .today-dashboard']) {
     assert.equal(value(globals, selector, 'height'), undefined)
@@ -91,17 +99,16 @@ test('actual dashboard variables reserve nav, elevation, desktop offset and safe
   }
 })
 
-test('short Plan and long Today flow models leave final footer content above fixed navigation without cumulative gaps', () => {
+test('short Plan and long Today flow models leave final dashboard content above fixed navigation without cumulative gaps', () => {
   for (const width of [390, 1024]) for (const safeArea of [0, 34]) for (const isGuided of [true, false]) {
     const variables = navigationVariables(width, isGuided), clearance = pixels(variables['--dashboard-nav-clearance'], variables, safeArea)
     const navTopInset = clearance - 16
-    for (const contentHeight of [240, 2400]) for (const footerContentHeight of [180, 360]) {
-      const viewport = 844, footerTopGap = 16
-      const finalFooterContent = contentHeight + footerTopGap + footerContentHeight
-      const scrollHeight = finalFooterContent + clearance
+    for (const contentHeight of [240, 2400]) {
+      const viewport = 844
+      const scrollHeight = contentHeight + clearance
       const maxScroll = Math.max(0, scrollHeight - viewport)
-      assert.ok(finalFooterContent - maxScroll <= viewport - navTopInset - 16)
-      assert.equal(scrollHeight - contentHeight - footerContentHeight, 16 + clearance)
+      assert.ok(contentHeight - maxScroll <= viewport - navTopInset - 16)
+      assert.equal(scrollHeight - contentHeight, clearance)
     }
   }
 })
