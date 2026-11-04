@@ -179,6 +179,7 @@ export default async function ProgramWorkoutPage({
     todaysWorkout,
     adjustedExercises,
     cycleAdjustment,
+    weekdayPreferenceNotice,
   } = getProgramWorkout({
     client,
     output,
@@ -293,6 +294,7 @@ export default async function ProgramWorkoutPage({
           muscleReadiness={muscleReadiness}
           workoutHistory={workoutHistory}
           strengthAssessmentWorkout={strengthWorkout}
+          weekdayPreferenceNotice={weekdayPreferenceNotice}
           memberEquipment={
             Array.isArray(client.equipment_access)
               ? client.equipment_access

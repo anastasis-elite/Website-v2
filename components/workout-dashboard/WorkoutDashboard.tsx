@@ -75,6 +75,7 @@ type Props = {
   weightUnit?: 'lb' | 'kg'
   memberEquipment: string[]
   strengthAssessmentWorkout?: boolean
+  weekdayPreferenceNotice?: string | null
 }
 
 function exerciseName(exercise: AssignedExercise) {
@@ -215,6 +216,8 @@ export default function WorkoutDashboard(props: Props) {
               ))}
             </div>
           </div>
+          <p><Link href="/dashboard/workout/preferences" className="tier-secondary-action">Training day preferences</Link></p>
+          {props.weekdayPreferenceNotice ? <p role="status">{props.weekdayPreferenceNotice}</p> : null}
           {recommendedInteractive && workoutMode === 'recommended' ? <>
             <p>Rest until breathing is comfortable.</p>
             <details className="workout-session-guidance">

@@ -2,6 +2,7 @@ import { membershipCan } from '@/lib/membership/policy'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { parseJsonObject, safeErrorResponse } from '@/lib/security/http'
+import { projectWeekdayProgram } from '@/lib/program/getProgramWorkout'
 
 export const runtime = 'nodejs'
 
@@ -45,6 +46,8 @@ export async function POST(req: Request) {
       .from('program_outputs')
       .select('*')
       .eq('client_id', clientId)
+      .eq('program', client.program)
+      .or(`auth_user_id.eq.${user.id},auth_user_id.is.null`)
       .order('generated_at', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -56,15 +59,15 @@ export async function POST(req: Request) {
       )
     }
 
-    if (!latestProgram?.output) {
+    if (!latestProgram?.program_json && !latestProgram?.output) {
       return NextResponse.json(
         { error: 'No generated program found for this client.' },
         { status: 404 }
       )
     }
 
-    const output = latestProgram.output
-    const days = output.days || []
+    const { programJson: output, weekdayPreferenceNotice } = projectWeekdayProgram({ client, output: latestProgram })
+    const days = Array.isArray(output.days) ? output.days : []
 
     const selectedDay = dayName
       ? days.find(
@@ -87,6 +90,7 @@ export async function POST(req: Request) {
       generated_at: output.generated_at || latestProgram.generated_at,
       day: selectedDay,
       exercises: selectedDay.exercises || [],
+      weekdayPreferenceNotice,
     })
   } catch (error) {
     return safeErrorResponse('Workout route failed', 500, error)

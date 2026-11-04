@@ -1,0 +1,33 @@
+.preferences {display:grid;gap:22px;min-width:0;color:#f1e9dc;}
+.preferences h2 {font:400 clamp(1.8rem,5vw,2.4rem)/1.2 Georgia,serif;margin:0 0 14px;}
+.preferences h3 {font:400 1.4rem/1.25 Georgia,serif;margin:0 0 12px;}
+.preferences p,.preferences li {line-height:1.6;color:#d1bda7;}
+.preferences p {margin:10px 0;}
+.savedChoices {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
+.panel,.mode,.day {min-width:0;margin:0;border:1px solid #b3855952;border-radius:20px;padding:18px;background:linear-gradient(135deg,#4a301c70,#261a12);}
+.summaryDays {display:grid;gap:10px;margin:12px 0;}
+.summaryDays div {display:grid;gap:3px;}
+.summaryDays dt {font-weight:600;color:#eed8c0;}
+.summaryDays dd {margin:0;color:#d1bda7;line-height:1.5;}
+.focusPlan {margin-top:16px;padding-top:8px;border-top:1px solid #b3855940;}
+.focusPlan h4 {margin:12px 0 8px;font-size:1rem;line-height:1.5;color:#eed8c0;}
+.focusPlan ul {padding-left:20px;}
+.notice {padding:12px 15px;border-left:3px solid #bd916b;line-height:1.6;}
+.form {display:grid;gap:18px;min-width:0;}
+.mode legend,.day legend {padding:0 6px;color:#eed8c0;font-weight:600;}
+.mode label,.groups label {display:flex;gap:10px;align-items:center;min-height:44px;line-height:1.4;cursor:pointer;}
+.mode p {margin:0 0 12px;padding-left:30px;}
+.mode input,.groups input {flex:none;width:20px;height:20px;accent-color:#c58b57;}
+.days {display:grid;gap:18px;}
+.groups {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 14px;}
+.actions {display:flex;flex-wrap:wrap;gap:12px;}
+.actions button {display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid #ba9067;border-radius:12px;font:inherit;line-height:1.4;cursor:pointer;}
+.primary {background:#62432d;color:#f5eadb;}
+.secondary {background:#291c13;color:#f1e9dc;}
+.actions button:disabled {opacity:.6;cursor:default;}
+.preferences :is(input,button):focus-visible {outline:2px solid #ead2b4;outline-offset:3px;}
+.preferences fieldset:disabled label {cursor:default;opacity:.7;}
+.error {padding:12px 15px;border:1px solid #d6a086;border-radius:12px;background:#4a2820;}
+.error p,.error li {color:#fae6da;}
+@media(max-width:700px) {.savedChoices{grid-template-columns:1fr;}.groups{grid-template-columns:repeat(2,minmax(0,1fr));}.panel,.mode,.day{padding:16px 12px;}.actions button{width:100%;}}
+@media(max-width:360px) {.groups{grid-template-columns:1fr;}}

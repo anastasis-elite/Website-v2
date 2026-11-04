@@ -73,7 +73,7 @@ export const config = {
     '/api/assessment', '/api/assessment-strength', '/api/assessment/:path*',
     '/api/schedule/:path*', '/api/onboarding/:path*', '/api/cycle/:path*',
     '/api/check-access', '/api/membership/:path*', '/api/tracker/:path*',
-    '/api/workout-set-log', '/api/workout-feedback', '/api/workout/prescription', '/api/assessment-photos/:path*',
+    '/api/workout-set-log', '/api/workout-feedback', '/api/workout/prescription', '/api/workout/weekday-preferences', '/api/assessment-photos/:path*',
     '/api/calendars/:path*', '/api/daily-check-in',
     '/api/phoenix/:path*', '/api/mobile/:path*', '/api/account/:path*', '/api/billing/:path*', '/api/health/:path*',
     '/api/assessment-window/:path*',
