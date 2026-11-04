@@ -15,10 +15,11 @@ import phoenixRecomposition from '@/data/template/phoenixRecomposition.json'
 import phoenixStrength from '@/data/template/phoenixStrength.json'
 import phoenixWaistCincher from '@/data/template/phoenixWaistCincher.json'
 
-import { getEquipmentAdjustedLoad } from '@/lib/program/getEquipmentAdjustedLoad'
+import { calculateFounderLoadFromEstimated1RM, getFounderIntensityKey, resolveFounderExerciseReference } from '@/lib/program/founderReference'
 import { getClientTimeZone } from '@/lib/timezone'
 import { readSessionEquipmentContext } from '@/lib/workout/selectedPrescriptionTypes'
 import { isReferenceSessionVariant } from '@/lib/workout/manualWorkout'
+import { withoutCalculatedLoad } from '@/lib/workout/loadGuidance'
 
 function getTemplate(program: string) {
   switch (program) {
@@ -47,48 +48,11 @@ function getTemplate(program: string) {
   }
 }
 
-function getIfKey(program: string) {
-  switch (program) {
-    case 'ember':
-      return 'ember_if'
-    case 'ignite':
-      return 'ignite_if'
-    case 'phoenixHypertrophy':
-      return 'phoenix_hypertrophy_if'
-    case 'phoenixStrength':
-      return 'phoenix_strength_if'
-    case 'phoenixBodybuilding':
-      return 'phoenix_bodybuilding_if'
-    case 'phoenixEndurance':
-      return 'phoenix_endurance_if'
-    case 'phoenixRecomposition':
-      return 'phoenix_recomposition_if'
-    case 'phoenixWaistCincher':
-      return 'phoenix_waist_cincher_if'
-    case 'phoenixGluteSculpt':
-      return 'phoenix_glute_sculpt_if'
-    default:
-      return 'ember_if'
-  }
-}
-
 function normalizeName(value: string) {
   return String(value || '')
     .trim()
     .toLowerCase()
     .replace(/\s+/g, ' ')
-}
-
-function getVariantGroup(exerciseName: string) {
-  const normalized = normalizeName(exerciseName)
-
-  return (exerciseVariants as any[]).find((group) => {
-    const aliases = group.aliases || []
-
-    return aliases.some(
-      (alias: string) => normalizeName(alias) === normalized
-    )
-  })
 }
 
 function normalizeEquipment(value: unknown) {
@@ -193,27 +157,22 @@ function estimate1RM(weight: number, reps: number) {
 }
 
 function getRepMultiplier(reps: number) {
-  const numericReps = Number(reps)
-
-  if (!numericReps || Number.isNaN(numericReps)) {
-    return 1
-  }
-
-  const found = (hypertrophyChart as any[]).find(
-    (row) => Number(row.reps) === numericReps
-  )
-
-  return Number(found?.multiplier || 1)
+  const found = (hypertrophyChart as any[]).filter(row => Number(row.reps) === reps)
+  return found.length === 1 ? Number(found[0].multiplier) : NaN
 }
 
-function roundToNearest5(num: number) {
-  if (!num || Number.isNaN(num)) return 0
+function hasUsableAssessment(lift: ReturnType<typeof getAssessmentLift>, bodyweight: boolean) {
+  return Boolean(lift && lift.recorded && Number.isFinite(lift.weight) && lift.weight <= 3000 &&
+    (bodyweight ? lift.weight >= 0 : lift.weight > 0) && Number.isSafeInteger(lift.reps) && lift.reps > 0 && lift.reps <= 100)
+}
 
-  if (num < 20) {
-    return Math.round(num)
+function calculationProvenance({ keyRow, ifKey, estimated1RM, intensityFactor, repMultiplier, baseCalculatedWeight, adjustedWeight, variant }: any) {
+  return {
+    version: 'founder-load-v2', reference_exercise: keyRow.exercise, assessment_key: keyRow.assessment_key,
+    intensity_key: ifKey, estimated_1rm: estimated1RM, intensity_factor: intensityFactor, rep_multiplier: repMultiplier,
+    base_weight: baseCalculatedWeight, equipment_weight: adjustedWeight,
+    selected_variant_id: variant?.id || null, equipment_modifier: variant?.equipment_modifier ?? 1,
   }
-
-  return Math.round(num / 5) * 5
 }
 
 // One calculation path for saved programs and bounded manual selections.
@@ -222,15 +181,7 @@ function calculateFounderLoad({ lift, intensityFactor, repMultiplier, group, var
   group: any; variant: any; bodyweight: boolean
 }) {
   const estimated1RM = estimate1RM(lift.weight, lift.reps)
-  const baseCalculatedWeight = roundToNearest5(estimated1RM * intensityFactor * repMultiplier)
-  const adjustedWeight = bodyweight ? 0 : getEquipmentAdjustedLoad({
-    baseWeight: baseCalculatedWeight,
-    fromEquipment: group?.base_equipment || variant?.equipment,
-    toEquipment: variant?.equipment,
-    category: group?.category || 'compound',
-    equipmentModifier: variant?.equipment_modifier,
-  })
-  return { estimated1RM, baseCalculatedWeight, adjustedWeight }
+  return calculateFounderLoadFromEstimated1RM({ estimated1RM, intensityFactor, repMultiplier, group, variant, bodyweight })
 }
 
 export function generateProgram({
@@ -239,14 +190,15 @@ export function generateProgram({
   strengthAssessment,
 }: any) {
   const template = getTemplate(client.program)
-  const ifKey = getIfKey(client.program)
+  const ifKey = getFounderIntensityKey(client.program)
   const clientEquipment = getClientEquipment(client, initialAssessment)
   const restrictedEquipment = !clientEquipment.includes('*')
   const excludedExercises: Array<{ day: string; exercise: string; reason: string }> = []
 
   const generatedDays = template.days.map((day: any) => {
     const exercises = day.exercises.flatMap((exercise: any) => {
-      const variantGroup = getVariantGroup(exercise.exercise)
+      const resolved = resolveFounderExerciseReference(exercise.exercise, masterKey, exerciseVariants)
+      const variantGroup = resolved.status === 'resolved' ? resolved.group : null
       const defaultVariant = getDefaultVariantForEquipment(variantGroup, clientEquipment)
       const availableVariants = getEquipmentCompatibleVariants(variantGroup, clientEquipment)
       // Keep existing unloaded template movements, but never assign an unsupported gym variant.
@@ -256,58 +208,48 @@ export function generateProgram({
         return []
       }
 
-      const keyRow = (masterKey as any[]).find((row) => {
-        if (variantGroup?.assessment_key) {
-          return row.assessment_key === variantGroup.assessment_key
-        }
-
-        return row.exercise === exercise.exercise
-      })
-
-      if (!keyRow) {
-        return {
-          ...exercise,
-          display_name: variantGroup?.display_name || exercise.exercise,
-          movement_pattern: variantGroup?.pattern || null,
-          selected_variant_id: defaultVariant?.id || null,
-          selected_variant_name: defaultVariant?.name || exercise.exercise,
-          selected_equipment: defaultVariant?.equipment || null,
-          load_type: unloaded ? 'bodyweight' : defaultVariant?.load_type || 'total_load',
-          available_variants: availableVariants,
-          calculated_weight: null,
-          calculation_note: 'No master key match',
-        }
-      }
-
-      const assessmentKey =
-        variantGroup?.assessment_key || keyRow.assessment_key
-
-      const assessmentLift = getAssessmentLift(
-        assessmentKey,
-        strengthAssessment
-      )
-
-      if (!assessmentLift) {
-        return {
-          ...exercise,
-          display_name: variantGroup?.display_name || exercise.exercise,
-          movement_pattern: variantGroup?.pattern || null,
-          selected_variant_id: defaultVariant?.id || null,
-          selected_variant_name: defaultVariant?.name || exercise.exercise,
-          selected_equipment: defaultVariant?.equipment || null,
-          load_type: unloaded ? 'bodyweight' : defaultVariant?.load_type || 'total_load',
-          available_variants: availableVariants,
-          calculated_weight: null,
-          calculation_note: 'No assessment key match',
-        }
-      }
-
-      const intensityFactor = Number(keyRow[ifKey] || 0)
-      const repMultiplier = getRepMultiplier(Number(exercise.reps))
+      const keyRow = resolved.status === 'resolved' ? resolved.reference : null
+      const assessmentKey = keyRow?.assessment_key
+      const assessmentLift = getAssessmentLift(assessmentKey, strengthAssessment?.data || strengthAssessment)
       const bodyweight = unloaded || defaultVariant?.load_type === 'bodyweight' || defaultVariant?.equipment === 'bodyweight'
-      const { estimated1RM, baseCalculatedWeight, adjustedWeight } = calculateFounderLoad({
-        lift: assessmentLift, intensityFactor, repMultiplier, group: variantGroup, variant: defaultVariant, bodyweight,
+      const exerciseMetadata = {
+        ...exercise,
+        display_name: variantGroup?.display_name || exercise.exercise,
+        movement_pattern: variantGroup?.pattern || null,
+        selected_variant_id: defaultVariant?.id || null,
+        selected_variant_name: defaultVariant?.name || exercise.exercise,
+        selected_equipment: defaultVariant?.equipment || (unloaded ? 'bodyweight' : null),
+        load_type: bodyweight ? 'bodyweight' : defaultVariant?.load_type || 'total_load',
+        available_variants: availableVariants,
+      }
+      // These established unloaded movements need no assessed external load.
+      // In particular Side Plank must not depend on an unsupported Crunch input.
+      if (bodyweight) return {
+        ...exerciseMetadata, baseline_weight: 0, calculated_weight: 0, recommended_weight: 0,
+        calculation_note: 'Bodyweight movement; zero added load.',
+      }
+      const intensityFactor = Number(keyRow?.[ifKey])
+      const repMultiplier = getRepMultiplier(Number(exercise.reps))
+      const invalidReason = resolved.status === 'unavailable' ? resolved.reason
+        : !assessmentLift ? 'This exercise has no established assessed load calculation.'
+        : !hasUsableAssessment(assessmentLift, bodyweight) ? 'Saved strength input is missing or invalid.'
+        : !Number.isFinite(intensityFactor) || intensityFactor <= 0 ? 'Exercise intensity is unavailable.'
+        : !Number.isSafeInteger(exercise.sets) || exercise.sets <= 0 || !Number.isSafeInteger(exercise.reps) || exercise.reps <= 0 ||
+          !Number.isFinite(repMultiplier) || repMultiplier <= 0 ? 'Exercise dose is unavailable.'
+        : defaultVariant && (!Number.isFinite(defaultVariant.equipment_modifier) || defaultVariant.equipment_modifier <= 0) ? 'Equipment conversion is unavailable.'
+        : null
+      const calculation = invalidReason ? null : calculateFounderLoad({
+        lift: assessmentLift!, intensityFactor, repMultiplier, group: variantGroup, variant: defaultVariant, bodyweight,
       })
+      const unavailableReason = invalidReason || (!calculation || !Number.isFinite(calculation.adjustedWeight) || (!bodyweight && calculation.adjustedWeight <= 0)
+        ? 'Calculated exercise load is unavailable.' : null)
+      if (unavailableReason) return withoutCalculatedLoad(
+        { ...exerciseMetadata, calculation_note: unavailableReason },
+        resolved.status === 'resolved' && !assessmentLift || resolved.status === 'unavailable' && resolved.reason === 'No exact exercise reference.'
+          ? 'not_calculated' : 'unverified',
+        unavailableReason,
+      )
+      const { estimated1RM, baseCalculatedWeight, adjustedWeight } = calculation!
 
       return {
         ...exercise,
@@ -328,6 +270,8 @@ export function generateProgram({
         baseline_weight: baseCalculatedWeight,
         calculated_weight: adjustedWeight,
         recommended_weight: adjustedWeight,
+        prescription_calculation: calculationProvenance({ keyRow, ifKey, estimated1RM, intensityFactor, repMultiplier,
+          baseCalculatedWeight, adjustedWeight, variant: defaultVariant }),
 
         calculation_note: bodyweight ? 'Bodyweight movement; zero added load.' : defaultVariant
           ? `Adjusted for ${defaultVariant.equipment} loading.`
@@ -373,14 +317,13 @@ export function getFounderSelectedExercise({ client, initialAssessment, strength
   if (!approved.includes(track)) return null
   const template = getTemplate(track)
   const catalogName = catalogExercise.exercise
-  const calculationGroup = getVariantGroup(catalogName)
-  // The manual catalog also recognizes exact display/variant names. Resolve
-  // only that existing identity metadata, without creating movement aliases.
-  const group = calculationGroup || (exerciseVariants as any[]).find(item =>
-    [item.display_name, ...(item.aliases || []), ...(item.variants || []).map((entry: any) => entry.name)]
-      .some(name => normalizeName(name) === normalizeName(catalogName)))
+  const resolved = resolveFounderExerciseReference(catalogName, masterKey, exerciseVariants)
+  if (resolved.status !== 'resolved') return null
+  const { reference: key, group } = resolved
   const unloaded = !group && /^(?:side plank|single-leg glute bridge|walking lunge|reverse lunge|sumo squat|bulgarian split squat)$/i.test(catalogName)
-  const variant = group?.variants?.find((item: any) => item.id === variantId) ||
+  const matchingVariants = group?.variants?.filter((item: any) => item.id === variantId) || []
+  if (matchingVariants.length > 1) return null
+  const variant = matchingVariants[0] ||
     (unloaded ? catalogExercise.available_variants.find((item: any) => item.id === variantId && item.load_type === 'bodyweight' && item.equipment === 'bodyweight') : null)
   if (!variant || !Number.isFinite(variant.equipment_modifier) || variant.equipment_modifier <= 0) return null
   const sessionContext = equipmentContext === undefined ? null : readSessionEquipmentContext(equipmentContext, variantId)
@@ -399,17 +342,15 @@ export function getFounderSelectedExercise({ client, initialAssessment, strength
   if (!choices.length || doses.size !== 1) return null
   const base = choices[0].exercise
   if (!Number.isSafeInteger(base.sets) || base.sets <= 0 || !Number.isSafeInteger(base.reps) || base.reps <= 0) return null
-  const key = (masterKey as any[]).find(row => calculationGroup?.assessment_key ? row.assessment_key === calculationGroup.assessment_key : row.exercise === catalogName)
-  const assessmentKey = calculationGroup?.assessment_key || key?.assessment_key
+  const assessmentKey = key.assessment_key
   const lift = getAssessmentLift(assessmentKey, strengthAssessment?.data || strengthAssessment)
-  const intensity = Number(key?.[getIfKey(track)])
-  const repRow = (hypertrophyChart as any[]).find(row => Number(row.reps) === base.reps)
-  const repMultiplier = Number(repRow?.multiplier)
+  const ifKey = getFounderIntensityKey(track)
+  const intensity = Number(key[ifKey])
+  const repMultiplier = getRepMultiplier(base.reps)
   const bodyweight = variant.load_type === 'bodyweight' || variant.equipment === 'bodyweight'
-  if (!key || !lift || !lift.recorded || !Number.isFinite(lift.weight) || lift.weight > 3000 || (bodyweight ? lift.weight < 0 : lift.weight <= 0) ||
-    !Number.isSafeInteger(lift.reps) || lift.reps <= 0 || lift.reps > 100 || !Number.isFinite(intensity) || intensity <= 0 ||
+  if (!hasUsableAssessment(lift, bodyweight) || !Number.isFinite(intensity) || intensity <= 0 ||
     !Number.isFinite(repMultiplier) || repMultiplier <= 0) return null
-  const { estimated1RM, baseCalculatedWeight, adjustedWeight } = calculateFounderLoad({ lift, intensityFactor: intensity, repMultiplier, group, variant, bodyweight })
+  const { estimated1RM, baseCalculatedWeight, adjustedWeight } = calculateFounderLoad({ lift: lift!, intensityFactor: intensity, repMultiplier, group, variant, bodyweight })
   if (!Number.isFinite(adjustedWeight) || (!bodyweight && adjustedWeight <= 0)) return null
   return { template, exercise: {
     ...catalogExercise, ...base,
@@ -420,5 +361,7 @@ export function getFounderSelectedExercise({ client, initialAssessment, strength
     available_variants: [variant], assessment_key: assessmentKey, estimated_1rm: Math.round(estimated1RM),
     intensity_factor: intensity, rep_multiplier: repMultiplier, baseline_weight: baseCalculatedWeight,
     calculated_weight: adjustedWeight, recommended_weight: adjustedWeight,
+    prescription_calculation: calculationProvenance({ keyRow: key, ifKey, estimated1RM, intensityFactor: intensity, repMultiplier,
+      baseCalculatedWeight, adjustedWeight, variant }),
   } }
 }

@@ -4,6 +4,7 @@ import { getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
 import { resolveProgramDayIntent } from '@/lib/program/templateDayIntent'
 import { getWeekdayMusclePreferencesView } from '@/lib/program/weekdayMusclePreferences'
 import { redistributeProgramWeek } from '@/lib/program/weekdayMuscleDistribution'
+import { projectSavedExercisePrescription } from '@/lib/program/savedPrescription'
 import {
   applyCycleTrainingAdjustment,
   getCycleTrainingAdjustment,
@@ -43,10 +44,13 @@ export function getProgramWorkout({ client, output, now = new Date() }: { client
   const todayName = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: getClientTimeZone(client) })
   const savedWorkout = days.find((day: any) => day.day_name === todayName)
   const dayIntent = resolveProgramDayIntent(savedWorkout, programJson, output?.program)
+  const calculationProgram = client?.program === 'phoenix' ? programJson.phoenix_track : client?.program || output?.program
+  const projectedExercises = Array.isArray(savedWorkout?.exercises)
+    ? savedWorkout.exercises.map((exercise: any) => projectSavedExercisePrescription(exercise, calculationProgram)) : []
   const todaysWorkout = savedWorkout && dayIntent ? { ...savedWorkout, day_intent: dayIntent } : savedWorkout
   const cycleAdjustment = getCycleTrainingAdjustment(client)
-  const adjustedExercises = todaysWorkout?.exercises?.length
-    ? todaysWorkout.exercises.map((exercise: any) =>
+  const adjustedExercises = projectedExercises.length
+    ? projectedExercises.map((exercise: any) =>
         applyCycleTrainingAdjustment({ exercise, adjustment: cycleAdjustment })
       )
     : []

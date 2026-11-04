@@ -15,6 +15,7 @@ import {
 } from '@/lib/workout/muscleReadiness'
 import type { ProgramTier, ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import { activityDose, summarizeActivityUnits } from '@/lib/workout/activity'
+import { exerciseLoadPresentation } from '@/lib/workout/exerciseLoadPresentation'
 import { exerciseOccurrenceLabel, formatWorkoutHistoryDate } from '@/lib/workout/logging'
 import { parseWorkoutViewPreferences } from '@/lib/workout/viewPreferences'
 
@@ -62,7 +63,9 @@ type Props = {
   assignedWorkoutId: string
   assignedDayName: string
   assignedExercises: AssignedExercise[]
+  loadGuidanceExercises?: AssignedExercise[]
   showInteractiveWorkout: boolean
+  calculationResumeOnly?: boolean
   hasSafetyFlags: boolean
   safetyFlags: any[]
   previewTitle: string
@@ -85,8 +88,9 @@ function exerciseName(exercise: AssignedExercise) {
 function exerciseDose(exercise: AssignedExercise) {
   if (exercise.duration_label) return exercise.duration_label
   const dose = activityDose(exercise)
+  const load = exerciseLoadPresentation(exercise)
   if (dose.metric === 'completion') return 'Complete the movement comfortably'
-  return `${dose.kind === 'strength' ? `${dose.sets} sets · ` : ''}${dose.prescribed || 'Choose a comfortable amount'} ${dose.metric}${dose.weight > 0 ? ` · ${dose.weight} ${dose.unit}` : ''}`
+  return `${dose.kind === 'strength' ? `${dose.sets} sets · ` : ''}${dose.prescribed || 'Choose a comfortable amount'} ${dose.metric}${load.recommendationAvailable && dose.weight > 0 ? ` · ${dose.weight} ${dose.unit}` : dose.kind === 'strength' && !load.recommendationAvailable ? ' · Load recommendation unavailable' : ''}`
 }
 
 function WorkoutPreview({ exercises, previewTitle, previewMessage }: { exercises: AssignedExercise[]; previewTitle: string; previewMessage: string }) {
@@ -246,6 +250,8 @@ export default function WorkoutDashboard(props: Props) {
               <article className="aos-workout-preview" data-testid="strength-assessment-workout"><h3>Strength assessment</h3><p>{getStrengthAssessmentDetail(props.logic.assessments.strength, props.logic.client)}</p><Link href={props.logic.assessments.strength.href} className={strengthSaved ? 'tier-secondary-action' : 'tier-primary-action'}>{props.logic.assessments.strength.actionLabel}</Link></article>
             ) : recommendedInteractive ? (
               <WorkoutTracker
+                loadGuidanceExercises={props.loadGuidanceExercises}
+                resumeOnly={props.calculationResumeOnly}
                 timezone={props.timezone}
                 weightUnit={props.weightUnit}
                 clientId={props.clientId}

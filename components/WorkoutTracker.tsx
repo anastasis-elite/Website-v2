@@ -129,6 +129,8 @@ type Props = {
   weightUnit?: 'lb' | 'kg'
   workoutSource?: 'recommended' | 'manual'
   plannedExercises?: unknown[]
+  loadGuidanceExercises?: any[]
+  resumeOnly?: boolean
   onExerciseFocus?: (exercise: Exercise) => void
   onExerciseBlur?: () => void
   onManualExerciseFinished?: (completed?: boolean, evidence?: ManualSaveEvidence) => void

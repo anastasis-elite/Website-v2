@@ -12,6 +12,7 @@ import phoenixRecomposition from '@/data/template/phoenixRecomposition.json'
 import phoenixStrength from '@/data/template/phoenixStrength.json'
 import phoenixWaistCincher from '@/data/template/phoenixWaistCincher.json'
 import exerciseVariants from '@/data/reference/exerciseVariants.json'
+import { resolveFounderExerciseReference } from '@/lib/program/founderReference'
 import { WEEKDAYS } from '@/lib/program/weekdayMuscleTypes'
 import type { Weekday } from '@/lib/program/weekdayMuscleTypes'
 import type { CanonicalMuscle } from '@/lib/workout-os/types'
@@ -143,7 +144,8 @@ function equal(a: unknown, b: unknown): boolean {
 
 const generatedExerciseKeys = new Set(['display_name', 'movement_pattern', 'selected_variant_id', 'selected_variant_name',
   'selected_equipment', 'load_type', 'available_variants', 'assessment_key', 'estimated_1rm', 'intensity_factor',
-  'rep_multiplier', 'baseline_weight', 'calculated_weight', 'recommended_weight', 'calculation_note'])
+  'rep_multiplier', 'baseline_weight', 'calculated_weight', 'recommended_weight', 'calculation_note',
+  'prescription_calculation', 'prescription_status', 'cycle_adjusted_weight', 'load_guidance_status', 'load_guidance_reason'])
 const identityKeys = ['display_name', 'movement_pattern', 'selected_variant_id', 'selected_variant_name',
   'selected_equipment', 'load_type', 'available_variants', 'calculated_weight', 'calculation_note']
 const unloadedFallbacks = new Set(['side plank', 'single-leg glute bridge', 'walking lunge', 'reverse lunge', 'sumo squat', 'bulgarian split squat'])
@@ -153,19 +155,32 @@ const normalizeGeneratorAlias = (name: string) => name.trim().toLowerCase().repl
 function generatedIdentityMatches(saved: Record<string, unknown>, originalName: string): boolean {
   if (!Object.keys(saved).some(key => generatedExerciseKeys.has(key))) return true
   if (identityKeys.some(key => !Object.hasOwn(saved, key))) return false
-  const group = exerciseVariants.find(source => source.aliases.some(alias => normalizeGeneratorAlias(alias) === normalizeGeneratorAlias(originalName)))
+  const v2 = record(saved.prescription_calculation) && saved.prescription_calculation.version === 'founder-load-v2'
+  if (Object.hasOwn(saved, 'prescription_calculation') && !v2) return false
+  if (Object.hasOwn(saved, 'prescription_status') && saved.prescription_status !== 'unavailable') return false
+  if (Object.hasOwn(saved, 'load_guidance_status') && !['not_calculated', 'unverified'].includes(String(saved.load_guidance_status))) return false
+  if (Object.hasOwn(saved, 'load_guidance_reason') && typeof saved.load_guidance_reason !== 'string') return false
+  const unavailableV2 = saved.prescription_status === 'unavailable' && saved.baseline_weight === null &&
+    saved.calculated_weight === null && saved.recommended_weight === null
+  const uncalculatedV2 = Object.hasOwn(saved, 'load_guidance_status') && saved.baseline_weight === null &&
+    saved.calculated_weight === null && saved.recommended_weight === null
+  // Both generator identities remain recognized. Calculation metadata does
+  // not change this adapter's strict source exercise/dose/order/week checks.
+  const exact = v2 || unavailableV2 || uncalculatedV2 ? resolveFounderExerciseReference(originalName) : null
+  const group = exact ? exact.status === 'resolved' ? exact.group : null
+    : exerciseVariants.find(source => source.aliases.some(alias => normalizeGeneratorAlias(alias) === normalizeGeneratorAlias(originalName)))
   if (!Array.isArray(saved.available_variants) || typeof saved.calculation_note !== 'string') return false
-  for (const key of ['estimated_1rm', 'intensity_factor', 'rep_multiplier', 'baseline_weight', 'calculated_weight', 'recommended_weight']) {
+  for (const key of ['estimated_1rm', 'intensity_factor', 'rep_multiplier', 'baseline_weight', 'calculated_weight', 'recommended_weight', 'cycle_adjusted_weight']) {
     if (Object.hasOwn(saved, key) && saved[key] !== null && (typeof saved[key] !== 'number' || !Number.isFinite(saved[key]))) return false
   }
   if (group) {
-    const variant = group.variants.find(source => source.id === saved.selected_variant_id)
+    const variant = group.variants.find((source: any) => source.id === saved.selected_variant_id)
     if (!variant || saved.display_name !== group.display_name || saved.movement_pattern !== group.pattern ||
       saved.selected_variant_name !== variant.name || saved.selected_equipment !== variant.equipment || saved.load_type !== variant.load_type) return false
     if (Object.hasOwn(saved, 'assessment_key') && saved.assessment_key !== group.assessment_key) return false
     const ids = new Set<string>()
     for (const available of saved.available_variants) {
-      if (!record(available) || typeof available.id !== 'string' || ids.has(available.id) || !group.variants.some(source => equal(source, available))) return false
+      if (!record(available) || typeof available.id !== 'string' || ids.has(available.id) || !group.variants.some((source: any) => equal(source, available))) return false
       ids.add(available.id)
     }
     return ids.has(variant.id)

@@ -17,10 +17,9 @@ export function buildSelectedPrescription({ inputs, exercise, variantId }: {
 }): SelectedPrescriptionResponse {
   const cycleAdjustment = getCycleTrainingAdjustment(inputs.client)
   const adjusted = applyCycleTrainingAdjustment({ exercise, adjustment: cycleAdjustment })
-  // Founder calculation already converted the selected equipment. Feed that
-  // cycle-adjusted load through safety once, without converting equipment again.
-  const safetyExercise = { ...adjusted, baseline_weight: adjusted.recommended_weight ?? 0,
-    available_variants: adjusted.available_variants.map((variant: any) => ({ ...variant, equipment_modifier: 1 })) }
+  // The daily decision path retains the converted, cycle-adjusted load for
+  // this exact selected variant, then applies the existing safety rules once.
+  const safetyExercise = adjusted
   const selectedInputs: ProgramLogicInputs = {
     ...inputs, cycleAdjustment, plannedExercises: [safetyExercise],
     plannedWorkout: { day_name: 'Selected exercise', day_intent: 'training', exercises: [safetyExercise] },

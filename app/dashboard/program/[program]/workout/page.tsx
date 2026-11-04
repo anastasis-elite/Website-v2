@@ -15,6 +15,7 @@ import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 import { buildMuscleReadiness } from '@/lib/workout/muscleReadiness'
 import { loadWorkoutHistory } from '@/lib/workout/history'
+import { hasUnconfirmedPrescription, projectSavedExercisePrescription, selectPreservedWorkoutSession } from '@/lib/program/savedPrescription'
 
 const SUPPORTED_PROGRAMS: ProgramTier[] = [
   'ember',
@@ -203,15 +204,25 @@ export default async function ProgramWorkoutPage({
   const strengthPaused = scheduledStrength && strengthTrainingPaused(logic, hasSafetyFlags)
   const strengthWorkout = scheduledStrength && (!strengthPaused || logic.assessments.strength.completedToday)
 
-  const assignedWorkout =
-    logic.workoutDecision.assignedWorkout
+  // Keep current saved work on its exact snapshot and original day identity.
+  // Load confidence is presentation metadata; it does not remove the workout.
+  const preservedSession = hasUnconfirmedPrescription(adjustedExercises) &&
+    !scheduledStrength && logic.workoutDecision.canTrain && !strengthTrainingPaused(logic, hasSafetyFlags)
+    ? selectPreservedWorkoutSession({ sessions: workoutHistoryResult.data || [], client }) : null
+  const assignedWorkout = preservedSession
+    ? { id: preservedSession.id, day_name: preservedSession.day_name, workout_state: 'saved', exercises: preservedSession.planned_exercises }
+    : logic.workoutDecision.assignedWorkout
+  const calculationProgram = clientProgram === 'phoenix' ? output?.program_json?.phoenix_track : clientProgram
+  const loadGuidanceExercises = preservedSession
+    ? preservedSession.planned_exercises.map((exercise: any) => projectSavedExercisePrescription(exercise, calculationProgram))
+    : assignedWorkout?.exercises || []
 
   const assignedExercises =
     (assignedWorkout?.exercises ??
       []) as AssignedExercise[]
 
   const workoutStateLabel =
-    strengthPaused ? 'Training paused' : strengthWorkout ? 'Strength assessment' : getWorkoutStateLabel(
+    strengthPaused ? 'Training paused' : strengthWorkout ? 'Strength assessment' : preservedSession ? 'Saved workout · original prescription retained' : getWorkoutStateLabel(
       assignedWorkout?.workout_state,
     )
 
@@ -285,6 +296,7 @@ export default async function ProgramWorkoutPage({
           showInteractiveWorkout={
             showInteractiveWorkout
           }
+          loadGuidanceExercises={loadGuidanceExercises}
           hasSafetyFlags={hasSafetyFlags}
           safetyFlags={safetyFlags}
           previewTitle={previewTitle}

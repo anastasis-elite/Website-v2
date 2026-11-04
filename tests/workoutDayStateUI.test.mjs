@@ -20,7 +20,8 @@ const mocks = {
   'next/navigation': { redirect: path => { throw new Error(`Unexpected redirect: ${path}`) } },
   '@/components/workout-dashboard/WorkoutDashboard': 'section',
   '@/components/phone-app/PhoneAppFrame': 'div',
-  '@/lib/timezone': { getClientTimeZone: () => 'Etc/UTC' },
+  '@/lib/timezone': { getClientTimeZone: () => 'Etc/UTC', getClientLocalDate: () => '2026-11-05' },
+  '@/lib/assessment/strengthWorkoutState': { isStrengthWorkout: () => false, strengthTrainingPaused: (logic, flags) => Boolean(flags || logic.symptoms?.redFlag) },
   '@/lib/assessments/getAssessmentWindow': { getAssessmentWindow: () => ({ isOpen: false }) },
   '@/lib/cycle/getCycleStatus': { getCycleStatus: () => ({}) },
   '@/lib/day/getDailyExecutionPlan': { getDailyExecutionPlan: async () => ({}) },
@@ -28,11 +29,12 @@ const mocks = {
     supabase: { from: query }, user: { id: 'synthetic-owner' },
     client: { client_id: 'synthetic-client', auth_user_id: 'synthetic-owner', program: 'ignite' },
   }) },
-  '@/lib/dashboard/logic/getProgramLogicEngine': { getProgramLogicEngine: async () => fixture.logic },
+  '@/lib/dashboard/logic/getProgramLogicEngine': { getProgramLogicEngine: async () => ({ ...fixture.logic, assessments: { strength: {} } }) },
   '@/lib/program/getProgramWorkout': { getProgramWorkout: () => ({ todaysWorkout: {}, adjustedExercises: [], cycleAdjustment: {} }) },
   '@/lib/safety/getRecentSafetyFlags': { getRecentSafetyFlags: async () => fixture.safetyFlags },
   '@/lib/workout/muscleReadiness': { buildMuscleReadiness: () => [] },
   '@/lib/workout/history': { loadWorkoutHistory: async () => ({ data: [] }) },
+  '@/lib/program/savedPrescription': { hasUnconfirmedPrescription: () => false, projectSavedExercisePrescription: exercise => exercise, selectPreservedWorkoutSession: () => null },
 }
 const module = { exports: {} }
 const source = readFileSync('app/dashboard/program/[program]/workout/page.tsx', 'utf8')
