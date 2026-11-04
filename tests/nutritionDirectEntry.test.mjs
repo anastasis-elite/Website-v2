@@ -41,8 +41,7 @@ test('food entry immediately exposes a changeable meal selector and tier-support
     assert.match(html, /<option value="Dinner">Dinner<\/option>/)
     assert.match(html, /Search \/ manual/)
     assert.match(html, /Barcode/)
-    assert.equal(/>Photo unavailable<\/button>/.test(html), tier === 'phoenix')
-    if (tier === 'phoenix') assert.match(html, /id="meal-method-image"[^>]*disabled=""/)
+    assert.doesNotMatch(html, /Photo unavailable|id="meal-method-image"/)
     assert.match(html, /type="search"/)
     assert.match(html, /enterKeyHint="search"/)
   }
@@ -116,6 +115,9 @@ test('direct food and meal entry shows the actual entitled logger while EMBER re
     '@/lib/supabase/client': { createClient: () => ({}) },
     '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: () => null },
     '@/components/NutritionFoodLogger': { __esModule: true, default: props => React.createElement('div', { 'data-testid': 'actual-food-entry' }, props.initialMealPeriod) },
+    '@/components/nutrition/MacroQuickAdd': { __esModule: true, default: props => React.createElement('button', { 'data-testid': 'actual-macro-entry' }, 'Add Macros') },
+    '@/lib/nutrition/dailyMacroMetrics': load('lib/nutrition/dailyMacroMetrics.ts'),
+    '@/lib/dashboard/viewPreferences': load('lib/dashboard/viewPreferences.ts'),
     '@/components/nutrition/MicronutrientProgressRing': { __esModule: true, default: () => null },
     '@/components/nutrition/hooks': { useNutritionEngine: logic => logic.nutrition, useFuelReadinessEngine: logic => logic.fuelReadiness, usePhoenixRecipes: recipes => recipes },
     '@/lib/nutrition/canLogFood': load('lib/nutrition/canLogFood.ts', { '@/lib/entitlements': entitlements }),
@@ -131,7 +133,7 @@ test('direct food and meal entry shows the actual entitled logger while EMBER re
     const logic = { program: tier, client: { id: 'own-client', program: tier }, trends: [], nutrition: { calories: metric, protein: metric, carbs: metric, fats: metric, mealSuggestions: [] }, fuelReadiness: {}, hydration: { consumed: 0, target: 100 } }
     const html = renderToStaticMarkup(Dashboard({ program: tier, logic, recipes: [], loggingIntent: parseNutritionLoggingIntent({ log: 'meal', meal: 'lunch' }) }))
     assert.doesNotMatch(html, /nutrition-objective|nutrition-progress-panel/)
-    if (tier === 'ember') { assert.doesNotMatch(html, /actual-food-entry/); assert.match(html, /Nutrition Guidance/); assert.match(html, /nutrition-macro-form/) }
+    if (tier === 'ember') { assert.doesNotMatch(html, /actual-food-entry/); assert.match(html, /Nutrition Guidance/); assert.match(html, /actual-macro-entry/) }
     else { assert.match(html, /actual-food-entry/); assert.match(html, />Lunch<\/div>/); assert.match(html, /Log Meal/) }
   }
 })

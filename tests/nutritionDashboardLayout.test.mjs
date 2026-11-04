@@ -11,36 +11,32 @@ const targetService = readFileSync('lib/nutrition/targetService.ts', 'utf8')
 const nutritionTargetMigration = readFileSync('supabase/migrations/20260825_nutrition_target_engine.sql', 'utf8')
 const css = readFileSync('app/globals.css', 'utf8')
 
-test('nutrition dashboard uses objective, two-panel row, and full-width management panel', () => {
-  assert.match(dashboard, /data-testid="nutrition-objective"/)
-  assert.match(dashboard, /className="nutrition-dashboard-row"/)
-  assert.match(dashboard, /data-testid="nutrition-progress-panel"/)
+test('nutrition dashboard combines daily progress with targets while retaining entitled intake and management panels', () => {
+  assert.match(dashboard, /phone-app-targets nutrition-daily-targets/)
+  assert.doesNotMatch(dashboard, /data-testid="nutrition-objective"|data-testid="nutrition-progress-panel"/)
   assert.match(dashboard, /data-testid="nutrition-intake-panel"/)
   assert.match(dashboard, /data-testid="nutrition-management-panel"/)
-  assert.match(css, /\.nutrition-dashboard-row\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/)
-  assert.match(css, /@media\(max-width:860px\).*\.nutrition-dashboard-row.*grid-template-columns:1fr/s)
+  assert.match(dashboard, /className="nutrition-progress-grid"/)
 })
 
-test('nutrition dashboard exposes progress, intake, and management tab systems', () => {
-  assert.match(dashboard, /type ProgressTab = 'daily' \| 'trends'/)
+test('nutrition dashboard keeps higher-tier food and micronutrient tools without duplicate trends or goals', () => {
+  assert.doesNotMatch(dashboard, /type ProgressTab|nutrition-trends-tab|nutrition-goals-assessment-tab|Goals \/ Assessment/)
   assert.match(dashboard, /type IntakeTab = 'water' \| 'meal' \| 'suggested'/)
-  assert.match(dashboard, /type ManagementTab = 'goals' \| 'micros' \| 'recipes'/)
-  assert.match(dashboard, /data-testid="nutrition-daily-progress-tab"/)
-  assert.match(dashboard, /data-testid="nutrition-trends-tab"/)
+  assert.match(dashboard, /type ManagementTab = 'micros' \| 'recipes'/)
   assert.match(dashboard, /data-testid="nutrition-suggested-foods-tab"/)
   assert.match(dashboard, /Suggested Foods/)
-  assert.match(dashboard, /data-testid="nutrition-goals-assessment-tab"/)
   assert.match(dashboard, /className="tier-tab-list nutrition-panel-tabs"/)
   assert.match(dashboard, /className="tier-tab-list nutrition-management-tabs"/)
+  assert.match(readFileSync('app/dashboard/progress/page.tsx', 'utf8'), /<TrendsTab logic=\{logic\}/)
 })
 
 test('nutrition dashboard reuses existing nutrition data and logging components', () => {
   assert.match(dashboard, /NutritionFoodLogger/)
   assert.match(readFileSync('components/hydration/HydrationQuickAdd.tsx', 'utf8'), /fetch\('\/api\/nutrition\/add-water'/)
-  assert.match(dashboard, /fetch\('\/api\/nutrition\/add-macros'/)
+  assert.match(readFileSync('components/nutrition/MacroQuickAdd.tsx', 'utf8'), /fetch\('\/api\/nutrition\/add-macros'/)
   assert.match(dashboard, /\/api\/nutrition\/suggested-foods\?nutritionLogId=/)
   assert.match(dashboard, /nutrition_log_remaining/)
-  assert.match(dashboard, /logic\.trends\.filter/)
+  assert.doesNotMatch(dashboard, /logic\.trends\.filter/)
   assert.doesNotMatch(dashboard, /Math\.random|placeholder/i)
 })
 

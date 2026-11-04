@@ -46,6 +46,26 @@
 .phone-app-surface .phone-app-community {display:grid;gap:20px;padding:0!important;min-height:0!important;}.phone-app-community > article,.phone-app-community > section {border:1px solid var(--phone-line)!important;background:var(--phone-panel)!important;border-radius:20px;padding:20px!important;}.phone-app-community .phone-app-community-note {font-size:.8rem;line-height:1.6;color:#baa58d;}.phone-app-community article {min-width:0;}.phone-app-community article > div:first-child {flex-wrap:wrap;}
 .phone-app-targets {text-align:center;border:1px solid var(--phone-line);border-radius:22px;padding:26px;background:var(--phone-panel);margin-bottom:24px;}.phone-app-targets h2 {text-align:left;margin:0 0 20px;}.phone-app-targets > strong {font:400 clamp(2.5rem,8vw,4rem) Georgia,serif;}.phone-app-targets > strong small {font-size:.4em;}.phone-app-targets > div {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:24px;border-top:1px solid var(--phone-line);padding-top:20px;}.phone-app-targets > div > div + div {border-left:1px solid var(--phone-line);}.phone-app-targets span {display:block;color:#cbb59e;font-size:.8rem;}.phone-app-targets b {display:block;font:400 1.7rem/1.8 Georgia,serif;}
 .phone-app-report {padding:18px 20px;border:1px solid var(--phone-line);border-radius:16px;margin-block:24px;color:#cbb59e;font-size:.85rem;line-height:1.6;}.phone-app-report summary {min-height:44px;cursor:pointer;color:#e0cab0;}
+.nutrition-daily-targets > .nutrition-progress-grid {grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 18px;padding:0;border:0;}
+.nutrition-daily-targets .tier-metric-card {min-width:0;min-height:180px;}
+.nutrition-daily-targets .tier-metric-card > small {display:block;line-height:1.5;}
+.nutrition-entry-card {display:block;width:100%;height:100%;padding:0;color:var(--anastasis-ivory);text-align:left;cursor:pointer;font:inherit;}
+.nutrition-entry-card-copy {display:grid;gap:10px;padding:18px;}
+.nutrition-entry-card-copy > strong {font:400 1.6rem/1.2 Georgia,serif;}
+.nutrition-entry-card-copy > span {color:#cbb59e;font-size:.95rem;line-height:1.5;}
+.phone-app-grid > :is(.hydration-quick-add,.macro-quick-add) {min-width:0;}
+.macro-entry-dialog .nutrition-macro-form {margin-top:16px;}
+.macro-entry-dialog .nutrition-macro-form input {box-sizing:border-box;min-width:0;font-size:16px;}
+.macro-entry-dialog .nutrition-macro-entry-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+.macro-entry-dialog :is(button,input):focus-visible {outline:2px solid var(--anastasis-copper);outline-offset:3px;}
+@media(max-width:720px) {
+  .nutrition-daily-targets > .nutrition-progress-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  .nutrition-daily-targets .tier-metric-card {padding:12px 8px;}
+  .nutrition-entry-card-copy {padding:14px 12px;}
+  .nutrition-entry-card-copy > strong {font-size:1.25rem;}
+  .nutrition-entry-card-copy > span {font-size:.82rem;}
+}
+@media(max-width:360px) {.macro-entry-dialog .nutrition-macro-entry-grid {grid-template-columns:1fr;}}
 .phone-app-surface .nutrition-objective h2,.phone-app-surface .recovery-objective h2,.phone-app-surface .workout-objective h2 {font-size:1.65rem;}
 .phone-app-surface :is(.nutrition-dashboard-row,.recovery-dashboard-row,.workout-dashboard-row) {gap:20px;}.phone-app-surface .workout-dashboard-row {grid-template-columns:1fr;}.phone-app-surface .workout-dashboard-row > details {order:2;}
 .phone-app-surface .activity-exercise {padding:22px;margin-block:18px;}.phone-app-surface .activity-inputs {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}.phone-app-surface .activity-inputs input {width:100%;min-height:48px;background:#26180e;border-color:#8f6949;color:#f1e9dc;border-radius:12px;}.phone-app-surface .activity-inputs label {min-width:0;}.phone-app-surface .tier-action-row {flex-wrap:wrap;gap:10px;}
