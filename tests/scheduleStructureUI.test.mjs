@@ -13,6 +13,7 @@ const timezone = await importTs('lib/timezone.ts')
 const scheduleActions = await importTs('lib/schedule/actions.ts')
 const commitmentWeekdays = await importTs('lib/assessment/commitmentWeekdays.ts')
 const routinePreferences = await importTs('lib/assessment/routinePreferences.ts')
+const mealAnchors = await importTs('lib/assessment/mealAnchors.ts')
 function load(path, mocks, globals = {}) {
   const module = { exports: {} }
   const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: {
@@ -20,7 +21,8 @@ function load(path, mocks, globals = {}) {
   } })
   runInNewContext(outputText, { module, exports: module.exports, ...globals, require: name => name.endsWith('.css') ? {} : name === '@/components/phone-app/PhoneAppFrame' ? (() => null) : mocks[name] ||
     (name === '@/lib/assessment/commitmentWeekdays' ? commitmentWeekdays
-      : name === '@/lib/assessment/routinePreferences' ? routinePreferences : require(name)) })
+      : name === '@/lib/assessment/routinePreferences' ? routinePreferences
+        : name === '@/lib/assessment/mealAnchors' ? mealAnchors : require(name)) })
   return module.exports.default
 }
 function nodes(tree, predicate) {
@@ -158,6 +160,38 @@ function pageHarness(client) {
   return { assessmentPage: load('app/dashboard/assessment/daily-structure/page.tsx', mocks),
     routinePage: load('app/dashboard/schedule/settings/routine/page.tsx', mocks), props }
 }
+
+test('optional breakfast submits through assessment and routine forms and reopens its saved value', async () => {
+  const empty = harness()
+  assert.equal(nodes(empty.render(), n => n.props?.label === 'Breakfast window (optional)')[0].props.required, undefined)
+  for (const mode of ['assessment', 'routine']) {
+    const view = harness({ ...validProps, mode, breakfastWindowTime: '07:30', routineRevision: 4 })
+    assert.equal(nodes(view.render(), n => n.props?.label === 'Breakfast window (optional)')[0].props.value, '07:30')
+    setTime(view, 'Breakfast window (optional)', '08:15')
+    view.setSend((_url, options) => mode === 'routine'
+      ? Response.json({ success: true, routine: { revision: 5, savedAt: '2026-10-18T12:00:00Z' } })
+      : confirmation(JSON.parse(options.body)))
+    view.submit(); await tick()
+    assert.equal(view.calls[0].body.breakfast_window_time, '08:15')
+    assert.equal(view.calls[0].body.expected_revision, 4)
+  }
+  const client = { client_id: 'qa-client', ...{ wake_time: '07:00', bed_time: '22:00' },
+    onboarding_data: { routinePreferences: { revision: 5, answers: { breakfast_window_time: '08:15' } } } }
+  const page = pageHarness(client)
+  assert.equal(page.props(await page.routinePage()).breakfastWindowTime, '08:15')
+  assert.equal(page.props(await page.assessmentPage({ searchParams: Promise.resolve({ eventId: 'qa-current-task' }) })).breakfastWindowTime, '08:15')
+  client.onboarding_data.scheduleStructureAssessments = { '1': { 'qa-saved-task': {
+    assessmentVersion: 1, eventId: 'qa-saved-task', submittedAt: '2026-10-15T18:00:00Z',
+    answers: { execution_style: 'flow', carousel_style: 'section', wake_time: '07:00', bed_time: '22:00', workout_days_available: 0,
+      breakfast_window_time: '06:45' },
+  } } }
+  const saved = page.props(await page.assessmentPage({ searchParams: Promise.resolve({ eventId: 'qa-saved-task' }) }))
+  assert.equal(saved.breakfastWindowTime, '06:45', 'immutable submitted breakfast is independent of later routine edits')
+  assert.ok(saved.completedAt)
+  delete client.onboarding_data.scheduleStructureAssessments['1']['qa-saved-task'].answers.breakfast_window_time
+  assert.equal(page.props(await page.assessmentPage({ searchParams: Promise.resolve({ eventId: 'qa-saved-task' }) })).breakfastWindowTime,
+    undefined, 'historical proof without breakfast does not inherit a later breakfast time')
+})
 
 test('assessment and routine defaults reopen current saved weekday metadata without weekday-name assumptions', async () => {
   const client = { client_id: 'qa-client', timezone: 'America/Chicago', ...{ wake_time: '07:00', bed_time: '22:00', school_dropoff_time: '08:00' },

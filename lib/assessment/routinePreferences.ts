@@ -1,6 +1,7 @@
 import { updateOwnedOnboardingData } from '@/lib/dashboard/updateOnboardingData'
 import type { ScheduleStructureAnswers } from './validateScheduleStructure'
 import { COMMITMENT_DAY_FIELDS, getCommitmentWeekdays, mergeCommitmentWeekdays, scheduleStructureProfileFields } from './commitmentWeekdays'
+import { getBreakfastWindowTime } from './mealAnchors'
 
 export type RoutinePreferences = {
   revision: number
@@ -29,6 +30,10 @@ export function mergeRoutinePreferences(current: Record<string, any>, expectedRe
   // Legacy submissions omit weekdays without clearing them. The mutable snapshot
   // reflects those retained choices, while immutable proof keeps submitted answers.
   const latestAnswers = { ...answers }
+  if (!Object.prototype.hasOwnProperty.call(answers, 'breakfast_window_time')) {
+    const breakfast = getBreakfastWindowTime({ onboarding_data: current })
+    if (breakfast) latestAnswers.breakfast_window_time = breakfast
+  }
   for (const field of COMMITMENT_DAY_FIELDS) {
     const days = getCommitmentWeekdays({ onboarding_data: next }, field)
     if (days !== undefined) latestAnswers[field] = days

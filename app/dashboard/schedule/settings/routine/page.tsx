@@ -5,6 +5,7 @@ import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import DailyStructureAssessment from '@/components/DailyStructureAssessment'
 import { getCommitmentWeekdays } from '@/lib/assessment/commitmentWeekdays'
 import { getClientTimeZone } from '@/lib/timezone'
+import { getBreakfastWindowTime } from '@/lib/assessment/mealAnchors'
 
 export default async function EditRoutinePage() {
   const { client } = await getDashboardContext()
@@ -19,6 +20,7 @@ export default async function EditRoutinePage() {
       preferredWorkoutTime={client.preferred_workout_time} schoolDropoffTime={client.school_dropoff_time} schoolPickupTime={client.school_pickup_time}
       schoolDropoffDaysOfWeek={getCommitmentWeekdays(client, 'school_dropoff_days_of_week')}
       schoolPickupDaysOfWeek={getCommitmentWeekdays(client, 'school_pickup_days_of_week')}
+      breakfastWindowTime={getBreakfastWindowTime(client)}
       lunchWindowTime={client.lunch_window_time} dinnerWindowTime={client.dinner_window_time} dailyNonNegotiables={client.daily_non_negotiables}
       dayStructureNotes={client.day_structure_notes} workoutDaysAvailable={client.workout_days_available}
       currentWorkoutDaysPerWeek={client.current_workout_days_per_week} currentWorkoutMinutesPerSession={client.current_workout_minutes_per_session}

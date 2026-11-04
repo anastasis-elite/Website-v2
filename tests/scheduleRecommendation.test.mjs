@@ -14,7 +14,7 @@ const client = { client_id: 'QA-ONLY', program: 'ember', timezone: 'America/Chic
 const event = { id: 'qa-overdue', user_id: 'qa-user', client_id: client.client_id, event_type: 'custom', title: 'Review appointment notes',
   status: 'scheduled', source: 'manual', priority: 'medium', flexibility_type: 'flexible', movable: true, approval_required: false,
   start_at: '2026-08-17T14:00:00.000Z', end_at: '2026-08-17T14:30:00.000Z', adjusted_start_at: null, adjusted_end_at: null, estimated_duration_minutes: 30 }
-const logic = () => ({ program: 'ember', nutrition: { dataStatus: 'needs_input', calories: { percent: 0 }, protein: { percent: 0 } },
+const logic = () => ({ client: { id: client.client_id }, program: 'ember', nutrition: { dataStatus: 'needs_input', calories: { percent: 0 }, protein: { percent: 0 } },
   hydration: { status: 'needs_input', remaining: 100 }, assessments: { dailyCompleted: true }, execution: { workoutComplete: false },
   workout: { assigned: false }, workoutDecision: { canTrain: true, adjustmentLevel: 'level_0_full_plan', reasonForModification: 'Planned training is available.' },
   symptoms: { redFlag: false }, recoveryStatus: { reasoning: 'Review recovery guidance.' } })

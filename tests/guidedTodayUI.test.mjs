@@ -17,6 +17,7 @@ const scheduleTime = await importTs('lib/schedule/time.ts')
 const recoveryPresentation = await importTs('lib/recovery/todayCompletion.ts')
 const streakProgress = await importTs('lib/dashboard/logic/streakRequirementProgress.ts')
 const entitlements = await importTs('lib/entitlements.ts')
+const scheduleActions = await importTs('lib/schedule/actions.ts')
 const scheduleRefreshCalls = []
 const Link = ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children)
 function component(path, extra = {}, exportName = 'default') {
@@ -29,6 +30,7 @@ function component(path, extra = {}, exportName = 'default') {
     '@/lib/dashboard/dailyRecommendation': recommendations,
     '@/lib/schedule/client': { useDailyScheduleRefresh(...args) { scheduleRefreshCalls.push(args) } },
     '@/lib/schedule/time': scheduleTime,
+    '@/lib/schedule/actions': scheduleActions,
     '@/lib/recovery/todayCompletion': recoveryPresentation,
     '@/lib/dashboard/logic/streakRequirementProgress': streakProgress,
     '@/lib/analytics': { trackEvent() {} },
@@ -39,7 +41,10 @@ function component(path, extra = {}, exportName = 'default') {
 }
 const ActionArrow = component('components/ActionArrow.tsx')
 const StreakRequirementsCard = component('components/program-dashboard/StreakRequirementsCard.tsx')
-const Today = component('components/program-dashboard/GuidedToday.tsx', { '@/components/ActionArrow': ActionArrow, '@/components/program-dashboard/StreakRequirementsCard': StreakRequirementsCard })
+const ScheduleCheckoff = component('components/ScheduleCheckoff.tsx', {
+  './schedule-checkoff.module.css': {}, '@/lib/calendar/client': { announceCalendarChange() {} },
+})
+const Today = component('components/program-dashboard/GuidedToday.tsx', { '@/components/ActionArrow': ActionArrow, '@/components/program-dashboard/StreakRequirementsCard': StreakRequirementsCard, '@/components/ScheduleCheckoff': ScheduleCheckoff })
 const PhoneAppCard = component('components/phone-app/PhoneAppFrame.tsx', { '@/components/ActionArrow': ActionArrow, './phone-app.css': {} }, 'PhoneAppCard')
 const StreakBadge = component('components/program-dashboard/TodayStreakBadge.tsx', { './TodayPlanTheme.module.css': { streakBadge: 'today-streak-badge' } })
 const Header = component('components/program-dashboard/TodayDashboardHeader.tsx', { '@/components/program-dashboard/TodayStreakBadge': StreakBadge })
@@ -416,4 +421,28 @@ test('approved empty copy never replaces actionable activity cards or their orig
   assert.match(html, /<li data-activity-id="nutrition"/)
   assert.match(html, /<h2>At your pace\.<\/h2>/)
   assert.doesNotMatch(html, /A little moment, just for you|Look at you showing up for yourself|warm cup of coffee|You’re doing beautifully/)
+})
+
+test('Today asks about due occurrences with explicit schedule responses and keeps health logging authoritative', () => {
+  const logic = fixture()
+  logic.assessments.dailyCompleted = true
+  const state = schedule()
+  const current = { id: 'current-school', title: 'School drop-off', event_type: 'school', status: 'scheduled',
+    source: 'anastasis', start_at: '2026-10-13T12:50:00Z', end_at: '2026-10-13T13:20:00Z', flexibility_type: 'fixed',
+    checkoff: { completed: false, status: 'in_progress', revision: 1 } }
+  state.events = [current]; state.nextActionableEvent = current
+  let html = render(logic, state)
+  assert.match(html, /You marked this in progress\. Have you completed it\?/)
+  assert.match(html, /aria-label="Response for School drop-off"/)
+  assert.match(html, />In progress<\/button>/)
+  assert.match(html, />Completed<\/button>/)
+  const breakfast = { ...current, id: 'virtual-breakfast-2026-10-13', title: 'Breakfast', event_type: 'meal',
+    source: 'program', virtual: true, schedule_date: state.date, schedule_response_kind: 'breakfast' }
+  state.events = [breakfast]; state.nextActionableEvent = breakfast
+  html = render(logic, state)
+  assert.match(html, /aria-label="Response for Breakfast"/)
+  assert.match(html, /Food and nutrition logs are saved separately/)
+  const health = { ...current, id: 'current-water', title: 'Hydration', event_type: 'hydration' }
+  state.events = [health]; state.nextActionableEvent = health
+  assert.doesNotMatch(render(logic, state), /aria-label="Response for Hydration"/)
 })

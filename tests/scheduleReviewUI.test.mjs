@@ -214,3 +214,56 @@ test('saved completion reopens checked while unavailable storage, cancelled and 
     assert.equal(view.calls.length, 0)
   }
 })
+
+test('explicit in-progress response saves once, reloads, and does not check completion', async () => {
+  const view = checkoffView()
+  const progress = () => nodes(view.render(), n => n.type === 'button' && text(n) === 'In progress')[0]
+  view.setSend(async () => Response.json({ checkoff: { completed: false, status: 'in_progress', revision: 1 } }))
+  progress().props.onClick(); progress().props.onClick(); await tick()
+  assert.equal(view.calls.length, 1)
+  assert.equal(view.calls[0].body.status, 'in_progress')
+  assert.equal(view.calls[0].body.completed, undefined)
+  assert.equal(view.checkbox().props.checked, false)
+  assert.equal(progress().props['aria-pressed'], true)
+  assert.equal(progress().props.disabled, true)
+  const reopened = checkoffView({ event: event('school-dropoff', '08:00', { checkoff: { completed: false, status: 'in_progress', revision: 1 } }) })
+  assert.equal(reopened.checkbox().props.checked, false)
+  assert.match(text(reopened.render()), /In progress/)
+  view.setSend(async () => Response.json({ checkoff: { completed: true, status: 'completed', revision: 2 } }))
+  view.click(); await tick()
+  assert.equal(view.calls[1].body.completed, true)
+  assert.equal(view.calls[1].body.expectedRevision, 1)
+  assert.equal(view.checkbox().props.checked, true)
+})
+
+test('Today response buttons retry uncertain intent before allowing a different response', async () => {
+  const view = checkoffView({ expanded: true })
+  const button = label => nodes(view.render(), n => n.type === 'button' && text(n) === label)[0]
+  view.setSend(async () => { throw new TypeError('Response lost') })
+  button('In progress').props.onClick(); await tick()
+  assert.equal(button('Completed').props.disabled, true)
+  assert.equal(button('In progress').props.disabled, true)
+  view.setSend(async () => Response.json({ checkoff: { completed: false, status: 'in_progress', revision: 1 } }))
+  button('Retry save').props.onClick(); await tick()
+  assert.deepEqual(view.calls[0].body, view.calls[1].body)
+  assert.equal(button('Completed').props.disabled, false)
+  assert.equal(button('In progress').props['aria-pressed'], true)
+  view.setSend(async () => Response.json({ checkoff: { completed: true, status: 'completed', revision: 2 } }))
+  button('Completed').props.onClick(); await tick()
+  assert.equal(view.calls[2].body.status, 'completed')
+  assert.equal(view.calls[2].body.expectedRevision, 1)
+})
+
+test('breakfast has schedule responses while other meal events keep logging and in-progress labels survive overdue timing', () => {
+  const breakfast = event('virtual-breakfast-2026-10-28', '08:00', { event_type: 'meal', source: 'program',
+    schedule_date: '2026-10-28', schedule_response_kind: 'breakfast', checkoff: { completed: false, status: 'in_progress', revision: 1 } })
+  const view = scheduleView({ events: [breakfast, event('logged meal', '09:00', { event_type: 'meal' })] })
+  assert.equal(nodes(view.tree, n => n.type === Checkoff).length, 1)
+  assert.match(text(nodes(view.tree, n => n.type === 'li' && n.props.id === `event-${breakfast.id}`)), /In progress/)
+  assert.equal(nodes(view.tree, n => n.type === Link && n.props['aria-label'] === 'Open logged meal to log').length, 1)
+  const unavailable = checkoffView({ expanded: true, unavailable: true })
+  for (const node of nodes(unavailable.render(), n => n.type === 'button')) assert.equal(node.props.disabled, true)
+  const authoritative = checkoffView({ event: event('source-done', '08:00', { status: 'completed',
+    checkoff: { completed: true, status: 'completed', revision: 2, authoritative: true } }) })
+  assert.equal(authoritative.checkbox().props.disabled, true)
+})
