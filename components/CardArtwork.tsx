@@ -1,3 +1,5 @@
+import type { StaticImageData } from 'next/image'
+
 import nutrition320 from '@/public/images/card-artwork/nutrition-320.webp'
 import nutrition640 from '@/public/images/card-artwork/nutrition-640.webp'
 import water320 from '@/public/images/card-artwork/water-320.webp'
@@ -20,32 +22,38 @@ import slowWalk320 from '@/public/images/card-artwork/slow-walk-320.webp'
 import slowWalk640 from '@/public/images/card-artwork/slow-walk-640.webp'
 import yogaNidra320 from '@/public/images/card-artwork/yoga-nidra-320.webp'
 import yogaNidra640 from '@/public/images/card-artwork/yoga-nidra-640.webp'
+import recovery320 from '@/public/images/card-artwork/recovery-320.webp'
+import recovery640 from '@/public/images/card-artwork/recovery-640.webp'
 import mobility320 from '@/public/images/card-artwork/mobility-320.webp'
 import mobility640 from '@/public/images/card-artwork/mobility-640.webp'
 
-const artwork: Record<string, { small: string; large: string }> = {
-  'nutrition': { small: nutrition320.src, large: nutrition640.src },
-  'water': { small: water320.src, large: water640.src },
-  'training': { small: training320.src, large: training640.src },
-  'schedule': { small: schedule320.src, large: schedule640.src },
-  'yogic-practices': { small: yogicPractices320.src, large: yogicPractices640.src },
-  'meditation': { small: meditation320.src, large: meditation640.src },
-  'breathwork': { small: breathwork320.src, large: breathwork640.src },
-  'sauna': { small: sauna320.src, large: sauna640.src },
-  'warm-soak': { small: warmSoak320.src, large: warmSoak640.src },
-  'slow-walk': { small: slowWalk320.src, large: slowWalk640.src },
-  'yoga-nidra': { small: yogaNidra320.src, large: yogaNidra640.src },
-  'mobility': { small: mobility320.src, large: mobility640.src },
+const artwork: Record<string, { small: StaticImageData; large: StaticImageData }> = {
+  'nutrition': { small: nutrition320, large: nutrition640 },
+  'water': { small: water320, large: water640 },
+  'training': { small: training320, large: training640 },
+  'schedule': { small: schedule320, large: schedule640 },
+  'yogic-practices': { small: yogicPractices320, large: yogicPractices640 },
+  'meditation': { small: meditation320, large: meditation640 },
+  'breathwork': { small: breathwork320, large: breathwork640 },
+  'sauna': { small: sauna320, large: sauna640 },
+  'warm-soak': { small: warmSoak320, large: warmSoak640 },
+  'slow-walk': { small: slowWalk320, large: slowWalk640 },
+  'yoga-nidra': { small: yogaNidra320, large: yogaNidra640 },
+  'recovery': { small: recovery320, large: recovery640 },
+  'mobility': { small: mobility320, large: mobility640 },
 }
 
-/** Decorative card artwork; keep the existing card geometry and accessible labels. */
-export default function CardArtwork({ kind, className, sizes = '(max-width: 350px) 100vw, 50vw' }: { kind: string; className?: string; sizes?: string }) {
+/** Decorative artwork. Today/Plan opt into intrinsic dimensions; other card geometry stays unchanged. */
+export default function CardArtwork({ kind, className, sizes = '(max-width: 350px) 100vw, 50vw', naturalProportions = false }: { kind: string; className?: string; sizes?: string; naturalProportions?: boolean }) {
   const image = artwork[kind]
   return <img
-    src={image?.large ?? `/illustrations/today-${kind}.svg`}
-    srcSet={image ? `${image.small} 320w, ${image.large} 640w` : undefined}
+    src={image?.large.src ?? `/illustrations/today-${kind}.svg`}
+    srcSet={image ? `${image.small.src} 320w, ${image.large.src} 640w` : undefined}
     sizes={image ? sizes : undefined}
-    width="360" height="180" alt="" className={className} data-supplied-artwork={image ? true : undefined}
+    width={naturalProportions && image ? image.large.width : 360}
+    height={naturalProportions && image ? image.large.height : 180}
+    style={naturalProportions ? { aspectRatio: image ? `${image.large.width} / ${image.large.height}` : '360 / 180' } : undefined}
+    alt="" className={className} data-supplied-artwork={image ? true : undefined}
     loading="lazy" decoding="async"
   />
 }

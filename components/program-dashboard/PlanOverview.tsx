@@ -20,7 +20,7 @@ export default function PlanOverview({ logic, schedule }: { logic: ProgramLogicO
     <TodayDashboardHeader logic={logic} schedule={schedule} plan />
     <section className="plan-overview" aria-labelledby="plan-overview"><h2 id="plan-overview">Your plan, at a glance.</h2>
       <div className="plan-overview-grid">{cards.map(card => <Link key={card.kind} className="plan-overview-card" href={card.href}>
-        <CardArtwork kind={card.kind} className="today-card-illustration" />
+        <CardArtwork kind={card.kind} className="today-card-illustration" naturalProportions />
         <div className="plan-overview-copy"><p className="today-card-kicker">{card.label}</p><h3>{card.title}</h3><p>{card.detail}</p></div>
       </Link>)}</div>
     </section>

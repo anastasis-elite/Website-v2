@@ -149,7 +149,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
       <div className="today-section-heading"><h2>At your pace.</h2><span>Go in your own order</span></div>
       {displayActivities.length ? <ul>{displayActivities.map(activity => <li key={activity.id} data-activity-id={activity.id} data-status={activity.status} data-illustrated={illustrated(activity.id) ? 'true' : undefined}>
         <Link href={activity.href} onClick={() => openActivity(activity.id, today.activities.some(record => record.id === activity.id && record.status === 'completed'))} data-tutorial-id={tutorialIds[activity.id]}>
-          {illustrated(activity.id) ? <CardArtwork kind={activityCards[activity.id]?.illustration || 'recovery'} className="today-card-illustration" /> : null}
+          {illustrated(activity.id) ? <CardArtwork kind={activityCards[activity.id]?.illustration || 'recovery'} className="today-card-illustration" naturalProportions /> : null}
           <span className="today-activity-icon" aria-hidden="true">{activity.status === 'completed' ? '✓' : icons[activity.category] || '▦'}</span>
           <span className="today-activity-copy">{illustrated(activity.id) ? <span className="today-card-kicker">{activityCards[activity.id]?.label}</span> : null}<strong>{activity.title}{!activity.countsTowardProgress ? <span className="today-optional-label">Optional</span> : null}</strong>{quiet ? null : <small>{activity.detail}</small>}</span>
           <span className="today-activity-state">{statusLabels[activity.status] || 'Available'}{activity.deferredUntil ? <small>Until {formatLocalTime(activity.deferredUntil, schedule.timezone)}</small> : null}</span>

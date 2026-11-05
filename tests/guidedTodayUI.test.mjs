@@ -79,6 +79,9 @@ test('compact Plan tiles remain whole image-and-content links without arrows and
     ].entries()) {
       assert.equal(cards[index][1], href)
       assert.match(cards[index][2], /<img[^>]+alt=""/)
+      assert.match(cards[index][2], /width="640" height="427"/)
+      assert.match(cards[index][2], /srcSet="[^"]+ 320w, [^"]+ 640w"/)
+      if (index === 2) assert.match(cards[index][2], /src="\/_next\/static\/media\/recovery-640\.webp"/)
       assert.ok(cards[index][2].includes(`<h3>${title}</h3>`))
       assert.doesNotMatch(cards[index][2], /<svg\b|<circle\b|plan-overview-arrow/)
       assert.doesNotMatch(cards[index][2], /↗|<a\b|<button\b|Explore sessions|View targets|View recovery|Open schedule/)
@@ -263,7 +266,7 @@ test('compact Today cards keep one primary image-title-status link and separate 
     ]
     cards.forEach((card, index) => {
       const kind = targets[index][0]
-      const artwork = kind === 'check-in' || kind === 'recovery'
+      const artwork = kind === 'check-in'
         ? `/illustrations/today-${kind}.svg`
         : `/_next/static/media/${kind}-640.webp`
       assert.ok(card[2].includes(`src="${artwork}"`))
@@ -271,6 +274,8 @@ test('compact Today cards keep one primary image-title-status link and separate 
       const primary = card[2].match(/^\s*<a\b[^>]*>([\s\S]*?)<\/a>/)?.[1]
       assert.ok(primary)
       assert.match(primary, /today-card-illustration/)
+      assert.match(primary, kind === 'check-in' ? /width="360" height="180"/ : /width="640" height="427"/)
+      if (kind !== 'check-in') assert.match(primary, /srcSet="[^"]+ 320w, [^"]+ 640w"/)
       assert.match(primary, /<strong>/)
       assert.match(primary, /today-activity-state/)
       assert.doesNotMatch(primary, /<button\b|<details\b|<summary\b|today-card-action|today-action-arrow/)
@@ -284,8 +289,10 @@ test('compact Today cards keep one primary image-title-status link and separate 
   assert.match(water, /<\/a><button[^>]+aria-label="Resume activity: Hydration"/)
   assert.doesNotMatch(water.match(/^\s*<a\b[^>]*>([\s\S]*?)<\/a>/)[1], /<button\b/)
   const css = readFileSync('components/program-dashboard/TodayPlanTheme.module.css', 'utf8')
-  assert.match(css, /height: clamp\(92px, 12vw, 132px\)/)
-  assert.match(css, /height: 86px/)
+  const imageRules = [...css.matchAll(/:global\(\.today-card-illustration\)\s*\{([^}]+)\}/g)]
+  assert.equal(imageRules.length, 1)
+  assert.match(imageRules[0][1], /width: 100%; height: auto; flex: none; object-fit: contain/)
+  assert.doesNotMatch(css, /height: clamp\(92px, 12vw, 132px\)|height: 86px|object-fit: cover/)
   assert.match(css, /focus-visible[^}]*outline: 2px/)
   assert.doesNotMatch(css, /\.today-card-action|\.today-action-arrow/)
 })
