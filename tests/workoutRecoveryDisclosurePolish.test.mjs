@@ -125,7 +125,7 @@ test('the unchanged informational map retains front/back, per-side keyboard and 
   assert.equal(muscle('left_biceps').props['aria-pressed'], false)
   nodes(render(), node => node.type === 'button' && node.props.children === 'Back')[0].props.onClick()
   assert.match(html(), /Interactive muscle readiness map: back/)
-  assert.match(html(), /data-testid="posterior-body-vector"/)
+  assert.match(html(), /data-testid="posterior-body-image"/)
   muscle('left_posterior_deltoid').props.onKeyDown({ key: ' ', preventDefault() {} })
   assert.match(html(), /Rear shoulder recorded reason\./)
 })

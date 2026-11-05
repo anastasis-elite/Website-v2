@@ -30,7 +30,7 @@ function pointsToSvg(points: MuscleGeometry['points']) {
 }
 
 // The original front illustration and its hit areas retain their coordinates.
-// The posterior vector below has its own anatomy and separately aligned regions.
+// The supplied back artwork has its own size, axis and separately aligned regions.
 const leftGeometry = {
   upperTrap: [[381, 415], [364, 429], [342, 440], [371, 454], [404, 438]],
   anteriorDeltoid: [[322, 450], [300, 455], [288, 478], [293, 518], [313, 530], [329, 490]],
@@ -90,54 +90,42 @@ export const muscleMapGeometry: Record<MuscleId, MuscleGeometry> = {
   right_tibialis_anterior: { points: mirror(leftGeometry.tibialis) },
 }
 
-const posteriorLeftGeometry = {
-  upperTrap: [[400, 412], [379, 431], [346, 445], [347, 465], [372, 486], [411, 535], [416, 461]],
-  lat: [[327, 537], [367, 522], [409, 555], [407, 631], [386, 685], [376, 748], [342, 768], [340, 705], [329, 652]],
-  glute: [[294, 829], [346, 823], [395, 850], [415, 889], [414, 939], [392, 972], [350, 974], [310, 947], [285, 902]],
-} satisfies Record<string, MuscleGeometry['points']>
-
-/** Coordinates share the posterior vector's pose, not the front torso details. */
-export const posteriorMuscleMapGeometry: Partial<Record<MuscleId, MuscleGeometry>> = {
-  left_upper_traps: { points: posteriorLeftGeometry.upperTrap },
-  right_upper_traps: { points: mirror(posteriorLeftGeometry.upperTrap) },
-  left_posterior_deltoid: { points: leftGeometry.posteriorDeltoid },
-  right_posterior_deltoid: { points: mirror(leftGeometry.posteriorDeltoid) },
-  left_triceps: muscleMapGeometry.left_triceps,
-  right_triceps: muscleMapGeometry.right_triceps,
-  left_lat_region: { points: posteriorLeftGeometry.lat },
-  right_lat_region: { points: mirror(posteriorLeftGeometry.lat) },
-  // This hit area is lumbar only, below the ribs; the former long thoracic strip
-  // remains in the front geometry export solely for coordinate compatibility.
-  erector_spinae_region: { points: [[390, 674], [413, 685], [425, 704], [437, 685], [460, 674], [451, 766], [438, 826], [412, 826], [399, 766]] },
-  left_glute_max: { points: posteriorLeftGeometry.glute },
-  right_glute_max: { points: mirror(posteriorLeftGeometry.glute) },
-  left_hamstrings: muscleMapGeometry.left_hamstrings,
-  right_hamstrings: muscleMapGeometry.right_hamstrings,
-  left_calves: muscleMapGeometry.left_calves,
-  right_calves: muscleMapGeometry.right_calves,
+// Native coordinates of Rhea's supplied back image. Keep the front registration
+// above independent: the two artworks have different poses and proportions.
+const posteriorBodyImageSize = { width: 932, height: 1687 } as const
+const posteriorBodyCenterX = 465
+function mirrorPosterior(points: MuscleGeometry['points']): MuscleGeometry['points'] {
+  return points.map(([x, y]) => [2 * posteriorBodyCenterX - x, y])
 }
 
-/** A source-native posterior illustration: nape, scapulae, spine and heels. */
-function PosteriorBody() {
-  const limb = 'M294 465C269 472 263 502 266 548L260 633C257 672 245 710 239 752L232 835 222 897 219 947C209 972 211 990 222 1008L242 1024 252 1029 261 1022 250 1006 245 986 255 971 260 944 258 902 271 841 286 784 300 733C308 703 308 670 310 633L319 553 330 506Z'
-  const leg = 'M287 898C276 943 284 1009 299 1074L318 1187C324 1218 319 1245 314 1280 307 1340 320 1436 337 1490L350 1552C351 1572 348 1591 342 1605L330 1646C325 1668 336 1682 360 1683L383 1680C403 1677 409 1667 405 1647L394 1594C391 1578 397 1566 399 1549L400 1481 404 1366 407 1250 407 1165 411 1051 422 943Z'
-  return <svg className="workout-body-image" viewBox="0 0 862 1825" aria-hidden="true" focusable="false" data-testid="posterior-body-vector">
-    <rect width="862" height="1825" rx="24" fill="var(--anastasis-charcoal, #161310)" />
-    <g fill="#221a14" stroke="var(--anastasis-copper, #ad7c52)" strokeWidth="2.4" strokeLinejoin="round">
-      <path d={limb} /><path d={limb} transform="translate(850 0) scale(-1 1)" />
-      <path d={leg} /><path d={leg} transform="translate(850 0) scale(-1 1)" />
-      <path d="M399 373 397 405C386 425 362 435 335 440 311 445 304 470 315 510L329 568C342 612 340 657 329 698L309 763C299 794 287 830 285 867 280 902 287 929 309 948 339 978 390 987 425 955 460 987 511 978 541 948 563 929 570 902 565 867 563 830 551 794 541 763L521 698C510 657 508 612 521 568L535 510C546 470 539 445 515 440 488 435 464 425 453 405L451 373Z" />
-      <path d="M366 270C363 309 373 350 396 374 411 391 439 391 454 374 477 350 487 309 484 270 482 232 460 207 425 205 390 207 368 232 366 270Z" fill="#19130f" />
-      <ellipse cx="425" cy="196" rx="45" ry="35" fill="#19130f" />
-    </g>
-    <g fill="none" stroke="var(--anastasis-ivory, #f4eee4)" strokeOpacity=".24" strokeWidth="2.4" strokeLinecap="round">
-      <path d="M400 386C407 399 411 413 412 432M450 386C443 399 439 413 438 432M425 450 425 654M425 689 425 801" />
-      <path d="M354 492C374 487 398 506 405 532L383 604C365 594 346 558 349 535M496 492C476 487 452 506 445 532L467 604C485 594 504 558 501 535" />
-      <path d="M316 612C356 636 494 636 534 612M311 631C354 653 496 653 539 631M303 807C350 825 500 825 547 807" />
-      <path d="M425 851 425 941M299 939C325 963 378 972 415 943M551 939C525 963 472 972 435 943M328 1226 388 1233M462 1233 522 1226" />
-      <path d="M348 1647C359 1657 382 1657 395 1647M455 1647C468 1657 491 1657 502 1647" />
-    </g>
-  </svg>
+const posteriorLeftGeometry = {
+  upperTrap: [[428, 344], [411, 360], [387, 374], [357, 385], [380, 401], [410, 412], [455, 431], [456, 383], [445, 350]],
+  posteriorDeltoid: [[351, 391], [333, 398], [321, 416], [316, 443], [318, 470], [333, 488], [354, 479], [366, 455], [368, 427]],
+  triceps: [[317, 488], [333, 498], [354, 489], [360, 514], [355, 551], [347, 583], [341, 611], [324, 620], [311, 601], [312, 562]],
+  lat: [[370, 486], [397, 474], [450, 456], [455, 487], [450, 534], [432, 571], [415, 610], [406, 649], [391, 670], [385, 643], [389, 609], [383, 561]],
+  glute: [[380, 701], [418, 714], [460, 724], [459, 790], [446, 822], [417, 837], [381, 835], [353, 815], [341, 790], [349, 751], [364, 719]],
+  hamstrings: [[342, 850], [380, 852], [417, 851], [450, 839], [453, 880], [447, 940], [445, 1009], [439, 1075], [385, 1075], [378, 1033], [364, 973], [352, 918], [345, 878]],
+  calves: [[383, 1122], [403, 1114], [434, 1119], [445, 1147], [447, 1181], [439, 1244], [428, 1304], [421, 1365], [407, 1370], [396, 1314], [383, 1261], [373, 1203], [372, 1163]],
+} satisfies Record<string, MuscleGeometry['points']>
+
+/** All posterior hit areas use the supplied image's native 932 × 1687 space. */
+export const posteriorMuscleMapGeometry: Partial<Record<MuscleId, MuscleGeometry>> = {
+  left_upper_traps: { points: posteriorLeftGeometry.upperTrap },
+  right_upper_traps: { points: mirrorPosterior(posteriorLeftGeometry.upperTrap) },
+  left_posterior_deltoid: { points: posteriorLeftGeometry.posteriorDeltoid },
+  right_posterior_deltoid: { points: mirrorPosterior(posteriorLeftGeometry.posteriorDeltoid) },
+  left_triceps: { points: posteriorLeftGeometry.triceps },
+  right_triceps: { points: mirrorPosterior(posteriorLeftGeometry.triceps) },
+  left_lat_region: { points: posteriorLeftGeometry.lat },
+  right_lat_region: { points: mirrorPosterior(posteriorLeftGeometry.lat) },
+  // Lumbar only: below the ribs and above the pelvis, not a thoracic strip.
+  erector_spinae_region: { points: [[435, 583], [463, 598], [491, 583], [503, 615], [512, 647], [525, 680], [499, 700], [465, 710], [431, 700], [405, 680], [418, 647], [427, 615]] },
+  left_glute_max: { points: posteriorLeftGeometry.glute },
+  right_glute_max: { points: mirrorPosterior(posteriorLeftGeometry.glute) },
+  left_hamstrings: { points: posteriorLeftGeometry.hamstrings },
+  right_hamstrings: { points: mirrorPosterior(posteriorLeftGeometry.hamstrings) },
+  left_calves: { points: posteriorLeftGeometry.calves },
+  right_calves: { points: mirrorPosterior(posteriorLeftGeometry.calves) },
 }
 
 const stateLabels: Record<MuscleReadinessState, string> = {
@@ -210,6 +198,8 @@ export default function MuscleReadinessMap({
     setInternalSelectedId((current) => (current === regionId ? null : regionId))
   }
 
+  const imageSize = view === 'posterior' ? posteriorBodyImageSize : bodyImageSize
+
   return (
     <section className="workout-muscle-panel" data-testid="muscle-readiness-panel">
       <div className="tier-panel-heading">
@@ -224,7 +214,7 @@ export default function MuscleReadinessMap({
         </div>
       </div>
 
-      <div className="workout-body-map">
+      <div className="workout-body-map" style={{ aspectRatio: `${imageSize.width} / ${imageSize.height}` }}>
         {view === 'front' ? <Image
           src="/woman-silhouette.png"
           alt=""
@@ -232,8 +222,18 @@ export default function MuscleReadinessMap({
           height={bodyImageSize.height}
           className="workout-body-image"
           priority={false}
-        /> : <PosteriorBody />}
-        <svg className="workout-muscle-overlay" viewBox={`0 0 ${bodyImageSize.width} ${bodyImageSize.height}`} role="group" aria-label={`Interactive muscle readiness map: ${view === 'front' ? 'front' : 'back'}`} preserveAspectRatio="xMidYMid meet">
+        /> : <Image
+          src="/images/muscle-map/posterior-body.webp"
+          alt=""
+          aria-hidden="true"
+          width={posteriorBodyImageSize.width}
+          height={posteriorBodyImageSize.height}
+          sizes="(max-width: 560px) 320px, (max-width: 980px) 360px, 390px"
+          className="workout-body-image"
+          data-testid="posterior-body-image"
+          priority={false}
+        />}
+        <svg className="workout-muscle-overlay" viewBox={`0 0 ${imageSize.width} ${imageSize.height}`} role="group" aria-label={`Interactive muscle readiness map: ${view === 'front' ? 'front' : 'back'}`} preserveAspectRatio="xMidYMid meet">
           {MUSCLE_REGIONS.filter(region => muscleRegionIsVisible(region, view)).map((region) => {
             const item = byId.get(region.id)
             const state = item?.state || 'unknown'
