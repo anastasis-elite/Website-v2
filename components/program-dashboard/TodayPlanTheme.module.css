@@ -22,7 +22,7 @@
 .surface :global(.today-header) > :global(.today-subtitle) { margin: 0; color: var(--soft); font: 400 clamp(1.35rem, 3.5vw, 2.7rem)/1.18 Georgia, serif; letter-spacing: -.025em; }
 .surface :global(.today-personal-greeting) { margin: 14px 0 7px; color: var(--soft); font-size: .85rem; line-height: 1.5; }
 .streakBadge { position: absolute; top: 24px; right: 10px; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; color: #c28e63; font: 500 1rem/1 Arial, sans-serif; font-variant-numeric: tabular-nums; }
-.streakBadge svg { width: 20px; height: 25px; }
+.streakBadge img { display: block; flex: none; width: 32px; height: 32px; object-fit: contain; pointer-events: none; }
 :global(.today-header):has(.streakBadge) { position: relative; }
 :global(.today-header):has(.streakBadge[aria-busy="true"]) :global(.today-brand) { padding-right: 64px; }
 .surface :global(.today-header) time { color: var(--soft); font-size: clamp(.9rem, 2.5vw, 1.3rem); }
@@ -47,6 +47,7 @@
 .surface :global(.today-activities) li[data-illustrated="true"], .surface :global(.plan-overview-card) { position: relative; display: flex; flex-direction: column; grid-column: auto; overflow: hidden; min-width: 0; padding: 0; border: 1px solid #b383504d; border-radius: 18px; background: radial-gradient(ellipse at 75% 0, #8b542b45, transparent 80%), linear-gradient(135deg, #4b2f1b99, #352112c9); }
 .surface :global(.plan-overview-card) { min-height: 44px; color: inherit; text-decoration: none; }
 .surface :global(.today-card-illustration) { display: block; width: 100%; height: clamp(92px, 12vw, 132px); object-fit: contain; border-bottom: 1px solid #9e6a3f14; background: linear-gradient(125deg, #7b4b2933, #38231266); }
+.surface :global(.today-card-illustration[data-supplied-artwork]) { object-fit: cover; object-position: center; }
 .surface :global(.today-activities) li[data-illustrated="true"] > a:first-child { display: flex; flex: 1; flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
 .surface :global(.today-activities) li[data-illustrated="true"] > a > :global(.today-activity-icon) { display: none; }
 .surface :global(.today-activities) li[data-illustrated="true"] :global(.today-activity-copy), .surface :global(.plan-overview-copy) { display: flex; flex: 1; flex-direction: column; padding: 12px 16px; }

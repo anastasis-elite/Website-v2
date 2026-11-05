@@ -45,7 +45,7 @@ export default function CardArtwork({ kind, className, sizes = '(max-width: 350p
     src={image?.large ?? `/illustrations/today-${kind}.svg`}
     srcSet={image ? `${image.small} 320w, ${image.large} 640w` : undefined}
     sizes={image ? sizes : undefined}
-    width="360" height="180" alt="" className={className}
+    width="360" height="180" alt="" className={className} data-supplied-artwork={image ? true : undefined}
     loading="lazy" decoding="async"
   />
 }
