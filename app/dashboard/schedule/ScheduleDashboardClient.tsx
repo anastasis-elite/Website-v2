@@ -8,7 +8,7 @@ import { addLocalDays, localDateKey } from '@/lib/timezone'
 import { useDailyScheduleRefresh } from '@/lib/schedule/client'
 import { dayBlockHref, dayBlockLabels, isDayBlockDate, scheduleDayHref, type DayBlock } from '@/lib/day/dayBlockRoutes'
 import { getActionRouteForEvent } from '@/lib/schedule/engine'
-import { healthEventTypes } from '@/lib/schedule/actions'
+import { canRespondToScheduleEvent } from '@/lib/schedule/actions'
 import ScheduleCheckoff from '@/components/ScheduleCheckoff'
 import styles from './schedule-review.module.css'
 
@@ -16,8 +16,10 @@ function statusLabel(event: ScheduleEvent, now: string) {
   if (event.status === 'completed') return 'Done'
   if (event.status === 'cancelled') return 'Cancelled'
   if (event.status === 'skipped') return 'Skipped'
+  if (event.checkoff?.status === 'in_progress') return 'In progress'
   if (event.suggested) return 'Suggested'
-  return Date.parse(event.adjusted_end_at || event.end_at) < Date.parse(now) ? 'Overdue' : 'Upcoming'
+  if (Date.parse(event.adjusted_end_at || event.end_at) <= Date.parse(now)) return 'Completed?'
+  return Date.parse(event.adjusted_start_at || event.start_at) <= Date.parse(now) ? 'Current' : 'Upcoming'
 }
 
 export default function ScheduleDashboardClient({ initialSchedule }: { initialSchedule: DailyScheduleState }) {
@@ -52,7 +54,7 @@ export default function ScheduleDashboardClient({ initialSchedule }: { initialSc
     {schedule.unavailableSources?.length ? <p className={styles.notice} role="status">Some schedule details could not load. Refresh to try again.</p> : null}
     <section aria-label="Daily schedule">
       {events.length ? <ol className={styles.events}>{events.map(event => {
-        const health = healthEventTypes.has(event.event_type)
+        const health = !canRespondToScheduleEvent(event)
         const terminal = ['completed', 'cancelled', 'skipped'].includes(event.status)
         return <li id={`event-${event.id}`} key={`${schedule.date}:${event.id}`} className={styles.row}>
           <time dateTime={event.adjusted_start_at || event.start_at}>{event.all_day ? 'All day' : formatLocalTime(event.adjusted_start_at || event.start_at, schedule.timezone)}</time>

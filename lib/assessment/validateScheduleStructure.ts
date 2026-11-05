@@ -31,6 +31,14 @@ export function validateScheduleStructure(input: unknown): { answers: ScheduleSt
     if (typeof time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d(?::00)?$/.test(time)) return { error: 'Enter valid times for your daily anchors.' }
     answers[field] = time.slice(0, 5)
   }
+  // Old forms omit breakfast entirely. Keep that absence in historical proof
+  // and let routine merging retain a later saved breakfast preference.
+  if (Object.prototype.hasOwnProperty.call(value, 'breakfast_window_time')) {
+    const time = value.breakfast_window_time
+    if (time == null || time === '') answers.breakfast_window_time = null
+    else if (typeof time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d(?::00)?$/.test(time)) return { error: 'Enter a valid breakfast time.' }
+    else answers.breakfast_window_time = time.slice(0, 5)
+  }
   if (!answers.wake_time || !answers.bed_time) return { error: 'Enter your wake time and bed time.' }
   if (Boolean(answers.work_start_time) !== Boolean(answers.work_end_time)) return { error: 'Enter both work start and end times, or leave both blank.' }
   // Legacy submissions have no day choices. They remain valid completion

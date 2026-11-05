@@ -5,7 +5,7 @@ import type {
   ScheduleAdjustment,
   ScheduleEvent,
 } from './types'
-import { healthEventTypes, scheduleConflict } from './actions'
+import { canRespondToScheduleEvent, healthEventTypes, scheduleConflict } from './actions'
 import { inferMealType, mealEntryHref, WATER_ENTRY_HREF } from '@/lib/nutrition/loggingRoutes'
 import { scheduleStructureTaskHref } from '@/lib/assessment/scheduleStructure'
 import { localDateKey } from '@/lib/timezone'
@@ -30,6 +30,16 @@ function eventStart(event: ScheduleEvent) {
 
 function eventEnd(event: ScheduleEvent) {
   return new Date(event.adjusted_end_at || event.end_at)
+}
+
+/** Occurrence responses describe what the member reported, never what elapsed
+ * time suggests. Keep timing based on the currently accepted schedule. */
+export function getScheduleEventPrompt(event: ScheduleEvent, now: Date): string {
+  if (event.status === 'completed') return 'This item is recorded as completed.'
+  if (event.checkoff?.status === 'in_progress') return 'You marked this in progress. Have you completed it?'
+  if (eventEnd(event) <= now) return 'This item’s scheduled time has passed. Did you complete it, or is it still in progress?'
+  if (eventStart(event) <= now) return 'Is this item in progress or completed?'
+  return 'This item is scheduled for later. You can update its status when you’re ready.'
 }
 
 function isActionable(event: ScheduleEvent) {
@@ -134,6 +144,9 @@ export function firstValidWindow(
 }
 
 export function getActionRouteForEvent(event: ScheduleEvent, program = 'ignite') {
+  if (event.schedule_response_kind === 'breakfast' && canRespondToScheduleEvent(event)) {
+    return `/dashboard/schedule?date=${event.schedule_date}#event-${event.id}`
+  }
   // A calendar label does not constitute health completion. Imported tracked
   // activities must open their real logging flow, even when their provider
   // record carries the generic calendar/Schedule destination.
@@ -340,7 +353,7 @@ export function buildNextAction({
         ? 'soon'
         : 'upcoming'
   const adjustment = adjustments.find((item) => item.event_id === nextActionableEvent.id)
-  const reason = adjustment?.reason || (overdue ? 'This scheduled item has passed and still needs attention.' : 'This is the next scheduled item that needs attention.')
+  const reason = getScheduleEventPrompt(nextActionableEvent, now)
 
   return {
     id: nextActionableEvent.id,

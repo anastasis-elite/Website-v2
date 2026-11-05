@@ -1,8 +1,10 @@
 import { mealEntryHref } from '@/lib/nutrition/loggingRoutes'
 import type { ScheduleEvent } from './types'
 import { zonedDateTimeToUtc } from './time'
-import { addLocalDays } from '@/lib/timezone'
+import { addLocalDays, localDateKey } from '@/lib/timezone'
 import { getCommitmentWeekdays, type CommitmentDayField } from '@/lib/assessment/commitmentWeekdays'
+import { getBreakfastWindowTime } from '@/lib/assessment/mealAnchors'
+import type { ScheduleCheckoff } from './checkoffs'
 
 function commitmentOccursOn(client: any, field: CommitmentDayField, date: string) {
   const days = getCommitmentWeekdays(client, field)
@@ -78,6 +80,49 @@ function fixedEvent({
     virtual: true,
     action_route: `/dashboard/schedule?date=${date}#event-${id}`,
   }
+}
+
+/** One explicit attendance occurrence, independent of meal logging and targets. */
+export function breakfastScheduleEventForDate({ userId, client, date, timezone, checkoffs = [] }: {
+  userId: string; client: any; date: string; timezone: string; checkoffs?: ScheduleCheckoff[]
+}): ScheduleEvent[] {
+  // A completed occurrence keeps its recorded timing when the routine changes
+  // or breakfast is later removed. Only server-saved whitelisted fields return.
+  const row = checkoffs.find(item => item.user_id === userId && item.client_id === client.client_id &&
+    item.occurrence_date === date && item.event_id === `virtual-breakfast-${date}` && item.completed)
+  const snapshot = row?.occurrence_snapshot
+  if (snapshot?.id === `virtual-breakfast-${date}` && snapshot.schedule_date === date &&
+    snapshot.schedule_response_kind === 'breakfast' && typeof snapshot.title === 'string' &&
+    snapshot.title.length > 0 && snapshot.title.length <= 300 && typeof snapshot.timezone === 'string' &&
+    typeof snapshot.start_at === 'string' && typeof snapshot.end_at === 'string' &&
+    Number.isFinite(Date.parse(snapshot.start_at)) && Date.parse(snapshot.end_at) > Date.parse(snapshot.start_at)) {
+    try {
+      if (localDateKey(new Date(snapshot.start_at), snapshot.timezone) === date) {
+        const event = fixedEvent({ id: snapshot.id, userId, clientId: client.client_id,
+          title: snapshot.title, eventType: 'meal', date, time: '00:00', timezone: snapshot.timezone, minutes: 30 })
+        return [{ ...event, source: 'program', schedule_response_kind: 'breakfast',
+          start_at: snapshot.start_at, end_at: snapshot.end_at, schedule_date: date,
+          preferred_time: null,
+          estimated_duration_minutes: Math.round((Date.parse(snapshot.end_at) - Date.parse(snapshot.start_at)) / 60000),
+          checkoff: { completed: true, status: 'completed', revision: row!.revision },
+          flexibility_type: 'flexible', priority: 'medium', required: false, movable: true,
+          approval_required: false, suggested: false,
+        }]
+      }
+    } catch { /* Invalid saved timezones cannot introduce a fabricated event. */ }
+  }
+  const time = getBreakfastWindowTime(client)
+  if (!time) return []
+  const event = fixedEvent({ id: `virtual-breakfast-${date}`, userId, clientId: client.client_id,
+    title: 'Breakfast', eventType: 'meal', date, time, timezone, minutes: 30 })
+  const start = new Date(event.start_at)
+  return [{ ...event, source: 'program', schedule_response_kind: 'breakfast', schedule_date: date,
+    description: 'Confirm breakfast here. Log food separately when you want to record nutrition.',
+    flexibility_type: 'flexible', priority: 'medium', required: false, movable: true,
+    approval_required: false, suggested: false,
+    earliest_start_at: addMinutes(start, -120).toISOString(),
+    latest_end_at: addMinutes(start, 180).toISOString(),
+  }]
 }
 
 export function dailyPlanToScheduleEvents({

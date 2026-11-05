@@ -14,6 +14,7 @@ import {
 import { getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
 import { getCommitmentWeekdays, type CommitmentDayField } from '@/lib/assessment/commitmentWeekdays'
 import { getRoutinePreferencesRevision } from '@/lib/assessment/routinePreferences'
+import { getBreakfastWindowTime } from '@/lib/assessment/mealAnchors'
 
 type SearchParams = {
   eventId?: string | string[]
@@ -80,6 +81,7 @@ export default async function DailyStructureAssessmentPage({
           schoolPickupTime={preferences.school_pickup_time}
           schoolDropoffDaysOfWeek={commitmentDays('school_dropoff_days_of_week')}
           schoolPickupDaysOfWeek={commitmentDays('school_pickup_days_of_week')}
+          breakfastWindowTime={submission ? (submission.answers.breakfast_window_time as string | null | undefined) : getBreakfastWindowTime(client)}
           lunchWindowTime={preferences.lunch_window_time}
           dinnerWindowTime={preferences.dinner_window_time}
           dailyNonNegotiables={preferences.daily_non_negotiables}

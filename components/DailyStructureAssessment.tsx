@@ -29,6 +29,7 @@ type Props = {
   schoolPickupTime?: string | null
   schoolDropoffDaysOfWeek?: number[] | null
   schoolPickupDaysOfWeek?: number[] | null
+  breakfastWindowTime?: string | null
   lunchWindowTime?: string | null
   dinnerWindowTime?: string | null
   dailyNonNegotiables?: string[] | null
@@ -75,6 +76,7 @@ export default function DailyStructureAssessment({
   schoolPickupTime,
   schoolDropoffDaysOfWeek,
   schoolPickupDaysOfWeek,
+  breakfastWindowTime,
   lunchWindowTime,
   dinnerWindowTime,
   dailyNonNegotiables,
@@ -103,6 +105,7 @@ export default function DailyStructureAssessment({
     preferred_workout_time: preferredWorkoutTime || '',
     school_dropoff_time: schoolDropoffTime || '',
     school_pickup_time: schoolPickupTime || '',
+    breakfast_window_time: breakfastWindowTime || '',
     lunch_window_time: lunchWindowTime || '',
     dinner_window_time: dinnerWindowTime || '',
     day_structure_notes: dayStructureNotes || '',
@@ -393,6 +396,12 @@ export default function DailyStructureAssessment({
             onChange={(value) =>
               updateField('preferred_workout_time', value)
             }
+          />
+
+          <Field
+            label="Breakfast window (optional)"
+            value={formData.breakfast_window_time}
+            onChange={(value) => updateField('breakfast_window_time', value)}
           />
 
           <Field
