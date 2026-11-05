@@ -94,6 +94,14 @@ export const muscleMapGeometry: Record<MuscleId, MuscleGeometry> = {
 // above independent: the two artworks have different poses and proportions.
 const posteriorBodyImageSize = { width: 932, height: 1687 } as const
 const posteriorBodyCenterX = 465
+// Fill the front-sized frame by height without stretching the back artwork.
+// Both the image and native-coordinate SVG use this one registration layer.
+// The small downward offset aligns the visible bun/heels with the front figure.
+const posteriorArtworkRegistration = {
+  width: `${100 * posteriorBodyImageSize.width * bodyImageSize.height / (posteriorBodyImageSize.height * bodyImageSize.width)}%`,
+  left: `${100 * bodyCenterX / bodyImageSize.width}%`,
+  transform: `translate(-${100 * posteriorBodyCenterX / posteriorBodyImageSize.width}%, 2.8%)`,
+}
 function mirrorPosterior(points: MuscleGeometry['points']): MuscleGeometry['points'] {
   return points.map(([x, y]) => [2 * posteriorBodyCenterX - x, y])
 }
@@ -214,55 +222,57 @@ export default function MuscleReadinessMap({
         </div>
       </div>
 
-      <div className="workout-body-map" style={{ aspectRatio: `${imageSize.width} / ${imageSize.height}` }}>
-        {view === 'front' ? <Image
-          src="/woman-silhouette.png"
-          alt=""
-          width={bodyImageSize.width}
-          height={bodyImageSize.height}
-          className="workout-body-image"
-          priority={false}
-        /> : <Image
-          src="/images/muscle-map/posterior-body.webp"
-          alt=""
-          aria-hidden="true"
-          width={posteriorBodyImageSize.width}
-          height={posteriorBodyImageSize.height}
-          sizes="(max-width: 560px) 320px, (max-width: 980px) 360px, 390px"
-          className="workout-body-image"
-          data-testid="posterior-body-image"
-          priority={false}
-        />}
-        <svg className="workout-muscle-overlay" viewBox={`0 0 ${imageSize.width} ${imageSize.height}`} role="group" aria-label={`Interactive muscle readiness map: ${view === 'front' ? 'front' : 'back'}`} preserveAspectRatio="xMidYMid meet">
-          {MUSCLE_REGIONS.filter(region => muscleRegionIsVisible(region, view)).map((region) => {
-            const item = byId.get(region.id)
-            const state = item?.state || 'unknown'
-            const isActive = selectedIds.has(region.id) || exerciseSelectedIds.has(region.id) || (!onChooseExercises && bilateralSelection && activeId ? getBilateralMuscleIds(activeId).includes(region.id) : activeId === region.id)
-            const isHighlighted = highlighted.has(region.id) || Boolean(item?.exercisesToday?.length)
-            const geometry = view === 'posterior' ? posteriorMuscleMapGeometry[region.id] : muscleMapGeometry[region.id]
-            if (!geometry) return null
-            return (
-              <polygon
-                key={region.id}
-                points={pointsToSvg(geometry.points)}
-                className={`workout-muscle-region readiness-${state}${isActive ? ' is-selected' : ''}${isHighlighted ? ' is-in-workout' : ''}`}
-                tabIndex={0}
-                role="button"
-                aria-label={`${region.label}: ${stateLabels[state]}`}
-                aria-pressed={selectedIds.has(region.id)}
-                aria-haspopup={onChooseExercises && !exerciseSelectionDisabled ? 'dialog' : undefined}
-                data-muscle-id={region.id}
-                data-exercise-selected={exerciseSelectedIds.has(region.id) ? 'true' : undefined}
-                onMouseEnter={() => setHoveredId(region.id)}
-                onMouseLeave={() => setHoveredId(null)}
-                onFocus={() => setHoveredId(region.id)}
-                onBlur={() => setHoveredId(null)}
-                onClick={event => selectMuscle(region.id, event?.currentTarget)}
-                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (!event.repeat) selectMuscle(region.id, event.currentTarget) } }}
-              />
-            )
-          })}
-        </svg>
+      <div className="workout-body-map" data-view={view} style={{ aspectRatio: `${bodyImageSize.width} / ${bodyImageSize.height}` }}>
+        <div className="workout-body-artwork" style={view === 'posterior' ? posteriorArtworkRegistration : undefined}>
+          {view === 'front' ? <Image
+            src="/woman-silhouette.png"
+            alt=""
+            width={bodyImageSize.width}
+            height={bodyImageSize.height}
+            className="workout-body-image"
+            priority={false}
+          /> : <Image
+            src="/images/muscle-map/posterior-body.webp"
+            alt=""
+            aria-hidden="true"
+            width={posteriorBodyImageSize.width}
+            height={posteriorBodyImageSize.height}
+            sizes="(max-width: 560px) 375px, (max-width: 980px) 422px, 457px"
+            className="workout-body-image"
+            data-testid="posterior-body-image"
+            priority={false}
+          />}
+          <svg className="workout-muscle-overlay" viewBox={`0 0 ${imageSize.width} ${imageSize.height}`} role="group" aria-label={`Interactive muscle readiness map: ${view === 'front' ? 'front' : 'back'}`} preserveAspectRatio="xMidYMid meet">
+            {MUSCLE_REGIONS.filter(region => muscleRegionIsVisible(region, view)).map((region) => {
+              const item = byId.get(region.id)
+              const state = item?.state || 'unknown'
+              const isActive = selectedIds.has(region.id) || exerciseSelectedIds.has(region.id) || (!onChooseExercises && bilateralSelection && activeId ? getBilateralMuscleIds(activeId).includes(region.id) : activeId === region.id)
+              const isHighlighted = highlighted.has(region.id) || Boolean(item?.exercisesToday?.length)
+              const geometry = view === 'posterior' ? posteriorMuscleMapGeometry[region.id] : muscleMapGeometry[region.id]
+              if (!geometry) return null
+              return (
+                <polygon
+                  key={region.id}
+                  points={pointsToSvg(geometry.points)}
+                  className={`workout-muscle-region readiness-${state}${isActive ? ' is-selected' : ''}${isHighlighted ? ' is-in-workout' : ''}`}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`${region.label}: ${stateLabels[state]}`}
+                  aria-pressed={selectedIds.has(region.id)}
+                  aria-haspopup={onChooseExercises && !exerciseSelectionDisabled ? 'dialog' : undefined}
+                  data-muscle-id={region.id}
+                  data-exercise-selected={exerciseSelectedIds.has(region.id) ? 'true' : undefined}
+                  onMouseEnter={() => setHoveredId(region.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  onFocus={() => setHoveredId(region.id)}
+                  onBlur={() => setHoveredId(null)}
+                  onClick={event => selectMuscle(region.id, event?.currentTarget)}
+                  onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (!event.repeat) selectMuscle(region.id, event.currentTarget) } }}
+                />
+              )
+            })}
+          </svg>
+        </div>
       </div>
 
       <div className="workout-readiness-legend" aria-label="Readiness legend">

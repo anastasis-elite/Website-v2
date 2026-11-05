@@ -70,6 +70,9 @@ test('Back uses the supplied decorative artwork with aligned shoulder, trap and 
   assert.ok(app.region(front, 'left_upper_traps'))
   assert.ok(app.region(front, 'left_pectoralis_major'))
   assert.equal(app.region(front, 'left_posterior_deltoid'), undefined)
+  const frontFrame = walk(front, element => element.props?.className === 'workout-body-map')[0]
+  assert.equal(frontFrame.props.style.aspectRatio, '862 / 1825')
+  assert.equal(walk(front, element => element.props?.className === 'workout-body-artwork')[0].props.style, undefined, 'Front keeps its original full-frame registration.')
   app.back(front).props.onClick()
   const back = app.render()
   const overlay = walk(back, element => element.props?.className === 'workout-muscle-overlay')[0]
@@ -83,7 +86,14 @@ test('Back uses the supplied decorative artwork with aligned shoulder, trap and 
   assert.equal(artwork[0].props.width, 932)
   assert.equal(artwork[0].props.height, 1687)
   assert.equal(overlay.props.viewBox, `0 0 ${artwork[0].props.width} ${artwork[0].props.height}`)
-  assert.equal(walk(back, element => element.props?.className === 'workout-body-map')[0].props.style.aspectRatio, '932 / 1687')
+  assert.equal(walk(back, element => element.props?.className === 'workout-body-map')[0].props.style.aspectRatio, frontFrame.props.style.aspectRatio, 'Switching views cannot resize the map frame.')
+  const layers = walk(back, element => element.props?.className === 'workout-body-artwork')
+  assert.equal(layers.length, 1)
+  assert.equal(layers[0].props.children.length, 2)
+  assert.equal(layers[0].props.children[0], artwork[0], 'Artwork uses the common registration parent.')
+  assert.equal(layers[0].props.children[1], overlay, 'The interactive overlay uses that same registration parent.')
+  assert.equal(artwork[0].props.style, undefined)
+  assert.equal(overlay.props.style, undefined)
   assert.equal(walk(back, element => element.type === 'svg').length, 1, 'Artwork and interactive overlay remain separate layers.')
   for (const id of ['left_upper_traps', 'right_upper_traps', 'left_posterior_deltoid', 'right_posterior_deltoid', 'erector_spinae_region']) {
     assert.ok(app.region(back, id), `${id} is keyboard-selectable on Back`)
@@ -92,6 +102,34 @@ test('Back uses the supplied decorative artwork with aligned shoulder, trap and 
   assert.equal(app.region(back, 'rectus_abdominis'), undefined)
   for (const id of ['left_upper_traps', 'right_upper_traps']) {
     assert.equal(muscles.MUSCLE_REGIONS.filter(region => region.id === id).length, 1, 'A back view does not create another trap history record.')
+  }
+})
+
+test('Back fills the front frame uniformly, shares its visible figure landmarks and keeps every hit area inside the clip', () => {
+  const app = harness()
+  app.back(app.render()).props.onClick()
+  const back = app.render(), layer = walk(back, element => element.props?.className === 'workout-body-artwork')[0]
+  const image = walk(layer, element => element.props?.['data-testid'] === 'posterior-body-image')[0]
+  const translation = /^translate\(-([\d.]+)%, ([\d.]+)%\)$/.exec(layer.props.style.transform)
+  assert.ok(translation, 'One common layer translates both artwork and hit areas.')
+  assert.equal(Number(translation[2]), 2.8)
+  assert.match(readFileSync('app/globals.css', 'utf8'), /\.workout-body-artwork\{position:absolute;inset:0\}/, 'The registration layer fills the fixed frame height.')
+  for (const frameWidth of [260, 320, 390]) {
+    const frameHeight = frameWidth * 1825 / 862
+    const layerWidth = frameWidth * parseFloat(layer.props.style.width) / 100
+    const left = frameWidth * parseFloat(layer.props.style.left) / 100 - layerWidth * Number(translation[1]) / 100
+    const top = frameHeight * Number(translation[2]) / 100
+    const scaleX = layerWidth / image.props.width, scaleY = frameHeight / image.props.height
+    assert.ok(Math.abs(scaleX - scaleY) < 1e-12, 'The image and native-coordinate SVG scale equally on both axes.')
+    assert.ok(Math.abs(left + 465 * scaleX - 425 * frameWidth / 862) < 1e-9, 'Back and Front share the torso axis.')
+    for (const [backY, frontY] of [[90, 149], [1509, 1683]]) {
+      assert.ok(Math.abs(top + backY * scaleY - frontY * frameWidth / 862) < 1, 'The supplied figures have matching visible bun and heel positions within one CSS pixel.')
+    }
+    const nativePoints = Object.values(app.exports.posteriorMuscleMapGeometry).flatMap(geometry => geometry.points)
+    for (const [x, y] of [...nativePoints, [268, 90], [660, 1509]]) {
+      assert.ok(left + x * scaleX > 0 && left + x * scaleX < frameWidth, 'Clipping preserves the complete silhouette and every interactive region horizontally.')
+      assert.ok(top + y * scaleY > 0 && top + y * scaleY < frameHeight, 'Clipping preserves the visible bun, heels and every interactive region vertically.')
+    }
   }
 })
 
