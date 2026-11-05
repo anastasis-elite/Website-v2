@@ -1,4 +1,5 @@
 import CardArtworkModule from './cardArtworkFixture.mjs'
+import TodayAffirmationModule from './todayAffirmationFixture.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -25,6 +26,8 @@ function component(path, extra = {}, exportName = 'default') {
   const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } })
   runInNewContext(outputText, { module, exports: module.exports, Date, require: name => name.endsWith('.webp') ? { src: `/_next/static/media/${name.split('/').at(-1)}` } : extra[name] || ({
     '@/components/CardArtwork': CardArtworkModule,
+    '@/components/program-dashboard/TodayAffirmation': TodayAffirmationModule,
+    './TodayAffirmation': TodayAffirmationModule,
     'next/link': Link,
     'next/navigation': { useRouter: () => ({ refresh() {} }), usePathname: () => '/dashboard/program/ignite' },
     '@/lib/dashboard/todayActivities': activities,
@@ -209,6 +212,7 @@ test('all-complete Today keeps saved progress and a history route without comple
   assert.doesNotMatch(html, /A little moment, just for you|Look at you showing up for yourself/)
   assert.match(html, /aria-valuenow="5"/)
   assert.match(html, /Your streak is secured for today/)
+  assert.match(html, /data-testid="today-affirmation" data-completed="true"/)
   assert.match(html, /href="\/dashboard\/progress">View progress/)
   assert.equal(activities.buildTodayActivities(logic, state).completed, 4)
 })
@@ -413,7 +417,8 @@ test('approved incomplete copy maps the treat invitation to next step and encour
   assert.match(html, /<h2>A little moment, just for you\.<\/h2>/)
   assert.ok(html.includes('You’ve made space for yourself today. Enjoy a warm cup of coffee or tea, a little dessert, or whatever feels like a treat to you. You deserve to enjoy it.'))
   assert.ok(emptySection.includes('<h2>At your pace.</h2>'))
-  assert.ok(emptySection.includes('<p role="status"><strong>Look at you showing up for yourself.</strong>'))
+  assert.match(emptySection, /data-testid="today-affirmation"/)
+  assert.match(emptySection, /<h3[^>]*>Look at you showing up for yourself\.<\/h3>/)
   assert.ok(emptySection.includes('You’re making space for your well-being today, and that matters. Take a breath and enjoy this moment. You’re doing beautifully.'))
   assert.doesNotMatch(emptySection, /A little moment, just for you|warm cup of coffee|Nothing else is due/)
   assert.match(emptySection, /href="\/dashboard\/progress">View progress<\/a>/)
@@ -431,4 +436,67 @@ test('approved empty copy never replaces actionable activity cards or their orig
   assert.match(html, /<li data-activity-id="nutrition"/)
   assert.match(html, /<h2>At your pace\.<\/h2>/)
   assert.doesNotMatch(html, /A little moment, just for you|Look at you showing up for yourself|warm cup of coffee|You’re doing beautifully/)
+})
+
+function affirmationFixture({ paced = false } = {}) {
+  const logic = fixture('ember'), state = schedule()
+  logic.assessments.dailyCompleted = true
+  logic.hydration = { status: 'ready', target: 80, consumed: paced ? 40 : 80, remaining: paced ? 40 : 0,
+    presentationPacing: { state: paced ? 'on_pace' : 'complete' } }
+  logic.nutrition = { ...logic.nutrition, dataStatus: 'known', calories: { percent: 100 }, protein: { percent: 100 },
+    pacing: { state: 'complete', nextRefreshAt: null } }
+  logic.execution = { workoutComplete: true, nutritionLogged: true, recoveryComplete: true }
+  logic.flameState = flame('ember', { dailyCheckIn: true, hydration: !paced, nutrition: true, workoutOrMovement: true })
+  state.dailyGuide.activities.schedule = { status: 'reviewed' }
+  return { logic, state }
+}
+
+test('illustrated encouragement stays general at three of four requirements when pacing hides the last card', () => {
+  const { logic, state } = affirmationFixture({ paced: true }), before = structuredClone({ logic, state })
+  const model = buildTodayViewModel(logic, state)
+  assert.equal(model.presentedActivities.length, 0)
+  assert.equal(model.streakProgress.completedCount, 3)
+  assert.equal(model.streakProgress.requiredCount, 4)
+  assert.equal(model.recommendation.primary.completed, false)
+  const html = render(logic, state)
+  assert.match(html, /data-testid="today-affirmation"/)
+  assert.match(html, /<h3[^>]*>Look at you showing up for yourself\.<\/h3>/)
+  assert.ok(html.includes('You’re making space for your well-being today, and that matters. Take a breath and enjoy this moment. You’re doing beautifully.'))
+  const image = html.match(/<img\b[^>]*src="\/images\/affirmations\/copper-rest\.webp"[^>]*>/)?.[0]
+  assert.ok(image, 'The approved word-free asset is rendered separately from the live copy.')
+  assert.match(image, /alt=""/)
+  assert.match(image, /aria-hidden="true"/)
+  assert.match(image, /width="1774" height="887"/)
+  assert.match(html, /href="\/dashboard\/progress">View progress<\/a>/)
+  assert.match(html, /href="\/dashboard\/schedule"/)
+  assert.match(html, /aria-valuenow="3" aria-valuetext="3 of 4 required items completed"/)
+  assert.match(html, /1 required item remains/)
+  assert.doesNotMatch(html, /data-completed="true"|Day completed|Your streak is secured|Your recorded activities are saved/)
+  assert.deepEqual({ logic, state }, before)
+})
+
+test('saved-activity encouragement gets completed styling only with the existing secured current-day recommendation', () => {
+  const { logic, state } = affirmationFixture()
+  const html = render(logic, state)
+  assert.match(html, /data-testid="today-affirmation" data-completed="true"/)
+  assert.ok(html.includes('Your recorded activities are saved. You can revisit your progress and history anytime.'))
+  assert.match(html, /<h2>Day completed<\/h2>/)
+  assert.match(html, /Reward yourself with a little treat\./)
+  assert.match(html, /href="\/dashboard\/progress">View progress<\/a>/)
+  assert.doesNotMatch(html, /Look at you showing up for yourself|<li data-activity-id=/)
+})
+
+test('stale or unavailable required evidence retains the saved copy without completed-day styling', () => {
+  for (const evidence of [null, { error: 'Synthetic unavailable requirements' },
+    { ...flame('ember', { dailyCheckIn: true, hydration: true, nutrition: true, workoutOrMovement: true }),
+      requirements: { ...flame('ember').requirements, date: '2026-10-12' } }]) {
+    const { logic, state } = affirmationFixture()
+    logic.flameState = evidence
+    const html = render(logic, state)
+    assert.match(html, /data-testid="today-affirmation"/)
+    assert.ok(html.includes('Your recorded activities are saved. You can revisit your progress and history anytime.'))
+    assert.match(html, /Status unavailable/)
+    assert.match(html, /href="\/dashboard\/progress">View progress<\/a>/)
+    assert.doesNotMatch(html, /data-completed="true"|Day completed|Your streak is secured/)
+  }
 })

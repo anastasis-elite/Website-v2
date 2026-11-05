@@ -12,6 +12,7 @@ import { recordTodayActionOpened, recordTodayActionCompletions } from '@/lib/ana
 import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
 import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
+import TodayAffirmation from '@/components/program-dashboard/TodayAffirmation'
 
 const icons: Record<string, string> = { check_in: '☀', hydration: '◒', schedule: '▦', nutrition: '◡', workout: '↟', recovery: '♡', none: '✦' }
 const statusLabels: Record<string, string> = { available: 'Available', upcoming: 'Upcoming', in_progress: 'In progress', completed: 'Completed', deferred: 'Deferred', skipped: 'Skipped' }
@@ -155,7 +156,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
           <span className="today-activity-state">{statusLabels[activity.status] || 'Available'}{activity.deferredUntil ? <small>Until {formatLocalTime(activity.deferredUntil, schedule.timezone)}</small> : null}</span>
         </Link>
         <ActivityOptions activity={activity} busy={busy !== null} onAction={updateActivity} />
-      </li>)}</ul> : <p role="status">{complete ? 'Your recorded activities are saved. You can revisit your progress and history anytime.' : <><strong>Look at you showing up for yourself.</strong>{' '}You’re making space for your well-being today, and that matters. Take a breath and enjoy this moment. You’re doing beautifully.</>} <Link href="/dashboard/progress">View progress</Link></p>}
+      </li>)}</ul> : <TodayAffirmation recorded={complete} completed={plan.primary.id === 'pause' && plan.primary.completed && streakAvailable && streakProgress.secured} />}
     </section>
 
     {model.macroReminder ? <aside className="today-feedback" aria-label="Recent nutrition logs">
