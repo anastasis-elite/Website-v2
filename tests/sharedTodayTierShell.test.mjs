@@ -26,6 +26,7 @@ function load(path) {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
   } }).outputText
   runInNewContext(source, { module, exports: module.exports, Date, Intl, require(name) {
+    if (name.endsWith('.webp')) return { src: `/_next/static/media/${name.split('/').at(-1)}` }
     if (name.endsWith('.module.css')) return { __esModule: true, default: theme }
     if (name === '@/components/program-dashboard/TierAwareDashboardWorkspace') return { __esModule: true, default: Workspace }
     const target = name.startsWith('@/') ? resolve(name.slice(2)) : name.startsWith('.') ? resolve(dirname(path), name) : null

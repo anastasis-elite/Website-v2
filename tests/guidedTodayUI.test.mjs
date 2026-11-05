@@ -23,7 +23,7 @@ const Link = ({ href, children, ...props }) => React.createElement('a', { href, 
 function component(path, extra = {}, exportName = 'default') {
   const module = { exports: {} }
   const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } })
-  runInNewContext(outputText, { module, exports: module.exports, Date, require: name => extra[name] || ({
+  runInNewContext(outputText, { module, exports: module.exports, Date, require: name => name.endsWith('.webp') ? { src: `/_next/static/media/${name.split('/').at(-1)}` } : extra[name] || ({
     '@/components/CardArtwork': CardArtworkModule,
     'next/link': Link,
     'next/navigation': { useRouter: () => ({ refresh() {} }), usePathname: () => '/dashboard/program/ignite' },
@@ -95,6 +95,7 @@ test('Today shows a confirmed zero and nonzero streak, while Plan omits the badg
     assert.match(html, new RegExp(`aria-label="${count} ${count === 1 ? 'day' : 'days'} streak"`))
     assert.ok(html.includes(`<span aria-hidden="true">${count}</span>`))
     assert.ok(html.includes('data-testid="today-streak"'))
+    assert.match(html, /<img[^>]+src="\/_next\/static\/media\/streak-flame\.webp"[^>]+alt=""[^>]+aria-hidden="true"/)
     const plan = renderToStaticMarkup(React.createElement(Header, { logic, schedule: schedule(), plan: true }))
     assert.doesNotMatch(plan, /data-testid="today-streak"/)
   }
@@ -105,6 +106,7 @@ test('missing, failed, invalid or loading streak data never renders a confirmed 
     const html = renderToStaticMarkup(React.createElement(StreakBadge, props))
     assert.doesNotMatch(html, /aria-label="0 days streak"/)
     assert.ok(html.includes('—'))
+    assert.ok(html.includes(`aria-label="${props.loading ? 'Streak loading' : 'Streak unavailable'}"`))
     if (props.loading) assert.match(html, /aria-busy="true"/)
   }
 })

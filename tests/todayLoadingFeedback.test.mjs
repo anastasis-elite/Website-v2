@@ -19,6 +19,7 @@ function load(path) {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
   } }).outputText
   runInNewContext(source, { module, exports: module.exports, require(name) {
+    if (name.endsWith('.webp')) return { src: `/_next/static/media/${name.split('/').at(-1)}` }
     if (name === '@/components/DashboardPerformance') return { __esModule: true, default: ({ stage }) => { stages.push(stage); return null } }
     if (name === '@/components/DashboardShellTiming') return { __esModule: true, default: () => null }
     if (name === './TodayPlanTheme.module.css') return { __esModule: true, default: { streakBadge: 'today-streak-badge' } }
