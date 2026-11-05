@@ -3,6 +3,7 @@
 import { useId, useRef, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import CardArtwork from '@/components/CardArtwork'
 import ActionArrow from '@/components/ActionArrow'
 import { calculateWalkPace, validateDetailedRecovery } from '@/lib/recovery/activityDetails'
 import { formatRecoveryDetails } from '@/lib/recovery/activityDisplay'
@@ -105,11 +106,11 @@ export default function RecoveryActivitySheets({ clientId }: { clientId: string 
 
   return <>
     {([
-      ['slow_walk', 'Slow walk', 'training'],
-      ['warm_soak', 'Warm soak', 'water'],
-      ['sauna', 'Sauna', 'recovery'],
+      ['slow_walk', 'Slow walk', 'slow-walk'],
+      ['warm_soak', 'Warm soak', 'warm-soak'],
+      ['sauna', 'Sauna', 'sauna'],
     ] as const).map(([kind, label, illustration]) => <button className={cardStyles.card} key={kind} type="button" aria-label={`Log ${label.toLowerCase()}`} aria-haspopup="dialog" aria-controls={id} onClick={event => open(kind, event.currentTarget)}>
-      <img src={`/illustrations/today-${illustration}.svg`} alt="" width="360" height="180" />
+      <CardArtwork kind={illustration} sizes="(max-width: 320px) 100vw, (max-width: 640px) 50vw, 33vw" />
       <span className={cardStyles.copy}><span className={cardStyles.title}>{label}</span><ActionArrow className={cardStyles.arrow} /></span>
     </button>)}
     <dialog ref={dialog} id={id} className={`phone-app-practice-dialog recovery-activity-sheet ${cardStyles.dialog}`} aria-labelledby={`${id}-title`} aria-describedby={`${id}-intro`} onCancel={event => { if (lock.current) event.preventDefault() }} onClose={() => trigger.current?.focus()}>

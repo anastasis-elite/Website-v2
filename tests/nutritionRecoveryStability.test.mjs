@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -345,6 +346,7 @@ test('nutrition cleanup keeps higher-tier food guidance and replaces Ember guida
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText
   const mocks = {
+    '@/components/CardArtwork': CardArtworkModule,
     '@/lib/supabase/client': { createClient: () => ({}) },
     '@/lib/nutrition/dailyMacroMetrics': dailyMetrics,
     '@/lib/dashboard/viewPreferences': preference,

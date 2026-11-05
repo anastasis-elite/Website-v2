@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
@@ -22,6 +23,7 @@ function clientModule() {
   return compile(dashboard, {
     '@/components/RecoveryLogger': { __esModule: true, default: 'recovery-logger' },
     '@/components/recovery/RecoveryActivitySheets': { __esModule: true, default: 'recovery-activities' },
+    '@/components/CardArtwork': CardArtworkModule,
     '@/components/ActionArrow': {}, './RecoveryCards.module.css': {},
     'next/link': { __esModule: true, default: 'a' },
   })
@@ -92,6 +94,7 @@ test('compact own-practice button opens the existing logger and closing restores
     '@/components/DailyCheckInForm': {}, '@/components/recovery/BreathingReset': {},
     '@/lib/dashboard/dailyTraining': {}, '@/lib/recovery/scoreExplanation': {},
     '@/components/dashboard/useViewPreference': {}, '@/components/phone-app/PhoneAppFrame': {},
+    '@/components/CardArtwork': CardArtworkModule,
     '@/components/ActionArrow': {}, './RecoveryCards.module.css': {},
     'next/link': { __esModule: true, default: 'a' },
   }

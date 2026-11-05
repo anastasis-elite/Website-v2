@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync, existsSync } from 'node:fs'
@@ -92,6 +93,7 @@ function harness(current = fixture()) {
       useEffect(callback, deps) { const index = effectCursor++, previous = effects[index]
         if (!previous || !deps || deps.some((value, offset) => value !== previous.deps[offset])) effects[index] = { callback, deps, pending: true, cleanup: previous?.cleanup }
       } },
+    '@/components/CardArtwork': CardArtworkModule,
     'next/link': { __esModule: true, default: 'a' }, 'next/navigation': { useRouter: () => router },
     '@/lib/schedule/client': { useDailyScheduleRefresh(...args) { scheduleRefreshCalls.push(args) } },
     '@/lib/analytics': { trackEvent(...args) { analytics.push(args) } },
