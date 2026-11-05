@@ -64,7 +64,7 @@ function harness(extra = {}) {
   return { exports, render, region, regions, back, selected }
 }
 
-test('Back is a genuine posterior vector with aligned shoulder, trap and lumbar hit areas while the front asset stays intact', () => {
+test('Back uses the supplied decorative artwork with aligned shoulder, trap and lumbar hit areas while the front asset stays intact', () => {
   const app = harness(), front = app.render()
   assert.equal(walk(front, element => element.props?.src === '/woman-silhouette.png').length, 1)
   assert.ok(app.region(front, 'left_upper_traps'))
@@ -72,9 +72,19 @@ test('Back is a genuine posterior vector with aligned shoulder, trap and lumbar 
   assert.equal(app.region(front, 'left_posterior_deltoid'), undefined)
   app.back(front).props.onClick()
   const back = app.render()
-  assert.equal(walk(back, element => element.props?.className === 'workout-muscle-overlay')[0].props.role, 'group', 'The interactive layer exposes its child button semantics.')
+  const overlay = walk(back, element => element.props?.className === 'workout-muscle-overlay')[0]
+  assert.equal(overlay.props.role, 'group', 'The interactive layer exposes its child button semantics.')
   assert.equal(walk(back, element => element.props?.src === '/woman-silhouette.png').length, 0)
-  assert.ok(walk(back, element => element.type === 'svg').length >= 2, 'Posterior body vector and interactive overlay are separate SVG layers.')
+  const artwork = walk(back, element => element.props?.['data-testid'] === 'posterior-body-image')
+  assert.equal(artwork.length, 1)
+  assert.equal(artwork[0].props.src, '/images/muscle-map/posterior-body.webp')
+  assert.equal(artwork[0].props.alt, '')
+  assert.equal(artwork[0].props['aria-hidden'], 'true', 'Region buttons provide the accessible anatomy labels.')
+  assert.equal(artwork[0].props.width, 932)
+  assert.equal(artwork[0].props.height, 1687)
+  assert.equal(overlay.props.viewBox, `0 0 ${artwork[0].props.width} ${artwork[0].props.height}`)
+  assert.equal(walk(back, element => element.props?.className === 'workout-body-map')[0].props.style.aspectRatio, '932 / 1687')
+  assert.equal(walk(back, element => element.type === 'svg').length, 1, 'Artwork and interactive overlay remain separate layers.')
   for (const id of ['left_upper_traps', 'right_upper_traps', 'left_posterior_deltoid', 'right_posterior_deltoid', 'erector_spinae_region']) {
     assert.ok(app.region(back, id), `${id} is keyboard-selectable on Back`)
   }
@@ -85,21 +95,52 @@ test('Back is a genuine posterior vector with aligned shoulder, trap and lumbar 
   }
 })
 
-test('Posterior lumbar and rear-deltoid geometry uses the back coordinate system rather than the old long front-overlay shapes', () => {
+test('Every posterior region uses the supplied artwork coordinate system with lumbar-only lower-back coverage', () => {
   const { posteriorMuscleMapGeometry, muscleMapGeometry } = harness().exports
   assert.ok(posteriorMuscleMapGeometry)
   const lumbar = posteriorMuscleMapGeometry.erector_spinae_region.points
-  assert.ok(Math.min(...lumbar.map(([, y]) => y)) >= 630, 'Lumbar selection starts below the thoracic/scapular area.')
-  assert.ok(Math.max(...lumbar.map(([, y]) => y)) <= 870)
-  assert.notDeepEqual(plain(lumbar), plain(muscleMapGeometry.erector_spinae_region.points))
-  for (const id of ['left_posterior_deltoid', 'right_posterior_deltoid', 'left_upper_traps', 'right_upper_traps', 'erector_spinae_region']) {
+  assert.ok(Math.min(...lumbar.map(([, y]) => y)) >= 580, 'Lumbar selection starts below the thoracic/scapular area.')
+  assert.ok(Math.max(...lumbar.map(([, y]) => y)) <= 715, 'Lumbar selection stays above the pelvis.')
+  const posteriorIds = muscles.MUSCLE_REGIONS.filter(region => muscles.muscleRegionIsVisible(region, 'posterior')).map(region => region.id)
+  assert.equal(posteriorIds.length, 15)
+  assert.deepEqual(Object.keys(posteriorMuscleMapGeometry).sort(), [...posteriorIds].sort())
+  for (const id of posteriorIds) {
+    assert.notDeepEqual(plain(posteriorMuscleMapGeometry[id].points), plain(muscleMapGeometry[id].points), `${id} must be registered to the back artwork rather than reuse front coordinates.`)
     for (const [x, y] of posteriorMuscleMapGeometry[id].points) {
-      assert.ok(Number.isFinite(x) && x > 0 && x < 862)
-      assert.ok(Number.isFinite(y) && y > 0 && y < 1825)
+      assert.ok(Number.isFinite(x) && x > 0 && x < 932)
+      assert.ok(Number.isFinite(y) && y > 0 && y < 1687)
     }
   }
-  assert.ok(Math.max(...posteriorMuscleMapGeometry.left_posterior_deltoid.points.map(([x]) => x)) < 425)
-  assert.ok(Math.min(...posteriorMuscleMapGeometry.right_posterior_deltoid.points.map(([x]) => x)) > 425)
+  assert.ok(Math.max(...posteriorMuscleMapGeometry.left_posterior_deltoid.points.map(([x]) => x)) < 465)
+  assert.ok(Math.min(...posteriorMuscleMapGeometry.right_posterior_deltoid.points.map(([x]) => x)) > 465)
+})
+
+test('Measured back-anatomy anchors target each of the fifteen posterior regions without competing polygon coverage', () => {
+  const app = harness()
+  app.back(app.render()).props.onClick()
+  const polygons = app.regions(app.render())
+  const leftAnchors = {
+    upper_traps: [440, 380], posterior_deltoid: [342, 440], triceps: [334, 554],
+    lat_region: [413, 538], glute_max: [395, 776], hamstrings: [400, 951], calves: [410, 1200],
+  }
+  const anchors = { erector_spinae_region: [465, 655] }
+  for (const [name, [x, y]] of Object.entries(leftAnchors)) {
+    anchors[`left_${name}`] = [x, y]
+    anchors[`right_${name}`] = [930 - x, y]
+  }
+  function contains(polygon, [x, y]) {
+    const points = polygon.props.points.split(' ').map(pair => pair.split(',').map(Number))
+    let inside = false
+    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+      const [currentX, currentY] = points[i], [previousX, previousY] = points[j]
+      if ((currentY > y) !== (previousY > y) && x < (previousX - currentX) * (y - currentY) / (previousY - currentY) + currentX) inside = !inside
+    }
+    return inside
+  }
+  assert.equal(polygons.length, 15)
+  for (const [id, point] of Object.entries(anchors)) {
+    assert.deepEqual(polygons.filter(polygon => contains(polygon, point)).map(polygon => polygon.props['data-muscle-id']), [id], `${id} anatomy anchor must remain its sole pointer target.`)
+  }
 })
 
 test('Manual click and Enter/Space selection highlight matching bilateral regions without emitting duplicate selections', () => {
