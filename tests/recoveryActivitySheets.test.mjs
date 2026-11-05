@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -28,6 +29,7 @@ function harness() {
         return [states[index], value => { states[index] = typeof value === 'function' ? value(states[index]) : value }] },
       useRef(initial) { return refs[refIndex++] ||= { current: initial } },
     },
+    '@/components/CardArtwork': CardArtworkModule,
     'next/navigation': { useRouter: () => ({ refresh() { refreshes++ } }) },
     'next/link': { __esModule: true, default: 'a' },
     '@/components/ActionArrow': { __esModule: true, default: 'arrow' },
@@ -172,8 +174,14 @@ test('compact sauna sheet starts blank, discloses coaching limits and requires a
   const view = harness()
   const cards = nodes(view.render(), node => node.type === 'button' && node.props.className?.includes('recovery-compact-card'))
   assert.equal(cards.length, 3)
-  for (const card of cards) {
-    assert.equal(nodes(card, node => node.type === 'img' && node.props.alt === '').length, 1)
+  const artworkKinds = ['slow-walk', 'warm-soak', 'sauna']
+  for (const [index, card] of cards.entries()) {
+    const artwork = nodes(card, node => node.type === CardArtworkModule.default)
+    assert.equal(artwork.length, 1)
+    const image = CardArtworkModule.default(artwork[0].props)
+    assert.equal(image.type, 'img')
+    assert.equal(image.props.alt, '')
+    assert.equal(image.props.src, `/_next/static/media/${artworkKinds[index]}-640.webp`)
     assert.equal(nodes(card, node => node.type === 'span' && node.props.className === 'recovery-title').length, 1)
     assert.equal(nodes(card, node => node.type === 'button').length, 1)
     assert.equal(nodes(card, node => node.type === 'p').length, 0)

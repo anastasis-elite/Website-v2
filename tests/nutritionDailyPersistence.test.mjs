@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -123,6 +124,7 @@ function dashboard(db, { request = async url => { throw new Error(`Unexpected sy
     },
   }
   const dependencies = {
+    '@/components/CardArtwork': CardArtworkModule,
     react: fakeReact,
     '@/lib/nutrition/dailyMacroMetrics': dailyMetrics,
     '@/lib/dashboard/viewPreferences': viewPreferences,

@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -151,6 +152,7 @@ test('visible micronutrient rings reload other-device persisted intake after res
   const db = { auth: { getUser: async () => ({ data: { user: { id: 'owner' } } }) }, from(table) { const query = { select() { return query }, eq() { return query }, maybeSingle: async () => ({ data: table === 'nutrition_logs' ? log : {}, error: null }) }; return query } }
   const progress = load('lib/nutrition/micronutrientProgress.ts', {})
   const Dashboard = load('components/AdaptiveNutritionDashboard.tsx', {
+    '@/components/CardArtwork': CardArtworkModule,
     react: state.react, 'next/navigation': { useRouter: () => router }, '@/lib/supabase/client': { createClient: () => db },
     '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: 'water-entry' }, '@/components/NutritionFoodLogger': { __esModule: true, default: 'food-entry' },
     '@/components/nutrition/MacroQuickAdd': { __esModule: true, default: 'macro-entry' },

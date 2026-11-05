@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from 'react'
 import Link from 'next/link'
+import CardArtwork from '@/components/CardArtwork'
 
 import RecoveryLogger from '@/components/RecoveryLogger'
 import RecoveryActivitySheets from '@/components/recovery/RecoveryActivitySheets'
@@ -23,11 +24,11 @@ export function OwnPractice({ clientId }: { clientId: string }) {
 }
 
 const guidedPractices = [
-  { title: 'Meditation', illustration: 'recovery', description: 'Make a quiet moment for yourself with the silent meditation timer. Choose the duration that fits your own practice.', href: '/dashboard/meditation?practice=recovery-meditation', action: 'Open silent timer' },
-  { title: 'Yoga nidra', illustration: 'recovery', description: 'Yoga nidra is a guided resting practice. A guided recording is not available here; you can record a practice you complete elsewhere using your own practice logger.', unavailable: 'Guided recording unavailable' },
-  { title: 'Guided mobility', illustration: 'training', description: 'Choose movement that fits your capacity and your existing guidance. Guided mobility sessions are not available here. You can log your own completed practice.', unavailable: 'Guided sessions unavailable' },
-  { title: 'Yogic practices', illustration: 'recovery', description: 'A gentle practice at your own pace. Guided yogic recordings are not available here. Record your own completed practice if you choose one.', unavailable: 'Guided sessions unavailable' },
-  { title: 'Breathwork', illustration: 'recovery', description: 'Come back to center with the existing breathing timer. Use a comfortable practice and stop if you feel unwell.', href: '/dashboard/meditation?practice=breath-reset', action: 'Open breathing timer' },
+  { title: 'Meditation', illustration: 'meditation', description: 'Make a quiet moment for yourself with the silent meditation timer. Choose the duration that fits your own practice.', href: '/dashboard/meditation?practice=recovery-meditation', action: 'Open silent timer' },
+  { title: 'Yoga nidra', illustration: 'yoga-nidra', description: 'Yoga nidra is a guided resting practice. A guided recording is not available here; you can record a practice you complete elsewhere using your own practice logger.', unavailable: 'Guided recording unavailable' },
+  { title: 'Guided mobility', illustration: 'mobility', description: 'Choose movement that fits your capacity and your existing guidance. Guided mobility sessions are not available here. You can log your own completed practice.', unavailable: 'Guided sessions unavailable' },
+  { title: 'Yogic practices', illustration: 'yogic-practices', description: 'A gentle practice at your own pace. Guided yogic recordings are not available here. Record your own completed practice if you choose one.', unavailable: 'Guided sessions unavailable' },
+  { title: 'Breathwork', illustration: 'breathwork', description: 'Come back to center with the existing breathing timer. Use a comfortable practice and stop if you feel unwell.', href: '/dashboard/meditation?practice=breath-reset', action: 'Open breathing timer' },
 ] as const
 
 export function GuidedRecoveryCards() {
@@ -38,7 +39,7 @@ export function GuidedRecoveryCards() {
   const practice = guidedPractices[selected]
   return <>
     {guidedPractices.map((item, index) => <button className={cardStyles.card} key={item.title} type="button" aria-label={`View ${item.title} details`} aria-haspopup="dialog" aria-controls={id} onClick={event => { trigger.current = event.currentTarget; setSelected(index); dialog.current?.showModal() }}>
-      <img src={`/illustrations/today-${item.illustration}.svg`} alt="" width="360" height="180" />
+      <CardArtwork kind={item.illustration} sizes="(max-width: 320px) 100vw, (max-width: 640px) 50vw, 33vw" />
       <span className={cardStyles.copy}><span className={cardStyles.title}>{item.title}</span><ActionArrow className={cardStyles.arrow} /></span>
     </button>)}
     <dialog ref={dialog} id={id} className={`phone-app-practice-dialog ${cardStyles.dialog}`} aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`} onClose={() => trigger.current?.focus()}>

@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -38,6 +39,7 @@ function harness(current = fixture(), state = schedule()) {
   const mocks = {
     react: { useId: () => 'streak-dialog', useEffect() {}, useRef(initial) { return refs[refIndex++] ||= { current: initial } },
       useState(initial) { const index = stateIndex++;if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;return [states[index], value => { states[index] = typeof value === 'function' ? value(states[index]) : value }] } },
+    '@/components/CardArtwork': CardArtworkModule,
     'next/link': { __esModule: true, default: 'a' },
     'next/navigation': { useRouter: () => ({ refresh() { refreshes++ } }) },
     '@/lib/dashboard/todayActivities': activities, '@/lib/dashboard/dailyRecommendation': recommendations,

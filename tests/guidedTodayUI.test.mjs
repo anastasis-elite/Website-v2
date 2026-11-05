@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -23,6 +24,7 @@ function component(path, extra = {}, exportName = 'default') {
   const module = { exports: {} }
   const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } })
   runInNewContext(outputText, { module, exports: module.exports, Date, require: name => extra[name] || ({
+    '@/components/CardArtwork': CardArtworkModule,
     'next/link': Link,
     'next/navigation': { useRouter: () => ({ refresh() {} }), usePathname: () => '/dashboard/program/ignite' },
     '@/lib/dashboard/todayActivities': activities,
@@ -258,7 +260,11 @@ test('compact Today cards keep one primary image-title-status link and separate 
       ['training', `/dashboard/program/${tier}/workout`], ['recovery', '/dashboard/recovery'],
     ]
     cards.forEach((card, index) => {
-      assert.ok(card[2].includes(`src="/illustrations/today-${targets[index][0]}.svg"`))
+      const kind = targets[index][0]
+      const artwork = kind === 'check-in' || kind === 'recovery'
+        ? `/illustrations/today-${kind}.svg`
+        : `/_next/static/media/${kind}-640.webp`
+      assert.ok(card[2].includes(`src="${artwork}"`))
       assert.ok(card[2].includes(`href="${targets[index][1]}"`))
       const primary = card[2].match(/^\s*<a\b[^>]*>([\s\S]*?)<\/a>/)?.[1]
       assert.ok(primary)

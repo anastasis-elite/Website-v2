@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -70,6 +71,7 @@ function fixture({ program = 'ember', persisted = {}, failRemaining = false, ent
   const mocks = {
     react: state.react,
     'next/navigation': { useRouter: () => ({ refresh() {}, push() {} }) },
+    '@/components/CardArtwork': CardArtworkModule,
     '@/lib/supabase/client': { createClient: () => db },
     '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: 'water-entry' },
     '@/components/nutrition/MacroQuickAdd': { __esModule: true, default: 'macro-entry' },

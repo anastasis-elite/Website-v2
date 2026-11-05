@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -44,6 +45,7 @@ function fixture({ program = 'ember', request = async () => Response.json({}), f
   const doc = { visibilityState: 'visible', addEventListener() {}, removeEventListener() {} }
   const storage = new Map()
   const Dashboard = load('components/AdaptiveNutritionDashboard.tsx', {
+    '@/components/CardArtwork': CardArtworkModule,
     react: state.react, 'next/navigation': { useRouter: () => ({ refresh() {}, push() {} }) }, '@/lib/supabase/client': { createClient: () => db },
     '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: 'water-entry' }, '@/components/NutritionFoodLogger': { __esModule: true, default: 'food-entry' },
     '@/components/nutrition/MacroQuickAdd': { __esModule: true, default: 'macro-entry' },

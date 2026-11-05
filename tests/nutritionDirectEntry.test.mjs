@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -111,6 +112,7 @@ test('direct food and meal entry shows the actual entitled logger while EMBER re
     useState(initial) { const index = cursor++; return [index === 0 ? false : index === 1 ? { id: 'own-log', calories: 2000, protein: 100, carbs: 250, fats: 70 } : typeof initial === 'function' ? initial() : initial, () => {}] },
   }
   const Dashboard = load('components/AdaptiveNutritionDashboard.tsx', {
+    '@/components/CardArtwork': CardArtworkModule,
     react: hooks, 'next/navigation': { useRouter: () => ({ refresh() {}, push() {} }) },
     '@/lib/supabase/client': { createClient: () => ({}) },
     '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: () => null },

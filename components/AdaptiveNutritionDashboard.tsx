@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import HydrationQuickAdd from '@/components/hydration/HydrationQuickAdd'
+import CardArtwork from '@/components/CardArtwork'
 import MacroQuickAdd from '@/components/nutrition/MacroQuickAdd'
 import { buildDailyMacroMetrics } from '@/lib/nutrition/dailyMacroMetrics'
 import { viewPreferenceKey } from '@/lib/dashboard/viewPreferences'
@@ -678,7 +679,7 @@ setNutritionLog(log)
     }}
     renderTrigger={({ toggle, triggerRef, open }) => <button ref={triggerRef} type="button"
       className="phone-app-card nutrition-entry-card" aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
-      <img src="/illustrations/today-nutrition.svg" width="360" height="180" alt="" />
+      <CardArtwork kind="nutrition" />
       <span className="nutrition-entry-card-copy"><strong>Add Macros</strong><span>Record calories, protein, carbohydrates and fat for a meal or block.</span></span>
     </button>}
   /> : null
@@ -813,12 +814,12 @@ setNutritionLog(log)
             {macroEntry}
             <HydrationQuickAdd initiallyOpen={entryFromHash === 'water'} clientId={logic.client.id} logDate={getClientLocalDateOffset(logic.client)} consumed={waterConsumed} target={logic.hydration.target} onSaved={setWaterConsumed}
               renderTrigger={({ toggle, triggerRef, open }) => <button ref={triggerRef} type="button" className="phone-app-card nutrition-entry-card" aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
-                <img src="/illustrations/today-nutrition.svg" width="360" height="180" alt="" />
+                <CardArtwork kind="water" />
                 <span className="nutrition-entry-card-copy"><strong>Log Water</strong><span>{roundValue(waterConsumed)} / {roundValue(logic.hydration.target)} oz logged today</span></span>
               </button>} />
           </> : <>
-            <article className="phone-app-card"><img src="/illustrations/today-nutrition.svg" width="360" height="180" alt=""/><div><h3>Start with protein</h3><p>{!loading && nutritionLogIsCurrent && macroMetrics[1].target !== null ? `Your daily protein target is ${roundValue(macroMetrics[1].target)} g.` : 'Your personalized protein target will appear when available.'}</p></div></article>
-            <article className="phone-app-card"><img src="/illustrations/today-nutrition.svg" width="360" height="180" alt=""/><div><h3>Build a balanced plate</h3><p>{nextFoodGuidance.copy}</p></div></article>
+            <article className="phone-app-card"><CardArtwork kind="nutrition" /><div><h3>Start with protein</h3><p>{!loading && nutritionLogIsCurrent && macroMetrics[1].target !== null ? `Your daily protein target is ${roundValue(macroMetrics[1].target)} g.` : 'Your personalized protein target will appear when available.'}</p></div></article>
+            <article className="phone-app-card"><CardArtwork kind="nutrition" /><div><h3>Build a balanced plate</h3><p>{nextFoodGuidance.copy}</p></div></article>
           </>}
         </div>
         <section className="nutrition-dashboard-workspace" data-tier={tier}>

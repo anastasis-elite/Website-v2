@@ -1,3 +1,4 @@
+import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -15,6 +16,7 @@ function harness() {
   const mocks = {
     react: { useId: () => 'guided-practice', useRef(initial) { return refs[refIndex++] ||= { current: initial } },
       useState(initial) { const index = stateIndex++;if (!(index in states)) states[index] = initial;return [states[index], value => { states[index] = value }] } },
+    '@/components/CardArtwork': CardArtworkModule,
     '@/components/RecoveryLogger': {}, '@/components/recovery/RecoveryActivitySheets': {}, '@/lib/recovery/activityDisplay': {},
     '@/components/DailyCheckInForm': {}, '@/components/recovery/BreathingReset': {}, '@/lib/dashboard/dailyTraining': {},
     '@/lib/recovery/scoreExplanation': {}, '@/components/dashboard/useViewPreference': {},
@@ -35,8 +37,14 @@ function harness() {
 test('compact guided tiles are whole native buttons with image, name and dialog focus return', () => {
   const view = harness(), cards = nodes(view.render(), node => node.type === 'button' && node.props.className === 'compact-card')
   assert.equal(cards.length, 5)
-  for (const card of cards) {
-    assert.equal(nodes(card, node => node.type === 'img' && node.props.alt === '').length, 1)
+  const artworkKinds = ['meditation', 'yoga-nidra', 'mobility', 'yogic-practices', 'breathwork']
+  for (const [index, card] of cards.entries()) {
+    const artwork = nodes(card, node => node.type === CardArtworkModule.default)
+    assert.equal(artwork.length, 1)
+    const image = CardArtworkModule.default(artwork[0].props)
+    assert.equal(image.type, 'img')
+    assert.equal(image.props.alt, '')
+    assert.equal(image.props.src, `/_next/static/media/${artworkKinds[index]}-640.webp`)
     assert.equal(nodes(card, node => node.type === 'span' && node.props.className === 'compact-title').length, 1)
     assert.equal(nodes(card, node => node.type === 'p').length, 0)
     assert.equal(nodes(card, node => node.type === 'button').length, 1, 'The native tile is the only button; controls are not nested.')
