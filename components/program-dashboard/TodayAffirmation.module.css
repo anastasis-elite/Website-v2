@@ -1,0 +1,88 @@
+.card {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .85fr);
+  min-width: 0;
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid #a97c55;
+  border-radius: 24px;
+  background: #24160e;
+  color: #fff3e4;
+  box-shadow: 0 4px 28px #10080433, inset 0 0 24px #bd885514;
+  container-type: inline-size;
+}
+
+.art {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right center;
+  pointer-events: none;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(90deg, #21140ef5 0%, #21140ee8 40%, #21140e99 57%, transparent 78%);
+  pointer-events: none;
+}
+
+.copy {
+  grid-column: 1;
+  align-self: center;
+  min-width: 0;
+  padding: clamp(24px, 4cqi, 44px);
+  overflow-wrap: anywhere;
+}
+
+.heading {
+  margin: 0 0 18px;
+  color: #fff3e4;
+  font: 400 clamp(1.65rem, 3.8cqi, 2.45rem)/1.14 Georgia, 'Times New Roman', serif;
+  letter-spacing: -.02em;
+  text-shadow: 0 0 18px #c68b5b66, 0 2px 7px #a2643c44;
+}
+
+.body {
+  margin: 0 0 22px;
+  color: #f5e5d2;
+  font: 400 clamp(1rem, 2cqi, 1.15rem)/1.55 Georgia, 'Times New Roman', serif;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  max-width: 100%;
+  padding: 11px 28px;
+  border: 1px solid #c3936b;
+  border-radius: 999px;
+  background: #26180fcc;
+  color: #fff3e4;
+  font: 400 1.1rem/1.35 Georgia, 'Times New Roman', serif;
+  text-align: center;
+  text-decoration: none;
+}
+
+.action:hover { background: #51331f; }
+.action:focus-visible { outline: 3px solid #e6b68c; outline-offset: 4px; }
+.card[data-completed='true'] { border-color: #d2a477; box-shadow: 0 0 26px #b7773c33, inset 0 0 28px #cb96581c; }
+.card[data-completed='true'] .body { text-shadow: 0 0 18px #c68b5b55; }
+
+@media (max-width: 640px) {
+  .card { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .art { position: relative; z-index: -2; inset: auto; grid-row: 1; grid-column: 1; height: auto; aspect-ratio: 2 / 1; object-fit: contain; }
+  .card::before { display: none; }
+  .copy { grid-row: 2; padding: 24px; background: linear-gradient(145deg, #342115, #24160e); }
+  .heading { font-size: clamp(1.65rem, 6.5vw, 2rem); }
+  .body { font-size: 1.05rem; }
+}
