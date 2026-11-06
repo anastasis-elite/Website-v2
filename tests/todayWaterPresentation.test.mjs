@@ -20,7 +20,7 @@ test('water uses cumulative saved wake-window fractions and exact equality witho
   const ahead = pacing('09:00:00')
   assert.equal(ahead.nextRefreshAt, '2026-11-02T18:00:00.001Z')
   const behind = calculateTodayHydrationPacing({ client, target: 80, consumed: 40, hasLoggedIntake: true, now: new Date(ahead.nextRefreshAt) })
-  assert.equal(behind.state, 'behind');assert.match(behind.prompt, /Log what you’ve had/i)
+  assert.equal(behind.state, 'behind');assert.equal(behind.prompt, 'A little moment of care: log the water you’ve had today.')
   assert.doesNotMatch(behind.prompt, /drink \d|must|catch up|extra water|finish/i)
 })
 

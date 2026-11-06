@@ -11,7 +11,7 @@ export function calculateTodayHydrationPacing(input: Parameters<typeof calculate
   if (pacing.state === 'complete') prompt = 'Your recorded water meets today’s target.'
   else if (pacing.state === 'on_pace') prompt = 'Your recorded water is on pace for your waking day.'
   else if (pacing.state === 'sleep') prompt = 'Water logging is available whenever you need it.'
-  else if (pacing.state === 'behind') prompt = 'Your water logs are behind your waking-day pace. Log what you’ve had, and drink when it suits your individual fluid guidance.'
+  else if (pacing.state === 'behind') prompt = 'A little moment of care: log the water you’ve had today.'
   else if (pacing.reason === 'missing_schedule') prompt = 'Log the water you’ve had. Save your wake time and bedtime to personalize when this reminder appears.'
   else if (pacing.reason === 'missing_target') prompt = 'Log the water you’ve had. A saved daily water target is needed for pacing.'
   else if (pacing.reason === 'overnight_unavailable') prompt = 'Log the water you’ve had. Your overnight waking window is not compared with calendar-day totals.'
