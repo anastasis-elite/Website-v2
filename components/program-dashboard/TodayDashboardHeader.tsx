@@ -22,10 +22,7 @@ export default function TodayDashboardHeader({ logic, schedule, plan = false }: 
     </svg>
     <div className="today-brand"><span>Anastasis</span><small>Elite</small></div>
     {!plan && <TodayStreakBadge count={logic.flameState?.streak} available={logic.streakAvailable === true} />}
-    <p className="today-page-label">{plan ? 'Plan' : 'Today'}</p>
-    <h1>{plan ? 'A week that fits you.' : 'Welcome back.'}</h1>
-    <p className="today-subtitle">{plan ? 'Structure, with room for life.' : 'A little space for you.'}</p>
-    <p className="today-personal-greeting">{greeting}{logic.client.name ? `, ${logic.client.name}` : ''}.</p>
+    {!plan && <h1>{greeting}{logic.client.name ? `, ${logic.client.name}` : ''}.</h1>}
     {plan ? <p className="today-week-range">{formatDay(week[0])} – {formatDay(week[6])}</p> : <time dateTime={schedule.date}>{new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: schedule.timezone }).format(date)}</time>}
     <ol className="today-week-strip" aria-label="This week">{week.map(day => <li key={day.toISOString()} aria-current={day.toISOString().slice(0, 10) === schedule.date ? 'date' : undefined}><span>{day.toLocaleDateString('en-US', { weekday: 'narrow', timeZone: 'UTC' })}</span><strong>{day.getUTCDate()}</strong></li>)}</ol>
   </header>
