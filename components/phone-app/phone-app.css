@@ -18,6 +18,7 @@
 .phone-app-back span {font-size:12px;}.phone-app-eyebrow {color:#bb8b66;letter-spacing:.24em;font:10px/1.5 Arial,sans-serif;text-transform:uppercase;margin:0 0 14px;}
 .phone-app-header h1 {color:#f1e9dc;font:400 clamp(2.7rem,6.5vw,4.8rem)/1.03 Georgia,serif;letter-spacing:-.035em;margin:0 0 12px;max-width:850px;}
 .phone-app-subtitle {color:#cbb59e;font:400 clamp(1.2rem,3vw,2rem)/1.25 Georgia,serif;margin:0;}
+.phone-app-header--title-only h1 {margin-bottom:0;}
 .phone-app-header.phone-app-header--compact {padding:20px 4px 16px;}
 .phone-app-header--compact .phone-app-brand {margin:0;max-width:none;font:400 16px/1.5 Georgia,serif;letter-spacing:.3em;}
 .phone-app-surface :is(.aos-flow-page,.aos-nutrition-page,.aos-workout-page,.schedule-page,.account-dashboard,.meditation-page) {padding:0!important;min-height:0!important;background:transparent!important;}
