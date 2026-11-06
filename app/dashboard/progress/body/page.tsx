@@ -18,7 +18,7 @@ export default async function BodyProgressPage({ searchParams }: {
   const params = await searchParams, range = progressRange(params.range)
   const selection = typeof params.measurement === 'string' && params.measurement.length <= 80 ? params.measurement : undefined
   const data = await loadBodyProgressHistory({ supabase, userId: user.id, client, range })
-  return <PhoneAppFrame backHref={`/dashboard/progress?range=${range}`} backLabel="Progress" eyebrow="Recorded body changes" title="Beyond the scale" subtitle="Your saved measurements and private photo comparison.">
+  return <PhoneAppFrame backHref={`/dashboard/progress?range=${range}`} backLabel="Progress" eyebrow="Recorded body changes" title="Beyond the scale" subtitle="There’s more to progress than a number.">
     <BodyProgressHistory data={data} selection={selection} />
   </PhoneAppFrame>
 }

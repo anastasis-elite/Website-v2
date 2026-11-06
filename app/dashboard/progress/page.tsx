@@ -23,7 +23,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
     loadCycleProgress({ supabase, user, client, range }),
     loadRecoveryProgressSummary({ supabase, user, client, range }),
   ])
-  return <PhoneAppFrame eyebrow="Progress" title="Look how far you’ve come." subtitle="There’s more to progress than a number."><main className={styles.content}>
+  return <PhoneAppFrame eyebrow="Progress" title="Look how far you’ve come."><main className={styles.content}>
     <ProgressOverview data={overview} program={client.program} recovery={recovery} />
     <div className={styles.trends}><NutritionProgressCard data={nutrition} /><CycleProgressCard data={cycle} /></div>
   </main></PhoneAppFrame>
