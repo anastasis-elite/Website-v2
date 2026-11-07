@@ -318,28 +318,75 @@ test('Recovery action cards use the same decorative SVG without changing destina
   assert.match(html, /Guided recording unavailable/)
 })
 
-test('Today and Plan preserve explicit rest and unavailable day labels without inventing workout completion', () => {
-  for (const [state, title, reason] of [
+test('Today hides intentional-rest notices while unavailable notices and Plan labels remain without invented completion', () => {
+  for (const tier of ['ember', 'ignite', 'phoenix']) for (const [state, title, reason] of [
     ['rest', 'Rest day', 'Today is an intentional rest day in your program. No workout is assigned.'],
     ['unavailable', 'Workout unavailable', 'Your training plan is missing or incomplete. Contact your coach to review it.'],
   ]) {
-    const logic = fixture()
+    const logic = fixture(tier), day = schedule()
     logic.workout = { assigned: false, title }
     logic.workoutDecision = { ...logic.workoutDecision, assignedWorkout: { workout_state: state }, canTrain: false, reasonForModification: reason }
-    const html = render(logic)
+    const before = JSON.stringify({ logic, day })
+    const html = render(logic, day)
     const status = html.match(/<p class="today-workout-status"[^>]*>([\s\S]*?)<\/p>/)?.[1]
-    assert.ok(status)
-    assert.ok(status.includes(`<strong>${title}</strong>`))
-    assert.ok(status.includes(reason))
-    assert.doesNotMatch(status, /<a\b|<button\b/)
+    if (state === 'rest') {
+      assert.equal(status, undefined)
+      assert.doesNotMatch(html, /Today is an intentional rest day in your program\. No workout is assigned\./)
+    } else {
+      assert.ok(status)
+      assert.ok(status.includes(`<strong>${title}</strong>`))
+      assert.ok(status.includes(reason))
+      assert.match(html, /class="today-workout-status" role="status" data-workout-state="unavailable"/)
+      assert.doesNotMatch(status, /<a\b|<button\b/)
+    }
     assert.doesNotMatch(html, /data-activity-id="workout"/)
-    const plan = renderToStaticMarkup(React.createElement(Plan, { logic, schedule: schedule() }))
+    assert.match(html, /aria-valuenow="0"/)
+    assert.doesNotMatch(html, /Your completed workout is saved/)
+    const plan = renderToStaticMarkup(React.createElement(Plan, { logic, schedule: day }))
     assert.ok(plan.includes(`<p>${title}</p>`))
     assert.doesNotMatch(plan, /Make room for movement and rest/)
+    assert.equal(logic.execution.workoutComplete, false)
+    assert.equal(JSON.stringify({ logic, day }), before)
   }
   const unknown = fixture(); unknown.workout.assigned = false
   assert.doesNotMatch(render(unknown), /today-workout-status/)
   assert.match(renderToStaticMarkup(React.createElement(Plan, { logic: unknown, schedule: schedule() })), /Make room for movement and rest/)
+})
+
+test('Today retains assigned training and recovery activities when the intentional-rest notice is hidden', () => {
+  for (const tier of ['ember', 'ignite', 'phoenix']) for (const state of ['planned', 'recovery']) {
+    const logic = fixture(tier), day = schedule()
+    logic.workoutDecision.assignedWorkout = { workout_state: state }
+    logic.workoutDecision.reasonForModification = `${state} guidance remains available.`
+    const before = JSON.stringify({ logic, day })
+    const html = render(logic, day)
+    assert.match(html, /data-activity-id="workout" data-status="available"/)
+    assert.ok(html.includes(`href="/dashboard/program/${tier}/workout"`))
+    assert.ok(html.includes(`${state} guidance remains available.`))
+    assert.doesNotMatch(html, /today-workout-status|Your completed workout is saved/)
+    assert.match(html, /aria-valuenow="0"/)
+    assert.equal(JSON.stringify({ logic, day }), before)
+  }
+})
+
+test('Today keeps paused-strength recovery guidance visible over an underlying rest day', () => {
+  for (const tier of ['ember', 'ignite', 'phoenix']) {
+    const logic = fixture(tier), day = schedule()
+    logic.workout = { assigned: false, title: 'Rest day' }
+    logic.workoutDecision = { ...logic.workoutDecision, assignedWorkout: { workout_state: 'rest' }, canTrain: false }
+    logic.assessments.strength = { scheduledDate: day.date, eligibleDate: day.date, state: 'due' }
+    logic.symptoms.redFlag = true
+    const before = JSON.stringify({ logic, day })
+    const html = render(logic, day)
+    const status = html.match(/<p class="today-workout-status"[^>]*>([\s\S]*?)<\/p>/)?.[1]
+    assert.ok(status)
+    assert.match(html, /class="today-workout-status" role="status" data-workout-state="recovery"/)
+    assert.match(status, /<strong>Training paused<\/strong>/)
+    assert.match(status, /Strength testing is paused\. Review today’s recovery guidance\./)
+    assert.doesNotMatch(html, /data-activity-id="workout"|Your completed workout is saved/)
+    assert.match(html, /aria-valuenow="0"/)
+    assert.equal(JSON.stringify({ logic, day }), before)
+  }
 })
 
 test('one-step preference quiets supporting copy while keeping every activity accessible', () => {
