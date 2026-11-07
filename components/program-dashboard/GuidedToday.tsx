@@ -144,7 +144,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
     </article>
     <p className="today-feedback" role="status" aria-live="polite">{message}</p>
 
-    {inactiveWorkoutDay ? <p className="today-workout-status" role="status" data-workout-state={workoutDayState}><strong>{model.workout.title}</strong><span>{model.workout.reason}</span></p> : null}
+    {inactiveWorkoutDay && workoutDayState !== 'rest' ? <p className="today-workout-status" role="status" data-workout-state={workoutDayState}><strong>{model.workout.title}</strong><span>{model.workout.reason}</span></p> : null}
 
     <section className="today-activities" data-testid="today-activities" aria-label="Your day at a glance" data-tutorial-id="dashboard-nutrition-progress">
       <div className="today-section-heading"><h2>At your pace.</h2><span>Go in your own order</span></div>
