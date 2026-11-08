@@ -222,6 +222,12 @@ export default function MuscleReadinessMap({
         </div>
       </div>
 
+      <div className="workout-readiness-legend" aria-label="Readiness legend">
+        {(['ready', 'available', 'recovering', 'rest'] as MuscleReadinessState[]).map((state) => (
+          <span key={state}><i className={`readiness-${state}`} />{stateLabels[state]}</span>
+        ))}
+      </div>
+
       <div className="workout-body-map" data-view={view} style={{ aspectRatio: `${bodyImageSize.width} / ${bodyImageSize.height}` }}>
         <div className="workout-body-artwork" style={view === 'posterior' ? posteriorArtworkRegistration : undefined}>
           {view === 'front' ? <Image
@@ -275,12 +281,6 @@ export default function MuscleReadinessMap({
         </div>
       </div>
 
-      <div className="workout-readiness-legend" aria-label="Readiness legend">
-        {(['ready', 'available', 'recovering', 'rest'] as MuscleReadinessState[]).map((state) => (
-          <span key={state}><i className={`readiness-${state}`} />{stateLabels[state]}</span>
-        ))}
-      </div>
-
       <div className="workout-muscle-detail" aria-live="polite">
         {active && activeDefinition ? (
           <>
@@ -299,10 +299,7 @@ export default function MuscleReadinessMap({
         )}
       </div>
       {onChooseExercises ? <div className="workout-map-exercise-choice">
-        {visibleSelectedId && selectedDefinition ? <button type="button" className="manual-primary-button" disabled={exerciseSelectionDisabled}
-          onClick={event => onChooseExercises(visibleSelectedId, event?.currentTarget)}>
-          Choose exercises for {selectedDefinition.label.replace(/^(Left|Right) /, '')}{selectedDefinition.side === 'center' ? '' : ' · both sides'}
-        </button> : <p>{exerciseSelectionDisabled ? 'Select a muscle to inspect its readiness.' : 'Select a muscle to choose equipment and exercises. Focus or hover to inspect readiness.'}</p>}
+        <p>{exerciseSelectionDisabled ? 'Select a muscle to inspect its readiness.' : 'Select a muscle to choose equipment and exercises. Focus or hover to inspect readiness.'}</p>
         {exerciseSelectionDisabled ? <p role="status">Your active exercise stays open. Inspect readiness here; finish that exercise before choosing another.</p>
           : <p>Exercise choices use the more cautious readiness of both matching sides.</p>}
       </div> : null}
