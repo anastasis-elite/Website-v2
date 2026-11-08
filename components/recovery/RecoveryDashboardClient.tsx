@@ -38,9 +38,9 @@ export function GuidedRecoveryCards() {
   const [selected, setSelected] = useState(0)
   const practice = guidedPractices[selected]
   return <>
-    {guidedPractices.map((item, index) => <button className={cardStyles.card} key={item.title} type="button" aria-label={`View ${item.title} details`} aria-haspopup="dialog" aria-controls={id} onClick={event => { trigger.current = event.currentTarget; setSelected(index); dialog.current?.showModal() }}>
+    {guidedPractices.map((item, index) => <button className={cardStyles.card} data-artwork={item.illustration} key={item.title} type="button" aria-label={`View ${item.title} details`} aria-haspopup="dialog" aria-controls={id} onClick={event => { trigger.current = event.currentTarget; setSelected(index); dialog.current?.showModal() }}>
       <CardArtwork kind={item.illustration} sizes="(max-width: 320px) 100vw, (max-width: 640px) 50vw, 33vw" />
-      <span className={cardStyles.copy}><span className={cardStyles.title}>{item.title}</span><ActionArrow className={cardStyles.arrow} /></span>
+      <span className={cardStyles.copy}><span className={cardStyles.title}>{item.title}</span></span>
     </button>)}
     <dialog ref={dialog} id={id} className={`phone-app-practice-dialog ${cardStyles.dialog}`} aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`} onClose={() => trigger.current?.focus()}>
       <header><h2 id={`${id}-title`}>{practice.title}</h2><button type="button" onClick={() => dialog.current?.close()}>Close</button></header>
