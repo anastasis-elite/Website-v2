@@ -53,20 +53,28 @@ test('raised navigation keeps all five semantic destinations, labels and active 
   for (const path of ['/dashboard/signup', '/dashboard/onboarding/plan', '/dashboard/payment-issue']) assert.equal(render(path), '')
 })
 
-test('the dimensional finish belongs to SVG strokes with a stronger selected state and no bubble or motion layer', () => {
+test('selected charcoal artwork has a copper halo and a non-color cue without a bubble or motion layer', () => {
   const base = rules.find(rule => rule.selector.endsWith('.client-dashboard-nav__icon svg') && !rule.selector.includes('aria-current'))
   const active = rules.find(rule => rule.selector.includes('[aria-current="page"]') && rule.selector.endsWith('.client-dashboard-nav__icon svg'))
   assert.ok(base && active)
   assert.match(base.selector, /^\.dashboard-client-shell \.client-dashboard-nav--guided /)
   assert.match(base.body, /color:\s*#cda27a/)
-  assert.match(active.body, /color:\s*#f4eee4/)
+  assert.match(active.body, /color:\s*var\(--anastasis-charcoal\)/)
+  assert.equal((base.body.match(/drop-shadow\(/g) || []).length, 2)
+  assert.equal((active.body.match(/drop-shadow\(/g) || []).length, 5)
   for (const rule of [base, active]) {
-    assert.equal((rule.body.match(/drop-shadow\(/g) || []).length, 2)
     assert.doesNotMatch(rule.body, /background|border|box-shadow|transform|animation|transition|url\(/)
   }
+  const label = rules.find(rule => rule.selector.includes('[aria-current="page"]') && rule.selector.endsWith(' small'))
+  assert.match(label.body, /color:\s*var\(--anastasis-charcoal\)/)
+  assert.match(label.body, /overflow:\s*visible/)
+  assert.match(label.body, /text-shadow:/)
+  const marker = rules.find(rule => rule.selector.includes('[aria-current="page"]') && rule.selector.endsWith(' small::after'))
+  assert.match(marker.body, /content:\s*''/)
+  assert.match(marker.body, /pointer-events:\s*none/)
   const selectedTarget = rules.find(rule => rule.selector.endsWith('.client-dashboard-nav__item.active'))
   assert.match(selectedTarget.body, /background:\s*transparent/)
-  assert.doesNotMatch(guidedCss, /@keyframes|animation:|::before|::after/)
+  assert.doesNotMatch(guidedCss, /@keyframes|animation:|::before/)
 })
 
 test('raised icons retain navigation touch clearance and the existing visible keyboard focus', () => {

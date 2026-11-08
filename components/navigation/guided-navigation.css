@@ -1,4 +1,5 @@
 .dashboard-client-shell .client-dashboard-nav.client-dashboard-nav--guided {
+  --guided-nav-selected-copper: #c28e63;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: min(620px, calc(100% - 24px));
   height: calc(78px + env(safe-area-inset-bottom));
@@ -12,6 +13,12 @@
   min-height: 54px;
   width: auto;
   transform: none;
+}
+/* Lower the artwork without moving the touch targets or safe-area padding. */
+.dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__icon,
+.dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__item small {
+  position: relative;
+  top: 3px;
 }
 .dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__item small {
   font-size: .72rem;
@@ -30,9 +37,35 @@
   filter: drop-shadow(0 -1px 0 rgba(255, 241, 220, .2)) drop-shadow(0 2px 1px rgba(9, 5, 3, .8));
 }
 .dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] .client-dashboard-nav__icon svg {
-  color: #f4eee4;
+  color: var(--anastasis-charcoal);
   stroke-width: 2;
-  filter: drop-shadow(0 -1px 0 rgba(255, 249, 237, .5)) drop-shadow(0 2px 1px rgba(95, 53, 31, .8));
+  /* The tight copper edge separates charcoal strokes from the dark bar. */
+  filter: drop-shadow(1px 0 0 var(--guided-nav-selected-copper))
+    drop-shadow(-1px 0 0 var(--guided-nav-selected-copper))
+    drop-shadow(0 1px 0 var(--guided-nav-selected-copper))
+    drop-shadow(0 -1px 0 var(--guided-nav-selected-copper))
+    drop-shadow(0 0 4px rgba(194, 142, 99, .24));
+}
+.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] small {
+  color: var(--anastasis-charcoal);
+  overflow: visible;
+  /* A solid 1px halo provides contrast; only the outer glow is translucent. */
+  text-shadow: 0 -1px 0 var(--guided-nav-selected-copper),
+    -1px 0 0 var(--guided-nav-selected-copper),
+    1px 0 0 var(--guided-nav-selected-copper),
+    0 1px 0 var(--guided-nav-selected-copper),
+    0 0 4px rgba(194, 142, 99, .24);
+}
+/* A separate marker keeps the selection cue crisp instead of shadowing it. */
+.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] small::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: calc(50% - 6px);
+  width: 12px;
+  height: 2px;
+  background: var(--guided-nav-selected-copper);
+  pointer-events: none;
 }
 .dashboard-client-shell .client-dashboard-nav--guided .dashboard-more-menu > .dashboard-more-trigger {
   width: 100%;
