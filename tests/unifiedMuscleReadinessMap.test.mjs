@@ -84,8 +84,7 @@ test('muscle activation immediately chooses the correct bilateral flow, includin
   assert.equal(view.choose(), undefined)
   const target = { focus() {} }
   view.region('right_pectoralis_major').props.onClick({ currentTarget: target })
-  assert.match(text(view.choose()), /Choose exercises for\s+pectoralis major\s+· both sides/)
-  assert.equal(view.choose().props.type, 'button')
+  assert.equal(view.choose(), undefined, 'Direct activation does not add a duplicate choose button')
   assert.deepEqual(view.choices, ['right_pectoralis_major'])
   assert.equal(view.triggers[0], target)
   assert.equal(view.region('right_pectoralis_major').props['aria-haspopup'], 'dialog')
@@ -104,8 +103,10 @@ test('muscle activation immediately chooses the correct bilateral flow, includin
   assert.equal(prevented, 2)
   view.region('left_pectoralis_major').props.onKeyDown({ key: 'Enter', repeat: true, preventDefault() { prevented++ } })
   assert.equal(view.choices.length, 3, 'A held key cannot duplicate activation')
-  view.choose().props.onClick({ currentTarget: target })
-  assert.equal(view.choices.at(-1), 'left_pectoralis_major', 'The existing explicit button remains usable')
+  view.region('left_pectoralis_major').props.onClick({ currentTarget: target })
+  assert.equal(view.choices.at(-1), 'left_pectoralis_major', 'The selected muscle can directly reopen its existing popup')
+  assert.equal(view.triggers.at(-1), target)
+  assert.equal(view.choose(), undefined)
 })
 
 test('an active exercise disables new exercise choice while keyboard inspection, Back view and recorded reasons stay reachable', () => {
@@ -117,7 +118,7 @@ test('an active exercise disables new exercise choice while keyboard inspection,
   assert.equal(right.props['aria-haspopup'], undefined)
   right.props.onKeyDown({ key: ' ', preventDefault() { prevented++ } })
   assert.equal(prevented, 1)
-  assert.equal(view.choose().props.disabled, true)
+  assert.equal(view.choose(), undefined)
   assert.match(text(view.detail()), /Right pectoralis major.*0% readiness estimate/)
   assert.match(text(view.render()), /Your active exercise stays open/)
   assert.equal(view.choices.length, 0)
@@ -125,11 +126,14 @@ test('an active exercise disables new exercise choice while keyboard inspection,
   assert.ok(view.region('right_posterior_deltoid'))
   view.region('right_posterior_deltoid').props.onClick()
   assert.match(text(view.detail()), /Right posterior deltoid.*Not enough data/)
-  assert.equal(view.choose().props.disabled, true)
+  assert.equal(view.choose(), undefined)
   view.setProps({ exerciseSelectionDisabled: false })
-  assert.equal(view.choose().props.disabled, false)
-  view.choose().props.onClick()
+  assert.equal(view.region('right_posterior_deltoid').props['aria-haspopup'], 'dialog')
+  const target = { focus() {} }
+  view.region('right_posterior_deltoid').props.onKeyDown({ key: 'Enter', currentTarget: target, preventDefault() {} })
   assert.deepEqual(view.choices, ['right_posterior_deltoid'])
+  assert.equal(view.triggers[0], target)
+  assert.equal(view.choose(), undefined)
 })
 
 test('unknown readiness remains honest and repeated activation reopens the same selection rather than clearing it', () => {
@@ -144,6 +148,33 @@ test('unknown readiness remains honest and repeated activation reopens the same 
   assert.deepEqual(view.choices, ['left_biceps'])
   view.region('left_biceps').props.onClick()
   assert.deepEqual(view.choices, ['left_biceps', 'left_biceps'])
-  assert.ok(view.choose())
+  assert.equal(view.choose(), undefined)
   assert.match(text(view.detail()), /Left biceps/)
+})
+
+test('the responsive legend is a direct sibling above the complete Front and Back map, outside the artwork', () => {
+  const view = harness()
+  for (const side of ['Front', 'Back']) {
+    view.view(side)
+    const tree = view.render(), children = tree.props.children.flat().filter(Boolean)
+    const legend = nodes(tree, node => node.props?.className === 'workout-readiness-legend')[0]
+    const map = nodes(tree, node => node.props?.className === 'workout-body-map')[0]
+    assert.equal(nodes(tree, node => node.props?.className === 'workout-readiness-legend').length, 1)
+    assert.ok(children.includes(legend), 'The legend belongs to the complete map panel')
+    assert.ok(children.includes(map), 'The entire map remains a sibling of the legend')
+    assert.ok(children.indexOf(legend) < children.indexOf(map))
+    assert.equal(legend.props['aria-label'], 'Readiness legend')
+    assert.equal(nodes(legend, node => node.type === 'span').length, 4)
+    assert.equal(nodes(map, node => node.props?.className === 'workout-readiness-legend').length, 0)
+    const artwork = nodes(map, node => node.props?.className === 'workout-body-artwork')[0]
+    assert.ok(artwork)
+    assert.ok(nodes(artwork, node => node.props?.className === 'workout-muscle-overlay').length)
+    assert.equal(nodes(artwork, node => node.props?.className === 'workout-readiness-legend').length, 0)
+  }
+  const css = readFileSync('app/globals.css', 'utf8')
+  const legendRule = css.match(/\.workout-readiness-legend\{[^}]+\}/)?.[0]
+  assert.ok(legendRule)
+  for (const property of ['flex-wrap:wrap', 'max-width:100%', 'border:', 'padding:']) assert.ok(legendRule.includes(property))
+  assert.doesNotMatch(legendRule, /position:\s*(absolute|fixed)/)
+  assert.match(css, /@media\(max-width:560px\)\{[^\n]*\.workout-readiness-legend\{max-width:260px\}/)
 })
