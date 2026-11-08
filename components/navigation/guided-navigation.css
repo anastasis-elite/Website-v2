@@ -1,6 +1,5 @@
 .dashboard-client-shell .client-dashboard-nav.client-dashboard-nav--guided {
-  --guided-nav-selected-copper: #c28e63;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(auto, 1fr));
   width: min(620px, calc(100% - 24px));
   height: calc(78px + env(safe-area-inset-bottom));
   gap: 4px;
@@ -10,6 +9,7 @@
   grid-column: auto;
   grid-row: auto;
   position: static;
+  min-width: 44px;
   min-height: 54px;
   width: auto;
   transform: none;
@@ -31,6 +31,42 @@
 .dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__item.active {
   background: transparent;
 }
+/* Keep the long label whole while reserving room for the selected copper wash. */
+.dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__item--community {
+  min-width: 60px;
+}
+.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] {
+  position: relative;
+  min-width: 77px;
+  isolation: isolate;
+}
+.dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__item--community[aria-current="page"] {
+  min-width: 88px;
+}
+/* A round copper wash sits behind the artwork and fades within its own item. */
+.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"]::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: calc(50% - .5px);
+  left: 50%;
+  width: 77px;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle closest-side,
+    #dfbb98 0%,
+    #d6b18f 35%,
+    #cda27a 72%,
+    rgba(205, 162, 122, .94) 80%,
+    rgba(205, 162, 122, .4) 91%,
+    rgba(205, 162, 122, 0) 100%);
+  pointer-events: none;
+}
+.dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__item--community[aria-current="page"]::before {
+  width: 88px;
+  /* Feather the lower tail before the safe area; the upper glow uses shell clearance. */
+  mask-image: linear-gradient(#000 0% 80%, transparent 94%);
+}
 /* Light catches the SVG strokes; the link remains a flat touch target. */
 .dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__icon svg {
   color: #cda27a;
@@ -39,33 +75,12 @@
 .dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] .client-dashboard-nav__icon svg {
   color: var(--anastasis-charcoal);
   stroke-width: 2;
-  /* The tight copper edge separates charcoal strokes from the dark bar. */
-  filter: drop-shadow(1px 0 0 var(--guided-nav-selected-copper))
-    drop-shadow(-1px 0 0 var(--guided-nav-selected-copper))
-    drop-shadow(0 1px 0 var(--guided-nav-selected-copper))
-    drop-shadow(0 -1px 0 var(--guided-nav-selected-copper))
-    drop-shadow(0 0 4px rgba(194, 142, 99, .24));
+  filter: none;
 }
 .dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] small {
   color: var(--anastasis-charcoal);
   overflow: visible;
-  /* A solid 1px halo provides contrast; only the outer glow is translucent. */
-  text-shadow: 0 -1px 0 var(--guided-nav-selected-copper),
-    -1px 0 0 var(--guided-nav-selected-copper),
-    1px 0 0 var(--guided-nav-selected-copper),
-    0 1px 0 var(--guided-nav-selected-copper),
-    0 0 4px rgba(194, 142, 99, .24);
-}
-/* A separate marker keeps the selection cue crisp instead of shadowing it. */
-.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] small::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: calc(50% - 6px);
-  width: 12px;
-  height: 2px;
-  background: var(--guided-nav-selected-copper);
-  pointer-events: none;
+  text-shadow: none;
 }
 .dashboard-client-shell .client-dashboard-nav--guided .dashboard-more-menu > .dashboard-more-trigger {
   width: 100%;
@@ -84,6 +99,11 @@
   }
   .dashboard-you-backdrop { padding: 0; }
   .dashboard-you-sheet { max-height: 86dvh; border-radius: 24px 24px 0 0; padding-bottom: max(22px, env(safe-area-inset-bottom)); }
+}
+@media (max-width: 360px) {
+  .dashboard-client-shell .client-dashboard-nav.client-dashboard-nav--guided {
+    gap: 3px;
+  }
 }
 
 .dashboard-more-trigger .client-dashboard-nav__icon {display:inline-block;width:24px;height:24px;flex-shrink:0;}
