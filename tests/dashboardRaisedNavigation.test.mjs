@@ -72,7 +72,7 @@ test('selected charcoal artwork overlays a round copper gradient without outline
   const gradient = rules.find(rule => rule.selector.endsWith('[aria-current="page"]::before'))
   assert.match(gradient.body, /radial-gradient\(circle closest-side/)
   assert.match(gradient.body, /aspect-ratio:\s*1/)
-  assert.match(gradient.body, /width:\s*77px/)
+  assert.match(gradient.body, /width:\s*68px/)
   assert.match(gradient.body, /z-index:\s*-1/)
   assert.match(gradient.body, /pointer-events:\s*none/)
   const selectedTarget = rules.find(rule => rule.selector.endsWith('.client-dashboard-nav__item.active'))
