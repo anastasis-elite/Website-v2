@@ -53,7 +53,7 @@ test('raised navigation keeps all five semantic destinations, labels and active 
   for (const path of ['/dashboard/signup', '/dashboard/onboarding/plan', '/dashboard/payment-issue']) assert.equal(render(path), '')
 })
 
-test('selected charcoal artwork has a copper halo and a non-color cue without a bubble or motion layer', () => {
+test('selected charcoal artwork overlays a round copper gradient without outlined glyphs or an underline', () => {
   const base = rules.find(rule => rule.selector.endsWith('.client-dashboard-nav__icon svg') && !rule.selector.includes('aria-current'))
   const active = rules.find(rule => rule.selector.includes('[aria-current="page"]') && rule.selector.endsWith('.client-dashboard-nav__icon svg'))
   assert.ok(base && active)
@@ -61,20 +61,23 @@ test('selected charcoal artwork has a copper halo and a non-color cue without a 
   assert.match(base.body, /color:\s*#cda27a/)
   assert.match(active.body, /color:\s*var\(--anastasis-charcoal\)/)
   assert.equal((base.body.match(/drop-shadow\(/g) || []).length, 2)
-  assert.equal((active.body.match(/drop-shadow\(/g) || []).length, 5)
+  assert.match(active.body, /filter:\s*none/)
   for (const rule of [base, active]) {
     assert.doesNotMatch(rule.body, /background|border|box-shadow|transform|animation|transition|url\(/)
   }
   const label = rules.find(rule => rule.selector.includes('[aria-current="page"]') && rule.selector.endsWith(' small'))
   assert.match(label.body, /color:\s*var\(--anastasis-charcoal\)/)
   assert.match(label.body, /overflow:\s*visible/)
-  assert.match(label.body, /text-shadow:/)
-  const marker = rules.find(rule => rule.selector.includes('[aria-current="page"]') && rule.selector.endsWith(' small::after'))
-  assert.match(marker.body, /content:\s*''/)
-  assert.match(marker.body, /pointer-events:\s*none/)
+  assert.match(label.body, /text-shadow:\s*none/)
+  const gradient = rules.find(rule => rule.selector.endsWith('[aria-current="page"]::before'))
+  assert.match(gradient.body, /radial-gradient\(circle closest-side/)
+  assert.match(gradient.body, /aspect-ratio:\s*1/)
+  assert.match(gradient.body, /width:\s*77px/)
+  assert.match(gradient.body, /z-index:\s*-1/)
+  assert.match(gradient.body, /pointer-events:\s*none/)
   const selectedTarget = rules.find(rule => rule.selector.endsWith('.client-dashboard-nav__item.active'))
   assert.match(selectedTarget.body, /background:\s*transparent/)
-  assert.doesNotMatch(guidedCss, /@keyframes|animation:|::before/)
+  assert.doesNotMatch(guidedCss, /@keyframes|animation:|small::after|text-decoration:\s*underline/)
 })
 
 test('raised icons retain navigation touch clearance and the existing visible keyboard focus', () => {
