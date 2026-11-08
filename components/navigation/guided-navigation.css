@@ -55,10 +55,7 @@
   transform: translate(-50%, -50%);
   background: radial-gradient(circle closest-side,
     #c99a77 0%,
-    #c28e68 76%,
-    rgba(194, 142, 104, .96) 80%,
-    rgba(194, 142, 104, .3) 89%,
-    rgba(194, 142, 104, 0) 96%);
+    rgba(201, 154, 119, 0) 96%);
   mask-image: linear-gradient(#000 0% 85%, transparent 96%);
   pointer-events: none;
 }
@@ -81,6 +78,26 @@
   color: var(--anastasis-charcoal);
   overflow: visible;
   text-shadow: none;
+}
+/* Local soft backing supports the charcoal without filling the copper circle. */
+.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] .client-dashboard-nav__icon,
+.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] small {
+  isolation: isolate;
+}
+.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] .client-dashboard-nav__icon::before,
+.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] small::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -3px;
+  border-radius: 8px;
+  background: rgba(188, 165, 141, .9);
+  filter: blur(2px);
+  pointer-events: none;
+}
+.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] small::before {
+  inset: -2px -5px;
+  border-radius: 5px;
 }
 .dashboard-client-shell .client-dashboard-nav--guided .dashboard-more-menu > .dashboard-more-trigger {
   width: 100%;
