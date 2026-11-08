@@ -21,9 +21,9 @@ const streakProgress = await importTs('lib/dashboard/logic/streakRequirementProg
 const entitlements = await importTs('lib/entitlements.ts')
 const scheduleRefreshCalls = []
 const Link = ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children)
-function component(path, extra = {}, exportName = 'default') {
+function component(path, extra = {}, exportName = 'default', testExports = '') {
   const module = { exports: {} }
-  const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } })
+  const { outputText } = ts.transpileModule(readFileSync(path, 'utf8') + testExports, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } })
   runInNewContext(outputText, { module, exports: module.exports, Date, require: name => name.endsWith('.webp') ? { src: `/_next/static/media/${name.split('/').at(-1)}` } : extra[name] || ({
     '@/components/CardArtwork': CardArtworkModule,
     '@/components/program-dashboard/TodayAffirmation': TodayAffirmationModule,
@@ -45,6 +45,8 @@ function component(path, extra = {}, exportName = 'default') {
 const ActionArrow = component('components/ActionArrow.tsx')
 const StreakRequirementsCard = component('components/program-dashboard/StreakRequirementsCard.tsx')
 const Today = component('components/program-dashboard/GuidedToday.tsx', { '@/components/ActionArrow': ActionArrow, '@/components/program-dashboard/StreakRequirementsCard': StreakRequirementsCard })
+// Expose the real private presentation helper only inside this test module.
+const ActivityOptions = component('components/program-dashboard/GuidedToday.tsx', { '@/components/ActionArrow': ActionArrow, '@/components/program-dashboard/StreakRequirementsCard': StreakRequirementsCard }, 'ActivityOptions', '\nexport { ActivityOptions }\n')
 const PhoneAppCard = component('components/phone-app/PhoneAppFrame.tsx', { '@/components/ActionArrow': ActionArrow, './phone-app.css': {} }, 'PhoneAppCard')
 const StreakBadge = component('components/program-dashboard/TodayStreakBadge.tsx', { './TodayPlanTheme.module.css': { streakBadge: 'today-streak-badge' } })
 const Header = component('components/program-dashboard/TodayDashboardHeader.tsx', { '@/components/program-dashboard/TodayStreakBadge': StreakBadge })
@@ -258,7 +260,7 @@ test('recent zero-macro note remains separate and does not restore an on-pace ca
   assert.match(html, /href="\/dashboard\/nutrition">Review nutrition logs/)
   assert.doesNotMatch(html, /role="alert"/)
 })
-test('compact Today cards keep one primary image-title-status link and separate activity options', () => {
+test('compact Today cards retain their primary links and direct schedule review without per-card dropdowns', () => {
   for (const tier of ['ember', 'ignite', 'phoenix']) {
     const html = render(fixture(tier))
     const cards = [...html.matchAll(/<li data-activity-id="([^"]+)"[^>]*data-illustrated="true"[^>]*>([\s\S]*?)<\/li>/g)]
@@ -284,7 +286,9 @@ test('compact Today cards keep one primary image-title-status link and separate 
       assert.match(primary, /today-activity-state/)
       assert.doesNotMatch(primary, /<button\b|<details\b|<summary\b|today-card-action|today-action-arrow/)
       const options = card[2].slice(card[2].indexOf('</a>') + 4)
-      assert.match(options, /<details class="today-row-options">/)
+      if (card[1] === 'schedule') assert.match(options, /^<button type="button">I’ve reviewed my schedule<\/button>$/)
+      else assert.equal(options, '')
+      assert.doesNotMatch(card[2], /<details\b|<summary\b|Review options|Later today|Skip for today/)
       assert.doesNotMatch(card[2], /↗|today-card-action|today-action-arrow/)
     })
   }
@@ -299,6 +303,51 @@ test('compact Today cards keep one primary image-title-status link and separate 
   assert.doesNotMatch(css, /height: clamp\(92px, 12vw, 132px\)|height: 86px|object-fit: cover/)
   assert.match(css, /focus-visible[^}]*outline: 2px/)
   assert.doesNotMatch(css, /\.today-card-action|\.today-action-arrow/)
+})
+
+test('direct Today schedule and resume controls retain their actions, busy state and schedule fallback', () => {
+  const actions = [], onAction = (...args) => actions.push(args)
+  const activity = { id: 'schedule', title: 'Schedule review', status: 'available', canResume: false, canDefer: true, canSkip: true }
+  const before = JSON.stringify(activity)
+  for (const busy of [false, true]) {
+    const review = ActivityOptions({ activity, busy, onAction })
+    assert.equal(review.type, 'button')
+    assert.equal(review.props.disabled, busy)
+    assert.equal(review.props.children, 'I’ve reviewed my schedule')
+    assert.doesNotMatch(renderToStaticMarkup(review), /<details\b|<summary\b|Review options|Later today|Skip for today/)
+    if (!busy) review.props.onClick()
+    for (const status of ['deferred', 'skipped']) {
+      const resumeActivity = { ...activity, id: 'water', title: 'Hydration', status, canResume: true }
+      const resume = ActivityOptions({ activity: resumeActivity, busy, onAction })
+      assert.equal(resume.type, 'button')
+      assert.equal(resume.props.disabled, busy)
+      assert.equal(resume.props['aria-label'], 'Resume activity: Hydration')
+      if (!busy) resume.props.onClick()
+      const change = ActivityOptions({ activity: { ...resumeActivity, canResume: false }, busy, onAction })
+      assert.equal(change.props.href, '/dashboard/schedule')
+      assert.equal(change.props.children, 'Change in Schedule')
+      assert.equal(change.props.onClick, undefined)
+      assert.doesNotMatch(renderToStaticMarkup(change), /<details\b|<summary\b|<button\b/)
+    }
+    for (const id of ['schedule', 'water']) assert.equal(ActivityOptions({ activity: { ...activity, id, status: 'completed' }, busy, onAction }), null)
+    for (const status of ['available', 'upcoming', 'in_progress']) assert.equal(ActivityOptions({ activity: { ...activity, id: 'water', status }, busy, onAction }), null)
+  }
+  assert.deepEqual(actions, [['schedule', 'review'], ['water', 'resume'], ['water', 'resume']])
+  assert.equal(JSON.stringify(activity), before)
+})
+
+test('Your next step keeps its separate Later today control and defer handler in every tier', () => {
+  for (const tier of ['ember', 'ignite', 'phoenix']) {
+    const logic = fixture(tier), day = schedule(), before = JSON.stringify({ logic, day })
+    const html = render(logic, day), next = html.match(/<article class="today-next"[\s\S]*?<\/article>/)?.[0]
+    assert.ok(next)
+    assert.match(next, /<button class="today-later" type="button">Later today<\/button>/)
+    assert.equal((html.match(/>Later today<\/button>/g) || []).length, 1)
+    assert.match(next, /href="\/dashboard\/check-in"/)
+    assert.equal(JSON.stringify({ logic, day }), before)
+  }
+  const source = readFileSync('components/program-dashboard/GuidedToday.tsx', 'utf8')
+  assert.match(source, /onClick=\{\(\) => updateActivity\(primary\.id, 'defer'\)\}/)
 })
 
 test('Recovery action cards use the same decorative SVG without changing destinations or unavailable controls', () => {

@@ -34,18 +34,8 @@ function ActivityOptions({ activity, busy, onAction }: { activity: TodayActivity
       : <Link className="today-change-time" href="/dashboard/schedule">Change in Schedule</Link>
   }
   if (activity.status === 'completed') return null
-  if (activity.id === 'schedule') return <details className="today-row-options">
-    <summary>Review options</summary><p>After reviewing your schedule, save that step here.</p>
-    <button type="button" disabled={busy} onClick={() => onAction(activity.id, 'review')}>I’ve reviewed my schedule</button>
-  </details>
-  if (!activity.canDefer && !activity.canSkip) return null
-  return <details className="today-row-options">
-    <summary><span className="sr-only">{activity.title}: </span>Options</summary>
-    <div>
-      {activity.canDefer ? <button type="button" disabled={busy} onClick={() => onAction(activity.id, 'defer')}>Later today</button> : null}
-      {activity.canSkip ? <button type="button" disabled={busy} onClick={() => onAction(activity.id, 'skip')}>Skip for today</button> : null}
-    </div>
-  </details>
+  if (activity.id === 'schedule') return <button type="button" disabled={busy} onClick={() => onAction(activity.id, 'review')}>I’ve reviewed my schedule</button>
+  return null
 }
 
 export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOutput; schedule: DailyScheduleState }) {
