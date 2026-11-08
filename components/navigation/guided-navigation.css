@@ -48,24 +48,24 @@
   content: '';
   position: absolute;
   z-index: -1;
-  top: calc(50% - .5px);
+  top: calc(50% + 7px);
   left: 50%;
-  width: 77px;
+  width: 68px;
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   background: radial-gradient(circle closest-side,
-    #dfbb98 0%,
-    #d6b18f 35%,
-    #cda27a 72%,
-    rgba(205, 162, 122, .94) 80%,
-    rgba(205, 162, 122, .4) 91%,
-    rgba(205, 162, 122, 0) 100%);
+    #c99a77 0%,
+    #c28e68 76%,
+    rgba(194, 142, 104, .96) 80%,
+    rgba(194, 142, 104, .3) 89%,
+    rgba(194, 142, 104, 0) 96%);
+  mask-image: linear-gradient(#000 0% 85%, transparent 96%);
   pointer-events: none;
 }
 .dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__item--community[aria-current="page"]::before {
-  width: 88px;
-  /* Feather the lower tail before the safe area; the upper glow uses shell clearance. */
-  mask-image: linear-gradient(#000 0% 80%, transparent 94%);
+  width: 78px;
+  /* Fade the lower tail before the safe area without dimming the label. */
+  mask-image: linear-gradient(#000 0% 72%, transparent 90%);
 }
 /* Light catches the SVG strokes; the link remains a flat touch target. */
 .dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__icon svg {
