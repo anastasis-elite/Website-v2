@@ -25,9 +25,14 @@
 .card > img {
   display: block;
   width: 100%;
-  height: 108px;
-  object-fit: contain;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
 }
+
+/* Keep the reclining head and rolled mat inside their square crops. */
+.card[data-artwork="yoga-nidra"] > img { object-position: 15% center; }
+.card[data-artwork="yogic-practices"] > img { object-position: 75% center; }
 
 .copy { box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; flex: 1; gap: 8px; width: 100%; min-height: 50px; padding: 10px 12px; }
 .title { font-size: clamp(1.05rem, 2.2vw, 1.25rem); line-height: 1.25; overflow-wrap: anywhere; }
@@ -39,7 +44,6 @@
 
 @media (max-width: 640px) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .card > img { height: 88px; }
   .copy { padding: 10px; }
 }
 
