@@ -283,7 +283,7 @@ test('compact Today cards retain their primary links and direct schedule review 
       assert.match(primary, kind === 'check-in' ? /width="360" height="180"/ : /width="640" height="427"/)
       if (kind !== 'check-in') assert.match(primary, /srcSet="[^"]+ 320w, [^"]+ 640w"/)
       assert.match(primary, /<strong>/)
-      assert.match(primary, /today-activity-state/)
+      assert.doesNotMatch(primary, /today-activity-state|>Available</)
       assert.doesNotMatch(primary, /<button\b|<details\b|<summary\b|today-card-action|today-action-arrow/)
       const options = card[2].slice(card[2].indexOf('</a>') + 4)
       if (card[1] === 'schedule') assert.match(options, /^<button type="button">I’ve reviewed my schedule<\/button>$/)
@@ -367,7 +367,7 @@ test('Recovery action cards use the same decorative SVG without changing destina
   assert.match(html, /Guided recording unavailable/)
 })
 
-test('Today hides intentional-rest notices while unavailable notices and Plan labels remain without invented completion', () => {
+test('Today hides rest and unavailable notices while Plan labels and workout eligibility remain unchanged', () => {
   for (const tier of ['ember', 'ignite', 'phoenix']) for (const [state, title, reason] of [
     ['rest', 'Rest day', 'Today is an intentional rest day in your program. No workout is assigned.'],
     ['unavailable', 'Workout unavailable', 'Your training plan is missing or incomplete. Contact your coach to review it.'],
@@ -376,18 +376,14 @@ test('Today hides intentional-rest notices while unavailable notices and Plan la
     logic.workout = { assigned: false, title }
     logic.workoutDecision = { ...logic.workoutDecision, assignedWorkout: { workout_state: state }, canTrain: false, reasonForModification: reason }
     const before = JSON.stringify({ logic, day })
+    const model = buildTodayViewModel(logic, day)
+    assert.equal(model.workout.state, state)
+    assert.equal(model.workout.inactive, true)
+    assert.equal(model.workout.title, title)
+    assert.equal(model.workout.reason, reason)
     const html = render(logic, day)
-    const status = html.match(/<p class="today-workout-status"[^>]*>([\s\S]*?)<\/p>/)?.[1]
-    if (state === 'rest') {
-      assert.equal(status, undefined)
-      assert.doesNotMatch(html, /Today is an intentional rest day in your program\. No workout is assigned\./)
-    } else {
-      assert.ok(status)
-      assert.ok(status.includes(`<strong>${title}</strong>`))
-      assert.ok(status.includes(reason))
-      assert.match(html, /class="today-workout-status" role="status" data-workout-state="unavailable"/)
-      assert.doesNotMatch(status, /<a\b|<button\b/)
-    }
+    assert.doesNotMatch(html, /today-workout-status/)
+    assert.equal(html.includes(reason), false)
     assert.doesNotMatch(html, /data-activity-id="workout"/)
     assert.match(html, /aria-valuenow="0"/)
     assert.doesNotMatch(html, /Your completed workout is saved/)
@@ -395,6 +391,8 @@ test('Today hides intentional-rest notices while unavailable notices and Plan la
     assert.ok(plan.includes(`<p>${title}</p>`))
     assert.doesNotMatch(plan, /Make room for movement and rest/)
     assert.equal(logic.execution.workoutComplete, false)
+    assert.equal(logic.workoutDecision.canTrain, false)
+    assert.deepEqual(buildTodayViewModel(logic, day), model)
     assert.equal(JSON.stringify({ logic, day }), before)
   }
   const unknown = fixture(); unknown.workout.assigned = false
@@ -418,11 +416,11 @@ test('Today retains assigned training and recovery activities when the intention
   }
 })
 
-test('Today keeps paused-strength recovery guidance visible over an underlying rest day', () => {
-  for (const tier of ['ember', 'ignite', 'phoenix']) {
+test('Today keeps paused-strength recovery guidance visible over underlying rest and unavailable days', () => {
+  for (const tier of ['ember', 'ignite', 'phoenix']) for (const state of ['rest', 'unavailable']) {
     const logic = fixture(tier), day = schedule()
-    logic.workout = { assigned: false, title: 'Rest day' }
-    logic.workoutDecision = { ...logic.workoutDecision, assignedWorkout: { workout_state: 'rest' }, canTrain: false }
+    logic.workout = { assigned: false, title: state === 'rest' ? 'Rest day' : 'Workout unavailable' }
+    logic.workoutDecision = { ...logic.workoutDecision, assignedWorkout: { workout_state: state }, canTrain: false }
     logic.assessments.strength = { scheduledDate: day.date, eligibleDate: day.date, state: 'due' }
     logic.symptoms.redFlag = true
     const before = JSON.stringify({ logic, day })
@@ -435,6 +433,41 @@ test('Today keeps paused-strength recovery guidance visible over an underlying r
     assert.doesNotMatch(html, /data-activity-id="workout"|Your completed workout is saved/)
     assert.match(html, /aria-valuenow="0"/)
     assert.equal(JSON.stringify({ logic, day }), before)
+  }
+})
+
+test('Today omits ordinary Available labels while retaining meaningful activity status, deferred time and controls', () => {
+  for (const tier of ['ember', 'ignite', 'phoenix']) {
+    const logic = fixture(tier), day = schedule(), model = buildTodayViewModel(logic, day)
+    const statuses = { water: ['available', null], schedule: ['in_progress', 'In progress'], 'check-in': ['deferred', 'Deferred'],
+      nutrition: ['completed', 'Completed'], workout: ['upcoming', 'Upcoming'], recovery: ['skipped', 'Skipped'] }
+    const deferredUntil = '2026-10-13T15:00:00Z'
+    // These synthetic view-model inputs exercise labels normally filtered
+    // from the list, without altering persisted completion evidence.
+    model.presentedActivities = model.presentedActivities.map(activity => ({ ...activity, status: statuses[activity.id][0],
+      canResume: activity.id === 'check-in' || activity.id === 'recovery',
+      ...(activity.id === 'check-in' ? { deferredUntil } : {}) }))
+    const before = JSON.stringify({ logic, day, model })
+    const html = renderToStaticMarkup(React.createElement(Today, { logic, schedule: { ...day, todayViewModel: model } }))
+    for (const activity of model.presentedActivities) {
+      const card = [...html.matchAll(/<li data-activity-id="([^"]+)"[^>]*>([\s\S]*?)<\/li>/g)].find(match => match[1] === activity.id)?.[2]
+      assert.ok(card)
+      assert.ok(card.includes(`href="${activity.href}"`))
+      const label = statuses[activity.id][1]
+      if (label) assert.ok(card.includes(`<span class="today-activity-state">${label}`))
+      else assert.doesNotMatch(card, /today-activity-state|>Available</)
+      if (activity.status === 'deferred') {
+        assert.ok(card.includes(`Until ${scheduleTime.formatLocalTime(deferredUntil, day.timezone)}`))
+        assert.match(card, /aria-label="Resume activity: Daily check-in"/)
+      }
+      if (activity.status === 'skipped') assert.match(card, /aria-label="Resume activity: Recovery"/)
+      if (activity.status === 'completed') assert.doesNotMatch(card, /<button\b|<details\b|<summary\b/)
+    }
+    assert.equal((html.match(/class="today-activity-state"/g) || []).length, 5)
+    assert.doesNotMatch(html, />Available</)
+    assert.match(html, /aria-valuenow="0"/)
+    assert.equal(logic.execution.workoutComplete, false)
+    assert.equal(JSON.stringify({ logic, day, model }), before)
   }
 })
 
@@ -454,12 +487,29 @@ test('deferred check-in stays available to resume without becoming completion', 
   assert.match(html, /aria-valuenow="0"/)
   assert.doesNotMatch(html, /Start daily check-in/)
 })
-test('safety guidance has no Later today button in the primary card', () => {
-  const logic = fixture(); logic.symptoms.redFlag = true
-  const html = render(logic)
-  const card = html.match(/<article class="today-next"[\s\S]*?<\/article>/)[0]
-  assert.match(card, /Review today/)
-  assert.doesNotMatch(card, /Later today/)
+test('safety guidance remains primary without Later today even when the unavailable workout notice is hidden', () => {
+  for (const tier of ['ember', 'ignite', 'phoenix']) for (const unavailable of [false, true]) {
+    const logic = fixture(tier), day = schedule()
+    logic.symptoms.redFlag = true
+    logic.recoveryStatus.reasoning = 'Existing safety guidance remains available.'
+    if (unavailable) {
+      logic.workout = { assigned: false, title: 'Workout unavailable' }
+      logic.workoutDecision = { ...logic.workoutDecision, assignedWorkout: { workout_state: 'unavailable' }, canTrain: false }
+    }
+    const before = JSON.stringify({ logic, day }), model = buildTodayViewModel(logic, day)
+    assert.equal(model.recommendation.primary.id, 'safety')
+    assert.equal(model.recommendation.primary.reason, logic.recoveryStatus.reasoning)
+    const html = render(logic, day), card = html.match(/<article class="today-next"[\s\S]*?<\/article>/)[0]
+    assert.match(card, /Review today’s recovery guidance/)
+    assert.match(card, /Existing safety guidance remains available\./)
+    assert.match(card, /href="\/dashboard\/recovery"/)
+    assert.doesNotMatch(card, /Later today/)
+    assert.doesNotMatch(html, /today-workout-status/)
+    assert.match(html, /aria-valuenow="0"/)
+    if (unavailable) assert.equal(model.workout.state, 'unavailable')
+    assert.equal(logic.execution.workoutComplete, false)
+    assert.equal(JSON.stringify({ logic, day }), before)
+  }
 })
 test('header uses the member timezone for both greeting and date', () => {
   const state = schedule(); state.now = '2026-10-14T03:00:00Z'

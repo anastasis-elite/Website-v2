@@ -15,7 +15,7 @@ import StreakRequirementsCard from '@/components/program-dashboard/StreakRequire
 import TodayAffirmation from '@/components/program-dashboard/TodayAffirmation'
 
 const icons: Record<string, string> = { check_in: '☀', hydration: '◒', schedule: '▦', nutrition: '◡', workout: '↟', recovery: '♡', none: '✦' }
-const statusLabels: Record<string, string> = { available: 'Available', upcoming: 'Upcoming', in_progress: 'In progress', completed: 'Completed', deferred: 'Deferred', skipped: 'Skipped' }
+const statusLabels: Record<string, string> = { upcoming: 'Upcoming', in_progress: 'In progress', completed: 'Completed', deferred: 'Deferred', skipped: 'Skipped' }
 const tutorialIds: Partial<Record<TodayActivityId, string>> = { 'check-in': 'dashboard-daily-checkin', water: 'dashboard-water-progress', workout: 'dashboard-nav-workout', nutrition: 'dashboard-nav-nutrition', recovery: 'dashboard-nav-recovery' }
 type GuideAction = 'defer' | 'skip' | 'resume' | 'review'
 const activityCards: Partial<Record<TodayActivityId, { illustration: string; label: string }>> = {
@@ -134,7 +134,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
     </article>
     <p className="today-feedback" role="status" aria-live="polite">{message}</p>
 
-    {inactiveWorkoutDay && workoutDayState !== 'rest' ? <p className="today-workout-status" role="status" data-workout-state={workoutDayState}><strong>{model.workout.title}</strong><span>{model.workout.reason}</span></p> : null}
+    {inactiveWorkoutDay && workoutDayState !== 'rest' && workoutDayState !== 'unavailable' ? <p className="today-workout-status" role="status" data-workout-state={workoutDayState}><strong>{model.workout.title}</strong><span>{model.workout.reason}</span></p> : null}
 
     <section className="today-activities" data-testid="today-activities" aria-label="Your day at a glance" data-tutorial-id="dashboard-nutrition-progress">
       <div className="today-section-heading"><h2>At your pace.</h2><span>Go in your own order</span></div>
@@ -143,7 +143,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
           {illustrated(activity.id) ? <CardArtwork kind={activityCards[activity.id]?.illustration || 'recovery'} className="today-card-illustration" naturalProportions /> : null}
           <span className="today-activity-icon" aria-hidden="true">{activity.status === 'completed' ? '✓' : icons[activity.category] || '▦'}</span>
           <span className="today-activity-copy">{illustrated(activity.id) ? <span className="today-card-kicker">{activityCards[activity.id]?.label}</span> : null}<strong>{activity.title}{!activity.countsTowardProgress ? <span className="today-optional-label">Optional</span> : null}</strong>{quiet ? null : <small>{activity.detail}</small>}</span>
-          <span className="today-activity-state">{statusLabels[activity.status] || 'Available'}{activity.deferredUntil ? <small>Until {formatLocalTime(activity.deferredUntil, schedule.timezone)}</small> : null}</span>
+          {statusLabels[activity.status] || activity.deferredUntil ? <span className="today-activity-state">{statusLabels[activity.status]}{activity.deferredUntil ? <small>Until {formatLocalTime(activity.deferredUntil, schedule.timezone)}</small> : null}</span> : null}
         </Link>
         <ActivityOptions activity={activity} busy={busy !== null} onAction={updateActivity} />
       </li>)}</ul> : <TodayAffirmation recorded={complete} completed={plan.primary.id === 'pause' && plan.primary.completed && streakAvailable && streakProgress.secured} />}
