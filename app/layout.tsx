@@ -4,6 +4,7 @@ import CookieBanner from '../components/CookieBanner'
 import AuthButton from '@/components/AuthButton'
 import DeferredAnalytics from '@/components/DeferredAnalytics'
 import PwaRegistration from '@/components/PwaRegistration'
+import PwaInstallProvider from '@/components/pwa/PwaInstallProvider'
 import LegalFooter from '@/components/LegalFooter'
 import PublicSiteFooter from '@/components/PublicSiteFooter'
 import StrengthHistoryGuardRoot from '@/components/assessments/StrengthHistoryGuardRoot'
@@ -137,7 +138,7 @@ export default function RootLayout({
           <AuthButton />
         </header>
 
-        {children}
+        <PwaInstallProvider>{children}</PwaInstallProvider>
 
         <PublicSiteFooter><LegalFooter /></PublicSiteFooter>
 
