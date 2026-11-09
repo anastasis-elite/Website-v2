@@ -1,5 +1,7 @@
 import type { StaticImageData } from 'next/image'
 
+import checkIn320 from '@/public/images/card-artwork/check-in-320.webp'
+import checkIn640 from '@/public/images/card-artwork/check-in-640.webp'
 import nutrition320 from '@/public/images/card-artwork/nutrition-320.webp'
 import nutrition640 from '@/public/images/card-artwork/nutrition-640.webp'
 import water320 from '@/public/images/card-artwork/water-320.webp'
@@ -28,6 +30,7 @@ import mobility320 from '@/public/images/card-artwork/mobility-320.webp'
 import mobility640 from '@/public/images/card-artwork/mobility-640.webp'
 
 const artwork: Record<string, { small: StaticImageData; large: StaticImageData }> = {
+  'check-in': { small: checkIn320, large: checkIn640 },
   'nutrition': { small: nutrition320, large: nutrition640 },
   'water': { small: water320, large: water640 },
   'training': { small: training320, large: training640 },
