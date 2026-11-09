@@ -81,7 +81,9 @@ function mount(item, initialStorage = new Map(), patch = {}) {
   const calls = []
   browser = { localStorage: { getItem: key => initialStorage.get(key) ?? null,
     setItem: (key, value) => initialStorage.set(key, value), removeItem: key => initialStorage.delete(key) }, confirm: () => true }
-  fetcher = async (url, options) => { calls.push({ url, payload: JSON.parse(options.body) });return Response.json({ success: true }) }
+  fetcher = async (url, options) => { calls.push({ url, payload: JSON.parse(options.body) });return Response.json({
+    success: true, workout_log_id: 'synthetic-saved-workout', exercise_session_id: 'synthetic-saved-exercise',
+  }) }
   const currentHooks = {
     useState(initial) { const index = cursor++;if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial
       return [slots[index], value => { slots[index] = typeof value === 'function' ? value(slots[index]) : value }] },
@@ -203,12 +205,19 @@ test('an ambiguous unguided save failure freezes the first explicit target for r
   assert.equal(app.calls[0].payload.exercise_logs[0].planned_sets, 3)
   const retained = [...app.storage.values()].map(value => JSON.parse(value)).find(value => value?.version === 3)
   assert.equal(retained.originalPlannedSets, 3)
+  assert.ok(retained.pendingSave)
+  assert.equal(input(app.tree, /Desired sets/i).props.disabled, true)
+  assert.equal(button(app.tree, 'Set Done').props.disabled, true)
+  fetcher = async (url, options) => { app.calls.push({ url, payload: JSON.parse(options.body) });return Response.json({
+    success: true, workout_log_id: 'synthetic-retried-workout', exercise_session_id: 'synthetic-retried-exercise',
+  }) }
+  button(app.tree, 'Retry save').props.onClick();await app.flush()
+  assert.deepEqual(app.calls.at(-1).payload, app.calls[0].payload, 'Retry uses the original target, intent, occurrence and set IDs')
   change(app, /Desired sets/i, '1')
-  fetcher = async (url, options) => { app.calls.push({ url, payload: JSON.parse(options.body) });return Response.json({ success: true }) }
   button(app.tree, 'Set Done').props.onClick();await app.flush()
   assert.equal(app.calls.at(-1).payload.exercise_logs[0].planned_sets, 3)
   assert.equal(app.calls.at(-1).payload.exercise_logs[0].user_intent.desired_set_count, 1)
-  assert.equal(app.calls.at(-1).payload.sets.length, 1)
+  assert.equal(app.calls.at(-1).payload.sets.length, 2)
 })
 
 test('changing display units on draft restoration converts edited weight once and retains the original units of recorded sets', async () => {
@@ -246,9 +255,9 @@ test('single-side and total-load labels keep one shared weight without doubling 
   }
 })
 
-test('a changed prescription response retains edited entries and offers an explicit reselect action without confirming a set', async () => {
+test('a changed prescription response retains edited entries and offers the safe Change exercise action without confirming a set', async () => {
   let resets = 0
-  const app = mount(exercise(), new Map(), { onManualRecommendationReset: () => { resets++ } })
+  const app = mount(exercise(), new Map(), { onManualExerciseChange: () => { resets++;return true } })
   change(app, /Weight \(/, '18.5');change(app, /^Reps/, '7');change(app, /Desired sets/i, '2')
   fetcher = async (url, options) => {
     app.calls.push({ url, payload: JSON.parse(options.body) })
@@ -263,8 +272,11 @@ test('a changed prescription response retains edited entries and offers an expli
   assert.equal(resets, 0)
   const retained = [...app.storage.values()].map(value => JSON.parse(value)).find(value => value?.version === 3)
   assert.equal(retained.weight, '18.5');assert.equal(retained.reps, '7');assert.deepEqual(retained.sets, [])
-  button(app.tree, 'Reselect exercise').props.onClick()
+  assert.equal(retained.pendingSave, null, 'The explicit first-attempt rejection happens before a server write')
+  assert.equal(button(app.tree, 'Reselect exercise'), undefined, 'The former action must not bypass safe change handling')
+  button(app.tree, 'Change exercise').props.onClick();await app.flush()
   assert.equal(resets, 1)
+  assert.equal(app.calls.length, 1, 'Changing after a rejected save does not fabricate a set or finish request')
 })
 
 function routeDatabase() {

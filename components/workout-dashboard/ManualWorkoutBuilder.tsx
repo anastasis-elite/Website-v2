@@ -125,6 +125,7 @@ export default function ManualWorkoutBuilder({
   const dialog = useRef<HTMLDialogElement>(null)
   const dialogHeading = useRef<HTMLHeadingElement>(null)
   const mapContainer = useRef<HTMLDivElement>(null)
+  const focusMuscleSelection = useRef(false)
   const trigger = useRef<HTMLElement | SVGElement | null>(null)
   const requestRevision = useRef(0)
   const request = useRef<AbortController | null>(null)
@@ -155,6 +156,7 @@ export default function ManualWorkoutBuilder({
   }
   useEffect(() => {
     mounted.current = true
+    focusMuscleSelection.current = false
     invalidateRequest()
     invalidateSummary(); interactionRevision.current++
     setSavedSummary(null); setCheckingSaved(false); setFinishing(false); setFinishError('')
@@ -192,10 +194,15 @@ export default function ManualWorkoutBuilder({
   useEffect(() => {
     // Open after the selected muscle/equipment heading has committed, so the
     // existing dialog announces the current selection instead of stale data.
-    if (step !== 'equipment' || !selectedRegionId || !dialog.current || dialog.current.open) return
+    if (!['equipment', 'exercise'].includes(step) || !selectedRegionId || !dialog.current || dialog.current.open) return
     dialog.current.showModal()
     dialogHeading.current?.focus()
   }, [step, selectedRegionId])
+  useEffect(() => {
+    if (step !== 'muscle' || !focusMuscleSelection.current) return
+    focusMuscleSelection.current = false
+    mapContainer.current?.focus()
+  }, [step, activeExercise])
   useEffect(() => {
     if (!draftLoaded) return
     void verifySavedWorkout(false)
@@ -284,6 +291,10 @@ export default function ManualWorkoutBuilder({
     clearPending(); dialog.current?.close(); setStep('muscle')
     setSelectedRegionId(null); setSelectedEquipment(null); setEquipmentMode('saved'); setSelectedMovementFamily(null)
     onExerciseBlur?.()
+  }
+  function changeMuscle() {
+    focusMuscleSelection.current = true
+    dismissSelection()
   }
   function chooseRegion(regionId: MuscleId, source?: HTMLElement | SVGElement) {
     if (step === 'logging' && activeExercise) return
@@ -378,6 +389,37 @@ export default function ManualWorkoutBuilder({
     if (activeExercise) setCompletedExercises(previous => [...previous, { ...activeExercise, ...(evidence ? { saveEvidence: evidence } : {}), completion_status: completed ? 'Complete' : 'Partial exercise saved' }])
     setActiveExercise(null); setStep('complete'); onExerciseBlur?.()
   }
+  function changeExercise(completed?: boolean, evidence?: ManualSaveEvidence): boolean {
+    const active = activeRef.current
+    if (!mounted.current || currentContext.current !== contextKey || getClientLocalDate({ timezone }) !== sessionDate ||
+      !active || active.id !== activeExercise?.id || isCardio(active)) return false
+    if ((evidence && (evidence.exerciseId !== active.id || evidence.dayName !== 'Manual Workout' || !evidence.workoutLogId || !evidence.signature)) ||
+      (completed !== undefined && !evidence)) return false
+    const nextCompleted = evidence
+      ? [...completedRef.current, { ...active, saveEvidence: evidence, completion_status: completed ? 'Complete' : 'Partial exercise saved' }]
+      : completedRef.current
+    // Persist the occurrence handoff before the logger clears its own draft.
+    // A reload between these operations can still recover every saved exercise.
+    try { localStorage.setItem(draftKey, JSON.stringify({ version: 1, activeExercise: null, completedExercises: nextCompleted })) }
+    catch {
+      setDraftMessage('This browser could not retain the exercise change. Your current exercise and entries remain open. Try again.')
+      return false
+    }
+    activeRef.current = null; completedRef.current = nextCompleted
+    invalidateSummary(); interactionRevision.current++
+    setSavedSummary(null); setCheckingSaved(false); setFinishError(''); setDraftMessage('')
+    clearPending(); trigger.current = null
+    setActiveExercise(null); setCompletedExercises(nextCompleted); setSelectedMovementFamily(null)
+    const equipment = equipmentMode === 'session' ? otherEquipment : availableEquipment
+    if (selectedRegionId && selectedMuscles.length) {
+      setStep(selectedEquipment && equipment.includes(selectedEquipment) ? 'exercise' : 'equipment')
+      onExerciseFocus?.(getBilateralMuscleIds(selectedRegionId))
+    } else {
+      setSelectedRegionId(null); setSelectedEquipment(null); setEquipmentMode('saved')
+      focusMuscleSelection.current = true; setStep('muscle'); onExerciseBlur?.()
+    }
+    return true
+  }
 
   if (!draftLoaded) return <p role="status">Loading your manual workout view…</p>
 
@@ -407,6 +449,7 @@ export default function ManualWorkoutBuilder({
       dayName={isCardio(activeExercise) ? MANUAL_CARDIO_DAY_NAME : 'Manual Workout'} workoutSource="manual" plannedExercises={isCardio(activeExercise) ? [activeExercise] : recommendedExercises} exercises={[activeExercise]}
       onExerciseFocus={exercise => onExerciseFocus?.(getMuscleIdsForExercise(exercise))} onExerciseBlur={onExerciseBlur}
       onManualExerciseFinished={finishExercise}
+      onManualExerciseChange={changeExercise}
       onManualRecommendationReset={() => resetSelection('muscle')}
     /> : step !== 'finished' ? <>
       <div className="manual-workout-summary"><div><p className="tier-dashboard-label">Manual Workout</p>
@@ -425,7 +468,7 @@ export default function ManualWorkoutBuilder({
       </div> : null}
       {step === 'muscle' && savedSummary ? <button type="button" disabled={finishing} onClick={() => { void verifySavedWorkout(true) }}>Review saved workout</button> : null}
     </> : null}
-    <div ref={mapContainer} className={styles.readinessMap} data-testid="manual-readiness-map">
+    <div ref={mapContainer} className={styles.readinessMap} data-testid="manual-readiness-map" tabIndex={-1} aria-label="Readiness and exercise selection">
       <p className={styles.readinessNote}>Readiness is estimated from saved training and recovery records. Save your activity or return to this page to see updated records.</p>
       <MuscleReadinessMap key={contextKey} readiness={readiness} selectedMuscleId={selectedRegionId}
         highlightedMuscleIds={activeExercise ? getMuscleIdsForExercise(activeExercise) : []}
@@ -436,13 +479,14 @@ export default function ManualWorkoutBuilder({
     <dialog id={dialogId} ref={dialog} className={styles.dialog} aria-labelledby={`${dialogId}-title`} aria-describedby={`${dialogId}-description`}
       onCancel={event => { event.preventDefault(); dismissSelection() }} onClose={() => {
         const target = trigger.current
-        if (target && !('disabled' in target && target.disabled)) target.focus()
+        if (target && target.isConnected !== false && !('disabled' in target && target.disabled)) target.focus()
         else mapContainer.current?.querySelector<SVGElement>(selectedRegionId ? `[data-muscle-id="${selectedRegionId}"]` : '[data-muscle-id]')?.focus()
       }}>
       <header className={styles.header}><h2 ref={dialogHeading} tabIndex={-1} id={`${dialogId}-title`}>{step === 'cardio' ? 'Choose cardio' : `${firstMuscleLabel(selectedMuscles)} · ${step === 'equipment' ? 'Choose equipment' : 'Choose exercise'}`}</h2>
         <button type="button" className="manual-secondary-button" onClick={dismissSelection}>Close</button>
       </header>
       <p id={`${dialogId}-description`}>{step === 'cardio' ? 'Choose a cardio activity and record the duration you actually complete. No strength prescription, sets, reps or load are added.' : 'Choose available equipment, then an exercise. Both matching sides stay selected; record one weight for the exercise.'}</p>
+      {step === 'equipment' || step === 'exercise' ? <button type="button" className="manual-secondary-button" onClick={changeMuscle}>Change muscle</button> : null}
       {!trackingOnly && readinessSummary ? <section className="manual-readiness-context" data-testid="manual-readiness-context">
         <span>{firstMuscleLabel(selectedMuscles)}</span><strong>{readinessSummary.label}</strong><small>{readinessSummary.guidance}</small>
         {cautiousReadinessReasons.map((reason, index) => <small key={`${index}:${reason}`}>{reason}</small>)}

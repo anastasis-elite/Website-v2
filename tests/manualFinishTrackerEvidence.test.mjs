@@ -18,7 +18,9 @@ const strength = { id: 'squat:synthetic-occurrence', exercise: 'Squat', exercise
 const cardio = { id: 'manual-cardio:walking:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', session_key: 'manual-cardio:walking:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', exercise: 'Walking', exercise_category: 'cardio', manual_activity: 'cardio-duration-v1', manual_cardio_id: 'walking', duration_unit: 'seconds' }
 
 function mount(path, exercise = strength) {
-  let now = start, cursor = 0, tree, queued = [], send = async call => call.body ? json({ success: true }) : json({ success: true, session: null })
+  let now = start, cursor = 0, tree, queued = [], send = async call => call.body
+    ? json({ success: true, workout_log_id: 'saved-workout', exercise_session_id: 'saved-exercise-session' })
+    : json({ success: true, session: null })
   const slots = [], effects = [], storage = new Map(), modules = new Map(), calls = [], finished = [], errors = []
   const localStorage = { getItem: key => storage.get(key) || null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) }
   const react = {
@@ -74,15 +76,24 @@ test('manual strength requires confirmed final receipt before clearing draft or 
   app.button('Set Done').props.onClick(); await app.flush()
   const draft = [...app.storage.values()][0]
   assert.equal(JSON.parse(draft).sets.length, 1)
+  app.setSend(async () => json({ success: true }))
   app.button('Finish Exercise').props.onClick(); await app.flush()
   assert.equal(app.finished.length, 0)
   assert.match(content(app.tree), /Exercise finish failed/)
-  assert.equal([...app.storage.values()][0], draft)
+  const retained = JSON.parse([...app.storage.values()][0]), before = JSON.parse(draft)
+  for (const field of ['sets', 'weight', 'weightUnit', 'reps', 'desiredSetCount', 'prescription', 'originalPlannedSets']) {
+    assert.deepEqual(retained[field], before[field], `${field} remains unchanged after an unconfirmed finish`)
+  }
+  assert.ok(retained.pendingSave, 'An uncertain final request remains available for an exact retry')
   const failed = app.writes.at(-1).body
   assert.equal(failed.exercise_logs[0].planned_sets, 4)
   assert.equal(failed.completed, false)
   assert.equal(failed.sets[0].weight_unit, 'kg')
   app.setSend(async () => json({ success: true, workout_log_id: 'saved-workout', exercise_session_id: 'saved-exercise-session', completed: false }))
+  app.button('Retry save').props.onClick(); await app.flush()
+  assert.deepEqual(app.writes.at(-1).body, failed, 'Retry resends the exact pending occurrence, set IDs and finish payload')
+  assert.equal(app.finished.length, 0, 'Confirming an uncertain request keeps the current exercise open for review')
+  assert.equal(JSON.parse([...app.storage.values()][0]).pendingSave, null)
   app.button('Finish Exercise').props.onClick(); await app.flush()
   assert.equal(app.finished.length, 1)
   assert.equal(app.finished[0][0], false, 'One set out of four is still partial')

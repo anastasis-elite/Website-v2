@@ -24,7 +24,7 @@ export function manualDesiredSets(value: unknown): number | null {
 export function readManualPrescriptionDraft(value: unknown) {
   const empty = { sets: [] as any[], weight: undefined as string | undefined, reps: undefined as string | undefined,
     weightUnit: undefined as 'lb' | 'kg' | undefined, desiredSetCount: undefined as string | undefined, originalPlannedSets: 0, prescription: null as Readonly<ManualPrescriptionSnapshot> | null,
-    equipmentContext: null as ReturnType<typeof readSessionEquipmentContext> }
+    equipmentContext: null as ReturnType<typeof readSessionEquipmentContext>, pendingSave: null as unknown, savedDesiredSetCount: 0, changeSafe: false, hadDraft: value !== null }
   // Retain the existing v2 set-array storage format while restoring richer drafts.
   if (Array.isArray(value)) return { ...empty, sets: value.filter(set => set && typeof set === 'object') }
   if (!value || typeof value !== 'object' || (value as any).version !== 3) return empty
@@ -35,5 +35,6 @@ export function readManualPrescriptionDraft(value: unknown) {
     reps: typeof row.reps === 'string' ? row.reps : undefined,
     desiredSetCount: typeof row.desiredSetCount === 'string' ? row.desiredSetCount : undefined,
     originalPlannedSets: manualDesiredSets(row.originalPlannedSets) || 0,
-    prescription: prescriptionSnapshot(row.prescription), equipmentContext: readSessionEquipmentContext(row.equipmentContext) }
+    prescription: prescriptionSnapshot(row.prescription), equipmentContext: readSessionEquipmentContext(row.equipmentContext),
+    pendingSave: row.pendingSave ?? null, savedDesiredSetCount: manualDesiredSets(row.savedDesiredSetCount) || 0, changeSafe: row.changeSafe === true, hadDraft: true }
 }

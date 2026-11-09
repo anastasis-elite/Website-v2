@@ -21,7 +21,7 @@ class FixedDate extends Date { constructor(...args) { super(...(args.length ? ar
 function harness(overrides = {}, initialStorage = new Map()) {
   const states = [], mapStates = [], refs = [], effects = [], memo = [], modules = new Map(), storage = initialStorage, calls = [], summaryCalls = [], focused = [], headingFocusTexts = []
   let renderingMap = false, mapStateIndex = 0
-  let stateIndex = 0, refIndex = 0, effectIndex = 0, dirty = false, queued = [], tree, dialogNode, sends = 0
+  let stateIndex = 0, refIndex = 0, effectIndex = 0, dirty = false, queued = [], tree, dialogNode, sends = 0, mapFocusReturns = 0
   let props = { clientId: 'synthetic-client', authUserId: 'synthetic-owner', program: 'ignite', timezone: 'America/Chicago', weightUnit: 'lb',
     recommendedDayName: 'Monday', recommendedExercises: [{ id: 'original-plan' }], memberEquipment: ['dumbbells'], readiness: [],
     onExerciseFocus: ids => focused.push(ids), ...overrides }
@@ -84,6 +84,8 @@ function harness(overrides = {}, initialStorage = new Map()) {
       if (dialogNode) dialogNode.ref.current = nativeDialog
       const heading = nodes(tree, node => node.type === 'h2' && node.ref)[0]
       if (heading) heading.ref.current = { focus() { headingFocusTexts.push(text(heading)) } }
+      const mapContainer = nodes(tree, node => node.props?.['data-testid'] === 'manual-readiness-map')[0]
+      if (mapContainer) mapContainer.ref.current = { focus() { mapFocusReturns++ }, querySelector() { return activeElement } }
       const run = queued;queued = [];run.forEach(callback => callback())
     } while (dirty)
     return tree
@@ -110,6 +112,7 @@ function harness(overrides = {}, initialStorage = new Map()) {
     render, button, calls, summaryCalls, storage, focused, nativeDialog, tracker, mapTree, activateRegion, headingFocusTexts,
     library: load('lib/workout/manualWorkout.ts'), anatomy: load('lib/workout/muscleReadiness.ts'),
     get props() { return props }, get focusReturns() { return activeElement.focusReturns }, get dialog() { render();return dialogNode },
+    get mapFocusReturns() { return mapFocusReturns },
     get draftKey() { return `aos-manual-builder:v1:${props.clientId}:${props.program}:2026-11-02` },
     open(region = 'left_pectoralis_major') { map().props.onChooseExercises(region);render() },
     openCardio() { button('Add cardio').props.onClick({ currentTarget: activeElement });render() },
@@ -535,4 +538,95 @@ test('Finish cardio restoration shows actual duration without strength sets or i
   view.render();await view.settle()
   assert.match(text(view.render()), /Partial workout saved/);assert.match(text(view.render()), /Recorded duration:\s+12\s+minutes/)
   assert.doesNotMatch(text(view.render()), /prescribed sets|reps ·|original prescribed units/)
+})
+
+test('Change exercise durably abandons an untouched occurrence without credit, preserves other entries and requests a fresh recommendation', async () => {
+  const seed = harness(), source = seed.library.getManualWorkoutLibrary()[0]
+  const completed = [{ ...source, id: 'earlier-saved-occurrence', completion_status: 'Partial exercise saved' }]
+  const view = harness({}, new Map([[seed.draftKey, JSON.stringify({ version: 1, activeExercise: null, completedExercises: completed })]]))
+  view.open();view.chooseEquipment();view.choose();await view.settle()
+  const original = view.tracker().props.exercises[0], plan = view.tracker().props.plannedExercises
+  const change = view.tracker().props.onManualExerciseChange, beforeCalls = view.calls.length
+  assert.equal(change(), true)
+  const handoff = JSON.parse(view.storage.get(view.draftKey))
+  assert.equal(handoff.activeExercise, null, 'The handoff is durable before React renders or the logger cleans its draft')
+  assert.deepEqual(handoff.completedExercises, JSON.parse(JSON.stringify(completed)), 'An abandoned choice grants no completion and preserves earlier exercises')
+  assert.equal(change(), false, 'Repeated activation cannot duplicate work')
+  view.render()
+  assert.equal(view.tracker(), undefined);assert.equal(view.calls.length, beforeCalls)
+  assert.equal(view.nativeDialog.open, true)
+  assert.equal(view.headingFocusTexts.at(-1), 'Chest · Choose exercise')
+  assert.ok(view.button('Change muscle'));assert.ok(view.button('Back · change equipment'))
+  view.setSend(async call => json(prescription(call, { sets: 6, reps: 11, weightLb: 25 })))
+  view.choose(1);await view.settle()
+  const replacement = view.tracker().props.exercises[0]
+  assert.notEqual(replacement.id, original.id);assert.notEqual(replacement.catalogExerciseId, original.catalogExerciseId)
+  assert.equal(view.calls.length, beforeCalls + 1)
+  assert.equal(replacement.prescription.exerciseId, replacement.catalogExerciseId)
+  assert.equal(replacement.prescription.variantId, replacement.selected_variant_id)
+  assert.equal(replacement.prescription.weightLb, 25);assert.equal(replacement.reps, 11);assert.equal(replacement.sets, 6)
+  assert.equal(replacement.equipmentContext, undefined);assert.equal(replacement.set_logs, undefined)
+  assert.equal(view.tracker().props.plannedExercises, plan)
+  assert.deepEqual(JSON.parse(view.storage.get(view.draftKey)).completedExercises, JSON.parse(JSON.stringify(completed)))
+})
+
+test('Change exercise preserves verified partial work under the original occurrence before opening the next picker', async () => {
+  const view = harness();view.open();view.chooseEquipment();view.choose();await view.settle()
+  const original = view.tracker().props.exercises[0]
+  const evidence = { exerciseId: original.id, workoutLogId: 'synthetic-saved-row', dayName: 'Manual Workout', signature: 'verified-synthetic-actuals' }
+  const change = view.tracker().props.onManualExerciseChange
+  assert.equal(change(false, evidence), true)
+  const persisted = JSON.parse(view.storage.get(view.draftKey)), saved = persisted.completedExercises[0]
+  assert.equal(persisted.activeExercise, null);assert.equal(saved.id, original.id)
+  assert.equal(saved.catalogExerciseId, original.catalogExerciseId);assert.equal(saved.selected_variant_id, original.selected_variant_id)
+  assert.equal(saved.completion_status, 'Partial exercise saved');assert.deepEqual(saved.saveEvidence, evidence)
+  assert.equal(saved.sets, 4, 'Changing exercises does not lower the original target')
+  assert.equal(change(false, evidence), false)
+  const reopened = harness({}, new Map(view.storage));reopened.render()
+  assert.equal(reopened.tracker(), undefined)
+  assert.equal(nodes(reopened.render(), node => node.type === 'li').length, 1)
+  assert.match(text(reopened.render()), /Partial exercise saved/)
+  assert.equal(JSON.parse(reopened.storage.get(reopened.draftKey)).completedExercises[0].id, original.id)
+})
+
+test('restored Change exercise falls back to focused muscle selection and live picker still supports changing muscle or equipment', async () => {
+  const seed = harness(), source = seed.library.getManualWorkoutLibrary()[0]
+  const restored = harness({}, new Map([[seed.draftKey, JSON.stringify({ version: 1, activeExercise: { ...source, id: 'restored-occurrence' }, completedExercises: [] })]]))
+  const change = restored.tracker().props.onManualExerciseChange
+  assert.equal(change(), true);restored.render()
+  assert.equal(restored.nativeDialog.open, false);assert.equal(restored.tracker(), undefined)
+  assert.equal(restored.mapFocusReturns, 1)
+  const mapContainer = nodes(restored.render(), node => node.props?.['data-testid'] === 'manual-readiness-map')[0]
+  assert.equal(mapContainer.props.tabIndex, -1);assert.equal(mapContainer.props['aria-label'], 'Readiness and exercise selection')
+  restored.open('left_biceps');restored.chooseEquipment();restored.choose();await restored.settle()
+  restored.tracker().props.onManualExerciseChange();restored.render()
+  assert.match(text(restored.dialog), /Biceps · Choose exercise/)
+  restored.button('Back · change equipment').props.onClick();restored.render()
+  assert.match(text(restored.dialog), /Choose equipment/)
+  restored.button('Change muscle').props.onClick();restored.render()
+  assert.equal(restored.nativeDialog.open, false);assert.equal(restored.mapFocusReturns, 2)
+  restored.open('left_pectoralis_major');assert.match(text(restored.dialog), /Chest · Choose equipment/)
+})
+
+test('Change exercise rejects unavailable durable storage, mismatched evidence and stale owner/day/unmount callbacks', async () => {
+  class DraftStorage extends Map { failed = false; set(key, value) { if (this.failed) throw new Error('synthetic quota');return super.set(key, value) } }
+  const storage = new DraftStorage(), view = harness({}, storage)
+  view.open();view.chooseEquipment();view.choose();await view.settle()
+  const original = view.tracker().props.exercises[0], before = storage.get(view.draftKey), change = view.tracker().props.onManualExerciseChange
+  assert.equal(change(false), false, 'Saved work requires verified evidence')
+  assert.equal(change(false, { exerciseId: 'another-occurrence', workoutLogId: 'row', dayName: 'Manual Workout', signature: 'actuals' }), false)
+  storage.failed = true
+  assert.equal(change(), false);view.render()
+  assert.equal(storage.get(view.draftKey), before);assert.equal(view.tracker().props.exercises[0].id, original.id)
+  assert.match(text(view.render()), /could not retain the exercise change/)
+  storage.failed = false
+  try {
+    clock = Date.parse('2026-11-03T18:00:00Z')
+    assert.equal(change(), false, 'A prior-day callback cannot abandon its occurrence')
+  } finally { clock = Date.parse('2026-11-02T18:00:00Z') }
+  view.setProps({ clientId: 'another-client', authUserId: 'another-owner' })
+  assert.equal(change(), false)
+  const unmounted = harness();unmounted.open();unmounted.chooseEquipment();unmounted.choose();await unmounted.settle()
+  const afterUnmount = unmounted.tracker().props.onManualExerciseChange
+  unmounted.unmount();assert.equal(afterUnmount(), false)
 })
