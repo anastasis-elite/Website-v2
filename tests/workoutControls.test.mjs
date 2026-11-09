@@ -15,7 +15,8 @@ function moduleUrl(path, cache = new Map()) {
   if (path.endsWith('.json')) return `data:text/javascript;base64,${Buffer.from(`export default ${readFileSync(path, 'utf8')}`).toString('base64')}`
   const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ES2020, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } })
   const output = outputText.replace(/from ['"]([^'"]+)['"]/g, (original, specifier) => {
-    const mock = specifier === 'react' ? 'export const useState=(...a)=>globalThis.workoutControlsHooks.useState(...a); export const useEffect=(...a)=>globalThis.workoutControlsHooks.useEffect(...a); export const useRef=(...a)=>globalThis.workoutControlsHooks.useRef(...a); export const useMemo=(...a)=>globalThis.workoutControlsHooks.useMemo(...a);' : specifier === 'next/navigation' ? 'export const useRouter=()=>({refresh(){}})' : specifier === 'next/image' ? "export default 'img'" : specifier === 'next/link' ? "export default 'a'" : ['@/components/workout-feedback/WorkoutFeedback', '@/components/legal/SafetyEscalationNotice'].includes(specifier) ? "export default 'aside'" : null
+    if (specifier.endsWith('.css')) return `from 'data:text/javascript;base64,${Buffer.from('export default {}').toString('base64')}'`
+    const mock = specifier === 'react' ? 'export const useState=(...a)=>globalThis.workoutControlsHooks.useState(...a); export const useEffect=(...a)=>globalThis.workoutControlsHooks.useEffect(...a); export const useRef=(...a)=>globalThis.workoutControlsHooks.useRef(...a); export const useMemo=(...a)=>globalThis.workoutControlsHooks.useMemo(...a); export const useId=()=>"synthetic-workout-dialog";' : specifier === 'next/navigation' ? 'export const useRouter=()=>({refresh(){}})' : specifier === 'next/image' ? "export default 'img'" : specifier === 'next/link' ? "export default 'a'" : ['@/components/workout-feedback/WorkoutFeedback', '@/components/legal/SafetyEscalationNotice'].includes(specifier) ? "export default 'aside'" : null
     if (mock) return `from 'data:text/javascript;base64,${Buffer.from(mock).toString('base64')}'`
     const base = specifier.startsWith('@/') ? resolve(specifier.slice(2)) : specifier.startsWith('.') ? resolve(dirname(path), specifier) : null
     if (base) {
@@ -81,6 +82,8 @@ function nodes(tree, predicate) {
   visit(tree); return result
 }
 const content = node => Array.isArray(node) ? node.map(content).join('') : node && typeof node === 'object' ? content(node.props?.children) : node == null ? '' : String(node)
+const progress = tree => nodes(tree, node => node.props?.role === 'progressbar')[0]?.props['aria-valuenow']
+const chooseExercise = (tree, index) => nodes(tree, node => node.type === 'select' && node.props['aria-label'] === 'Choose exercise')[0].props.onChange({ target: { value: String(index) } })
 const button = (tree, label) => nodes(tree, n => n.type === 'button' && content(n) === label)[0]
 const props = exercises => ({ clientId: 'DISPOSABLE-TEST', authUserId: 'disposable-user', program: 'ignite', dayName: 'Control regression', exercises, timezone: 'America/Chicago' })
 const bodyweight = { id: 'squat', exercise: 'Squat', exercise_category: 'strength', sets: 1, reps: 8, load_type: 'bodyweight' }
@@ -116,7 +119,7 @@ test('zero added load remains a valid prescription and logged set', async () => 
 test('missing variation selection has an honest placeholder instead of showing an incompatible first choice', async () => {
   const app = mount(ActivityTracker, props([{ ...bodyweight, load_type: 'total_load', selected_variant_id: null, available_variants: [{ id: 'bw', name: 'Bodyweight squat', equipment: 'bodyweight', load_type: 'bodyweight', equipment_modifier: 1 }, { id: 'db', name: 'Dumbbell squat', equipment: 'dumbbell', load_type: 'per_hand', equipment_modifier: 1 }] }]))
   await app.flush()
-  const select = nodes(app.tree, n => n.type === 'select')[0]
+  const select = nodes(app.tree, n => n.type === 'select' && n.props['aria-label'] !== 'Choose exercise')[0]
   assert.equal(select.props.value, '')
   assert.equal(nodes(select, n => n.type === 'option' && n.props.value === '').length, 1)
 })
@@ -127,7 +130,7 @@ test('repeated exercises have distinct visible occurrence labels and independent
   const headings = nodes(app.tree, n => n.type === 'h3').map(content)
   assert.equal(new Set(headings).size, 2)
   button(app.tree, 'Complete set 1').props.onClick(); app.render()
-  assert.match(content(app.tree), /1 of 2 exercises complete/)
+  assert.equal(progress(app.tree), 50)
 })
 
 test('reopening a completed exercise keeps confirmed sets for correction', async () => {
@@ -217,12 +220,12 @@ test('recommended repeated occurrences survive save, reload and revisit with sep
   button(first.tree, 'Complete set 1').props.onClick(); first.render()
   button(first.tree, 'Save / pause').props.onClick(); await first.flush()
   const reloaded = mount(ActivityTracker, props(exercises), storage); await reloaded.flush()
-  assert.match(content(reloaded.tree), /1 of 2 exercises complete/)
+  assert.equal(progress(reloaded.tree), 50)
   button(reloaded.tree, 'Complete set 1').props.onClick(); reloaded.render()
   button(reloaded.tree, 'Finish and review').props.onClick(); await reloaded.flush()
   assert.deepEqual(reloaded.calls.at(-1).payload.exercise_logs.map(log => log.set_logs[0].reps), [8, 10])
   const revisited = mount(ActivityTracker, props(exercises), storage); await revisited.flush()
-  assert.match(content(revisited.tree), /2 of 2 exercises complete/)
+  assert.equal(progress(revisited.tree), 100)
 })
 
 test('set threshold shows whole-plan progress, stays open at half, and reopens the fixed prescription', async () => {
@@ -231,11 +234,11 @@ test('set threshold shows whole-plan progress, stays open at half, and reopens t
   const card = index => nodes(app.tree, node => node.type === 'article' && node.props.className === 'activity-exercise')[index]
   for (let count = 0; count < 3; count++) { button(card(0), `Complete set ${count + 1}`).props.onClick(); app.render() }
   button(card(1), 'Complete set 1').props.onClick(); app.render()
-  assert.match(content(app.tree), /4 of 9 prescribed sets recorded · 5 needed/)
+  assert.equal(progress(app.tree), 44)
   button(app.tree, 'Save / pause').props.onClick(); await app.flush()
   assert.equal(app.calls.at(-1).payload.completed, false)
   button(card(1), 'Complete set 2').props.onClick(); app.render()
-  assert.match(content(app.tree), /5 of 9 prescribed sets recorded · 5 needed/)
+  assert.equal(progress(app.tree), 55)
   assert.match(content(app.tree), /meet the workout checkoff threshold/)
   assert.equal(nodes(app.tree, node => node.props?.['aria-label'] === 'Session summary').length, 0, 'crossing half never finishes automatically')
   assert.ok(button(card(1), 'Complete set 3'))
@@ -246,7 +249,7 @@ test('set threshold shows whole-plan progress, stays open at half, and reopens t
   assert.equal(saved.exercise_logs[2].set_logs.length, 0)
   storage.set('__disposableServer', JSON.stringify({ ...saved, updated_at: new Date().toISOString() }))
   const reopened = mount(ActivityTracker, props(exercises.map(exercise => ({ ...exercise, sets: 1 }))), storage); await reopened.flush()
-  assert.match(content(reopened.tree), /5 of 9 prescribed sets recorded · 5 needed/)
+  assert.equal(progress(reopened.tree), 55)
   assert.equal(nodes(reopened.tree, node => node.props?.['aria-label'] === 'Session summary').length, 0)
 })
 
@@ -258,17 +261,15 @@ test('carousel keeps exercise drafts, completed sets and saved progress through 
   const app = mount(ActivityTracker, props(exercises), storage); await app.flush()
   const slides = tree => nodes(tree, n => n.props?.['aria-roledescription'] === 'slide')
   const active = tree => slides(tree).find(n => n.props['aria-hidden'] === false)
-  const control = (tree, label) => nodes(tree, n => n.type === 'button' && n.props['aria-label'] === label)[0]
   assert.match(content(app.tree), /Exercise 1 of 2/)
-  assert.equal(control(app.tree, 'Previous exercise').props.disabled, true)
+  assert.equal(nodes(app.tree, n => n.type === 'button' && ['Previous exercise', 'Next exercise'].includes(n.props['aria-label'])).length, 0)
   let inputs = nodes(active(app.tree), n => n.type === 'input')
   inputs[0].props.onChange({ target: { value: '12.5' } }); inputs[1].props.onChange({ target: { value: '9' } }); app.render()
   button(active(app.tree), 'Complete set 1').props.onClick(); app.render()
   inputs = nodes(active(app.tree), n => n.type === 'input')
   inputs[1].props.onChange({ target: { value: '11' } }); app.render()
-  control(app.tree, 'Next exercise').props.onClick(); app.render()
+  chooseExercise(app.tree, 1); app.render()
   assert.match(content(app.tree), /Exercise 2 of 2/)
-  assert.equal(control(app.tree, 'Next exercise').props.disabled, true)
   const mounted = slides(app.tree)
   assert.equal(mounted.length, 2, 'Navigating keeps both keyed cards mounted, including recorded-set editors')
   const inactiveElement = { inert: false }; mounted[0].ref(inactiveElement)
@@ -276,18 +277,18 @@ test('carousel keeps exercise drafts, completed sets and saved progress through 
   inputs = nodes(active(app.tree), n => n.type === 'input')
   inputs[0].props.onChange({ target: { value: '17.5' } }); inputs[1].props.onChange({ target: { value: '10' } }); app.render()
   button(active(app.tree), 'Complete set 1').props.onClick(); app.render()
-  control(app.tree, 'Previous exercise').props.onClick(); app.render()
+  chooseExercise(app.tree, 0); app.render()
   inputs = nodes(active(app.tree), n => n.type === 'input')
   assert.deepEqual(inputs.map(n => n.props.value), [12.5, 11])
   assert.match(content(active(app.tree)), /Set 1: 9 reps · 12.5 lb/)
   button(active(app.tree), 'Complete set 2').props.onClick(); app.render()
-  control(app.tree, 'Next exercise').props.onClick(); app.render()
+  chooseExercise(app.tree, 1); app.render()
   button(app.tree, 'Save / pause').props.onClick(); await app.flush()
   assert.deepEqual(app.calls.at(-1).payload.exercise_logs.map(log => log.set_logs.map(set => [set.weight, set.reps])), [[[12.5, 9], [12.5, 11]], [[17.5, 10]]])
   const reloaded = mount(ActivityTracker, props(exercises), storage); await reloaded.flush()
   assert.match(content(reloaded.tree), /Exercise 2 of 2/)
-  assert.match(content(reloaded.tree), /2 of 2 exercises complete/)
-  control(reloaded.tree, 'Previous exercise').props.onClick(); reloaded.render()
+  assert.equal(progress(reloaded.tree), 100)
+  chooseExercise(reloaded.tree, 0); reloaded.render()
   assert.match(content(active(reloaded.tree)), /Set 2: 11 reps · 12.5 lb/)
 })
 
@@ -385,14 +386,15 @@ test('workout view preferences preserve useful choices and ignore damaged browse
 test('workout dashboard restores each client and tier preference before writing that scoped key', async () => {
   const firstKey = 'aos-workout-view:v1:DISPOSABLE-TEST:ignite', secondKey = 'aos-workout-view:v1:SECOND-DISPOSABLE-CLIENT:ember'
   const storage = new Map([[firstKey, JSON.stringify({ tab: 'history', mode: 'manual' })], [secondKey, JSON.stringify({ tab: 'strength', mode: 'recommended' })]])
-  const initialProps = { ...props([]), assignedExercises: [], workoutHistory: [], workoutTitle: 'Fixture workout', assignedDayName: 'Fixture', hasSafetyFlags: false, logic: { workoutDecision: { canTrain: true, adjustmentLevel: 'level_0_full_plan' }, assessments: { dailyCompleted: false }, symptoms: { redFlag: false } } }
+  const initialProps = { ...props([]), assignedExercises: [], workoutHistory: [], workoutTitle: 'Fixture workout', assignedDayName: 'Fixture', hasSafetyFlags: false, logic: { workoutDecision: { canTrain: true, adjustmentLevel: 'level_0_full_plan' }, assessments: { dailyCompleted: false, strength: {} }, symptoms: { redFlag: false } } }
   const app = mount(Dashboard, initialProps, storage); await app.flush()
-  assert.equal(button(app.tree, 'History').props['aria-selected'], true)
+  assert.equal(button(app.tree, 'Build Your Own').props['aria-selected'], true)
+  assert.equal(button(app.tree, 'History'), undefined)
   app.render({ ...initialProps, clientId: 'SECOND-DISPOSABLE-CLIENT', program: 'ember' })
   assert.deepEqual(JSON.parse(storage.get(secondKey)), { tab: 'strength', mode: 'recommended' }, 'The previous view must not overwrite the new scope during restoration')
   await app.flush()
-  assert.equal(button(app.tree, 'Strength').props['aria-selected'], true)
-  assert.equal(button(app.tree, 'Recommended').props['aria-selected'], true)
+  assert.equal(button(app.tree, 'Strength'), undefined)
+  assert.equal(button(app.tree, 'Your Plan').props['aria-selected'], true)
   assert.deepEqual(JSON.parse(storage.get(firstKey)), { tab: 'history', mode: 'manual' })
 })
 
@@ -438,4 +440,88 @@ test('back muscle map preserves posterior choices and keyboard Enter/Space selec
   assert.deepEqual(prevented, ['Enter', ' '])
   button(app.tree, 'Front').props.onClick(); app.render()
   assert.ok(nodes(app.tree, n => n.type === 'polygon' && n.props['data-muscle-id'] === 'left_quadriceps').length)
+})
+
+test('daily percentage follows all 25 retained sets through confirmation, edits, removal, reload and full completion', async () => {
+  const storage = new Map(), exercises = [4, 3, 3, 3, 3, 3, 3, 3].map((sets, index) => ({ ...bodyweight, id: `daily-${index}`, sets }))
+  let app = mount(ActivityTracker, props(exercises), storage); await app.flush()
+  const card = index => nodes(app.tree, node => node.props?.className === 'activity-exercise')[index]
+  assert.equal(progress(app.tree), 0)
+  assert.doesNotMatch(content(app.tree), /exercises complete|prescribed sets recorded|needed for workout checkoff|Prescribed values are a starting point/)
+  const amount = nodes(card(0), node => node.type === 'input')[0]
+  amount.props.onChange({ target: { value: '0' } }); app.render()
+  button(card(0), 'Complete set 1').props.onClick(); app.render()
+  assert.equal(progress(app.tree), 0, 'unconfirmed and invalid values earn no progress')
+  nodes(card(0), node => node.type === 'input')[0].props.onChange({ target: { value: '8' } }); app.render()
+  button(card(0), 'Complete set 1').props.onClick(); app.render()
+  assert.equal(progress(app.tree), 4)
+  for (const [index, count] of [4, 3, 3, 3].entries()) {
+    for (let n = index === 0 ? 2 : 1; n <= count; n++) { button(card(index), `Complete set ${n}`).props.onClick(); app.render() }
+  }
+  assert.equal(progress(app.tree), 52)
+  button(app.tree, 'Save / pause').props.onClick(); await app.flush()
+  assert.equal(app.calls.at(-1).payload.completed, true, '13 of 25 still earns halfway credit')
+  const saved = app.calls.at(-1).payload
+  storage.set('__disposableServer', JSON.stringify({ ...saved, updated_at: new Date().toISOString() }))
+  app = mount(ActivityTracker, props(exercises.map(exercise => ({ ...exercise, sets: 1 }))), storage); await app.flush()
+  assert.equal(progress(app.tree), 52, 'a refreshed projection cannot replace the retained denominator')
+  const editor = nodes(card(0), node => typeof node.props?.onSave === 'function')[0]
+  editor.props.onSave({ weight: 0, reps: 9 }); app.render()
+  assert.equal(progress(app.tree), 52, 'correcting a valid set preserves its completed slot')
+  button(card(0), 'Remove set 4').props.onClick(); app.render()
+  assert.equal(progress(app.tree), 48)
+  button(app.tree, 'Save / pause').props.onClick(); await app.flush()
+  assert.equal(app.calls.at(-1).payload.completed, false, 'removal also preserves the existing credit calculation')
+  button(card(0), 'Complete set 4').props.onClick(); app.render()
+  for (let index = 4; index < exercises.length; index++) for (let n = 1; n <= 3; n++) { button(card(index), `Complete set ${n}`).props.onClick(); app.render() }
+  assert.equal(progress(app.tree), 100)
+  button(app.tree, 'Save / pause').props.onClick(); await app.flush()
+  assert.equal(app.calls.at(-1).payload.planned_exercises.reduce((sum, exercise) => sum + exercise.sets, 0), 25)
+})
+
+test('incomplete work never rounds to 100 and duplicate or invalid evidence does not inflate percentage', async () => {
+  const exercises = [0, 1].map(index => ({ ...bodyweight, id: `large-${index}`, sets: 100 }))
+  const logs = exercises.map((exercise, index) => ({ ...exercise, session_key: `${exercise.id}:${index}`, set_logs: Array.from({ length: index ? 99 : 100 }, (_, n) => ({ set_number: n + 1, weight: 0, reps: 8, weight_unit: 'lb', completed_at: new Date().toISOString() })) }))
+  logs[1].set_logs.push({ ...logs[1].set_logs[0] }, { set_number: 100, weight: 0, reps: 0, weight_unit: 'lb', completed_at: new Date().toISOString() })
+  const storage = new Map([['__disposableServer', JSON.stringify({ planned_exercises: exercises, exercise_logs: logs, updated_at: new Date().toISOString() })]])
+  const app = mount(ActivityTracker, props(exercises), storage); await app.flush()
+  assert.equal(progress(app.tree), 99)
+})
+
+test('empty or unknown prescribed work has no invented percentage and manual activity has no daily-plan bar', async () => {
+  for (const exercises of [[], [{ ...bodyweight, sets: 0 }], [{ ...bodyweight, sets: undefined }], [bodyweight, { ...bodyweight, id: 'unknown', sets: undefined }]]) {
+    const app = mount(ActivityTracker, props(exercises)); await app.flush()
+    assert.equal(progress(app.tree), undefined)
+    assert.match(content(app.tree), /Workout progress unavailable/)
+  }
+  const manual = mount(ActivityTracker, { ...props([bodyweight]), workoutSource: 'manual' }); await manual.flush()
+  button(manual.tree, 'Complete set 1').props.onClick(); manual.render()
+  assert.equal(progress(manual.tree), undefined)
+})
+
+test('daily progress retains confirmed activity semantics without turning duration targets into fractions', async () => {
+  const walk = { id: 'walk', exercise: 'Walking', exercise_category: 'cardio', duration_minutes: 10 }
+  const app = mount(ActivityTracker, props([bodyweight, walk])); await app.flush()
+  const card = () => nodes(app.tree, node => node.props?.className === 'activity-exercise')[1]
+  nodes(card(), node => node.type === 'input')[0].props.onChange({ target: { value: '1' } }); app.render()
+  assert.equal(progress(app.tree), 0)
+  button(card(), 'Confirm activity').props.onClick(); app.render()
+  assert.equal(progress(app.tree), 50, 'existing positive confirmed-duration semantics remain unchanged')
+  button(card(), 'Edit activity').props.onClick(); app.render()
+  assert.equal(progress(app.tree), 0)
+  button(card(), 'Confirm activity').props.onClick(); app.render()
+  button(app.tree, 'Complete set 1').props.onClick(); app.render()
+  assert.equal(progress(app.tree), 100)
+})
+
+test('carousel moves focus out of a swiped-away card before making it inactive', async () => {
+  const app = mount(ActivityTracker, props([bodyweight, { ...bodyweight, id: 'second' }])); await app.flush()
+  const viewport = () => nodes(app.tree, node => node.props?.['aria-label'] === 'Exercise cards')[0]
+  const focused = {}, focusCalls = [], track = { scrollTo() {}, clientWidth: 320, ownerDocument: { activeElement: focused }, children: [{ contains: node => node === focused }, { contains: () => false }], focus: options => focusCalls.push(options) }
+  viewport().ref.current = track
+  viewport().props.onScroll({ currentTarget: { clientWidth: 320, scrollLeft: 320 } }); app.render()
+  assert.deepEqual(focusCalls, [{ preventScroll: true }])
+  assert.match(content(app.tree), /Exercise 2 of 2/)
+  chooseExercise(app.tree, 0); app.render()
+  assert.equal(focusCalls.length, 1, 'pagination focus outside the track stays on its control')
 })

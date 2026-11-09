@@ -18,17 +18,16 @@ test('workout opens with the workout panel, keeps rest guidance and puts adaptat
   assert.doesNotMatch(dashboard, /Muscle readiness details|className="workout-dashboard-row"/)
   assert.match(map, /data-testid="muscle-readiness-panel"/)
   assert.match(dashboard, /data-testid="today-workout-panel"/)
-  assert.match(dashboard, /data-testid="workout-toggle-panel"/)
+  assert.doesNotMatch(dashboard, /data-testid="workout-toggle-panel"/)
+  assert.match(route, /<PhoneAppFrame compactHeader>/)
   assert.match(css, /\.workout-dashboard-row\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(340px,\.8fr\)/)
   assert.match(css, /@media\(max-width:980px\).*\.workout-dashboard-row.*grid-template-columns:1fr/s)
 })
 
-test('workout toggle panel contains workout-specific tab set', () => {
-  assert.match(dashboard, /\['progress', 'strength', 'recovery', 'history'\] as Tab\[\]/)
-  assert.match(dashboard, /data-testid="workout-progress-tab"/)
-  assert.match(dashboard, /data-testid="workout-strength-tab"/)
-  assert.match(dashboard, /data-testid="workout-recovery-tab"/)
-  assert.match(dashboard, /data-testid="workout-history-tab"/)
+test('workout mode keeps stable identifiers with the approved labels and no supplemental tabs', () => {
+  assert.match(dashboard, /\['recommended', 'manual'\] as const/)
+  assert.match(dashboard, /'Your Plan' : 'Build Your Own'/)
+  assert.doesNotMatch(dashboard, /Workout information|workout-(?:progress|strength|recovery|history)-tab|setTab/)
 })
 
 test('route reuses existing workout engine and reads existing history and recovery data', () => {

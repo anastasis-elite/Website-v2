@@ -10,16 +10,17 @@ import { importTs } from './typescriptModule.mjs'
 const require=createRequire(import.meta.url)
 const status=await importTs('lib/assessment/getStrengthAssessmentStatus.ts')
 const activity=await importTs('lib/workout/activity.ts')
+const loadPresentation=await importTs('lib/workout/exerciseLoadPresentation.ts')
 const logging=await importTs('lib/workout/logging.ts')
 const prefs=await importTs('lib/workout/viewPreferences.ts')
 const strengthState=await importTs('lib/assessment/strengthWorkoutState.ts')
-let selectedTab='progress',selectedMode='recommended'
+let selectedMode='recommended'
 const module={exports:{}}
 const source=readFileSync('components/workout-dashboard/WorkoutDashboard.tsx','utf8')
 const mocks={
-  react:{...React,useState:initial=>[initial==='progress'?selectedTab:initial==='recommended'?selectedMode:initial,()=>{}],useEffect:()=>{}},
+  react:{...React,useState:initial=>[initial==='recommended'?selectedMode:initial,()=>{}],useEffect:()=>{}},
   'next/link':{__esModule:true,default:'a'},
-  '@/lib/assessment/getStrengthAssessmentStatus':status,'@/lib/assessment/strengthWorkoutState':strengthState,'@/lib/workout/activity':activity,'@/lib/workout/logging':logging,'@/lib/workout/viewPreferences':prefs,
+  '@/lib/assessment/getStrengthAssessmentStatus':status,'@/lib/assessment/strengthWorkoutState':strengthState,'@/lib/workout/exerciseLoadPresentation':loadPresentation,'@/lib/workout/activity':activity,'@/lib/workout/logging':logging,'@/lib/workout/viewPreferences':prefs,
   '@/components/WorkoutTracker':{__esModule:true,default:()=>React.createElement('div',{'data-testid':'regular-tracker'})},
   '@/components/workout-dashboard/ManualWorkoutBuilder':{__esModule:true,default:()=>React.createElement('div',{'data-testid':'manual-builder'})},
   '@/components/legal/SafetyEscalationNotice':{__esModule:true,default:()=>React.createElement('div',{'role':'alert'},'Existing safety notice')},
@@ -41,7 +42,7 @@ test('safe eligible workout renders the assessment; ordinary rest or an absent r
     assert.match(html,/data-testid="strength-assessment-workout"/);assert.match(html,/class="tier-primary-action"/)
     assert.match(html,/href="\/dashboard\/assessment\/start2\?period=2026-11-01"/)
     assert.doesNotMatch(html,/data-testid="regular-tracker"/)
-    for(const tab of ['Progress','Strength','Recovery','History'])assert.match(html,new RegExp('>'+tab+'<'))
+    assert.doesNotMatch(html,/Workout information|workout-toggle-panel/)
   }
 })
 
@@ -58,8 +59,7 @@ test('safety flags or a real training pause remove the primary assessment while 
     assert.doesNotMatch(html,/data-testid="regular-tracker"/)
     assert.match(html,/Training paused/)
     if(patch==='flags')assert.match(html,/Existing safety notice/)
-    selectedTab='strength';html=render(props);selectedTab='progress'
-    assert.match(html,/Review assessment/);assert.match(html,/saved assessment and draft remain available to review/)
+    assert.match(html,/Review assessment/)
     assert.match(html,/href="\/dashboard\/assessment\/start2\?period=2026-11-01"/)
     selectedMode='manual';html=render(props);selectedMode='recommended'
     assert.match(html,/data-testid="manual-builder"/,'Existing manual logging policy is unchanged')

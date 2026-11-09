@@ -253,7 +253,7 @@ export default async function ProgramWorkoutPage({
             : 'Recovery movement'
 
   const previewMessage = strengthPaused
-    ? 'Strength testing is paused. Review today’s recovery guidance. Your saved assessment and draft remain available in Strength.'
+    ? 'Strength testing is paused. Review today’s recovery guidance. Your saved assessment and draft remain available to review.'
     : hasSafetyFlags
     ? 'The assigned plan is listed below, but completion is paused until the safety message is resolved.'
     : logic.workoutDecision
@@ -274,7 +274,7 @@ export default async function ProgramWorkoutPage({
     })
 
   return (
-    <PhoneAppFrame eyebrow="Workout" title="Your strength, one set at a time." subtitle={showInteractiveWorkout ? 'Your exercises are ready to log.' : workoutTitle}><main className="aos-workout-page">
+    <PhoneAppFrame compactHeader><main className="aos-workout-page">
       <div className="aos-workout-shell">
         <WorkoutDashboard
           timezone={getClientTimeZone(client)}
@@ -304,8 +304,7 @@ export default async function ProgramWorkoutPage({
           logic={logic}
           outputProgram={output?.program}
           muscleReadiness={muscleReadiness}
-          workoutHistory={workoutHistory}
-          strengthAssessmentWorkout={strengthWorkout}
+          strengthAssessmentWorkout={scheduledStrength}
           weekdayPreferenceNotice={weekdayPreferenceNotice}
           memberEquipment={
             Array.isArray(client.equipment_access)

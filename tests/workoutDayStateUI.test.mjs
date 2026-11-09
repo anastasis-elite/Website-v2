@@ -21,7 +21,7 @@ const mocks = {
   '@/components/workout-dashboard/WorkoutDashboard': 'section',
   '@/components/phone-app/PhoneAppFrame': 'div',
   '@/lib/timezone': { getClientTimeZone: () => 'Etc/UTC', getClientLocalDate: () => '2026-11-05' },
-  '@/lib/assessment/strengthWorkoutState': { isStrengthWorkout: () => false, strengthTrainingPaused: (logic, flags) => Boolean(flags || logic.symptoms?.redFlag) },
+  '@/lib/assessment/strengthWorkoutState': { isStrengthWorkout: () => fixture.scheduledStrength === true, strengthTrainingPaused: (logic, flags) => Boolean(flags || logic.symptoms?.redFlag) },
   '@/lib/assessments/getAssessmentWindow': { getAssessmentWindow: () => ({ isOpen: false }) },
   '@/lib/cycle/getCycleStatus': { getCycleStatus: () => ({}) },
   '@/lib/day/getDailyExecutionPlan': { getDailyExecutionPlan: async () => ({}) },
@@ -72,7 +72,7 @@ for (const [state, label] of [['rest', 'Rest day'], ['unavailable', 'Workout una
   })
 }
 
-test('ready workouts use a neutral page subtitle without changing the actual workout identity', async () => {
+test('ready workouts use the compact brand header without changing the actual workout identity', async () => {
   fixture = { safetyFlags: [], logic: {
     workout: { title: 'Low-Capacity Strength Workout' }, workoutDecision: {
       assignedWorkout: { workout_state: 'reduced', day_name: 'Low-Capacity Strength Workout', exercises: [{ exercise: 'Squat', sets: 3, reps: 8 }] },
@@ -80,9 +80,27 @@ test('ready workouts use a neutral page subtitle without changing the actual wor
     },
   } }
   const page = await Page({ params: Promise.resolve({ program: 'ignite' }) })
-  assert.equal(page.props.subtitle, 'Your exercises are ready to log.')
+  assert.equal(page.props.compactHeader, true)
+  assert.equal(page.props.title, undefined)
+  assert.equal(page.props.subtitle, undefined)
   const dashboard = findDashboard(page)
   assert.equal(dashboard.props.workoutTitle, 'Low-Capacity Strength Workout')
   assert.equal(dashboard.props.assignedDayName, 'Low-Capacity Strength Workout')
   assert.equal(dashboard.props.showInteractiveWorkout, true)
+})
+
+
+test('a paused scheduled assessment keeps its review routing inside the workout box', async () => {
+  fixture = { scheduledStrength: true, safetyFlags: [{ id: 'synthetic-flag' }], logic: {
+    workout: { title: 'Strength assessment' }, workoutDecision: {
+      assignedWorkout: { workout_state: 'rest', exercises: [] }, canTrain: false, displayWorkout: false,
+      reasonForModification: 'Synthetic safety guidance.',
+    },
+  } }
+  const page = await Page({ params: Promise.resolve({ program: 'ignite' }) })
+  const dashboard = findDashboard(page)
+  assert.equal(dashboard.props.strengthAssessmentWorkout, true)
+  assert.equal(dashboard.props.showInteractiveWorkout, false)
+  assert.match(dashboard.props.previewMessage, /remain available to review/)
+  assert.equal(page.props.compactHeader, true)
 })

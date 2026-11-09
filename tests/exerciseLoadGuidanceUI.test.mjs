@@ -132,7 +132,7 @@ test('started server sessions retain actual kg entries and original prescription
   assert.equal(inputWeights(app.tree)[0].props.value, 22)
   assert.match(content(app.tree), /Set 1: 7 reps · 22 kg/)
   assert.match(content(app.tree), /Load recommendation unavailable/)
-  assert.match(content(app.tree), /1 of 4 prescribed sets recorded/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 25)
   button(app.tree, 'Save / pause').props.onClick(); await app.flush()
   const saved = app.calls.find(call => call.payload).payload
   assert.deepEqual(saved.exercise_logs[0].set_logs, [set])
@@ -182,7 +182,7 @@ test('normal legacy logging discovers an existing unique reduced local session a
   const stored = { logs: [{ ...exercise, set_logs: [set] }], plannedExercises: [exercise], dirty: true, modifiedAt: new Date().toISOString() }
   const storage = new Map([[key, JSON.stringify(stored)]]), app = mount(ActivityTracker, p, storage)
   await app.flush()
-  assert.match(content(app.tree), /1 of 4 prescribed sets recorded/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 25)
   button(app.tree, 'Save / pause').props.onClick(); await app.flush()
   const saved = app.calls.find(call => call.payload).payload
   assert.equal(saved.day_name, dayName); assert.equal(saved.planned_exercises.length, 1)
@@ -266,8 +266,7 @@ test('normal exact-key started local sessions keep their original four-set snaps
     dirty: true, modifiedAt: new Date().toISOString() }
   const app = mount(ActivityTracker, { ...p, weightUnit: 'kg' }, new Map([[key, JSON.stringify(stored)]]))
   await app.flush()
-  assert.match(content(app.tree), /1 of 4 prescribed sets recorded/)
-  assert.match(content(app.tree), /2 needed for workout checkoff/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 25)
   assert.equal(inputWeights(app.tree)[0].props.value, 0)
   assert.ok(button(app.tree, 'Save / pause'))
   button(app.tree, 'Save / pause').props.onClick(); await app.flush()
@@ -284,8 +283,7 @@ test('normal exact-key raw legacy local arrays retain coherent original dose and
   const originalPlan = { ...row(), sets: 4, session_key: 'row:0', set_logs: [set] }
   const app = mount(ActivityTracker, p, new Map([[key, JSON.stringify([originalPlan])]]))
   await app.flush()
-  assert.match(content(app.tree), /1 of 4 prescribed sets recorded/)
-  assert.match(content(app.tree), /2 needed for workout checkoff/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 25)
   assert.equal(inputWeights(app.tree)[0].props.value, 17.5)
   assert.ok(button(app.tree, 'Save / pause'))
   button(app.tree, 'Save / pause').props.onClick(); await app.flush()
@@ -302,7 +300,7 @@ test('normal exact-key coherent server snapshots retain their own denominator an
     updated_at: new Date().toISOString() }
   const app = mount(ActivityTracker, p, new Map([['__disposableServer', JSON.stringify(session)]]))
   await app.flush()
-  assert.match(content(app.tree), /1 of 4 prescribed sets recorded/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 25)
   assert.equal(inputWeights(app.tree)[0].props.value, 0)
   assert.ok(button(app.tree, 'Save / pause'))
   button(app.tree, 'Save / pause').props.onClick(); await app.flush()
@@ -390,8 +388,7 @@ test('normal exact-key newer typed-only local zero kg retains its four-set plan 
   const storage = new Map([[key, JSON.stringify(stored)], ['__disposableServer', JSON.stringify(server)]])
   const app = mount(ActivityTracker, p, storage)
   await app.flush()
-  assert.match(content(app.tree), /0 of 4 prescribed sets recorded/)
-  assert.match(content(app.tree), /2 needed for workout checkoff/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 0)
   assert.equal(inputWeights(app.tree)[0].props.value, 0)
   const retained = JSON.parse(storage.get(key))
   assert.equal(retained.plannedExercises[0].sets, 4)
@@ -414,8 +411,8 @@ test('normal exact-key newer skipped-only local work retains its original four-s
     weight_unit: 'kg', reps: 7, completed_at: '2026-11-04T12:00:00Z' }] }], updated_at: '2026-11-04T12:00:00Z' }
   const app = mount(ActivityTracker, p, new Map([[key, JSON.stringify(stored)], ['__disposableServer', JSON.stringify(server)]]))
   await app.flush()
-  assert.match(content(app.tree), /0 of 4 prescribed sets recorded/)
-  assert.match(content(app.tree), /1 skipped/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 0)
+  assert.match(content(app.tree), /Skipped/)
   button(app.tree, 'Save / pause').props.onClick(); await app.flush()
   const saved = app.calls.find(call => call.payload).payload
   assert.equal(saved.planned_exercises[0].sets, 4)
@@ -457,7 +454,7 @@ test('normal exact-key coherent typed-only drafts retain their identity before d
   const read = new URL(app.calls[0].url, 'https://synthetic.invalid')
   assert.equal(read.searchParams.get('dayName'), p.dayName)
   assert.deepEqual(JSON.parse(read.searchParams.get('planKeys')), ['row:0'])
-  assert.match(content(app.tree), /0 of 4 prescribed sets recorded/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 0)
   assert.equal(inputWeights(app.tree)[0].props.value, 0)
   assert.equal(storage.get(reducedKey), reducedOriginal)
   button(app.tree, 'Complete set 1').props.onClick(); app.render()
@@ -488,8 +485,8 @@ test('normal exact-key coherent skipped-only server sessions retain their identi
   const read = new URL(app.calls[0].url, 'https://synthetic.invalid')
   assert.equal(read.searchParams.get('dayName'), p.dayName)
   assert.deepEqual(JSON.parse(read.searchParams.get('planKeys')), ['row:0'])
-  assert.match(content(app.tree), /0 of 4 prescribed sets recorded/)
-  assert.match(content(app.tree), /1 skipped/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 0)
+  assert.match(content(app.tree), /Skipped/)
   assert.equal(storage.get(reducedKey), reducedOriginal)
   button(app.tree, 'Save / pause').props.onClick(); await app.flush()
   const saved = app.calls.find(call => call.payload).payload
