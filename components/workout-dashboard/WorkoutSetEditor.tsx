@@ -10,12 +10,18 @@ type Props = {
   disabled: boolean
   bodyweight?: boolean
   onSave: (values: { weight: number; reps: number }) => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
-export default function WorkoutSetEditor({ set, increment, loadLabel, disabled, bodyweight, onSave }: Props) {
+export default function WorkoutSetEditor({ set, increment, loadLabel, disabled, bodyweight, onSave, onDirtyChange }: Props) {
   const [weight, setWeight] = useState(String(set.weight))
   const [reps, setReps] = useState(String(set.reps))
   const [message, setMessage] = useState('')
+
+  function edit(nextWeight: string, nextReps: string) {
+    setWeight(nextWeight); setReps(nextReps)
+    onDirtyChange?.((!bodyweight && (!nextWeight.trim() || Number(nextWeight) !== set.weight)) || !nextReps.trim() || Number(nextReps) !== set.reps)
+  }
 
   function save() {
     const values = parseStrengthSetInput(bodyweight ? 0 : weight, reps)
@@ -27,10 +33,10 @@ export default function WorkoutSetEditor({ set, increment, loadLabel, disabled, 
   return <div className="manual-current-set workout-set-editor">
     <div className="activity-inputs">
       {!bodyweight ? <label>Set {set.set_number} weight ({set.weight_unit || 'lb'}, {loadLabel})
-        <input type="number" inputMode="decimal" min="0" step={increment} value={weight} disabled={disabled} onChange={event => setWeight(event.target.value)} />
+        <input type="number" inputMode="decimal" min="0" step={increment} value={weight} disabled={disabled} onChange={event => edit(event.target.value, reps)} />
       </label> : <p>Bodyweight · no added load</p>}
       <label>Set {set.set_number} reps
-        <input type="number" inputMode="numeric" min="1" step="1" value={reps} disabled={disabled} onChange={event => setReps(event.target.value)} />
+        <input type="number" inputMode="numeric" min="1" step="1" value={reps} disabled={disabled} onChange={event => edit(weight, event.target.value)} />
       </label>
     </div>
     <button type="button" disabled={disabled} onClick={save}>Update set {set.set_number}</button>
