@@ -14,12 +14,10 @@ import {
   type MuscleReadiness,
 } from '@/lib/workout/muscleReadiness'
 import type { ProgramTier, ProgramLogicOutput } from '@/lib/dashboard/logic/types'
-import { activityDose, summarizeActivityUnits } from '@/lib/workout/activity'
+import { activityDose } from '@/lib/workout/activity'
 import { exerciseLoadPresentation } from '@/lib/workout/exerciseLoadPresentation'
-import { exerciseOccurrenceLabel, formatWorkoutHistoryDate } from '@/lib/workout/logging'
+import { exerciseOccurrenceLabel } from '@/lib/workout/logging'
 import { parseWorkoutViewPreferences } from '@/lib/workout/viewPreferences'
-
-type Tab = 'progress' | 'strength' | 'recovery' | 'history'
 
 type AssignedExercise = {
   id?: string | number
@@ -43,17 +41,6 @@ type AssignedExercise = {
   [key: string]: unknown
 }
 
-type WorkoutLogRow = {
-  id?: string
-  workout_date?: string
-  workout_started_at?: string | null
-  day_name?: string
-  completed?: boolean
-  workout_source?: 'recommended' | 'manual'
-  planned_exercises?: AssignedExercise[]
-  exercise_logs?: AssignedExercise[]
-}
-
 type Props = {
   clientId: string
   authUserId: string
@@ -73,7 +60,6 @@ type Props = {
   logic: ProgramLogicOutput
   outputProgram?: string | null
   muscleReadiness: MuscleReadiness[]
-  workoutHistory: WorkoutLogRow[]
   timezone?: string
   weightUnit?: 'lb' | 'kg'
   memberEquipment: string[]
@@ -116,60 +102,7 @@ function WorkoutPreview({ exercises, previewTitle, previewMessage }: { exercises
   )
 }
 
-function ProgressTab({ logic, exercises }: { logic: ProgramLogicOutput; exercises: AssignedExercise[] }) {
-  const totals = summarizeActivityUnits(exercises)
-
-  return (
-    <div className="workout-tab-grid" data-testid="workout-progress-tab">
-      <article><span>Completion</span><strong>{logic.execution.workoutComplete ? 'Complete' : 'Open'}</strong><small>From your saved workout session</small></article>
-      <article><span>Planned Strength</span><strong>{totals.sets} sets</strong><small>{totals.reps} prescribed repetitions</small></article>
-      <article><span>Planned Activity</span><strong>{Math.round(totals.minutes * 10) / 10} min · {totals.breaths} breaths</strong><small>{totals.activities} completion-based movement{totals.activities === 1 ? '' : 's'}</small></article>
-      <article><span>Duration</span><strong>{logic.workout.durationMinutes ? `${logic.workout.durationMinutes} min` : 'Not set'}</strong><small>From the current workout source</small></article>
-    </div>
-  )
-}
-
-function StrengthTab({ logic, paused }: { logic: ProgramLogicOutput; paused: boolean }) {
-  const strength = logic.assessments.strength
-  return (
-    <div className="workout-tab-grid" data-testid="workout-strength-tab">
-      <article>
-        <span>Strength Assessment</span>
-        <strong>{strength.label}</strong>
-        <small>{getStrengthAssessmentDetail(strength, logic.client)}</small>
-        {paused && !strength.completedToday ? <small>Training is paused. Your saved assessment and draft remain available to review.</small> : null}
-        <Link href={strength.href} className="tier-secondary-action">{paused && !strength.completedToday ? strength.state === 'draft' ? 'Review saved draft' : 'Review assessment' : strength.actionLabel}</Link>
-        {strength.previousDraft ? <Link href={strength.previousDraft.href} className="tier-secondary-action">Resume earlier strength assessment</Link> : null}
-      </article>
-    </div>
-  )
-}
-
-function RecoveryTab({ tier }: { tier: ProgramTier }) {
-  return (
-    <div data-testid="workout-recovery-tab" data-tier={tier}>
-      <details className="phone-app-report"><summary>Heart-rate recovery · Unavailable</summary><p>No timestamped heart-rate stream or continuous exercise/rest intervals are connected to this session. Your recorded sets remain available. This screen does not establish a watch connection or a heart-rate readiness threshold.</p></details>
-      <p>Inspect muscle readiness in the Manual workout map.</p>
-    </div>
-  )
-}
-
-function HistoryTab({ history, timezone }: { history: WorkoutLogRow[]; timezone?: string }) {
-  return (
-    <div className="workout-history-list" data-testid="workout-history-tab">
-      {history.length ? history.slice(0, 8).map((row, index) => (
-        <article key={row.id || `${row.workout_date}-${index}`}>
-          <time>{formatWorkoutHistoryDate(row.workout_started_at || row.workout_date, timezone)}</time>
-          <strong>{row.day_name || 'Completed workout'}</strong>
-          <small>{row.completed ? 'Completed' : 'Not completed'} · {row.workout_source || 'recommended'} · {(row.exercise_logs || []).length} logged exercises</small>
-        </article>
-      )) : <p className="tier-calendar-empty">Your saved workout sessions will appear here.</p>}
-    </div>
-  )
-}
-
 export default function WorkoutDashboard(props: Props) {
-  const [tab, setTab] = useState<Tab>('progress')
   const [workoutMode, setWorkoutMode] = useState<'recommended' | 'manual'>('recommended')
   const [restoredPreferenceKey, setRestoredPreferenceKey] = useState<string | null>(null)
   const preferenceKey = `aos-workout-view:v1:${props.clientId}:${props.program}`
@@ -180,12 +113,12 @@ export default function WorkoutDashboard(props: Props) {
     let stored = null
     try { stored = localStorage.getItem(preferenceKey) } catch { /* The workout remains available without browser preferences. */ }
     const preferences = parseWorkoutViewPreferences(stored)
-    setTab(preferences.tab); setWorkoutMode(preferences.mode); setRestoredPreferenceKey(preferenceKey)
+    setWorkoutMode(preferences.mode); setRestoredPreferenceKey(preferenceKey)
   }, [preferenceKey])
   useEffect(() => {
     if (restoredPreferenceKey !== preferenceKey) return
-    try { localStorage.setItem(preferenceKey, JSON.stringify({ tab, mode: workoutMode })) } catch { /* Browser preferences are optional. */ }
-  }, [preferenceKey, restoredPreferenceKey, tab, workoutMode])
+    try { localStorage.setItem(preferenceKey, JSON.stringify({ ...parseWorkoutViewPreferences(localStorage.getItem(preferenceKey)), mode: workoutMode })) } catch { /* Browser preferences are optional. */ }
+  }, [preferenceKey, restoredPreferenceKey, workoutMode])
 
   return (
     <section className="workout-dashboard-workspace" data-tier={props.program}>
@@ -215,7 +148,7 @@ export default function WorkoutDashboard(props: Props) {
                   className={workoutMode === mode ? 'is-active' : ''}
                   onClick={() => setWorkoutMode(mode)}
                 >
-                  {mode === 'recommended' ? 'Recommended' : 'Manual'}
+                  {mode === 'recommended' ? 'Your Plan' : 'Build Your Own'}
                 </button>
               ))}
             </div>
@@ -263,25 +196,14 @@ export default function WorkoutDashboard(props: Props) {
                 exercises={props.assignedExercises}
               />
             ) : (
-              <WorkoutPreview exercises={props.assignedExercises} previewTitle={props.previewTitle} previewMessage={props.previewMessage} />
+              <>
+                <WorkoutPreview exercises={props.assignedExercises} previewTitle={props.previewTitle} previewMessage={props.previewMessage} />
+                {props.strengthAssessmentWorkout && strengthPaused ? <p><Link href={props.logic.assessments.strength.href} className="tier-secondary-action">{props.logic.assessments.strength.state === 'draft' ? 'Review saved draft' : 'Review assessment'}</Link>{props.logic.assessments.strength.previousDraft ? <Link href={props.logic.assessments.strength.previousDraft.href} className="tier-secondary-action">Resume earlier strength assessment</Link> : null}</p> : null}
+              </>
             )}
           </div>
         </section>
-      <section className="tier-info-panel workout-info-panel" data-testid="workout-toggle-panel">
-        <div className="tier-tab-list" role="tablist" aria-label="Workout information">
-          {(['progress', 'strength', 'recovery', 'history'] as Tab[]).map((item) => (
-            <button key={item} id={`workout-tab-${item}`} type="button" role="tab" aria-selected={tab === item} aria-controls="workout-information-panel" className={tab === item ? 'is-active' : ''} onClick={() => setTab(item)}>
-              {item[0].toUpperCase() + item.slice(1)}
-            </button>
-          ))}
-        </div>
-        <div id="workout-information-panel" role="tabpanel" aria-labelledby={`workout-tab-${tab}`}>
-        {tab === 'progress' ? <ProgressTab logic={props.logic} exercises={props.assignedExercises} /> : null}
-        {tab === 'strength' ? <StrengthTab logic={props.logic} paused={strengthPaused} /> : null}
-        {tab === 'recovery' ? <RecoveryTab tier={props.program} /> : null}
-        {tab === 'history' ? <HistoryTab history={props.workoutHistory} timezone={props.timezone} /> : null}
-        </div>
-      </section>
+
     </section>
   )
 }

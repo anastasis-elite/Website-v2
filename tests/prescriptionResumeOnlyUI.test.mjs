@@ -100,8 +100,7 @@ test('resume-only restores a local partial workout with original session keys, a
   const storage = new Map([[legacyKey, JSON.stringify(stored)]])
   const app = mount(ActivityTracker, { ...p, resumeOnly: true }, storage)
   await app.flush()
-  assert.match(content(app.tree), /1 of 4 prescribed sets recorded/)
-  assert.match(content(app.tree), /2 needed for workout checkoff/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 25)
   assert.match(content(app.tree), /Set 1: 7 reps/)
   assert.ok(button(app.tree, 'Save / pause'))
   button(app.tree, 'Save / pause').props.onClick(); await app.flush()
@@ -133,7 +132,7 @@ test('resume-only retains actual sets from a full-dose raw legacy browser array'
   const original = JSON.stringify([log]), storage = new Map([[key, original]])
   const app = mount(ActivityTracker, { ...p, resumeOnly: true }, storage)
   await app.flush()
-  assert.match(content(app.tree), /1 of 4 prescribed sets recorded/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 25)
   button(app.tree, 'Save / pause').props.onClick(); await app.flush()
   const saved = app.calls.find(call => call.payload).payload
   assert.deepEqual(saved.exercise_logs[0].set_logs, log.set_logs)
@@ -149,7 +148,7 @@ test('resume-only discovers a unique reduced local session and saves with its or
   const stored = { logs: [log], plannedExercises: [exercise], dirty: true, modifiedAt: new Date().toISOString() }
   const storage = new Map([[key, JSON.stringify(stored)]]), app = mount(ActivityTracker, { ...p, resumeOnly: true }, storage)
   await app.flush()
-  assert.match(content(app.tree), /1 of 4 prescribed sets recorded/)
+  assert.equal(nodes(app.tree, node => node.props?.role === 'progressbar')[0].props['aria-valuenow'], 25)
   const reads = app.calls.filter(call => !call.payload)
   assert.equal(reads.length, 2)
   const originalRead = new URL(reads[1].url, 'https://synthetic.invalid')

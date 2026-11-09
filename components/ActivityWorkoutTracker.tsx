@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { activityDose, isBodyweightExercise, manualWorkoutPlan, workoutCompletion, summarizeStrengthSets, summarizeActivityUnits } from '@/lib/workout/activity'
+import { activityDose, isBodyweightExercise, manualWorkoutPlan, prescribedSetCount, workoutCompletion, summarizeStrengthSets, summarizeActivityUnits } from '@/lib/workout/activity'
 import { initialWorkoutLogs, matchingWorkoutPlan, resumeWorkoutSession, workoutSessionKeys } from '@/lib/workout/session'
 import { exerciseOccurrenceLabel } from '@/lib/workout/logging'
 import WorkoutSetEditor from '@/components/workout-dashboard/WorkoutSetEditor'
@@ -34,9 +34,16 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
   const [exercisePosition, setExercisePosition] = useState({ key, index: 0 })
   const [sessionPlan, setSessionPlan] = useState<any[]>(plannedExercises as any[])
   const activeIndex = exercisePosition.key === key ? Math.min(exercisePosition.index, Math.max(0, logs.length - 1)) : 0
-  function showExercise(index: number) {
+  function selectExercise(index: number) {
     const next = Math.max(0, Math.min(index, logs.length - 1))
+    const track = carousel.current
+    // Move focus before a swipe makes the focused card inert.
+    if (next !== activeIndex && track?.children[activeIndex]?.contains(track.ownerDocument.activeElement)) track.focus({ preventScroll: true })
     setExercisePosition({ key, index: next })
+    return next
+  }
+  function showExercise(index: number) {
+    const next = selectExercise(index)
     if (carousel.current) carousel.current.scrollTo({ left: next * carousel.current.clientWidth, behavior: 'auto' })
   }
   useEffect(() => {
@@ -119,6 +126,10 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
   }, [key, retry, prescriptionKey, resumeOnly])
   useEffect(() => { if (ready) { try { localStorage.setItem(resumedIdentity.current.storageKey, JSON.stringify({ version: 2, logs, plannedExercises: sessionPlan, draft, dirty, modifiedAt, activeExerciseKey: logs[activeIndex]?.session_key })) } catch { setMessage('This browser could not retain a draft. Use Save / pause to keep your progress.') } } }, [key, ready, logs, sessionPlan, draft, dirty, modifiedAt, activeIndex])
   const counts = workoutCompletion(logs, workoutSource === 'manual' ? manualWorkoutPlan(logs) : sessionPlan)
+  // This display uses all retained prescribed work, independently of halfway credit.
+  const progressPercentage = counts.totalSets > 0 && sessionPlan.every(exercise => prescribedSetCount(exercise) > 0)
+    ? counts.completedSets >= counts.totalSets ? 100 : Math.max(0, Math.min(99, Math.floor(counts.completedSets * 100 / counts.totalSets)))
+    : null
   const totals = summarizeActivityUnits(logs, true)
   function markDirty() { setDirty(true); setModifiedAt(new Date().toISOString()) }
   function patch(index: number, values: Record<string, unknown>) { markDirty(); setLogs(current => current.map((log, i) => i === index ? { ...log, ...values } : log)); setSummary(false); setMessage('Your changes are in this draft. Save progress when you’re ready.') }
@@ -159,15 +170,21 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
   return <section className="activity-session" data-testid="activity-workout-tracker" aria-label="Workout session">
     {!ready ? <p role="status">{loadFailed ? 'Saved progress is unavailable. Retry before editing or saving.' : 'Loading your saved progress…'}</p> : null}
     {loadFailed ? <button type="button" onClick={() => setRetry(value => value + 1)}>Retry saved progress</button> : null}
-    <p>{counts.complete} of {counts.total} exercises complete{counts.partial ? ` · ${counts.partial} in progress` : ''}{counts.skipped ? ` · ${counts.skipped} skipped` : ''}</p>
-    {manualCardio ? <p>Manual duration logging. Enter and confirm the time you actually completed. No duration target is prescribed. Distance and automatic readings are not recorded here.</p> : <><p>{counts.completedSets} of {counts.totalSets} prescribed sets recorded{counts.totalSets > 0 ? ` · ${counts.requiredSets} needed for workout checkoff` : ' · No fixed set prescription is available.'}</p><p>Prescribed values are a starting point. Confirm each set or activity to record what you did.</p></>}
-    {logs.length ? <section className="activity-exercise-carousel" aria-label="Exercises" aria-roledescription="carousel">
-      <div className="activity-carousel-controls">
-        <button type="button" aria-label="Previous exercise" disabled={!ready || activeIndex === 0} onClick={() => showExercise(activeIndex - 1)}>Previous</button>
-        <p role="status" aria-live="polite" aria-atomic="true">Exercise {activeIndex + 1} of {logs.length}</p>
-        <button type="button" aria-label="Next exercise" disabled={!ready || activeIndex === logs.length - 1} onClick={() => showExercise(activeIndex + 1)}>Next</button>
+    {workoutSource === 'recommended' ? progressPercentage === null ? <p className="activity-progress-unavailable">Workout progress unavailable.</p> : <div className="activity-workout-progress">
+      <div className="activity-progress-label"><span>Workout progress</span><strong>{progressPercentage}%</strong></div>
+      <div className="activity-progress-bar" role="progressbar" aria-label="Today's workout progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressPercentage} aria-valuetext={`${progressPercentage}% of prescribed workout completed`}>
+        <span style={{ width: `${progressPercentage}%` }} />
       </div>
-      <p className="activity-carousel-hint">Swipe left or right, or use Previous and Next.</p>
+    </div> : null}
+    {manualCardio ? <p>Manual duration logging. Enter and confirm the time you actually completed. No duration target is prescribed. Distance and automatic readings are not recorded here.</p> : null}
+    {logs.length ? <section className="activity-exercise-carousel" aria-label="Exercises" aria-roledescription="carousel">
+      <label className="activity-carousel-pagination">
+        <span role="status" aria-live="polite" aria-atomic="true">Exercise {activeIndex + 1} of {logs.length}</span>
+        <select aria-label="Choose exercise" value={activeIndex} disabled={!ready} onChange={event => showExercise(Number(event.target.value))}>
+          {logs.map((_, index) => <option key={logs[index].session_key} value={index}>{index + 1}. {exerciseOccurrenceLabel(logs, index)}</option>)}
+        </select>
+      </label>
+      <p className="activity-carousel-hint">Swipe left or right, choose an exercise, or focus the cards and use arrow keys.</p>
       <div className="activity-exercise-track" ref={carousel} tabIndex={0} role="region" aria-label="Exercise cards" onKeyDown={event => {
         // Arrow keys inside number inputs, selects and other controls retain their native behavior.
         if (event.target !== event.currentTarget || !ready || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
@@ -175,7 +192,7 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
         showExercise(event.key === 'Home' ? 0 : event.key === 'End' ? logs.length - 1 : activeIndex + (event.key === 'ArrowRight' ? 1 : -1))
       }} onScroll={event => {
         const viewport = event.currentTarget
-        if (viewport.clientWidth > 0) setExercisePosition({ key, index: Math.max(0, Math.min(logs.length - 1, Math.round(viewport.scrollLeft / viewport.clientWidth))) })
+        if (viewport.clientWidth > 0) selectExercise(Math.round(viewport.scrollLeft / viewport.clientWidth))
       }}>
       {logs.map((log, index) => {
       const dose = activityDose(log, weightUnit)

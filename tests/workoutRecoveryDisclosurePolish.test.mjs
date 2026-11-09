@@ -9,7 +9,7 @@ import ts from 'typescript'
 import { importTs } from './typescriptModule.mjs'
 
 const require = createRequire(import.meta.url)
-const explanation = 'No timestamped heart-rate stream or continuous exercise/rest intervals are connected to this session. Your recorded sets remain available. This screen does not establish a watch connection or a heart-rate readiness threshold.'
+const strengthState = await importTs('lib/assessment/strengthWorkoutState.ts')
 const readinessModule = await importTs('lib/workout/muscleReadiness.ts')
 const nodes = (tree, match) => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree)
   ? tree.flatMap(child => nodes(child, match)) : [...(match(tree) ? [tree] : []), ...nodes(tree.props?.children, match)]
@@ -33,6 +33,8 @@ function harness({ safety = false, readiness = [] } = {}) {
       mapCalls.push(props)
       return React.createElement('div', { 'data-testid': 'informational-muscle-map' })
     } },
+    '@/lib/assessment/strengthWorkoutState': strengthState,
+    '@/lib/workout/exerciseLoadPresentation': { exerciseLoadPresentation: () => ({ recommendationAvailable: false }) },
     '@/lib/assessment/getStrengthAssessmentStatus': { getStrengthAssessmentDetail: () => 'Saved assessment information.' },
     '@/lib/workout/muscleReadiness': { getMuscleIdsForExercise: () => [] },
     '@/lib/workout/activity': { activityDose: () => ({}), summarizeActivityUnits: () => ({ sets: 0, reps: 0, minutes: 0, breaths: 0, activities: 0 }) },
@@ -48,12 +50,9 @@ function harness({ safety = false, readiness = [] } = {}) {
     assignedExercises: [], showInteractiveWorkout: false, hasSafetyFlags: safety, safetyFlags: safety ? [{ id: 'synthetic-flag' }] : [],
     previewTitle: 'Existing preview', previewMessage: 'Saved workout remains available.', muscleReadiness: readiness,
     workoutHistory: [], memberEquipment: [], showStrengthAssessmentOffer: false,
-    logic: { execution: { workoutComplete: false }, workout: { durationMinutes: 0 } } }
+    logic: { execution: { workoutComplete: false }, workout: { durationMinutes: 0 }, workoutDecision: { canTrain: true }, assessments: { strength: {} } } }
   const render = () => { position = 0;return module.exports.default(props) }
-  return { render, mapCalls, html: () => renderToStaticMarkup(render()), tab(id) {
-    const button = nodes(render(), node => node.type === 'button' && node.props.id === `workout-tab-${id}`)[0]
-    assert.ok(button);button.props.onClick()
-  } }
+  return { render, mapCalls, html: () => renderToStaticMarkup(render()) }
 }
 
 test('default workout keeps its panel and safety information without the top heart-rate disclosure', () => {
@@ -61,27 +60,21 @@ test('default workout keeps its panel and safety information without the top hea
   assert.match(html, /data-testid="today-workout-panel"/)
   assert.match(html, /Existing preview/)
   assert.match(html, /role="alert">Existing safety notice/)
-  assert.match(html, /id="workout-tab-progress"[^>]+aria-selected="true"/)
+  assert.doesNotMatch(html, /workout-toggle-panel|workout-tab-progress/)
   assert.doesNotMatch(html, /Heart-rate recovery|No timestamped heart-rate stream/)
   assert.doesNotMatch(html, /Muscle readiness details|informational-muscle-map/)
 })
 
-test('the existing Recovery tab retains the unavailable disclosure and points to the single Manual map', () => {
+test('supplemental recovery content is removed while readiness reaches the manual builder', () => {
   const readiness = [{ muscleId: 'left_quadriceps', state: 'recovering', reasons: ['Existing muscle recovery note.'] }]
-  const view = harness({ readiness })
-  view.tab('recovery')
-  const html = view.html()
-  assert.match(html, /id="workout-tab-recovery"[^>]+aria-selected="true"/)
-  assert.match(html, /role="tabpanel" aria-labelledby="workout-tab-recovery"/)
-  assert.match(html, /data-testid="workout-recovery-tab"[^>]*><details class="phone-app-report"><summary>Heart-rate recovery · Unavailable<\/summary>/)
-  assert.equal((html.match(/Heart-rate recovery · Unavailable/g) || []).length, 1)
-  assert.ok(html.includes(explanation))
-  assert.equal((html.match(/data-testid="informational-muscle-map"/g) || []).length, 0)
+  const view = harness({ readiness }), html = view.html()
+  assert.doesNotMatch(html, /Workout information|workout-toggle-panel|workout-recovery-tab|Heart-rate recovery/)
+  const mode = nodes(view.render(), node => node.type === 'button' && node.props.children === 'Build Your Own')[0]
+  mode.props.onClick()
+  const builder = nodes(view.render(), node => node.props?.readiness === readiness)[0]
+  assert.ok(builder)
+  assert.equal(builder.props.readiness, readiness)
   assert.equal(view.mapCalls.length, 0)
-  assert.match(html, /Inspect muscle readiness in the Manual workout map/)
-  assert.doesNotMatch(html, /workout-recovery-table|Muscle readiness details/)
-  view.tab('progress')
-  assert.doesNotMatch(view.html(), /Heart-rate recovery|No timestamped heart-rate stream/)
 })
 
 test('the unchanged informational map retains front/back, per-side keyboard and tap inspection with reasons', () => {
