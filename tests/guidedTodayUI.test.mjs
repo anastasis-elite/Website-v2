@@ -272,16 +272,15 @@ test('compact Today cards retain their primary links and direct schedule review 
     ]
     cards.forEach((card, index) => {
       const kind = targets[index][0]
-      const artwork = kind === 'check-in'
-        ? `/illustrations/today-${kind}.svg`
-        : `/_next/static/media/${kind}-640.webp`
+      const artwork = `/_next/static/media/${kind}-640.webp`
       assert.ok(card[2].includes(`src="${artwork}"`))
       assert.ok(card[2].includes(`href="${targets[index][1]}"`))
       const primary = card[2].match(/^\s*<a\b[^>]*>([\s\S]*?)<\/a>/)?.[1]
       assert.ok(primary)
       assert.match(primary, /today-card-illustration/)
-      assert.match(primary, kind === 'check-in' ? /width="360" height="180"/ : /width="640" height="427"/)
-      if (kind !== 'check-in') assert.match(primary, /srcSet="[^"]+ 320w, [^"]+ 640w"/)
+      assert.match(primary, kind === 'check-in' ? /width="640" height="700"/ : /width="640" height="427"/)
+      assert.match(primary, /srcSet="[^"]+ 320w, [^"]+ 640w"/)
+      if (kind === 'check-in') assert.match(primary, /src="\/_next\/static\/media\/check-in-640\.webp"/)
       assert.match(primary, /<strong>/)
       assert.doesNotMatch(primary, /today-activity-state|>Available</)
       assert.doesNotMatch(primary, /<button\b|<details\b|<summary\b|today-card-action|today-action-arrow/)
