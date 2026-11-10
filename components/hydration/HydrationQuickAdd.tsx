@@ -25,6 +25,7 @@ type Props = {
   stepOunces?: number
   initiallyOpen?: boolean
   inline?: boolean
+  refreshOnSave?: boolean
   onSaved?: (total: number, target?: number) => void
   onClosed?: () => void
   children?: ReactNode
@@ -34,7 +35,7 @@ type Props = {
 export default function HydrationQuickAdd({
   clientId, logDate, consumed, consumedKnown = true, target, targetStatus, disabled = false, defaultOunces = 8,
   minimumOunces = 4, maximumOunces = 64, stepOunces = 4,
-  initiallyOpen = false, inline = false, onSaved, onClosed, children, renderTrigger,
+  initiallyOpen = false, inline = false, refreshOnSave = true, onSaved, onClosed, children, renderTrigger,
 }: Props) {
   const router = useRouter()
   const id = useId()
@@ -171,7 +172,7 @@ export default function HydrationQuickAdd({
       const confirmedTarget = Number(payload.nutritionLog?.water_oz)
       onSaved?.(total, Number.isFinite(confirmedTarget) && confirmedTarget > 0 ? confirmedTarget : undefined)
       setMessage(`${ounces} oz saved. ${total} oz logged today.`)
-      router.refresh()
+      if (refreshOnSave) router.refresh()
     } catch (error) {
       if (activeScope.current === submissionScope) setMessage(error instanceof Error ? error.message : 'Water could not be saved. Try again.')
     } finally {

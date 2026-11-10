@@ -2,6 +2,7 @@ import CardArtworkModule from './cardArtworkFixture.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { randomUUID } from 'node:crypto'
 import test from 'node:test'
 import vm from 'node:vm'
 import { dirname, resolve } from 'node:path'
@@ -82,8 +83,8 @@ test('direct water exposes the actual inline entry without a second trigger', ()
   assert.equal(nodes(tree).filter(node => node.type === 'h1' || node.type === 'button' || node.type === 'a').length, 0, 'No redundant wrapper controls precede the actual entry')
   assert.equal(entries[0].props.renderTrigger({}), null)
   assert.equal(entries[0].props.consumed, 8)
-  entries[0].props.onClosed()
-  assert.deepEqual(navigations, ['/dashboard'])
+  assert.equal(entries[0].props.onClosed, undefined, 'Unsaved dismissal has no return callback')
+  assert.deepEqual(navigations, [])
 })
 
 test('direct water retains unavailable-total feedback and its read retry inside the actual entry', async () => {
@@ -180,4 +181,192 @@ test('visible micronutrient rings reload other-device persisted intake after res
   assert.equal(nodes(render()).find(node => node.type === 'micro-ring' && node.props.progress.key === 'iron').props.progress.percent, 60)
   state.unmount()
   assert.equal(doc.listenerCount('visibilitychange'), 0)
+})
+
+// Render both real water components so navigation assertions exercise receipt
+// persistence and response validation, rather than invoking onSaved by hand.
+function mountedWaterReturn({ request, shared = false, earlierReceipt } = {}) {
+  const parent = hooks(), child = hooks(), values = new Map(), calls = [], navigation = []
+  let active = parent.react, props, tree, mounted = true, childMounted = false, failClear = false, refreshes = 0, receiptChecks = 0
+  const react = Object.fromEntries(Object.keys(active).map(name => [name, (...args) => active[name](...args)]))
+  const storage = {
+    getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem(key) { if (failClear) throw new Error('Synthetic receipt-clear failure'); values.delete(key) },
+    get length() { return values.size }, key: index => [...values.keys()][index] ?? null,
+  }
+  if (earlierReceipt) values.set('anastasis:water-submission:v1:own-client', JSON.stringify(earlierReceipt))
+  const location = { pathname: '/dashboard/nutrition', search: '?log=water' }
+  const environment = {
+    Date: class extends Date { constructor(...args) { super(...(args.length ? args : ['2026-10-14T12:00:00Z'])) } },
+    URLSearchParams, crypto: { randomUUID }, document: documentFixture(),
+    window: { localStorage: storage, location, setInterval() { return 1 }, clearInterval() {}, addEventListener() {}, removeEventListener() {} },
+    fetch: async (url, options) => {
+      assert.equal(url, '/api/nutrition/add-water')
+      const body = JSON.parse(options.body)
+      assert.equal(JSON.parse(values.get(`anastasis:water-submission:v1:${body.clientId}`)).submissionId, body.submissionId, 'The durable identity exists before POST')
+      calls.push(body)
+      return request ? request(body, calls.length) : Response.json({ nutritionLog: { water_consumed_oz: 44, water_oz: 90 } })
+    },
+  }
+  const navigationRouter = { refresh() { refreshes++ }, replace(href) { navigation.push(href) }, push() { assert.fail('Returning must replace history') }, back() { assert.fail('Returning must resolve Today directly') } }
+  const imports = {
+    react, 'next/navigation': { useRouter: () => navigationRouter },
+    '@/lib/supabase/client': { createClient: () => ({}) },
+    '@/lib/hydration/waterSubmission': load('lib/hydration/waterSubmission.ts', {}, environment),
+    '@/lib/hydration/reconcileWaterSubmission': { readWaterReceiptStatus: async () => { receiptChecks++; return 'confirmed' } },
+  }
+  const QuickAdd = load('components/hydration/HydrationQuickAdd.tsx', imports, environment).default
+  const Direct = load('components/nutrition/DirectNutritionEntry.tsx', {
+    ...imports, '@/lib/entitlements': entitlements,
+    '@/components/hydration/HydrationQuickAdd': { __esModule: true, default: QuickAdd },
+    '@/components/NutritionFoodLogger': { __esModule: true, default: 'food-entry' },
+    '@/lib/nutrition/directEntry': { readDirectWaterEntry: async (clientId, logDate) => ({ clientId, logDate, target: 90, consumed: 36 }) },
+  }, environment).default
+  props = { clientId: 'own-client', program: 'ignite', timezone: 'UTC', logDate: '2026-10-14', loggingIntent: { action: 'water' }, initialLog: { id: 'own-log', client_id: 'own-client', log_date: '2026-10-14', water_consumed_oz: 36, water_oz: 90 } }
+  function render() {
+    if (!mounted) return tree
+    active = parent.react
+    tree = parent.render(Direct, props)
+    const water = nodes(tree).find(node => node.type === QuickAdd)
+    if (water) {
+      active = child.react
+      tree = child.render(QuickAdd, shared ? { ...water.props, inline: false, refreshOnSave: undefined, onSaved: undefined } : water.props)
+      childMounted = true
+    } else if (childMounted) { child.unmount(); childMounted = false }
+    return tree
+  }
+  render(); render()
+  return {
+    render, calls, navigation, values, location,
+    get refreshes() { return refreshes }, get receiptChecks() { return receiptChecks },
+    setProps(next) { props = { ...props, ...next } },
+    setClearFailure(value) { failClear = value },
+    unmount() { mounted = false; parent.unmount(); child.unmount() },
+    button(label) { return nodes(tree).find(node => node.type === 'button' && elementText(node) === label) },
+    input(type) { return nodes(tree).find(node => node.type === 'input' && node.props.type === type) },
+    async flush() { return flush(render) },
+  }
+}
+const elementText = element => Array.isArray(element) ? element.map(elementText).join('') : element && typeof element === 'object' ? elementText(element.props?.children) : element == null ? '' : String(element)
+
+test('confirmed direct water save replaces Today once despite repeated taps and does not refresh the departing entry', async () => {
+  let release
+  const app = mountedWaterReturn({ request: () => new Promise(resolve => { release = resolve }) })
+  const save = app.button('Add 8 oz')
+  save.props.onClick(); save.props.onClick()
+  assert.equal(app.calls.length, 1)
+  assert.deepEqual(app.navigation, [])
+  release(Response.json({ nutritionLog: { water_consumed_oz: 44, water_oz: 90 } }))
+  await app.flush()
+  assert.deepEqual(app.navigation, ['/dashboard'])
+  assert.equal(app.refreshes, 0)
+  assert.equal(app.values.size, 0)
+  assert.equal(app.button('Add 8 oz').props.disabled, true, 'A pending route replacement cannot submit another drink')
+  app.button('Add 8 oz').props.onClick(); await app.flush()
+  assert.equal(app.calls.length, 1)
+  assert.deepEqual(app.navigation, ['/dashboard'])
+})
+
+test('opening direct water and editing an unsaved amount never saves or returns', async () => {
+  const app = mountedWaterReturn()
+  app.input('range').props.onChange({ target: { value: '20' } }); app.render()
+  app.input('number').props.onChange({ target: { value: '7.5' } }); app.render()
+  assert.equal(app.input('range').props.value, 7.5)
+  app.unmount(); await app.flush()
+  assert.equal(app.calls.length, 0)
+  assert.deepEqual(app.navigation, [])
+  assert.equal(app.refreshes, 0)
+  assert.equal(app.values.size, 0)
+})
+
+test('failed and ambiguous direct water responses retain the same receipt and return only after a confirmed retry', async () => {
+  const failures = [
+    () => Response.json({ error: 'Synthetic save failure' }, { status: 503 }),
+    () => { throw new TypeError('Response lost after commit') },
+    () => new Response('{malformed'),
+    ...[null, '', -1, 'invalid'].map(total => () => Response.json({ nutritionLog: { water_consumed_oz: total } })),
+  ]
+  for (const failure of failures) {
+    const app = mountedWaterReturn({ request: (_body, attempt) => attempt === 1 ? failure() : Response.json({ nutritionLog: { water_consumed_oz: 44 } }) })
+    app.button('Add 8 oz').props.onClick(); await app.flush()
+    assert.deepEqual(app.navigation, [])
+    assert.equal(app.refreshes, 0)
+    assert.equal(app.values.size, 1)
+    app.button('Retry 8 oz save').props.onClick(); await app.flush()
+    assert.equal(app.calls[1].submissionId, app.calls[0].submissionId)
+    assert.equal(app.calls[1].logDate, app.calls[0].logDate)
+    assert.deepEqual(app.navigation, ['/dashboard'])
+    assert.equal(app.values.size, 0)
+    assert.equal(app.refreshes, 0)
+    app.unmount()
+  }
+})
+
+test('receipt-clear failure keeps direct water open and retries its original identity before returning', async () => {
+  const app = mountedWaterReturn()
+  app.setClearFailure(true)
+  app.button('Add 8 oz').props.onClick(); await app.flush()
+  assert.deepEqual(app.navigation, [])
+  assert.equal(app.values.size, 1)
+  assert.equal(app.refreshes, 0)
+  app.setClearFailure(false)
+  app.button('Retry 8 oz save').props.onClick(); await app.flush()
+  assert.equal(app.calls[1].submissionId, app.calls[0].submissionId)
+  assert.deepEqual(app.navigation, ['/dashboard'])
+})
+
+test('late direct water confirmation cannot return after unmount, navigation away, or a client/day scope change', async () => {
+  const changes = [
+    app => app.unmount(),
+    app => { app.location.pathname = '/dashboard/training' },
+    app => { app.location.search = '?log=food' },
+    app => { app.setProps({ clientId: 'other-client' }); app.render() },
+    app => { app.setProps({ logDate: '2026-10-15' }); app.render() },
+    app => { app.setProps({ clientId: 'other-client' }); app.render(); app.setProps({ clientId: 'own-client' }); app.render() },
+    app => { app.setProps({ loggingIntent: { action: 'food' } }); app.render() },
+  ]
+  for (const change of changes) {
+    let release
+    const app = mountedWaterReturn({ request: () => new Promise(resolve => { release = resolve }) })
+    app.button('Add 8 oz').props.onClick()
+    change(app)
+    const refreshesBeforeResponse = app.refreshes
+    release(Response.json({ nutritionLog: { water_consumed_oz: 44 } }))
+    await app.flush()
+    assert.deepEqual(app.navigation, [])
+    assert.equal(app.refreshes, refreshesBeforeResponse, 'The stale response cannot add a refresh')
+    assert.equal(app.calls.length, 1)
+    app.unmount()
+  }
+})
+
+test('confirming an earlier receipt alone never returns direct water or submits another drink', async () => {
+  const app = mountedWaterReturn({ earlierReceipt: { submissionId: randomUUID(), ounces: 8, logDate: '2026-10-13' } })
+  await app.flush()
+  assert.equal(app.receiptChecks, 1)
+  assert.equal(app.values.size, 0)
+  assert.equal(app.calls.length, 0)
+  assert.deepEqual(app.navigation, [])
+  assert.equal(app.refreshes, 0)
+})
+
+test('shared hydration still refreshes after confirmation and food/meal saves retain their logger without returning', async () => {
+  const shared = mountedWaterReturn({ shared: true })
+  shared.button('Log 8 oz').props.onClick(); await shared.flush()
+  assert.deepEqual(shared.navigation, [])
+  assert.equal(shared.refreshes, 1)
+  for (const action of ['food', 'meal']) {
+    const app = mountedWaterReturn()
+    app.setProps({ loggingIntent: { action, meal: 'Lunch' } })
+    const entry = nodes(app.render()).find(node => node.type === 'food-entry')
+    assert.equal(entry.props.initialMealPeriod, 'Lunch')
+    entry.props.onUpdated({}, 'saved')
+    const saved = nodes(app.render()).find(node => node.type === 'food-entry')
+    assert.equal(saved.key, entry.key)
+    assert.equal(app.refreshes, 1)
+    assert.equal(app.calls.length, 0)
+    assert.deepEqual(app.navigation, [])
+    app.unmount()
+  }
 })
