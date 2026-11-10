@@ -38,7 +38,7 @@ function restoredAnswers(raw: unknown): Partial<Values> {
   return answers
 }
 
-export default function DailyCheckInForm({ clientId, program, initial, cycleTrackingEnabled, stayOnSave = false, completed = false, localDate, timeZone }: { clientId:string; program:string; initial:Partial<Values>; cycleTrackingEnabled:boolean; stayOnSave?: boolean; completed?: boolean; localDate?: string; timeZone?: string }) {
+export default function DailyCheckInForm({ clientId, program, initial, cycleTrackingEnabled, recentPeriodStart = false, stayOnSave = false, completed = false, localDate, timeZone }: { clientId:string; program:string; initial:Partial<Values>; cycleTrackingEnabled:boolean; recentPeriodStart?: boolean; stayOnSave?: boolean; completed?: boolean; localDate?: string; timeZone?: string }) {
   const router = useRouter()
   const initialSoreness = initial.soreness ?? 5
   const initialSorenessRegions = initialSoreness > 5
@@ -125,6 +125,23 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
   }
   const [sorenessDialogOpen,setSorenessDialogOpen] = useState(false)
   const [symptomsOpen,setSymptomsOpen] = useState(false)
+  const [symptomConfirmation,setSymptomConfirmation] = useState('')
+  const symptomEntry = useRef<HTMLButtonElement>(null)
+  const checkInResume = useRef<HTMLDivElement>(null)
+  const symptomSaved = useRef(false)
+  const closeSymptoms = useCallback(() => setSymptomsOpen(false), [])
+  const afterSymptomsClose = useCallback(() => {
+    if (symptomSaved.current) {
+      symptomSaved.current = false
+      checkInResume.current?.focus({ preventScroll: true })
+      checkInResume.current?.scrollIntoView({ block: 'start' })
+    } else symptomEntry.current?.focus({ preventScroll: true })
+  }, [])
+  const onSymptomSaved = useCallback(() => {
+    symptomSaved.current = true
+    setSymptomConfirmation('Symptom saved. Continue your Daily Check-In below, then save it when you’re ready.')
+    setSymptomsOpen(false)
+  }, [])
   const closeSorenessDialog = useCallback(() => setSorenessDialogOpen(false), [])
   const updateSlider = (key: SliderKey, value: number) => {
     markEdited()
@@ -173,6 +190,7 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
       edited.current = false
       setChanged(false)
       setSaved(true)
+      setSymptomConfirmation('')
       if (draftKey) { try { window.sessionStorage.removeItem(draftKey) } catch { /* Submitted answers are already saved. */ } }
       if (!completionTracked.current) {
         completionTracked.current = true
@@ -190,11 +208,19 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
   }
 
   return <div className="daily-check-in-layout">
+    <div ref={checkInResume} tabIndex={-1} aria-label="Daily check-in" className="guided-check-in-resume">
     <AOSCard as="form" className="aos-check-in-form" onSubmit={save}>
       <fieldset className="guided-check-in-fields" disabled={saving}>
       <AOSSectionHeader eyebrow="Daily check-in" title="How’s your energy today?" copy="One answer is enough to check in. Add more context when it helps." />
+      {symptomConfirmation ? <p className="aos-status" role="status">{symptomConfirmation}</p> : null}
       <div className="guided-check-in-energy">{slider('energy','Energy')}<p><span>Running on empty</span><span>Feeling strong</span></p>{!answered.has('energy') ? <AOSButton type="button" variant="secondary" onClick={() => updateSlider('energy', values.energy)}>Use this energy level</AOSButton> : null}</div>
       {saved && !changed ? <p className="aos-status" role="status">Your check-in is already saved. You can update any answer below.</p> : null}
+      <section className="guided-check-in-symptom-entry" aria-label="Symptoms and period start">
+        <button ref={symptomEntry} type="button" className="aos-button aos-button--secondary" aria-haspopup="dialog" aria-expanded={symptomsOpen} onClick={() => setSymptomsOpen(true)}>Log symptoms (optional)</button>
+        <p className="guided-check-in-copy">Choose a body area or period-related symptoms. Symptoms are saved separately.</p>
+        {cycleTrackingEnabled ? <div className="aos-period-panel"><span className="aos-period-panel__icon" aria-hidden="true">◒</span><AOSToggle label="My period started today" description="Recorded when you save your final Daily Check-In. Logging symptoms does not record a period start." checked={values.periodStarted} onChange={(periodStarted)=>{markEdited();setValues((current)=>({...current,periodStarted}))}}/></div> : null}
+        {cycleTrackingEnabled && (values.periodStarted || recentPeriodStart) ? <p className="guided-check-in-copy">Period-related choices are available in the symptom popup and matching body areas.</p> : null}
+      </section>
       <details className="guided-check-in-details" open>
       <summary>Add more context (optional)<span>Sleep, stress, soreness, and more</span></summary>
       <p className="guided-check-in-copy">Untouched markers stay unanswered. Your existing inputs and detailed body signals remain available here.</p>
@@ -203,14 +229,14 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
         const label = SORENESS_REGIONS.find((item) => item.key === region)?.label || region
         return <button type="button" key={region} className="aos-chip is-selected" aria-pressed="true" onClick={() => toggleSorenessRegion(region)}>{label}</button>
       })}</div> : null}
-      {cycleTrackingEnabled ? <div className="aos-period-panel"><span className="aos-period-panel__icon" aria-hidden="true">◒</span><AOSToggle label="My period started today" description="This records today as the start of your period." checked={values.periodStarted} onChange={(periodStarted)=>{markEdited();setValues((current)=>({...current,periodStarted}))}}/></div> : null}
       <AOSInput multiline label="Optional notes" placeholder="Anything else your body is telling you?" rows={3} value={values.notes} onChange={(event)=>{markEdited();setAnswered(current => new Set(current).add('notes')); setValues((current)=>({...current,notes:event.target.value})) }}/>
       </details>
       <AOSButton type="submit" disabled={saving || (saved && !changed)}>{saving?'Saving…':saved?'Save changes':'Save Daily Check-In'}</AOSButton>
       {message?<p className="aos-status" role="status">{message}</p>:null}<Link href={`/dashboard/program/${tier}`} className="tier-secondary-action">{saved && !changed ? 'Done — what’s next?' : 'Return to Today'}</Link>
       </fieldset>
     </AOSCard>
-    <details className="aos-symptom-column guided-check-in-details guided-check-in-symptoms" onToggle={(event) => setSymptomsOpen(event.currentTarget.open)}><summary>Log symptoms (optional)<span>Open your detailed body map</span></summary>{symptomsOpen ? <><AOSSectionHeader eyebrow="Symptoms" title="Add any body signal." copy="Tap the area where you feel something. Symptoms are saved separately."/><SymptomLogger clientId={clientId}/></> : null}</details>
+    </div>
+    <SymptomLogger clientId={clientId} open={symptomsOpen} onClose={closeSymptoms} onAfterClose={afterSymptomsClose} onSaved={onSymptomSaved} periodContext={cycleTrackingEnabled && (values.periodStarted || recentPeriodStart)}/>
     <AOSModal open={sorenessDialogOpen} title="Soreness regions" onClose={closeSorenessDialog}>
       <AOSSectionHeader eyebrow="Soreness" title="Where are you sore?" copy="Select the areas where you feel soreness." />
       <div className="aos-chip-list" role="group" aria-label="Soreness regions">
