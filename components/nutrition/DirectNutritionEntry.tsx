@@ -39,6 +39,14 @@ export default function DirectNutritionEntry({
   const [waterEntry, setWaterEntry] = useState<DirectWaterEntry | null>(null)
   const [dayChanged, setDayChanged] = useState(false)
   const waterReadVersion = useRef(0)
+  // Scope changes intentionally create a fresh lifetime for pending save callbacks.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const waterReturn = useMemo(() => ({ active: false, returned: false }), [clientId, logDate, water, dayChanged])
+
+  useEffect(() => {
+    waterReturn.active = true
+    return () => { waterReturn.active = false }
+  }, [waterReturn])
 
   useEffect(() => {
     setError(initialError || '')
@@ -99,6 +107,7 @@ export default function DirectNutritionEntry({
   const savedTarget = Number(scopedLog?.water_oz)
   const target = dayChanged ? 0 : Number.isFinite(savedTarget) && savedTarget > 0 ? savedTarget : currentWater?.target || 0
   function waterSaved(total: number, confirmedTarget?: number) {
+    if (!waterReturn.active || waterReturn.returned) return
     waterReadVersion.current++
     setLoading(false)
     setError('')
@@ -107,12 +116,17 @@ export default function DirectNutritionEntry({
       setWaterEntry({ clientId, logDate, target: confirmedTarget, consumed: total })
       if (nutritionLog) setNutritionLog({ ...nutritionLog, water_oz: confirmedTarget })
     }
+    if (water && !dayChanged && typeof window !== 'undefined'
+      && window.location.pathname === '/dashboard/nutrition'
+      && new URLSearchParams(window.location.search).get('log') === 'water') {
+      waterReturn.returned = true
+      router.replace('/dashboard')
+    }
   }
   if (water) return <PhoneAppFrame eyebrow="Hydration" title="A moment to refill." subtitle="Choose what you drank, then add it."><main className="aos-nutrition-page nutrition-direct-entry">
     <HydrationQuickAdd inline clientId={clientId} logDate={logDate} consumed={consumed} consumedKnown={!dayChanged && (!error || currentWaterTotal !== null)} target={target}
-      targetStatus={loading && !target ? 'loading' : target > 0 ? 'ready' : 'error'} disabled={dayChanged}
-      onSaved={waterSaved}
-      onClosed={() => router.replace('/dashboard')} renderTrigger={() => null}>
+      targetStatus={loading && !target ? 'loading' : target > 0 ? 'ready' : 'error'} disabled={dayChanged || waterReturn.returned}
+      onSaved={waterSaved} refreshOnSave={false} renderTrigger={() => null}>
       {dayChanged ? <div><p role="alert">The logging day changed. Reload to open today’s water entry.</p><button type="button" className="tier-secondary-action" onClick={() => router.refresh()}>Reload today</button></div> : null}
       {error ? <div><p role="alert">{error}</p><button type="button" className="tier-secondary-action" disabled={loading} onClick={() => setRetry(current => current + 1)}>Retry loading saved intake</button></div> : null}
     </HydrationQuickAdd>
