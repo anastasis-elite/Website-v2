@@ -6,6 +6,10 @@ import CardArtwork from '@/components/CardArtwork'
 
 import RecoveryLogger from '@/components/RecoveryLogger'
 import RecoveryActivitySheets from '@/components/recovery/RecoveryActivitySheets'
+import RecoverySuggestionCard from '@/components/recovery/RecoverySuggestionCard'
+import type { RecoveryRewardSuggestion } from '@/lib/recovery/rewardSuggestion'
+import type { DailyScheduleState } from '@/lib/schedule/types'
+import { useDailyScheduleRefresh } from '@/lib/schedule/client'
 import ActionArrow from '@/components/ActionArrow'
 import cardStyles from './RecoveryCards.module.css'
 
@@ -53,10 +57,18 @@ export function GuidedRecoveryCards() {
   </>
 }
 
-export default function RecoveryDashboardClient({ clientId }: { clientId: string }) {
+type RecoveryRefreshSchedule = Pick<DailyScheduleState, 'date' | 'timezone' | 'events'> & { nextRefreshAt?: string | null }
+
+export default function RecoveryDashboardClient({ clientId, suggestion, schedule }: {
+  clientId: string
+  suggestion?: RecoveryRewardSuggestion
+  schedule?: RecoveryRefreshSchedule
+}) {
+  useDailyScheduleRefresh(schedule ?? { date: '1970-01-01', timezone: 'UTC', events: [] }, Boolean(schedule), schedule?.nextRefreshAt)
   return (
     <main className="aos-nutrition-page recovery-dashboard-page">
       <div className="aos-nutrition-shell recovery-dashboard-shell">
+        {suggestion ? <RecoverySuggestionCard suggestion={suggestion} clientId={clientId} date={suggestion.date} timezone={suggestion.timezone} /> : null}
         <OwnPractice clientId={clientId} />
         <h2>Let us guide you.</h2>
         <div className={cardStyles.grid}>

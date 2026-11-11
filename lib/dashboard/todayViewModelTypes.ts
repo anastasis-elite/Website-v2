@@ -1,4 +1,5 @@
 import type { ProgramTier } from './logic/types'
+import type { RecoveryRewardSuggestion } from '@/lib/recovery/rewardSuggestion'
 import type { TodayActivities, TodayActivity } from './todayActivityTypes'
 import type { DailyRecommendation } from './dailyRecommendationTypes'
 import type { StreakRequirementProgress } from './logic/streakRequirementProgressTypes'
@@ -21,4 +22,5 @@ export type TodayViewModel = {
   quiet: boolean
   workout: { state: string | null; inactive: boolean; title: string; reason: string; inProgress: boolean }
   macroReminder: string | null
+  recoveryRewardSuggestion?: RecoveryRewardSuggestion
 }

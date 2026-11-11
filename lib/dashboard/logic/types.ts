@@ -7,6 +7,7 @@ import type { StrengthAssessmentStatus } from '@/lib/assessment/getStrengthAsses
 import type { NutritionPacing, NutritionMacroReminder, RecordedHistoryMacros } from '@/lib/nutrition/todayPacing'
 import type { RecoveryCompletionEvidence } from '@/lib/recovery/todayCompletion'
 import type { TodayHydrationPacing } from '@/lib/hydration/todayPacing'
+import type { RecoveryRewardSources, RecoveryRewardSuggestion } from '@/lib/recovery/rewardSuggestion'
 
 export type ProgramTier = 'ember' | 'ignite' | 'phoenix'
 export type CapacityStatus = 'low_capacity' | 'moderate_capacity' | 'high_capacity'
@@ -49,6 +50,7 @@ export type ProgramLogicInputs = {
   todayWorkoutFeedback: any
   todayAssessment: any
   todayRecovery: any
+  recoveryRewardSources?: RecoveryRewardSources
   recentRecovery: HistoricalRecoverySignal[]
   todaySymptoms: any[]
   recentSymptoms: any[]
@@ -158,6 +160,7 @@ export type ProgramLogicOutput = {
       daysUntilNext: number
     }
   }
+  recoveryRewardSuggestion?: RecoveryRewardSuggestion
   recoveryCheck: { completed: boolean; energy: number | null; stress: number | null; soreness: number | null; sleepQuality: number | null }
   sleep: { logged: boolean; hours: number | null; quality: number | null }
   cycle: CycleResult

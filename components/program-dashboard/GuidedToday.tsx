@@ -13,6 +13,7 @@ import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
 import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
 import TodayAffirmation from '@/components/program-dashboard/TodayAffirmation'
+import RecoverySuggestionCard from '@/components/recovery/RecoverySuggestionCard'
 
 const icons: Record<string, string> = { check_in: '☀', hydration: '◒', schedule: '▦', nutrition: '◡', workout: '↟', recovery: '♡', none: '✦' }
 const statusLabels: Record<string, string> = { upcoming: 'Upcoming', in_progress: 'In progress', completed: 'Completed', deferred: 'Deferred', skipped: 'Skipped' }
@@ -133,6 +134,10 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
       {primary?.canDefer ? <button className="today-later" type="button" disabled={busy !== null} onClick={() => updateActivity(primary.id, 'defer')}>{busy === primary.id ? 'Saving…' : 'Later today'}</button> : null}
     </article>
     <p className="today-feedback" role="status" aria-live="polite">{message}</p>
+
+    {model.recoveryRewardSuggestion && (plan.primary.id !== 'safety' || model.recoveryRewardSuggestion.kind === 'safety') ? <RecoverySuggestionCard
+      suggestion={model.recoveryRewardSuggestion} clientId={model.clientId} date={model.date} timezone={model.timezone}
+    /> : null}
 
     {inactiveWorkoutDay && workoutDayState !== 'rest' && workoutDayState !== 'unavailable' ? <p className="today-workout-status" role="status" data-workout-state={workoutDayState}><strong>{model.workout.title}</strong><span>{model.workout.reason}</span></p> : null}
 

@@ -1,5 +1,6 @@
 import CardArtworkModule from './cardArtworkFixture.mjs'
 import TodayAffirmationModule from './todayAffirmationFixture.mjs'
+import RecoverySuggestionModule from './recoverySuggestionFixture.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -27,6 +28,7 @@ function component(path, extra = {}, exportName = 'default', testExports = '') {
   runInNewContext(outputText, { module, exports: module.exports, Date, require: name => name.endsWith('.webp') ? { src: `/_next/static/media/${name.split('/').at(-1)}` } : extra[name] || ({
     '@/components/CardArtwork': CardArtworkModule,
     '@/components/program-dashboard/TodayAffirmation': TodayAffirmationModule,
+    '@/components/recovery/RecoverySuggestionCard': RecoverySuggestionModule,
     './TodayAffirmation': TodayAffirmationModule,
     'next/link': Link,
     'next/navigation': { useRouter: () => ({ refresh() {} }), usePathname: () => '/dashboard/program/ignite' },
@@ -459,7 +461,7 @@ test('Today omits ordinary Available labels while retaining meaningful activity 
         assert.ok(card.includes(`Until ${scheduleTime.formatLocalTime(deferredUntil, day.timezone)}`))
         assert.match(card, /aria-label="Resume activity: Daily check-in"/)
       }
-      if (activity.status === 'skipped') assert.match(card, /aria-label="Resume activity: Recovery"/)
+      if (activity.status === 'skipped') assert.ok(card.includes(`aria-label="Resume activity: ${activity.title}"`))
       if (activity.status === 'completed') assert.doesNotMatch(card, /<button\b|<details\b|<summary\b/)
     }
     assert.equal((html.match(/class="today-activity-state"/g) || []).length, 5)
@@ -643,5 +645,158 @@ test('stale or unavailable required evidence retains the saved copy without comp
     assert.match(html, /Status unavailable/)
     assert.match(html, /href="\/dashboard\/progress">View progress<\/a>/)
     assert.doesNotMatch(html, /data-completed="true"|Day completed|Your streak is secured/)
+  }
+})
+
+
+test('Today shares the scoped optional reward and suppresses it when safety is primary', () => {
+  const logic = fixture('ignite'), day = { ...schedule(), date: new Date().toISOString().slice(0, 10), timezone: 'UTC', now: new Date().toISOString() }
+  logic.execution.recoveryEvidence = { ownerUserId: 'QA-OWNER', clientId: logic.client.id, date: day.date, available: true, completedAt: [], unlinkedRecordCount: 0 }
+  const suggestion = { version: 1, clientId: logic.client.id, date: day.date, timezone: day.timezone, kind: 'reward', id: 'high-stress', title: 'Let the day soften.', description: 'Settle in with a podcast you enjoy.' }
+  logic.recoveryRewardSuggestion = suggestion
+  const before = JSON.stringify(logic), model = buildTodayViewModel(logic, day)
+  assert.equal(model.recoveryRewardSuggestion, suggestion)
+  const html = render(logic, day)
+  assert.equal((html.match(/data-recovery-suggestion="high-stress"/g) || []).length, 1)
+  assert.ok(html.indexOf('data-recovery-suggestion') < html.indexOf('data-testid="today-activities"'))
+  assert.match(html, /Optional/)
+  assert.equal(JSON.stringify(logic), before, 'Showing a suggestion does not change completion or other logic.')
+  for (const change of [{ clientId: 'OTHER' }, { date: '2020-01-01' }, { timezone: 'America/Chicago' }]) {
+    logic.recoveryRewardSuggestion = { ...suggestion, ...change }
+    assert.equal(buildTodayViewModel(logic, day).recoveryRewardSuggestion, undefined)
+  }
+  logic.recoveryRewardSuggestion = suggestion
+  logic.symptoms.redFlag = true
+  const safety = buildTodayViewModel(logic, day)
+  assert.equal(safety.recommendation.primary.id, 'safety')
+  assert.equal(safety.recoveryRewardSuggestion, undefined)
+  assert.doesNotMatch(render(logic, day), /data-recovery-suggestion|Let the day soften/)
+  logic.recoveryRewardSuggestion = { ...suggestion, kind: 'safety', id: 'safety-first', title: 'Your safety comes first.', description: 'Follow your existing care guidance.' }
+  assert.equal(buildTodayViewModel(logic, day).recoveryRewardSuggestion, logic.recoveryRewardSuggestion)
+  logic.symptoms.redFlag = false
+  const beforeSafetyOverride = JSON.stringify(logic), fromRecentSafety = buildTodayViewModel(logic, day)
+  assert.equal(fromRecentSafety.recommendation.primary.id, 'safety', 'Validated safety guidance leads this surface.')
+  assert.equal(fromRecentSafety.recommendation.primary.title, 'Your safety comes first.')
+  assert.ok(!fromRecentSafety.presentedActivities.some(activity => activity.category === 'workout' || activity.id === 'assessment:strength'))
+  assert.equal(fromRecentSafety.workout.inactive, true)
+  assert.equal(fromRecentSafety.workout.title, 'Training paused')
+  assert.ok(fromRecentSafety.today.activities.some(activity => activity.id === 'workout'), 'Canonical workout and completion evidence remain available.')
+  assert.equal(fromRecentSafety.recommendation.primary.reason, logic.recoveryRewardSuggestion.description)
+  assert.equal(fromRecentSafety.recommendation.training.mode, 'recovery_only')
+  assert.ok(fromRecentSafety.recommendation.supporting.every(action => action.category !== 'workout'))
+  assert.deepEqual(fromRecentSafety.today, model.today, 'Canonical activities and completion are preserved.')
+  assert.equal(JSON.stringify(logic), beforeSafetyOverride)
+})
+
+
+function readyForRecovery(tier = 'ember') {
+  const logic = fixture(tier)
+  logic.assessments.dailyCompleted = true
+  logic.execution.workoutComplete = true
+  logic.execution.nutritionLogged = true
+  logic.nutrition = { ...logic.nutrition, dataStatus: 'known', calories: { percent: 100 }, protein: { percent: 100 } }
+  logic.hydration = { ...logic.hydration, status: 'ready', remaining: 0, consumed: logic.hydration.target }
+  return logic
+}
+
+test('Ember recovery invites a generic reward without adding a tailored card or changing links, status or progress', () => {
+  const logic = readyForRecovery(), day = schedule()
+  day.dailyGuide.activities.schedule = { status: 'reviewed' }
+  const before = JSON.stringify({ logic, day }), model = buildTodayViewModel(logic, day)
+  const recovery = model.today.activities.find(activity => activity.id === 'recovery')
+  assert.equal(recovery.title, 'A little reward, just for you.')
+  assert.equal(recovery.detail, 'Put on a podcast, get comfortable, or choose your own way to unwind.')
+  assert.equal(recovery.href, '/dashboard/recovery')
+  assert.equal(recovery.status, 'available')
+  assert.equal(recovery.countsTowardProgress, false)
+  assert.equal(recovery.canDefer, true)
+  assert.equal(recovery.canSkip, true)
+  assert.deepEqual([model.today.completed, model.today.total], [4, 4], 'Optional recovery adds no new progress requirement or credit.')
+  assert.equal(model.recommendation.primary.id, 'recovery')
+  assert.equal(model.recommendation.primary.title, recovery.title)
+  assert.equal(model.recommendation.primary.reason, recovery.detail)
+  assert.equal(model.recommendation.primary.href, recovery.href)
+  assert.equal(model.recommendation.primary.completed, false)
+  const html = render(logic, day), card = html.match(/<li data-activity-id="recovery"[^>]*>[\s\S]*?<\/li>/)?.[0]
+  assert.ok(card)
+  assert.match(card, /data-status="available"/)
+  assert.match(card, /href="\/dashboard\/recovery"/)
+  assert.match(card, /A little reward, just for you\./)
+  assert.match(card, /Put on a podcast, get comfortable, or choose your own way to unwind\./)
+  assert.doesNotMatch(card, /at your own pace|you logged|high stress|sore|hard workout/i)
+  assert.match(html, />Open recovery<\/a>/)
+  assert.match(html, />Later today<\/button>/)
+  assert.doesNotMatch(html, /data-recovery-suggestion/)
+  assert.equal(model.recoveryRewardSuggestion, undefined)
+  assert.equal(JSON.stringify({ logic, day }), before)
+  // A personalized reward cannot leak into Ember through an existing snapshot.
+  logic.recoveryRewardSuggestion = { version: 1, clientId: logic.client.id, date: day.date, timezone: day.timezone,
+    kind: 'reward', id: 'high-stress', title: 'Personalized reward', description: 'You logged high stress.' }
+  assert.equal(buildTodayViewModel(logic, day).recoveryRewardSuggestion, undefined)
+  assert.doesNotMatch(render(logic, day), /Personalized reward|You logged high stress|data-recovery-suggestion/)
+  for (const tier of ['ignite', 'phoenix']) {
+    const other = readyForRecovery(tier), otherModel = buildTodayViewModel(other, day)
+    assert.equal(otherModel.today.activities.find(activity => activity.id === 'recovery').title, 'Recovery')
+    assert.equal(otherModel.recommendation.primary.title, 'Choose a recovery moment')
+  }
+})
+
+test('Ember recovery wording respects saved holds, completion, due windows and safety guidance', () => {
+  const logic = readyForRecovery(), day = schedule()
+  day.dailyGuide.activities.schedule = { status: 'reviewed' }
+  for (const status of ['skipped', 'deferred']) {
+    day.dailyGuide.activities.recovery = { status, ...(status === 'deferred' ? { until: '2026-10-13T15:00:00Z' } : {}) }
+    const before = JSON.stringify({ logic, day }), model = buildTodayViewModel(logic, day)
+    const recovery = model.today.activities.find(activity => activity.id === 'recovery')
+    assert.equal(recovery.status, status)
+    assert.equal(recovery.canResume, true)
+    assert.ok(![model.recommendation.primary, ...model.recommendation.supporting].some(action => action.id === 'recovery'))
+    const card = render(logic, day).match(/<li data-activity-id="recovery"[^>]*>[\s\S]*?<\/li>/)?.[0]
+    assert.ok(card?.includes(`data-status="${status}"`))
+    assert.match(card, /aria-label="Resume activity: A little reward, just for you\."/)
+    assert.equal(JSON.stringify({ logic, day }), before)
+  }
+  delete day.dailyGuide.activities.recovery
+  logic.execution.recoveryComplete = true
+  const completed = buildTodayViewModel(logic, day), completedRecovery = completed.today.activities.find(activity => activity.id === 'recovery')
+  assert.equal(completedRecovery.status, 'completed')
+  assert.equal(completedRecovery.detail, 'Your recovery activity is saved.')
+  assert.ok(!completed.presentedActivities.some(activity => activity.id === 'recovery'))
+  assert.ok(![completed.recommendation.primary, ...completed.recommendation.supporting].some(action => action.id === 'recovery'))
+  assert.deepEqual([completed.today.completed, completed.today.total], [4, 4])
+  logic.execution.recoveryComplete = false
+  logic.execution.recoveryEvidence = { ownerUserId: 'QA-OWNER', clientId: logic.client.id, date: day.date, available: true, completedAt: [], unlinkedRecordCount: 0 }
+  day.events = [{ id: 'recovery-window', event_type: 'recovery', user_id: 'QA-OWNER', client_id: logic.client.id,
+    status: 'scheduled', all_day: false, start_at: '2026-10-13T14:00:00Z', end_at: '2026-10-13T14:30:00Z', flexibility_type: 'flexible' }]
+  const upcoming = buildTodayViewModel(logic, day)
+  assert.ok(!upcoming.presentedActivities.some(activity => activity.id === 'recovery'))
+  assert.ok(![upcoming.recommendation.primary, ...upcoming.recommendation.supporting].some(action => action.id === 'recovery'))
+  day.now = '2026-10-13T14:05:00Z'
+  const due = buildTodayViewModel(logic, day), dueRecovery = due.presentedActivities.find(activity => activity.id === 'recovery')
+  assert.equal(dueRecovery.title, 'A little reward, just for you.')
+  assert.equal(dueRecovery.detail, 'Put on a podcast, get comfortable, or choose your own way to unwind.')
+  assert.equal(dueRecovery.status, 'available')
+  assert.equal(dueRecovery.href, '/dashboard/recovery')
+  logic.execution.recoveryEvidence.available = false
+  assert.match(buildTodayViewModel(logic, day).presentedActivities.find(activity => activity.id === 'recovery').detail, /could not be confirmed/)
+  logic.execution.recoveryEvidence.available = true
+  logic.execution.recoveryEvidence.unlinkedRecordCount = 1
+  assert.match(buildTodayViewModel(logic, day).presentedActivities.find(activity => activity.id === 'recovery').detail, /could not be linked/)
+  day.events = []
+  delete logic.execution.recoveryEvidence
+  for (const condition of ['redFlag', 'fullRecovery', 'cannotTrain', 'validatedSafety']) {
+    const safety = readyForRecovery()
+    if (condition === 'redFlag') safety.symptoms.redFlag = true
+    if (condition === 'fullRecovery') safety.recoveryStatus.status = 'full_recovery_or_red_flag'
+    if (condition === 'cannotTrain') safety.workoutDecision.canTrain = false
+    if (condition === 'validatedSafety') safety.recoveryRewardSuggestion = { version: 1, clientId: safety.client.id, date: day.date, timezone: day.timezone,
+      kind: 'safety', id: 'safety-first', title: 'Your safety comes first.', description: 'Follow your existing care guidance.' }
+    // Full-recovery is ordinarily accompanied by the existing training pause.
+    if (condition === 'fullRecovery') safety.workoutDecision.canTrain = false
+    const model = buildTodayViewModel(safety, day), canonical = model.today.activities.find(activity => activity.id === 'recovery')
+    assert.equal(canonical.title, 'Recovery', condition)
+    assert.doesNotMatch(canonical.detail, /reward|Put on a podcast/)
+    assert.equal(model.recommendation.primary.id, 'safety', condition)
+    assert.doesNotMatch(model.recommendation.primary.title + model.recommendation.primary.reason, /A little reward|Put on a podcast/)
   }
 })

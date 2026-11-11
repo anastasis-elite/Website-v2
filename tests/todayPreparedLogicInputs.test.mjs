@@ -18,7 +18,7 @@ function fixedClock(t, instant = '2026-11-03T19:00:00Z') {
   t.after(() => { globalThis.Date = OriginalDate })
   return next => { now = OriginalDate.parse(next) }
 }
-function database({ holdInitial, initialThrow, nutritionError, mealError, recoveryError, executionError } = {}) {
+function database({ holdInitial, initialThrow, nutritionError, mealError, recoveryError, executionError, checkInError, workoutsError, checkIn } = {}) {
   const queries = []
   const supabase = { from(table) {
     const query = { table, ops: [] }; let pending
@@ -34,6 +34,8 @@ function database({ holdInitial, initialThrow, nutritionError, mealError, recove
         if (table === 'nutrition_logs') return { data: [{ id: 'nutrition', log_date: '2026-11-03', calories: 2000, protein: 100, carbs: 240, fats: 60 }], error: nutritionError || null }
         if (table === 'nutrition_log_totals_by_block') return { data: [{ nutrition_log_id: 'nutrition', day_block: 'morning', calories_eaten: 500, protein_eaten_g: 20, carbs_eaten_g: 50, fat_eaten_g: 10 }], error: null }
         if (table === 'meal_entries') return { data: [{ id: 'meal', nutrition_log_id: 'nutrition', meal_name: 'Breakfast', day_block: 'morning', created_at: '2026-11-03T13:00:00Z' }], error: mealError || null }
+        if (table === 'recovery_logs' && single) return { data: checkIn || null, error: checkInError || null }
+        if (table === 'workout_logs') return { data: [], error: workoutsError || null }
         if (table === 'recovery_activity_logs') return { data: [], error: recoveryError || null }
         if (table === 'daily_execution_status') return { data: [], error: executionError || null }
         return { data: single ? null : [], error: null }
@@ -152,5 +154,22 @@ test('prepared inputs fence the member-local day before resolve and after pendin
   assert.equal(inputs.date, '2026-11-04')
   for (const query of nextDb.queries.filter(query => query.table === 'nutrition_logs')) {
     assert.equal(operation(query, 'lte', 'log_date')[2], '2026-11-04')
+  }
+})
+
+
+test('reward suggestions retain raw check-in evidence and distinguish source errors without adding source queries', async t => {
+  fixedClock(t)
+  const checkIn = { client_id: member.client_id, auth_user_id: owner.id, log_date: '2026-11-03', stress_level: 8 }
+  const error = { message: 'Synthetic optional source error' }
+  for (const option of [{}, { checkInError: error }, { workoutsError: error }]) {
+    const db = database({ ...option, checkIn }), args = full(context(db))
+    const inputs = await loadProgramLogicInputs(args)
+    assert.deepEqual(inputs.recoveryRewardSources.recoveryLog, checkIn)
+    assert.equal(inputs.recoveryRewardSources.recoveryAvailable, !option.checkInError)
+    assert.equal(inputs.recoveryRewardSources.workoutsAvailable, !option.workoutsError)
+    assert.equal(db.queries.filter(q => q.table === 'recovery_logs' && operation(q, 'eq', 'log_date')).length, 1)
+    assert.equal(db.queries.filter(q => q.table === 'client_symptom_logs').length, 1)
+    assert.equal(db.queries.filter(q => q.table === 'workout_logs').length, 2)
   }
 })

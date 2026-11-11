@@ -4,6 +4,7 @@ import { getClientTimeZone, getClientLocalDateOffset } from '@/lib/timezone'
 import { loadProgramLogicInputs, type PreparedProgramLogicInputs } from './loadProgramLogicInputs'
 import { workoutLocalDate } from '@/lib/workout/history'
 import { recoveryCompletionEvidence } from '@/lib/recovery/todayCompletion'
+import { buildRecoveryRewardSuggestion } from '@/lib/recovery/rewardSuggestion'
 import type { DashboardRequestReads } from '@/lib/dashboard/requestReads'
 import type { createDashboardRequestTiming } from '@/lib/performance/dashboardRequest'
 
@@ -996,5 +997,17 @@ export async function getProgramLogicEngine(
     stopExecutionTiming?.()
   }
 
+  // Display-only: attach after the existing writes so this optional suggestion
+  // changes neither persisted recommendations nor completion records. Recheck
+  // the current local day after asynchronous source and persistence work.
+  output.recoveryRewardSuggestion = buildRecoveryRewardSuggestion({
+    date: inputs.date, userId: inputs.userId, client: inputs.client,
+    sources: inputs.recoveryRewardSources, workouts: inputs.workoutHistory,
+    safety: {
+      redFlag: symptoms.redFlag, recoveryStatus: recoveryStatus.status,
+      adjustmentLevel: workoutDecision.adjustmentLevel,
+      canTrain: workoutDecision.canTrain, workoutState: workoutDecision.assignedWorkout?.workout_state,
+    },
+  }) || undefined
   return output
 }

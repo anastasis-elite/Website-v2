@@ -214,7 +214,8 @@ test('authoritative completion and safety decisions pass through untouched; acti
   }
 })
 
-function engineFixture({ stale = false, writeFailure = null } = {}) {
+function engineFixture({ stale = false, writeFailure = null, allowTraining = false } = {}) {
+  let instant = Date.parse('2026-11-03T13:00:00Z')
   const writes = [], errors = [], events = [], first = deferred(), second = deferred()
   const inputs = { date: '2026-11-03', userId: owner.id, client, program: 'ignite', dailyPlan: { workoutCompleted: true },
     plannedWorkout: null, plannedExercises: [], recentRecovery: [], todayRecovery: {}, healthMetrics: { today: {}, recent: [] },
@@ -226,7 +227,7 @@ function engineFixture({ stale = false, writeFailure = null } = {}) {
     runRecoveryEngine: () => ({ status: 'ready' }), runHydrationEngine: () => ({ percent: 100, status: 'ready' }),
     runNutritionEngine: () => ({ dataStatus: 'known' }), runFuelReadinessEngine: () => ({ status: 'ready' }),
     runCycleEngine: () => ({ phase: 'not_tracking' }), runPostureCompensationEngine: () => ({}),
-    runWorkoutDecisionEngine: () => ({ canTrain: false, adjustmentLevel: 'level_3_recovery_training', reasonForModification: 'Synthetic preserved pause' }),
+    runWorkoutDecisionEngine: () => ({ canTrain: allowTraining, adjustmentLevel: allowTraining ? 'level_0_full_plan' : 'level_3_recovery_training', reasonForModification: 'Synthetic preserved pause' }),
     runFlameExecutionEngine: () => ({ requirements, streakEligible: true }) }
   const load = loader({ './engines': pure,
     './loadProgramLogicInputs': { loadProgramLogicInputs: () => { throw new Error('Prepared inputs must be used') } },
@@ -236,12 +237,12 @@ function engineFixture({ stale = false, writeFailure = null } = {}) {
     '@/lib/assessment/getStrengthAssessmentStatus': { getStrengthAssessmentPeriod: () => ({}), strengthAssessmentStatusFromRecords: () => ({}) },
     '@/lib/assessment/strengthWorkout': { strengthCompletionForDay: () => false },
     '@/lib/recovery/todayCompletion': { recoveryCompletionEvidence: () => ({ available: true, records: [] }) },
-  }, { errors })
+  }, { errors, clock: () => instant })
   const { getProgramLogicEngine } = load('lib/dashboard/logic/getProgramLogicEngine.ts')
   const supabase = { from(table) { return { upsert(value) { events.push('write:' + table); writes.push({ table, value })
     if (writeFailure === table) return Promise.reject(new Error('Synthetic transport failure'))
     return table === 'dashboard_daily_recommendations' ? first.promise : second.promise } } } }
-  return { writes, events, errors, first, second, run() { return getProgramLogicEngine({ supabase, user: owner, client,
+  return { inputs, writes, events, errors, first, second, advance(value) { instant = Date.parse(value) }, run() { return getProgramLogicEngine({ supabase, user: owner, client,
     program: 'ignite', preparedInputs: { async resolve() { events.push('resolve'); return inputs }, assertCurrent() { events.push('assert-current'); if (stale) throw new DashboardLocalDayChangedError('Changed before persistence') } },
     timings: { start(stage) { events.push('start:' + stage); return () => events.push('stop:' + stage) } } }) } }
 }
@@ -273,4 +274,30 @@ test('production persistence transport failures retain existing fallback and sto
   }
   const stale = engineFixture({ stale: true }); await assert.rejects(stale.run(), DashboardLocalDayChangedError)
   assert.deepEqual(stale.writes, []); assert.equal(stale.errors.length, 0)
+})
+
+
+test('one shared recovery reward is attached only after existing writes and never persists or completes recovery', async () => {
+  const f = engineFixture({ allowTraining: true })
+  f.inputs.recoveryRewardSources = { recoveryAvailable: true, workoutsAvailable: true,
+    recoveryLog: { client_id: client.client_id, auth_user_id: owner.id, log_date: '2026-11-03', stress_level: 8 } }
+  const result = f.run(); await flush()
+  assert.equal('recoveryRewardSuggestion' in f.writes[0].value.recommendation_output, false)
+  f.first.resolve({ error: null }); await flush(); f.second.resolve({ error: null })
+  const output = await result
+  assert.equal(output.recoveryRewardSuggestion.id, 'high-stress')
+  assert.equal(output.recoveryRewardSuggestion.clientId, client.client_id)
+  assert.equal(output.execution.recoveryComplete, false)
+  assert.equal(f.writes.length, 2)
+  assert.equal('recoveryRewardSuggestion' in f.writes[0].value.recommendation_output, false)
+  assert.equal('recoveryRewardSuggestion' in f.writes[1].value, false)
+})
+
+test('recovery reward generation rechecks the member-local day after asynchronous persistence finishes', async () => {
+  const f = engineFixture({ allowTraining: true })
+  const result = f.run(); await flush(); f.first.resolve({ error: null }); await flush()
+  f.advance('2026-11-04T00:00:00Z'); f.second.resolve({ error: null })
+  const output = await result
+  assert.equal(output.recoveryRewardSuggestion, undefined)
+  assert.equal(f.writes.length, 2, 'The existing persistence sequence is unchanged.')
 })
