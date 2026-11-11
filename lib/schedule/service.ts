@@ -138,6 +138,7 @@ export async function getDailyScheduleState({
   // suggestions. Today's health completion is never copied to another day.
   const virtualEvents = includeVirtualPlan
     ? dailyPlanToScheduleEvents({ userId: user.id, client,
+      workoutCompletion: effectiveLogic?.execution?.generatedWorkoutCompletion,
       dailyPlan: dailyPlan?.date === day.date ? dailyPlan : { date: day.date, timezone: day.timezone, timing: {} } })
       .filter(event => dailyPlan?.date === day.date && !['work', 'school'].includes(event.event_type) &&
         !persistedEvents.some(e => ['workout','hydration'].includes(event.event_type) && e.event_type === event.event_type && !['skipped','cancelled'].includes(e.status)))
@@ -177,12 +178,9 @@ export async function getDailyScheduleState({
     events: applyScheduleCheckoffs(projectStrengthWorkout({ status: effectiveLogic?.assessments?.strength,
       userId: user.id, client, date: day.date, events: [...commitments, ...persistedEvents.map(event => {
       if (event.status !== 'scheduled' || !effectiveLogic || dailyPlan?.date !== day.date) return event
-      // The projection below links a final assessment to its workout slot.
-      // Do not also mark an unperformed regular workout complete from that
-      // assessment; ordinary session completion still comes from its own log.
-      const confirmed = event.event_type === 'workout' ? dailyPlan.workoutCompleted ||
-        effectiveLogic.execution.workoutComplete && !effectiveLogic.assessments.strength?.completedToday
-        : event.event_type === 'check_in' ? effectiveLogic.assessments.dailyCompleted : event.event_type === 'hydration' ? effectiveLogic.hydration.status !== 'needs_input' && effectiveLogic.hydration.remaining <= 0 : false
+      // Persisted workouts have their own occurrence status. A daily workout
+      // flag cannot link an unrelated saved class or session to its performed log.
+      const confirmed = event.event_type === 'check_in' ? effectiveLogic.assessments.dailyCompleted : event.event_type === 'hydration' ? effectiveLogic.hydration.status !== 'needs_input' && effectiveLogic.hydration.remaining <= 0 : false
       return confirmed ? { ...event, status: 'completed' as const } : event
     }), ...virtualEvents.map(event => {
       const override = client.onboarding_data?.scheduleOverrides?.[event.id]

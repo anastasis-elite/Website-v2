@@ -29,6 +29,7 @@ function component(path, extra = {}, exportName = 'default', testExports = '') {
     '@/components/CardArtwork': CardArtworkModule,
     '@/components/program-dashboard/TodayAffirmation': TodayAffirmationModule,
     '@/components/recovery/RecoverySuggestionCard': RecoverySuggestionModule,
+    '@/components/program-dashboard/TodayDayCarousel': { __esModule: true, default: () => null },
     './TodayAffirmation': TodayAffirmationModule,
     'next/link': Link,
     'next/navigation': { useRouter: () => ({ refresh() {} }), usePathname: () => '/dashboard/program/ignite' },
@@ -223,6 +224,7 @@ test('all-complete Today keeps saved progress and a history route without comple
 
 test('calorie pacing hides an on-pace card then restores it when behind without changing recorded progress', () => {
   const logic = fixture(), state = schedule()
+  state.preferences = { carouselStyle: 'step' }
   logic.assessments.dailyCompleted = true
   logic.hydration = { status: 'ready', target: 80, remaining: 0, consumed: 80 }
   logic.execution.nutritionLogged = true
@@ -531,6 +533,7 @@ test('partial schedule failure stays visible while core dashboard activities rem
 
 test('GuidedToday schedules the earliest water, calorie or distinct recovery boundary without polling', () => {
   const current = fixture(), state = schedule()
+  state.preferences = { carouselStyle: 'step' }
   current.nutrition.pacing = { state: 'on_pace', nextRefreshAt: '2026-10-13T16:00:00.001Z' }
   current.hydration.presentationPacing = { state: 'on_pace', nextRefreshAt: '2026-10-13T15:00:00.001Z' }
   scheduleRefreshCalls.length = 0

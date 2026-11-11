@@ -3,6 +3,8 @@ import 'server-only'
 import { getClientTimeZone, getClientLocalDateOffset } from '@/lib/timezone'
 import { loadProgramLogicInputs, type PreparedProgramLogicInputs } from './loadProgramLogicInputs'
 import { workoutLocalDate } from '@/lib/workout/history'
+import { generatedWorkoutCompletionEvidence } from '@/lib/workout/occurrenceCompletion'
+import { attachGeneratedWorkoutOrigin } from '@/lib/workout/generatedOrigin'
 import { recoveryCompletionEvidence } from '@/lib/recovery/todayCompletion'
 import { buildRecoveryRewardSuggestion } from '@/lib/recovery/rewardSuggestion'
 import type { DashboardRequestReads } from '@/lib/dashboard/requestReads'
@@ -485,6 +487,11 @@ export async function getProgramLogicEngine(
       posture,
     )
 
+  if (workoutDecision.canTrain) {
+    workoutDecision.assignedWorkout = attachGeneratedWorkoutOrigin({ userId: inputs.userId, client: inputs.client,
+      date: inputs.date, plannedWorkout: inputs.plannedWorkout, assignedWorkout: workoutDecision.assignedWorkout })
+  }
+
   const flameState =
     runFlameExecutionEngine({
       inputs,
@@ -790,6 +797,8 @@ export async function getProgramLogicEngine(
     trends: buildTrends(inputs),
 
     execution: {
+      generatedWorkoutCompletion: generatedWorkoutCompletionEvidence({ userId: inputs.userId, client: inputs.client, date: inputs.date,
+        plannedWorkout: inputs.plannedWorkout, plannedExercises: inputs.plannedExercises, history: inputs.workoutHistory }),
       workoutInProgress: inputs.workoutHistory.some(row => workoutLocalDate(row, getClientTimeZone(inputs.client)) === inputs.date && !row.completed && Array.isArray(row.exercise_logs) && row.exercise_logs.some((log: any) => log.set_logs?.length || Number(log.actual_duration || log.actual_reps) > 0)),
       completedWorkoutTitle: inputs.dailyPlan?.completedWorkoutTitle || null,
       completedWorkoutId: inputs.dailyPlan?.completedWorkoutId || null,

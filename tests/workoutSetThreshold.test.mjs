@@ -107,16 +107,30 @@ test('save/pause, duplicate retry, reopen and Today history use the same fixed f
   const keys = encodeURIComponent(JSON.stringify(session.workoutSessionKeys(qualified.exercise_logs)))
   const reopened = await (await route.GET(new Request(`https://threshold.test/api/workout-log?clientId=${client.client_id}&dayName=Whole%20daily%20plan&planKeys=${keys}`))).json()
   assert.equal(reopened.session.completed, true)
-  assert.deepEqual(reopened.session.planned_exercises, plan)
-  assert.equal(activity.workoutCompletion(session.resumeWorkoutSession(session.initialWorkoutLogs(plan), null, reopened.session).logs, reopened.session.planned_exercises).completedSets, 5)
+  const expectedStoredPlan = plan.map((exercise, index) => index === 0
+    ? { ...exercise, generated_workout_origin_status: 'unsigned' } : exercise)
+  assert.equal(reopened.session.planned_exercises[0].generated_workout_origin_status, 'unsigned')
+  assert.deepEqual(reopened.session.planned_exercises, expectedStoredPlan, 'only the permitted first-occurrence marker is added; prescription fields and ordering stay exact')
+  const resumedProgress = activity.workoutCompletion(session.resumeWorkoutSession(session.initialWorkoutLogs(plan), null, reopened.session).logs, reopened.session.planned_exercises)
+  assert.equal(resumedProgress.totalSets, 9)
+  assert.equal(resumedProgress.requiredSets, 5)
+  assert.equal(resumedProgress.completedSets, 5)
+  assert.equal(resumedProgress.completed, true)
   rows[0].completed = false
   assert.equal((await loadWorkoutHistory({ supabase: db, client, completed: true })).data.length, 1, 'Today/checkoff reads qualifying persisted sets even for an older partial flag')
   const shrunk = { ...partial, planned_exercises: plan.map(exercise => ({ ...exercise, sets: 1 })) }
   assert.equal((await route.POST(request(shrunk))).status, 200)
   assert.equal(rows[0].completed, false)
+  assert.deepEqual(rows[0].planned_exercises, expectedStoredPlan, 'a shrunken submission cannot replace any retained prescription or metadata')
   assert.equal(rows[0].planned_exercises.reduce((sum, exercise) => sum + exercise.sets, 0), 9)
+  const shrunkProgress = activity.workoutCompletion(rows[0].exercise_logs, rows[0].planned_exercises)
+  assert.equal(shrunkProgress.totalSets, 9)
+  assert.equal(shrunkProgress.requiredSets, 5)
+  assert.equal(shrunkProgress.completedSets, 4)
+  assert.equal(shrunkProgress.completed, false)
   assert.equal((await route.POST(request({ ...partial, planned_exercises: plan.slice(0, 1), exercise_logs: partial.exercise_logs.slice(0, 1) }))).status, 400)
   assert.equal(rows.length, 1)
+  assert.deepEqual(rows[0].planned_exercises, expectedStoredPlan, 'rejecting a truncated submission leaves the full retained prescription untouched')
 })
 
 test('manual session checkoff aggregates every known custom prescription, preserves retries, and does not borrow the recommended denominator', async () => {

@@ -42,6 +42,8 @@ function harness(current = fixture(), state = schedule()) {
       useState(initial) { const index = stateIndex++;if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;return [states[index], value => { states[index] = typeof value === 'function' ? value(states[index]) : value }] } },
     '@/components/CardArtwork': CardArtworkModule,
     '@/components/program-dashboard/TodayAffirmation': TodayAffirmationModule,
+    '@/components/recovery/RecoverySuggestionCard': { __esModule: true, default: () => null },
+    '@/components/program-dashboard/TodayDayCarousel': { __esModule: true, default: () => null },
     './TodayAffirmation': TodayAffirmationModule,
     'next/link': { __esModule: true, default: 'a' },
     'next/navigation': { useRouter: () => ({ refresh() { refreshes++ } }) },

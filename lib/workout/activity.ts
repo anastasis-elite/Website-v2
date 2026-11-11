@@ -76,12 +76,12 @@ export function isValidCompletedSet(set: any): boolean {
     ['lb', 'kg'].includes(set.weight_unit || 'lb') && typeof set.completed_at === 'string' && set.completed_at.trim() !== '' && Number.isFinite(new Date(set.completed_at).getTime()))
 }
 
-export function workoutCompletion(logs: any[], prescribed: any[] = logs) {
-  const complete = logs.filter(log => log.completed === true).length
-  const skipped = logs.filter(log => log.skipped === true).length
-  const partial = logs.filter(log => !log.completed && !log.skipped && (log.set_logs?.length || Number(log.actual_duration || log.actual_breaths || log.actual_reps) > 0)).length
+// Keep provenance reads aligned with the exact prescribed occurrences and
+// deduplicated work counted by completion, regardless of mutable log categories.
+export function workoutCompletionEvidence(logs: any[], prescribed: any[] = logs) {
   const keys = workoutSessionKeys(logs), planKeys = workoutSessionKeys(prescribed)
   const seenExercises = new Set<string>()
+  const completedAt: unknown[] = []
   let totalSets = 0, completedSets = 0
   for (const [index, exercise] of prescribed.entries()) {
     const setCount = prescribedSetCount(exercise), key = planKeys[index]
@@ -92,7 +92,14 @@ export function workoutCompletion(logs: any[], prescribed: any[] = logs) {
     seenExercises.add(key)
     const matching = logs.filter((_, position) => keys[position] === key)
     if (activityDose(exercise).kind !== 'strength') {
-      if (matching.some(log => isConfirmedActivity(log))) completedSets += Math.min(1, setCount)
+      const confirmed = matching.find(log => isConfirmedActivity(log))
+      if (confirmed) {
+        completedSets += Math.min(1, setCount)
+        // Existing activity confirmation can itself count a strength log's
+        // sets. In that case its optional activity timestamp is not evidence.
+        completedAt.push(...(activityDose(confirmed).kind === 'strength'
+          ? workoutCompletionEvidence([confirmed]).completedAt : [confirmed.confirmed_at]))
+      }
       continue
     }
     const slots = new Set<number>(), identities = new Set<string>()
@@ -105,9 +112,18 @@ export function workoutCompletion(logs: any[], prescribed: any[] = logs) {
       const slot = ordinal ?? Array.from({ length: setCount }, (_, position) => position + 1).find(value => !slots.has(value))
       if (slot === undefined) continue
       slots.add(slot); identities.add(identity)
+      completedAt.push(set.completed_at)
     }
     completedSets += slots.size
   }
+  return { totalSets, completedSets, completedAt }
+}
+
+export function workoutCompletion(logs: any[], prescribed: any[] = logs) {
+  const complete = logs.filter(log => log.completed === true).length
+  const skipped = logs.filter(log => log.skipped === true).length
+  const partial = logs.filter(log => !log.completed && !log.skipped && (log.set_logs?.length || Number(log.actual_duration || log.actual_breaths || log.actual_reps) > 0)).length
+  const { totalSets, completedSets } = workoutCompletionEvidence(logs, prescribed)
   const requiredSets = Math.ceil(totalSets / 2)
   return { complete, skipped, partial, total: logs.length, totalSets, completedSets, requiredSets, completed: totalSets > 0 && completedSets >= requiredSets }
 }

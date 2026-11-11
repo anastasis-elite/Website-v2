@@ -1,5 +1,6 @@
 import { mealEntryHref } from '@/lib/nutrition/loggingRoutes'
 import type { ScheduleEvent } from './types'
+import { generatedWorkoutOccurrenceCompleted, type GeneratedWorkoutCompletionEvidence } from '@/lib/workout/occurrenceIdentity'
 import { zonedDateTimeToUtc } from './time'
 import { addLocalDays } from '@/lib/timezone'
 import { getCommitmentWeekdays, type CommitmentDayField } from '@/lib/assessment/commitmentWeekdays'
@@ -85,11 +86,13 @@ export function dailyPlanToScheduleEvents({
   client,
   dailyPlan,
   includeHealthActivities = true,
+  workoutCompletion,
 }: {
   userId: string
   client: any
   dailyPlan: any
   includeHealthActivities?: boolean
+  workoutCompletion?: GeneratedWorkoutCompletionEvidence | null
 }): ScheduleEvent[] {
   const date = dailyPlan.date
   const timezone = dailyPlan.timezone || dailyPlan.timing?.timezone || 'America/Chicago'
@@ -148,6 +151,7 @@ export function dailyPlanToScheduleEvents({
 
   const workoutTime = dailyPlan.timing?.workoutTime || client.preferred_workout_time
   if (workoutTime) {
+    const completed = generatedWorkoutOccurrenceCompleted(workoutCompletion, { userId, clientId: client.client_id, date })
     const minutes = Math.max(10, Number(client.current_workout_minutes_per_session || 30))
     events.push({
       ...fixedEvent({
@@ -162,9 +166,9 @@ export function dailyPlanToScheduleEvents({
         minutes,
       }),
       source: 'program',
-      status: dailyPlan.workoutCompleted ? 'completed' : 'scheduled',
-      completed_at: dailyPlan.completedWorkoutAt || null,
-      suggested: !dailyPlan.workoutCompleted,
+      status: completed ? 'completed' : 'scheduled',
+      completed_at: completed ? workoutCompletion?.completedAt || null : null,
+      suggested: !completed,
       flexibility_type: 'flexible',
       priority: 'high',
       required: false,

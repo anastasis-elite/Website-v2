@@ -14,6 +14,7 @@ import type { DailyScheduleState } from '@/lib/schedule/types'
 import StreakRequirementsCard from '@/components/program-dashboard/StreakRequirementsCard'
 import TodayAffirmation from '@/components/program-dashboard/TodayAffirmation'
 import RecoverySuggestionCard from '@/components/recovery/RecoverySuggestionCard'
+import TodayDayCarousel from '@/components/program-dashboard/TodayDayCarousel'
 
 const icons: Record<string, string> = { check_in: '☀', hydration: '◒', schedule: '▦', nutrition: '◡', workout: '↟', recovery: '♡', none: '✦' }
 const statusLabels: Record<string, string> = { upcoming: 'Upcoming', in_progress: 'In progress', completed: 'Completed', deferred: 'Deferred', skipped: 'Skipped' }
@@ -39,7 +40,7 @@ function ActivityOptions({ activity, busy, onAction }: { activity: TodayActivity
   return null
 }
 
-export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOutput; schedule: DailyScheduleState }) {
+export default function GuidedToday({ logic, schedule, presentation = 'step' }: { logic: ProgramLogicOutput; schedule: DailyScheduleState; presentation?: 'step' | 'section' }) {
   const router = useRouter()
   const [busy, setBusy] = useState<TodayActivityId | null>(null)
   const [message, setMessage] = useState('')
@@ -55,7 +56,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
   const candidate = schedule.todayViewModel
   const model = candidate?.version === 1 && candidate.date === schedule.date && candidate.timezone === schedule.timezone &&
     candidate.generatedAt === schedule.now && candidate.clientId === logic.client.id && candidate.tier === logic.program ? candidate : null
-  const hasModel = Boolean(model)
+  const hasModel = Boolean(model && (presentation !== 'section' || model.daySections))
   useDailyScheduleRefresh(schedule, true, model?.nextRefreshAt)
   useEffect(() => {
     const key = `${logic.client.id}:${schedule.date}`
@@ -100,7 +101,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
     } finally { lock.current = false; setBusy(null) }
   }
 
-  if (!model) return <div className="today-guide">{schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved activities are still recorded; check your calendar before choosing a time.</p> : null}<p role="status">Your saved day could not be confirmed. Refresh to load your current actions.</p><button type="button" className="tier-primary-action" onClick={() => router.refresh()}>Refresh day</button></div>
+  if (!model || !hasModel) return <div className="today-guide">{schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved activities are still recorded; check your calendar before choosing a time.</p> : null}<p role="status">Your saved day could not be confirmed. Refresh to load your current actions.</p><button type="button" className="tier-primary-action" onClick={() => router.refresh()}>Refresh day</button></div>
   const today = model.today
   const plan = model.recommendation
   const presentedActivities = model.presentedActivities
@@ -126,13 +127,13 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
     {schedule.unavailableSources?.length ? <p role="status">Some schedule details are temporarily unavailable. Your saved activities are still recorded; check your calendar before choosing a time.</p> : null}
 
 
-    <article className="today-next" data-testid="guided-next-step" data-activity-id={primaryId} data-tutorial-id="dashboard-whats-next">
+    {(presentation !== 'section' || plan.primary.id === 'safety') && <article className="today-next" data-testid="guided-next-step" data-activity-id={primaryId} data-tutorial-id="dashboard-whats-next">
       <div className="today-next-heading"><p className="tier-dashboard-label">Your next step</p><span className="today-activity-icon" aria-hidden="true">{icons[plan.primary.category] || '▦'}</span></div>
       <h2>{plan.primary.id === 'check-in' ? 'Let’s start with you.' : plan.primary.title}</h2>
       <p data-tutorial-id="dashboard-daily-insight">{plan.primary.id === 'check-in' ? 'How’s your energy today? A quick check-in is enough to begin.' : plan.primary.reason}</p>
       <Link className="tier-primary-action" href={plan.primary.href} onClick={() => openActivity(plan.primary.id, plan.primary.completed)}>{plan.primary.id === 'check-in' ? 'Start daily check-in' : plan.primary.id === 'water' ? 'Log water' : plan.primary.id === 'workout' ? model.workout.inProgress ? 'Resume workout' : 'Open workout' : plan.primary.id === 'recovery' ? 'Open recovery' : plan.primary.category === 'assessment' ? 'Open assessment' : plan.primary.category === 'nutrition' ? model.tier === 'ember' ? 'Open nutrition guidance' : 'Log meal' : 'Open schedule'}</Link>
       {primary?.canDefer ? <button className="today-later" type="button" disabled={busy !== null} onClick={() => updateActivity(primary.id, 'defer')}>{busy === primary.id ? 'Saving…' : 'Later today'}</button> : null}
-    </article>
+    </article>}
     <p className="today-feedback" role="status" aria-live="polite">{message}</p>
 
     {model.recoveryRewardSuggestion && (plan.primary.id !== 'safety' || model.recoveryRewardSuggestion.kind === 'safety') ? <RecoverySuggestionCard
@@ -141,7 +142,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
 
     {inactiveWorkoutDay && workoutDayState !== 'rest' && workoutDayState !== 'unavailable' ? <p className="today-workout-status" role="status" data-workout-state={workoutDayState}><strong>{model.workout.title}</strong><span>{model.workout.reason}</span></p> : null}
 
-    <section className="today-activities" data-testid="today-activities" aria-label="Your day at a glance" data-tutorial-id="dashboard-nutrition-progress">
+    {presentation === 'section' && model.daySections ? <TodayDayCarousel day={model.daySections} timezone={schedule.timezone} onOpen={id => openActivity(id)} /> : <section className="today-activities" data-testid="today-activities" aria-label="Your day at a glance" data-tutorial-id="dashboard-nutrition-progress">
       <div className="today-section-heading"><h2>At your pace.</h2><span>Go in your own order</span></div>
       {displayActivities.length ? <ul>{displayActivities.map(activity => <li key={activity.id} data-activity-id={activity.id} data-status={activity.status} data-illustrated={illustrated(activity.id) ? 'true' : undefined}>
         <Link href={activity.href} onClick={() => openActivity(activity.id, today.activities.some(record => record.id === activity.id && record.status === 'completed'))} data-tutorial-id={tutorialIds[activity.id]}>
@@ -152,7 +153,7 @@ export default function GuidedToday({ logic, schedule }: { logic: ProgramLogicOu
         </Link>
         <ActivityOptions activity={activity} busy={busy !== null} onAction={updateActivity} />
       </li>)}</ul> : <TodayAffirmation recorded={complete} completed={plan.primary.id === 'pause' && plan.primary.completed && streakAvailable && streakProgress.secured} />}
-    </section>
+    </section>}
 
     {model.macroReminder ? <aside className="today-feedback" aria-label="Recent nutrition logs">
       <p>{model.macroReminder}</p>

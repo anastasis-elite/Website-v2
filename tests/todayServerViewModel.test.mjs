@@ -66,6 +66,23 @@ function modelFor(current) {
   return model
 }
 
+test('section style includes its exact local boundary while step keeps existing refresh and completion decisions', () => {
+  const current = fixture()
+  current.schedule.now = `${date}T09:59:59.000Z`
+  current.logic.nutrition.pacing.nextRefreshAt = `${date}T11:00:00.000Z`
+  current.logic.hydration.presentationPacing.nextRefreshAt = `${date}T12:00:00.000Z`
+  const before = clone(current)
+  const section = buildTodayViewModel(current.logic, current.schedule)
+  assert.equal(section.daySections.currentSection, 'morning')
+  assert.equal(section.nextRefreshAt, `${date}T10:00:00.000Z`)
+  const step = buildTodayViewModel(current.logic, { ...current.schedule, preferences: { ...current.schedule.preferences, carouselStyle: 'step' } })
+  assert.equal(step.daySections, undefined)
+  assert.equal(step.nextRefreshAt, `${date}T11:00:00.000Z`)
+  assert.deepEqual(step.today, section.today)
+  assert.deepEqual(step.streakProgress, section.streakProgress)
+  assert.deepEqual(current, before)
+})
+
 function completeFixture(program = 'ignite') {
   const current = fixture(program)
   const flags = { dailyCheckIn: true, nutrition: true, hydration: true, workoutOrMovement: true,
