@@ -104,7 +104,11 @@ export function buildTodayActivities(logic: ProgramLogicOutput, schedule: Pick<D
       detail: 'Your strength reassessment is eligible. Its workout day is shown in your assessment details.', href: strength.href,
       status: strength.state === 'draft' ? 'in_progress' : 'available', countsTowardProgress: false, canSkip: false, canDefer: false, canResume: false })
   }
-  if (capabilities.recoveryBasic) add('recovery', 'Recovery', logic.execution.recoveryComplete ? 'Your recovery activity is saved.' : capabilities.recoveryRecommendation ? 'Choose from your existing recovery options.' : 'A quiet moment is available when you need it.', '/dashboard/recovery', logic.execution.recoveryComplete)
+  const emberRecoveryCopy = logic.program === 'ember' && !strengthPaused && logic.recoveryRewardSuggestion?.kind !== 'safety'
+  if (capabilities.recoveryBasic) add('recovery', emberRecoveryCopy ? 'A little reward, just for you.' : 'Recovery',
+    logic.execution.recoveryComplete ? 'Your recovery activity is saved.' : emberRecoveryCopy ? 'Put on a podcast, get comfortable, or choose your own way to unwind.'
+      : capabilities.recoveryRecommendation ? 'Choose from your existing recovery options.' : 'A quiet moment is available when you need it.',
+    '/dashboard/recovery', logic.execution.recoveryComplete)
   const counted = activities.filter(activity => activity.countsTowardProgress)
   return { activities, completed: counted.filter(activity => activity.status === 'completed').length, total: counted.length }
 }
@@ -133,7 +137,9 @@ export function presentTodayActivities(logic: ProgramLogicOutput, schedule: Pick
       }
       const detail = recovery.state === 'unavailable' ? 'Your saved recovery could not be confirmed. Open recovery to review it.'
         : recovery.state === 'ambiguous' ? 'Your recovery activities remain saved. Review this recovery block in Schedule; its completion could not be linked.'
-        : 'This recovery block is available. Earlier saved activities remain in your history.'
+        : logic.program === 'ember' && !strengthTrainingPaused(logic) && logic.recoveryRewardSuggestion?.kind !== 'safety'
+          ? 'Put on a podcast, get comfortable, or choose your own way to unwind.'
+          : 'This recovery block is available. Earlier saved activities remain in your history.'
       return [{ ...activity, status, detail, canDefer: !safetyRecovery, canSkip: !activity.countsTowardProgress && !safetyRecovery,
         canResume: !safetyRecovery && Boolean(heldByGuide) && recovery.state !== 'held' && !acceptedLater && !skippedBySchedule, deferredUntil }]
     }

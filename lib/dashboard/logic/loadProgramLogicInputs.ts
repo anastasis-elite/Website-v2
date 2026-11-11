@@ -140,8 +140,8 @@ async function readProgramLogicSources({ supabase, user, client, requestReads }:
   const timeZone = getClientTimeZone(client)
 
   const [
-    { data: todayAssessment }, { data: rawTodayRecovery }, { data: recentSymptoms },
-    { data: nutritionLogs, error: nutritionLogsError }, { data: workoutHistory }, { data: strengthAssessments },
+    { data: todayAssessment }, { data: rawTodayRecovery, error: recoveryLogError }, { data: recentSymptoms },
+    { data: nutritionLogs, error: nutritionLogsError }, { data: workoutHistory, error: workoutHistoryError }, { data: strengthAssessments },
     { data: initialAssessment }, { data: measurementLogs }, { data: photoRecord },
     { data: phoenixTasks }, { data: recentTasks }, { data: todayWorkoutFeedback },
     { data: recoveryActivities, error: recoveryActivitiesError }, { data: rawRecentRecovery }, { data: executionHistory, error: executionHistoryError },
@@ -238,6 +238,7 @@ async function readProgramLogicSources({ supabase, user, client, requestReads }:
   return {
     today, yesterday, recentRecoveryDates, timeZone, todayHealthMetrics, todayRecovery,
     todayAssessment, todayCycle, recentSymptoms, nutritionLogs, nutritionLogsError, workoutHistory,
+    rawTodayRecovery, recoveryLogError, workoutHistoryError,
     strengthAssessments, initialAssessment, measurementLogs, photoRecord, phoenixTasks,
     recentTasks, todayWorkoutFeedback, recoveryActivities, recoveryActivitiesError,
     rawRecentRecovery, executionHistory, executionHistoryError, dailyHealthMetrics,
@@ -252,6 +253,7 @@ function assembleProgramLogicInputs({ user, client, program, dailyPlan, cycleSta
   const {
     today, yesterday, recentRecoveryDates, timeZone, todayHealthMetrics, todayRecovery,
     todayAssessment, todayCycle, recentSymptoms, nutritionLogs, nutritionLogsError, workoutHistory,
+    rawTodayRecovery, recoveryLogError, workoutHistoryError,
     strengthAssessments, initialAssessment, measurementLogs, photoRecord, phoenixTasks,
     recentTasks, todayWorkoutFeedback, recoveryActivities, recoveryActivitiesError,
     rawRecentRecovery, executionHistory, executionHistoryError, dailyHealthMetrics,
@@ -431,6 +433,8 @@ const recentFuelingHistory = [-1, -2, -3].map((offset) => {
   return {
     date: today, userId: user.id, client, program, dailyPlan, cycleStatus, cycleAdjustment,
     plannedWorkout, plannedExercises, todayWorkoutFeedback, todayAssessment, todayRecovery,
+    recoveryRewardSources: { recoveryLog: rawTodayRecovery, recoveryAvailable: !recoveryLogError,
+      workoutsAvailable: !workoutHistoryError && Array.isArray(workoutHistory) },
     recentRecovery,
     todaySymptoms, recentSymptoms: recentSymptoms || [], nutritionLogs: nutritionLogs || [],
     nutritionTotals: nutritionTotals || [],

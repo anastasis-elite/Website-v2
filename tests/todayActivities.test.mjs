@@ -128,7 +128,10 @@ test('all tier activities retain their existing nutrition and recovery capabilit
     const today = buildTodayActivities(current, schedule())
     assert.match(activity(today, 'workout').href, new RegExp(`/program/${tier}/workout$`))
     assert.equal(activity(today, 'nutrition').title, tier === 'ember' ? 'Nutrition' : 'Meal logging')
-    assert.match(activity(today, 'recovery').detail, tier === 'ember' ? /quiet moment/ : /existing recovery options/)
+    if (tier === 'ember') {
+      assert.equal(activity(today, 'recovery').title, 'A little reward, just for you.')
+      assert.equal(activity(today, 'recovery').detail, 'Put on a podcast, get comfortable, or choose your own way to unwind.')
+    } else assert.match(activity(today, 'recovery').detail, /existing recovery options/)
     assert.doesNotMatch(today.activities.map(item => item.detail).join(' '), /supplement|breakfast|high energy/i)
   }
 })

@@ -100,8 +100,9 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   const evening = getLocalDaypart(new Date(schedule.now), schedule.timezone) === 'evening'
   const recoveryEventDue = recovery?.state === 'due'
   const unscheduledRecoveryDue = (!recovery || recovery.state === 'no_event') && !logic.execution.recoveryComplete
-  if (recoveryDue && !candidates.some(action => action.category === 'recovery') && (recoveryEventDue || (workout === 'completed' || evening || logic.capacityStatus?.status === 'low_capacity') && unscheduledRecoveryDue)) add('recovery', 'recovery', 'Choose a recovery moment',
-    workout === 'completed' ? `A completed workout is recorded${logic.execution.completedWorkoutTitle ? `: ${logic.execution.completedWorkoutTitle}` : ' today'}. Recovery options are available.` : 'Choose from the recovery options already available in your plan.', '/dashboard/recovery', 'confirmed')
+  if (recoveryDue && !candidates.some(action => action.category === 'recovery') && (recoveryEventDue || (workout === 'completed' || evening || logic.capacityStatus?.status === 'low_capacity') && unscheduledRecoveryDue)) add('recovery', 'recovery', logic.program === 'ember' ? 'A little reward, just for you.' : 'Choose a recovery moment',
+    logic.program === 'ember' ? 'Put on a podcast, get comfortable, or choose your own way to unwind.'
+      : workout === 'completed' ? `A completed workout is recorded${logic.execution.completedWorkoutTitle ? `: ${logic.execution.completedWorkoutTitle}` : ' today'}. Recovery options are available.` : 'Choose from the recovery options already available in your plan.', '/dashboard/recovery', 'confirmed')
   // Commitments and overdue items remain actionable even when food is not logged.
   const next = schedule.nextActionableEvent
   if (next && !['completed','cancelled','skipped'].includes(next.status) && !next.suggested && !['hydration','meal'].includes(next.event_type) && !candidates.some(c => c.eventId === next.id) &&
