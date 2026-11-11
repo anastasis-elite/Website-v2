@@ -1,4 +1,5 @@
 .dashboard-client-shell .client-dashboard-nav.client-dashboard-nav--guided {
+  --guided-nav-selected-copper: #bd875b;
   grid-template-columns: repeat(5, minmax(auto, 1fr));
   width: min(620px, calc(100% - 24px));
   height: calc(78px + env(safe-area-inset-bottom));
@@ -54,14 +55,14 @@
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   background: radial-gradient(circle closest-side,
-    #c99a77 0%,
-    rgba(201, 154, 119, 0) 96%);
+    rgba(184, 115, 51, .2) 0%,
+    rgba(184, 115, 51, 0) 96%);
   mask-image: linear-gradient(#000 0% 85%, transparent 96%);
   pointer-events: none;
 }
 .dashboard-client-shell .client-dashboard-nav--guided .client-dashboard-nav__item--community[aria-current="page"]::before {
   width: 78px;
-  /* Fade the lower tail before the safe area without dimming the label. */
+  /* Fade the lower tail before the safe area. */
   mask-image: linear-gradient(#000 0% 72%, transparent 90%);
 }
 /* Light catches the SVG strokes; the link remains a flat touch target. */
@@ -70,34 +71,14 @@
   filter: drop-shadow(0 -1px 0 rgba(255, 241, 220, .2)) drop-shadow(0 2px 1px rgba(9, 5, 3, .8));
 }
 .dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] .client-dashboard-nav__icon svg {
-  color: var(--anastasis-charcoal);
+  color: var(--guided-nav-selected-copper);
   stroke-width: 2;
   filter: none;
 }
 .dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] small {
-  color: var(--anastasis-charcoal);
+  color: var(--guided-nav-selected-copper);
   overflow: visible;
   text-shadow: none;
-}
-/* Local soft backing supports the charcoal without filling the copper circle. */
-.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] .client-dashboard-nav__icon,
-.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] small {
-  isolation: isolate;
-}
-.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] .client-dashboard-nav__icon::before,
-.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] small::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: -3px;
-  border-radius: 8px;
-  background: rgba(188, 165, 141, .9);
-  filter: blur(2px);
-  pointer-events: none;
-}
-.dashboard-client-shell .client-dashboard-nav--guided [aria-current="page"] small::before {
-  inset: -2px -5px;
-  border-radius: 5px;
 }
 .dashboard-client-shell .client-dashboard-nav--guided .dashboard-more-menu > .dashboard-more-trigger {
   width: 100%;
