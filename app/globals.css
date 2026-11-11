@@ -316,6 +316,7 @@ body:has(.dashboard-client-shell){--dashboard-nav-height:84px;--dashboard-nav-el
 .workout-info-panel{width:100%}
 .workout-current-panel .aos-workout-preview h2{margin:8px 0;color:var(--text-primary);font:400 clamp(1.35rem,3vw,2rem)/1.12 Georgia,'Times New Roman',serif;text-transform:none}
 .workout-current-panel .aos-workout-preview>p{color:var(--text-secondary)}
+.workout-recovery-artwork{display:block;width:100%;max-width:480px;height:auto;object-fit:contain;margin:20px auto 0}
 .workout-tracker,.workout-exercise-carousel,.workout-exercise-track,.workout-exercise-card,.workout-exercise-card label{min-width:0}
 .workout-completion-summary{margin:0 0 12px;color:var(--text-muted);font-size:.78rem;line-height:1.4}
 .workout-exercise-carousel{max-width:100%;overscroll-behavior-x:contain}

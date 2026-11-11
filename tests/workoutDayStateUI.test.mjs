@@ -60,8 +60,9 @@ for (const [state, label] of [['rest', 'Rest day'], ['unavailable', 'Workout una
     } }
     const dashboard = findDashboard(await Page({ params: Promise.resolve({ program: 'ignite' }) }))
     assert.equal(dashboard.props.workoutTitle, label)
-    assert.equal(dashboard.props.workoutStateLabel, label)
-    assert.equal(dashboard.props.previewTitle, label)
+    const displayLabel = state === 'rest' ? 'Recovery day' : label
+    assert.equal(dashboard.props.workoutStateLabel, displayLabel)
+    assert.equal(dashboard.props.previewTitle, displayLabel)
     assert.equal(dashboard.props.previewMessage, `Synthetic ${state} explanation`)
     assert.equal(dashboard.props.showInteractiveWorkout, false)
 

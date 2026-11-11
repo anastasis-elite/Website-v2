@@ -86,7 +86,7 @@ function getWorkoutStateLabel(
   workoutState?: string | null,
 ): string {
   if (workoutState === 'rest') {
-    return 'Rest day'
+    return 'Recovery day'
   }
 
   if (workoutState === 'unavailable') {
@@ -245,7 +245,7 @@ export default async function ProgramWorkoutPage({
     hasSafetyFlags || strengthPaused
       ? 'Safety support first'
       : assignedWorkout?.workout_state === 'rest'
-        ? 'Rest day'
+        ? 'Recovery day'
         : assignedWorkout?.workout_state === 'unavailable'
           ? 'Workout unavailable'
           : !logic.workoutDecision.canTrain

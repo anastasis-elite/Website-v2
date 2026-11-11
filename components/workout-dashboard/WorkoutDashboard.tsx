@@ -5,6 +5,7 @@ import { strengthTrainingPaused } from '@/lib/assessment/strengthWorkoutState'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 import WorkoutTracker from '@/components/WorkoutTracker'
 import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
@@ -79,12 +80,22 @@ function exerciseDose(exercise: AssignedExercise) {
   return `${dose.kind === 'strength' ? `${dose.sets} sets · ` : ''}${dose.prescribed || 'Choose a comfortable amount'} ${dose.metric}${load.recommendationAvailable && dose.weight > 0 ? ` · ${dose.weight} ${dose.unit}` : dose.kind === 'strength' && !load.recommendationAvailable ? ' · Load recommendation unavailable' : ''}`
 }
 
-function WorkoutPreview({ exercises, previewTitle, previewMessage }: { exercises: AssignedExercise[]; previewTitle: string; previewMessage: string }) {
+function WorkoutPreview({ exercises, previewTitle, previewMessage, intentionalRecoveryDay }: { exercises: AssignedExercise[]; previewTitle: string; previewMessage: string; intentionalRecoveryDay: boolean }) {
   return (
     <div className="aos-workout-preview">
       {exercises.length ? <p className="tier-dashboard-label">Plan remains visible</p> : null}
       <h2>{previewTitle}</h2>
       <p>{previewMessage}</p>
+      {intentionalRecoveryDay ? (
+        <Image
+          src="/images/workout/intentional-recovery-day.jpeg"
+          alt=""
+          width={1199}
+          height={1312}
+          sizes="(max-width: 600px) 100vw, 480px"
+          className="workout-recovery-artwork"
+        />
+      ) : null}
       {exercises.length ? (
         <div>
           {exercises.map((exercise, index) => (
@@ -107,6 +118,7 @@ export default function WorkoutDashboard(props: Props) {
   const [restoredPreferenceKey, setRestoredPreferenceKey] = useState<string | null>(null)
   const preferenceKey = `aos-workout-view:v1:${props.clientId}:${props.program}`
   const strengthPaused = strengthTrainingPaused(props.logic, props.hasSafetyFlags)
+  const intentionalRecoveryDay = props.logic.workoutDecision.assignedWorkout?.workout_state === 'rest' && !props.strengthAssessmentWorkout && !strengthPaused
   const strengthSaved = props.logic.assessments.strength.completedToday && props.logic.assessments.strength.state === 'completed'
   const recommendedInteractive = props.showInteractiveWorkout && !(props.strengthAssessmentWorkout && strengthPaused)
   useEffect(() => {
@@ -197,7 +209,7 @@ export default function WorkoutDashboard(props: Props) {
               />
             ) : (
               <>
-                <WorkoutPreview exercises={props.assignedExercises} previewTitle={props.previewTitle} previewMessage={props.previewMessage} />
+                <WorkoutPreview exercises={props.assignedExercises} previewTitle={props.previewTitle} previewMessage={props.previewMessage} intentionalRecoveryDay={intentionalRecoveryDay} />
                 {props.strengthAssessmentWorkout && strengthPaused ? <p><Link href={props.logic.assessments.strength.href} className="tier-secondary-action">{props.logic.assessments.strength.state === 'draft' ? 'Review saved draft' : 'Review assessment'}</Link>{props.logic.assessments.strength.previousDraft ? <Link href={props.logic.assessments.strength.previousDraft.href} className="tier-secondary-action">Resume earlier strength assessment</Link> : null}</p> : null}
               </>
             )}
