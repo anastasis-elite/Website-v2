@@ -26,7 +26,8 @@ export function projectStrengthWorkout({ status, userId, client, date, events, n
     getClientLocalDate(client, new Date(event.adjusted_start_at || event.start_at)) === date &&
     event.event_type === 'workout' && !event.calendar_event_id &&
     !event.external_event_id && ['program', 'anastasis', 'system'].includes(event.source) && !['completed', 'cancelled'].includes(event.status))
-  const template = workouts[0] || dailyPlanToScheduleEvents({ userId, client, dailyPlan: { date, timezone: day.timezone, timing: {} } })
+  const selected = workouts.find(event => event.id === `virtual-workout-${date}`) || (!completed && workouts.length === 1 ? workouts[0] : undefined)
+  const template = selected || dailyPlanToScheduleEvents({ userId, client, dailyPlan: { date, timezone: day.timezone, timing: {} } })
     .find(event => event.event_type === 'workout')
   const fallback: ScheduleEvent = {
     id: `strength-workout-${date}`, user_id: userId, client_id: client.client_id,
@@ -66,5 +67,5 @@ export function projectStrengthWorkout({ status, userId, client, date, events, n
   // A confirmed timed slot occupies time just like the workout slot it uses.
   // Only the genuinely untimed all-day fallback is nonblocking.
   event.busy = !event.all_day && Date.parse(event.adjusted_end_at || event.end_at) > Date.parse(event.adjusted_start_at || event.start_at)
-  return [...events.filter(event => !workouts.includes(event)), event]
+  return [...events.filter(event => event !== selected), event]
 }

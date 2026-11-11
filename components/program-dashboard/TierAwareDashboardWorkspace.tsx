@@ -18,7 +18,7 @@ export default function TierAwareDashboardWorkspace({
   const quiet = schedule.preferences?.carouselStyle === 'step'
   return (
     <section className="tier-dashboard-workspace daily-home" data-tier={tier} data-quiet={quiet}>
-      <GuidedToday key={`${logic.client.id}:${schedule.date}`} logic={logic} schedule={schedule} />
+      <GuidedToday key={`${logic.client.id}:${schedule.date}`} logic={logic} schedule={schedule} presentation={quiet ? 'step' : 'section'} />
     </section>
   )
 }

@@ -10,6 +10,7 @@ import { loadWorkoutHistory } from '@/lib/workout/history'
 import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { canonicalManualCardioLog, canonicalManualCardioPlan, MANUAL_CARDIO_DAY_NAME } from '@/lib/workout/manualCardio'
 import { getManualWorkoutSummary } from '@/lib/workout/getManualWorkoutSummary'
+import { isLegacyGeneratedWorkoutSession, retainGeneratedWorkoutOrigin, withoutGeneratedWorkoutOrigin } from '@/lib/workout/generatedOrigin'
 export async function POST(req: Request) {
   try {
     const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser()
@@ -45,17 +46,24 @@ export async function POST(req: Request) {
     const day = getClientDayRange(client)
     const workoutDate = body.workout_date ? new Date(body.workout_date) : new Date()
     if (!Number.isFinite(workoutDate.getTime()) || getClientLocalDate(client, workoutDate) !== day.date) return NextResponse.json({ error: 'This session belongs to another day. Reload today’s workout.' }, { status: 400 })
+    let legacy = false
     if (source === 'recommended') {
       const keys = workoutSessionKeys(planned)
       if (!matchingWorkoutPlan(logs, keys)) return NextResponse.json({ error: 'Keep the full prescribed plan when saving, including skipped exercises.' }, { status: 400 })
       const history = await loadWorkoutHistory({ supabase, client, authUserId: user.id, startDate: day.date, dayName, source })
       if (history.error) throw history.error
       const saved = (history.data || []).find((row: any) => matchingWorkoutPlan(row.exercise_logs, keys))
-      if (saved && matchingWorkoutPlan(saved.planned_exercises, keys)) planned = saved.planned_exercises
-      else if ((history.data || []).some((row: any) => Array.isArray(row.planned_exercises) && row.planned_exercises.length > planned.length && keys.every(key => workoutSessionKeys(row.planned_exercises).includes(key)))) {
+      if (saved && matchingWorkoutPlan(saved.planned_exercises, keys)) {
+        planned = saved.planned_exercises
+        legacy = isLegacyGeneratedWorkoutSession(saved)
+      } else if ((history.data || []).some((row: any) => Array.isArray(row.planned_exercises) && row.planned_exercises.length > planned.length && keys.every(key => workoutSessionKeys(row.planned_exercises).includes(key)))) {
         return NextResponse.json({ error: 'Reload the full saved workout before saving this session.' }, { status: 400 })
       }
     }
+    // The existing JSON snapshot carries a verified assignment-time origin. Do
+    // not guess an origin by recalculating today's possibly changed readiness.
+    planned = retainGeneratedWorkoutOrigin({ userId: user.id, client, date: day.date, dayName, plan: planned, source, legacy })
+    logs = logs.map(withoutGeneratedWorkoutOrigin)
     const payload = { client_id: client.client_id, auth_user_id: user.id, program: client.program, day_name: dayName, workout_source: source,
       workout_date: workoutDate.toISOString(), workout_local_date: day.date, planned_exercises: planned, exercise_logs: logs.map((log: any) => log.set_logs?.length ? { ...log, ...summarizeStrengthSets(log.set_logs.filter(isValidCompletedSet)) } : log),
       completed: workoutCompletion(logs, source === 'manual' ? manualWorkoutPlan(logs) : planned).completed, updated_at: new Date().toISOString() }

@@ -8,6 +8,7 @@ import type { NutritionPacing, NutritionMacroReminder, RecordedHistoryMacros } f
 import type { RecoveryCompletionEvidence } from '@/lib/recovery/todayCompletion'
 import type { TodayHydrationPacing } from '@/lib/hydration/todayPacing'
 import type { RecoveryRewardSources, RecoveryRewardSuggestion } from '@/lib/recovery/rewardSuggestion'
+import type { GeneratedWorkoutCompletionEvidence } from '@/lib/workout/occurrenceCompletion'
 
 export type ProgramTier = 'ember' | 'ignite' | 'phoenix'
 export type CapacityStatus = 'low_capacity' | 'moderate_capacity' | 'high_capacity'
@@ -183,6 +184,6 @@ export type ProgramLogicOutput = {
     sources: string[]
   }
   trends: DashboardTrend[]
-  execution: { workoutInProgress?: boolean; completedWorkoutTitle?: string | null; completedWorkoutId?: string | null; completedWorkoutAt?: string | null; workoutComplete: boolean; nutritionLogged: boolean; assessmentComplete: boolean; recoveryComplete: boolean; recoveryEvidence?: RecoveryCompletionEvidence; phoenixTaskPercent: number }
+  execution: { generatedWorkoutCompletion?: GeneratedWorkoutCompletionEvidence; workoutInProgress?: boolean; completedWorkoutTitle?: string | null; completedWorkoutId?: string | null; completedWorkoutAt?: string | null; workoutComplete: boolean; nutritionLogged: boolean; assessmentComplete: boolean; recoveryComplete: boolean; recoveryEvidence?: RecoveryCompletionEvidence; phoenixTaskPercent: number }
   presentation: { tier: ProgramTier; complexity: 'minimal' | 'guided' | 'direct'; maxTasksPerBlock: number; showTrends: boolean; showInsight: boolean }
 }
