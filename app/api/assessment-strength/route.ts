@@ -99,7 +99,7 @@ async function save(req: Request, complete: boolean) {
       const effectiveClient = { ...client, ...(profile.data || {}), client_id: client.client_id, auth_user_id: user.id, program: client.program }
       safetyFlags = evaluateSafetyEscalation({ client: effectiveClient, initialAssessment: initial.data.data, strengthAssessment: values })
       if (safetyFlags.length) planStatus = 'safety_paused'
-      else { programJson = generateProgram({ client: effectiveClient, initialAssessment: initial.data.data, strengthAssessment: values }); planStatus = 'generated' }
+      else { programJson = generateProgram({ client: { ...effectiveClient, current_weight: values.weight }, initialAssessment: initial.data.data, strengthAssessment: values }); planStatus = 'generated' }
     }
     const { data, error } = await supabase.rpc('save_strength_assessment', { p_client_id: client.client_id, p_period: period, p_expected_revision: revision, p_values: values, p_complete: complete, p_program_json: programJson })
     if (error || !data || typeof data.success !== 'boolean') return fail(503, 'save_failed', complete ? 'Your assessment hasn’t been confirmed as complete yet. Retry submission.' : 'Your changes haven’t been saved yet. Retry saving.')

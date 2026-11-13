@@ -15,7 +15,7 @@ import phoenixRecomposition from '@/data/template/phoenixRecomposition.json'
 import phoenixStrength from '@/data/template/phoenixStrength.json'
 import phoenixWaistCincher from '@/data/template/phoenixWaistCincher.json'
 
-import { calculateFounderLoadFromEstimated1RM, getFounderIntensityKey, resolveFounderExerciseReference } from '@/lib/program/founderReference'
+import { calculateFounderLoadFromEstimated1RM, founderBodyMassLb, experimentalLoadNote, resolveFounderExerciseReference } from '@/lib/program/founderReference'
 import { getClientTimeZone } from '@/lib/timezone'
 import { readSessionEquipmentContext } from '@/lib/workout/selectedPrescriptionTypes'
 import { isReferenceSessionVariant } from '@/lib/workout/manualWorkout'
@@ -166,22 +166,22 @@ function hasUsableAssessment(lift: ReturnType<typeof getAssessmentLift>, bodywei
     (bodyweight ? lift.weight >= 0 : lift.weight > 0) && Number.isSafeInteger(lift.reps) && lift.reps > 0 && lift.reps <= 100)
 }
 
-function calculationProvenance({ keyRow, ifKey, estimated1RM, intensityFactor, repMultiplier, baseCalculatedWeight, adjustedWeight, variant }: any) {
+function calculationProvenance({ keyRow, bodyMassLb, estimated1RM, repMultiplier, baseCalculatedWeight, adjustedWeight, variant }: any) {
   return {
-    version: 'founder-load-v2', reference_exercise: keyRow.exercise, assessment_key: keyRow.assessment_key,
-    intensity_key: ifKey, estimated_1rm: estimated1RM, intensity_factor: intensityFactor, rep_multiplier: repMultiplier,
+    version: 'founder-load-v3', reference_exercise: keyRow.exercise, assessment_key: keyRow.assessment_key,
+    estimated_1rm: estimated1RM, bodyweight_factor: keyRow.bodyweight_factor, body_mass_lb: bodyMassLb, rep_multiplier: repMultiplier,
     base_weight: baseCalculatedWeight, equipment_weight: adjustedWeight,
     selected_variant_id: variant?.id || null, equipment_modifier: variant?.equipment_modifier ?? 1,
   }
 }
 
 // One calculation path for saved programs and bounded manual selections.
-function calculateFounderLoad({ lift, intensityFactor, repMultiplier, group, variant, bodyweight }: {
-  lift: { weight: number; reps: number }; intensityFactor: number; repMultiplier: number
+function calculateFounderLoad({ lift, bodyweightFactor, bodyMassLb, repMultiplier, group, variant, bodyweight }: {
+  lift: { weight: number; reps: number }; bodyweightFactor: unknown; bodyMassLb: unknown; repMultiplier: number
   group: any; variant: any; bodyweight: boolean
 }) {
   const estimated1RM = estimate1RM(lift.weight, lift.reps)
-  return calculateFounderLoadFromEstimated1RM({ estimated1RM, intensityFactor, repMultiplier, group, variant, bodyweight })
+  return calculateFounderLoadFromEstimated1RM({ estimated1RM, bodyweightFactor, bodyMassLb, repMultiplier, group, variant, bodyweight })
 }
 
 export function generateProgram({
@@ -190,7 +190,7 @@ export function generateProgram({
   strengthAssessment,
 }: any) {
   const template = getTemplate(client.program)
-  const ifKey = getFounderIntensityKey(client.program)
+  const bodyMassLb = founderBodyMassLb(client, strengthAssessment)
   const clientEquipment = getClientEquipment(client, initialAssessment)
   const restrictedEquipment = !clientEquipment.includes('*')
   const excludedExercises: Array<{ day: string; exercise: string; reason: string }> = []
@@ -228,18 +228,18 @@ export function generateProgram({
         ...exerciseMetadata, baseline_weight: 0, calculated_weight: 0, recommended_weight: 0,
         calculation_note: 'Bodyweight movement; zero added load.',
       }
-      const intensityFactor = Number(keyRow?.[ifKey])
+      const bodyweightFactor = keyRow?.bodyweight_factor
       const repMultiplier = getRepMultiplier(Number(exercise.reps))
       const invalidReason = resolved.status === 'unavailable' ? resolved.reason
         : !assessmentLift ? 'This exercise has no established assessed load calculation.'
         : !hasUsableAssessment(assessmentLift, bodyweight) ? 'Saved strength input is missing or invalid.'
-        : !Number.isFinite(intensityFactor) || intensityFactor <= 0 ? 'Exercise intensity is unavailable.'
+        : typeof bodyweightFactor !== 'number' || !Number.isFinite(bodyweightFactor) ? 'Exercise bodyweight factor is unavailable.'
         : !Number.isSafeInteger(exercise.sets) || exercise.sets <= 0 || !Number.isSafeInteger(exercise.reps) || exercise.reps <= 0 ||
           !Number.isFinite(repMultiplier) || repMultiplier <= 0 ? 'Exercise dose is unavailable.'
         : defaultVariant && (!Number.isFinite(defaultVariant.equipment_modifier) || defaultVariant.equipment_modifier <= 0) ? 'Equipment conversion is unavailable.'
         : null
       const calculation = invalidReason ? null : calculateFounderLoad({
-        lift: assessmentLift!, intensityFactor, repMultiplier, group: variantGroup, variant: defaultVariant, bodyweight,
+        lift: assessmentLift!, bodyweightFactor, bodyMassLb, repMultiplier, group: variantGroup, variant: defaultVariant, bodyweight,
       })
       const unavailableReason = invalidReason || (!calculation || !Number.isFinite(calculation.adjustedWeight) || (!bodyweight && calculation.adjustedWeight <= 0)
         ? 'Calculated exercise load is unavailable.' : null)
@@ -264,18 +264,15 @@ export function generateProgram({
 
         assessment_key: assessmentKey,
         estimated_1rm: Math.round(estimated1RM),
-        intensity_factor: intensityFactor,
         rep_multiplier: repMultiplier,
 
         baseline_weight: baseCalculatedWeight,
         calculated_weight: adjustedWeight,
         recommended_weight: adjustedWeight,
-        prescription_calculation: calculationProvenance({ keyRow, ifKey, estimated1RM, intensityFactor, repMultiplier,
+        prescription_calculation: calculationProvenance({ keyRow, bodyMassLb, estimated1RM, repMultiplier,
           baseCalculatedWeight, adjustedWeight, variant: defaultVariant }),
 
-        calculation_note: bodyweight ? 'Bodyweight movement; zero added load.' : defaultVariant
-          ? `Adjusted for ${defaultVariant.equipment} loading.`
-          : 'Standard loading calculation.',
+        calculation_note: experimentalLoadNote,
       }
     })
 
@@ -344,13 +341,13 @@ export function getFounderSelectedExercise({ client, initialAssessment, strength
   if (!Number.isSafeInteger(base.sets) || base.sets <= 0 || !Number.isSafeInteger(base.reps) || base.reps <= 0) return null
   const assessmentKey = key.assessment_key
   const lift = getAssessmentLift(assessmentKey, strengthAssessment?.data || strengthAssessment)
-  const ifKey = getFounderIntensityKey(track)
-  const intensity = Number(key[ifKey])
+  const bodyMassLb = founderBodyMassLb(client, strengthAssessment)
+  const bodyweightFactor = key.bodyweight_factor
   const repMultiplier = getRepMultiplier(base.reps)
   const bodyweight = variant.load_type === 'bodyweight' || variant.equipment === 'bodyweight'
-  if (!hasUsableAssessment(lift, bodyweight) || !Number.isFinite(intensity) || intensity <= 0 ||
+  if (!hasUsableAssessment(lift, bodyweight) ||
     !Number.isFinite(repMultiplier) || repMultiplier <= 0) return null
-  const { estimated1RM, baseCalculatedWeight, adjustedWeight } = calculateFounderLoad({ lift: lift!, intensityFactor: intensity, repMultiplier, group, variant, bodyweight })
+  const { estimated1RM, baseCalculatedWeight, adjustedWeight } = calculateFounderLoad({ lift: lift!, bodyweightFactor, bodyMassLb, repMultiplier, group, variant, bodyweight })
   if (!Number.isFinite(adjustedWeight) || (!bodyweight && adjustedWeight <= 0)) return null
   return { template, exercise: {
     ...catalogExercise, ...base,
@@ -359,9 +356,9 @@ export function getFounderSelectedExercise({ client, initialAssessment, strength
     equipment: variant.equipment, load_type: bodyweight ? 'bodyweight' : variant.load_type,
     // Keep this exact variant through the existing capacity/structural path.
     available_variants: [variant], assessment_key: assessmentKey, estimated_1rm: Math.round(estimated1RM),
-    intensity_factor: intensity, rep_multiplier: repMultiplier, baseline_weight: baseCalculatedWeight,
-    calculated_weight: adjustedWeight, recommended_weight: adjustedWeight,
-    prescription_calculation: calculationProvenance({ keyRow: key, ifKey, estimated1RM, intensityFactor: intensity, repMultiplier,
+    rep_multiplier: repMultiplier, baseline_weight: baseCalculatedWeight,
+    calculated_weight: adjustedWeight, recommended_weight: adjustedWeight, calculation_note: experimentalLoadNote,
+    prescription_calculation: calculationProvenance({ keyRow: key, bodyMassLb, estimated1RM, repMultiplier,
       baseCalculatedWeight, adjustedWeight, variant }),
   } }
 }

@@ -8,17 +8,17 @@ const positive = (value: unknown): value is number => numeric(value) && value > 
 
 function hasRecordedCalculation(exercise: any) {
   const calculation = exercise?.prescription_calculation
-  if (calculation?.version !== 'founder-load-v2' || !positive(calculation.estimated_1rm) ||
-    !positive(calculation.intensity_factor) || !positive(calculation.rep_multiplier)) return false
+  if (calculation?.version !== 'founder-load-v3' || !positive(calculation.estimated_1rm) ||
+    !positive(calculation.rep_multiplier)) return false
   const resolved = resolveFounderExerciseReference(exercise.exercise)
   if (resolved.status !== 'resolved' || calculation.reference_exercise !== resolved.reference.exercise ||
     calculation.assessment_key !== resolved.reference.assessment_key ||
-    calculation.intensity_factor !== resolved.reference[calculation.intensity_key] ||
+    calculation.bodyweight_factor !== resolved.reference.bodyweight_factor ||
     calculation.selected_variant_id !== (exercise.selected_variant_id || null)) return false
   const variant = resolved.group?.variants?.find((item: any) => item.id === exercise.selected_variant_id)
   if (resolved.group && !variant || calculation.equipment_modifier !== (variant?.equipment_modifier ?? 1)) return false
   const expected = calculateFounderLoadFromEstimated1RM({ estimated1RM: calculation.estimated_1rm,
-    intensityFactor: calculation.intensity_factor, repMultiplier: calculation.rep_multiplier,
+    bodyweightFactor: calculation.bodyweight_factor, bodyMassLb: calculation.body_mass_lb, repMultiplier: calculation.rep_multiplier,
     group: resolved.group, variant, bodyweight: false })
   return calculation.base_weight === expected.baseCalculatedWeight && calculation.equipment_weight === expected.adjustedWeight &&
     positive(calculation.equipment_weight) && exercise.calculated_weight === calculation.equipment_weight

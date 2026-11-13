@@ -5,8 +5,8 @@ import { importTs } from './typescriptModule.mjs'
 const { exerciseLoadPresentation, actualWeightForInput, weightDraftForInput } = await importTs('lib/workout/exerciseLoadPresentation.ts')
 const raw = () => ({ id: 'row', exercise: 'Seated Cable Row', sets: 4, reps: 8, recommended_weight: 40, calculated_weight: 40,
   selected_variant_id: 'seated_cable_row', selected_equipment: 'cable', load_type: 'total_load' })
-const verified = () => ({ ...raw(), prescription_calculation: { version: 'founder-load-v2', reference_exercise: 'Seated Cable Row',
-  assessment_key: 'Row', intensity_key: 'ember_if', intensity_factor: .4, estimated_1rm: 100, rep_multiplier: 1,
+const verified = () => ({ ...raw(), prescription_calculation: { version: 'founder-load-v3', reference_exercise: 'Seated Cable Row',
+  assessment_key: 'Row', bodyweight_factor: 0, body_mass_lb: 180, estimated_1rm: 40, rep_multiplier: 1,
   base_weight: 40, equipment_weight: 40, selected_variant_id: 'seated_cable_row', equipment_modifier: 1 } })
 
 test('legacy external source weights remain retained while current recommendation and new actual input stay unavailable', () => {

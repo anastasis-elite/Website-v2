@@ -15,7 +15,7 @@ import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 import { buildMuscleReadiness } from '@/lib/workout/muscleReadiness'
 import { loadWorkoutHistory } from '@/lib/workout/history'
-import { hasUnconfirmedPrescription, projectSavedExercisePrescription, selectPreservedWorkoutSession } from '@/lib/program/savedPrescription'
+import { projectSavedExercisePrescription, selectPreservedWorkoutSession } from '@/lib/program/savedPrescription'
 
 const SUPPORTED_PROGRAMS: ProgramTier[] = [
   'ember',
@@ -206,8 +206,7 @@ export default async function ProgramWorkoutPage({
 
   // Keep current saved work on its exact snapshot and original day identity.
   // Load confidence is presentation metadata; it does not remove the workout.
-  const preservedSession = hasUnconfirmedPrescription(adjustedExercises) &&
-    !scheduledStrength && logic.workoutDecision.canTrain && !strengthTrainingPaused(logic, hasSafetyFlags)
+  const preservedSession = !scheduledStrength && logic.workoutDecision.canTrain && !strengthTrainingPaused(logic, hasSafetyFlags)
     ? selectPreservedWorkoutSession({ sessions: workoutHistoryResult.data || [], client }) : null
   const assignedWorkout = preservedSession
     ? { id: preservedSession.id, day_name: preservedSession.day_name, workout_state: 'saved', exercises: preservedSession.planned_exercises }

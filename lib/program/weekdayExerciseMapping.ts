@@ -155,7 +155,7 @@ const normalizeGeneratorAlias = (name: string) => name.trim().toLowerCase().repl
 function generatedIdentityMatches(saved: Record<string, unknown>, originalName: string): boolean {
   if (!Object.keys(saved).some(key => generatedExerciseKeys.has(key))) return true
   if (identityKeys.some(key => !Object.hasOwn(saved, key))) return false
-  const v2 = record(saved.prescription_calculation) && saved.prescription_calculation.version === 'founder-load-v2'
+  const v2 = record(saved.prescription_calculation) && ['founder-load-v2', 'founder-load-v3'].includes(String(saved.prescription_calculation.version))
   if (Object.hasOwn(saved, 'prescription_calculation') && !v2) return false
   if (Object.hasOwn(saved, 'prescription_status') && saved.prescription_status !== 'unavailable') return false
   if (Object.hasOwn(saved, 'load_guidance_status') && !['not_calculated', 'unverified'].includes(String(saved.load_guidance_status))) return false

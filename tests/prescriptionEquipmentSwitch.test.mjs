@@ -38,8 +38,8 @@ function prescription(patch = {}) {
     calculated_weight: 40, cycle_adjusted_weight: 35, recommended_weight: 28,
     cycle_weight_multiplier: .85, cycle_rep_adjustment: -2, prescription_safety_multiplier: .8,
     available_variants: clone(variants), set_logs: [],
-    prescription_calculation: { version: 'founder-load-v2', reference_exercise: 'Seated Cable Row', assessment_key: 'Row',
-      intensity_key: 'ember_if', intensity_factor: .4, estimated_1rm: 250, rep_multiplier: 1,
+    prescription_calculation: { version: 'founder-load-v3', reference_exercise: 'Seated Cable Row', assessment_key: 'Row',
+      bodyweight_factor: 0, body_mass_lb: 180, estimated_1rm: 100, rep_multiplier: 1,
       base_weight: 100, equipment_weight: 40, equipment_modifier: .42, selected_variant_id: 'single_arm_dumbbell_row' }, ...patch }
 }
 
@@ -80,10 +80,12 @@ test('legacy, missing, zero, ambiguous and mismatched calculation metadata canno
     assert.equal(changePrescriptionVariant(source, 'seated_cable_row'), null)
     assert.deepEqual(clone(source), before)
   }
-  for (const field of ['base_weight', 'equipment_weight', 'equipment_modifier', 'intensity_factor']) {
+  for (const field of ['base_weight', 'equipment_weight', 'equipment_modifier', 'estimated_1rm']) {
     const source = prescription(); source.prescription_calculation[field] = 0
     assert.equal(changePrescriptionVariant(source, 'seated_cable_row'), null)
   }
+  const legacy = prescription(); legacy.prescription_calculation.version = 'founder-load-v2'
+  assert.equal(changePrescriptionVariant(legacy, 'seated_cable_row'), null)
   const duplicated = prescription(); duplicated.available_variants.push(duplicated.available_variants.find(item => item.id === 'seated_cable_row'))
   assert.equal(changePrescriptionVariant(duplicated, 'seated_cable_row'), null)
   const fabricated = prescription(); fabricated.available_variants.find(item => item.id === 'seated_cable_row').equipment_modifier = 2

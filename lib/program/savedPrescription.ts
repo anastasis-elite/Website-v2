@@ -1,4 +1,4 @@
-import { calculateFounderLoadFromEstimated1RM, resolveFounderExerciseReference, getFounderIntensityKey } from '@/lib/program/founderReference'
+import { calculateFounderLoadFromEstimated1RM, calculateLegacyFounderLoadFromEstimated1RM, founderBodyMassLb, experimentalLoadNote, resolveFounderExerciseReference, getFounderIntensityKey } from '@/lib/program/founderReference'
 import hypertrophyChart from '@/data/reference/hypertrophyChart_normalized.json'
 import { activityDose, isBodyweightExercise } from '@/lib/workout/activity'
 import { matchingWorkoutPlan, workoutSessionKeys } from '@/lib/workout/session'
@@ -22,9 +22,9 @@ function hasStoredLoad(exercise: any) {
     typeof exercise[field] === 'string' && exercise[field].trim() !== '' && Number.isFinite(Number(exercise[field])))
 }
 
-/** Read-only load-guidance projection. Keep every stored load and dose intact:
- * rounded legacy 1RM values cannot safely recreate a trusted recommendation. */
-export function projectSavedExercisePrescription(exercise: any, program: string) {
+/** Read-only projection; never mutate stored loads or dose. Only callers projecting
+ * an unstarted plan may refresh validated full-precision v2 provenance. */
+export function projectSavedExercisePrescription(exercise: any, program: string, refreshClient?: any) {
   if (!exercise || typeof exercise !== 'object') return exercise
   const retained = withoutObsoleteOutage(exercise)
   if (activityDose(exercise).kind !== 'strength' || isBodyweightExercise(exercise)) return retained
@@ -44,15 +44,16 @@ export function projectSavedExercisePrescription(exercise: any, program: string)
     'phoenixHypertrophy', 'phoenixRecomposition', 'phoenixStrength', 'phoenixWaistCincher'].includes(program)
     ? getFounderIntensityKey(program) : null
   const repRows = (hypertrophyChart as any[]).filter(row => Number(row.reps) === Number(exercise.reps))
-  const expected = provenance && finite(provenance.estimated_1rm) && provenance.estimated_1rm > 0 &&
+  const modern = provenance?.version === 'founder-load-v3'
+  const expected = modern ? calculateFounderLoadFromEstimated1RM({ estimated1RM: provenance.estimated_1rm, bodyweightFactor: provenance.bodyweight_factor, bodyMassLb: provenance.body_mass_lb, repMultiplier: provenance.rep_multiplier, group, variant, bodyweight: false }) : provenance && finite(provenance.estimated_1rm) && provenance.estimated_1rm > 0 &&
     finite(provenance.intensity_factor) && provenance.intensity_factor > 0 &&
     finite(provenance.rep_multiplier) && provenance.rep_multiplier > 0
-    ? calculateFounderLoadFromEstimated1RM({ estimated1RM: provenance.estimated_1rm, intensityFactor: provenance.intensity_factor,
+    ? calculateLegacyFounderLoadFromEstimated1RM({ estimated1RM: provenance.estimated_1rm, intensityFactor: provenance.intensity_factor,
       repMultiplier: provenance.rep_multiplier, group, variant, bodyweight: false }) : null
-  const supported = provenance?.version === 'founder-load-v2' && reference && intensityKey &&
+  const supported = (modern || provenance?.version === 'founder-load-v2') && reference && intensityKey &&
     provenance.reference_exercise === reference.exercise && provenance.assessment_key === reference.assessment_key &&
-    provenance.intensity_key === intensityKey && provenance.intensity_factor === reference[intensityKey] &&
-    provenance.assessment_key === exercise.assessment_key && provenance.intensity_factor === exercise.intensity_factor &&
+    (modern ? provenance.bodyweight_factor === reference.bodyweight_factor : provenance.intensity_key === intensityKey && provenance.intensity_factor === reference[intensityKey] && provenance.intensity_factor === exercise.intensity_factor) &&
+    provenance.assessment_key === exercise.assessment_key &&
     finite(provenance.estimated_1rm) && provenance.estimated_1rm > 0 &&
     finite(provenance.rep_multiplier) && provenance.rep_multiplier > 0 && provenance.rep_multiplier === exercise.rep_multiplier &&
     repRows.length === 1 && provenance.rep_multiplier === Number(repRows[0].multiplier) &&
@@ -63,7 +64,25 @@ export function projectSavedExercisePrescription(exercise: any, program: string)
     provenance.selected_variant_id === (exercise.selected_variant_id || null) &&
     (variant ? provenance.equipment_modifier === variant.equipment_modifier && exercise.selected_equipment === variant.equipment && exercise.load_type === variant.load_type
       : !group && provenance.selected_variant_id === null && provenance.equipment_modifier === 1)
-  if (supported) return retained
+  if (supported && modern) return retained
+  // Only unstarted plan projections opt in. Session/history callers never refresh.
+  if (supported && refreshClient && exercise.completed !== true && !exercise.set_logs?.length) {
+    const bodyMassLb = founderBodyMassLb(refreshClient)
+    const result = calculateFounderLoadFromEstimated1RM({ estimated1RM: provenance.estimated_1rm,
+      bodyweightFactor: reference.bodyweight_factor, bodyMassLb, repMultiplier: provenance.rep_multiplier, group, variant, bodyweight: false })
+    if (Number.isFinite(result.adjustedWeight) && result.adjustedWeight > 0) {
+      const updated = { ...retained, baseline_weight: result.baseCalculatedWeight, calculated_weight: result.adjustedWeight,
+        recommended_weight: result.adjustedWeight, calculation_note: experimentalLoadNote,
+        prescription_calculation: { version: 'founder-load-v3', reference_exercise: reference.exercise,
+          assessment_key: reference.assessment_key, estimated_1rm: provenance.estimated_1rm,
+          bodyweight_factor: reference.bodyweight_factor, body_mass_lb: bodyMassLb, rep_multiplier: provenance.rep_multiplier,
+          base_weight: result.baseCalculatedWeight, equipment_weight: result.adjustedWeight,
+          selected_variant_id: provenance.selected_variant_id, equipment_modifier: provenance.equipment_modifier } }
+      delete updated.intensity_factor
+      delete updated.cycle_adjusted_weight
+      return updated
+    }
+  }
   return { ...retained, load_guidance_status: 'unverified', load_guidance_reason: unverifiedReason }
 }
 
