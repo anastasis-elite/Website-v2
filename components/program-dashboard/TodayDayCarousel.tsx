@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useId, useRef } from 'react'
+import { useId } from 'react'
 import CardArtwork from '@/components/CardArtwork'
 import { formatLocalTime } from '@/lib/schedule/time'
 import type { TodayDayItem, TodayDaySections } from '@/lib/dashboard/todayDaySections'
@@ -15,40 +15,22 @@ function DayAction({ item, timezone, onOpen }: { item: TodayDayItem; timezone: s
   const timing = item.timing === 'all_day' ? 'All day' : item.startAt ? `${item.timing === 'suggested' ? 'Suggested · ' : ''}${item.continuesFromPreviousDay ? 'Continues from the previous day · ' : ''}${formatLocalTime(item.startAt, timezone)}${item.endAt ? ` – ${formatLocalTime(item.endAt, timezone)}` : ''}` : 'No set time'
   return <li data-day-item-id={item.id} data-event-id={item.eventId} data-activity-id={item.activityId}>
     <Link className={styles.action} href={item.href} onClick={() => onOpen(item.activityId || item.id)}>
-      {kind ? <CardArtwork kind={kind} className={styles.artwork} naturalProportions sizes="96px" /> : null}
+      {kind ? <CardArtwork kind={kind} className={styles.artwork} naturalProportions sizes="(max-width: 600px) 100vw, 50vw" /> : null}
       <span className={styles.actionCopy}>
         <small className={styles.timing}>{timing}</small>
         <strong>{item.title}</strong>
         <span>{item.detail}</span>
         {statuses[item.status] ? <small>{statuses[item.status]}</small> : null}
       </span>
-      <span className={styles.arrow} aria-hidden="true">↗</span>
     </Link>
   </li>
 }
 
 export default function TodayDayCarousel({ day, timezone, onOpen }: { day: TodayDaySections; timezone: string; onOpen: (id: string) => void }) {
   const id = useId()
-  const cards = useRef<Array<HTMLElement | null>>([])
-  const navigate = (index: number) => {
-    const card = cards.current[index]
-    card?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' })
-    card?.focus({ preventScroll: true })
-  }
-  return <section className={styles.day} aria-labelledby={`${id}-title`} data-testid="today-day-carousel">
-    <div className={styles.heading}>
-      <div><h2 id={`${id}-title`}>Your day, in view.</h2><p>Your commitments and remaining actions for today.</p></div>
-      <nav className={styles.navigation} aria-label="Parts of your day">
-        {day.sections.map((section, index) => <button type="button" key={section.id} aria-controls={`${id}-${section.id}`} aria-current={section.id === day.currentSection ? 'time' : undefined} onClick={() => navigate(index)}>{section.title}</button>)}
-      </nav>
-    </div>
-    <p className={styles.hint}>Swipe through your day, or choose a section above. Times follow your saved time zone: {timezone}.</p>
-    <div className={styles.carousel}>
-      {day.sections.map((section, index) => <section key={section.id} id={`${id}-${section.id}`} ref={node => { cards.current[index] = node }} className={styles.section} tabIndex={0} aria-labelledby={`${id}-${section.id}-title`} data-day-section={section.id} onKeyDown={event => {
-        if (event.target !== event.currentTarget) return
-        const next = event.key === 'ArrowRight' ? Math.min(index + 1, 2) : event.key === 'ArrowLeft' ? Math.max(index - 1, 0) : event.key === 'Home' ? 0 : event.key === 'End' ? 2 : null
-        if (next !== null) { event.preventDefault(); navigate(next) }
-      }}>
+  return <section className={styles.day} aria-label="Today’s actions" data-testid="today-day-carousel">
+    <div className={styles.sections}>
+      {day.sections.map(section => <section key={section.id} id={`${id}-${section.id}`} className={styles.section} aria-labelledby={`${id}-${section.id}-title`} data-day-section={section.id}>
         <header className={styles.sectionHeading}><h3 id={`${id}-${section.id}-title`}>{section.title}</h3><p>{section.range}</p></header>
         {section.items.length ? <ul className={styles.actions}>{section.items.map(item => <DayAction key={item.id} item={item} timezone={timezone} onOpen={onOpen} />)}</ul> : <p className={styles.empty}>No remaining saved actions in this part of your day.</p>}
       </section>)}
