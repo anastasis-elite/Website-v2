@@ -120,8 +120,8 @@ test('day cards retain supplied artwork and existing destinations, with explicit
   const Carousel = modules()('components/program-dashboard/TodayDayCarousel.tsx').default
   const current = fixture(), model = current.schedule.todayViewModel
   const html = renderToStaticMarkup(React.createElement(Carousel, { day: model.daySections, timezone: 'UTC', onOpen() {} }))
-  assert.match(html, /aria-label="Parts of your day"/)
-  assert.match(html, /aria-current="time"/)
+  assert.match(html, /aria-label="Today’s actions"/)
+  assert.doesNotMatch(html, /Parts of your day|Your day, in view|Your commitments and remaining actions|Swipe through your day|↗|<button/)
   assert.match(html, /href="\/dashboard\/check-in"/)
   assert.match(html, /href="\/dashboard\/nutrition\?log=water"/)
   assert.match(html, /src="\/_next\/static\/media\/check-in-640\.webp"/)
@@ -149,31 +149,35 @@ function hooks() {
   }, cleanup() { for (const effect of effects) effect.cleanup?.() } }
 }
 
-test('section controls and Arrow/Home/End navigate focus without intercepting action links or touch events', () => {
-  const runtime = hooks(), opened = [], calls = []
+test('stacked sections expose every action without section navigation or keyboard interception', () => {
+  const runtime = hooks(), opened = []
   const Carousel = modules(runtime.react)('components/program-dashboard/TodayDayCarousel.tsx').default
-  const current = fixture(), tree = runtime.render(() => Carousel({ day: current.schedule.todayViewModel.daySections, timezone: 'UTC', onOpen: id => opened.push(id) }))
-  const cards = nodes(tree, node => node.props?.['data-day-section'])
-  cards.forEach((card, index) => {
-    assert.equal(card.props.tabIndex, 0)
-    card.ref({ scrollIntoView(options) { calls.push(['scroll', index, clone(options)]) }, focus(options) { calls.push(['focus', index, clone(options)]) } })
-    assert.equal(card.props.onTouchStart, undefined); assert.equal(card.props.onPointerDown, undefined)
-  })
-  const controls = nodes(tree, node => node.type === 'button')
-  controls[2].props.onClick(); assert.deepEqual(calls.slice(-2).map(call => call.slice(0, 2)), [['scroll', 2], ['focus', 2]])
-  assert.equal(controls[2].props['aria-controls'], cards[2].props.id)
-  const press = (index, key, descendant = false) => {
-    const target = {}, event = { key, currentTarget: target, target: descendant ? {} : target, prevented: false, preventDefault() { this.prevented = true } }
-    cards[index].props.onKeyDown(event); return event
+  const current = fixture(), before = clone(current)
+  const tree = runtime.render(() => Carousel({ day: current.schedule.todayViewModel.daySections, timezone: 'UTC', onOpen: id => opened.push(id) }))
+  const sections = nodes(tree, node => node.props?.['data-day-section'])
+  assert.deepEqual(sections.map(section => section.props['data-day-section']), ['morning', 'midday', 'evening'])
+  for (const section of sections) {
+    assert.equal(section.props.tabIndex, undefined)
+    assert.equal(section.props.onKeyDown, undefined)
+    assert.equal(section.props.hidden, undefined)
   }
-  for (const [from, key, to] of [[0, 'ArrowRight', 1], [0, 'ArrowLeft', 0], [1, 'End', 2], [2, 'Home', 0]]) {
-    assert.equal(press(from, key).prevented, true)
-    assert.deepEqual(calls.at(-1).slice(0, 2), ['focus', to])
+  assert.equal(nodes(tree, node => node.type === 'button').length, 0)
+  const actions = nodes(tree, node => node.type?.name === 'DayAction')
+  assert.equal(actions.length, 6)
+  for (const action of actions) {
+    const card = action.type(action.props)
+    const link = nodes(card, node => node.type === 'a')[0]
+    assert.equal(link.props.href, action.props.item.href)
+    link.props.onClick()
+    link.props.onClick()
   }
-  const before = calls.length
-  assert.equal(press(0, 'ArrowRight', true).prevented, false)
-  assert.equal(press(0, 'Tab').prevented, false); assert.equal(calls.length, before)
-  assert.deepEqual(opened, [])
+  assert.deepEqual(opened, actions.flatMap(action => [action.props.item.activityId || action.props.item.id, action.props.item.activityId || action.props.item.id]))
+  assert.deepEqual(current, before)
+  const css = readFileSync('components/program-dashboard/TodayDayCarousel.module.css', 'utf8')
+  assert.match(css, /\.sections\s*\{[^}]*display: grid/)
+  assert.match(css, /\.artwork\s*\{[^}]*width: 100%;[^}]*height: auto/)
+  assert.match(css, /\.action:focus-visible/)
+  assert.doesNotMatch(css, /scroll-snap|overflow-x|\.arrow|\.navigation/)
   runtime.cleanup()
 })
 

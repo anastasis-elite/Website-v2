@@ -1,41 +1,27 @@
 .day { min-width: 0; color: #f4eee4; }
-.heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
-.heading h2 { margin: 0 0 8px; font: 400 clamp(1.7rem, 4.5vw, 2.7rem)/1.15 Georgia, serif; }
-.heading p, .hint, .untimed > p { margin: 0; color: #c9b29a; font-size: .9rem; line-height: 1.6; }
-.navigation { display: flex; flex-wrap: wrap; gap: 8px; }
-.navigation button { min-height: 44px; padding: 10px 14px; border: 1px solid #b3835060; border-radius: 12px; color: #f4eee4; background: #382414; font: inherit; cursor: pointer; }
-.navigation button[aria-current] { border-color: #e4bb91; background: #664326; }
-.hint { margin: 16px 0 12px; }
-.carousel { display: flex; align-items: flex-start; gap: 16px; overflow-x: auto; scroll-snap-type: x proximity; padding: 4px 4px 20px; scroll-padding-inline: 4px; }
-.section { box-sizing: border-box; flex: 0 0 min(100%, 520px); min-width: 0; padding: 22px; border: 1px solid #b3835060; border-radius: 22px; scroll-snap-align: start; background: radial-gradient(ellipse at 80% 0, #85563644, transparent 75%), linear-gradient(125deg, #51331d66, #302014ee); }
-.sectionHeading { margin-bottom: 18px; }
+.sections { display: grid; gap: 28px; }
+.section { min-width: 0; }
+.sectionHeading { margin-bottom: 16px; }
 .sectionHeading h3, .untimed h3 { margin: 0 0 8px; font: 400 1.8rem/1.2 Georgia, serif; }
-.sectionHeading p { margin: 0; color: #c9b29a; font-size: .9rem; }
-.actions { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.sectionHeading p, .untimed > p { margin: 0; color: #c9b29a; font-size: .9rem; line-height: 1.6; }
+.actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 0; margin: 0; list-style: none; }
 .actions > li { min-width: 0; }
-.action { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px; border: 1px solid #b3835045; border-radius: 16px; background: #21140caa; color: inherit; text-decoration: none; }
-.artwork { display: block; flex: 0 0 76px; width: 76px; height: auto; border-radius: 10px; }
-.actionCopy { display: grid; min-width: 0; gap: 5px; overflow-wrap: anywhere; }
-.actionCopy strong { font: 400 1.2rem/1.25 Georgia, serif; }
-.actionCopy > span { color: #d5c2ae; font-size: .85rem; line-height: 1.5; }
-.actionCopy small { color: #d5c2ae; font-size: .78rem; line-height: 1.5; }
+.action { display: flex; flex-direction: column; height: 100%; box-sizing: border-box; overflow: hidden; border: 1px solid #b3835060; border-radius: 20px; background: radial-gradient(ellipse at 80% 0, #85563644, transparent 75%), linear-gradient(125deg, #51331d66, #21140cee); color: inherit; text-decoration: none; }
+.artwork { display: block; width: 100%; height: auto; }
+.actionCopy { display: grid; min-width: 0; gap: 7px; padding: 18px; overflow-wrap: anywhere; }
+.actionCopy strong { font: 400 1.35rem/1.25 Georgia, serif; }
+.actionCopy > span { color: #d5c2ae; font-size: .9rem; line-height: 1.5; }
+.actionCopy small { color: #d5c2ae; font-size: .8rem; line-height: 1.5; }
 .timing { display: block; }
-.arrow { flex: none; align-self: center; margin-left: auto; color: #e4bb91; }
 .empty { margin: 0; color: #c9b29a; line-height: 1.6; }
-.untimed { margin-top: 12px; padding: 20px; border: 1px solid #b3835045; border-radius: 20px; background: #41291955; }
+.untimed { margin-top: 28px; min-width: 0; }
 .untimed > p { margin-bottom: 16px; }
-.navigation button:focus-visible, .action:focus-visible, .section:focus-visible { outline: 2px solid #e4bb91; outline-offset: 3px; }
-@media (max-width: 600px) {
-  .section { flex-basis: 100%; padding: 16px; border-radius: 18px; }
-  .navigation { width: 100%; }
-  .navigation button { flex: 1; padding-inline: 8px; }
-  .sectionHeading h3, .untimed h3 { font-size: 1.55rem; }
-  .artwork { flex-basis: 64px; width: 64px; }
-  .action { gap: 10px; padding: 10px; }
-  .untimed { padding: 16px; }
+.action:focus-visible { outline: 2px solid #e4bb91; outline-offset: 3px; }
+@media (hover: hover) {
+  .action:hover { border-color: #e4bb91; }
 }
-@media (max-width: 350px) {
-  .action { flex-wrap: wrap; }
-  .artwork { flex-basis: 52px; width: 52px; }
-  .actionCopy { flex: 1 1 130px; }
+@media (max-width: 600px) {
+  .actions { grid-template-columns: minmax(0, 1fr); }
+  .sectionHeading h3, .untimed h3 { font-size: 1.55rem; }
+  .actionCopy { padding: 16px; }
 }
