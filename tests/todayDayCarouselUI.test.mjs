@@ -96,12 +96,12 @@ function modules(react = React, extra = {}, globals = {}) {
   return load
 }
 
-test('saved dashboard style selects the real three-section carousel or existing next-step view in every tier', () => {
+test('saved dashboard style selects the time-section and anytime carousel or existing next-step view in every tier', () => {
   const Workspace = modules()('components/program-dashboard/TierAwareDashboardWorkspace.tsx').default
   for (const tier of ['ember', 'ignite', 'phoenix']) {
     const current = fixture('section', tier), before = clone(current)
     let html = renderToStaticMarkup(React.createElement(Workspace, { tier, ...current }))
-    assert.equal((html.match(/data-day-section=/g) || []).length, 3)
+    assert.equal((html.match(/data-day-section=/g) || []).length, 4)
     assert.match(html, /data-testid="today-day-carousel"/)
     for (const title of ['Saved work', 'Saved school', 'Saved appointment']) assert.ok(html.includes(title))
     assert.doesNotMatch(html, /Review schedule|Select schedule|Schedule review|At your pace|data-testid="guided-next-step"/)
@@ -155,7 +155,7 @@ test('carousel panels preserve cards and support bounded keyboard navigation wit
   const current = fixture(), before = clone(current)
   const tree = runtime.render(() => Carousel({ day: current.schedule.todayViewModel.daySections, timezone: 'UTC', onOpen: id => opened.push(id) }))
   const sections = nodes(tree, node => node.props?.['data-day-section'])
-  assert.deepEqual(sections.map(section => section.props['data-day-section']), ['morning', 'midday', 'evening'])
+  assert.deepEqual(sections.map(section => section.props['data-day-section']), ['morning', 'midday', 'evening', 'untimed'])
   for (const section of sections) {
     assert.equal(section.props.tabIndex, 0)
     assert.equal(typeof section.props.onKeyDown, 'function')
@@ -170,8 +170,8 @@ test('carousel panels preserve cards and support bounded keyboard navigation wit
     const target = {}, event = { key, target, currentTarget: nested ? {} : target, preventDefault() { navigation.push(['prevent']) } }
     sections[index].props.onKeyDown(event)
   }
-  key(0, 'ArrowRight'); key(1, 'End'); key(2, 'ArrowRight'); key(2, 'Home'); key(0, 'ArrowLeft')
-  assert.deepEqual(navigation.filter(entry => entry[0] === 'focus').map(entry => entry[1]), [1, 2, 2, 0, 0])
+  key(0, 'ArrowRight'); key(1, 'End'); key(3, 'ArrowRight'); key(3, 'Home'); key(0, 'ArrowLeft')
+  assert.deepEqual(navigation.filter(entry => entry[0] === 'focus').map(entry => entry[1]), [1, 3, 3, 0, 0])
   assert.ok(navigation.filter(entry => entry[0] === 'focus').every(entry => entry[2] === true))
   const count = navigation.length
   key(1, 'ArrowRight', true); key(1, 'Enter')
@@ -242,5 +242,27 @@ test('section style keeps safety guidance and source-unavailable notices visible
   assert.equal(refreshes.length, 1)
   nodes(tree, node => node.type === 'button' && text(node) === 'Refresh day')[0].props.onClick()
   assert.equal(refreshes.length, 2)
+  runtime.cleanup()
+})
+
+
+test('Any time today is inside the scroll track and empty untimed actions do not create a fourth panel', () => {
+  const runtime = hooks()
+  const Carousel = modules(runtime.react)('components/program-dashboard/TodayDayCarousel.tsx').default
+  const day = fixture().schedule.todayViewModel.daySections
+  const render = () => runtime.render(() => Carousel({ day, timezone: 'UTC', onOpen() {} }))
+  let tree = render()
+  let track = nodes(tree, node => node.props?.className === 'carousel')[0]
+  assert.equal(nodes(track, node => node.props?.['data-day-section'] === 'untimed').length, 1)
+  assert.equal(nodes(tree, node => node.props?.['data-day-section'] === 'untimed').length, 1)
+  day.untimed = []
+  tree = render()
+  const sections = nodes(tree, node => node.props?.['data-day-section'])
+  assert.equal(sections.length, 3)
+  const focus = []
+  sections.forEach((section, i) => section.ref({ scrollIntoView() {}, focus() { focus.push(i) } }))
+  const target = {}
+  sections[0].props.onKeyDown({ target, currentTarget: target, key: 'End', preventDefault() {} })
+  assert.deepEqual(focus, [2])
   runtime.cleanup()
 })
