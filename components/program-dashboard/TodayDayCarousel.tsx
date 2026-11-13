@@ -28,6 +28,11 @@ function DayAction({ item, timezone, onOpen }: { item: TodayDayItem; timezone: s
 
 export default function TodayDayCarousel({ day, timezone, onOpen }: { day: TodayDaySections; timezone: string; onOpen: (id: string) => void }) {
   const id = useId()
+  const sections = [...day.sections, ...(day.untimed.length ? [{
+    id: 'untimed', title: 'Any time today',
+    range: 'All-day items and actions without a set time stay here. No scheduled time has been added.',
+    items: day.untimed,
+  }] : [])]
   const panels = useRef<Array<HTMLElement | null>>([])
   const navigate = (index: number) => {
     const panel = panels.current[index]
@@ -36,9 +41,9 @@ export default function TodayDayCarousel({ day, timezone, onOpen }: { day: Today
   }
   return <section className={styles.day} aria-label="Today’s actions" data-testid="today-day-carousel">
     <div className={styles.carousel}>
-      {day.sections.map((section, index) => <section key={section.id} id={`${id}-${section.id}`} ref={node => { panels.current[index] = node }} className={styles.section} tabIndex={0} aria-labelledby={`${id}-${section.id}-title`} data-day-section={section.id} onKeyDown={event => {
+      {sections.map((section, index) => <section key={section.id} id={`${id}-${section.id}`} ref={node => { panels.current[index] = node }} className={styles.section} tabIndex={0} aria-labelledby={`${id}-${section.id}-title`} data-day-section={section.id} onKeyDown={event => {
         if (event.target !== event.currentTarget) return
-        const last = day.sections.length - 1
+        const last = sections.length - 1
         const next = event.key === 'ArrowRight' ? Math.min(index + 1, last) : event.key === 'ArrowLeft' ? Math.max(index - 1, 0) : event.key === 'Home' ? 0 : event.key === 'End' ? last : null
         if (next !== null) { event.preventDefault(); navigate(next) }
       }}>
@@ -46,10 +51,5 @@ export default function TodayDayCarousel({ day, timezone, onOpen }: { day: Today
         {section.items.length ? <ul className={styles.actions}>{section.items.map(item => <DayAction key={item.id} item={item} timezone={timezone} onOpen={onOpen} />)}</ul> : <p className={styles.empty}>No remaining saved actions in this part of your day.</p>}
       </section>)}
     </div>
-    {day.untimed.length ? <section className={styles.untimed} aria-labelledby={`${id}-untimed`}>
-      <h3 id={`${id}-untimed`}>Any time today</h3>
-      <p>All-day items and actions without a set time stay here. No scheduled time has been added.</p>
-      <ul className={styles.actions}>{day.untimed.map(item => <DayAction key={item.id} item={item} timezone={timezone} onOpen={onOpen} />)}</ul>
-    </section> : null}
   </section>
 }

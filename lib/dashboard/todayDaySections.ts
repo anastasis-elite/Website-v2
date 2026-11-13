@@ -119,7 +119,7 @@ export function buildTodayDaySections(logic: ProgramLogicOutput, schedule: Daily
     return !Number.isFinite(dayStart) || !Number.isFinite(start) || !Number.isFinite(end) || end <= start || start < dayEnd && end > dayStart
   })
   const add = (item: TodayDayItem, start: number) => {
-    const section = item.timing === 'all_day' || item.timing === 'untimed' ? null
+    const section = item.category === 'check_in' ? 'morning' : item.timing === 'all_day' || item.timing === 'untimed' ? null
       : todayDaySectionAt(new Date(Math.max(start, dayStart)), schedule.timezone)
     if (!section) result.untimed.push(item)
     else result.sections.find(part => part.id === section)!.items.push(item)
@@ -161,11 +161,11 @@ export function buildTodayDaySections(logic: ProgramLogicOutput, schedule: Daily
     if (activity.id === 'schedule' || completed || represented.has(activity.id)) continue
     const unconfirmedGenerated = generatedAction && activity.status === 'completed'
     const workoutHeld = activity.id === 'workout' && strengthTrainingPaused(logic)
-    result.untimed.push({ id: `activity:${activity.id}`, activityId: activity.id, title: activity.title,
+    add({ id: `activity:${activity.id}`, activityId: activity.id, title: activity.title,
       detail: workoutHeld ? 'Training is paused. Review your existing recovery guidance before choosing movement.'
         : unconfirmedGenerated ? 'This day’s generated workout is still available. Its own completion has not been confirmed.' : activity.detail,
       href: workoutHeld ? '/dashboard/recovery' : activity.href, category: activity.category, status: unconfirmedGenerated ? 'available' : activity.status, startAt: null, endAt: null,
-      timing: 'untimed', continuesFromPreviousDay: false })
+      timing: 'untimed', continuesFromPreviousDay: false }, NaN)
   }
   for (const section of result.sections) section.items.sort((left, right) => Date.parse(left.startAt!) - Date.parse(right.startAt!) || left.id.localeCompare(right.id))
   return result

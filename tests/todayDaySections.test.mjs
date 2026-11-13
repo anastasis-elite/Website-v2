@@ -34,7 +34,7 @@ test('Today uses exact 10:00 and 15:00 section boundaries in the member timezone
   assert.equal(todayDaySectionAt(`${date}T10:00:00Z`, 'invalid-zone'), null)
   const saved = schedule([event('before10', '09:59'), event('at10', '10:00'), event('before15', '14:59'), event('at15', '15:00')])
   const result = project(logic(), saved)
-  assert.deepEqual(result.sections.map(section => section.items.map(item => item.eventId)), [['before10'], ['at10', 'before15'], ['at15']])
+  assert.deepEqual(result.sections.map(section => section.items.filter(item => item.eventId).map(item => item.eventId)), [['before10'], ['at10', 'before15'], ['at15']])
 })
 
 test('section refresh instants follow saved timezone and DST, with exact boundaries assigned forward', () => {
@@ -76,7 +76,8 @@ test('saved adjusted starts, commitments, all-day and untimed actions retain the
   assert.equal(allDay.timing, 'all_day'); assert.equal(allDay.startAt, null); assert.equal(allDay.endAt, null)
   const untimed = result.untimed.find(item => item.eventId === 'untimed')
   assert.equal(untimed.timing, 'untimed'); assert.equal(untimed.startAt, null)
-  assert.ok(result.untimed.some(item => item.id === 'activity:check-in'))
+  assert.ok(result.sections[0].items.some(item => item.id === 'activity:check-in'))
+  assert.equal(result.untimed.some(item => item.id === 'activity:check-in'), false)
   assert.equal(result.sections.length, 3)
 })
 
@@ -85,7 +86,7 @@ test('overlapping overnight commitments appear once as continued, while events m
     event('overnight', '00:00', 'work', { start_at: '2026-11-10T23:00:00Z', end_at: `${date}T07:00:00Z` }),
     event('moved-out', '09:00', 'school', { adjusted_start_at: '2026-11-12T09:00:00Z', adjusted_end_at: '2026-11-12T09:30:00Z' }),
   ])
-  const result = project(logic(), saved), ongoing = result.sections[0].items[0]
+  const result = project(logic(), saved), ongoing = result.sections[0].items.find(item => item.eventId === 'overnight')
   assert.equal(ongoing.eventId, 'overnight'); assert.equal(ongoing.continuesFromPreviousDay, true)
   assert.equal(ongoing.startAt, '2026-11-10T23:00:00.000Z')
   assert.equal(ids(result).filter(id => id === 'event:overnight').length, 1)
@@ -170,4 +171,23 @@ test('style preference only changes presentation inputs and this projection neve
   const step = project(current, { ...saved, preferences: { ...saved.preferences, carouselStyle: 'step' } })
   assert.deepEqual(section, step)
   assert.deepEqual(current, beforeLogic); assert.deepEqual(saved, beforeSchedule)
+})
+
+
+test('daily check-in is presented in Morning without changing its saved timing or duplicating its fallback', () => {
+  for (const patch of [{}, { all_day: true }, { start_at: '', end_at: '' }]) {
+    const saved = schedule([event('checkin', '18:00', 'check_in', patch)])
+    const before = structuredClone(saved)
+    const result = project(logic(), saved)
+    const checkins = items(result).filter(item => item.category === 'check_in')
+    assert.equal(checkins.length, 1)
+    assert.ok(result.sections[0].items.includes(checkins[0]))
+    assert.equal(result.untimed.some(item => item.category === 'check_in'), false)
+    if (!patch.all_day && patch.start_at !== '') assert.equal(checkins[0].startAt, `${date}T18:00:00.000Z`)
+    assert.deepEqual(saved, before)
+  }
+  const current = logic()
+  assert.ok(project(current, schedule()).sections[0].items.some(item => item.activityId === 'check-in'))
+  current.assessments.dailyCompleted = true
+  assert.equal(items(project(current, schedule())).some(item => item.activityId === 'check-in'), false)
 })
