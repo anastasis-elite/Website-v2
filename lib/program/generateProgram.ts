@@ -96,10 +96,11 @@ function getEquipmentCompatibleVariants(group: any, equipment: string[]) {
   return []
 }
 
-function getDefaultVariantForEquipment(group: any, equipment: string[]) {
+function getDefaultVariantForEquipment(group: any, equipment: string[], exerciseName?: string) {
   if (!group) return null
   const compatible = getEquipmentCompatibleVariants(group, equipment)
-  const preferred = compatible.find((variant: any) => variant.id === group.default_variant)
+  const exactHipThrust = group.pattern === 'hip_thrust' ? compatible.find((variant: any) => variant.name === exerciseName) : null
+  const preferred = exactHipThrust || compatible.find((variant: any) => variant.id === group.default_variant)
   return preferred || compatible[0] || null
 }
 
@@ -199,7 +200,7 @@ export function generateProgram({
     const exercises = day.exercises.flatMap((exercise: any) => {
       const resolved = resolveFounderExerciseReference(exercise.exercise, masterKey, exerciseVariants)
       const variantGroup = resolved.status === 'resolved' ? resolved.group : null
-      const defaultVariant = getDefaultVariantForEquipment(variantGroup, clientEquipment)
+      const defaultVariant = getDefaultVariantForEquipment(variantGroup, clientEquipment, exercise.exercise)
       const availableVariants = getEquipmentCompatibleVariants(variantGroup, clientEquipment)
       // Keep existing unloaded template movements, but never assign an unsupported gym variant.
       const unloaded = !variantGroup && /^(?:side plank|single-leg glute bridge|walking lunge|reverse lunge|sumo squat|bulgarian split squat)$/i.test(exercise.exercise)
@@ -231,6 +232,8 @@ export function generateProgram({
       const bodyweightFactor = keyRow?.bodyweight_factor
       const repMultiplier = getRepMultiplier(Number(exercise.reps))
       const invalidReason = resolved.status === 'unavailable' ? resolved.reason
+        : variantGroup?.requires_variant_assessment && defaultVariant && defaultVariant.name !== exercise.exercise
+          ? 'No verified load is available for substituted hip-thrust equipment. Enter the actual weight you use.'
         : !assessmentLift ? 'This exercise has no established assessed load calculation.'
         : !hasUsableAssessment(assessmentLift, bodyweight) ? 'Saved strength input is missing or invalid.'
         : typeof bodyweightFactor !== 'number' || !Number.isFinite(bodyweightFactor) ? 'Exercise bodyweight factor is unavailable.'
@@ -323,6 +326,9 @@ export function getFounderSelectedExercise({ client, initialAssessment, strength
   const variant = matchingVariants[0] ||
     (unloaded ? catalogExercise.available_variants.find((item: any) => item.id === variantId && item.load_type === 'bodyweight' && item.equipment === 'bodyweight') : null)
   if (!variant || !Number.isFinite(variant.equipment_modifier) || variant.equipment_modifier <= 0) return null
+  // Manual/session equipment selection must not regenerate the original load
+  // for an uncalibrated hip-thrust variant. Caller retains manual logging.
+  if (group?.requires_variant_assessment && variant.name !== key.exercise) return null
   const sessionContext = equipmentContext === undefined ? null : readSessionEquipmentContext(equipmentContext, variantId)
   if (equipmentContext !== undefined && (!sessionContext || !isReferenceSessionVariant(catalogExercise, variantId, sessionContext.equipment))) return null
   const equipment = sessionContext ? [sessionContext.equipment] : getClientEquipment(client, initialAssessment)

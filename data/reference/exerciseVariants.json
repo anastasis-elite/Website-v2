@@ -232,5 +232,46 @@
       "B-Stance RDL",
       "Single-Leg RDL"
     ]
+  },
+  {
+    "pattern": "hip_thrust",
+    "display_name": "Hip Thrust",
+    "default_variant": "barbell_hip_thrust",
+    "assessment_key": "RDL",
+    "category": "compound",
+    "base_equipment": "barbell",
+    "calculation_basis": "Original prescribed catalog calculation is unchanged. Equipment substitutions have no verified equivalence and require manual actual load entry.",
+    "variants": [
+      {
+        "id": "barbell_hip_thrust",
+        "name": "Barbell Hip Thrust",
+        "equipment": "barbell",
+        "load_type": "total_load",
+        "equipment_modifier": 1
+      },
+      {
+        "id": "dumbbell_hip_thrust",
+        "name": "Dumbbell Hip Thrust",
+        "equipment": "dumbbell",
+        "load_type": "total_load",
+        "equipment_modifier": 1
+      },
+      {
+        "id": "smith_hip_thrust",
+        "name": "Smith Machine Hip Thrust",
+        "equipment": "smith",
+        "load_type": "total_load",
+        "equipment_modifier": 1
+      },
+      {
+        "id": "machine_hip_thrust",
+        "name": "Machine Hip Thrust",
+        "equipment": "machine",
+        "load_type": "total_load",
+        "equipment_modifier": 1
+      }
+    ],
+    "aliases": [],
+    "requires_variant_assessment": true
   }
 ]

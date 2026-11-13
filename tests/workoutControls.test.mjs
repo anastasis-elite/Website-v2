@@ -83,7 +83,7 @@ function nodes(tree, predicate) {
 }
 const content = node => Array.isArray(node) ? node.map(content).join('') : node && typeof node === 'object' ? content(node.props?.children) : node == null ? '' : String(node)
 const progress = tree => nodes(tree, node => node.props?.role === 'progressbar')[0]?.props['aria-valuenow']
-const chooseExercise = (tree, index) => nodes(tree, node => node.type === 'select' && node.props['aria-label'] === 'Choose exercise')[0].props.onChange({ target: { value: String(index) } })
+const chooseExercise = (tree, index) => nodes(tree, node => node.props?.['aria-label'] === 'Exercise cards')[0].props.onScroll({ currentTarget: { clientWidth: 100, scrollLeft: index * 100 } })
 const button = (tree, label) => nodes(tree, n => n.type === 'button' && content(n) === label)[0]
 const props = exercises => ({ clientId: 'DISPOSABLE-TEST', authUserId: 'disposable-user', program: 'ignite', dayName: 'Control regression', exercises, timezone: 'America/Chicago' })
 const bodyweight = { id: 'squat', exercise: 'Squat', exercise_category: 'strength', sets: 1, reps: 8, load_type: 'bodyweight' }
@@ -524,4 +524,46 @@ test('carousel moves focus out of a swiped-away card before making it inactive',
   assert.match(content(app.tree), /Exercise 2 of 2/)
   chooseExercise(app.tree, 0); app.render()
   assert.equal(focusCalls.length, 1, 'pagination focus outside the track stays on its control')
+})
+
+test('equipment selector is visible on the card; exercise navigation remains carousel-only', async () => {
+  const app = mount(ActivityTracker, props([{ ...bodyweight, load_type: 'total_load', selected_variant_id: null,
+    available_variants: [{ id: 'bar', name: 'Barbell Hip Thrust' }, { id: 'smith', name: 'Smith Machine Hip Thrust' }] }, bodyweight]))
+  await app.flush()
+  assert.equal(nodes(app.tree, n => n.type === 'select' && n.props['aria-label'] === 'Choose exercise').length, 0)
+  assert.equal(nodes(app.tree, n => n.type === 'select' && n.props['aria-label'] === 'Equipment').length, 1)
+  assert.equal(nodes(app.tree, n => n.type === 'details' && content(n).includes('Equipment')).length, 0)
+  assert.match(content(app.tree), /Exercise 1 of 2/)
+  chooseExercise(app.tree, 1); app.render()
+  assert.match(content(app.tree), /Exercise 2 of 2/)
+})
+
+test('hip thrust equipment changes in place, clears unverified load, and locks after a recorded set', async () => {
+  const groups = JSON.parse(readFileSync('data/reference/exerciseVariants.json', 'utf8'))
+  const variants = groups.find(group => group.pattern === 'hip_thrust').variants
+  const hip = { id: 'hip', exercise: 'Smith Machine Hip Thrust', sets: 3, reps: 8, recommended_reps: 8,
+    selected_variant_id: 'smith_hip_thrust', selected_variant_name: 'Smith Machine Hip Thrust', selected_equipment: 'smith', load_type: 'total_load',
+    baseline_weight: 100, calculated_weight: 100, cycle_adjusted_weight: 100, recommended_weight: 100,
+    cycle_weight_multiplier: 1, prescription_safety_multiplier: 1, available_variants: variants,
+    prescription_calculation: { version: 'founder-load-v3', reference_exercise: 'Smith Machine Hip Thrust', assessment_key: 'RDL',
+      bodyweight_factor: 0, body_mass_lb: 180, estimated_1rm: 125, rep_multiplier: .8,
+      base_weight: 100, equipment_weight: 100, equipment_modifier: 1, selected_variant_id: 'smith_hip_thrust' } }
+  const app = mount(ActivityTracker, props([bodyweight, hip])); await app.flush()
+  chooseExercise(app.tree, 1); app.render()
+  const select = () => nodes(app.tree, n => n.type === 'select' && n.props['aria-label'] === 'Equipment')[0]
+  assert.equal(select().props.disabled, false)
+  select().props.onChange({ target: { value: 'dumbbell_hip_thrust' } }); app.render()
+  assert.equal(select().props.value, 'dumbbell_hip_thrust')
+  assert.match(content(app.tree), /Exercise 2 of 2/)
+  assert.ok(nodes(app.tree, n => n.type === 'h3' && content(n) === 'Dumbbell Hip Thrust').length)
+  const card = nodes(app.tree, n => n.type === 'article' && n.props['aria-hidden'] === false)[0]
+  const weightInput = nodes(card, n => n.type === 'input' && n.props.inputMode === 'decimal')[0]
+  assert.equal(weightInput.props.value, '')
+  assert.match(content(app.tree), /Load recommendation unavailable/)
+  assert.equal(select().props.disabled, false)
+  weightInput.props.onChange({ target: { value: '25' } }); app.render()
+  const updatedCard = nodes(app.tree, n => n.type === 'article' && n.props['aria-hidden'] === false)[0]
+  nodes(updatedCard, n => n.type === 'button' && content(n) === 'Complete set 1')[0].props.onClick(); app.render()
+  assert.equal(select().props.disabled, true)
+  assert.match(content(app.tree), /Equipment is locked after recording sets/)
 })

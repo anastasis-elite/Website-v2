@@ -179,13 +179,10 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
     </div> : null}
     {manualCardio ? <p>Manual duration logging. Enter and confirm the time you actually completed. No duration target is prescribed. Distance and automatic readings are not recorded here.</p> : null}
     {logs.length ? <section className="activity-exercise-carousel" aria-label="Exercises" aria-roledescription="carousel">
-      <label className="activity-carousel-pagination">
+      <div className="activity-carousel-pagination">
         <span role="status" aria-live="polite" aria-atomic="true">Exercise {activeIndex + 1} of {logs.length}</span>
-        <select aria-label="Choose exercise" value={activeIndex} disabled={!ready} onChange={event => showExercise(Number(event.target.value))}>
-          {logs.map((_, index) => <option key={logs[index].session_key} value={index}>{index + 1}. {exerciseOccurrenceLabel(logs, index)}</option>)}
-        </select>
-      </label>
-      <p className="activity-carousel-hint">Swipe left or right, choose an exercise, or focus the cards and use arrow keys.</p>
+      </div>
+      <p className="activity-carousel-hint">Swipe left or right, or focus the cards and use arrow keys.</p>
       <div className="activity-exercise-track" ref={carousel} tabIndex={0} role="region" aria-label="Exercise cards" onKeyDown={event => {
         // Arrow keys inside number inputs, selects and other controls retain their native behavior.
         if (event.target !== event.currentTarget || !ready || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
@@ -203,14 +200,13 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
         {isManualCardioExercise(log) ? <p>Record actual duration in {dose.metric}. This is a manual activity log.</p> : <p>Prescribed: {dose.metric === 'completion' ? `${log.duration_label || 'Complete the movement comfortably'} · record completion` : <>{dose.kind === 'strength' ? `${dose.sets} sets · ` : ''}{dose.prescribed || log.duration_label || 'Choose a comfortable amount'} {dose.prescribed ? dose.metric : ''}{dose.kind === 'strength' && loadGuidance.recommendationAvailable && dose.weight > 0 ? ` · ${dose.weight} ${dose.unit} ${dose.loadLabel}` : ''}</>}</p>}
         {dose.kind === 'strength' && loadGuidance.recommendationAvailable && dose.weight > 0 ? <p>Experimental load estimate, not a tested maximum for this exercise. Start conservatively and adjust to a manageable weight.</p> : null}
         {dose.kind === 'strength' && !loadGuidance.recommendationAvailable ? <p>Load recommendation unavailable. {loadGuidance.reason} Enter the {dose.unit} you actually used; zero means no added load.</p> : dose.kind === 'strength' && dose.weight === 0 ? <p>{isBodyweightExercise(log) ? 'Bodyweight · no added load.' : `No added load prescribed. Record the ${dose.unit} you actually used, including zero.`}</p> : null}
-        {log.available_variants?.length > 1 ? <details><summary>Exercise substitutions</summary><label>Variation<select value={log.selected_variant_id || ''} onChange={e => {
-          if (log.set_logs.length) { setMessage('Save this exercise before changing its variation.'); return }
-          if (!loadGuidance.recommendationAvailable) { setMessage('Review this exercise’s load guidance before changing its equipment. You can keep recording actual sets.'); return }
+        {log.available_variants?.length > 1 ? <div className="activity-equipment-selector"><label>Equipment<select aria-label="Equipment" value={log.selected_variant_id || ''} onChange={e => {
+          if (log.set_logs.length) { setMessage('Equipment is locked for this exercise because sets have been recorded.'); return }
           const selected = changePrescriptionVariant(log, e.target.value)
           if (!selected) { setMessage('This saved prescription needs review before changing its equipment. Your recorded work is preserved.'); return }
           patch(index, selected)
-          setDraft(current => current.map((d,i) => i === index ? { ...d, weight: activityDose(selected, weightUnit).weight, weightEdited: false } : d))
-        }} disabled={!ready || saving || !loadGuidance.recommendationAvailable || !canChangePrescriptionVariant(log)}>{!log.available_variants.some((v: any) => v.id === log.selected_variant_id) ? <option value="">Keep prescribed movement</option> : null}{log.available_variants.map((v: any) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>{log.set_logs.length ? <p>Remove recorded sets before changing variation so each set keeps its equipment and load.</p> : !loadGuidance.recommendationAvailable || !canChangePrescriptionVariant(log) ? <p>This saved prescription needs review before changing its equipment. You can keep recording your actual sets.</p> : null}</details> : null}
+          setDraft(current => current.map((d,i) => i === index ? { ...d, weight: selected.load_guidance_status ? NaN : activityDose(selected, weightUnit).weight, weightEdited: false } : d))
+        }} disabled={!ready || saving || !canChangePrescriptionVariant(log)}>{!log.available_variants.some((v: any) => v.id === log.selected_variant_id) ? <option value="">Keep prescribed movement</option> : null}{log.available_variants.map((v: any) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>{log.set_logs.length ? <p>Equipment is locked after recording sets so your recorded work keeps its equipment and load.</p> : !canChangePrescriptionVariant(log) ? <p>This saved prescription needs review before changing its equipment. You can keep recording your actual sets.</p> : null}</div> : null}
         {!log.completed && !log.skipped ? <>
           <div className="activity-inputs">
             {dose.kind === 'strength' && !isBodyweightExercise(log) ? <label>Weight ({dose.unit}, {dose.loadLabel})<input type="number" disabled={!ready || saving} min="0" step={weightInputIncrement(log, draft[index].weight, dose.unit)} inputMode="decimal" value={Number.isFinite(draft[index].weight) ? draft[index].weight : ''} onChange={e => { markDirty(); setDraft(current => current.map((d,i) => i === index ? { ...d, weight: e.target.value === '' ? NaN : Number(e.target.value), weightEdited: true } : d)) }}/></label> : null}

@@ -116,3 +116,60 @@ test('rounded policy validates exact final load without relaxing legacy validati
   assert.equal(canChangePrescriptionVariant(prescription({ recommended_weight: 31, suggested_load_rounding: 'equipment-v1' })), false)
   assert.equal(canChangePrescriptionVariant(prescription({ suggested_load_rounding: 'unknown' })), false)
 })
+
+test('bilateral hip thrust variants clear load rather than transfer equipment estimates', () => {
+  const group = groups.find(group => group.pattern === 'hip_thrust')
+  const { resolveFounderExerciseReference } = load('lib/program/founderReference.ts')
+  assert.equal(group.variants.length, 4)
+  for (const variant of group.variants) {
+    const resolved = resolveFounderExerciseReference(variant.name)
+    assert.equal(resolved.status, 'resolved')
+    assert.equal(resolved.reference.assessment_key, 'RDL')
+    assert.equal(resolved.reference.bodyweight_factor, 0)
+    assert.equal(variant.equipment_modifier, 1)
+    assert.equal(variant.load_type, 'total_load')
+  }
+  for (const name of ['B-Stance Hip Thrust', 'Single-Leg Hip Thrust', 'Hip Thrust Holds']) {
+    assert.equal(resolveFounderExerciseReference(name).group, null)
+  }
+  const source = prescription({ exercise: 'Smith Machine Hip Thrust', session_key: 'hip-thrust-card',
+    selected_variant_id: 'smith_hip_thrust', selected_equipment: 'smith', load_type: 'total_load',
+    calculated_weight: 100, cycle_adjusted_weight: 85, recommended_weight: 68,
+    available_variants: clone(group.variants), prescription_calculation: {
+      version: 'founder-load-v3', reference_exercise: 'Smith Machine Hip Thrust', assessment_key: 'RDL',
+      bodyweight_factor: 0, body_mass_lb: 180, estimated_1rm: 125, rep_multiplier: .8,
+      base_weight: 100, equipment_weight: 100, equipment_modifier: 1, selected_variant_id: 'smith_hip_thrust' } })
+  let current = source
+  for (const variant of group.variants) {
+    current = changePrescriptionVariant(current, variant.id)
+    assert.ok(current)
+    assert.equal(current.session_key, source.session_key)
+    assert.equal(current.exercise, source.exercise)
+    assert.equal(current.selected_variant_name, variant.name)
+    assert.equal(current.calculated_weight, null)
+    assert.equal(current.recommended_weight, null)
+    assert.equal(canChangePrescriptionVariant(current), true)
+  }
+  assert.equal(changePrescriptionVariant({ ...current, set_logs: [{ weight: 70, reps: 8 }] }, 'barbell_hip_thrust'), null)
+  assert.equal(changePrescriptionVariant({ ...current, prescription_calculation: undefined }, 'barbell_hip_thrust').recommended_weight, null)
+  const fabricated = clone(current); fabricated.available_variants[0].name = 'Unverified movement'
+  assert.equal(changePrescriptionVariant(fabricated, 'barbell_hip_thrust'), null)
+})
+
+test('unstarted catalog hip thrust can gain choices from its exact saved exercise; started work is not refreshed', () => {
+  const { projectSavedExercisePrescription } = loader({ 'server-only': {} })('lib/program/savedPrescription.ts')
+  const source = { exercise: 'Smith Machine Hip Thrust', sets: 3, reps: 8, load_type: 'total_load', recommended_weight: 65 }
+  const updated = projectSavedExercisePrescription(source, 'ember', { current_weight: 180 }, { data: { romanian_deadlift_weight: 95, romanian_deadlift_reps: 10 } })
+  assert.equal(updated.selected_variant_id, 'smith_hip_thrust')
+  assert.equal(updated.available_variants.length, 4)
+  assert.equal(updated.prescription_calculation.reference_exercise, 'Smith Machine Hip Thrust')
+  assert.ok(updated.recommended_weight > 0)
+  const substituted = projectSavedExercisePrescription({ ...updated, selected_variant_id: 'dumbbell_hip_thrust', selected_equipment: 'dumbbell' }, 'ember', { current_weight: 180 }, { data: { romanian_deadlift_weight: 95, romanian_deadlift_reps: 10 } })
+  assert.equal(substituted.recommended_weight, null)
+  assert.equal(substituted.load_guidance_status, 'not_calculated')
+  const started = { ...source, set_logs: [{ weight: 65, reps: 8 }] }
+  const retained = projectSavedExercisePrescription(started, 'ember', { current_weight: 180 }, { data: { romanian_deadlift_weight: 95, romanian_deadlift_reps: 10 } })
+  assert.equal(retained.recommended_weight, 65)
+  assert.deepEqual(retained.set_logs, started.set_logs)
+  assert.equal(retained.selected_variant_id, undefined)
+})
