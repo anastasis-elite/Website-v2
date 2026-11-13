@@ -79,7 +79,7 @@ test('check-off survives new readers, stays isolated by owner/date/occurrence an
   const restarted = setup({ records: db.rows })
   const state = await load(restarted.db, restarted.client)
   assert.equal(state.events.find(event => event.id === eventId).status, 'completed')
-  assert.deepEqual(state.events.find(event => event.id === eventId).checkoff, { completed: true, revision: 1 })
+  assert.deepEqual(state.events.find(event => event.id === eventId).checkoff, { completed: true, status: 'completed', revision: 1 })
   assert.equal(state.completedEvents.filter(event => event.id === eventId).length, 1)
   assert.equal((await load(restarted.db, restarted.client, '2026-10-29')).completedEvents.length, 0)
   const other = { ...restarted.client, client_id: 'QA-OTHER' }
@@ -91,26 +91,26 @@ test('check-off survives new readers, stays isolated by owner/date/occurrence an
 test('retries and concurrent identical requests save once, while stale opposing intent cannot overwrite a newer action', async () => {
   const { db } = setup(), operationId = randomUUID()
   const results = await Promise.all([save(db, { operationId }), save(db, { operationId })])
-  assert.deepEqual(results, [{ completed: true, revision: 1 }, { completed: true, revision: 1 }])
+  assert.deepEqual(results, [{ completed: true, status: 'completed', revision: 1 }, { completed: true, status: 'completed', revision: 1 }])
   assert.equal(db.rows.length, 1)
   assert.equal(db.writes.length, 1)
   const originalTimestamp = db.rows[0].completed_at
   mock.timers.setTime(instant + 5000)
-  assert.deepEqual(await save(db, { operationId }), { completed: true, revision: 1 })
+  assert.deepEqual(await save(db, { operationId }), { completed: true, status: 'completed', revision: 1 })
   assert.equal(db.rows[0].completed_at, originalTimestamp)
-  assert.deepEqual(await save(db, { completed: false, expectedRevision: 1 }), { completed: false, revision: 2 })
+  assert.deepEqual(await save(db, { completed: false, expectedRevision: 1 }), { completed: false, status: 'scheduled', revision: 2 })
   await assert.rejects(save(db, { operationId }), ScheduleCheckoffConflict)
   assert.equal(db.rows[0].completed, false)
   assert.equal(db.rows[0].completed_at, null)
   const next = await save(db, { expectedRevision: 2 })
-  assert.deepEqual(next, { completed: true, revision: 3 })
+  assert.deepEqual(next, { completed: true, status: 'completed', revision: 3 })
 })
 
 test('fresh Today/Plan projections remove a completed commitment without fabricating health progress', async () => {
   const { db, client } = setup()
   client.daily_structure_reviewed_at = new Date().toISOString()
   const logic = {
-    program: 'ignite', flameState: { requirements: { requiredItems: { dailyCheckIn: true, hydration: true } } },
+    client: { id: clientId }, program: 'ignite', flameState: { requirements: { requiredItems: { dailyCheckIn: true, hydration: true } } },
     nutrition: { dataStatus: 'confirmed', calories: { percent: 100 }, protein: { percent: 100 } },
     hydration: { target: 96, consumed: 96, remaining: 0, status: 'complete' }, assessments: { dailyCompleted: true },
     execution: { workoutComplete: false, nutritionLogged: true, recoveryComplete: true }, workout: { assigned: false },
@@ -181,7 +181,7 @@ test('generic check-offs cannot complete health items or add health progress, in
     if (event_type === 'hydration') assert.equal(importedHref, '/dashboard/nutrition?log=water')
     if (event_type === 'assessment') assert.equal(importedHref, '/dashboard/assessment/start')
   }
-  const logic = { program: 'ignite', flameState: { requirements: { requiredItems: { dailyCheckIn: true, hydration: true, workoutOrMovement: true } } },
+  const logic = { client: { id: clientId }, program: 'ignite', flameState: { requirements: { requiredItems: { dailyCheckIn: true, hydration: true, workoutOrMovement: true } } },
     assessments: { dailyCompleted: false }, hydration: { target: 96, consumed: 0, remaining: 96, status: 'needs_input' },
     execution: { workoutComplete: false, nutritionLogged: false, recoveryComplete: false }, workout: { assigned: true },
     workoutDecision: { canTrain: true, reasonForModification: 'Existing plan' }, symptoms: { redFlag: false } }
@@ -247,5 +247,126 @@ test('review migration enforces owner/client boundaries, unique occurrences, com
     await db.exec('reset role')
     await db.query('delete from clients where client_id=$1',[clientId])
     assert.equal((await db.query('select * from schedule_occurrence_checkoffs')).rows.length,0)
+  } finally { await db.close() }
+})
+
+test('explicit in-progress survives reload without completion credit and remains isolated by member, date and occurrence', async () => {
+  const { db, client } = setup()
+  const response = await POST(request({ completed: undefined, status: 'in_progress' }))
+  assert.equal(response.status, 200)
+  assert.deepEqual((await response.json()).checkoff, { completed: false, status: 'in_progress', revision: 1 })
+  assert.equal(db.rows[0].response_status, 'in_progress')
+  assert.equal(db.rows[0].completed_at, null)
+  const restarted = setup({ records: db.rows })
+  const state = await load(restarted.db, restarted.client)
+  const event = state.events.find(event => event.id === `virtual-school-dropoff-${date}`)
+  assert.equal(event.status, 'scheduled')
+  assert.equal(event.checkoff.status, 'in_progress')
+  assert.equal(state.completedEvents.length, 0)
+  assert.equal((await load(restarted.db, restarted.client, '2026-10-29')).events.some(event => event.checkoff?.status === 'in_progress'), false)
+  assert.equal((await load(restarted.db, { ...restarted.client, client_id: 'QA-OTHER' })).events.some(event => event.checkoff?.status === 'in_progress'), false)
+  const progressed = applyScheduleCheckoffs([{ id: 'school', event_type: 'school', status: 'scheduled' }],
+    [{ event_id: 'school', completed: false, response_status: 'in_progress', revision: 1 }])
+  const logic = { client: { id: clientId }, program: 'ignite', flameState: { requirements: { requiredItems: { dailyCheckIn: true, hydration: true } } },
+    assessments: { dailyCompleted: false }, hydration: { target: 96, consumed: 0, remaining: 96, status: 'needs_input' },
+    execution: { workoutComplete: false, nutritionLogged: false, recoveryComplete: false }, workout: { assigned: false },
+    workoutDecision: { canTrain: true }, symptoms: { redFlag: false } }
+  assert.equal(buildTodayActivities(logic, { date, timezone: 'America/Chicago', now: new Date().toISOString(), events: progressed }).completed, 0)
+  assert.deepEqual(client.onboarding_data, {})
+})
+
+test('in-progress operations retry once and stale completion cannot replace a newer response', async () => {
+  const { db } = setup(), operationId = randomUUID()
+  const progress = { completed: undefined, status: 'in_progress', operationId }
+  assert.deepEqual(await Promise.all([save(db, progress), save(db, progress)]), [
+    { completed: false, status: 'in_progress', revision: 1 }, { completed: false, status: 'in_progress', revision: 1 },
+  ])
+  assert.equal(db.writes.length, 1)
+  assert.deepEqual(await save(db, progress), { completed: false, status: 'in_progress', revision: 1 })
+  const completed = await save(db, { expectedRevision: 1 })
+  assert.deepEqual(completed, { completed: true, status: 'completed', revision: 2 })
+  assert.equal(db.rows[0].response_status, 'completed')
+  assert.ok(db.rows[0].completed_at)
+  await assert.rejects(save(db, progress), ScheduleCheckoffConflict)
+  assert.equal(db.rows[0].completed, true)
+  assert.equal((await POST(request({ completed: true, status: 'in_progress', expectedRevision: 2 }))).status, 400)
+  assert.equal((await POST(request({ completed: undefined, status: 'unknown', expectedRevision: 2 }))).status, 400)
+})
+
+test('authoritative completed history cannot regress even with an older incomplete occurrence response', async () => {
+  const event = { id: 'saved-completed', user_id: userId, client_id: clientId, title: 'Saved commitment', event_type: 'work', source: 'manual',
+    status: 'completed', completed_at: '2026-10-28T14:30:00Z', start_at: '2026-10-28T14:00:00Z', end_at: '2026-10-28T15:00:00Z', timezone: 'America/Chicago' }
+  const record = { user_id: userId, client_id: clientId, occurrence_date: date, event_id: event.id, completed: false,
+    completed_at: null, response_status: 'in_progress', revision: 1, operation_id: randomUUID() }
+  const { db, client } = setup({ events: [event], records: [record] })
+  const projected = (await load(db, client)).events.find(item => item.id === event.id)
+  assert.equal(projected.status, 'completed')
+  assert.equal(projected.completed_at, event.completed_at)
+  assert.equal(projected.checkoff.status, 'completed')
+  assert.equal(projected.checkoff.authoritative, true)
+  assert.equal((await POST(request({ eventId: event.id, completed: undefined, status: 'in_progress', expectedRevision: 1 }))).status, 409)
+  assert.equal(db.writes.length, 0)
+})
+
+test('breakfast self-report writes only occurrence evidence and snapshots completion timing without nutrition entry', async () => {
+  const { db, client } = setup()
+  client.onboarding_data = { routinePreferences: { answers: { breakfast_window_time: '07:30' } } }
+  const eventId = `virtual-breakfast-${date}`
+  const first = (await load(db, client)).events.find(event => event.id === eventId)
+  assert.ok(first)
+  assert.equal((await POST(request({ eventId, completed: undefined, status: 'in_progress' }))).status, 200)
+  assert.equal(db.rows[0].completed, false)
+  assert.equal(db.rows[0].occurrence_snapshot.start_at, first.start_at)
+  // A changed routine time belongs to the same selected local-day occurrence.
+  client.onboarding_data.routinePreferences.answers.breakfast_window_time = '08:30'
+  const moved = (await load(db, client)).events.find(event => event.id === eventId)
+  assert.notEqual(moved.start_at, first.start_at)
+  assert.equal((await POST(request({ eventId, status: 'completed', expectedRevision: 1 }))).status, 200)
+  assert.equal(db.rows.length, 1)
+  assert.equal(db.rows[0].occurrence_snapshot.start_at, moved.start_at)
+  const next = (await load(db, client)).events.find(event => event.id === eventId)
+  assert.equal(next.status, 'completed')
+  assert.equal(db.writes.length, 2)
+  assert.equal(db.writes.every(row => row.event_id === eventId), true)
+  // A meal merely named Breakfast cannot opt into schedule-only completion.
+  const fake = { ...first, id: 'health-breakfast', schedule_response_kind: 'breakfast' }
+  assert.equal(applyScheduleCheckoffs([fake], [{ event_id: fake.id, completed: true, revision: 1 }])[0].status, 'scheduled')
+})
+
+test('response migration backfills old evidence, constrains new states and preserves RLS in disposable Postgres', async () => {
+  const db = new PGlite(), otherId = '22222222-2222-4222-8222-222222222222'
+  try {
+    await db.exec(`create role authenticated; create role anon; create schema auth; create table auth.users(id uuid primary key);
+      create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+      grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;
+      create table public.clients(client_id text primary key, auth_user_id uuid);
+      grant select on public.clients to authenticated;`)
+    await db.query('insert into auth.users values ($1),($2)', [userId,otherId])
+    await db.query('insert into clients values ($1,$2),(\'QA-OTHER\',$3)', [clientId,userId,otherId])
+    await db.exec(readFileSync('supabase/migrations/20261028190000_schedule_occurrence_checkoffs.sql','utf8'))
+    await db.query('insert into schedule_occurrence_checkoffs(user_id,client_id,occurrence_date,event_id,completed,completed_at,revision,operation_id) values($1,$2,$3,\'legacy\',true,now(),1,$4)', [userId,clientId,date,randomUUID()])
+    const original = (await db.query('select completed_at from schedule_occurrence_checkoffs')).rows[0].completed_at
+    await db.exec(readFileSync('supabase/migrations/20261104185917_schedule_occurrence_responses.sql','utf8'))
+    const backfilled = (await db.query('select * from schedule_occurrence_checkoffs')).rows[0]
+    assert.equal(backfilled.response_status, 'completed')
+    assert.equal(new Date(backfilled.completed_at).getTime(), new Date(original).getTime())
+    await db.exec(`set role authenticated; set request.jwt.claim.sub='${userId}'`)
+    const insert = 'insert into schedule_occurrence_checkoffs(user_id,client_id,occurrence_date,event_id,completed,completed_at,response_status,revision,operation_id) values($1,$2,$3,$4,false,null,$5,1,$6)'
+    await db.query(insert, [userId,clientId,date,'progress','in_progress',randomUUID()])
+    await assert.rejects(db.query(insert, [userId,'QA-OTHER',date,'progress','in_progress',randomUUID()]), /row-level security/)
+    await assert.rejects(db.query(insert, [userId,clientId,date,'invalid','completed',randomUUID()]), /check constraint/)
+    await assert.rejects(db.query(insert, [userId,clientId,date,'invalid','unknown',randomUUID()]), /check constraint/)
+    const changed = await db.query("update schedule_occurrence_checkoffs set response_status='completed',completed=true,completed_at=now(),revision=2 where event_id='progress' and revision=1 returning *")
+    assert.equal(changed.rows.length, 1)
+    assert.equal((await db.query("update schedule_occurrence_checkoffs set response_status='in_progress',completed=false,completed_at=null,revision=2 where event_id='progress' and revision=1 returning *")).rows.length, 0)
+    // Old boolean-only writers remain compatible during a rolling release.
+    await db.query("update schedule_occurrence_checkoffs set completed=false,completed_at=null where event_id='legacy'")
+    assert.equal((await db.query("select response_status from schedule_occurrence_checkoffs where event_id='legacy'")).rows[0].response_status, 'scheduled')
+    await assert.rejects(db.query("update schedule_occurrence_checkoffs set user_id=$1", [otherId]), /row-level security/)
+    await db.exec(`set request.jwt.claim.sub='${otherId}'`)
+    assert.equal((await db.query('select * from schedule_occurrence_checkoffs')).rows.length, 0)
+    await db.exec('reset role')
+    await db.query('delete from clients where client_id=$1', [clientId])
+    assert.equal((await db.query('select * from schedule_occurrence_checkoffs')).rows.length, 0)
   } finally { await db.close() }
 })

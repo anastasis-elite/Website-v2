@@ -44,7 +44,8 @@ export function mergeCommitmentWeekdays(onboardingData: Record<string, any>, ans
   return changed ? { ...onboardingData, scheduleCommitmentWeekdays: metadata } : { ...onboardingData }
 }
 
-/** Weekday choices live in JSON, never in unprovisioned client columns. */
+/** New routine preferences live in JSON, never in unprovisioned client columns. */
 export function scheduleStructureProfileFields(answers: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(answers).filter(([field]) => !COMMITMENT_DAY_FIELDS.includes(field as CommitmentDayField)))
+  return Object.fromEntries(Object.entries(answers).filter(([field]) =>
+    field !== 'breakfast_window_time' && !COMMITMENT_DAY_FIELDS.includes(field as CommitmentDayField)))
 }

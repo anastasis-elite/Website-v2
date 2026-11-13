@@ -15,6 +15,8 @@ import StreakRequirementsCard from '@/components/program-dashboard/StreakRequire
 import TodayAffirmation from '@/components/program-dashboard/TodayAffirmation'
 import RecoverySuggestionCard from '@/components/recovery/RecoverySuggestionCard'
 import TodayDayCarousel from '@/components/program-dashboard/TodayDayCarousel'
+import ScheduleCheckoff from '@/components/ScheduleCheckoff'
+import { canRespondToScheduleEvent } from '@/lib/schedule/actions'
 
 const icons: Record<string, string> = { check_in: '☀', hydration: '◒', schedule: '▦', nutrition: '◡', workout: '↟', recovery: '♡', none: '✦' }
 const statusLabels: Record<string, string> = { upcoming: 'Upcoming', in_progress: 'In progress', completed: 'Completed', deferred: 'Deferred', skipped: 'Skipped' }
@@ -107,6 +109,7 @@ export default function GuidedToday({ logic, schedule, presentation = 'step' }: 
   const presentedActivities = model.presentedActivities
   const primaryId = plan.primary.id === 'food-input' ? 'nutrition' : plan.primary.id
   const primary = plan.primary.id === 'safety' ? undefined : presentedActivities.find(activity => activity.id === primaryId)
+  const primaryEvent = plan.primary.eventId ? schedule.events.find(event => event.id === plan.primary.eventId) : undefined
   const streakProgress = model.streakProgress
   const streakAvailable = streakProgress.available && streakProgress.requiredCount !== null && streakProgress.completedCount !== null
   const requiredCount = streakProgress.requiredCount ?? 0
@@ -133,6 +136,7 @@ export default function GuidedToday({ logic, schedule, presentation = 'step' }: 
       <p data-tutorial-id="dashboard-daily-insight">{plan.primary.id === 'check-in' ? 'How’s your energy today? A quick check-in is enough to begin.' : plan.primary.reason}</p>
       <Link className="tier-primary-action" href={plan.primary.href} onClick={() => openActivity(plan.primary.id, plan.primary.completed)}>{plan.primary.id === 'check-in' ? 'Start daily check-in' : plan.primary.id === 'water' ? 'Log water' : plan.primary.id === 'workout' ? model.workout.inProgress ? 'Resume workout' : 'Open workout' : plan.primary.id === 'recovery' ? 'Open recovery' : plan.primary.category === 'assessment' ? 'Open assessment' : plan.primary.category === 'nutrition' ? model.tier === 'ember' ? 'Open nutrition guidance' : 'Log meal' : 'Open schedule'}</Link>
       {primary?.canDefer ? <button className="today-later" type="button" disabled={busy !== null} onClick={() => updateActivity(primary.id, 'defer')}>{busy === primary.id ? 'Saving…' : 'Later today'}</button> : null}
+      {primaryEvent && canRespondToScheduleEvent(primaryEvent) ? <ScheduleCheckoff key={`${model.clientId}:${schedule.date}:${primaryEvent.id}`} event={primaryEvent} date={schedule.date} timezone={schedule.timezone} expanded unavailable={schedule.unavailableSources?.includes('checkoffs')} /> : null}
     </article>}
     <p className="today-feedback" role="status" aria-live="polite">{message}</p>
 

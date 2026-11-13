@@ -4,6 +4,7 @@ import { importTs } from './typescriptModule.mjs'
 
 const { buildTodayActivities, presentTodayActivities } = await importTs('lib/dashboard/todayActivities.ts')
 const { buildDailyRecommendation } = await importTs('lib/dashboard/dailyRecommendation.ts')
+const { breakfastScheduleEventForDate } = await importTs('lib/schedule/dailyPlanAdapter.ts')
 const clone = value => JSON.parse(JSON.stringify(value))
 
 function fixture(logged = true) {
@@ -121,5 +122,33 @@ test('unaccepted suggestions, cancelled meals and elapsed deferrals do not creat
     assert.equal(presented.canResume, false)
     assert.equal(presented.deferredUntil, undefined)
     assert.equal(buildDailyRecommendation(logic, schedule).primary.id, 'food-input')
+  }
+})
+
+test('breakfast attendance changes never skip or defer Nutrition and never override a real meal hold', () => {
+  for (const tier of ['ember', 'ignite', 'phoenix']) for (const logged of [false, true]) {
+    const { logic, schedule } = fixture(logged)
+    logic.program = tier
+    const [breakfast] = breakfastScheduleEventForDate({ userId: 'owner', client: {
+      client_id: logic.client.id, onboarding_data: { routinePreferences: { answers: { breakfast_window_time: '08:00' } } },
+    }, date: schedule.date, timezone: schedule.timezone })
+    const before = clone(logic), baseline = clone(buildTodayActivities(logic, schedule))
+    const visibleBefore = clone(presentedNutrition(logic, schedule))
+    for (const response of [
+      { status: 'skipped' },
+      { status: 'deferred', adjusted_start_at: '2026-11-02T19:00:00Z', adjusted_end_at: '2026-11-02T19:30:00Z' },
+      { status: 'completed', checkoff: { status: 'completed', completed: true, revision: 1 } },
+      { status: 'scheduled', checkoff: { status: 'in_progress', completed: false, revision: 1 } },
+    ]) {
+      schedule.events = [{ ...breakfast, schedule_date: schedule.date, ...response }]
+      assert.deepEqual(buildTodayActivities(logic, schedule), baseline)
+      assert.deepEqual(clone(presentedNutrition(logic, schedule)), visibleBefore)
+      assert.equal(buildDailyRecommendation(logic, schedule).primary.id, 'food-input')
+      assert.deepEqual(logic, before)
+    }
+    schedule.events = [{ ...breakfast, schedule_date: schedule.date }, meal({ status: 'deferred',
+      adjusted_start_at: '2026-11-02T19:00:00Z', adjusted_end_at: '2026-11-02T19:30:00Z' })]
+    assert.equal(presentedNutrition(logic, schedule).status, 'deferred')
+    assert.equal(presentedNutrition(logic, schedule).deferredUntil, '2026-11-02T19:00:00Z')
   }
 })

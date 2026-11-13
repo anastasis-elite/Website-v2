@@ -1,7 +1,8 @@
 import 'server-only'
 import type { ProgramLogicOutput } from './logic/types'
-import type { DailyScheduleState } from '@/lib/schedule/types'
-import { getActionRouteForEvent } from '@/lib/schedule/engine'
+import type { DailyScheduleState, ScheduleEvent } from '@/lib/schedule/types'
+import { getActionRouteForEvent, getScheduleEventPrompt } from '@/lib/schedule/engine'
+import { canRespondToScheduleEvent } from '@/lib/schedule/actions'
 import { getDailyTraining } from './dailyTraining'
 import { buildTodayActivities, presentTodayActivities, type TodayActivityId } from './todayActivities'
 import { getLocalDaypart, localDateKey } from '@/lib/timezone'
@@ -13,6 +14,8 @@ import { isStrengthWorkout, strengthTrainingPaused } from '@/lib/assessment/stre
 import type { DailyRecommendation, DailyRecommendationAction, DataAvailability } from './dailyRecommendationTypes'
 import type { TodayActivities, TodayActivity } from './todayActivityTypes'
 export type { DailyRecommendation, DailyRecommendationAction, DataAvailability } from './dailyRecommendationTypes'
+
+const isBreakfastOccurrence = (event: ScheduleEvent) => event.schedule_response_kind === 'breakfast' && canRespondToScheduleEvent(event)
 
 // This coordinates existing decisions. It does not calculate a health score or change doses.
 export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: DailyScheduleState, prepared?: { today: TodayActivities; presented: TodayActivity[] }): DailyRecommendation {
@@ -46,6 +49,9 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   const eventActivityId = (category: string) => category === 'check_in' ? 'check-in' : category === 'hydration' ? 'water' :
     category === 'meal' || category === 'nutrition' ? 'nutrition' : category === 'workout' || category === 'recovery' ? category : undefined
   const eventUnavailable = (category: string, eventId?: string) => {
+    // Breakfast occurrence check-ins are independent of logged food and its
+    // pacing; a saved meal entry cannot answer whether this breakfast happened.
+    if (eventId && schedule.events.some(event => event.id === eventId && isBreakfastOccurrence(event))) return false
     if (category === 'workout' && strengthPaused) return true
     if (category === 'workout' && emptyWorkoutDay) return true
     if (category === 'hydration') return !waterDue || held('water')
@@ -76,7 +82,8 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
   }
   const active = schedule.events.find(e => !eventUnavailable(e.event_type, e.id) && e.flexibility_type === 'fixed' && e.status === 'scheduled' &&
     new Date(e.adjusted_start_at || e.start_at) <= new Date(schedule.now) && new Date(e.adjusted_end_at || e.end_at) > new Date(schedule.now))
-  if (active) add(active.id, active.event_type, active.title, `${active.source_label ? active.source_label + '. ' : ''}This is your current commitment. Keep your other actions flexible.`, getActionRouteForEvent(active, logic.program), 'confirmed', active.id)
+  if (active) add(active.id, active.event_type, active.title, `${active.source_label ? active.source_label + '. ' : ''}${getScheduleEventPrompt(active, new Date(schedule.now))}`,
+    getActionRouteForEvent(active, logic.program), active.checkoff?.status === 'in_progress' ? 'partial' : 'confirmed', active.id)
 
   if (nutritionDue) {
     add('food-input', 'nutrition', nutritionPacing ? 'Log what you’ve had' : logic.program === 'ember' ? 'Review your next meal' : 'Log your latest meal',
@@ -105,11 +112,12 @@ export function buildDailyRecommendation(logic: ProgramLogicOutput, schedule: Da
       : workout === 'completed' ? `A completed workout is recorded${logic.execution.completedWorkoutTitle ? `: ${logic.execution.completedWorkoutTitle}` : ' today'}. Recovery options are available.` : 'Choose from the recovery options already available in your plan.', '/dashboard/recovery', 'confirmed')
   // Commitments and overdue items remain actionable even when food is not logged.
   const next = schedule.nextActionableEvent
-  if (next && !['completed','cancelled','skipped'].includes(next.status) && !next.suggested && !['hydration','meal'].includes(next.event_type) && !candidates.some(c => c.eventId === next.id) &&
+  if (next && !['completed','cancelled','skipped'].includes(next.status) && !next.suggested &&
+    (isBreakfastOccurrence(next) || !['hydration','meal'].includes(next.event_type)) && !candidates.some(c => c.eventId === next.id) &&
     !eventUnavailable(next.event_type, next.id) && !(next.event_type === 'workout' && new Date(next.adjusted_start_at || next.start_at) > new Date(schedule.now) && next.adjusted_start_at)) {
-    const overdue = new Date(next.adjusted_end_at || next.end_at) <= new Date(schedule.now)
-    const action = { id: next.id, category: next.event_type, title: next.title, reason: schedule.nextAction?.id === next.id ? schedule.nextAction.reason : overdue ? 'This item is overdue. Review it, reschedule it, or record its outcome.' : 'This fits the next part of your schedule.',
-      href: getActionRouteForEvent(next, logic.program), availability: 'confirmed' as const, eventId: next.id, completed: false }
+    const action: DailyRecommendationAction = { id: next.id, category: next.event_type, title: next.title,
+      reason: getScheduleEventPrompt(next, new Date(schedule.now)), href: getActionRouteForEvent(next, logic.program),
+      availability: next.checkoff?.status === 'in_progress' ? 'partial' : 'confirmed', eventId: next.id, completed: false }
     const required = candidates.findIndex(candidate => !['safety', 'check-in'].includes(candidate.id) && !candidate.eventId)
     candidates.splice(required < 0 ? candidates.length : required, 0, action)
   }
