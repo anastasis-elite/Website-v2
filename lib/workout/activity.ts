@@ -1,3 +1,4 @@
+import { weightInputIncrement } from './weightRounding'
 import { workoutSessionKeys } from './session'
 import { isManualCardioExercise } from './manualCardio'
 
@@ -23,8 +24,7 @@ export function activityDose(exercise: any, preferredUnit: 'lb' | 'kg' = 'lb'): 
   const factor = unit === sourceUnit ? 1 : unit === 'kg' ? 1/2.2046226218 : 2.2046226218
   const weightLb = Number(exercise.recommended_weight ?? exercise.cycle_adjusted_weight ?? exercise.calculated_weight ?? exercise.baseline_weight ?? 0)
   const weight = isBodyweightExercise(exercise) || !Number.isFinite(weightLb) ? 0 : Math.max(0, Math.round(weightLb * factor * 10)/10)
-  const explicitIncrement = Number(exercise.weight_increment ?? exercise.equipment_increment)
-  const increment = explicitIncrement > 0 ? Math.round(explicitIncrement * factor * 1000)/1000 : unit === 'kg' ? 0.5 : weight < 5 ? 0.5 : weight < 20 ? 1 : 5
+  const increment = weightInputIncrement(exercise, weight, unit)
   return { kind, metric, prescribed: Number.isFinite(prescribed) ? prescribed : Number(timeMatch?.[1] || 0), sets: kind === 'strength' ? Math.max(1, Number(exercise.sets || 1)) : 1,
     weight: kind === 'strength' ? weight : 0, increment, unit, loadLabel: exercise.load_type === 'per_hand' ? 'per hand' : exercise.load_type === 'single_side' ? 'one side' : 'total weight' }
 }

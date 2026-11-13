@@ -84,7 +84,7 @@ test('one existing variant conversion is applied and each original load semantic
     const response = buildSelectedPrescription({ inputs: inputs(), exercise: base.exercise, variantId })
     assert.equal(response.status, 'available')
     assert.equal(response.prescription.loadType, loadType)
-    assert.equal(response.prescription.weightLb, actual('lib/cycle/getCycleTrainingAdjustment.ts').roundRecommendedWeight(base.exercise.calculated_weight))
+    assert.equal(response.prescription.weightLb, actual('lib/workout/weightRounding.ts').roundSuggestedWeightLb(base.exercise, actual('lib/cycle/getCycleTrainingAdjustment.ts').roundRecommendedWeight(base.exercise.calculated_weight)))
     assert.equal(response.prescription.exerciseId, catalog('Dumbbell Lateral Raise').id)
     assert.equal(response.prescription.version, 'founder-selected-v1')
     assert.ok(response.prescription.sets > 0 && response.prescription.reps > 0)
