@@ -11,7 +11,7 @@ import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getProgramLogicEngine } from '@/lib/dashboard/logic/getProgramLogicEngine'
 import type { ProgramTier } from '@/lib/dashboard/logic/types'
-import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
+import { getCurrentProgramWorkout } from '@/lib/program/getProgramWorkout'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 import { buildMuscleReadiness } from '@/lib/workout/muscleReadiness'
 import { loadWorkoutHistory } from '@/lib/workout/history'
@@ -181,8 +181,8 @@ export default async function ProgramWorkoutPage({
     adjustedExercises,
     cycleAdjustment,
     weekdayPreferenceNotice,
-  } = getProgramWorkout({
-    client,
+  } = await getCurrentProgramWorkout({
+    supabase, user, client,
     output,
   })
 

@@ -7,7 +7,7 @@ import PhoenixDashboard from '@/components/program-dashboard/PhoenixDashboard'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { getDailyExecutionPlan } from '@/lib/day/getDailyExecutionPlan'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
-import { getProgramWorkout } from '@/lib/program/getProgramWorkout'
+import { getCurrentProgramWorkout } from '@/lib/program/getProgramWorkout'
 import { getSavedPlanState } from '@/lib/program/getSavedPlanState'
 import { getRecentSafetyFlags } from '@/lib/safety/getRecentSafetyFlags'
 import SafetyEscalationNotice from '@/components/legal/SafetyEscalationNotice'
@@ -130,7 +130,7 @@ async function loadPersonalizedDashboard({ supabase, user, client, program, view
   const monthlyAssessmentsDueCount = monthlyAssessment.due ? 1 : 0
 
   const { programJson, todaysWorkout, cycleAdjustment, adjustedExercises } =
-    getProgramWorkout({ client, output })
+    await getCurrentProgramWorkout({ supabase, user, client, output })
 
   const logic = await timings.measure('logic', () => getProgramLogicEngine({
     supabase,

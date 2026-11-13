@@ -103,7 +103,7 @@ function getDefaultVariantForEquipment(group: any, equipment: string[]) {
   return preferred || compatible[0] || null
 }
 
-function getAssessmentLift(key: string, data: any) {
+export function getAssessmentLift(key: string, data: any) {
   const map: Record<string, { weight: string; reps: string }> = {
     Bench: {
       weight: 'bench_press_weight',
@@ -161,7 +161,7 @@ function getRepMultiplier(reps: number) {
   return found.length === 1 ? Number(found[0].multiplier) : NaN
 }
 
-function hasUsableAssessment(lift: ReturnType<typeof getAssessmentLift>, bodyweight: boolean) {
+export function hasUsableAssessment(lift: ReturnType<typeof getAssessmentLift>, bodyweight: boolean) {
   return Boolean(lift && lift.recorded && Number.isFinite(lift.weight) && lift.weight <= 3000 &&
     (bodyweight ? lift.weight >= 0 : lift.weight > 0) && Number.isSafeInteger(lift.reps) && lift.reps > 0 && lift.reps <= 100)
 }
