@@ -346,7 +346,7 @@ test('response migration backfills old evidence, constrains new states and prese
     await db.exec(readFileSync('supabase/migrations/20261028190000_schedule_occurrence_checkoffs.sql','utf8'))
     await db.query('insert into schedule_occurrence_checkoffs(user_id,client_id,occurrence_date,event_id,completed,completed_at,revision,operation_id) values($1,$2,$3,\'legacy\',true,now(),1,$4)', [userId,clientId,date,randomUUID()])
     const original = (await db.query('select completed_at from schedule_occurrence_checkoffs')).rows[0].completed_at
-    await db.exec(readFileSync('supabase/migrations/20261104184614_schedule_occurrence_responses.sql','utf8'))
+    await db.exec(readFileSync('supabase/migrations/20261104185917_schedule_occurrence_responses.sql','utf8'))
     const backfilled = (await db.query('select * from schedule_occurrence_checkoffs')).rows[0]
     assert.equal(backfilled.response_status, 'completed')
     assert.equal(new Date(backfilled.completed_at).getTime(), new Date(original).getTime())
