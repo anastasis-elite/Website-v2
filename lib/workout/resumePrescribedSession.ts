@@ -39,7 +39,14 @@ export function inspectRetainedLocalPrescription({ keys, stored }: { keys: strin
     ['actual_weight', 'actual_reps', 'actual_duration', 'actual_breaths'].some(field => Number(log[field]) > 0) ||
     log.activity_completed || log.confirmed_at
   ))
-  const retainedEdit = Array.isArray(local.draft) && local.draft.some((entry: any) => entry?.weightEdited === true)
+  const originalPlan = local.plannedExercises === undefined ? logs : local.plannedExercises
+  const retainedEdit = Array.isArray(local.draft) && local.draft.some((entry: any, index: number) =>
+    entry?.weightEdited === true || entry?.amountEdited === true ||
+    // Legacy rep inputs had no edit marker. A departure from the saved dose
+    // is user input, even after Save / pause cleared the dirty flag.
+    suppliedNumber(entry?.amount) && originalPlan?.[index] &&
+      Number(entry.amount) !== activityDose(originalPlan[index]).prescribed)
+
   if (local.dirty !== true && local.completed !== true && !retainedWork && !retainedEdit) return { status: 'none' }
   const plan = local.plannedExercises === undefined ? logs : local.plannedExercises
   if (!keys.length || new Set(keys).size !== keys.length || !matchingWorkoutPlan(logs, keys) ||
