@@ -175,3 +175,54 @@ test('resume-only ambiguous reduced local sessions remain untouched without expo
   assert.equal(app.calls.length, 1); assert.equal(app.calls.some(call => call.payload), false)
   assert.deepEqual([...storage], before)
 })
+
+const freshRow = { id: 'row', exercise: 'Seated Cable Row', sets: 3, reps: 8, recommended_weight: 40, calculated_weight: 40,
+  selected_variant_id: 'seated_cable_row', selected_equipment: 'cable', load_type: 'total_load',
+  prescription_calculation: { version: 'founder-load-v3', reference_exercise: 'Seated Cable Row', assessment_key: 'Row',
+    bodyweight_factor: 0, body_mass_lb: 180, estimated_1rm: 40, rep_multiplier: 1, base_weight: 40,
+    equipment_weight: 40, selected_variant_id: 'seated_cable_row', equipment_modifier: 1 } }
+const oldRow = { ...freshRow, sets: 4, reps: 10, recommended_weight: 20, calculated_weight: 20, prescription_calculation: undefined }
+async function retainedDraftStorage(draft, server = false) {
+  const p = props([freshRow]), date = (await import(moduleUrl('lib/timezone.ts'))).getClientLocalDate({ timezone: p.timezone })
+  const key = `anastasis-session:${p.clientId}:${p.program}:${p.dayName}:${date}:recommended:${JSON.stringify(['row:0'])}`
+  const log = { ...oldRow, session_key: 'row:0', completed: false, skipped: false, set_logs: [], actual_weight: 0, actual_reps: 0 }
+  return new Map(server ? [['__disposableServer', JSON.stringify({ exercise_logs: [log], planned_exercises: [oldRow] })]]
+    : [[key, JSON.stringify({ logs: [log], plannedExercises: [oldRow], draft: [draft], dirty: false })]])
+}
+const numericInputs = tree => nodes(tree, node => node.type === 'input' && node.props.type === 'number')
+for (const server of [false, true]) {
+  test(`untouched ${server ? 'server' : 'browser'} draft refreshes current assessment weight and reps on reload`, async () => {
+    const storage = await retainedDraftStorage({ weight: 20, amount: 10 }, server)
+    const app = mount(ActivityTracker, props([freshRow]), storage); await app.flush()
+    assert.deepEqual(numericInputs(app.tree).map(n => n.props.value), [40, 8])
+    const reloaded = mount(ActivityTracker, props([freshRow]), storage); await reloaded.flush()
+    assert.deepEqual(numericInputs(reloaded.tree).map(n => n.props.value), [40, 8])
+  })
+}
+test('typed weight and legacy changed reps survive even when dirty was cleared', async () => {
+  const storage = await retainedDraftStorage({ weight: 25, weightEdited: true, amount: 7 })
+  const app = mount(ActivityTracker, props([freshRow]), storage); await app.flush()
+  assert.deepEqual(numericInputs(app.tree).map(n => n.props.value), [25, 7])
+})
+test('legacy changed reps alone retain their original prescription', async () => {
+  const storage = await retainedDraftStorage({ weight: 20, amount: 7 })
+  const app = mount(ActivityTracker, props([freshRow]), storage); await app.flush()
+  assert.equal(numericInputs(app.tree)[1].props.value, 7)
+})
+test('rep input marks a deliberate edit even when matching the original default', async () => {
+  const storage = await retainedDraftStorage({ weight: 20, amount: 10 })
+  const app = mount(ActivityTracker, props([freshRow]), storage); await app.flush()
+  numericInputs(app.tree)[1].props.onChange({ target: { value: '8' } }); await app.flush()
+  const saved = JSON.parse([...storage.values()][0]); assert.equal(saved.draft[0].amountEdited, true)
+  const changed = { ...freshRow, reps: 12 }
+  const reloaded = mount(ActivityTracker, props([changed]), storage); await reloaded.flush()
+  assert.equal(numericInputs(reloaded.tree)[1].props.value, 8)
+})
+
+test('saved zero-set server defaults do not erase browser-only weight and rep edits', async () => {
+  const storage = await retainedDraftStorage({ weight: 25, weightEdited: true, amount: 7 })
+  const server = await retainedDraftStorage(null, true)
+  storage.set('__disposableServer', server.get('__disposableServer'))
+  const app = mount(ActivityTracker, props([freshRow]), storage); await app.flush()
+  assert.deepEqual(numericInputs(app.tree).map(n => n.props.value), [25, 7])
+})
