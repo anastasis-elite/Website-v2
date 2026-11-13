@@ -149,7 +149,7 @@ function hooks() {
   }, cleanup() { for (const effect of effects) effect.cleanup?.() } }
 }
 
-test('stacked sections expose every action without section navigation or keyboard interception', () => {
+test('carousel panels preserve cards and support bounded keyboard navigation without separate buttons', () => {
   const runtime = hooks(), opened = []
   const Carousel = modules(runtime.react)('components/program-dashboard/TodayDayCarousel.tsx').default
   const current = fixture(), before = clone(current)
@@ -157,10 +157,25 @@ test('stacked sections expose every action without section navigation or keyboar
   const sections = nodes(tree, node => node.props?.['data-day-section'])
   assert.deepEqual(sections.map(section => section.props['data-day-section']), ['morning', 'midday', 'evening'])
   for (const section of sections) {
-    assert.equal(section.props.tabIndex, undefined)
-    assert.equal(section.props.onKeyDown, undefined)
+    assert.equal(section.props.tabIndex, 0)
+    assert.equal(typeof section.props.onKeyDown, 'function')
     assert.equal(section.props.hidden, undefined)
   }
+  const navigation = []
+  sections.forEach((section, index) => section.ref({
+    scrollIntoView(options) { navigation.push(['scroll', index, options.inline]) },
+    focus(options) { navigation.push(['focus', index, options.preventScroll]) },
+  }))
+  function key(index, key, nested = false) {
+    const target = {}, event = { key, target, currentTarget: nested ? {} : target, preventDefault() { navigation.push(['prevent']) } }
+    sections[index].props.onKeyDown(event)
+  }
+  key(0, 'ArrowRight'); key(1, 'End'); key(2, 'ArrowRight'); key(2, 'Home'); key(0, 'ArrowLeft')
+  assert.deepEqual(navigation.filter(entry => entry[0] === 'focus').map(entry => entry[1]), [1, 2, 2, 0, 0])
+  assert.ok(navigation.filter(entry => entry[0] === 'focus').every(entry => entry[2] === true))
+  const count = navigation.length
+  key(1, 'ArrowRight', true); key(1, 'Enter')
+  assert.equal(navigation.length, count)
   assert.equal(nodes(tree, node => node.type === 'button').length, 0)
   const actions = nodes(tree, node => node.type?.name === 'DayAction')
   assert.equal(actions.length, 6)
@@ -174,10 +189,11 @@ test('stacked sections expose every action without section navigation or keyboar
   assert.deepEqual(opened, actions.flatMap(action => [action.props.item.activityId || action.props.item.id, action.props.item.activityId || action.props.item.id]))
   assert.deepEqual(current, before)
   const css = readFileSync('components/program-dashboard/TodayDayCarousel.module.css', 'utf8')
-  assert.match(css, /\.sections\s*\{[^}]*display: grid/)
+  assert.match(css, /\.carousel\s*\{[^}]*display: flex;[^}]*overflow-x: auto;[^}]*scroll-snap-type: x mandatory/)
+  assert.match(css, /\.section\s*\{[^}]*flex: 0 0 100%;[^}]*scroll-snap-align: center/)
   assert.match(css, /\.artwork\s*\{[^}]*width: 100%;[^}]*height: auto/)
   assert.match(css, /\.action:focus-visible/)
-  assert.doesNotMatch(css, /scroll-snap|overflow-x|\.arrow|\.navigation/)
+  assert.doesNotMatch(css, /\.arrow|\.navigation/)
   runtime.cleanup()
 })
 
