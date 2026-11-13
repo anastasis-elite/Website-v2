@@ -1,4 +1,5 @@
 import 'server-only'
+import { roundSuggestedWeightLb, SUGGESTED_LOAD_ROUNDING } from '@/lib/workout/weightRounding'
 
 import type {
   CapacityResult, CycleResult, DayBlock, FlameResult, FuelReadinessDisplayStatus, FuelReadinessResult,
@@ -382,7 +383,7 @@ function modifyExercises(exercises: any[], level: WorkoutDecisionResult['adjustm
     load*=safetyMultiplier
     const plannedSets=Math.max(1,numeric(next.sets,dose.sets));next.sets=index===0?Math.min(plannedSets,dose.sets):Math.min(plannedSets,dose.keepAccessories?Math.max(2,dose.sets-1):2)
     if(level==='level_0_full_plan'&&allowEnduranceProgression)next.sets=Math.min(5,numeric(next.sets,3)+1)
-    if(!hasNoCalculatedLoad(next))next.recommended_weight=(load*structural.modifier)||null
+    if(!hasNoCalculatedLoad(next)){next.recommended_weight=roundSuggestedWeightLb(next,load*structural.modifier);next.suggested_load_rounding=SUGGESTED_LOAD_ROUNDING}
     next.prescription_safety_multiplier=safetyMultiplier*structural.modifier;next.client_cues=clientCues;next.rest_seconds=dose.restSeconds;next.rpe_target=dose.rpe
     return next
   })

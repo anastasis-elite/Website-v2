@@ -1,3 +1,4 @@
+import { roundSuggestedWeightLb, SUGGESTED_LOAD_ROUNDING } from '@/lib/workout/weightRounding'
 import { calculateFounderLoadFromEstimated1RM, resolveFounderExerciseReference } from '@/lib/program/founderReference'
 import { getEquipmentAdjustedLoad } from '@/lib/program/getEquipmentAdjustedLoad'
 import { roundRecommendedWeight } from '@/lib/cycle/getCycleTrainingAdjustment'
@@ -30,9 +31,14 @@ function switchContext(exercise: any) {
     fromEquipment: resolved.group.base_equipment, toEquipment: current.equipment,
     category: resolved.group.category, equipmentModifier: current.equipment_modifier })
   const cycleWeight = roundRecommendedWeight(equipmentWeight * exercise.cycle_weight_multiplier)
+  if (!positive(cycleWeight)) return null
+  const rawWeight = cycleWeight * exercise.prescription_safety_multiplier
+  // Untouched legacy snapshots retain their exact historical validation.
+  if (exercise.suggested_load_rounding && exercise.suggested_load_rounding !== SUGGESTED_LOAD_ROUNDING) return null
+  const expectedWeight = exercise.suggested_load_rounding === SUGGESTED_LOAD_ROUNDING ? roundSuggestedWeightLb(exercise, rawWeight) : rawWeight
   if (!equalLoad(equipmentWeight, provenance.equipment_weight) || !positive(cycleWeight) ||
     !positive(exercise.recommended_weight) ||
-    !equalLoad(exercise.recommended_weight, cycleWeight * exercise.prescription_safety_multiplier)) return null
+    !equalLoad(exercise.recommended_weight, expectedWeight)) return null
   return { provenance, group: resolved.group }
 }
 
@@ -58,10 +64,12 @@ export function changePrescriptionVariant(exercise: any, variantId: string): any
     category: context.group.category, equipmentModifier: variant.equipment_modifier })
   const cycleWeight = roundRecommendedWeight(equipmentWeight * exercise.cycle_weight_multiplier)
   if (!positive(equipmentWeight) || !positive(cycleWeight)) return null
-  return { ...exercise, selected_variant_id: variant.id, selected_variant_name: variant.name,
+  const finalWeight = roundSuggestedWeightLb({ selected_equipment: variant.equipment, load_type: variant.load_type }, cycleWeight * exercise.prescription_safety_multiplier)
+  if (!positive(finalWeight)) return null
+  return { ...exercise, suggested_load_rounding: SUGGESTED_LOAD_ROUNDING, selected_variant_id: variant.id, selected_variant_name: variant.name,
     selected_equipment: variant.equipment, equipment: variant.equipment, load_type: variant.load_type,
     equipment_modifier: variant.equipment_modifier, baseline_weight: equipmentWeight, calculated_weight: equipmentWeight,
-    cycle_adjusted_weight: cycleWeight, recommended_weight: cycleWeight * exercise.prescription_safety_multiplier,
+    cycle_adjusted_weight: cycleWeight, recommended_weight: finalWeight,
     prescription_calculation: { ...context.provenance, selected_variant_id: variant.id,
       equipment_modifier: variant.equipment_modifier, equipment_weight: equipmentWeight } }
 }

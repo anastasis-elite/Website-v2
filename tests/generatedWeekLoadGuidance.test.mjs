@@ -6,6 +6,7 @@ import { importTs } from './typescriptModule.mjs'
 const { generateProgram } = await importTs('lib/program/generateProgram.ts')
 const { getProgramWorkout } = await importTs('lib/program/getProgramWorkout.ts')
 const { runWorkoutDecisionEngine } = await importTs('lib/dashboard/logic/engines.ts')
+const { roundSuggestedWeightLb } = await importTs('lib/workout/weightRounding.ts')
 const { hasNoCalculatedLoad } = await importTs('lib/workout/loadGuidance.ts')
 const strength = {
   bench_press_weight: 100, bench_press_reps: 10, shoulder_press_weight: 80, shoulder_press_reps: 10,
@@ -62,6 +63,9 @@ for (const program of ['ember', 'ignite']) {
           assert.equal(exercise.recommended_weight, null)
           assert.equal(exercise.calculated_weight, null)
           assert.equal(exercise.cycle_adjusted_weight, null)
+        } else {
+          assert.equal(exercise.suggested_load_rounding, 'equipment-v1')
+          assert.equal(exercise.recommended_weight, roundSuggestedWeightLb(exercise, exercise.cycle_adjusted_weight * exercise.prescription_safety_multiplier), 'Round only after cycle and all daily modifiers.')
         }
       }
     }
