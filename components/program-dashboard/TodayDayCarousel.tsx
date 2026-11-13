@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useId } from 'react'
+import { useId, useRef } from 'react'
 import CardArtwork from '@/components/CardArtwork'
 import { formatLocalTime } from '@/lib/schedule/time'
 import type { TodayDayItem, TodayDaySections } from '@/lib/dashboard/todayDaySections'
@@ -28,9 +28,20 @@ function DayAction({ item, timezone, onOpen }: { item: TodayDayItem; timezone: s
 
 export default function TodayDayCarousel({ day, timezone, onOpen }: { day: TodayDaySections; timezone: string; onOpen: (id: string) => void }) {
   const id = useId()
+  const panels = useRef<Array<HTMLElement | null>>([])
+  const navigate = (index: number) => {
+    const panel = panels.current[index]
+    panel?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' })
+    panel?.focus({ preventScroll: true })
+  }
   return <section className={styles.day} aria-label="Today’s actions" data-testid="today-day-carousel">
-    <div className={styles.sections}>
-      {day.sections.map(section => <section key={section.id} id={`${id}-${section.id}`} className={styles.section} aria-labelledby={`${id}-${section.id}-title`} data-day-section={section.id}>
+    <div className={styles.carousel}>
+      {day.sections.map((section, index) => <section key={section.id} id={`${id}-${section.id}`} ref={node => { panels.current[index] = node }} className={styles.section} tabIndex={0} aria-labelledby={`${id}-${section.id}-title`} data-day-section={section.id} onKeyDown={event => {
+        if (event.target !== event.currentTarget) return
+        const last = day.sections.length - 1
+        const next = event.key === 'ArrowRight' ? Math.min(index + 1, last) : event.key === 'ArrowLeft' ? Math.max(index - 1, 0) : event.key === 'Home' ? 0 : event.key === 'End' ? last : null
+        if (next !== null) { event.preventDefault(); navigate(next) }
+      }}>
         <header className={styles.sectionHeading}><h3 id={`${id}-${section.id}-title`}>{section.title}</h3><p>{section.range}</p></header>
         {section.items.length ? <ul className={styles.actions}>{section.items.map(item => <DayAction key={item.id} item={item} timezone={timezone} onOpen={onOpen} />)}</ul> : <p className={styles.empty}>No remaining saved actions in this part of your day.</p>}
       </section>)}
