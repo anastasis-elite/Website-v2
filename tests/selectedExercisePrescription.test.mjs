@@ -395,3 +395,14 @@ test('session override cannot bypass ownership, tier, safety or Phoenix saved-tr
   const base=founder('Dumbbell Lateral Raise','cable_lateral_raise',{client:{...client(),equipment_access:['bodyweight']},equipmentContext})
   assert.equal(buildSelectedPrescription({inputs:inputs({todaySymptoms:[{severity:9,symptom_types:{name:'chest pain',category:'pain'}}]}),exercise:base.exercise,variantId:'cable_lateral_raise'}).status,'blocked')
 })
+
+test('hip thrust selected-exercise preview preserves original but never transfers load to another equipment variant', () => {
+  const original = founder('Smith Machine Hip Thrust', 'smith_hip_thrust')
+  assert.ok(original)
+  assert.ok(original.exercise.recommended_weight > 0)
+  const { exerciseLoadPresentation } = actual('lib/workout/exerciseLoadPresentation.ts')
+  for (const variantId of ['dumbbell_hip_thrust', 'barbell_hip_thrust', 'machine_hip_thrust']) {
+    assert.equal(founder('Smith Machine Hip Thrust', variantId), null)
+    assert.equal(exerciseLoadPresentation({ ...original.exercise, selected_variant_id: variantId }, { source: 'manual' }).recommendationAvailable, false)
+  }
+})

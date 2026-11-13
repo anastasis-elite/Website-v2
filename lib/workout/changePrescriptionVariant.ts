@@ -2,10 +2,28 @@ import { roundSuggestedWeightLb, SUGGESTED_LOAD_ROUNDING } from '@/lib/workout/w
 import { calculateFounderLoadFromEstimated1RM, resolveFounderExerciseReference } from '@/lib/program/founderReference'
 import { getEquipmentAdjustedLoad } from '@/lib/program/getEquipmentAdjustedLoad'
 import { roundRecommendedWeight } from '@/lib/cycle/getCycleTrainingAdjustment'
-import { hasNoCalculatedLoad } from '@/lib/workout/loadGuidance'
+import { hasNoCalculatedLoad, withoutCalculatedLoad } from '@/lib/workout/loadGuidance'
 
 const positive = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0
 const equalLoad = (first: number, second: number) => Math.abs(first - second) < 1e-8
+
+/** Equipment identity can be changed without claiming load equivalence. */
+function manualEquipmentContext(exercise: any) {
+  if (exercise?.completed || exercise?.skipped || exercise?.confirmed_at || exercise?.set_logs?.length ||
+    Number(exercise?.actual_reps || exercise?.actual_duration || 0) > 0) return null
+  const resolved = resolveFounderExerciseReference(exercise?.exercise)
+  if (resolved.status !== 'resolved' || resolved.group?.requires_variant_assessment !== true) return null
+  const group = resolved.group
+  const current = group.variants.filter((v: any) => exercise.selected_variant_id
+    ? v.id === exercise.selected_variant_id : v.name === exercise.exercise)
+  if (current.length !== 1 || exercise.selected_equipment && exercise.selected_equipment !== current[0].equipment ||
+    exercise.load_type && exercise.load_type !== current[0].load_type) return null
+  if (!Array.isArray(exercise.available_variants) || !exercise.available_variants.length ||
+    new Set(exercise.available_variants.map((v: any) => v.id)).size !== exercise.available_variants.length ||
+    exercise.available_variants.some((choice: any) => !group.variants.some((v: any) =>
+      ['id', 'name', 'equipment', 'load_type', 'equipment_modifier'].every(field => choice[field] === v[field])))) return null
+  return group
+}
 
 function switchContext(exercise: any) {
   const provenance = exercise?.prescription_calculation
@@ -15,7 +33,7 @@ function switchContext(exercise: any) {
     provenance.selected_variant_id !== exercise.selected_variant_id || exercise.completed === true ||
     Array.isArray(exercise.set_logs) && exercise.set_logs.length > 0) return null
   const resolved = resolveFounderExerciseReference(exercise.exercise)
-  if (resolved.status !== 'resolved' || !resolved.group ||
+  if (resolved.status !== 'resolved' || !resolved.group || resolved.group.requires_variant_assessment ||
     resolved.reference.exercise !== provenance.reference_exercise ||
     resolved.reference.assessment_key !== provenance.assessment_key ||
     resolved.reference.bodyweight_factor !== provenance.bodyweight_factor) return null
@@ -44,13 +62,23 @@ function switchContext(exercise: any) {
 
 /** Legacy session snapshots stay loggable, but cannot justify a new conversion. */
 export function canChangePrescriptionVariant(exercise: any) {
-  return switchContext(exercise) !== null
+  return manualEquipmentContext(exercise) !== null || switchContext(exercise) !== null
 }
 
 /** Rebuild a different equipment load from its recorded base, then carry the
  * existing cycle and daily safety adjustments through exactly once. */
 export function changePrescriptionVariant(exercise: any, variantId: string): any | null {
   if (variantId === exercise?.selected_variant_id) return exercise
+  const manualGroup = manualEquipmentContext(exercise)
+  if (manualGroup) {
+    const variant = manualGroup.variants.find((v: any) => v.id === variantId)
+    if (!variant || !exercise.available_variants.some((v: any) => v.id === variantId)) return null
+    const selected = withoutCalculatedLoad({ ...exercise, selected_variant_id: variant.id,
+      selected_variant_name: variant.name, selected_equipment: variant.equipment, equipment: variant.equipment,
+      load_type: variant.load_type, equipment_modifier: null, weight: null, weight_goal: null }, 'not_calculated',
+      'No verified load is available for this equipment. Loads do not transfer between hip-thrust equipment; enter the actual weight you use.')
+    return selected
+  }
   const context = switchContext(exercise)
   if (!context || !Array.isArray(exercise.available_variants)) return null
   const choices = exercise.available_variants.filter((item: any) => item.id === variantId)

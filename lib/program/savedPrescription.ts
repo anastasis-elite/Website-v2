@@ -1,3 +1,4 @@
+import { withoutCalculatedLoad } from '@/lib/workout/loadGuidance'
 import { getAssessmentLift, hasUsableAssessment } from '@/lib/program/generateProgram'
 import { calculateFounderLoadFromEstimated1RM, calculateLegacyFounderLoadFromEstimated1RM, founderBodyMassLb, experimentalLoadNote, resolveFounderExerciseReference, getFounderIntensityKey } from '@/lib/program/founderReference'
 import hypertrophyChart from '@/data/reference/hypertrophyChart_normalized.json'
@@ -38,6 +39,10 @@ function refreshFromAssessment(exercise: any, client: any, strengthAssessment: a
     variant && (exercise.selected_equipment && exercise.selected_equipment !== variant.equipment || exercise.load_type && exercise.load_type !== variant.load_type)) {
     return unavailable('The saved equipment variant could not be confirmed. Choose a supported variant before calculating a load.')
   }
+  if (group?.requires_variant_assessment && variant && variant.name !== reference.exercise) return withoutCalculatedLoad({ ...exercise,
+    selected_variant_id: variant.id, selected_variant_name: variant.name, selected_equipment: variant.equipment,
+    load_type: variant.load_type, available_variants: group.variants }, 'not_calculated',
+    'No verified load is available for this hip-thrust equipment. Enter the actual weight you use.')
   const lift = getAssessmentLift(reference.assessment_key, strengthAssessment?.data || strengthAssessment)
   if (!hasUsableAssessment(lift, false)) return unavailable('A valid current strength assessment is needed for this exercise. Your planned sets and reps are retained.')
   const repRows = (hypertrophyChart as any[]).filter(row => Number(row.reps) === Number(exercise.reps))
@@ -93,7 +98,7 @@ export function projectSavedExercisePrescription(exercise: any, program: string,
     finite(provenance.rep_multiplier) && provenance.rep_multiplier > 0
     ? calculateLegacyFounderLoadFromEstimated1RM({ estimated1RM: provenance.estimated_1rm, intensityFactor: provenance.intensity_factor,
       repMultiplier: provenance.rep_multiplier, group, variant, bodyweight: false }) : null
-  const supported = (modern || provenance?.version === 'founder-load-v2') && reference && intensityKey &&
+  const supported = !(group?.requires_variant_assessment && variant?.name !== reference?.exercise) && (modern || provenance?.version === 'founder-load-v2') && reference && intensityKey &&
     provenance.reference_exercise === reference.exercise && provenance.assessment_key === reference.assessment_key &&
     (modern ? provenance.bodyweight_factor === reference.bodyweight_factor : provenance.intensity_key === intensityKey && provenance.intensity_factor === reference[intensityKey] && provenance.intensity_factor === exercise.intensity_factor) &&
     provenance.assessment_key === exercise.assessment_key &&

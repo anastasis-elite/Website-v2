@@ -27,6 +27,12 @@ function hasRecordedCalculation(exercise: any) {
 /** Presentation only: never annotate or replace the retained session snapshot. */
 export function exerciseLoadPresentation(exercise: any, { source = 'recommended', projectedExercise }: Context = {}) {
   if (isBodyweightExercise(exercise)) return { status: 'bodyweight' as const, recommendationAvailable: true, reason: '' }
+  const resolved = resolveFounderExerciseReference(exercise?.exercise)
+  if (resolved.status === 'resolved' && resolved.group?.requires_variant_assessment && exercise?.selected_variant_id) {
+    const variant = resolved.group.variants.find((item: any) => item.id === exercise.selected_variant_id)
+    if (!variant || variant.name !== resolved.reference.exercise) return { status: 'not_calculated' as const,
+      recommendationAvailable: false, reason: 'No verified load is available for this substituted equipment. Enter the actual weight you use.' }
+  }
   const marked = hasNoCalculatedLoad(projectedExercise) ? projectedExercise : hasNoCalculatedLoad(exercise) ? exercise : null
   const weight = exercise?.recommended_weight ?? exercise?.cycle_adjusted_weight ?? exercise?.calculated_weight ?? exercise?.baseline_weight
   if (marked) return { status: marked.load_guidance_status as 'not_calculated' | 'unverified', recommendationAvailable: false,
