@@ -10,14 +10,14 @@ import { importTs } from './typescriptModule.mjs'
 const privacy = await importTs('lib/analytics/privacy.ts')
 const tick = () => new Promise(resolve => setImmediate(resolve))
 
-function harness(consent, cryptoImpl = webcrypto) {
+function harness(consent, cryptoImpl = webcrypto, projectKey = 'synthetic-key') {
   const values = new Map(consent ? [['cookie_consent', consent]] : [])
   const calls = [], timers = [], initialized = []
   let resetCount = 0, optedOut = 0
   const sdk = {
     init(_key, config) { initialized.push(config) },
     capture(event, properties) {
-      const result = initialized.at(-1).before_send({ uuid: '11111111-1111-4111-8111-111111111111', event, properties: { ...properties, '$current_url': 'https://site.test/audit/results/secret?token=unsafe', '$referrer': 'https://secret.test', email: 'private@example.test' }, $set: { email: 'private@example.test' } })
+      const result = initialized.at(-1).before_send({ uuid: '11111111-1111-4111-8111-111111111111', event, properties: { ...properties, token: 'synthetic-key', '$current_url': 'https://site.test/audit/results/secret?token=unsafe', '$referrer': 'https://secret.test', email: 'private@example.test' }, $set: { email: 'private@example.test' } })
       if (result) calls.push(result)
     },
     stopSessionRecording() {}, reset() { resetCount++ }, opt_out_capturing() { optedOut++ }, opt_in_capturing() {},
@@ -30,7 +30,7 @@ function harness(consent, cryptoImpl = webcrypto) {
   runInNewContext(consentCompiled, { module: consentModule, exports: consentModule.exports, window: browser, document, crypto: cryptoImpl, Date })
   const module = { exports: {} }
   const compiled = ts.transpileModule(readFileSync('lib/posthog.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText
-  runInNewContext(compiled, { module, exports: module.exports, process: { env: { NEXT_PUBLIC_POSTHOG_KEY: 'synthetic-key' } }, window: browser, document, crypto: cryptoImpl, TextEncoder, URL, Date, Event: class Event {},
+  runInNewContext(compiled, { module, exports: module.exports, process: { env: { NEXT_PUBLIC_POSTHOG_KEY: projectKey } }, window: browser, document, crypto: cryptoImpl, TextEncoder, URL, Date, Event: class Event {},
     require(name) {
       if (name === 'posthog-js') return { __esModule: true, default: sdk }
       if (name === '@/lib/analytics/privacy') return { ...privacy, filterAnalyticsEvent: (event, properties) => privacy.filterAnalyticsEvent(event, properties, 'test') }
@@ -80,7 +80,8 @@ test('SDK disables automatic collection and strips enriched properties and perso
   for (const key of ['disable_session_recording', 'disable_surveys', 'advanced_disable_flags', 'disable_external_dependency_loading']) assert.equal(config[key], true)
   assert.equal(config.person_profiles, 'never'); assert.equal(config.persistence, 'memory')
   assert.equal(view.calls.length, 1)
-  assert.deepEqual(Object.keys(view.calls[0].properties).sort(), ['$geoip_disable', '$process_person_profile', 'analytics_environment', 'analytics_schema', 'distinct_id', 'journey_id', 'page'])
+  assert.deepEqual(Object.keys(view.calls[0].properties).sort(), ['$geoip_disable', '$process_person_profile', 'analytics_environment', 'analytics_schema', 'distinct_id', 'journey_id', 'page', 'token'])
+  assert.equal(view.calls[0].properties.token, 'synthetic-key')
   assert.equal(view.calls[0].properties.$geoip_disable, true)
   assert.equal(view.calls[0].properties.$process_person_profile, false)
   assert.match(view.calls[0].properties.distinct_id, /^anonymous_[0-9a-f-]{36}$/)
@@ -166,4 +167,39 @@ test('unavailable cryptographic identity drops optional telemetry without failin
   view.api.default.capture('landing_page_viewed', { page: 'landing' })
   await view.flush()
   assert.equal(view.calls.length, 0)
+})
+
+
+// Exercise the wire boundary directly, including attempted transport overrides.
+test('ingestion token comes only from the configured project, without reopening payload fields', async () => {
+  const view = harness('accepted')
+  const capture = { uuid: '11111111-1111-4111-8111-111111111111', event: 'today_page_viewed',
+    properties: { tier: 'ember', token: 'wrong-project', api_key: 'untrusted', email: 'private@example.test', $set: { private: true } } }
+  const result = view.api.scrubAnalyticsCapture(capture)
+  assert.equal(result.properties.token, 'synthetic-key')
+  assert.equal(result.properties.tier, 'ember')
+  for (const key of ['api_key', 'email', '$set']) assert.equal(result.properties[key], undefined)
+  assert.equal(harness('accepted', webcrypto, '').api.scrubAnalyticsCapture(capture), null)
+  assert.equal(harness('declined').api.scrubAnalyticsCapture(capture), null)
+  assert.equal(view.api.scrubAnalyticsCapture({ ...capture, event: '$pageview' }), null)
+})
+
+test('deployment environment labels production without mistaking preview or local builds for production', () => {
+  const source = ts.transpileModule(readFileSync('lib/analytics/privacy.ts', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText
+  function label(env) {
+    const module = { exports: {} }
+    runInNewContext(source, { module, exports: module.exports, process: { env }, URL })
+    return module.exports.analyticsEnvironment()
+  }
+  assert.equal(label({ NODE_ENV: 'production' }), 'development')
+  assert.equal(label({ NODE_ENV: 'production', NEXT_PUBLIC_VERCEL_ENV: 'production' }), 'production')
+  assert.equal(label({ VERCEL_ENV: 'production' }), 'production')
+  assert.equal(label({ NODE_ENV: 'production', NEXT_PUBLIC_VERCEL_ENV: 'preview' }), 'development')
+  assert.equal(label({ NEXT_PUBLIC_VERCEL_ENV: 'preview', VERCEL_ENV: 'production' }), 'development')
+  assert.equal(label({ NEXT_PUBLIC_ANALYTICS_ENV: 'development', NEXT_PUBLIC_VERCEL_ENV: 'production' }), 'development')
+  assert.equal(label({ NEXT_PUBLIC_ANALYTICS_ENV: 'test', NEXT_PUBLIC_VERCEL_ENV: 'production' }), 'test')
+  assert.equal(label({ NEXT_PUBLIC_ANALYTICS_ENV: 'production' }), 'production')
+  assert.equal(label({ NODE_ENV: 'test', NEXT_PUBLIC_VERCEL_ENV: 'production' }), 'test')
 })

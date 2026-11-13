@@ -43,6 +43,10 @@ export function scrubAnalyticsCapture(capture: CaptureResult | null): CaptureRes
   if (!capture || !canCaptureAnalytics() || SERVER_CONVERSION_EVENTS.has(capture.event)) return null
   const safe = filterAnalyticsEvent(capture.event, capture.properties)
   if (!safe) return null
+  // PostHog's ingestion token is transport metadata, not an event property to
+  // accept from callers. Restore the same public project key used by init.
+  const token = process.env.NEXT_PUBLIC_POSTHOG_KEY
+  if (!token) return null
   const distinctId = identity || anonymousIdentity()
   const journeyId = getCurrentJourneyId()
   if (!distinctId || !journeyId) return null
@@ -50,7 +54,7 @@ export function scrubAnalyticsCapture(capture: CaptureResult | null): CaptureRes
     if (distinctId.startsWith('member_') && window.localStorage.getItem(ANALYTICS_JOURNEY_OWNER_KEY) !== distinctId) return null
     if (distinctId.startsWith('anonymous_') && (window.localStorage.getItem(ANALYTICS_JOURNEY_OWNER_KEY) || distinctId !== journeyId)) return null
   } catch { return null }
-  return { uuid: capture.uuid, event: safe.event, properties: { ...safe.properties, distinct_id: distinctId, journey_id: journeyId,
+  return { uuid: capture.uuid, event: safe.event, properties: { ...safe.properties, token, distinct_id: distinctId, journey_id: journeyId,
     ...(distinctId.startsWith('member_') ? { member_id: distinctId } : {}), $process_person_profile: false, $geoip_disable: true },
     ...(capture.timestamp instanceof Date && Number.isFinite(capture.timestamp.getTime()) ? { timestamp: capture.timestamp } : {}) }
 }

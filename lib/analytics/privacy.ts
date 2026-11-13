@@ -46,6 +46,10 @@ for (const action of ['resolved', 'eligible', 'shown', 'dismissed', 'expanded', 
 export function analyticsEnvironment(): AnalyticsEnvironment {
   if (process.env.NEXT_PUBLIC_ANALYTICS_ENV === 'test' || process.env.NODE_ENV === 'test' || process.env.NODE_TEST_CONTEXT) return 'test'
   if (process.env.NEXT_PUBLIC_ANALYTICS_ENV === 'production') return 'production'
+  if (process.env.NEXT_PUBLIC_ANALYTICS_ENV === 'development') return 'development'
+  // Vercel's deployment target distinguishes production from preview builds.
+  // NEXT_PUBLIC_* is inlined for the browser; VERCEL_ENV covers server events.
+  if ((process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL_ENV) === 'production') return 'production'
   // A production build alone does not identify the production analytics environment.
   return 'development'
 }
