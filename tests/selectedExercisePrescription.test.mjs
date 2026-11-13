@@ -42,7 +42,7 @@ const { buildSelectedPrescription } = actual('lib/workout/selectedPrescription.t
 const { getManualWorkoutLibrary, getSessionEquipmentForMuscles, filterSessionManualExercises, isReferenceSessionVariant } = actual('lib/workout/manualWorkout.ts')
 const { capabilityForPath, isProtectedApiPath, membershipCan } = actual('lib/membership/policy.ts')
 const catalog = name => getManualWorkoutLibrary().find(exercise => exercise.exercise === name)
-const client = () => ({ client_id: 'OWNED', auth_user_id: owner, program: 'ember', access: true, active: true,
+const client = () => ({ client_id: 'OWNED', auth_user_id: owner, program: 'ember', current_weight: 180, access: true, active: true,
   verified_purchase: true, membership_expires_at: '2035-01-01T00:00:00Z', equipment_access: ['full gym'],
   timezone: 'America/Chicago', capacity_state: 'high', injuries: [], limitations: [], primary_goal: 'strength' })
 const strength = { shoulder_press_weight: '45', shoulder_press_reps: '8', lateral_raise_weight: '10', lateral_raise_reps: '10',
@@ -84,19 +84,20 @@ test('one existing variant conversion is applied and each original load semantic
     const response = buildSelectedPrescription({ inputs: inputs(), exercise: base.exercise, variantId })
     assert.equal(response.status, 'available')
     assert.equal(response.prescription.loadType, loadType)
-    assert.equal(response.prescription.weightLb, base.exercise.calculated_weight)
+    assert.equal(response.prescription.weightLb, actual('lib/cycle/getCycleTrainingAdjustment.ts').roundRecommendedWeight(base.exercise.calculated_weight))
     assert.equal(response.prescription.exerciseId, catalog('Dumbbell Lateral Raise').id)
     assert.equal(response.prescription.version, 'founder-selected-v1')
     assert.ok(response.prescription.sets > 0 && response.prescription.reps > 0)
   }
 })
 
-test('approved paid tiers use their exact tier or Phoenix track template and intensity mapping', () => {
+test('approved paid tiers use their exact tier or Phoenix track template and no-IF load formula', () => {
   for (const [program, phoenix_track] of [['ember', undefined], ['ignite', undefined], ['phoenix', 'phoenixStrength']]) {
     const selected = founder('Dumbbell Lateral Raise', 'dumbbell_lateral_raise', { client: { ...client(), program }, phoenixTrack: phoenix_track })
     assert.ok(selected)
     assert.equal(selected.template.program, phoenix_track || program)
-    assert.ok(selected.exercise.intensity_factor > 0)
+    assert.equal(selected.exercise.intensity_factor, undefined)
+    assert.equal(selected.exercise.prescription_calculation.version, 'founder-load-v3')
     assert.ok(selected.exercise.sets > 0 && selected.exercise.reps > 0)
   }
   assert.equal(founder('Dumbbell Lateral Raise', 'dumbbell_lateral_raise', { client: { ...client(), program: 'phoenix' } }), null)
@@ -127,12 +128,12 @@ test('a catalog exercise absent from its tier template cannot borrow dose from a
   assert.equal(founder('Dumbbell Lateral Raise', 'dumbbell_lateral_raise', { client: { ...client(), program: 'phoenix', phoenix_track: 'invented_track' } }), null)
 })
 
-test('missing master key, intensity, rep chart or established dose is unavailable without coefficient or template defaults', () => {
+test('missing master key, BWF, rep chart or established dose is unavailable without coefficient or template defaults', () => {
   const keyRows = actual('data/reference/masterKey.json')
   const template = actual('data/template/emberGym.json')
   for (const mocks of [
     { '@/data/reference/masterKey.json': [] },
-    { '@/data/reference/masterKey.json': keyRows.map(row => ({ ...row, ember_if: 0 })) },
+    { '@/data/reference/masterKey.json': keyRows.map(row => ({ ...row, bodyweight_factor: undefined })) },
     { '@/data/reference/hypertrophyChart_normalized.json': [] },
     { '@/data/template/emberGym.json': { ...template, days: template.days.map(day => ({ ...day, exercises: day.exercises.map(exercise => ({ ...exercise, sets: 0 })) })) } },
     { '@/data/template/emberGym.json': { ...template, days: template.days.map(day => ({ ...day, exercises: day.exercises.map(exercise => ({ ...exercise, reps: null })) })) } },

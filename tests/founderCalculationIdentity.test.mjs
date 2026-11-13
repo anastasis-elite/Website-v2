@@ -38,7 +38,7 @@ const keys = actual('data/reference/masterKey.json')
 const variants = actual('data/reference/exerciseVariants.json')
 const template = actual('data/template/emberGym.json')
 const repTable = actual('data/reference/hypertrophyChart_normalized.json')
-const client = { program: 'ember', equipment_access: ['full gym'], timezone: 'Etc/UTC' }
+const client = { program: 'ember', current_weight: 180, equipment_access: ['full gym'], timezone: 'Etc/UTC' }
 const strength = { seated_row_weight: 300, seated_row_reps: 10, shoulder_press_weight: 100, shoulder_press_reps: 10,
   lateral_raise_weight: 30, lateral_raise_reps: 10, squat_weight: 100, squat_reps: 10 }
 const generate = (overrides = {}, generator = generateProgram) => generator({ client, initialAssessment: {}, strengthAssessment: { ...strength, ...overrides } })
@@ -47,17 +47,17 @@ const selected = (name, variantId, resolver = getFounderSelectedExercise, extra 
   catalogExercise: getManualWorkoutLibrary().find(exercise => exercise.exercise === name), variantId, now: new Date('2026-11-05T12:00:00Z'), ...extra })
 const round = value => value < 20 ? Math.round(value) : Math.round(value / 5) * 5
 
-test('Row and Lat share only the measured input, preserving their exact existing .40 and .35 coefficients and formula', () => {
+test('Row and Lat share only the measured input, using existing BWF and reps without IF', () => {
   const before = JSON.stringify(strength), plan = generate()
   const row = findExercise(plan, 'Seated Cable Row'), lat = findExercise(plan, 'Lat Pulldown')
   assert.equal(row.assessment_key, 'Row'); assert.equal(lat.assessment_key, 'Row')
-  assert.equal(row.intensity_factor, 0.40); assert.equal(lat.intensity_factor, 0.35)
+  assert.equal(row.intensity_factor, undefined); assert.equal(lat.intensity_factor, undefined)
   for (const exercise of [row, lat]) {
     const multiplier = repTable.find(entry => entry.reps === exercise.reps).multiplier
-    const expected = round(300 * (1 + 10 / 30) * exercise.intensity_factor * multiplier)
+    const expected = round(300 * (1 + 10 / 30) * multiplier)
     assert.equal(exercise.calculated_weight, expected)
     assert.equal(exercise.prescription_calculation.reference_exercise, exercise.exercise)
-    assert.equal(exercise.prescription_calculation.version, 'founder-load-v2')
+    assert.equal(exercise.prescription_calculation.version, 'founder-load-v3')
     assert.equal(exercise.prescription_calculation.estimated_1rm, 300 * (1 + 10 / 30))
   }
   assert.notEqual(row.calculated_weight, lat.calculated_weight)
@@ -134,7 +134,7 @@ test('zero, missing and invalid measured inputs never become an external-load pr
 
 test('missing or duplicate coefficient/rep metadata is unavailable without replacing the established tables', () => {
   for (const mocks of [
-    { '@/data/reference/masterKey.json': keys.map(key => key.exercise === 'Seated Cable Row' ? { ...key, ember_if: undefined } : key) },
+    { '@/data/reference/masterKey.json': keys.map(key => key.exercise === 'Seated Cable Row' ? { ...key, bodyweight_factor: undefined } : key) },
     { '@/data/reference/hypertrophyChart_normalized.json': [] },
     { '@/data/reference/hypertrophyChart_normalized.json': [...repTable, ...repTable] },
   ]) {

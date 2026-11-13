@@ -46,7 +46,7 @@ export function getProgramWorkout({ client, output, now = new Date() }: { client
   const dayIntent = resolveProgramDayIntent(savedWorkout, programJson, output?.program)
   const calculationProgram = client?.program === 'phoenix' ? programJson.phoenix_track : client?.program || output?.program
   const projectedExercises = Array.isArray(savedWorkout?.exercises)
-    ? savedWorkout.exercises.map((exercise: any) => projectSavedExercisePrescription(exercise, calculationProgram)) : []
+    ? savedWorkout.exercises.map((exercise: any) => projectSavedExercisePrescription(exercise, calculationProgram, client)) : []
   const todaysWorkout = savedWorkout && dayIntent ? { ...savedWorkout, day_intent: dayIntent } : savedWorkout
   const cycleAdjustment = getCycleTrainingAdjustment(client)
   const adjustedExercises = projectedExercises.length

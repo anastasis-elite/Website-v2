@@ -66,8 +66,8 @@ function roundToNearest5(num: number) {
   return Math.round(num / 5) * 5
 }
 
-/** Reuse the established formula rounding and equipment conversion for a verified derived 1RM. */
-export function calculateFounderLoadFromEstimated1RM({ estimated1RM, intensityFactor, repMultiplier, group, variant, bodyweight }: {
+/** Historical integrity check only. Never use this IF formula for current suggestions. */
+export function calculateLegacyFounderLoadFromEstimated1RM({ estimated1RM, intensityFactor, repMultiplier, group, variant, bodyweight }: {
   estimated1RM: number; intensityFactor: number; repMultiplier: number; group: any; variant: any; bodyweight: boolean
 }) {
   const baseCalculatedWeight = roundToNearest5(estimated1RM * intensityFactor * repMultiplier)
@@ -80,3 +80,29 @@ export function calculateFounderLoadFromEstimated1RM({ estimated1RM, intensityFa
   })
   return { estimated1RM, baseCalculatedWeight, adjustedWeight }
 }
+
+/** Experimental external-load estimate. Never interpret a missing BWF as zero. */
+export function calculateFounderLoadFromEstimated1RM({ estimated1RM, bodyweightFactor, bodyMassLb, repMultiplier, group, variant, bodyweight }: {
+  estimated1RM: number; bodyweightFactor: unknown; bodyMassLb: unknown; repMultiplier: number; group: any; variant: any; bodyweight: boolean
+}) {
+  const validFactor = typeof bodyweightFactor === 'number' && Number.isFinite(bodyweightFactor) && bodyweightFactor >= 0 && bodyweightFactor <= 1
+  const validMass = typeof bodyMassLb === 'number' && Number.isFinite(bodyMassLb) && bodyMassLb > 0 && bodyMassLb <= 1500
+  const adjusted1RM = validFactor && (bodyweightFactor === 0 || validMass) && Number.isFinite(estimated1RM) && estimated1RM > 0
+    ? estimated1RM - (bodyweightFactor === 0 ? 0 : (bodyMassLb as number) * bodyweightFactor) : NaN
+  const baseCalculatedWeight = adjusted1RM > 0 && Number.isFinite(repMultiplier) && repMultiplier > 0 && repMultiplier <= 1
+    ? roundToNearest5(adjusted1RM * repMultiplier) : NaN
+  const adjustedWeight = bodyweight ? 0 : baseCalculatedWeight > 0 ? getEquipmentAdjustedLoad({
+    baseWeight: baseCalculatedWeight, fromEquipment: group?.base_equipment || variant?.equipment,
+    toEquipment: variant?.equipment, category: group?.category || 'compound', equipmentModifier: variant?.equipment_modifier,
+  }) : NaN
+  return { estimated1RM, adjusted1RM, baseCalculatedWeight, adjustedWeight }
+}
+
+export function founderBodyMassLb(client: any, strengthAssessment?: any): number | null {
+  const raw = client?.current_weight ?? (strengthAssessment?.data || strengthAssessment)?.weight
+  if ((typeof raw !== 'number' && typeof raw !== 'string') || String(raw).trim() === '') return null
+  const value = Number(raw)
+  return Number.isFinite(value) && value > 0 && value <= 1500 ? value : null
+}
+
+export const experimentalLoadNote = 'Experimental load estimate, not a tested maximum for this exercise. Start conservatively and adjust to a manageable weight.'

@@ -80,8 +80,8 @@ for (const program of ['ember', 'ignite']) {
       assert.equal(exercise.recommended_weight, 0)
       assert.equal(exercise.load_guidance_status, undefined)
     }
-    assert.equal(find(all, 'Seated Cable Row').intensity_factor, program === 'ember' ? .40 : .60)
-    assert.equal(find(all, 'Lat Pulldown').intensity_factor, program === 'ember' ? .35 : .55)
+    assert.equal(find(all, 'Seated Cable Row').intensity_factor, undefined)
+    assert.equal(find(all, 'Lat Pulldown').intensity_factor, undefined)
     assert.equal(decisionFor(client, output, new Date('2026-11-08T12:00:00Z')).decision.assignedWorkout.workout_state, 'unavailable', 'Absent source Sunday remains absent.')
     assert.equal(JSON.stringify(output), saved, 'Projection and daily safety never mutate the saved source week.')
     assert.equal(JSON.stringify({ client, strength, source }), originalInputs)

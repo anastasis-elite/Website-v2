@@ -1,4 +1,4 @@
-import { resolveFounderExerciseReference } from '@/lib/program/founderReference'
+import { calculateFounderLoadFromEstimated1RM, resolveFounderExerciseReference } from '@/lib/program/founderReference'
 import { getEquipmentAdjustedLoad } from '@/lib/program/getEquipmentAdjustedLoad'
 import { roundRecommendedWeight } from '@/lib/cycle/getCycleTrainingAdjustment'
 import { hasNoCalculatedLoad } from '@/lib/workout/loadGuidance'
@@ -8,7 +8,7 @@ const equalLoad = (first: number, second: number) => Math.abs(first - second) < 
 
 function switchContext(exercise: any) {
   const provenance = exercise?.prescription_calculation
-  if (provenance?.version !== 'founder-load-v2' || hasNoCalculatedLoad(exercise) || exercise.prescription_status === 'unavailable' ||
+  if (provenance?.version !== 'founder-load-v3' || hasNoCalculatedLoad(exercise) || exercise.prescription_status === 'unavailable' ||
     !positive(provenance.base_weight) || !positive(provenance.equipment_weight) ||
     !positive(exercise.cycle_weight_multiplier) || !positive(exercise.prescription_safety_multiplier) ||
     provenance.selected_variant_id !== exercise.selected_variant_id || exercise.completed === true ||
@@ -17,11 +17,15 @@ function switchContext(exercise: any) {
   if (resolved.status !== 'resolved' || !resolved.group ||
     resolved.reference.exercise !== provenance.reference_exercise ||
     resolved.reference.assessment_key !== provenance.assessment_key ||
-    !positive(provenance.intensity_factor) || resolved.reference[provenance.intensity_key] !== provenance.intensity_factor) return null
+    resolved.reference.bodyweight_factor !== provenance.bodyweight_factor) return null
   const variants = resolved.group.variants.filter((item: any) => item.id === exercise.selected_variant_id)
   if (variants.length !== 1) return null
   const current = variants[0]
   if (!positive(current.equipment_modifier) || current.equipment_modifier !== provenance.equipment_modifier) return null
+  const expected = calculateFounderLoadFromEstimated1RM({ estimated1RM: provenance.estimated_1rm,
+    bodyweightFactor: provenance.bodyweight_factor, bodyMassLb: provenance.body_mass_lb,
+    repMultiplier: provenance.rep_multiplier, group: resolved.group, variant: current, bodyweight: false })
+  if (expected.baseCalculatedWeight !== provenance.base_weight || expected.adjustedWeight !== provenance.equipment_weight) return null
   const equipmentWeight = getEquipmentAdjustedLoad({ baseWeight: provenance.base_weight,
     fromEquipment: resolved.group.base_equipment, toEquipment: current.equipment,
     category: resolved.group.category, equipmentModifier: current.equipment_modifier })
