@@ -34,7 +34,8 @@ const eventTypeById: Partial<Record<TodayActivityId, ScheduleEventType>> = {
 
 function scheduleActivityIntent(id: TodayActivityId, schedule: Pick<DailyScheduleState, 'events'>, guide: DailyGuideState, now: number) {
   const preference = guide.activities[id]
-  const events = schedule.events.filter(event => event.event_type === eventTypeById[id] && event.status !== 'cancelled')
+  const events = schedule.events.filter(event => event.event_type === eventTypeById[id] && event.status !== 'cancelled' &&
+    !(id === 'nutrition' && event.schedule_response_kind === 'breakfast'))
   const acceptedLater = events.find(event => !['completed', 'skipped'].includes(event.status) && !event.suggested &&
     Boolean(event.adjusted_start_at || event.status === 'deferred') && Date.parse(event.adjusted_start_at || event.start_at) > now)
   const skippedBySchedule = events.length > 0 && events.every(event => event.status === 'skipped')

@@ -4,3 +4,11 @@
 .target input:disabled { cursor:default; }
 .target input:focus-visible { outline:2px solid #edc296; outline-offset:4px; }
 .control p { color:#f4c394; font-size:.75rem; overflow-wrap:anywhere; margin:4px 0 0; line-height:1.4; }
+.control button,.expanded button { min-height:44px; border:1px solid #926d4c88; border-radius:10px; background:#332419; color:#f2e8d9; padding:8px 12px; font:inherit; font-size:.8rem; cursor:pointer; }
+.control button:disabled,.expanded button:disabled { opacity:.6; cursor:default; }
+.control button[aria-pressed=true],.expanded button[aria-pressed=true] { border-color:#edc296; }
+.control button:focus-visible,.expanded button:focus-visible { outline:2px solid #edc296; outline-offset:3px; }
+.progress { max-width:100px; }
+.expanded { margin-top:16px; }
+.responses { display:flex; flex-wrap:wrap; gap:10px; }
+.expanded p { font-size:.8rem; line-height:1.5; margin:8px 0 0; color:#e9c49f; }

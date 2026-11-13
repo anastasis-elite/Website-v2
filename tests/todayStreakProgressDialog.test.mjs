@@ -49,6 +49,8 @@ function harness(current = fixture(), state = schedule()) {
     'next/navigation': { useRouter: () => ({ refresh() { refreshes++ } }) },
     '@/lib/dashboard/todayActivities': activities, '@/lib/dashboard/dailyRecommendation': recommendations,
     '@/lib/schedule/client': { useDailyScheduleRefresh() {} }, '@/lib/schedule/time': time,
+    '@/lib/schedule/actions': { canRespondToScheduleEvent: () => false },
+    '@/components/ScheduleCheckoff': { __esModule: true, default: () => null },
     '@/lib/recovery/todayCompletion': recovery, '@/lib/dashboard/logic/streakRequirementProgress': streak,
     '@/lib/analytics': { trackEvent() {} }, '@/lib/analytics/todayJourney': { recordTodayActionOpened() {}, recordTodayActionCompletions() {} },
   }

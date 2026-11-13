@@ -36,6 +36,7 @@ export type ScheduleFlexibilityType =
   | 'approval_required'
 
 export type SchedulePriority = 'low' | 'medium' | 'high' | 'critical'
+export type ScheduleResponseStatus = 'scheduled' | 'in_progress' | 'completed'
 
 export type ScheduleEvent = {
   id: string
@@ -86,9 +87,11 @@ export type ScheduleEvent = {
   suggested?: boolean
   action_route?: string | null
   schedule_date?: string
+  // Only the program's projected breakfast uses a schedule-only meal response.
+  schedule_response_kind?: 'breakfast'
   // Anastasis-only evidence for this member's selected local-day occurrence.
   // Health activity completion continues to come from its saved logs.
-  checkoff?: { completed: boolean; revision: number }
+  checkoff?: { completed: boolean; revision: number; status?: ScheduleResponseStatus; authoritative?: true }
 }
 
 export type OpenWindow = {

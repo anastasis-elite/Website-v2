@@ -8,7 +8,11 @@
 .guided-check-in-details[open] > summary { margin-bottom: 18px; }
 .guided-check-in-copy { color: var(--text-secondary, #cdb8ad); font-size: .9rem; line-height: 1.5; }
 .guided-check-in-details .aos-period-panel, .guided-check-in-details .aos-input { margin-top: 20px; }
-/* Native details must retain its closed behavior even where the old body column uses grid. */
-.daily-check-in-layout > .guided-check-in-symptoms { display: block; }
-.guided-check-in-symptoms > .aos-section-header { margin-bottom: 18px; }
+/* Keep symptom entry and explicit period onset beside the unfinished form. */
+.daily-check-in-layout { grid-template-columns: minmax(0, 1fr); }
+.guided-check-in-resume { min-width: 0; scroll-margin-top: calc(20px + env(safe-area-inset-top, 0px)); }
+.guided-check-in-resume:focus-visible { outline: 2px solid var(--accent-focus, #ffae70); outline-offset: 4px; }
+.guided-check-in-symptom-entry { display: grid; gap: 12px; }
+.guided-check-in-symptom-entry > p { margin: 0; }
+.guided-check-in-symptom-entry .aos-toggle:has(input:focus-visible) { outline: 2px solid var(--accent-focus, #ffae70); outline-offset: 4px; }
 @media (max-width: 800px) { .guided-check-in-fields { gap: 18px; } .guided-check-in-details { padding: 14px; } }

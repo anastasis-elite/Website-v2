@@ -1,0 +1,14 @@
+/* The existing body inset reserves space once. This cover stays above scrolled content. */
+.check-in-safe-area { display: none; }
+
+@media (display-mode: standalone) {
+  .check-in-safe-area {
+    display: block;
+    position: fixed;
+    inset: 0 0 auto;
+    height: env(safe-area-inset-top, 0px);
+    z-index: 10000;
+    background: #21150e;
+    pointer-events: none;
+  }
+}

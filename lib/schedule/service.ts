@@ -7,7 +7,7 @@ import { getScheduleStructureSubmission, getScheduleStructureVersion, scheduleSt
 import { getClientLocalDate } from '@/lib/timezone'
 import { getClientDayRange, zonedDateTimeToUtc } from './time'
 import { buildDailyScheduleState, buildNextAction } from './engine'
-import { dailyPlanToScheduleEvents, fixedCommitmentsForDate } from './dailyPlanAdapter'
+import { breakfastScheduleEventForDate, dailyPlanToScheduleEvents, fixedCommitmentsForDate } from './dailyPlanAdapter'
 import { applyScheduleCheckoffs, loadScheduleCheckoffs, type ScheduleCheckoff } from './checkoffs'
 import type { DailyScheduleState, ScheduleEvent } from './types'
 import { projectStrengthWorkout } from '@/lib/assessment/strengthWorkout'
@@ -176,7 +176,10 @@ export async function getDailyScheduleState({
     dayStart: client.wake_time && (!client.bed_time || client.wake_time < client.bed_time) ? zonedDateTimeToUtc(day.date, client.wake_time, day.timezone) : day.start,
     dayEnd: client.bed_time && (!client.wake_time || client.wake_time < client.bed_time) ? zonedDateTimeToUtc(day.date, client.bed_time, day.timezone) : day.end,
     events: applyScheduleCheckoffs(projectStrengthWorkout({ status: effectiveLogic?.assessments?.strength,
-      userId: user.id, client, date: day.date, events: [...commitments, ...persistedEvents.map(event => {
+      userId: user.id, client, date: day.date, events: [...commitments,
+      ...breakfastScheduleEventForDate({ userId: user.id, client, date: day.date, timezone: day.timezone, checkoffs }).map(event => ({
+        ...event, ...(event.checkoff?.completed ? {} : client.onboarding_data?.scheduleOverrides?.[event.id]),
+      })), ...persistedEvents.map(event => {
       if (event.status !== 'scheduled' || !effectiveLogic || dailyPlan?.date !== day.date) return event
       // Persisted workouts have their own occurrence status. A daily workout
       // flag cannot link an unrelated saved class or session to its performed log.
