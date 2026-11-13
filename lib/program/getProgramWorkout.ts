@@ -38,7 +38,7 @@ export function projectWeekdayProgram({ client, output, now = new Date() }: { cl
   return { programJson, weekdayPreferenceNotice: notices.length ? notices.join(' ') : null }
 }
 
-export function getProgramWorkout({ client, output, now = new Date() }: { client: any; output: any; now?: Date }) {
+export function getProgramWorkout({ client, output, now = new Date(), strengthAssessment }: { client: any; output: any; now?: Date; strengthAssessment?: any }) {
   const { programJson, weekdayPreferenceNotice } = projectWeekdayProgram({ client, output, now })
   const days = Array.isArray(programJson.days) ? programJson.days : []
   const todayName = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: getClientTimeZone(client) })
@@ -46,7 +46,7 @@ export function getProgramWorkout({ client, output, now = new Date() }: { client
   const dayIntent = resolveProgramDayIntent(savedWorkout, programJson, output?.program)
   const calculationProgram = client?.program === 'phoenix' ? programJson.phoenix_track : client?.program || output?.program
   const projectedExercises = Array.isArray(savedWorkout?.exercises)
-    ? savedWorkout.exercises.map((exercise: any) => projectSavedExercisePrescription(exercise, calculationProgram, client)) : []
+    ? savedWorkout.exercises.map((exercise: any) => projectSavedExercisePrescription(exercise, calculationProgram, client, strengthAssessment)) : []
   const todaysWorkout = savedWorkout && dayIntent ? { ...savedWorkout, day_intent: dayIntent } : savedWorkout
   const cycleAdjustment = getCycleTrainingAdjustment(client)
   const adjustedExercises = projectedExercises.length
@@ -56,4 +56,21 @@ export function getProgramWorkout({ client, output, now = new Date() }: { client
     : []
 
   return { programJson, todaysWorkout, cycleAdjustment, adjustedExercises, weekdayPreferenceNotice }
+}
+
+/** Read-only, request-scoped refresh. Identity comes from the authenticated
+ * dashboard context; assessment reads are constrained to that same member. */
+export async function getCurrentProgramWorkout({ supabase, user, client, output, now = new Date() }: {
+  supabase: any; user: { id: string }; client: any; output: any; now?: Date
+}) {
+  let strengthAssessment: any = null
+  if (user?.id && client?.client_id && client.auth_user_id === user.id) {
+    try {
+      const result = await supabase.from('assessments').select('data,client_id,assessment_type,submitted_at')
+        .eq('client_id', client.client_id).eq('assessment_type', 'strength')
+        .order('submitted_at', { ascending: false }).limit(1).maybeSingle()
+      if (!result.error && result.data?.client_id === client.client_id && result.data.assessment_type === 'strength') strengthAssessment = result.data
+    } catch { /* Missing/unconfirmed inputs remain unavailable, never guessed. */ }
+  }
+  return getProgramWorkout({ client, output, now, strengthAssessment })
 }

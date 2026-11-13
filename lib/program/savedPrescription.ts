@@ -1,3 +1,4 @@
+import { getAssessmentLift, hasUsableAssessment } from '@/lib/program/generateProgram'
 import { calculateFounderLoadFromEstimated1RM, calculateLegacyFounderLoadFromEstimated1RM, founderBodyMassLb, experimentalLoadNote, resolveFounderExerciseReference, getFounderIntensityKey } from '@/lib/program/founderReference'
 import hypertrophyChart from '@/data/reference/hypertrophyChart_normalized.json'
 import { activityDose, isBodyweightExercise } from '@/lib/workout/activity'
@@ -22,12 +23,54 @@ function hasStoredLoad(exercise: any) {
     typeof exercise[field] === 'string' && exercise[field].trim() !== '' && Number.isFinite(Number(exercise[field])))
 }
 
+/** Fresh guidance uses owned current assessment inputs, never an old saved load.
+ * Only unstarted plan projections opt in; sessions/history pass no assessment. */
+function refreshFromAssessment(exercise: any, client: any, strengthAssessment: any) {
+  const unavailable = (reason: string) => ({ ...exercise, load_guidance_status: 'unverified', load_guidance_reason: reason })
+  const resolved = resolveFounderExerciseReference(exercise.exercise)
+  if (resolved.status !== 'resolved') return unavailable('The saved exercise reference could not be confirmed. Your sets and reps remain available to log.')
+  const { reference, group } = resolved
+  const normalize = (value: unknown) => String(value || '').trim().toLowerCase().replace(/romanian deadlift/g, 'rdl')
+  const candidates = group?.variants?.filter((v: any) => exercise.selected_variant_id
+    ? v.id === exercise.selected_variant_id : normalize(v.name) === normalize(exercise.exercise)) || []
+  const variant = candidates.length === 1 ? candidates[0] : null
+  if (group && !variant || !group && exercise.selected_variant_id ||
+    variant && (exercise.selected_equipment && exercise.selected_equipment !== variant.equipment || exercise.load_type && exercise.load_type !== variant.load_type)) {
+    return unavailable('The saved equipment variant could not be confirmed. Choose a supported variant before calculating a load.')
+  }
+  const lift = getAssessmentLift(reference.assessment_key, strengthAssessment?.data || strengthAssessment)
+  if (!hasUsableAssessment(lift, false)) return unavailable('A valid current strength assessment is needed for this exercise. Your planned sets and reps are retained.')
+  const repRows = (hypertrophyChart as any[]).filter(row => Number(row.reps) === Number(exercise.reps))
+  const repMultiplier = repRows.length === 1 ? Number(repRows[0].multiplier) : NaN
+  const bodyMassLb = founderBodyMassLb(client, strengthAssessment)
+  const estimated1RM = lift!.weight * (1 + lift!.reps / 30)
+  const result = calculateFounderLoadFromEstimated1RM({ estimated1RM, bodyweightFactor: reference.bodyweight_factor,
+    bodyMassLb, repMultiplier, group, variant, bodyweight: false })
+  if (!Number.isFinite(result.adjustedWeight) || result.adjustedWeight <= 0) return unavailable('A current load could not be calculated from the available body weight, exercise factor and rep target. Your planned sets and reps are retained.')
+  const updated = { ...exercise, assessment_key: reference.assessment_key, estimated_1rm: Math.round(estimated1RM),
+    rep_multiplier: repMultiplier, baseline_weight: result.baseCalculatedWeight, calculated_weight: result.adjustedWeight,
+    recommended_weight: result.adjustedWeight, weight_unit: 'lb', calculation_note: experimentalLoadNote,
+    ...(variant ? { selected_variant_id: variant.id, selected_variant_name: variant.name, selected_equipment: variant.equipment,
+      load_type: variant.load_type, available_variants: group.variants } : {}),
+    prescription_calculation: { version: 'founder-load-v3', reference_exercise: reference.exercise,
+      assessment_key: reference.assessment_key, estimated_1rm: estimated1RM, bodyweight_factor: reference.bodyweight_factor,
+      body_mass_lb: bodyMassLb, rep_multiplier: repMultiplier, base_weight: result.baseCalculatedWeight,
+      equipment_weight: result.adjustedWeight, selected_variant_id: variant?.id || null, equipment_modifier: variant?.equipment_modifier ?? 1 } }
+  for (const key of ['load_guidance_status', 'load_guidance_reason', 'intensity_factor', 'cycle_adjusted_weight']) delete updated[key]
+  return updated
+}
+
 /** Read-only projection; never mutate stored loads or dose. Only callers projecting
- * an unstarted plan may refresh validated full-precision v2 provenance. */
-export function projectSavedExercisePrescription(exercise: any, program: string, refreshClient?: any) {
+ * an unstarted plan may refresh from current assessments or validated v2 provenance. */
+export function projectSavedExercisePrescription(exercise: any, program: string, refreshClient?: any, strengthAssessment?: any) {
   if (!exercise || typeof exercise !== 'object') return exercise
   const retained = withoutObsoleteOutage(exercise)
   if (activityDose(exercise).kind !== 'strength' || isBodyweightExercise(exercise)) return retained
+  const started = exercise.completed === true || exercise.skipped === true || exercise.set_logs?.length || exercise.confirmed_at ||
+    Number(exercise.actual_reps || exercise.actual_duration || exercise.actual_breaths) > 0
+  if (refreshClient && strengthAssessment !== undefined && !started) {
+    return refreshFromAssessment(retained, refreshClient, strengthAssessment)
+  }
   if (exercise.load_guidance_status === 'not_calculated' || exercise.load_guidance_status === 'unverified') return retained
   if (!hasStoredLoad(exercise) && !exercise.prescription_calculation) {
     const source = resolveFounderExerciseReference(exercise.exercise)
@@ -66,7 +109,7 @@ export function projectSavedExercisePrescription(exercise: any, program: string,
       : !group && provenance.selected_variant_id === null && provenance.equipment_modifier === 1)
   if (supported && modern) return retained
   // Only unstarted plan projections opt in. Session/history callers never refresh.
-  if (supported && refreshClient && exercise.completed !== true && !exercise.set_logs?.length) {
+  if (supported && refreshClient && !started) {
     const bodyMassLb = founderBodyMassLb(refreshClient)
     const result = calculateFounderLoadFromEstimated1RM({ estimated1RM: provenance.estimated_1rm,
       bodyweightFactor: reference.bodyweight_factor, bodyMassLb, repMultiplier: provenance.rep_multiplier, group, variant, bodyweight: false })
