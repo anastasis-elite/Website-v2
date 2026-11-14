@@ -30,6 +30,7 @@ function load(path) {
 const render = path => renderToStaticMarkup(React.createElement(load(path).default)).replace(/<!-- -->/g, '')
 const config = await importTs('lib/legal/config.ts')
 const mocks = {
+  react: 'export const cache = fn => fn',
   'next/server': 'export const NextResponse = { json: (body, init) => Response.json(body, init) }',
   '@/lib/supabase/server': 'export const createClient = async () => globalThis.legalDatesRequestDb',
   '@/lib/supabase/admin': 'export const createAdminClient = () => globalThis.legalDatesPrivilegedDb',

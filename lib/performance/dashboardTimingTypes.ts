@@ -1,7 +1,7 @@
 // Serializable, allowlisted diagnostics only. These offsets describe one server
 // request; they are not synchronized with the browser's performance clock.
 export const DASHBOARD_TIMING_STAGES = [
-  'routing', 'context', 'safety', 'plan', 'logic-sources', 'schedule-sources',
+  'routing', 'context', 'auth', 'member-profile', 'current-profile', 'legal', 'safety', 'bootstrap', 'response-ready', 'plan', 'logic-sources', 'schedule-sources',
   'logic', 'schedule', 'recommendation-persistence', 'execution-persistence',
 ] as const
 

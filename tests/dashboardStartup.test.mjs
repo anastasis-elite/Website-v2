@@ -7,6 +7,9 @@ const { getDashboardContext } = await importTs('lib/dashboard/getDashboardContex
   'next/navigation': 'export const redirect = path => { throw new Error("REDIRECT " + path) }',
   '@/lib/supabase/server': 'export const createClient = async () => globalThis.dashboardIdentityDatabase',
 })
+const { getDashboardStartupTiming } = await importTs('lib/performance/dashboardStartupRequest.ts', {
+  react: 'export const cache = fn => { const requests = new Map(); return (...args) => { const scope = globalThis.dashboardIdentityScope; if (!requests.has(scope)) requests.set(scope, fn(...args)); return requests.get(scope) } }',
+})
 
 function identityDatabase(id, access = true) {
   let authentication = 0
@@ -47,11 +50,28 @@ test('a subsequent request for another account never reuses the previous member 
   assert.equal(secondDb.authentication, 1)
 })
 
+test('layout and page auth/profile timings share a request clock and contain no member content', async () => {
+  globalThis.dashboardIdentityScope = Symbol('timed request')
+  globalThis.dashboardIdentityDatabase = identityDatabase('private-synthetic-owner')
+  const layoutClock = getDashboardStartupTiming()
+  await getDashboardContext({ allowIncompleteOnboarding: true })
+  await getDashboardContext()
+  assert.equal(getDashboardStartupTiming(), layoutClock)
+  const timings = layoutClock.snapshot()
+  assert.deepEqual(timings.map(entry => entry.stage), ['auth', 'member-profile', 'current-profile'])
+  assert.ok(timings.every(entry => Object.keys(entry).sort().join(',') === 'durationMs,stage,startMs'))
+  assert.ok(timings.every(entry => Number.isFinite(entry.startMs) && Number.isFinite(entry.durationMs)))
+  assert.doesNotMatch(JSON.stringify(timings), /private-synthetic-owner|client-private/)
+  globalThis.dashboardIdentityScope = Symbol('next request')
+  assert.notEqual(getDashboardStartupTiming(), layoutClock)
+  assert.deepEqual(getDashboardStartupTiming().snapshot(), [])
+})
+
 const { getDailyScheduleState } = await importTs('lib/schedule/service.ts', {
   '@/lib/calendar/service': 'export const importedScheduleEvents = () => globalThis.scheduleStartupFixture.read("calendar")',
   '@/lib/day/getDailyExecutionPlan': 'export const getDailyExecutionPlan = async () => { globalThis.scheduleStartupFixture.dailyPlanReads++; return globalThis.scheduleStartupFixture.dailyPlan }',
   '@/lib/dashboard/logic/getProgramLogicForClient': 'export const getProgramLogicForClient = async ({ dailyPlan }) => { globalThis.scheduleStartupFixture.logicPlan = dailyPlan; return {} }',
-  './dailyPlanAdapter': 'export const dailyPlanToScheduleEvents = () => []; export const fixedCommitmentsForDate = () => []',
+  './dailyPlanAdapter': 'export const dailyPlanToScheduleEvents = () => []; export const fixedCommitmentsForDate = () => []; export const breakfastScheduleEventForDate = () => []',
   './engine': 'export const buildNextAction = () => null; export const buildDailyScheduleState = args => ({...args, now: args.now.toISOString(), openWindows: [{ minutes: 60 }], adjustments: [{ event_id: "test" }], nextAction: { can_defer: true }})',
   '@/lib/dashboard/todayActivities': 'export const readDailyGuide = () => undefined',
   '@/lib/dashboard/buildTodayViewModel': 'export const buildTodayViewModel = () => ({today: {activities: [], completed: 0, total: 0}, recommendation: {primary: {id: "check-in", title: "Daily check-in", category: "check_in", reason: "Start with you", href: "/dashboard/check-in"}}})',

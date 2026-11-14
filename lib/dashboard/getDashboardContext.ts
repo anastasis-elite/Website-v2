@@ -4,26 +4,27 @@ import { isClientOnboardingComplete } from '@/lib/dashboard/isClientOnboardingCo
 import { hasMemberAccess } from '@/lib/commerce/access'
 import { cache } from 'react'
 import { parseMembershipTier } from '@/lib/membership/policy'
+import { getDashboardStartupTiming } from '@/lib/performance/dashboardStartupRequest'
 
 // React's cache lasts for one server render request. Layouts and pages share the
 // verified identity without persisting member data across requests or accounts.
 const loadDashboardIdentity = cache(async () => {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
+  const timings = getDashboardStartupTiming()
+  const { supabase, user, userError } = await timings.measure('auth', async () => {
+    const supabase = await createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    return { supabase, user, userError }
+  })
 
   if (userError || !user) {
     redirect('/login')
   }
 
-  const { data: client, error: clientError } = await supabase
+  const { data: client, error: clientError } = await timings.measure('member-profile', () => supabase
     .from('clients')
     .select('*')
     .eq('auth_user_id', user.id)
-    .maybeSingle()
+    .maybeSingle())
 
   if (clientError) {
     throw new Error(`Client lookup failed: ${clientError.message}`)
@@ -33,12 +34,12 @@ const loadDashboardIdentity = cache(async () => {
     throw new Error(`No client found for auth user: ${user.id}`)
   }
 
-  const { data: currentProfile } = await supabase
+  const { data: currentProfile } = await timings.measure('current-profile', () => supabase
     .from('client_current_profiles')
     .select('*')
     .eq('user_id', user.id)
     .eq('client_id', client.client_id)
-    .maybeSingle()
+    .maybeSingle())
 
   const effectiveClient = currentProfile
     ? {

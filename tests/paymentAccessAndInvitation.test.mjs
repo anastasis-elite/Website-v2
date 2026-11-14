@@ -24,6 +24,7 @@ test('canceled access redirects member content while shared dashboard layout per
     react: { ...require('react'), cache: fn => fn },
     'next/navigation': { redirect: path => { throw new Error('REDIRECT ' + path) } },
     '@/lib/supabase/server': { createClient: async () => db },
+    '@/lib/performance/dashboardStartupRequest': { getDashboardStartupTiming: () => ({ measure: (_stage, task) => task() }) },
     '@/lib/commerce/access': memberAccess,
     '@/lib/membership/policy': membershipPolicy,
     '@/lib/dashboard/isClientOnboardingComplete': load('lib/dashboard/isClientOnboardingComplete.ts'),

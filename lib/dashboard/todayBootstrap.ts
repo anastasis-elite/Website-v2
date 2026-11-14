@@ -68,20 +68,32 @@ export function createTodayBootstrap({ user, client, program, now = new Date() }
 
 /** Only today's owner-bound completion evidence is necessary to offer check-in.
  * No plan generation, recommendation persistence or display history is awaited. */
-export async function loadTodayBootstrap({ supabase, now = () => new Date(), ...context }: BootstrapContext & {
+export async function loadTodayBootstrap({ supabase, now = () => new Date(), sourceTimeoutMs, ...context }: BootstrapContext & {
   supabase: any
   now?: () => Date
+  sourceTimeoutMs?: number
 }): Promise<TodayBootstrap> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const seed = createTodayBootstrap({ ...context, now: now() })
     let result: { data: { check_in_completed_at?: string | null } | null; error?: unknown }
+    let timer: ReturnType<typeof setTimeout> | undefined
     try {
-      result = await supabase.from('recovery_logs').select('check_in_completed_at')
+      const query = supabase.from('recovery_logs').select('check_in_completed_at')
         .eq('client_id', seed.clientId).eq('auth_user_id', seed.ownerUserId)
-        .eq('log_date', seed.date).maybeSingle()
+        .eq('log_date', seed.date)
+      const bounded = sourceTimeoutMs !== undefined && Number.isFinite(sourceTimeoutMs) && sourceTimeoutMs > 0
+      const controller = bounded ? new AbortController() : null
+      if (controller) query.abortSignal(controller.signal)
+      const read = Promise.resolve(query.maybeSingle())
+      // The initial response has a small read budget. A slow source remains
+      // unknown and retryable instead of holding the whole Today layout. API
+      // retries omit this budget and continue to verify current evidence.
+      result = controller ? await Promise.race([read, new Promise<{ data: null; error: true }>(resolve => {
+        timer = setTimeout(() => { controller.abort(); resolve({ data: null, error: true }) }, sourceTimeoutMs)
+      })]) : await read
     } catch {
       result = { data: null, error: true }
-    }
+    } finally { if (timer !== undefined) clearTimeout(timer) }
     const current = createTodayBootstrap({ ...context, now: now() })
     // Retry with the new member-local day. Yesterday's absence or completion is
     // never allowed to activate an action for the new date.

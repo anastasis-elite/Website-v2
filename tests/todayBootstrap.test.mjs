@@ -18,6 +18,7 @@ function recoveryDatabase(reply) {
       queries.push(query)
       const builder = { select(...args) { query.operations.push(['select', ...args]); return builder },
         eq(...args) { query.operations.push(['eq', ...args]); return builder },
+        abortSignal(signal) { query.signal = signal; return builder },
         maybeSingle() { return typeof reply === 'function' ? reply(query) : reply } }
       return builder
     } },
@@ -96,7 +97,26 @@ test('member-local midnight discards old completion and reads the new date befor
   assert.deepEqual(database.queries.map(query => query.operations.find(operation => operation[1] === 'log_date')[2]), ['2026-11-14', '2026-11-15'])
 })
 
+test('the initial response budget aborts a delayed completion read and exposes only a retryable unknown state', async () => {
+  const held = deferred(), database = recoveryDatabase(held.promise)
+  const result = await loadTodayBootstrap({ ...context, supabase: database.supabase, now: fixed, sourceTimeoutMs: 10 })
+  assert.equal(database.queries.length, 1)
+  assert.equal(database.queries[0].signal.aborted, true)
+  assert.equal(result.checkIn.status, 'error')
+  assert.equal(result.checkIn.completed, null)
+  assert.ok(result.day.sections.every(section => section.items.length === 0))
+  held.resolve({ data: { check_in_completed_at: '2026-11-14T15:00:00Z' }, error: null })
+  await new Promise(setImmediate)
+  assert.equal(result.checkIn.completed, null, 'A late response cannot activate or overwrite the timed-out initial state')
+  const retry = recoveryDatabase({ data: { check_in_completed_at: '2026-11-14T15:00:00Z' }, error: null })
+  const verified = await loadTodayBootstrap({ ...context, supabase: retry.supabase, now: fixed })
+  assert.equal(verified.checkIn.status, 'ready')
+  assert.equal(verified.checkIn.completed, true)
+  assert.equal(retry.queries[0].signal, undefined, 'Normal API retries keep their independent fetch timeout and verification behavior')
+})
+
 const accessMocks = {
+  '@/lib/performance/dashboardStartupRequest': `export const getDashboardStartupTiming = () => ({ measure: (_stage, task) => task() })`,
   'next/navigation': `export function redirect(destination) { const error = new Error('redirect'); error.digest = 'NEXT_REDIRECT;replace;' + destination + ';307;'; throw error }`,
   'next/server': `export function after(task) { void task() } export const NextResponse = { json(body, options = {}) { return { body, status: options.status || 200, headers: options.headers || {} } } }`,
   '@/lib/dashboard/getDashboardContext': `export async function getDashboardContext() { return globalThis.__todayAccessContext() }`,
