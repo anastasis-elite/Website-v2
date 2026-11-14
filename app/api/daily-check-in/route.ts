@@ -2,6 +2,7 @@ import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { NextResponse } from 'next/server'
 
 import { getCyclePrediction } from '@/lib/cycle/getCyclePrediction'
+import { cycleTrackingAllowed, readPeriodState, type PeriodState } from '@/lib/cycle/periodState'
 import {
   isSorenessRegionKey,
 } from '@/lib/recovery/sorenessRegions'
@@ -108,56 +109,11 @@ function getLatestPeriodStart(
   )
 }
 
-async function updateOrInsertByClientDate(
-  supabase: any,
-  table: string,
-  payload: Record<
-    string,
-    unknown
-  >,
-) {
-  const {
-    data: updated,
-    error: updateError,
-  } = await supabase
-    .from(table)
-    .update(payload)
-    .eq(
-      'client_id',
-      payload.client_id,
-    )
-    .eq(
-      'log_date',
-      payload.log_date,
-    )
-    .select('id')
-    .maybeSingle()
-
-  if (updateError) {
-    return {
-      error: updateError,
-    }
-  }
-
-  if (updated) {
-    return {
-      error: null,
-    }
-  }
-
-  const { error: insertError } =
-    await supabase
-      .from(table)
-      .insert(payload)
-
-  return {
-    error: insertError,
-  }
-}
-
 export async function POST(
   request: Request,
 ) {
+  let confirmedPeriodState: PeriodState | null = null
+  let retryPeriodAction = false
   try {
     const supabase =
       await createClient()
@@ -195,7 +151,9 @@ export async function POST(
           onboarding_data,
           state,
           last_period_start,
-          average_cycle_length
+          average_cycle_length,
+          reproductive_status,
+          cycle_tracking_enabled
         `,
       )
       .eq(
@@ -236,10 +194,20 @@ export async function POST(
       getClientLocalDate(client)
     if (body.date !== undefined && body.date !== today) return NextResponse.json({ error: 'A new day has started. Open Today before saving your check-in.' }, { status: 409 })
 
-    const updatedAt =
-      new Date().toISOString()
+    const requestedAction = body.periodAction
+    if (requestedAction != null && !['start', 'end', 'resume'].includes(requestedAction)) return NextResponse.json({ error: 'Choose a valid period action.' }, { status: 400 })
+    if (body.periodStarted !== undefined && typeof body.periodStarted !== 'boolean') return NextResponse.json({ error: 'Choose a valid period start answer.' }, { status: 400 })
+    if (body.periodStarted === true && requestedAction && requestedAction !== 'start') return NextResponse.json({ error: 'Choose one period action before saving.' }, { status: 400 })
+    const periodAction: 'start' | 'end' | 'resume' | null = requestedAction || (body.periodStarted === true ? 'start' : null)
+    if (periodAction && !cycleTrackingAllowed(client)) return NextResponse.json({ error: 'Period tracking is disabled. Update your cycle settings before recording a period action.' }, { status: 409 })
+    let periodState = await readPeriodState(supabase, client, today)
+    if (periodAction && periodState.loadError) return NextResponse.json({ error: 'Your period status could not be loaded. Your check-in has not been saved. Try again.' }, { status: 503 })
+    if (periodAction === 'start' && periodState.status === 'active' && periodState.recordedDate !== today) return NextResponse.json({ error: 'Your period is already marked active. Mark it ended before recording a new start.', periodState }, { status: 409 })
 
-    const { data: previous } = await supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle()
+    const updatedAt = new Date().toISOString()
+
+    const { data: previous, error: previousError } = await supabase.from('recovery_logs').select('*').eq('client_id', client.client_id).eq('log_date', today).maybeSingle()
+    if (previousError) return NextResponse.json({ error: previousError.message }, { status: 500 })
     const fields: Record<string, string> = { sleepHours: 'sleep_hours', sleepQuality: 'sleep_quality', stress: 'stress_level', soreness: 'soreness_level', energy: 'energy_level', mood: 'mood_level', hunger: 'hunger_level' }
     const answers: Record<string, unknown> = {}
     for (const [key, column] of Object.entries(fields)) {
@@ -258,21 +226,6 @@ export async function POST(
     }
     if (body.notes !== undefined) answers.notes = typeof body.notes === 'string' ? body.notes.trim() || null : null
     if (getClientLocalDate(client) !== today) return NextResponse.json({ error: 'A new day has started. Open Today before saving your check-in.' }, { status: 409 })
-    const { error: recoveryError } = await supabase.from('recovery_logs').upsert({ client_id: client.client_id, auth_user_id: user.id, log_date: today,
-      ...answers, check_in_completed_at: previous?.check_in_completed_at || updatedAt, updated_at: updatedAt }, { onConflict: 'client_id,log_date' })
-
-    if (recoveryError) {
-      return NextResponse.json(
-        {
-          error:
-            recoveryError.message,
-        },
-        {
-          status: 500,
-        },
-      )
-    }
-
     let cyclePrediction:
       | ReturnType<
           typeof getCyclePrediction
@@ -291,47 +244,7 @@ export async function POST(
         client.average_cycle_length,
       )
 
-    if (body.periodStarted) {
-      const {
-        error: cycleError,
-      } =
-        await updateOrInsertByClientDate(
-          supabase,
-          'cycle_logs',
-          {
-            client_id:
-              client.client_id,
-            auth_user_id:
-              user.id,
-            log_date: today,
-
-            period_started: true,
-            cycle_day: 1,
-            cycle_phase:
-              'menstrual',
-            bleeding: true,
-
-            updated_at:
-              updatedAt,
-          },
-        )
-
-      if (cycleError) {
-        return NextResponse.json(
-          {
-            error:
-              cycleError.message,
-          },
-          {
-            status: 500,
-          },
-        )
-      }
-
-      /*
-       * Reload every period start, including the
-       * one just logged through the daily check-in.
-       */
+    if (periodAction === 'start') {
       const {
         data:
           storedPeriodStartLogs,
@@ -376,9 +289,11 @@ export async function POST(
         )
       }
 
+      if (periodState.status === 'active' && !(storedPeriodStartLogs ?? []).some((log: PeriodStartLog) => log.log_date === today)) {
+        return NextResponse.json({ error: 'Your period is already marked active. Update its existing start date on the Cycle page instead of recording a new start.', periodState }, { status: 409 })
+      }
       const periodStartLogs =
-        (storedPeriodStartLogs ??
-          []) as PeriodStartLog[]
+        [...(storedPeriodStartLogs ?? []), { log_date: today, period_started: true }] as PeriodStartLog[]
 
       const fallbackLastPeriodStart =
         getDateOnly(
@@ -404,6 +319,30 @@ export async function POST(
           .averageCycleLength ??
         resolvedAverageCycleLength
 
+    }
+
+    let periodSaved = false
+    const partialFailure = (error: string, status = 500) => {
+      if (periodSaved) invalidateDailyPlan()
+      return NextResponse.json({ error: periodSaved ? `Your period update was saved, but your Daily Check-In was not saved. ${error} Retry to finish saving your check-in.` : error,
+        ...(periodSaved ? { periodState, partialSave: true, retryPeriodAction } : {}) }, { status })
+    }
+    if (getClientLocalDate(client) !== today) return partialFailure('A new day has started. Open Today before saving your check-in.', 409)
+    if (periodAction) {
+      const nextStatus: PeriodState['status'] = periodAction === 'end' ? 'ended' : 'active'
+      const { error: cycleError } = await supabase.from('cycle_logs').upsert({
+        client_id: client.client_id, auth_user_id: user.id, log_date: today,
+        period_status: nextStatus, updated_at: updatedAt,
+        ...(periodAction === 'start' ? { period_started: true, cycle_day: 1, cycle_phase: 'menstrual', bleeding: true } : {}),
+      }, { onConflict: 'client_id,log_date' })
+      if (cycleError) return partialFailure(cycleError.message)
+      periodSaved = true
+      periodState = { status: nextStatus, recordedDate: today }
+      confirmedPeriodState = periodState
+      retryPeriodAction = periodAction === 'start'
+    }
+
+    if (periodAction === 'start') {
       const {
         error:
           clientUpdateError,
@@ -431,28 +370,23 @@ export async function POST(
           user.id,
         )
 
-      if (clientUpdateError) {
-        return NextResponse.json(
-          {
-            error:
-              clientUpdateError.message,
-          },
-          {
-            status: 500,
-          },
-        )
-      }
+      if (clientUpdateError) return partialFailure(clientUpdateError.message)
+      retryPeriodAction = false
     }
+
+    const { error: recoveryError } = await supabase.from('recovery_logs').upsert({ client_id: client.client_id, auth_user_id: user.id, log_date: today,
+      ...answers, check_in_completed_at: previous?.check_in_completed_at || updatedAt, updated_at: updatedAt }, { onConflict: 'client_id,log_date' })
+
+    if (recoveryError) return partialFailure(recoveryError.message)
 
     invalidateDailyPlan()
 
     return NextResponse.json({
       success: true,
+      periodState,
 
       period_started:
-        Boolean(
-          body.periodStarted,
-        ),
+        periodAction === 'start',
 
       last_period_start:
         resolvedLastPeriodStart,
@@ -490,6 +424,10 @@ export async function POST(
         null,
     })
   } catch (error) {
+    if (confirmedPeriodState) {
+      invalidateDailyPlan()
+      return NextResponse.json({ error: 'Your period update was saved. The rest of your Daily Check-In could not be confirmed. Retry to finish saving your check-in.', periodState: confirmedPeriodState, partialSave: true, retryPeriodAction }, { status: 500 })
+    }
     return NextResponse.json(
       {
         error:

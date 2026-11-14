@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import SymptomLogger from '@/components/SymptomLogger'
+import CycleFlowLogger from '@/components/CycleFlowLogger'
+import type { PeriodState } from '@/lib/cycle/periodState'
 import { AOSButton } from '@/components/aos-ui/AOSButton'
 import { AOSCard } from '@/components/aos-ui/AOSCard'
 import { AOSInput } from '@/components/aos-ui/AOSInput'
@@ -21,7 +23,7 @@ import {
   type SorenessRegionKey,
 } from '@/lib/recovery/sorenessRegions'
 
-type Values = { sleepHours:number; sleepQuality:number; stress:number; soreness:number; energy:number; mood:number; hunger:number; notes:string; periodStarted:boolean; sorenessRegions:SorenessRegionKey[] }
+type Values = { sleepHours:number; sleepQuality:number; stress:number; soreness:number; energy:number; mood:number; hunger:number; notes:string; periodStarted:boolean; periodAction:'end'|'resume'|null; sorenessRegions:SorenessRegionKey[] }
 type SliderKey = 'sleepHours' | 'sleepQuality' | 'stress' | 'soreness' | 'energy' | 'mood' | 'hunger'
 const sliderKeys: SliderKey[] = ['sleepHours', 'sleepQuality', 'stress', 'soreness', 'energy', 'mood', 'hunger']
 const draftPrefix = 'anastasis:check-in-draft:v1:'
@@ -38,13 +40,13 @@ function restoredAnswers(raw: unknown): Partial<Values> {
   return answers
 }
 
-export default function DailyCheckInForm({ clientId, program, initial, cycleTrackingEnabled, recentPeriodStart = false, stayOnSave = false, completed = false, localDate, timeZone }: { clientId:string; program:string; initial:Partial<Values>; cycleTrackingEnabled:boolean; recentPeriodStart?: boolean; stayOnSave?: boolean; completed?: boolean; localDate?: string; timeZone?: string }) {
+export default function DailyCheckInForm({ clientId, program, initial, cycleTrackingEnabled, recentPeriodStart = false, periodState = { status: 'unknown', recordedDate: null }, stayOnSave = false, completed = false, localDate, timeZone }: { clientId:string; program:string; initial:Partial<Values>; cycleTrackingEnabled:boolean; recentPeriodStart?: boolean; periodState?: PeriodState; stayOnSave?: boolean; completed?: boolean; localDate?: string; timeZone?: string }) {
   const router = useRouter()
   const initialSoreness = initial.soreness ?? 5
   const initialSorenessRegions = initialSoreness > 5
     ? (initial.sorenessRegions || []).filter(isSorenessRegionKey)
     : []
-  const [values,setValues] = useState<Values>({sleepHours:initial.sleepHours ?? 7,sleepQuality:initial.sleepQuality ?? 5,stress:initial.stress ?? 5,soreness:initialSoreness,energy:initial.energy ?? 5,mood:initial.mood ?? 5,hunger:initial.hunger ?? 5,notes:initial.notes ?? '',periodStarted:false,sorenessRegions:initialSorenessRegions})
+  const [values,setValues] = useState<Values>({sleepHours:initial.sleepHours ?? 7,sleepQuality:initial.sleepQuality ?? 5,stress:initial.stress ?? 5,soreness:initialSoreness,energy:initial.energy ?? 5,mood:initial.mood ?? 5,hunger:initial.hunger ?? 5,notes:initial.notes ?? '',periodStarted:false,periodAction:null,sorenessRegions:initialSorenessRegions})
   const lock = useRef(false)
   const [answered, setAnswered] = useState<Set<string>>(() => new Set(Object.keys(initial).filter(key => initial[key as keyof Values] !== undefined && initial[key as keyof Values] !== null)))
   const [saving,setSaving] = useState(false)
@@ -59,6 +61,18 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
   const [restoredKey,setRestoredKey] = useState<string | null>(null)
   const tier = normalizeProgramTier(program)
   const initialKey = JSON.stringify(initial)
+  const periodStateKey = `${periodState.status}:${periodState.recordedDate || ''}`
+  const [storedPeriodState,setStoredPeriodState] = useState(periodState)
+  const previousPeriodStateKey = useRef(periodStateKey)
+  useEffect(() => {
+    setStoredPeriodState({ status: periodState.status, recordedDate: periodState.recordedDate, ...(periodState.loadError ? { loadError: true } : {}) })
+  }, [periodState.status, periodState.recordedDate, periodState.loadError])
+  useEffect(() => {
+    if (previousPeriodStateKey.current !== periodStateKey || !cycleTrackingEnabled) {
+      previousPeriodStateKey.current = periodStateKey
+      setValues(current => ({ ...current, periodStarted: false, periodAction: null }))
+    }
+  }, [periodStateKey, cycleTrackingEnabled])
   // Unsaved answers stay in this tab only, scoped to the authenticated member's local day.
   const draftKey = clientId && localDate && /^\d{4}-\d{2}-\d{2}$/.test(localDate)
     ? `${draftPrefix}${encodeURIComponent(clientId)}:${tier}:${localDate}` : null
@@ -77,7 +91,7 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
     setChanged(false)
     const baseline = JSON.parse(initialKey) as Partial<Values>
     const soreness = baseline.soreness ?? 5
-    setValues({ sleepHours: baseline.sleepHours ?? 7, sleepQuality: baseline.sleepQuality ?? 5, stress: baseline.stress ?? 5, soreness, energy: baseline.energy ?? 5, mood: baseline.mood ?? 5, hunger: baseline.hunger ?? 5, notes: baseline.notes ?? '', periodStarted: false, sorenessRegions: soreness > 5 ? (baseline.sorenessRegions || []).filter(isSorenessRegionKey) : [] })
+    setValues({ sleepHours: baseline.sleepHours ?? 7, sleepQuality: baseline.sleepQuality ?? 5, stress: baseline.stress ?? 5, soreness, energy: baseline.energy ?? 5, mood: baseline.mood ?? 5, hunger: baseline.hunger ?? 5, notes: baseline.notes ?? '', periodStarted: false, periodAction: null, sorenessRegions: soreness > 5 ? (baseline.sorenessRegions || []).filter(isSorenessRegionKey) : [] })
     setAnswered(new Set(Object.keys(baseline).filter(key => baseline[key as keyof Values] != null)))
     setSaved(completed)
     completionTracked.current = completed
@@ -88,8 +102,10 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
         if (draft?.version === 1 && draft.initialKey === initialKey) {
           const answers = restoredAnswers(draft.answers)
           const regions = Array.isArray(draft.sorenessRegions) ? draft.sorenessRegions.filter(isSorenessRegionKey) : []
-          if (Object.keys(answers).length || (cycleTrackingEnabled && draft.periodStarted === true)) {
-            setValues(current => ({ ...current, ...answers, periodStarted: cycleTrackingEnabled && draft.periodStarted === true, sorenessRegions: (answers.soreness ?? soreness) > 5 ? regions : [] }))
+          const periodAction = cycleTrackingEnabled && ['end', 'resume'].includes(draft.periodAction) ? draft.periodAction as 'end'|'resume' : null
+          const samePeriodState = draft.periodStateKey === periodStateKey || (draft.periodStateKey === undefined && periodState.status === 'unknown')
+          if (Object.keys(answers).length || (cycleTrackingEnabled && (draft.periodStarted === true || periodAction))) {
+            setValues(current => ({ ...current, ...answers, periodStarted: cycleTrackingEnabled && samePeriodState && draft.periodStarted === true, periodAction: samePeriodState ? periodAction : null, sorenessRegions: (answers.soreness ?? soreness) > 5 ? regions : [] }))
             setAnswered(current => new Set([...current, ...Object.keys(answers)]))
             edited.current = true
             started.current = true
@@ -103,16 +119,16 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
       }
     }
     setRestoredKey(draftKey)
-  }, [draftKey, initialKey, cycleTrackingEnabled, tier, completed, clientId, localDate])
+  }, [draftKey, initialKey, cycleTrackingEnabled, tier, completed, clientId, localDate, periodStateKey, periodState.status])
 
   useEffect(() => {
     if (!draftKey || restoredKey !== draftKey || !edited.current || saving) return
     try {
-      window.sessionStorage.setItem(draftKey, JSON.stringify({ version: 1, initialKey, answers: Object.fromEntries(Object.entries(values).filter(([key]) => answered.has(key))), periodStarted: values.periodStarted, sorenessRegions: values.sorenessRegions }))
+      window.sessionStorage.setItem(draftKey, JSON.stringify({ version: 1, initialKey, answers: Object.fromEntries(Object.entries(values).filter(([key]) => answered.has(key))), periodStarted: values.periodStarted, periodAction: values.periodAction, periodStateKey, sorenessRegions: values.sorenessRegions }))
     } catch {
       // Saving the submitted check-in still works when browser storage is unavailable.
     }
-  }, [draftKey, restoredKey, initialKey, values, answered, saving])
+  }, [draftKey, restoredKey, initialKey, values, answered, saving, periodStateKey])
 
   const markEdited = () => {
     edited.current = true
@@ -122,6 +138,26 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
       started.current = true
       trackEvent('daily_check_in_started', { program: tier, source: stayOnSave ? 'recovery' : 'daily_check_in' })
     }
+  }
+  const [flowOpen,setFlowOpen] = useState(false)
+  const [flowSaving,setFlowSaving] = useState(false)
+  const flowLock = useRef(false)
+  const flowEntry = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (!cycleTrackingEnabled || storedPeriodState.status !== 'active') setFlowOpen(false)
+  }, [cycleTrackingEnabled, storedPeriodState.status])
+  const closeFlow = useCallback(() => {
+    if (flowLock.current) return
+    setFlowOpen(false)
+    flowEntry.current?.focus({ preventScroll: true })
+  }, [])
+  const flowSavingChanged = useCallback((pending: boolean) => { flowLock.current = pending; setFlowSaving(pending) }, [])
+  const flowSaved = useCallback(() => {
+    setMessage('Flow saved separately. Continue your Daily Check-In, then save it when you’re ready.')
+  }, [])
+  const selectPeriodAction = (action: 'start'|'end'|'resume', selected: boolean) => {
+    markEdited()
+    setValues(current => ({ ...current, periodStarted: action === 'start' && selected, periodAction: selected && action !== 'start' ? action : null }))
   }
   const [sorenessDialogOpen,setSorenessDialogOpen] = useState(false)
   const [symptomsOpen,setSymptomsOpen] = useState(false)
@@ -170,7 +206,7 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
 
   async function save(event:React.FormEvent) {
     event.preventDefault(); setMessage('')
-    if (lock.current) return
+    if (lock.current || flowLock.current || (saved && !changed)) return
     if (localDate && timeZone && localDateKey(new Date(), timeZone) !== localDate) {
       setMessage('A new day has started. Open Today to begin a fresh check-in.')
       return
@@ -184,12 +220,20 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
     lock.current = true
     setSaving(true)
     try {
-      const response = await fetch('/api/daily-check-in',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,date:localDate,...Object.fromEntries(Object.entries(values).filter(([key]) => answered.has(key))), sorenessRegions: values.sorenessRegions, periodStarted: values.periodStarted})})
+      const response = await fetch('/api/daily-check-in',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,date:localDate,...Object.fromEntries(Object.entries(values).filter(([key]) => answered.has(key))), sorenessRegions: values.sorenessRegions, periodStarted: cycleTrackingEnabled && values.periodStarted, ...(cycleTrackingEnabled && values.periodAction ? { periodAction: values.periodAction } : {})})})
       const payload = await response.json()
-      if(!response.ok){setMessage(payload.error||'Check-in could not be saved.');return}
+      if(!response.ok){
+        if (payload.partialSave && payload.periodState) {
+          setStoredPeriodState(payload.periodState)
+          if (!payload.retryPeriodAction) setValues(current => ({ ...current, periodStarted: false, periodAction: null }))
+        }
+        setMessage(payload.error||'Check-in could not be saved.');return
+      }
       edited.current = false
       setChanged(false)
       setSaved(true)
+      if (payload.periodState) setStoredPeriodState(payload.periodState)
+      setValues(current => ({ ...current, periodStarted: false, periodAction: null }))
       setSymptomConfirmation('')
       if (draftKey) { try { window.sessionStorage.removeItem(draftKey) } catch { /* Submitted answers are already saved. */ } }
       if (!completionTracked.current) {
@@ -210,16 +254,31 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
   return <div className="daily-check-in-layout">
     <div ref={checkInResume} tabIndex={-1} aria-label="Daily check-in" className="guided-check-in-resume">
     <AOSCard as="form" className="aos-check-in-form" onSubmit={save}>
-      <fieldset className="guided-check-in-fields" disabled={saving}>
+      <fieldset className="guided-check-in-fields" disabled={saving || flowSaving}>
       <AOSSectionHeader eyebrow="Daily check-in" title="How’s your energy today?" copy="One answer is enough to check in. Add more context when it helps." />
       {symptomConfirmation ? <p className="aos-status" role="status">{symptomConfirmation}</p> : null}
       <div className="guided-check-in-energy">{slider('energy','Energy')}<p><span>Running on empty</span><span>Feeling strong</span></p>{!answered.has('energy') ? <AOSButton type="button" variant="secondary" onClick={() => updateSlider('energy', values.energy)}>Use this energy level</AOSButton> : null}</div>
       {saved && !changed ? <p className="aos-status" role="status">Your check-in is already saved. You can update any answer below.</p> : null}
-      <section className="guided-check-in-symptom-entry" aria-label="Symptoms and period start">
+      <section className="guided-check-in-symptom-entry" aria-label="Symptoms and period">
         <button ref={symptomEntry} type="button" className="aos-button aos-button--secondary" aria-haspopup="dialog" aria-expanded={symptomsOpen} onClick={() => setSymptomsOpen(true)}>Log symptoms (optional)</button>
         <p className="guided-check-in-copy">Choose a body area or period-related symptoms. Symptoms are saved separately.</p>
-        {cycleTrackingEnabled ? <div className="aos-period-panel"><span className="aos-period-panel__icon" aria-hidden="true">◒</span><AOSToggle label="My period started today" description="Recorded when you save your final Daily Check-In. Logging symptoms does not record a period start." checked={values.periodStarted} onChange={(periodStarted)=>{markEdited();setValues((current)=>({...current,periodStarted}))}}/></div> : null}
-        {cycleTrackingEnabled && (values.periodStarted || recentPeriodStart) ? <p className="guided-check-in-copy">Period-related choices are available in the symptom popup and matching body areas.</p> : null}
+        {cycleTrackingEnabled ? <div className="guided-check-in-period">
+          {storedPeriodState.loadError ? <p role="status">Your period status could not be loaded. Reopen this check-in before changing it.</p> : <>
+            {storedPeriodState.status === 'unknown' ? <p className="guided-check-in-copy">Your current period status is unconfirmed. A previous start date does not tell us whether your period is still active.</p> : null}
+            {storedPeriodState.status === 'active' ? <>
+              <button ref={flowEntry} type="button" className="aos-button aos-button--secondary" aria-haspopup="dialog" aria-expanded={flowOpen} onClick={() => setFlowOpen(true)}>Track today’s flow</button>
+              <p className="guided-check-in-copy">Flow entries save separately. You’ll return to these unfinished check-in answers.</p>
+              <AOSToggle label="My period ended" description="Recorded when you save your final Daily Check-In. This keeps your cycle and flow history." checked={values.periodAction === 'end'} onChange={selected => selectPeriodAction('end', selected)}/>
+            </> : <AOSToggle label="My period started today" description="Recorded when you save your final Daily Check-In. Logging symptoms does not record a period start." checked={values.periodStarted} onChange={selected => selectPeriodAction('start', selected)}/>}
+            <details className="guided-check-in-details">
+              <summary>Correct period status</summary>
+              {storedPeriodState.status !== 'active' ? <AOSToggle label={storedPeriodState.status === 'ended' ? 'My period is still active' : 'My period is already active'} description="Confirms an active period without adding or changing a start date. Recorded with your final Daily Check-In." checked={values.periodAction === 'resume'} onChange={selected => selectPeriodAction('resume', selected)}/> : null}
+              {storedPeriodState.status === 'unknown' ? <AOSToggle label="My period ended" description="Confirms it has ended without inventing an earlier start date. Recorded with your final Daily Check-In." checked={values.periodAction === 'end'} onChange={selected => selectPeriodAction('end', selected)}/> : null}
+              <Link href="/dashboard/cycle" className="tier-secondary-action">Review or correct cycle dates</Link>
+            </details>
+          </>}
+        </div> : null}
+        {cycleTrackingEnabled && (values.periodStarted || values.periodAction === 'resume' || storedPeriodState.status === 'active' || recentPeriodStart) ? <p className="guided-check-in-copy">Period-related choices are available in the symptom popup and matching body areas.</p> : null}
       </section>
       <details className="guided-check-in-details" open>
       <summary>Add more context (optional)<span>Sleep, stress, soreness, and more</span></summary>
@@ -236,7 +295,11 @@ export default function DailyCheckInForm({ clientId, program, initial, cycleTrac
       </fieldset>
     </AOSCard>
     </div>
-    <SymptomLogger clientId={clientId} open={symptomsOpen} onClose={closeSymptoms} onAfterClose={afterSymptomsClose} onSaved={onSymptomSaved} periodContext={cycleTrackingEnabled && (values.periodStarted || recentPeriodStart)}/>
+    <SymptomLogger clientId={clientId} open={symptomsOpen} onClose={closeSymptoms} onAfterClose={afterSymptomsClose} onSaved={onSymptomSaved} periodContext={cycleTrackingEnabled && (values.periodStarted || values.periodAction === 'resume' || storedPeriodState.status === 'active' || recentPeriodStart)}/>
+    <AOSModal open={flowOpen && cycleTrackingEnabled && storedPeriodState.status === 'active'} title="Track today’s flow" onClose={closeFlow}>
+      <CycleFlowLogger clientId={clientId} localDate={localDate} timeZone={timeZone} onSaved={flowSaved} onSavingChange={flowSavingChanged}/>
+      <AOSButton type="button" variant="secondary" disabled={flowSaving} onClick={closeFlow}>Return to check-in</AOSButton>
+    </AOSModal>
     <AOSModal open={sorenessDialogOpen} title="Soreness regions" onClose={closeSorenessDialog}>
       <AOSSectionHeader eyebrow="Soreness" title="Where are you sore?" copy="Select the areas where you feel soreness." />
       <div className="aos-chip-list" role="group" aria-label="Soreness regions">

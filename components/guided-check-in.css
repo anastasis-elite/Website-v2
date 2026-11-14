@@ -14,5 +14,7 @@
 .guided-check-in-resume:focus-visible { outline: 2px solid var(--accent-focus, #ffae70); outline-offset: 4px; }
 .guided-check-in-symptom-entry { display: grid; gap: 12px; }
 .guided-check-in-symptom-entry > p { margin: 0; }
+.guided-check-in-period { display: grid; gap: 12px; min-width: 0; }
+.guided-check-in-period > p { margin: 0; }
 .guided-check-in-symptom-entry .aos-toggle:has(input:focus-visible) { outline: 2px solid var(--accent-focus, #ffae70); outline-offset: 4px; }
 @media (max-width: 800px) { .guided-check-in-fields { gap: 18px; } .guided-check-in-details { padding: 14px; } }

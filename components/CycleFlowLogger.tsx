@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { localDateKey } from '@/lib/timezone'
+import Link from 'next/link'
 
 import * as styles from '@/app/styles/globalstyles'
 
@@ -22,6 +24,10 @@ type FlowProduct = {
 
 type Props = {
   clientId: string
+  localDate?: string
+  timeZone?: string
+  onSaved?: () => void
+  onSavingChange?: (saving: boolean) => void
 }
 
 const productTypes: Array<{ value: ProductType; label: string }> = [
@@ -82,18 +88,41 @@ function labelFor(value: string) {
   return value.replaceAll('_', ' ')
 }
 
-export default function CycleFlowLogger({ clientId }: Props) {
-  const [products, setProducts] = useState<FlowProduct[]>([emptyProduct()])
-  const [energy, setEnergy] = useState(5)
-  const [fatigue, setFatigue] = useState(5)
-  const [perceivedRecovery, setPerceivedRecovery] = useState(5)
-  const [trainingReadiness, setTrainingReadiness] = useState(5)
+export default function CycleFlowLogger({ clientId, localDate, timeZone, onSaved, onSavingChange }: Props) {
+  const [products, setProducts] = useState<FlowProduct[]>([])
+  const [energy, setEnergy] = useState<number | null>(null)
+  const [fatigue, setFatigue] = useState<number | null>(null)
+  const [perceivedRecovery, setPerceivedRecovery] = useState<number | null>(null)
+  const [trainingReadiness, setTrainingReadiness] = useState<number | null>(null)
   const [symptoms, setSymptoms] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [flowBand, setFlowBand] = useState<string | null>(null)
   const [followUpMessage, setFollowUpMessage] = useState<string | null>(null)
+  const saveLock = useRef(false)
+  const confirmedSave = useRef(false)
+  const uncertainSave = useRef(false)
+  const [saved, setSaved] = useState(false)
+  const [uncertain, setUncertain] = useState(false)
+
+  function newEntry() {
+    if (saveLock.current) return
+    confirmedSave.current = false
+    setSaved(false)
+    uncertainSave.current = false
+    setUncertain(false)
+    setProducts([])
+    setEnergy(null)
+    setFatigue(null)
+    setPerceivedRecovery(null)
+    setTrainingReadiness(null)
+    setSymptoms({})
+    setMessage('')
+    setError('')
+    setFlowBand(null)
+    setFollowUpMessage(null)
+  }
 
   function updateProduct(index: number, patch: Partial<FlowProduct>) {
     setProducts((previous) =>
@@ -104,6 +133,14 @@ export default function CycleFlowLogger({ clientId }: Props) {
   }
 
   async function saveFlow() {
+    if (saveLock.current || confirmedSave.current || uncertainSave.current) return
+    if (!products.length) { setError('Add the products you used before saving flow. Period end is recorded in your Daily Check-In.'); return }
+    if (localDate && timeZone && localDateKey(new Date(), timeZone) !== localDate) {
+      setError('A new day has started. Open Today before logging flow.'); return
+    }
+    saveLock.current = true
+    onSavingChange?.(true)
+    let rejectedBeforeWrite = false
     try {
       setSaving(true)
       setError('')
@@ -115,6 +152,7 @@ export default function CycleFlowLogger({ clientId }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId,
+          ...(localDate ? { logDate: localDate } : {}),
           products: products.map((product) => ({
             productType: product.productType,
             absorbency: product.absorbency || null,
@@ -128,33 +166,44 @@ export default function CycleFlowLogger({ clientId }: Props) {
             leakOrOverflow: product.leakOrOverflow,
             customLabel: product.customLabel || null,
           })),
-          energy,
-          fatigue,
-          perceivedRecovery,
-          trainingReadiness,
+          ...(energy === null ? {} : { energy }),
+          ...(fatigue === null ? {} : { fatigue }),
+          ...(perceivedRecovery === null ? {} : { perceivedRecovery }),
+          ...(trainingReadiness === null ? {} : { trainingReadiness }),
           symptoms,
         }),
       })
 
       const data = await response.json().catch(() => null)
 
-      if (!response.ok) {
-        throw new Error(data?.error || 'Flow log could not be saved.')
+      if (!response.ok || data?.success !== true) {
+        // The existing endpoint writes several records. A failed response may
+        // arrive after a flow record was inserted, so never blindly resubmit.
+        rejectedBeforeWrite = [400, 401, 403, 404, 409, 422].includes(response.status)
+        throw new Error(data?.error || 'Flow log could not be confirmed.')
       }
 
       setFlowBand(data?.burden?.burdenBand || null)
       setFollowUpMessage(data?.escalation?.message || null)
-      setMessage('Flow log saved.')
+      confirmedSave.current = true
+      setSaved(true)
+      setMessage('Flow log saved separately. Continue your Daily Check-In and save your answers when ready.')
+      onSaved?.()
     } catch (caughtError) {
+      if (!rejectedBeforeWrite && !confirmedSave.current) { uncertainSave.current = true; setUncertain(true) }
       setError(caughtError instanceof Error ? caughtError.message : 'Flow log could not be saved.')
     } finally {
+      saveLock.current = false
       setSaving(false)
+      onSavingChange?.(false)
     }
   }
 
   return (
     <section style={styles.cartBoxStyle}>
       <h2 style={styles.sectionTitleStyle}>Today’s Flow</h2>
+      <p style={styles.bodyStyle}>Save Flow adds a new flow entry separately from your Daily Check-In. Add only products you used; optional ratings stay unanswered until you choose them.</p>
+      <fieldset disabled={saving || saved || uncertain} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
 
       <div style={{ display: 'grid', gap: '18px', marginTop: '18px' }}>
         {products.map((product, index) => {
@@ -217,8 +266,9 @@ export default function CycleFlowLogger({ clientId }: Props) {
                     type="number"
                     min={1}
                     max={40}
-                    value={product.quantity}
-                    onChange={(event) => updateProduct(index, { quantity: Number(event.target.value || 1) })}
+                    value={isVolumeProduct ? product.empties : product.quantity}
+                    onChange={(event) => updateProduct(index, isVolumeProduct ? { empties: event.target.value } : { quantity: Number(event.target.value || 1) })}
+                    placeholder={isVolumeProduct ? 'Number of empties' : undefined}
                     style={styles.inputStyle}
                   />
                 </div>
@@ -317,6 +367,7 @@ export default function CycleFlowLogger({ clientId }: Props) {
                   />
                 )}
               </div>
+              <button type="button" onClick={() => setProducts(previous => previous.filter((_, currentIndex) => currentIndex !== index))} style={{ ...styles.secondaryButtonStyle, marginTop: '14px' }}>Remove product {index + 1}</button>
             </div>
           )
         })}
@@ -347,10 +398,11 @@ export default function CycleFlowLogger({ clientId }: Props) {
             <label key={key} style={styles.fieldWrap}>
               <span style={styles.labelStyle}>{labelFor(key)}</span>
               <select
-                value={symptoms[key] || 'none'}
+                value={symptoms[key] || ''}
                 onChange={(event) => setSymptoms((previous) => ({ ...previous, [key]: event.target.value }))}
                 style={styles.inputStyle}
               >
+                <option value="">Not answered</option>
                 {severityOptions.map((option) => (
                   <option key={option} value={option}>
                     {option}
@@ -365,11 +417,15 @@ export default function CycleFlowLogger({ clientId }: Props) {
       <button
         type="button"
         onClick={saveFlow}
-        disabled={saving}
+        disabled={saving || saved || uncertain || !products.length}
         style={{ ...styles.primaryButtonStyle, marginTop: '22px', opacity: saving ? 0.65 : 1 }}
       >
-        {saving ? 'Saving...' : 'Save Flow'}
+        {saving ? 'Saving...' : saved ? 'Flow saved' : 'Save Flow'}
       </button>
+
+      </fieldset>
+      {saved ? <button type="button" onClick={newEntry} style={{ ...styles.secondaryButtonStyle, marginTop: '14px' }}>Log another entry</button> : null}
+      {uncertain ? <p role="alert" style={styles.bodyStyle}>The save could not be confirmed and may already be recorded. Review your Cycle history before logging another entry; this entry cannot be submitted again here. <Link href="/dashboard/cycle">Open Cycle</Link></p> : null}
 
       {flowBand ? (
         <p style={{ ...styles.bodyStyle, marginTop: '14px' }}>
@@ -390,22 +446,23 @@ function ScaleInput({
   onChange,
 }: {
   label: string
-  value: number
+  value: number | null
   onChange: (value: number) => void
 }) {
   return (
     <label style={styles.fieldWrap}>
       <span style={styles.labelStyle}>
-        {label}: {value}
+        {label}: {value === null ? 'not answered' : value}
       </span>
       <input
         type="range"
         min={1}
         max={10}
-        value={value}
+        value={value ?? 5}
         onChange={(event) => onChange(Number(event.target.value))}
         style={{ accentColor: '#b56e43' }}
       />
+      {value === null ? <button type="button" onClick={() => onChange(5)} style={styles.secondaryButtonStyle}>Use 5 for {label.toLowerCase()}</button> : null}
     </label>
   )
 }
