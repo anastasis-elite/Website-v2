@@ -6,6 +6,7 @@ import type {
   WorkoutDecisionResult,
 } from '@/lib/dashboard/logic/types'
 import { getClientLocalDate } from '@/lib/timezone'
+import { issueExercisePrescription } from '@/lib/workout/issuedPrescription'
 
 type WorkoutState = 'planned' | 'recovery' | 'starter' | 'reduced' | 'rest' | 'unavailable'
 
@@ -409,7 +410,7 @@ function createLowCapacityWorkout(
         )
       })
       .slice(0, 3)
-      .map((exercise) => {
+      .map((exercise, index) => {
         const originalSets = normalizeNumber(
           exercise.sets,
           3,
@@ -432,7 +433,7 @@ function createLowCapacityWorkout(
           Math.min(originalReps, 10),
         )
 
-        return {
+        const reduced = {
           ...exercise,
 
           exercise_category:
@@ -463,6 +464,8 @@ function createLowCapacityWorkout(
               ? exercise.client_cues
               : strengthCues,
         }
+        return exercise.issued_prescription ? issueExercisePrescription(reduced,index,exercise.issued_prescription.adjustments.daily,
+          {version:'low-capacity-v1',input_sets:originalSets,input_reps:originalReps}) : reduced
       })
 
   return {

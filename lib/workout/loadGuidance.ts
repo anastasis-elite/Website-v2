@@ -11,7 +11,7 @@ export function withoutCalculatedLoad(exercise: any, status: LoadGuidanceStatus,
     baseline_weight: null, calculated_weight: null, cycle_adjusted_weight: null, recommended_weight: null,
     load_guidance_status: status, load_guidance_reason: reason,
   }
-  for (const field of ['prescription_calculation', 'estimated_1rm', 'intensity_factor', 'rep_multiplier',
+  for (const field of ['prescription_calculation', 'issued_prescription', 'estimated_1rm', 'intensity_factor', 'rep_multiplier',
     'prescription_status', 'prescription_unavailable_reason']) delete projected[field]
   return projected
 }
