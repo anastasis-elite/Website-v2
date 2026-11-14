@@ -204,7 +204,7 @@ test('migration adds nullable explicit state without backfilling or changing rec
     period_started boolean, bleeding boolean, symptoms jsonb, flow_burden_score numeric);
     insert into cycle_logs values('old','member','owner','2026-10-15',true,true,'{"cramping":"moderate"}',13);`)
   const before = (await pg.query('select * from cycle_logs')).rows[0]
-  await pg.exec(readFileSync('supabase/migrations/20261114131521_daily_check_in_period_status.sql', 'utf8'))
+  await pg.exec(readFileSync('supabase/migrations/20261114135621_daily_check_in_period_status.sql', 'utf8'))
   const after = (await pg.query('select * from cycle_logs')).rows[0]
   assert.deepEqual(after, { ...before, period_status: null })
   await pg.exec("update cycle_logs set period_status='active'")
