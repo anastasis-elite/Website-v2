@@ -8,6 +8,7 @@ import { hasCurrentLegalAcceptance } from '@/lib/legal/hasCurrentLegalAcceptance
 import { evaluateSafetyEscalation, type SafetyFlag } from '@/lib/safety/evaluateSafetyEscalation'
 import { getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
 import { logRecommendationAudit } from '@/lib/legal/logRecommendationAudit'
+import { getDashboardStartupTiming } from '@/lib/performance/dashboardStartupRequest'
 
 export class TodayAccessError extends Error {
   constructor(message: string, public status: number, public redirect?: string, public flags?: SafetyFlag[]) {
@@ -21,6 +22,7 @@ export class TodayAccessError extends Error {
 export type TodayAccessExpectation = { program?: string; clientId?: string; ownerUserId?: string; date?: string; timezone?: string }
 
 export async function getTodayAccessContext(expected: TodayAccessExpectation = {}) {
+  const timings = getDashboardStartupTiming()
   const context = await getDashboardContext()
   const { supabase, user, client } = context
   if (!user?.id || !client?.client_id || client.auth_user_id !== user.id) {
@@ -39,10 +41,10 @@ export async function getTodayAccessContext(expected: TodayAccessExpectation = {
   const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
   let safety
   try {
-    safety = await supabase.from('client_symptom_logs')
+    safety = await timings.measure('safety', () => supabase.from('client_symptom_logs')
       .select('severity, notes, created_at, symptom_types(name, category)')
       .eq('client_id', client.client_id).eq('auth_user_id', user.id)
-      .gte('created_at', since).order('created_at', { ascending: false }).limit(25)
+      .gte('created_at', since).order('created_at', { ascending: false }).limit(25))
   } catch {
     throw new TodayAccessError('Your safety status could not be verified. Try again.', 503)
   }

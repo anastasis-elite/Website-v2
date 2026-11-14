@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getDashboardContext } from '@/lib/dashboard/getDashboardContext'
 import { parseMembershipTier } from '@/lib/membership/policy'
+import ProgramDashboardPage from '@/components/program-dashboard/ProgramDashboardPage'
 
 const supportedPrograms = ['ember', 'ignite', 'phoenix']
 
@@ -14,5 +15,8 @@ export default async function DashboardPage() {
     ? client.program
     : tier
 
-  redirect(`/dashboard/program/${program}`)
+  // Render the verified member's Today in this request. The shared renderer
+  // still applies its legal and safety gates; identity is shared only within
+  // this server render through getDashboardContext's React cache.
+  return <ProgramDashboardPage params={Promise.resolve({ program })} />
 }

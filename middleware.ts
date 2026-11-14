@@ -5,6 +5,26 @@ import { capabilityForPath, isProtectedApiPath, membershipCan, parseMembershipTi
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
+  const measureStartup = path === '/dashboard' || /^\/dashboard\/program\/(ember|ignite|phoenix)$/.test(path)
+  const startupTimings: string[] = []
+  const startStage = (stage: 'auth' | 'context') => {
+    let start: number | undefined
+    try { if (measureStartup) start = performance.now() } catch { /* Optional local diagnostics. */ }
+    return () => {
+      try {
+        if (start === undefined) return
+        const duration = performance.now() - start
+        if (Number.isFinite(duration) && duration >= 0 && duration <= 86_400_000) startupTimings.push(`today_mw_${stage};dur=${duration.toFixed(3)}`)
+      } catch { /* Timing must never affect authentication. */ }
+    }
+  }
+  const withStartupTimings = (result: NextResponse) => {
+    if (startupTimings.length) {
+      const existing = result.headers.get('Server-Timing')
+      result.headers.set('Server-Timing', [existing, ...startupTimings].filter(Boolean).join(', '))
+    }
+    return result
+  }
   const api = path.startsWith('/api/')
   // Public/auth/provider APIs retain their own boundaries and are not member middleware routes.
   if (api && !isProtectedApiPath(path)) return NextResponse.next({ request })
@@ -25,17 +45,21 @@ export async function middleware(request: NextRequest) {
       },
     },
   })
+  const stopAuthTiming = startStage('auth')
   const { data: { user } } = await supabase.auth.getUser()
+  stopAuthTiming()
   const withSessionCookies = (result: NextResponse) => {
     response.cookies.getAll().forEach(cookie => result.cookies.set(cookie))
-    return result
+    return withStartupTimings(result)
   }
   if (!user) {
     if (api) return withSessionCookies(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
     const url = request.nextUrl.clone(); url.pathname = '/login'; url.searchParams.set('redirect', request.nextUrl.pathname)
     return withSessionCookies(NextResponse.redirect(url))
   }
+  const stopContextTiming = startStage('context')
   const { data: client, error } = await supabase.from('clients').select('program,onboarding_completed,birthdate,address_line_1,city,state,postal_code,verified_purchase,access,active,subscription_ends_at,membership_expires_at,onboarding_data,timezone').eq('auth_user_id', user.id).maybeSingle()
+  stopContextTiming()
   if (error) return withSessionCookies(NextResponse.json({ error: 'Member access could not be verified.' }, { status: 503 }))
   // Billing and support remain reachable for suspended/canceled members.
   const accountRoute = request.nextUrl.pathname.startsWith('/dashboard/account')
@@ -63,7 +87,7 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone(); url.pathname = '/dashboard/onboarding/profile'; url.search = ''
     return withSessionCookies(NextResponse.redirect(url))
   }
-  return response
+  return withStartupTimings(response)
 }
 
 export const config = {

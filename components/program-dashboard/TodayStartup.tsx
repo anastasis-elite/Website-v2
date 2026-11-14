@@ -7,6 +7,7 @@ import type { TodayBootstrap } from '@/lib/dashboard/todayBootstrap'
 import type { TodayEnrichment } from '@/lib/dashboard/loadTodayEnrichment'
 import { canRetainTodayStartup, matchesTodayStartup, todayStartupKey } from '@/lib/dashboard/todayStartupState'
 import { beginTodayStartup } from '@/lib/performance/dashboard'
+import type { DashboardTimingEntry } from '@/lib/performance/dashboardTimingTypes'
 import { createClient } from '@/lib/supabase/client'
 import { addLocalDays, localDateKey } from '@/lib/timezone'
 import { zonedDateTimeToUtc } from '@/lib/schedule/time'
@@ -15,23 +16,33 @@ import { recordTodayActionOpened } from '@/lib/analytics/todayJourney'
 import TodayDashboardHeader from './TodayDashboardHeader'
 import TodayDayCarousel from './TodayDayCarousel'
 import TodayInstallButton from '@/components/pwa/TodayInstallButton'
-import GuidedToday from './GuidedToday'
 import DashboardPerformance from '@/components/DashboardPerformance'
+import DeferredTodayGuidance from './DeferredTodayGuidance'
 import styles from './TodayPlanTheme.module.css'
+
 
 function useTodayResource<T extends TodayBootstrap | TodayEnrichment>(kind: 'bootstrap' | 'enrichment', seed: TodayBootstrap, revision: number, disabled: boolean) {
   const router = useRouter()
   const key = todayStartupKey(seed)
-  const [retry, setRetry] = useState(0)
-  const [state, setState] = useState<{ key: string; revision: number; data?: T; error?: string; blocked?: boolean; settled?: boolean }>({ key, revision })
+  const [retryState, setRetry] = useState({ key, count: 0 })
+  const retry = retryState.key === key ? retryState.count : 0
+  const initialBootstrap = kind === 'bootstrap' && revision === 0 && retry === 0 && seed.checkIn.status !== 'pending' ? seed as T : undefined
+  const [state, setState] = useState<{ key: string; revision: number; data?: T; error?: string; blocked?: boolean; settled?: boolean }>({ key, revision, data: initialBootstrap, settled: Boolean(initialBootstrap) })
   const generation = useRef(0)
   useEffect(() => {
     const current = ++generation.current
     if (disabled) return
+    // A verified server seed already includes the small owner-bound read. Do
+    // not repeat auth/access/safety and check-in over HTTP after hydration.
+    if (initialBootstrap) {
+      setState({ key, revision, data: initialBootstrap, settled: true })
+      return
+    }
     let disposed = false
     const controller = new AbortController()
     const timeout = window.setTimeout(() => controller.abort(), kind === 'bootstrap' ? 12000 : 30000)
-    setState(previous => ({ key, revision, data: previous.revision === revision && canRetainTodayStartup(previous.data, seed) ? previous.data : undefined }))
+    setState(previous => ({ key, revision, data: previous.revision === revision &&
+      (previous.key === key || kind === 'enrichment' || seed.checkIn.status === 'pending') && canRetainTodayStartup(previous.data, seed) ? previous.data : undefined }))
     const query = new URLSearchParams({ program: seed.program, clientId: seed.clientId, ownerUserId: seed.ownerUserId, date: seed.date, timezone: seed.timezone })
     async function load() {
       try {
@@ -67,18 +78,23 @@ function useTodayResource<T extends TodayBootstrap | TodayEnrichment>(kind: 'boo
     }
     void load()
     return () => { disposed = true; controller.abort(); window.clearTimeout(timeout) }
-  }, [key, kind, retry, revision, disabled, router, seed])
-  const active = state.revision === revision && !disabled && (state.key === key || canRetainTodayStartup(state.data, seed)) ? state : null
-  return { data: active?.data, error: active?.error, blocked: active?.blocked, revalidating: active?.key !== key || active?.settled !== true, retry: () => setRetry(value => value + 1) }
+  }, [key, kind, retry, revision, disabled, router, seed, initialBootstrap])
+  if (initialBootstrap && !disabled) return { data: initialBootstrap, error: undefined, blocked: false, revalidating: false,
+    retry: () => setRetry(previous => ({ key, count: previous.key === key ? previous.count + 1 : 1 })) }
+  const active = state.revision === revision && !disabled && (state.key === key ||
+    (kind === 'enrichment' || seed.checkIn.status === 'pending') && canRetainTodayStartup(state.data, seed)) ? state : null
+  return { data: active?.data, error: active?.error, blocked: active?.blocked, revalidating: active?.key !== key || active?.settled !== true,
+    retry: () => setRetry(previous => ({ key, count: previous.key === key ? previous.count + 1 : 1 })) }
 }
 
-export default function TodayStartup({ seed }: { seed: TodayBootstrap }) {
+export default function TodayStartup({ seed, startupTimings }: { seed: TodayBootstrap; startupTimings?: readonly DashboardTimingEntry[] }) {
   const router = useRouter()
+  const startupKey = todayStartupKey(seed)
   const [now, setNow] = useState(seed.generatedAt)
-  const [revision, setRevision] = useState(0)
+  const [refreshState, setRefreshState] = useState({ key: startupKey, count: 0 })
+  const revision = refreshState.key === startupKey ? refreshState.count : 0
   const [signedOut, setSignedOut] = useState(false)
   const reconciledBootstrap = useRef('')
-  const startupKey = todayStartupKey(seed)
   const wrongDay = localDateKey(new Date(now), seed.timezone) !== seed.date
   const bootstrapRequest = useTodayResource<TodayBootstrap>('bootstrap', seed, revision, signedOut || wrongDay)
   const enrichmentRequest = useTodayResource<TodayEnrichment>('enrichment', seed, revision, signedOut || wrongDay || bootstrapRequest.blocked === true)
@@ -97,7 +113,7 @@ export default function TodayStartup({ seed }: { seed: TodayBootstrap }) {
   const quiet = seed.carouselStyle === 'step'
   useDailyScheduleRefresh(schedule, !blocked && !wrongDay, model?.nextRefreshAt)
 
-  useEffect(() => { beginTodayStartup() }, [startupKey, revision])
+  useEffect(() => beginTodayStartup(startupTimings), [startupKey, revision, startupTimings])
   useEffect(() => {
     if (!completionConflict || !bootstrap || reconciledBootstrap.current === bootstrap.generatedAt) return
     reconciledBootstrap.current = bootstrap.generatedAt
@@ -105,10 +121,10 @@ export default function TodayStartup({ seed }: { seed: TodayBootstrap }) {
   }, [completionConflict, bootstrap, enrichmentRequest])
 
   useEffect(() => {
-    setSignedOut(false)
     const updateClock = () => setNow(new Date().toISOString())
-    const saved = () => { updateClock(); setRevision(value => value + 1) }
-    const ended = () => { setSignedOut(true); setRevision(value => value + 1) }
+    const invalidate = () => setRefreshState(previous => ({ key: startupKey, count: previous.key === startupKey ? previous.count + 1 : 1 }))
+    const saved = () => { updateClock(); invalidate() }
+    const ended = () => { setSignedOut(true); invalidate() }
     updateClock()
     // Hide yesterday's actions at the boundary itself, before an RSC refresh
     // finishes. The shared refresh hook still owns event and pacing boundaries.
@@ -129,7 +145,7 @@ export default function TodayStartup({ seed }: { seed: TodayBootstrap }) {
       window.removeEventListener('anastasis:session-ended', ended)
       subscription.unsubscribe()
     }
-  }, [seed.ownerUserId, seed.clientId, seed.date, seed.timezone, router])
+  }, [seed.ownerUserId, seed.clientId, seed.date, seed.timezone, startupKey, router])
 
   const checkInError = bootstrapRequest.error || (bootstrap?.checkIn.status === 'error' ? bootstrap.checkIn.message : undefined)
   const checkInCompleted = bootstrap?.checkIn.completed === true || model?.today.activities.some(activity => activity.id === 'check-in' && activity.status === 'completed')
@@ -137,6 +153,7 @@ export default function TodayStartup({ seed }: { seed: TodayBootstrap }) {
   return <div className={`today-dashboard ${styles.surface}`} data-tier={seed.program} data-dashboard-stage={pending ? 'bootstrap' : 'primary'}>
     <DashboardPerformance stage="today-layout-visible" snapshot={`${seed.generatedAt}:${revision}`} />
     {!quiet && !blocked && !wrongDay ? <DashboardPerformance stage="today-carousel-interactive" snapshot={`${seed.generatedAt}:${revision}`} /> : null}
+    {bootstrap?.checkIn.status === 'ready' ? <DashboardPerformance stage="today-check-in-ready" snapshot={bootstrap.generatedAt} /> : null}
     {bootstrap?.checkIn.status === 'ready' && !checkInCompleted ? <DashboardPerformance stage="today-check-in-clickable" snapshot={bootstrap.generatedAt} /> : null}
     {enrichment ? <DashboardPerformance stage="primary" timings={enrichment.timings} actionable /> : null}
     {enrichment ? <DashboardPerformance stage="secondary" snapshot={enrichment.generatedAt} /> : null}
@@ -160,7 +177,7 @@ export default function TodayStartup({ seed }: { seed: TodayBootstrap }) {
           {partialSchedule ? <div role="status"><p>Some schedule details could not be confirmed. Other saved actions may still be pending.</p><button type="button" onClick={enrichmentRequest.retry}>Retry schedule details</button></div> : null}
           {enrichment ? <>
             {enrichment.savedPlanState.status !== 'ready' ? <aside className="aos-card" role="status"><h2>Your saved training plan needs attention.</h2><p>Review your saved assessments and plan setup before training.</p><Link href="/dashboard/onboarding/plan">Review plan setup</Link></aside> : null}
-            <GuidedToday key={`${seed.clientId}:${seed.date}`} logic={enrichment.logic} schedule={enrichment.schedule} presentation={quiet ? 'step' : 'section'} hideDayCarousel manageRefresh={false} />
+            <DeferredTodayGuidance key={`${seed.clientId}:${seed.date}`} logic={enrichment.logic} schedule={enrichment.schedule} presentation={quiet ? 'step' : 'section'} hideDayCarousel manageRefresh={false} />
           </> : null}
         </>}
       </section>

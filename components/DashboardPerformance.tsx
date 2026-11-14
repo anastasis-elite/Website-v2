@@ -5,7 +5,7 @@ import { markDashboardStage, publishDashboardRequestTimings } from '@/lib/perfor
 import type { DashboardTimingEntry } from '@/lib/performance/dashboardTimingTypes'
 
 export default function DashboardPerformance({ stage, snapshot, timings, actionable }: {
-  stage: 'shell' | 'primary' | 'secondary' | 'today-layout-visible' | 'today-carousel-interactive' | 'today-check-in-clickable'; snapshot?: string
+  stage: 'shell' | 'primary' | 'secondary' | 'today-layout-visible' | 'today-carousel-interactive' | 'today-check-in-ready' | 'today-check-in-clickable'; snapshot?: string
   timings?: readonly DashboardTimingEntry[]; actionable?: boolean
 }) {
   useEffect(() => {

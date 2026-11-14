@@ -9,11 +9,13 @@ const plain = value => JSON.parse(JSON.stringify(value))
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no }); return { promise, resolve, reject } }
 
 function fixture({ performance } = {}) {
-  const modules = new Map(), frames = new Map(), allFrames = new Map(), effects = []
+  const modules = new Map(), frames = new Map(), allFrames = new Map(), effects = [], listeners = new Map()
   let frameId = 0
   const window = {
     requestAnimationFrame(callback) { const id = ++frameId; frames.set(id, callback); allFrames.set(id, callback); return id },
     cancelAnimationFrame(id) { frames.delete(id) },
+    addEventListener(type, callback) { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type).add(callback) },
+    removeEventListener(type, callback) { listeners.get(type)?.delete(callback) },
   }
   function load(path) {
     path = resolve(path)
@@ -30,16 +32,18 @@ function fixture({ performance } = {}) {
     } }, { filename: path })
     return module.exports
   }
-  return { load, frames, allFrames, effects,
+  return { load, frames, allFrames, effects, listeners,
+    emit(type) { for (const callback of listeners.get(type) || []) callback() },
     frame() { const [id, callback] = frames.entries().next().value; frames.delete(id); callback() },
     component(props) { load('components/DashboardPerformance.tsx').default(props); return effects.at(-1).callback() },
   }
 }
 
-function browserPerformance() {
+function browserPerformance({ navigation } = {}) {
   const entries = [], calls = []
   let now = 100
   return { entries, calls, now: () => now++,
+    getEntriesByType(type) { assert.equal(type, 'navigation', 'No resource URLs or request details may be read.'); return navigation ? [navigation] : [] },
     mark(name, options) { const entry = { name, startTime: now++, ...options }; entries.push(entry); calls.push(['mark', name, plain(options || {})]) },
     clearMarks(name) { calls.push(['clearMarks', name]); for (let index = entries.length - 1; index >= 0; index--) if (entries[index].name === name) entries.splice(index, 1) },
     clearMeasures(name) { calls.push(['clearMeasures', name]); for (let index = entries.length - 1; index >= 0; index--) if (entries[index].name === name) entries.splice(index, 1) },
@@ -50,7 +54,7 @@ function browserPerformance() {
 
 test('request timing uses the exact static allowlist and strips extra properties at the browser boundary', () => {
   const api = fixture().load('lib/performance/dashboardTimingTypes.ts')
-  assert.deepEqual([...api.DASHBOARD_TIMING_STAGES], ['routing', 'context', 'safety', 'plan', 'logic-sources', 'schedule-sources', 'logic', 'schedule', 'recommendation-persistence', 'execution-persistence'])
+  assert.deepEqual([...api.DASHBOARD_TIMING_STAGES], ['routing', 'context', 'auth', 'member-profile', 'current-profile', 'legal', 'safety', 'bootstrap', 'response-ready', 'plan', 'logic-sources', 'schedule-sources', 'logic', 'schedule', 'recommendation-persistence', 'execution-persistence'])
   const sanitized = api.sanitizeDashboardTimings([
     { stage: 'plan', startMs: 1.123456, durationMs: 2.987654, user: 'discarded', payload: { health: 'discarded' } },
     { stage: 'owner-id', startMs: 1, durationMs: 2 }, { stage: 'plan', startMs: -1, durationMs: 2 },
@@ -174,7 +178,7 @@ test('unmount/navigation/logout cancellation fences even escaped late frame call
 
 test('each Today startup resets bounded milestone records and measures relative to the current start', () => {
   const performance = browserPerformance(), api = fixture({ performance }).load('lib/performance/dashboard.ts')
-  const stages = ['today-layout-visible', 'today-carousel-interactive', 'today-check-in-clickable']
+  const stages = ['today-layout-visible', 'today-carousel-interactive', 'today-check-in-ready', 'today-check-in-clickable']
   api.beginTodayStartup()
   for (const stage of stages) { api.markDashboardStage(stage); api.markDashboardStage(stage) }
   assert.equal(performance.getEntriesByName('anastasis:today:start').length, 1)
@@ -184,7 +188,7 @@ test('each Today startup resets bounded milestone records and measures relative 
     assert.equal(performance.getEntriesByName(`anastasis:navigation-to-${stage}`).length, 1)
   }
   api.beginTodayStartup()
-  assert.deepEqual(performance.entries.map(entry => entry.name), ['anastasis:today:start'])
+  assert.deepEqual(performance.entries.map(entry => entry.name), ['anastasis:today:start', 'anastasis:today-hydrated', 'anastasis:navigation-to-today-hydrated', 'anastasis:today:start-to-today-hydrated'])
   api.markDashboardStage('today-layout-visible')
   assert.equal(performance.getEntriesByName('anastasis:today:start-to-today-layout-visible').length, 1)
   assert.ok(performance.entries.every(entry => entry.detail === undefined), 'Milestone records contain no member context')
@@ -193,8 +197,91 @@ test('each Today startup resets bounded milestone records and measures relative 
   }
 })
 
-test('Today layout, carousel and check-in milestones require two committed frames and cancel on unmount', () => {
-  for (const stage of ['today-layout-visible', 'today-carousel-interactive', 'today-check-in-clickable']) {
+test('the committed Today effect separates startup server work and hydration from later enrichment with owner cleanup', () => {
+  const performance = browserPerformance(), api = fixture({ performance }).load('lib/performance/dashboard.ts')
+  const first = api.beginTodayStartup([
+    { stage: 'auth', startMs: 3, durationMs: 20, userId: 'discarded' },
+    { stage: 'response-ready', startMs: 80, durationMs: 0, date: 'discarded' },
+    { stage: 'private-route', startMs: 0, durationMs: 1 },
+  ])
+  assert.equal(performance.getEntriesByName('anastasis:today-hydrated').length, 1)
+  assert.deepEqual(plain(performance.getEntriesByName('anastasis:today:startup:server:auth')[0].detail), { startMs: 3, durationMs: 20 })
+  const enrichment = api.publishDashboardRequestTimings([{ stage: 'logic', startMs: 0, durationMs: 250 }], true)
+  assert.equal(performance.getEntriesByName('anastasis:today:startup:server:auth').length, 1, 'Enrichment must not erase startup evidence.')
+  const next = api.beginTodayStartup([{ stage: 'bootstrap', startMs: 3, durationMs: 2 }])
+  first()
+  assert.equal(performance.getEntriesByName('anastasis:today:startup:server:bootstrap').length, 1)
+  assert.equal(performance.getEntriesByName('anastasis:today:startup:server:auth').length, 0)
+  assert.equal(performance.getEntriesByName('anastasis:today:server:logic').length, 1)
+  next(); enrichment()
+  assert.equal(performance.entries.filter(entry => entry.name.startsWith('anastasis:today:') || entry.name.startsWith('anastasis:today-')).length, 0)
+  assert.doesNotMatch(JSON.stringify(performance.entries), /discarded|private-route/)
+})
+
+test('document response timings read only bounded navigation scalars once and never describe warm RSC responses', () => {
+  const navigation = { type: 'navigate', activationStart: 0, requestStart: 5, responseStart: 150, responseEnd: 180,
+    get name() { throw new Error('A document URL must not be inspected.') } }
+  const performance = browserPerformance({ navigation }), api = fixture({ performance }).load('lib/performance/dashboard.ts')
+  api.beginTodayStartup()
+  assert.deepEqual(plain(performance.getEntriesByName('anastasis:document-response-start')[0]), { name: 'anastasis:document-response-start', startTime: 150 })
+  assert.deepEqual(plain(performance.getEntriesByName('anastasis:document-response-download')[0]), { name: 'anastasis:document-response-download', startTime: performance.getEntriesByName('anastasis:document-response-download')[0].startTime, start: 150, end: 180 })
+  api.beginTodayStartup()
+  assert.equal(performance.getEntriesByName('anastasis:document-response-start').length, 1)
+  assert.equal(performance.getEntriesByName('anastasis:document-response-end').length, 1)
+  assert.ok(performance.entries.filter(entry => entry.name.includes('document')).every(entry => entry.detail === undefined))
+  for (const overrides of [{ type: 'back_forward' }, { activationStart: 1 }, { responseEnd: 0 }, { responseStart: Infinity }, { responseEnd: 86_400_001 }, { responseStart: 4 }]) {
+    const browser = browserPerformance({ navigation: { type: 'navigate', activationStart: 0, requestStart: 5, responseStart: 150, responseEnd: 180, ...overrides } })
+    fixture({ performance: browser }).load('lib/performance/dashboard.ts').beginTodayStartup()
+    assert.equal(browser.entries.filter(entry => entry.name.includes('document')).length, 0)
+  }
+})
+
+test('same-origin middleware timing accepts only static auth/context names and finite scalar durations', () => {
+  const performance = browserPerformance({ navigation: { type: 'navigate', requestStart: 5, responseStart: 150, responseEnd: 180,
+    serverTiming: [
+      { name: 'today_mw_auth', duration: 10.123456, get description() { throw new Error('Descriptions cannot be copied.') } },
+      { name: 'today_mw_context', duration: 23.5, description: 'discarded private content' },
+      { name: 'unknown-secret', duration: 1 },
+    ] } })
+  const api = fixture({ performance }).load('lib/performance/dashboard.ts')
+  api.beginTodayStartup(); api.beginTodayStartup()
+  const auth = performance.getEntriesByName('anastasis:today:middleware:auth')
+  assert.equal(auth.length, 1)
+  assert.deepEqual(plain(auth[0].detail), { durationMs: 10.123 })
+  assert.deepEqual(plain(performance.getEntriesByName('anastasis:today:middleware:context')[0].detail), { durationMs: 23.5 })
+  assert.doesNotMatch(JSON.stringify(performance.entries), /today_mw_|discarded|unknown-secret|description/)
+  for (const duration of [-1, NaN, Infinity, '123', 86_400_001]) {
+    const browser = browserPerformance({ navigation: { type: 'navigate', requestStart: 1, responseStart: 2, responseEnd: 3,
+      serverTiming: [{ name: 'today_mw_auth', duration }] } })
+    fixture({ performance: browser }).load('lib/performance/dashboard.ts').beginTodayStartup()
+    assert.equal(browser.getEntriesByName('anastasis:today:middleware:auth').length, 0)
+  }
+})
+
+test('a streamed document observes response completion once and abandoned load callbacks cannot publish', () => {
+  const navigation = { type: 'navigate', requestStart: 5, responseStart: 150, responseEnd: 0 }
+  const performance = browserPerformance({ navigation }), view = fixture({ performance })
+  const api = view.load('lib/performance/dashboard.ts'), cleanup = api.beginTodayStartup()
+  assert.equal(performance.getEntriesByName('anastasis:document-response-end').length, 0)
+  assert.equal(view.listeners.get('load').size, 1)
+  navigation.responseEnd = 180
+  view.emit('load'); view.emit('load')
+  assert.equal(performance.getEntriesByName('anastasis:document-response-end').length, 1)
+  cleanup()
+  assert.equal(view.listeners.get('load').size, 0)
+
+  const pending = { type: 'navigate', requestStart: 5, responseStart: 150, responseEnd: 0 }
+  const canceledPerformance = browserPerformance({ navigation: pending }), canceled = fixture({ performance: canceledPerformance })
+  const stop = canceled.load('lib/performance/dashboard.ts').beginTodayStartup()
+  const escaped = [...canceled.listeners.get('load')]
+  stop(); pending.responseEnd = 180
+  for (const callback of escaped) callback()
+  assert.equal(canceledPerformance.getEntriesByName('anastasis:document-response-end').length, 0)
+  assert.equal(canceled.listeners.get('load').size, 0)
+})
+
+test('Today layout, carousel, verified check-in status and clickable milestones require two committed frames and cancel on unmount', () => {
+  for (const stage of ['today-layout-visible', 'today-carousel-interactive', 'today-check-in-ready', 'today-check-in-clickable']) {
     const performance = browserPerformance(), view = fixture({ performance })
     view.load('lib/performance/dashboard.ts').beginTodayStartup()
     const cleanup = view.component({ stage, snapshot: 'current', timings: [{ stage: 'plan', startMs: 0, durationMs: 4 }], actionable: true })

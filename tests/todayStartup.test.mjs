@@ -48,8 +48,9 @@ function enrichment(seed, completed = false, patch = {}) {
 // Execute the real startup component, hooks, timing and freshness helpers with
 // disposable promise-controlled HTTP/auth transports. Nested display components
 // are opaque so no full dashboard logic or authenticated provider is involved.
-function harness(initialSeed) {
+function harness(initialSeed, { effects: commitInitially = true } = {}) {
   let seed = initialSeed, tree, changed = false, now = Date.parse(seed.generatedAt || seed.now)
+  let commitEffects = commitInitially, mounted = true, afterUnmountUpdates = 0
   let stateIndex = 0, refIndex = 0, effectIndex = 0, memoIndex = 0, nextTimer = 0, authListener
   const states = [], refs = [], effects = [], memos = [], requests = [], redirects = [], refreshes = [], opened = []
   const windowListeners = new Map(), documentListeners = new Map(), timers = new Map(), frames = new Map(), entries = []
@@ -79,7 +80,7 @@ function harness(initialSeed) {
   }
   const react = {
     useState(initial) { const index = stateIndex++; if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial
-      return [states[index], next => { const value = typeof next === 'function' ? next(states[index]) : next; if (!Object.is(value, states[index])) { states[index] = value; changed = true } }] },
+      return [states[index], next => { if (!mounted) { afterUnmountUpdates++; return } const value = typeof next === 'function' ? next(states[index]) : next; if (!Object.is(value, states[index])) { states[index] = value; changed = true } }] },
     useRef(initial) { return refs[refIndex++] ||= { current: initial } },
     useEffect(fn, deps) { const index = effectIndex++, previous = effects[index]
       if (!previous || !deps || deps.some((value, i) => !Object.is(value, previous.deps[i]))) effects[index] = { deps, fn, cleanup: previous?.cleanup, pending: true } },
@@ -126,12 +127,13 @@ function harness(initialSeed) {
   }
   const Startup = load('components/program-dashboard/TodayStartup.tsx').default
   function render(nextSeed) {
+    if (!mounted) return tree
     if (nextSeed) seed = nextSeed
     let count = 0
     do {
       changed = false; stateIndex = refIndex = effectIndex = memoIndex = 0
       tree = Startup({ seed })
-      for (const effect of effects) if (effect?.pending) { effect.pending = false; effect.cleanup?.(); effect.cleanup = effect.fn() }
+      if (commitEffects) for (const effect of effects) if (effect?.pending) { effect.pending = false; effect.cleanup?.(); effect.cleanup = effect.fn() }
       assert.ok(count++ < 25, 'Startup settles without an effect loop')
     } while (changed)
     return tree
@@ -141,19 +143,111 @@ function harness(initialSeed) {
   render()
   return {
     render, flush, requests, redirects, refreshes, entries, window, document, opened, get tree() { return render() },
+    get afterUnmountUpdates() { return afterUnmountUpdates },
+    commit() { commitEffects = true; return render() },
     find, carousel: () => find(node => node.type === 'TodayDayCarousel')[0],
     button: label => find(node => node.type === 'button' && text(node).includes(label))[0],
     emit(type, props = {}) { window.dispatchEvent({ type, ...props }); document.dispatchEvent({ type, ...props }); render() },
     auth(userId, event = 'SIGNED_IN') { authListener?.(event, userId ? { user: { id: userId } } : null); render() },
     frames() { const pending = [...frames.values()]; frames.clear(); for (const callback of pending) callback(); render() },
     advance(ms) { now += ms; let count = 0; for (;;) { const due = [...timers.entries()].filter(([, timer]) => timer.at <= now).sort((a, b) => a[1].at - b[1].at)[0]; if (!due) break; timers.delete(due[0]); due[1].fn(); render(); assert.ok(count++ < 20, 'Boundary timers remain bounded') } },
-    unmount() { for (const effect of effects) effect?.cleanup?.() },
+    unmount() { if (!mounted) return; mounted = false; for (const effect of effects) effect?.cleanup?.() },
   }
 }
 
 const request = (view, kind, index = 0) => view.requests.filter(call => call.url.startsWith(`/api/dashboard/today-${kind}?`))[index]
-const guide = view => view.find(node => node.type === 'GuidedToday')[0]
+const guide = view => view.find(node => node.type === 'DeferredTodayGuidance')[0]
 const markers = view => view.find(node => node.type === 'DashboardPerformance').map(node => node.props.stage)
+
+test('verified server bootstrap makes check-in available in the first render and avoids a duplicate bootstrap request', async () => {
+  const seed = bootstrap({ completed: false }), view = harness(seed, { effects: false })
+  assert.equal(view.requests.length, 0, 'Server markup has its verified action before browser effects or fetches')
+  const initialCarousel = view.carousel()
+  assert.equal(initialCarousel.props.day.sections[0].items[0].href, '/dashboard/check-in')
+  assert.ok(markers(view).includes('today-check-in-ready'), 'Verified incomplete status is measurable before browser effects')
+  assert.ok(markers(view).includes('today-check-in-clickable'))
+  assert.equal(guide(view), undefined)
+  assert.doesNotMatch(text(view.tree), /Confirming today’s daily check-in status/)
+  view.commit()
+  assert.equal(view.requests.length, 1)
+  assert.equal(request(view, 'bootstrap'), undefined, 'Hydration reuses the owner/day-bound verification already performed by the server')
+  assert.ok(request(view, 'enrichment'))
+  assert.equal(view.carousel().key, initialCarousel.key)
+  request(view, 'enrichment').respond(enrichment(seed))
+  await view.flush()
+  assert.ok(guide(view))
+  assert.equal(view.requests.length, 1)
+  view.unmount()
+})
+
+test('verified server completion never briefly exposes an already completed check-in', async () => {
+  const seed = bootstrap({ completed: true }), view = harness(seed, { effects: false })
+  assert.equal(view.carousel().props.day.sections[0].items.length, 0)
+  assert.ok(markers(view).includes('today-check-in-ready'), 'Verified completed status is ready even though it offers no new check-in')
+  assert.ok(!markers(view).includes('today-check-in-clickable'))
+  assert.match(text(view.tree), /daily check-in is saved/)
+  view.commit()
+  assert.equal(request(view, 'bootstrap'), undefined)
+  assert.equal(view.requests.length, 1)
+  request(view, 'enrichment').respond(enrichment(seed, true))
+  await view.flush()
+  assert.equal(view.carousel().props.day.sections[0].items.length, 0)
+  view.unmount()
+})
+
+test('server verification errors stay local until an explicit retry verifies the current day', async () => {
+  const seed = bootstrap({ checkIn: { status: 'error', completed: null, message: 'Synthetic server read unavailable' } })
+  const view = harness(seed)
+  assert.equal(request(view, 'bootstrap'), undefined)
+  assert.match(text(view.tree), /Synthetic server read unavailable/)
+  assert.ok(!markers(view).includes('today-check-in-ready'), 'An unverified error cannot publish readiness')
+  assert.ok(view.button('Retry check-in status'))
+  assert.equal(view.carousel().props.day.sections[0].items.length, 0)
+  request(view, 'enrichment').respond(enrichment(seed))
+  await view.flush()
+  assert.equal(guide(view), undefined, 'A full model cannot bypass failed completion verification')
+  view.button('Retry check-in status').props.onClick(); view.render()
+  assert.equal(view.requests.length, 2)
+  request(view, 'bootstrap').respond({ bootstrap: bootstrap({ completed: false }) })
+  await view.flush()
+  assert.ok(guide(view))
+  assert.ok(view.carousel().props.day.sections[0].items[0])
+  view.unmount()
+})
+
+test('retrying a newer server verification error cannot resurrect a previous ready seed', async () => {
+  const original = bootstrap({ completed: false }), view = harness(original)
+  request(view, 'enrichment').respond(enrichment(original))
+  await view.flush()
+  assert.ok(guide(view))
+  const current = bootstrap({ at: '2026-11-14T13:00:02.000Z',
+    checkIn: { status: 'error', completed: null, message: 'Synthetic newer verification unavailable' } })
+  view.render(current)
+  assert.equal(view.carousel().props.day.sections[0].items.length, 0)
+  assert.equal(guide(view), undefined)
+  assert.equal(request(view, 'bootstrap'), undefined)
+  assert.ok(!markers(view).includes('today-check-in-ready'))
+
+  view.button('Retry check-in status').props.onClick(); view.render()
+  assert.ok(request(view, 'bootstrap'))
+  assert.equal(view.carousel().props.day.sections[0].items.length, 0, 'A prior seed is superseded by the new unknown server result')
+  assert.equal(guide(view), undefined)
+  assert.ok(!markers(view).includes('today-check-in-ready'))
+  assert.ok(!markers(view).includes('today-check-in-clickable'))
+  request(view, 'enrichment', 1).respond(enrichment(current))
+  await view.flush()
+  assert.equal(guide(view), undefined, 'Independent enrichment cannot bypass the pending verification retry')
+  request(view, 'bootstrap').respond({ bootstrap: bootstrap({ completed: true, at: current.generatedAt }) })
+  await view.flush()
+  assert.ok(markers(view).includes('today-check-in-ready'))
+  assert.ok(!markers(view).includes('today-check-in-clickable'))
+  assert.equal(view.carousel().props.day.sections[0].items.length, 0)
+  assert.equal(guide(view), undefined, 'The old incomplete model cannot reverse the newly verified completion')
+  request(view, 'enrichment', 2).respond(enrichment(current, true))
+  await view.flush()
+  assert.ok(guide(view))
+  view.unmount()
+})
 
 test('cold startup exposes an interactive real carousel and verified check-in while enrichment remains unresolved', async () => {
   const seed = bootstrap(), view = harness(seed)
@@ -275,15 +369,18 @@ test('other-account, invalid-model and wrong-day responses never become current 
 })
 
 test('account switch, logout and unmount fence late completions immediately', async () => {
-  for (const action of ['account', 'logout', 'event', 'unmount']) {
-    const view = harness(bootstrap()), pending = [...view.requests]
+  for (const action of ['account', 'logout', 'expired', 'event', 'unmount']) {
+    const seed = bootstrap({ completed: false }), view = harness(seed), pending = [...view.requests]
+    assert.ok(markers(view).includes('today-check-in-clickable'))
     if (action === 'account') view.auth('OTHER-USER')
     else if (action === 'logout') view.auth(null, 'SIGNED_OUT')
+    else if (action === 'expired') view.auth(null, 'TOKEN_REFRESHED')
     else if (action === 'event') view.emit('anastasis:session-ended')
     else view.unmount()
     assert.ok(pending.every(call => call.options.signal.aborted))
     for (const call of pending) call.respond(call.url.includes('today-bootstrap') ? { bootstrap: bootstrap({ completed: false }) } : enrichment(bootstrap()))
     await view.flush()
+    assert.equal(view.afterUnmountUpdates, 0, 'Interrupted navigation cancels every late state update')
     if (action !== 'unmount') {
       assert.equal(view.carousel(), undefined)
       assert.equal(guide(view), undefined)
@@ -291,6 +388,81 @@ test('account switch, logout and unmount fence late completions immediately', as
     }
     view.unmount()
   }
+})
+
+test('a late old-account server seed cannot clear an account-switch or logout block', async () => {
+  for (const action of ['account-switch', 'logout']) {
+    const seed = bootstrap({ completed: false }), view = harness(seed)
+    request(view, 'enrichment').respond(enrichment(seed))
+    await view.flush()
+    assert.ok(guide(view))
+    const resuming = bootstrap({ completed: false, at: '2026-11-14T13:00:01.000Z' })
+    view.render(resuming)
+    const escaped = request(view, 'enrichment', 1)
+    assert.ok(escaped)
+    if (action === 'account-switch') view.auth('OTHER-USER')
+    else view.auth(null, 'SIGNED_OUT')
+    assert.ok(escaped.options.signal.aborted)
+    assert.equal(view.carousel(), undefined)
+    assert.equal(guide(view), undefined)
+    const requestsAtBlock = view.requests.length
+
+    view.render(bootstrap({ completed: false, at: '2026-11-14T13:00:02.000Z' }))
+    escaped.respond(enrichment(resuming))
+    await view.flush()
+    assert.equal(view.requests.length, requestsAtBlock, 'A fresh timestamp for the old owner cannot restart authenticated work')
+    assert.equal(view.carousel(), undefined)
+    assert.equal(guide(view), undefined)
+    for (const stage of ['today-carousel-interactive', 'today-check-in-ready', 'today-check-in-clickable', 'primary']) {
+      assert.ok(!markers(view).includes(stage), `Blocked state cannot publish ${stage}`)
+    }
+    assert.match(text(view.tree), /account or safety status changed/)
+    const header = view.find(node => node.type === 'TodayDashboardHeader')[0]
+    assert.equal(header.props.memberName, '')
+    view.unmount()
+  }
+})
+
+test('a fresh server seed after save cancels superseded work and reuses its verified completion without another read', async () => {
+  const seed = bootstrap({ completed: false }), view = harness(seed)
+  assert.equal(view.requests.length, 1)
+  const beforeSave = request(view, 'enrichment')
+  view.emit('anastasis:daily-plan-updated')
+  assert.ok(beforeSave.options.signal.aborted)
+  const verifying = request(view, 'bootstrap'), oldGuidance = request(view, 'enrichment', 1)
+  assert.ok(verifying)
+  const refreshed = bootstrap({ completed: true, at: '2026-11-14T13:00:02.000Z' })
+  view.render(refreshed)
+  assert.ok(verifying.options.signal.aborted)
+  assert.ok(oldGuidance.options.signal.aborted)
+  assert.equal(view.requests.filter(call => call.url.includes('today-bootstrap')).length, 1, 'The new server read replaces the invalidated browser verification')
+  assert.match(text(view.tree), /daily check-in is saved/)
+  assert.equal(view.carousel().props.day.sections[0].items.length, 0)
+  beforeSave.respond(enrichment(seed))
+  verifying.respond({ bootstrap: bootstrap({ completed: false }) })
+  oldGuidance.respond(enrichment(seed))
+  await view.flush()
+  assert.equal(guide(view), undefined)
+  assert.ok(!markers(view).includes('today-check-in-clickable'))
+  request(view, 'enrichment', 2).respond(enrichment(refreshed, true))
+  await view.flush()
+  assert.ok(guide(view))
+  assert.equal(view.carousel().props.day.sections[0].items.length, 0)
+  view.unmount()
+})
+
+test('a server-verified check-in is disabled at local midnight without waiting for enrichment or another bootstrap response', async () => {
+  const seed = bootstrap({ completed: false, at: '2026-11-14T23:59:59.000Z' }), view = harness(seed)
+  assert.equal(request(view, 'bootstrap'), undefined)
+  assert.ok(view.carousel().props.day.sections[0].items[0])
+  view.advance(1020)
+  assert.equal(view.carousel(), undefined)
+  assert.ok(!markers(view).includes('today-check-in-clickable'))
+  assert.match(text(view.tree), /new local day/)
+  request(view, 'enrichment').respond(enrichment(seed))
+  await view.flush()
+  assert.equal(guide(view), undefined)
+  view.unmount()
 })
 
 test('local midnight hides yesterday immediately and discards its late enrichment', async () => {
