@@ -16,7 +16,7 @@ const text = tree => typeof tree === 'string' || typeof tree === 'number' ? Stri
   ? tree.map(text).join(' ') : tree && typeof tree === 'object' ? text(children(tree)) : ''
 const plain = value => JSON.parse(JSON.stringify(value))
 const AOSButton = 'AOSButton', AOSSlider = 'AOSSlider', AOSInput = 'AOSInput', AOSToggle = 'AOSToggle'
-const SymptomLogger = 'SymptomLogger', AOSChip = 'AOSChip'
+const SymptomLogger = 'SymptomLogger', CycleFlowLogger = 'CycleFlowLogger', AOSChip = 'AOSChip'
 const commonMocks = {
   'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key, ref: props?.ref }), jsxs: (type, props, key) => ({ type, props, key, ref: props?.ref }), Fragment: 'Fragment' },
   '@/components/aos-ui/AOSButton': { AOSButton }, '@/components/aos-ui/AOSSlider': { AOSSlider },
@@ -24,6 +24,7 @@ const commonMocks = {
   '@/components/aos-ui/AOSCard': { AOSCard: 'AOSCard' }, '@/components/aos-ui/AOSChip': { AOSChip },
   '@/components/aos-ui/AOSModal': { AOSModal: 'AOSModal' }, '@/components/aos-ui/AOSSectionHeader': { AOSSectionHeader: 'AOSSectionHeader' },
   '@/components/SymptomLogger': { __esModule: true, default: SymptomLogger },
+  '@/components/CycleFlowLogger': { __esModule: true, default: CycleFlowLogger },
   'next/link': { __esModule: true, default: 'a' }, 'next/image': { __esModule: true, default: 'img' },
   '@/lib/symptoms/symptomCatalog': catalog,
   '@/lib/entitlements': { normalizeProgramTier: program => program },
@@ -158,14 +159,14 @@ test('unconfirmed success keeps the popup and details; changed details receive a
   respond(h.pending[1], true, { success: true }); await second
 })
 
-function checkIn(initial = {}, props = {}, storage = new Map()) {
+function checkIn(initial = {}, props = {}, storage = new Map(), extra = {}) {
   const requests = [], events = [], routes = []
   const window = { sessionStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) } }
   const view = harness('components/DailyCheckInForm.tsx', { clientId: 'synthetic-client', program: 'ignite', localDate: '2026-11-10', timeZone: 'Etc/UTC', initial, cycleTrackingEnabled: true, ...props }, {
-    window, fetch: async (url, options) => { requests.push({ url, body: JSON.parse(options.body) }); return { ok: true, json: async () => ({ success: true }) } },
-    mocks: { 'next/navigation': { useRouter: () => ({ push: route => routes.push(route), refresh: () => routes.push('refresh') }) }, '@/lib/analytics': { trackEvent: (name, data) => events.push({ name, data }) } },
+    window, fetch: async (url, options) => { const body = JSON.parse(options.body); requests.push({ url, body }); return extra.fetch ? extra.fetch(url, body) : { ok: true, json: async () => ({ success: true }) } },
+    mocks: { 'next/navigation': { useRouter: () => ({ push: route => routes.push(route), refresh: () => routes.push('refresh') }) }, '@/lib/analytics': { trackEvent: (name, data) => events.push({ name, data }) }, ...(extra.mocks || {}) },
   })
-  return { view, requests, events, routes, storage, logger: () => view.find(node => node.type === SymptomLogger)[0], notes: () => view.find(node => node.type === AOSInput)[0], period: () => view.find(node => node.type === AOSToggle)[0], form: () => view.find(node => node.type === 'AOSCard' && node.props.as === 'form')[0] }
+  return { view, requests, events, routes, storage, logger: () => view.find(node => node.type === SymptomLogger)[0], notes: () => view.find(node => node.type === AOSInput)[0], period: (label) => view.find(node => node.type === AOSToggle && (!label || node.props.label === label))[0], flow: () => view.find(node => node.type === CycleFlowLogger)[0], flowModal: () => view.find(node => node.type === 'AOSModal' && node.props.title === 'Track today’s flow')[0], form: () => view.find(node => node.type === 'AOSCard' && node.props.as === 'form')[0] }
 }
 
 test('symptom cancellation and confirmed save preserve unfinished answers, soreness, notes, explicit onset, and tab-local draft', async () => {
@@ -244,4 +245,239 @@ test('symptom dialog layout contract preserves the silhouette, alternate area co
   assert.match(dialogRule, /overscroll-behavior: contain/)
   assert.match(css, /@media \(max-width: 480px\)[\s\S]*\.symptom-dialog__map-layout\s*\{ grid-template-columns: minmax\(0, 1fr\); \}/)
   assert.match(css, /@media \(max-width: 480px\)[\s\S]*\.symptom-dialog__area-list\s*\{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/)
+})
+
+
+test('unknown, active and ended period states offer the appropriate actions and preserve correction access', () => {
+  const unknown = checkIn({}, { recentPeriodStart: true })
+  assert.ok(unknown.period('My period started today'))
+  assert.equal(unknown.view.button('Track today’s flow'), undefined, 'A recent historical onset does not confirm an active period.')
+  assert.match(text(unknown.view.tree), /current period status is unconfirmed/)
+  assert.ok(unknown.period('My period is already active'))
+  assert.ok(unknown.period('My period ended'))
+  assert.equal(unknown.requests.length, 0)
+
+  const active = checkIn({}, { periodState: { status: 'active', recordedDate: '2026-09-01' } })
+  assert.ok(active.view.button('Track today’s flow'), 'An explicit active period has no fixed-day expiry.')
+  assert.equal(active.period('My period started today'), undefined)
+  assert.ok(active.period('My period ended'))
+  assert.ok(active.view.find(node => node.type === 'a' && node.props.href === '/dashboard/cycle').length)
+  assert.equal(active.logger().props.periodContext, true)
+
+  const ended = checkIn({}, { periodState: { status: 'ended', recordedDate: '2026-11-09' } })
+  assert.equal(ended.view.button('Track today’s flow'), undefined)
+  assert.ok(ended.period('My period started today'))
+  assert.ok(ended.period('My period is still active'))
+  assert.equal(ended.period('My period ended'), undefined)
+  ended.period('My period is still active').props.onChange(true); ended.view.render()
+  assert.equal(ended.period('My period is still active').props.checked, true)
+  ended.period('My period started today').props.onChange(true); ended.view.render()
+  assert.equal(ended.period('My period is still active').props.checked, false, 'Start and correction are mutually exclusive.')
+})
+
+test('flow popup opening, cancelling and returning preserve unfinished check-in and never save defaults or complete it', async () => {
+  const h = checkIn({}, { periodState: { status: 'active', recordedDate: '2026-11-07' } }), v = h.view
+  v.slider('Energy').props.onChange(8); v.slider('Stress').props.onChange(3); v.slider('Soreness').props.onChange(7); v.render()
+  v.click('Upper back'); h.notes().props.onChange({ target: { value: 'Keep my unfinished answers' } }); v.render()
+  const draft = [...h.storage.values()][0]
+  assert.equal(h.flowModal().props.open, false)
+  v.click('Track today’s flow')
+  assert.equal(h.flowModal().props.open, true)
+  assert.equal(h.flow().props.clientId, 'synthetic-client')
+  assert.equal(h.flow().props.localDate, '2026-11-10')
+  assert.equal(h.flow().props.timeZone, 'Etc/UTC')
+  assert.equal(h.form().props.as, 'form')
+  assert.equal(nodes(h.form(), node => node.type === CycleFlowLogger).length, 0, 'Flow save is outside the daily check-in form.')
+  assert.equal(h.requests.length, 0)
+  h.flowModal().props.onClose(); v.render()
+  assert.equal(h.flowModal().props.open, false)
+  assert.equal(v.calls.entryFocus, 1)
+  assert.equal([...h.storage.values()][0], draft)
+
+  v.click('Track today’s flow'); h.flow().props.onSaved(); v.render()
+  assert.equal(h.requests.length, 0)
+  assert.match(text(v.tree), /Flow saved separately/)
+  v.click('Return to check-in')
+  assert.equal(h.flowModal().props.open, false)
+  assert.equal(v.slider('Energy').props.value, 8)
+  assert.equal(v.slider('Stress').props.value, 3)
+  assert.equal(v.slider('Soreness').props.value, 7)
+  assert.ok(v.button('Upper back'))
+  assert.equal(h.notes().props.value, 'Keep my unfinished answers')
+  assert.equal([...h.storage.values()][0], draft)
+  assert.equal(h.events.filter(event => event.name === 'daily_check_in_completed').length, 0)
+  assert.deepEqual(h.routes, [])
+})
+
+test('in-flight flow save blocks close and daily submission until the shared logger returns', async () => {
+  const h = checkIn({ energy: 7 }, { periodState: { status: 'active', recordedDate: '2026-11-07' } }), v = h.view
+  v.click('Track today’s flow')
+  h.flow().props.onSavingChange(true); v.render()
+  assert.equal(v.find(node => node.type === 'fieldset')[0].props.disabled, true)
+  assert.equal(v.button('Return to check-in').props.disabled, true)
+  h.flowModal().props.onClose(); await h.form().props.onSubmit({ preventDefault() {} }); v.render()
+  assert.equal(h.flowModal().props.open, true)
+  assert.equal(h.requests.length, 0)
+  h.flow().props.onSavingChange(false); v.render()
+  v.click('Return to check-in')
+  assert.equal(h.flowModal().props.open, false)
+})
+
+test('explicit start, end and resume save with final check-in and persist into subsequent reopening', async () => {
+  const actionCases = [
+    { state: { status: 'unknown', recordedDate: null }, label: 'My period started today', action: 'start', result: 'active' },
+    { state: { status: 'active', recordedDate: '2026-11-07' }, label: 'My period ended', action: 'end', result: 'ended' },
+    { state: { status: 'ended', recordedDate: '2026-11-09' }, label: 'My period is still active', action: 'resume', result: 'active' },
+  ]
+  for (const item of actionCases) {
+    const periodState = { status: item.result, recordedDate: '2026-11-10' }
+    const h = checkIn({ energy: 7 }, { periodState: item.state, stayOnSave: true }, new Map(), {
+      fetch: async () => ({ ok: true, json: async () => ({ success: true, periodState }) }),
+    }), v = h.view
+    h.period(item.label).props.onChange(true); v.render()
+    assert.equal(h.requests.length, 0, 'Selecting an action is a draft until final save.')
+    const restored = checkIn({ energy: 7 }, { periodState: item.state }, h.storage)
+    assert.equal(restored.period(item.label).props.checked, true)
+    await h.form().props.onSubmit({ preventDefault() {} }); v.render()
+    assert.equal(h.requests.length, 1)
+    assert.equal(h.requests[0].url, '/api/daily-check-in')
+    assert.equal(h.requests[0].body.periodStarted, item.action === 'start')
+    assert.equal(h.requests[0].body.periodAction, item.action === 'start' ? undefined : item.action)
+    assert.equal(h.requests[0].body.date, '2026-11-10')
+    assert.equal(h.storage.size, 0)
+    assert.equal(Boolean(v.button('Track today’s flow')), item.result === 'active')
+    assert.equal(h.period(item.result === 'active' ? 'My period ended' : 'My period started today').props.checked, false)
+    const reopened = checkIn({ energy: 7 }, { completed: true, periodState })
+    assert.equal(Boolean(reopened.view.button('Track today’s flow')), item.result === 'active')
+    assert.equal(reopened.requests.length, 0, 'Persisted reopening does not replay the lifecycle action.')
+  }
+})
+
+test('a changed persisted period state drops stale drafted actions but preserves unfinished answers', () => {
+  const state = { status: 'active', recordedDate: '2026-11-07' }
+  const h = checkIn({}, { periodState: state }), v = h.view
+  v.slider('Energy').props.onChange(8); h.notes().props.onChange({ target: { value: 'Still unfinished' } })
+  h.period('My period ended').props.onChange(true); v.render()
+  const otherState = { status: 'ended', recordedDate: '2026-11-10' }
+  const reopened = checkIn({}, { periodState: otherState }, h.storage)
+  assert.equal(reopened.view.slider('Energy').props.value, 8)
+  assert.equal(reopened.notes().props.value, 'Still unfinished')
+  assert.equal(reopened.period('My period started today').props.checked, false)
+  assert.equal(reopened.period('My period is still active').props.checked, false)
+  assert.equal(JSON.parse([...reopened.storage.values()][0]).periodAction, null)
+  v.render({ periodState: otherState })
+  assert.equal(v.slider('Energy').props.value, 8)
+  assert.equal(h.notes().props.value, 'Still unfinished')
+  assert.equal(JSON.parse([...h.storage.values()][0]).periodAction, null, 'An incoming persisted state invalidates a pending period action even on the mounted form.')
+})
+
+test('daily save blocks duplicate submissions, preserves drafts on failure, and accepts edited corrections', async () => {
+  const pending = []
+  const h = checkIn({ energy: 7 }, { stayOnSave: true }, new Map(), {
+    fetch: () => new Promise(resolve => pending.push(resolve)),
+  }), v = h.view
+  h.period('My period started today').props.onChange(true); v.render()
+  const save = h.form().props.onSubmit
+  const first = save({ preventDefault() {} }), duplicate = save({ preventDefault() {} }); v.render()
+  assert.equal(h.requests.length, 1)
+  assert.equal(v.find(node => node.type === 'fieldset')[0].props.disabled, true)
+  respond(pending[0], false, { error: 'Synthetic save failure' }); await first; await duplicate; v.render()
+  assert.equal(h.period('My period started today').props.checked, true)
+  assert.ok(h.storage.size)
+  const retry = h.form().props.onSubmit({ preventDefault() {} })
+  respond(pending[1], true, { success: true, periodState: { status: 'active', recordedDate: '2026-11-10' } }); await retry; v.render()
+  await h.form().props.onSubmit({ preventDefault() {} }); v.render()
+  assert.equal(h.requests.length, 2, 'A successful unchanged check-in cannot be submitted again.')
+  assert.equal(v.button('Save changes').props.disabled, true)
+  h.period('My period ended').props.onChange(true); v.render()
+  const corrected = h.form().props.onSubmit({ preventDefault() {} })
+  assert.equal(h.requests.length, 3)
+  assert.equal(h.requests.at(-1).body.periodAction, 'end')
+  assert.equal(h.requests.at(-1).body.periodStarted, false)
+  respond(pending[2], true, { success: true, periodState: { status: 'ended', recordedDate: '2026-11-10' } }); await corrected; v.render()
+  assert.equal(v.button('Track today’s flow'), undefined)
+})
+
+test('tracking disabled hides cycle actions and day rollover prevents stale final check-in writes', async () => {
+  const disabled = checkIn({ energy: 7 }, { cycleTrackingEnabled: false, periodState: { status: 'active', recordedDate: '2026-11-07' } })
+  assert.equal(disabled.period(), undefined)
+  assert.equal(disabled.view.button('Track today’s flow'), undefined)
+  assert.equal(disabled.flowModal().props.open, false)
+  assert.equal(disabled.logger().props.periodContext, false)
+  await disabled.form().props.onSubmit({ preventDefault() {} })
+  assert.equal(disabled.requests[0].body.periodStarted, false)
+  assert.equal(disabled.requests[0].body.periodAction, undefined)
+  const rolled = checkIn({ energy: 7 }, {}, new Map(), { mocks: { '@/lib/timezone': { localDateKey: () => '2026-11-11' } } })
+  await rolled.form().props.onSubmit({ preventDefault() {} }); rolled.view.render()
+  assert.equal(rolled.requests.length, 0)
+  assert.match(text(rolled.view.tree), /A new day has started/)
+  const failed = checkIn({ energy: 7 }, { periodState: { status: 'unknown', recordedDate: null, loadError: true } })
+  assert.equal(failed.period(), undefined)
+  assert.equal(failed.view.button('Track today’s flow'), undefined)
+  assert.match(text(failed.view.tree), /period status could not be loaded/)
+})
+
+test('confirmed partial lifecycle save retains unfinished answers and retry saves recovery without replaying period action', async () => {
+  let attempts = 0
+  const h = checkIn({ energy: 7 }, { stayOnSave: true, periodState: { status: 'active', recordedDate: '2026-11-07' } }, new Map(), {
+    fetch: async () => ++attempts === 1
+      ? { ok: false, json: async () => ({ partialSave: true, periodState: { status: 'ended', recordedDate: '2026-11-10' }, error: 'Period saved; daily answers could not be saved.' }) }
+      : { ok: true, json: async () => ({ success: true, periodState: { status: 'ended', recordedDate: '2026-11-10' } }) },
+  }), v = h.view
+  v.slider('Stress').props.onChange(3); h.notes().props.onChange({ target: { value: 'Retain through partial save' } })
+  h.period('My period ended').props.onChange(true); v.render()
+  await h.form().props.onSubmit({ preventDefault() {} }); v.render()
+  assert.equal(h.requests[0].body.periodAction, 'end')
+  assert.equal(v.button('Track today’s flow'), undefined)
+  assert.match(text(v.tree), /Period saved; daily answers could not be saved/)
+  assert.equal(v.slider('Energy').props.value, 7)
+  assert.equal(v.slider('Stress').props.value, 3)
+  assert.equal(h.notes().props.value, 'Retain through partial save')
+  assert.ok(h.storage.size)
+  assert.equal(h.events.filter(event => event.name === 'daily_check_in_completed').length, 0)
+  await h.form().props.onSubmit({ preventDefault() {} }); v.render()
+  assert.equal(h.requests.length, 2)
+  assert.equal(h.requests[1].body.periodAction, undefined)
+  assert.equal(h.requests[1].body.periodStarted, false)
+  assert.equal(h.requests[1].body.stress, 3)
+  assert.equal(h.requests[1].body.notes, 'Retain through partial save')
+  assert.equal(h.storage.size, 0)
+})
+
+test('legacy unfinished drafts retain an explicitly selected start only while persisted status remains unknown', () => {
+  const key = 'anastasis:check-in-draft:v1:synthetic-client:ignite:2026-11-10'
+  const legacy = JSON.stringify({ version: 1, initialKey: '{}', answers: { energy: 8, notes: 'Existing draft' }, periodStarted: true, sorenessRegions: [] })
+  const unknown = checkIn({}, {}, new Map([[key, legacy]]))
+  assert.equal(unknown.period('My period started today').props.checked, true)
+  assert.equal(unknown.view.slider('Energy').props.value, 8)
+  const active = checkIn({}, { periodState: { status: 'active', recordedDate: '2026-11-07' } }, new Map([[key, legacy]]))
+  assert.equal(active.period('My period ended').props.checked, false)
+  assert.equal(active.view.slider('Energy').props.value, 8)
+  assert.equal(active.notes().props.value, 'Existing draft')
+  assert.equal(JSON.parse([...active.storage.values()][0]).periodStarted, false)
+})
+
+
+test('partial start requiring summary repair retains its action for an explicit retry without losing answers', async () => {
+  let attempts = 0
+  const h = checkIn({ energy: 7 }, { stayOnSave: true }, new Map(), {
+    fetch: async () => ++attempts === 1
+      ? { ok: false, json: async () => ({ partialSave: true, retryPeriodAction: true, periodState: { status: 'active', recordedDate: '2026-11-10' }, error: 'Period start saved; cycle summary could not be updated. Try saving again.' }) }
+      : { ok: true, json: async () => ({ success: true, periodState: { status: 'active', recordedDate: '2026-11-10' } }) },
+  }), v = h.view
+  h.notes().props.onChange({ target: { value: 'Retain while repairing summary' } })
+  h.period('My period started today').props.onChange(true); v.render()
+  await h.form().props.onSubmit({ preventDefault() {} }); v.render()
+  assert.equal(h.requests[0].body.periodStarted, true)
+  assert.match(text(v.tree), /cycle summary could not be updated/)
+  assert.equal(v.slider('Energy').props.value, 7)
+  assert.equal(h.notes().props.value, 'Retain while repairing summary')
+  assert.equal(JSON.parse([...h.storage.values()][0]).periodStarted, true, 'The already-written start is retained only because its summary needs repair.')
+  assert.equal(h.events.filter(event => event.name === 'daily_check_in_completed').length, 0)
+  await h.form().props.onSubmit({ preventDefault() {} }); v.render()
+  assert.equal(h.requests.length, 2)
+  assert.equal(h.requests[1].body.periodStarted, true, 'Explicit retry repeats the idempotent start to repair the summary.')
+  assert.equal(h.requests[1].body.notes, 'Retain while repairing summary')
+  assert.equal(h.storage.size, 0)
+  assert.equal(h.period('My period ended').props.checked, false)
 })

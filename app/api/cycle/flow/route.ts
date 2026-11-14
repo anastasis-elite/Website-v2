@@ -8,6 +8,7 @@ import {
   type MenstrualProductLogInput,
 } from '@/lib/cycle/menstrualFlow'
 import { getCycleStatus } from '@/lib/cycle/getCycleStatus'
+import { cycleTrackingAllowed } from '@/lib/cycle/periodState'
 import { evaluateMenstrualFlowEscalation } from '@/lib/physiology/escalation'
 import {
   buildClinicianPatternObservation,
@@ -156,8 +157,20 @@ export async function POST(request: Request) {
 
     if (!membershipCan(client, 'generatedCoaching')) return NextResponse.json({ error: 'Cycle coaching is not available for this membership.' }, { status: 403 })
 
-    const logDate = typeof body.logDate === 'string' ? body.logDate : getClientLocalDate(client)
+    if (!cycleTrackingAllowed(client)) return NextResponse.json({ error: 'Cycle tracking is disabled.' }, { status: 409 })
+    const today = getClientLocalDate(client)
+    const logDate = typeof body.logDate === 'string' ? body.logDate : today
+    if (logDate !== today) return NextResponse.json({ error: 'A new day has started. Open Today before logging flow.' }, { status: 409 })
+    if (body.periodAction !== undefined || body.periodEnded === true || body.noFlow === true || body.bleeding === false || ['end', 'period_ended', 'no_flow'].includes(body.action)) {
+      return NextResponse.json({ error: 'Record period end in your Daily Check-In. Flow logging requires products used.' }, { status: 400 })
+    }
     const products = cleanProducts(body.products)
+    if (!products.length || products.some(product => {
+      const volumeProduct = product.productType === 'cup' || product.productType === 'disc'
+      return volumeProduct
+        ? !(Number(product.empties) > 0 || Number(product.estimatedMl) > 0)
+        : !(Number(product.quantity) > 0)
+    })) return NextResponse.json({ error: 'Add the products used with a positive quantity, empties, or measured volume.' }, { status: 400 })
     const symptoms = cleanSeverityMap(body.symptoms)
     const energy = ratingOrNull(body.energy)
     const fatigue = ratingOrNull(body.fatigue)
@@ -166,14 +179,33 @@ export async function POST(request: Request) {
     const cycleStatus = getCycleStatus(client)
     const burden = calculateDailyMenstrualFlowBurden({ products })
 
-    const { data: existingCycleLog } = await supabase
+    const { data: existingCycleLog, error: existingCycleError } = await supabase
       .from('cycle_logs')
-      .select('symptoms')
+      .select('symptoms, cycle_day, cycle_phase')
       .eq('client_id', clientId)
       .eq('auth_user_id', user.id)
       .eq('log_date', logDate)
       .maybeSingle()
 
+    if (existingCycleError) return NextResponse.json({ error: existingCycleError.message }, { status: 500 })
+    const { data: existingDailySymptoms, error: dailyReadError } = await supabase.from('cycle_daily_symptoms')
+      .select('energy, fatigue, perceived_recovery, training_readiness, symptom_severity, numeric_scales')
+      .eq('user_id', user.id).eq('client_id', clientId).eq('log_date', logDate).maybeSingle()
+    if (dailyReadError) return NextResponse.json({ error: dailyReadError.message }, { status: 500 })
+    if (getClientLocalDate(client) !== today) return NextResponse.json({ error: 'A new day has started. Open Today before logging flow.' }, { status: 409 })
+
+    const ratingAnswers = {
+      ...(energy === null ? {} : { energy }),
+      ...(fatigue === null ? {} : { fatigue }),
+      ...(perceivedRecovery === null ? {} : { perceived_recovery: perceivedRecovery }),
+      ...(trainingReadiness === null ? {} : { training_readiness: trainingReadiness }),
+    }
+    const numericAnswers = {
+      ...(energy === null ? {} : { energy }),
+      ...(fatigue === null ? {} : { fatigue }),
+      ...(perceivedRecovery === null ? {} : { perceivedRecovery }),
+      ...(trainingReadiness === null ? {} : { trainingReadiness }),
+    }
     const existingSymptoms =
       existingCycleLog?.symptoms &&
       typeof existingCycleLog.symptoms === 'object' &&
@@ -188,8 +220,8 @@ export async function POST(request: Request) {
           client_id: clientId,
           auth_user_id: user.id,
           log_date: logDate,
-          cycle_day: cycleStatus.cycleDay,
-          cycle_phase: cycleStatus.phase,
+          cycle_day: existingCycleLog?.cycle_day ?? cycleStatus.cycleDay,
+          cycle_phase: existingCycleLog?.cycle_phase ?? cycleStatus.phase,
           bleeding: true,
           symptoms: {
             ...existingSymptoms,
@@ -293,12 +325,9 @@ export async function POST(request: Request) {
           cycle_log_id: cycleLog?.id || null,
           cycle_day: cycleStatus.cycleDay,
           cycle_phase: cycleStatus.phase,
-          energy,
-          fatigue,
-          perceived_recovery: perceivedRecovery,
-          training_readiness: trainingReadiness,
-          symptom_severity: symptoms,
-          numeric_scales: { energy, fatigue, perceivedRecovery, trainingReadiness },
+          ...ratingAnswers,
+          symptom_severity: { ...cleanSeverityMap(existingDailySymptoms?.symptom_severity), ...symptoms },
+          numeric_scales: { ...(existingDailySymptoms?.numeric_scales || {}), ...numericAnswers },
           provenance_category: 'self_reported',
           raw_entry: body,
           updated_at: new Date().toISOString(),
