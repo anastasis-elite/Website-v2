@@ -3,6 +3,7 @@ import { calculateFounderLoadFromEstimated1RM, resolveFounderExerciseReference }
 import { getEquipmentAdjustedLoad } from '@/lib/program/getEquipmentAdjustedLoad'
 import { roundRecommendedWeight } from '@/lib/cycle/getCycleTrainingAdjustment'
 import { hasNoCalculatedLoad, withoutCalculatedLoad } from '@/lib/workout/loadGuidance'
+import { issueExercisePrescription, hasVerifiedSavedPrescription } from '@/lib/workout/issuedPrescription'
 
 const positive = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0
 const equalLoad = (first: number, second: number) => Math.abs(first - second) < 1e-8
@@ -27,6 +28,7 @@ function manualEquipmentContext(exercise: any) {
 
 function switchContext(exercise: any) {
   const provenance = exercise?.prescription_calculation
+  if (exercise?.issued_prescription && !hasVerifiedSavedPrescription(exercise)) return null
   if (provenance?.version !== 'founder-load-v3' || hasNoCalculatedLoad(exercise) || exercise.prescription_status === 'unavailable' ||
     !positive(provenance.base_weight) || !positive(provenance.equipment_weight) ||
     !positive(exercise.cycle_weight_multiplier) || !positive(exercise.prescription_safety_multiplier) ||
@@ -94,10 +96,12 @@ export function changePrescriptionVariant(exercise: any, variantId: string): any
   if (!positive(equipmentWeight) || !positive(cycleWeight)) return null
   const finalWeight = roundSuggestedWeightLb({ selected_equipment: variant.equipment, load_type: variant.load_type }, cycleWeight * exercise.prescription_safety_multiplier)
   if (!positive(finalWeight)) return null
-  return { ...exercise, suggested_load_rounding: SUGGESTED_LOAD_ROUNDING, selected_variant_id: variant.id, selected_variant_name: variant.name,
+  const selected = { ...exercise, suggested_load_rounding: SUGGESTED_LOAD_ROUNDING, selected_variant_id: variant.id, selected_variant_name: variant.name,
     selected_equipment: variant.equipment, equipment: variant.equipment, load_type: variant.load_type,
     equipment_modifier: variant.equipment_modifier, baseline_weight: equipmentWeight, calculated_weight: equipmentWeight,
     cycle_adjusted_weight: cycleWeight, recommended_weight: finalWeight,
     prescription_calculation: { ...context.provenance, selected_variant_id: variant.id,
       equipment_modifier: variant.equipment_modifier, equipment_weight: equipmentWeight } }
+  return exercise.issued_prescription ? issueExercisePrescription(selected,0,exercise.issued_prescription.adjustments.daily,
+    exercise.issued_prescription.adjustments.low_capacity) : selected
 }

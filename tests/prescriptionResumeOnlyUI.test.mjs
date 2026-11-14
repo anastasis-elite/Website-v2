@@ -176,10 +176,14 @@ test('resume-only ambiguous reduced local sessions remain untouched without expo
   assert.deepEqual([...storage], before)
 })
 
+// A 50 lb x 3 assessment gives an estimated 1RM of 55 lb. The reference
+// multiplier for 8 reps is .725, which rounds to the issued 40 lb cable load.
+const freshEstimated1RM = 50 * (1 + 3 / 30)
 const freshRow = { id: 'row', exercise: 'Seated Cable Row', sets: 3, reps: 8, recommended_weight: 40, calculated_weight: 40,
+  assessment_key: 'Row', estimated_1rm: Math.round(freshEstimated1RM), baseline_weight: 40, rep_multiplier: .725, weight_unit: 'lb',
   selected_variant_id: 'seated_cable_row', selected_equipment: 'cable', load_type: 'total_load',
   prescription_calculation: { version: 'founder-load-v3', reference_exercise: 'Seated Cable Row', assessment_key: 'Row',
-    bodyweight_factor: 0, body_mass_lb: 180, estimated_1rm: 40, rep_multiplier: 1, base_weight: 40,
+    bodyweight_factor: 0, body_mass_lb: 180, estimated_1rm: freshEstimated1RM, rep_multiplier: .725, base_weight: 40,
     equipment_weight: 40, selected_variant_id: 'seated_cable_row', equipment_modifier: 1 } }
 const oldRow = { ...freshRow, sets: 4, reps: 10, recommended_weight: 20, calculated_weight: 20, prescription_calculation: undefined }
 async function retainedDraftStorage(draft, server = false) {
@@ -225,4 +229,47 @@ test('saved zero-set server defaults do not erase browser-only weight and rep ed
   storage.set('__disposableServer', server.get('__disposableServer'))
   const app = mount(ActivityTracker, props([freshRow]), storage); await app.flush()
   assert.deepEqual(numericInputs(app.tree).map(n => n.props.value), [25, 7])
+})
+
+test('ambiguous legacy loads stay blank while recorded sets and explicit input drafts survive pause and reopen', async () => {
+  const first = { ...bodyweight, sets: 4 }
+  const ambiguous = { ...freshRow, assessment_key: undefined, baseline_weight: undefined, rep_multiplier: undefined,
+    prescription_calculation: { ...freshRow.prescription_calculation, estimated_1rm: 40, rep_multiplier: 1 } }
+  const p = props([first, ambiguous]), date = (await import(moduleUrl('lib/timezone.ts'))).getClientLocalDate({ timezone: p.timezone })
+  const keys = ['squat:0', 'row:1'], key = `anastasis-session:${p.clientId}:${p.program}:${p.dayName}:${date}:recommended:${JSON.stringify(keys)}`
+  const recorded = [{ set_number: 1, weight: 0, reps: 7, weight_unit: 'kg', completed_at: new Date().toISOString() }]
+  const plan = [first, ambiguous], logs = plan.map((exercise, index) => ({ ...exercise, session_key: keys[index], completed: false,
+    skipped: false, set_logs: index === 0 ? recorded : [], actual_weight: 0, actual_reps: 0 }))
+  const storage = new Map([[key, JSON.stringify({ logs, plannedExercises: plan, dirty: true,
+    modifiedAt: new Date().toISOString(), draft: [{ weight: 0, amount: 8 }, { weight: 40, amount: 8 }] })]])
+  const app = mount(ActivityTracker, p, storage); await app.flush()
+  const weightInput = tree => nodes(tree, node => node.type === 'label' && content(node).startsWith('Weight ('))
+    .flatMap(label => nodes(label, node => node.type === 'input'))[0]
+  const repInputs = tree => nodes(tree, node => node.type === 'label' && content(node).startsWith('Repetitions completed'))
+    .flatMap(label => nodes(label, node => node.type === 'input'))
+  assert.equal(weightInput(app.tree).props.value, '')
+  assert.match(content(app.tree), /Load recommendation unavailable/)
+  assert.match(content(app.tree), /Set 1: 7 reps · 0 kg/)
+  assert.equal(JSON.parse(storage.get(key)).draft[1].retainedWeight, 40, 'an unedited legacy default remains review context')
+  button(app.tree, 'Save / pause').props.onClick(); await app.flush()
+  const untouched = app.calls.find(call => call.payload).payload
+  assert.deepEqual(untouched.exercise_logs[0].set_logs, recorded)
+  assert.deepEqual(untouched.exercise_logs[1].set_logs, [])
+  assert.equal(untouched.exercise_logs[1].input_draft, undefined, 'an unverifiable suggestion is never promoted to an actual input')
+
+  weightInput(app.tree).props.onChange({ target: { value: '25' } }); await app.flush()
+  repInputs(app.tree)[1].props.onChange({ target: { value: '7' } }); await app.flush()
+  button(app.tree, 'Save / pause').props.onClick(); await app.flush()
+  const saved = app.calls.filter(call => call.payload).at(-1).payload
+  assert.deepEqual(saved.exercise_logs[0].set_logs, recorded)
+  assert.deepEqual(saved.exercise_logs[1].set_logs, [])
+  assert.equal(saved.exercise_logs[1].input_draft.weight, 25)
+  assert.equal(saved.exercise_logs[1].input_draft.amount, 7)
+  assert.equal(saved.exercise_logs[1].input_draft.session_key, 'row:1')
+  assert.equal(saved.planned_exercises[1].recommended_weight, 40)
+  const reloaded = mount(ActivityTracker, p, storage); await reloaded.flush()
+  assert.equal(weightInput(reloaded.tree).props.value, 25)
+  assert.equal(repInputs(reloaded.tree)[1].props.value, 7)
+  assert.match(content(reloaded.tree), /Set 1: 7 reps · 0 kg/)
+  assert.match(content(reloaded.tree), /Load recommendation unavailable/)
 })

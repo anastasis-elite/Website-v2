@@ -19,6 +19,7 @@ import { calculateTodayNutritionPacing, recentZeroMacroReminder } from '@/lib/nu
 import { changePrescriptionVariant } from '@/lib/workout/changePrescriptionVariant'
 import { hasNoCalculatedLoad } from '@/lib/workout/loadGuidance'
 import { activityDose } from '@/lib/workout/activity'
+import { issueExercisePrescription } from '@/lib/workout/issuedPrescription'
 
 export function numeric(value: unknown, fallback = 0) {
   const parsed = Number(value)
@@ -369,10 +370,12 @@ function modifyExercises(exercises: any[], level: WorkoutDecisionResult['adjustm
     const requiredEquipment=String(next.equipment||next.equipment_required||'').toLowerCase()
     if(availableEquipment.length&&requiredEquipment&&!availableEquipment.some((item)=>requiredEquipment.includes(item)||item.includes(requiredEquipment))){const equipmentSwap=Array.isArray(next.regression_options)?next.regression_options[0]:null;if(equipmentSwap){next.exercise=equipmentSwap;next.name=equipmentSwap;next.display_name=equipmentSwap;next.equipment_adjusted=true}}
     const tags=(next.movement_tags||next.tags||[]).map((tag:string)=>String(tag).toLowerCase());const shouldRegress=structural.avoidTags.some((tag)=>tags.includes(tag));const regression=Array.isArray(next.regression_options)?next.regression_options[0]:null;if(shouldRegress&&regression){next.exercise=regression;next.name=regression;next.display_name=regression}
+    const inputSets=numeric(next.sets,3)
     const plannedReps=Math.max(3,numeric(next.recommended_reps??next.cycle_adjusted_reps??next.reps??next.target_reps,8));let reps=plannedReps
     if(fuel.status==='under_fueled'||fuel.status==='depleted')reps=Math.max(3,plannedReps-2)
     else if(fuel.status==='slightly_under_fueled'||fuel.status==='unknown_needs_input')reps=Math.max(3,plannedReps-1)
     else if(hydration.status==='ready'&&fuel.status==='well_fueled'&&['normal_training_day','push_day'].includes(recovery.status))reps=plannedReps+1
+    const fuelRepAdjustment=reps-plannedReps
     reps=Math.max(3,Math.min(reps,dose.reps));next.recommended_reps=reps;next.reps=reps
     let load=numeric(next.recommended_weight??next.cycle_adjusted_weight??next.calculated_weight??next.baseline_weight)
     let safetyMultiplier=1
@@ -385,7 +388,13 @@ function modifyExercises(exercises: any[], level: WorkoutDecisionResult['adjustm
     if(level==='level_0_full_plan'&&allowEnduranceProgression)next.sets=Math.min(5,numeric(next.sets,3)+1)
     if(!hasNoCalculatedLoad(next)){next.recommended_weight=roundSuggestedWeightLb(next,load*structural.modifier);next.suggested_load_rounding=SUGGESTED_LOAD_ROUNDING}
     next.prescription_safety_multiplier=safetyMultiplier*structural.modifier;next.client_cues=clientCues;next.rest_seconds=dose.restSeconds;next.rpe_target=dose.rpe
-    return next
+    return issueExercisePrescription(next,index,{version:'daily-v1',input_sets:inputSets,planned_reps:plannedReps,
+      fuel_rep_adjustment:fuelRepAdjustment,rep_limit:dose.reps,set_limit:dose.sets,accessory:index!==0,
+      fuel_status:fuel.status,hydration_status:hydration.status,recovery_status:recovery.status,
+      fuel_reason:fuel.reasoning??null,recovery_reason:recovery.reasoning??null,hydration_note:hydration.recoverySupportNote??null,
+      keep_accessories:dose.keepAccessories,endurance_progression:level==='level_0_full_plan'&&allowEnduranceProgression,
+      load_progression:level==='level_0_full_plan'&&allowLoadProgression&&hydration.status==='ready'&&fuel.status==='well_fueled',
+      adjustment_level:level,safety_multiplier:next.prescription_safety_multiplier,structural_multiplier:structural.modifier})
   })
 }
 
