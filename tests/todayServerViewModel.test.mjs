@@ -98,7 +98,7 @@ function completeFixture(program = 'ignite') {
 
 function harness(current = fixture()) {
   const states = [], refs = [], effects = [], modules = new Map(), timers = new Map()
-  const refreshCalls = [], fetchCalls = [], scheduleRefreshCalls = [], analytics = []
+  const refreshCalls = [], fetchCalls = [], scheduleRefreshCalls = [], analytics = [], events = []
   let stateCursor = 0, refCursor = 0, effectCursor = 0, nextTimer = 1, focusReturns = 0, headingFocus = 0
   let fetchResult = { ok: true, body: { dailyGuide: { date, activities: { water: { status: 'deferred', until: `${date}T14:00:00Z` } } } } }
   class FixedDate extends Date { constructor(...args) { super(...(args.length ? args : [current.schedule.now])) } static now() { return Date.parse(current.schedule.now) } }
@@ -116,7 +116,8 @@ function harness(current = fixture()) {
     '@/lib/analytics': { trackEvent(...args) { analytics.push(args) } },
     '@/lib/analytics/todayJourney': { recordTodayActionOpened(...args) { analytics.push(['opened', ...args]) }, recordTodayActionCompletions(...args) { analytics.push(['completed', ...args]) } },
   }
-  const window = { setTimeout(callback, delay) { const key = nextTimer++; timers.set(key, { callback, delay }); return key }, clearTimeout(key) { timers.delete(key) } }
+  const window = { setTimeout(callback, delay) { const key = nextTimer++; timers.set(key, { callback, delay }); return key }, clearTimeout(key) { timers.delete(key) },
+    dispatchEvent(event) { events.push(event.type); return true } }
   const fetch = async (url, options) => { fetchCalls.push({ url, options, body: JSON.parse(options.body) }); return { ok: fetchResult.ok, json: async () => fetchResult.body } }
   function load(path) {
     path = resolve(path)
@@ -125,7 +126,7 @@ function harness(current = fixture()) {
     const compiled = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: {
       module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
     } }).outputText
-    runInNewContext(compiled, { module, exports: module.exports, Date: FixedDate, window, fetch,
+    runInNewContext(compiled, { module, exports: module.exports, Date: FixedDate, window, fetch, Event,
       require(name) {
         if (mocks[name]) return mocks[name]
         if (name === 'server-only' || /(?:buildTodayViewModel|todayActivities|dailyRecommendation|streakRequirementProgress|todayCompletion|targetEngine|generateProgram|getProgramLogicEngine|\/logic\/engines)$/.test(name)) throw new Error(`Authoritative client import forbidden: ${name}`)
@@ -148,7 +149,7 @@ function harness(current = fixture()) {
     for (const effect of effects) if (effect.pending) { effect.cleanup?.(); effect.pending = false; effect.cleanup = effect.callback() }
     return tree
   }
-  return { current, render, dialog, timers, fetchCalls, refreshCalls, scheduleRefreshCalls, analytics,
+  return { current, render, dialog, timers, fetchCalls, refreshCalls, scheduleRefreshCalls, analytics, events,
     setFetchResult(value) { fetchResult = value }, get dialogNode() { render(); return dialogNode },
     get focusReturns() { return focusReturns }, get headingFocus() { return headingFocus },
     open() { const trigger = nodes(render(), node => node.props['data-testid'] === 'today-progress')[0]; trigger.props.onClick({ currentTarget: { focus() { focusReturns++ } } }); return render() },
@@ -302,6 +303,7 @@ test('activity writes retain transient busy/error feedback and refresh after sav
   const tree = view.render()
   assert.equal(view.fetchCalls.length, 1)
   assert.deepEqual(clone(view.fetchCalls[0].body), { date, activityId: 'water', action: 'defer' })
+  assert.deepEqual(view.events, ['anastasis:daily-plan-updated'], 'Confirmed saves invalidate independently loading Today guidance')
   assert.equal(view.refreshCalls.length, 1)
   assert.match(text(tree), /Saved for later today/)
   assert.deepEqual(clone(current.schedule.todayViewModel), original)
@@ -311,6 +313,7 @@ test('activity writes retain transient busy/error feedback and refresh after sav
   await nextOptions.props.onAction('water', 'defer')
   assert.match(text(view.render()), /Synthetic save failed/)
   assert.equal(view.refreshCalls.length, 1)
+  assert.deepEqual(view.events, ['anastasis:daily-plan-updated'], 'Failed writes cannot invalidate a confirmed current day')
   view.cleanup()
 })
 

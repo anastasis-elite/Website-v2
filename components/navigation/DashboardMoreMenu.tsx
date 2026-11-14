@@ -61,6 +61,7 @@ export default function DashboardMoreMenu({ program }: { program: 'ember' | 'ign
     try {
       const response = await fetch('/api/auth/logout', { method: 'POST' })
       if (!response.ok) throw new Error('Sign out failed')
+      window.dispatchEvent(new Event('anastasis:session-ended'))
       resetAnalyticsIdentity()
       try {
         for (const key of Object.keys(window.sessionStorage)) {

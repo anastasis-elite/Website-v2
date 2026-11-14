@@ -60,9 +60,10 @@ export type ProgramLogicInputArgs = {
   cycleStatus: any; cycleAdjustment: any; plannedWorkout: any
   plannedExercises: any[]; monthlyAssessmentsDueCount: number
   requestReads?: DashboardRequestReads
+  includePhotoPreviews?: boolean
 }
 
-type ProgramLogicSourceArgs = Pick<ProgramLogicInputArgs, 'supabase' | 'user' | 'client' | 'program' | 'requestReads'>
+type ProgramLogicSourceArgs = Pick<ProgramLogicInputArgs, 'supabase' | 'user' | 'client' | 'program' | 'requestReads' | 'includePhotoPreviews'>
 
 export class DashboardLocalDayChangedError extends Error {
   constructor() {
@@ -125,7 +126,7 @@ export async function loadProgramLogicInputs(args: ProgramLogicInputArgs): Promi
   return assembleProgramLogicInputs(args, await readProgramLogicSources(args))
 }
 
-async function readProgramLogicSources({ supabase, user, client, requestReads }: ProgramLogicSourceArgs, now?: Date) {
+async function readProgramLogicSources({ supabase, user, client, requestReads, includePhotoPreviews = true }: ProgramLogicSourceArgs, now?: Date) {
   const today = getClientLocalDateOffset(client, 0, now)
   const yesterday = getClientLocalDateOffset(client, -1, now)
   const fourteenDaysAgo = getClientLocalDateOffset(client, -13, now)
@@ -203,7 +204,9 @@ async function readProgramLogicSources({ supabase, user, client, requestReads }:
   )
   const passiveSleepHours = metricValue(todayHealthMetrics, 'sleep_duration')
   const todayRecovery=sleepStatus.logged?{...(rawTodayRecovery||{}),sleep_hours:sleepStatus.durationHours,sleep_quality:sleepStatus.quality,sleep_bedtime:sleepStatus.bedtime,sleep_wake_time:sleepStatus.wakeTime}:passiveSleepHours!==null?{...(rawTodayRecovery||{}),sleep_hours:passiveSleepHours,passive_source:'health_integration'}:rawTodayRecovery
-  const paths = ['front_photo_url','back_photo_url','left_photo_url','right_photo_url'].map((key) => photoRecord?.[key]).filter(Boolean)
+  // The photo row still feeds posture, structural safety and assessment timing.
+  // Today does not display its previews, so it can omit signing those URLs only.
+  const paths = includePhotoPreviews ? ['front_photo_url','back_photo_url','left_photo_url','right_photo_url'].map((key) => photoRecord?.[key]).filter(Boolean) : []
   const [{ data: nutritionTotals, error: nutritionTotalsError }, { data: allMealEntries, error: mealEntriesError }, { data: allMacroEntries, error: macroEntriesError }, photoUrls] = await Promise.all([
     nutritionIds.length
     ? supabase.from('nutrition_log_totals_by_block').select('*').in('nutrition_log_id', nutritionIds)

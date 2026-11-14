@@ -266,3 +266,87 @@ test('Any time today is inside the scroll track and empty untimed actions do not
   assert.deepEqual(focus, [2])
   runtime.cleanup()
 })
+
+test('pending sections remain navigable and keep an honest Anytime panel while enrichment updates the same carousel', () => {
+  const runtime = hooks(), Carousel = modules(runtime.react)('components/program-dashboard/TodayDayCarousel.tsx').default
+  const empty = fixture().schedule.todayViewModel.daySections
+  for (const section of empty.sections) section.items = []
+  empty.untimed = []
+  const pending = renderToStaticMarkup(React.createElement(Carousel, { day: empty, timezone: 'UTC', pending: true, onOpen() {} }))
+  assert.equal((pending.match(/data-day-section=/g) || []).length, 4)
+  assert.match(pending, /Any time today/)
+  assert.match(pending, /Your other saved actions and current guidance are still loading/)
+  assert.doesNotMatch(pending, /No remaining saved actions/)
+  const verifiedCheckIn = clone(empty)
+  verifiedCheckIn.sections[0].items.push(item('activity:check-in', 'Daily check-in', 'check_in', null, { activityId: 'check-in', href: '/dashboard/check-in', timingPending: true }))
+  const early = renderToStaticMarkup(React.createElement(Carousel, { day: verifiedCheckIn, timezone: 'UTC', pending: true, onOpen() {} }))
+  assert.match(early, /Timing is being confirmed/)
+  assert.doesNotMatch(early, /No set time/, 'Early completion verification cannot invent an untimed schedule preference')
+
+  let tree = runtime.render(() => Carousel({ day: empty, timezone: 'UTC', pending: true, keepAnytime: true, onOpen() {} }))
+  const original = nodes(tree, node => node.props?.['data-day-section'])
+  const calls = []
+  original.forEach((section, index) => section.ref({ scrollIntoView() { calls.push(['scroll', index]) }, focus() { calls.push(['focus', index]) } }))
+  const target = {}
+  original[0].props.onKeyDown({ target, currentTarget: target, key: 'End', preventDefault() {} })
+  assert.deepEqual(calls, [['scroll', 3], ['focus', 3]])
+  const enriched = fixture().schedule.todayViewModel.daySections
+  tree = runtime.render(() => Carousel({ day: enriched, timezone: 'UTC', pending: false, keepAnytime: true, onOpen() {} }))
+  const updated = nodes(tree, node => node.props?.['data-day-section'])
+  assert.deepEqual(updated.map(node => [node.key, node.props.id]), original.map(node => [node.key, node.props.id]))
+  assert.deepEqual(calls, [['scroll', 3], ['focus', 3]], 'Enrichment never moves scroll or focus itself')
+  tree = runtime.render(() => Carousel({ day: empty, timezone: 'UTC', pending: false, keepAnytime: true, onOpen() {} }))
+  assert.equal(nodes(tree, node => node.props?.['data-day-section']).length, 4, 'A previously selected Anytime panel is retained even if its current actions complete')
+  runtime.cleanup()
+})
+
+test('removing a focused card restores its current check-in or panel without stealing deliberate external focus', () => {
+  const runtime = hooks(), body = {}, document = { body, documentElement: {}, activeElement: body }
+  const Carousel = modules(runtime.react, {}, { document })('components/program-dashboard/TodayDayCarousel.tsx').default
+  let day = fixture().schedule.todayViewModel.daySections, cards = [], calls = []
+  const render = () => runtime.render(() => Carousel({ day, timezone: 'UTC', onOpen() {} }))
+  let tree = render()
+  const panels = nodes(tree, node => node.props?.['data-day-section']).map(node => ({
+    dataset: { daySection: node.props['data-day-section'] },
+    focus(options) { calls.push(['panel', this.dataset.daySection, options.preventScroll]) },
+    scrollIntoView() { assert.fail('Data replacement cannot change carousel scroll position') },
+  }))
+  nodes(tree, node => node.props?.['data-day-section']).forEach((node, index) => node.ref(panels[index]))
+  const root = { querySelectorAll: () => cards, contains: target => target === panels[0] }
+  tree.ref.current = root
+  const oldCard = { dataset: { dayItemId: 'activity:check-in', activityId: 'check-in' } }
+  const oldLink = { isConnected: true, closest(selector) { return selector === '[data-day-section]' ? panels[0] : oldCard } }
+  tree.props.onFocusCapture({ target: oldLink })
+
+  const currentLink = { focus(options) { calls.push(['check-in', options.preventScroll]) } }
+  cards = [{ dataset: { dayItemId: 'event:current-check-in', eventId: 'current-check-in', activityId: 'check-in' }, querySelector: () => currentLink }]
+  oldLink.isConnected = false
+  day = clone(day); day.sections[0].items[1] = { ...day.sections[0].items[1], id: 'event:current-check-in', eventId: 'current-check-in' }
+  tree = render()
+  assert.deepEqual(calls, [['check-in', true]], 'The fresh equivalent check-in receives focus with preventScroll')
+
+  calls = []; document.activeElement = { id: 'intentional-external-focus' }; day = clone(day); tree = render()
+  assert.deepEqual(calls, [], 'A deliberate focus outside the carousel is preserved')
+
+  document.activeElement = body; cards = []; day = clone(day); tree = render()
+  assert.deepEqual(calls, [['panel', 'morning', true]], 'Completed/removed actions fall back to their existing panel')
+  calls = []
+  tree.props.onBlurCapture({ currentTarget: root, relatedTarget: { id: 'outside-button' } })
+  day = clone(day); render()
+  assert.deepEqual(calls, [], 'An intentional blur clears restoration ownership')
+  runtime.cleanup()
+})
+
+test('bootstrap check-in keeps its React key when a saved occurrence enriches it without duplicating keys', () => {
+  const runtime = hooks(), Carousel = modules(runtime.react)('components/program-dashboard/TodayDayCarousel.tsx').default
+  const current = fixture().schedule.todayViewModel.daySections
+  const render = day => runtime.render(() => Carousel({ day, timezone: 'UTC', onOpen() {} }))
+  const before = nodes(render(current), node => node.type?.name === 'DayAction' && node.props.item.activityId === 'check-in')[0]
+  const enriched = clone(current)
+  enriched.sections[0].items[1] = { ...enriched.sections[0].items[1], id: 'event:scheduled-check-in', eventId: 'scheduled-check-in' }
+  enriched.sections[0].items.push({ ...enriched.sections[0].items[1], id: 'event:second-check-in', eventId: 'second-check-in' })
+  const after = nodes(render(enriched), node => node.type?.name === 'DayAction' && node.props.item.activityId === 'check-in')
+  assert.equal(before.key, after[0].key)
+  assert.equal(new Set(after.map(node => node.key)).size, after.length)
+  runtime.cleanup()
+})

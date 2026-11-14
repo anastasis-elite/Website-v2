@@ -2,9 +2,26 @@
 
 import { DASHBOARD_TIMING_STAGES, sanitizeDashboardTimings, type DashboardTimingEntry } from './dashboardTimingTypes'
 
+const todayMilestones = ['today-layout-visible', 'today-carousel-interactive', 'today-check-in-clickable'] as const
+
+// Each mounted/revalidated Today gets bounded local measurements. No identity,
+// date, health information or other member content enters User Timing detail.
+export function beginTodayStartup() {
+  if (typeof performance === 'undefined') return
+  try {
+    for (const stage of todayMilestones) {
+      performance.clearMarks(`anastasis:${stage}`)
+      performance.clearMeasures(`anastasis:navigation-to-${stage}`)
+      performance.clearMeasures(`anastasis:today:start-to-${stage}`)
+    }
+    performance.clearMarks('anastasis:today:start')
+    performance.mark('anastasis:today:start')
+  } catch { /* Local timing is optional. */ }
+}
+
 // Local User Timing entries only: no account identifiers, health data, network
 // requests, or persistent browser storage. Read these with performance.getEntries.
-export function markDashboardStage(stage: 'shell' | 'primary' | 'secondary' | 'resume') {
+export function markDashboardStage(stage: 'shell' | 'primary' | 'secondary' | 'resume' | 'today-layout-visible' | 'today-carousel-interactive' | 'today-check-in-clickable') {
   if (typeof performance === 'undefined' || typeof performance.mark !== 'function') return
   try {
     if (stage === 'secondary') {
@@ -18,6 +35,9 @@ export function markDashboardStage(stage: 'shell' | 'primary' | 'secondary' | 'r
     if (stage !== 'resume' && performance.getEntriesByName(name).length) return
     performance.mark(name)
     if (stage !== 'resume') performance.measure(`anastasis:navigation-to-${stage}`, { start: 0, end: name })
+    if ((todayMilestones as readonly string[]).includes(stage) && performance.getEntriesByName('anastasis:today:start').length) {
+      performance.measure(`anastasis:today:start-to-${stage}`, { start: 'anastasis:today:start', end: name })
+    }
   } catch {
     // Unsupported/restricted timing APIs must not interfere with daily actions.
   }
