@@ -11,6 +11,7 @@ import { invalidateDailyPlan } from '@/lib/dashboard/invalidateDailyPlan'
 import { canonicalManualCardioLog, canonicalManualCardioPlan, MANUAL_CARDIO_DAY_NAME } from '@/lib/workout/manualCardio'
 import { getManualWorkoutSummary } from '@/lib/workout/getManualWorkoutSummary'
 import { isLegacyGeneratedWorkoutSession, retainGeneratedWorkoutOrigin, withoutGeneratedWorkoutOrigin } from '@/lib/workout/generatedOrigin'
+import { readWorkoutInputDraft } from '@/lib/workout/inputDraft'
 export async function POST(req: Request) {
   try {
     const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser()
@@ -25,9 +26,23 @@ export async function POST(req: Request) {
     const dayName = String(body.day_name || 'Workout').slice(0, 200)
     let logs = body.exercise_logs
     let planned = body.planned_exercises
+    if (logs.some((log: any) => !log || typeof log !== 'object' || Array.isArray(log))) return NextResponse.json({ error: 'Review your exercises before saving.' }, { status: 400 })
+    const inputKeys = workoutSessionKeys(logs)
+    if (logs.some((log: any, index: number) => log.input_draft != null &&
+      (!readWorkoutInputDraft(log.input_draft, inputKeys[index]) || inputKeys.filter(key => key === inputKeys[index]).length !== 1))) {
+      return NextResponse.json({ error: 'Review the unconfirmed exercise inputs before saving.' }, { status: 400 })
+    }
+    logs = logs.map((log: any, index: number) => {
+      const { input_draft, ...retained } = log
+      const draft = readWorkoutInputDraft(input_draft, inputKeys[index])
+      return draft ? { ...retained, input_draft: draft } : retained
+    })
     const manualCardio = dayName === MANUAL_CARDIO_DAY_NAME || [...logs, ...planned].some((item: any) => item?.manual_activity !== undefined)
     if (manualCardio) {
-      const cardioLogs = logs.map(canonicalManualCardioLog), cardioPlan = planned.map(canonicalManualCardioPlan)
+      const cardioLogs = logs.map((log: any) => {
+        const canonical = canonicalManualCardioLog(log)
+        return canonical && log.input_draft ? { ...canonical, input_draft: log.input_draft } : canonical
+      }), cardioPlan = planned.map(canonicalManualCardioPlan)
       if (source !== 'manual' || dayName !== MANUAL_CARDIO_DAY_NAME || cardioLogs.some((log: any) => !log) || cardioPlan.some((log: any) => !log) ||
         !matchingWorkoutPlan(cardioLogs, workoutSessionKeys(cardioPlan)) || cardioLogs.some((log: any, index: number) => log.duration_unit !== cardioPlan[index]?.duration_unit) ||
         new Set(workoutSessionKeys(cardioLogs)).size !== cardioLogs.length) {

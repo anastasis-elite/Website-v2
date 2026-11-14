@@ -1,14 +1,15 @@
 import { withoutCalculatedLoad } from '@/lib/workout/loadGuidance'
 import { getAssessmentLift, hasUsableAssessment } from '@/lib/program/generateProgram'
-import { calculateFounderLoadFromEstimated1RM, calculateLegacyFounderLoadFromEstimated1RM, founderBodyMassLb, experimentalLoadNote, resolveFounderExerciseReference, getFounderIntensityKey } from '@/lib/program/founderReference'
+import { calculateFounderLoadFromEstimated1RM, founderBodyMassLb, experimentalLoadNote, resolveFounderExerciseReference, getFounderIntensityKey } from '@/lib/program/founderReference'
 import hypertrophyChart from '@/data/reference/hypertrophyChart_normalized.json'
 import { activityDose, isBodyweightExercise } from '@/lib/workout/activity'
 import { matchingWorkoutPlan, workoutSessionKeys } from '@/lib/workout/session'
 import { getClientLocalDate, getClientTimeZone } from '@/lib/timezone'
 import { workoutLocalDate } from '@/lib/workout/history'
+import { canVerifySavedLoad, hasVerifiedRawCalculation, hasVerifiedFinalPrescription, hasVerifiedSavedPrescription } from '@/lib/workout/issuedPrescription'
+import { readWorkoutInputDraft } from '@/lib/workout/inputDraft'
 
 const unverifiedReason = 'The original saved load cannot be verified as current guidance. Keep the saved prescription for review and record the weight actually used. Your planned sets, reps and recorded work are retained.'
-const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
 
 function withoutObsoleteOutage(exercise: any) {
   if (exercise?.prescription_status !== 'unavailable' && !Object.hasOwn(exercise, 'prescription_unavailable_reason')) return exercise
@@ -61,7 +62,9 @@ function refreshFromAssessment(exercise: any, client: any, strengthAssessment: a
       assessment_key: reference.assessment_key, estimated_1rm: estimated1RM, bodyweight_factor: reference.bodyweight_factor,
       body_mass_lb: bodyMassLb, rep_multiplier: repMultiplier, base_weight: result.baseCalculatedWeight,
       equipment_weight: result.adjustedWeight, selected_variant_id: variant?.id || null, equipment_modifier: variant?.equipment_modifier ?? 1 } }
-  for (const key of ['load_guidance_status', 'load_guidance_reason', 'intensity_factor', 'cycle_adjusted_weight']) delete updated[key]
+  for (const key of ['load_guidance_status', 'load_guidance_reason', 'intensity_factor', 'cycle_adjusted_weight', 'issued_prescription',
+    'baseline_reps', 'cycle_adjusted_reps', 'recommended_reps', 'cycle_weight_multiplier', 'cycle_rep_adjustment',
+    'prescription_safety_multiplier', 'suggested_load_rounding']) delete updated[key]
   return updated
 }
 
@@ -76,7 +79,7 @@ export function projectSavedExercisePrescription(exercise: any, program: string,
   if (refreshClient && strengthAssessment !== undefined && !started) {
     return refreshFromAssessment(retained, refreshClient, strengthAssessment)
   }
-  if (exercise.load_guidance_status === 'not_calculated' || exercise.load_guidance_status === 'unverified') return retained
+  if (!canVerifySavedLoad(exercise)) return retained
   if (!hasStoredLoad(exercise) && !exercise.prescription_calculation) {
     const source = resolveFounderExerciseReference(exercise.exercise)
     const mappedAssessment = source.status === 'resolved' && ['Bench', 'Shoulder', 'Squat', 'RDL', 'Row', 'Bicep', 'LateralRaise', 'Close-Grip'].includes(source.reference.assessment_key)
@@ -91,28 +94,15 @@ export function projectSavedExercisePrescription(exercise: any, program: string,
   const intensityKey = ['ember', 'ignite', 'phoenixBodybuilding', 'phoenixEndurance', 'phoenixFullTransformation', 'phoenixGluteSculpt',
     'phoenixHypertrophy', 'phoenixRecomposition', 'phoenixStrength', 'phoenixWaistCincher'].includes(program)
     ? getFounderIntensityKey(program) : null
-  const repRows = (hypertrophyChart as any[]).filter(row => Number(row.reps) === Number(exercise.reps))
   const modern = provenance?.version === 'founder-load-v3'
-  const expected = modern ? calculateFounderLoadFromEstimated1RM({ estimated1RM: provenance.estimated_1rm, bodyweightFactor: provenance.bodyweight_factor, bodyMassLb: provenance.body_mass_lb, repMultiplier: provenance.rep_multiplier, group, variant, bodyweight: false }) : provenance && finite(provenance.estimated_1rm) && provenance.estimated_1rm > 0 &&
-    finite(provenance.intensity_factor) && provenance.intensity_factor > 0 &&
-    finite(provenance.rep_multiplier) && provenance.rep_multiplier > 0
-    ? calculateLegacyFounderLoadFromEstimated1RM({ estimated1RM: provenance.estimated_1rm, intensityFactor: provenance.intensity_factor,
-      repMultiplier: provenance.rep_multiplier, group, variant, bodyweight: false }) : null
-  const supported = !(group?.requires_variant_assessment && variant?.name !== reference?.exercise) && (modern || provenance?.version === 'founder-load-v2') && reference && intensityKey &&
-    provenance.reference_exercise === reference.exercise && provenance.assessment_key === reference.assessment_key &&
-    (modern ? provenance.bodyweight_factor === reference.bodyweight_factor : provenance.intensity_key === intensityKey && provenance.intensity_factor === reference[intensityKey] && provenance.intensity_factor === exercise.intensity_factor) &&
-    provenance.assessment_key === exercise.assessment_key &&
-    finite(provenance.estimated_1rm) && provenance.estimated_1rm > 0 &&
-    finite(provenance.rep_multiplier) && provenance.rep_multiplier > 0 && provenance.rep_multiplier === exercise.rep_multiplier &&
-    repRows.length === 1 && provenance.rep_multiplier === Number(repRows[0].multiplier) &&
-    finite(provenance.base_weight) && provenance.base_weight > 0 && provenance.base_weight === exercise.baseline_weight &&
-    finite(provenance.equipment_weight) && provenance.equipment_weight > 0 && provenance.equipment_weight === exercise.calculated_weight &&
-    provenance.equipment_weight === exercise.recommended_weight &&
-    provenance.base_weight === expected?.baseCalculatedWeight && provenance.equipment_weight === expected?.adjustedWeight &&
-    provenance.selected_variant_id === (exercise.selected_variant_id || null) &&
-    (variant ? provenance.equipment_modifier === variant.equipment_modifier && exercise.selected_equipment === variant.equipment && exercise.load_type === variant.load_type
-      : !group && provenance.selected_variant_id === null && provenance.equipment_modifier === 1)
-  if (supported && modern) return retained
+  const supported = Boolean(intensityKey && hasVerifiedRawCalculation(exercise, program) && hasVerifiedFinalPrescription(exercise))
+  if (supported && modern) {
+    if (retained.load_guidance_status !== 'unverified') return retained
+    const verified = { ...retained }
+    delete verified.load_guidance_status
+    delete verified.load_guidance_reason
+    return verified
+  }
   // Only unstarted plan projections opt in. Session/history callers never refresh.
   if (supported && refreshClient && !started) {
     const bodyMassLb = founderBodyMassLb(refreshClient)
@@ -148,9 +138,14 @@ export function selectPreservedWorkoutSession({ sessions, client, now = new Date
     (session.workout_source || 'recommended') === 'recommended' && workoutLocalDate(session, timeZone) === today &&
     typeof session.day_name === 'string' && session.day_name.trim() &&
     Array.isArray(session.planned_exercises) && session.planned_exercises.length > 0 &&
+    session.planned_exercises.every((exercise: any) => exercise && typeof exercise === 'object' && !Array.isArray(exercise)) &&
+    Array.isArray(session.exercise_logs) && session.exercise_logs.every((log: any) => log && typeof log === 'object' && !Array.isArray(log)) &&
     matchingWorkoutPlan(session.exercise_logs, workoutSessionKeys(session.planned_exercises)) &&
     (session.completed === true || session.exercise_logs.some((log: any) => log.completed || log.skipped || log.set_logs?.length ||
-      log.confirmed_at || Number(log.actual_reps || log.actual_duration || log.actual_breaths) > 0)))
+      log.confirmed_at || Number(log.actual_reps || log.actual_duration || log.actual_breaths) > 0) ||
+      session.exercise_logs.some((log: any, index: number) => readWorkoutInputDraft(log.input_draft, workoutSessionKeys(session.planned_exercises)[index])) ||
+      session.planned_exercises.some((exercise: any) => exercise.issued_prescription && hasVerifiedSavedPrescription(exercise)) &&
+        session.planned_exercises.every((exercise: any) => !exercise.issued_prescription || hasVerifiedSavedPrescription(exercise))))
   // Distinct saved same-day plans have no established priority. Keep them in
   // history instead of choosing one and assigning its prescription to another.
   const identities = new Set(candidates.map(session => `${session.day_name}:${JSON.stringify(workoutSessionKeys(session.planned_exercises))}`))

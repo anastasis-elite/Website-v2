@@ -13,6 +13,7 @@ import { manualExerciseSignature, manualExerciseIdentity, type ManualSaveEvidenc
 import { canChangePrescriptionVariant, changePrescriptionVariant } from '@/lib/workout/changePrescriptionVariant'
 import { discoverResumableLocalPrescription, inspectRetainedLocalPrescription, selectResumablePrescriptionSnapshot } from '@/lib/workout/resumePrescribedSession'
 import { exerciseLoadPresentation, weightDraftForInput } from '@/lib/workout/exerciseLoadPresentation'
+import { createWorkoutInputDraft, readWorkoutInputDraft } from '@/lib/workout/inputDraft'
 
 type Props = { clientId: string; authUserId: string; program: string; dayName: string; exercises: any[]; plannedExercises?: unknown[]; loadGuidanceExercises?: any[]; workoutSource?: 'manual' | 'recommended'; timezone?: string; weightUnit?: 'lb' | 'kg'; resumeOnly?: boolean; onManualExerciseFinished?: (completed?: boolean, evidence?: ManualSaveEvidence) => void; onExerciseFocus?: (exercise: any) => void; onExerciseBlur?: () => void }
 export default function ActivityWorkoutTracker({ clientId, program, dayName, exercises, plannedExercises = exercises, loadGuidanceExercises = exercises, workoutSource = 'recommended', timezone = 'America/Chicago', weightUnit = 'lb', resumeOnly = false, onExerciseFocus, onExerciseBlur, onManualExerciseFinished }: Props) {
@@ -22,10 +23,13 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
   const date = workoutSource === 'manual' ? manualDate.current : getClientLocalDate({ timezone }); const legacyKey = `anastasis-session:${clientId}:${program}:${dayName}:${date}`
   const planKeys = JSON.stringify(workoutSessionKeys(exercises)); const key = `${legacyKey}:${workoutSource}:${planKeys}`
   const resumedIdentity = useRef({ storageKey: key, dayName, keys: workoutSessionKeys(exercises) })
+  const retainedGuidance = useRef(false)
   const projectedKeys = workoutSessionKeys(loadGuidanceExercises)
   const guidanceContext = (exercise: any, index: number) => ({ source: workoutSource,
-    projectedExercise: loadGuidanceExercises[projectedKeys.indexOf(String(exercise.session_key || workoutSessionKeys(exercises)[index]))] })
-  const prescriptionKey = JSON.stringify(exercises.map((exercise, index) => [activityDose(exercise, weightUnit), exerciseLoadPresentation(exercise, guidanceContext(exercise, index))]))
+    projectedExercise: retainedGuidance.current ? undefined : loadGuidanceExercises[projectedKeys.indexOf(String(exercise.session_key || workoutSessionKeys(exercises)[index]))] })
+  const prescriptionKey = JSON.stringify(exercises.map((exercise, index) => [activityDose(exercise, weightUnit), exerciseLoadPresentation(exercise, {
+    source: workoutSource, projectedExercise: loadGuidanceExercises[projectedKeys.indexOf(workoutSessionKeys(exercises)[index])],
+  })]))
   const initialize = () => initialWorkoutLogs(exercises)
   const manualCardio = workoutSource === 'manual' && exercises.length > 0 && exercises.every(isManualCardioExercise)
   const [logs, setLogs] = useState(initialize); const [ready, setReady] = useState(false); const [saving, setSaving] = useState(false); const [message, setMessage] = useState(''); const [summary, setSummary] = useState(false)
@@ -71,6 +75,7 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
         const retainedLocal = inspectRetainedLocalPrescription({ keys: identity.keys, stored })
         const retainedServer = result.session ? inspectRetainedLocalPrescription({ keys: identity.keys, stored: {
           logs: result.session.exercise_logs, plannedExercises: result.session.planned_exercises, completed: result.session.completed,
+          draft: result.session.exercise_logs?.map((log: any, index: number) => readWorkoutInputDraft(log?.input_draft, identity.keys[index])),
         } }) : null
         if (workoutSource === 'recommended' && (retainedLocal.status === 'incomplete' || retainedServer?.status === 'incomplete')) {
           if (!cancelled) { setResumeUnavailable(true); setLoadFailed(false); setMessage('The saved workout is missing its original set prescription. Your entered data and browser draft have been kept unchanged. Ask your coach to review this session before resuming.') }
@@ -107,11 +112,19 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
           if (!cancelled) { setResumeUnavailable(true); setLoadFailed(false); setMessage('This saved workout needs review before it can be resumed. Your recorded work and browser draft have been kept. Contact your coach to review the original prescription.') }
           return
         }
-        // Merely opening a workout persists defaults. Only actual work or edits
-        // lock its saved prescription; untouched drafts use current guidance.
+        // Browser defaults can refresh until work or an edit starts a session.
+        // An explicitly saved issued prescription resumes from the server.
         const fixedPlan = preserved?.plan || plannedExercises
-        const resumed = resumeWorkoutSession(workoutSource === 'recommended' ? initialWorkoutLogs(fixedPlan) : initial, stored, preserved?.source === 'local' && retainedServer?.status === 'none' ? null : result.session)
-        if (!cancelled) { setLogs(resumed.logs); setDraft(resumed.logs.map((e: any, index: number) => { const dose = activityDose(e, weightUnit), actualDuration = Number(e.actual_duration || 0), retained = preserved || workoutSource === 'manual' ? resumed.draft?.[index] : undefined; return { ...weightDraftForInput(e, weightUnit, guidanceContext(e, index), retained), amountEdited: retained?.amountEdited === true, amount: retained?.amount ?? (isManualCardioExercise(e) ? actualDuration : dose.prescribed) } })); setDirty(resumed.dirty); setModifiedAt(resumed.modifiedAt); setLoadFailed(false); setReady(true)
+        const resumed = resumeWorkoutSession(workoutSource === 'recommended' ? initialWorkoutLogs(fixedPlan) : initial, stored, preserved?.source === 'local' && retainedServer?.status === 'none' ? null : result.session, Boolean(preserved))
+        retainedGuidance.current = Boolean(preserved)
+        if (!cancelled) { setLogs(resumed.logs); setDraft(resumed.logs.map((e: any, index: number) => {
+          const dose = activityDose(e, weightUnit), actualDuration = Number(e.actual_duration || 0)
+          const retained = preserved || workoutSource === 'manual' ? resumed.draft?.[index] : undefined
+          const amount = retained?.amountEdited === true
+            ? typeof retained.amount === 'number' && Number.isFinite(retained.amount) ? retained.amount : NaN
+            : retained?.amount ?? (isManualCardioExercise(e) ? actualDuration : dose.prescribed)
+          return { ...weightDraftForInput(e, weightUnit, guidanceContext(e, index), retained), amountEdited: retained?.amountEdited === true, amount }
+        })); setDirty(resumed.dirty); setModifiedAt(resumed.modifiedAt); setLoadFailed(false); setReady(true)
           resumedIdentity.current = identity
           setSessionPlan(fixedPlan)
           const savedIndex = resumed.logs.findIndex((log: { session_key: string }) => log.session_key === stored?.activeExerciseKey)
@@ -152,7 +165,12 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
     try {
       if (workoutSource === 'manual' && getClientLocalDate({ timezone }) !== date) throw new Error('A new day has started. Reopen Workout before saving this session.')
       const response = await fetch('/api/workout-log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: clientId, program, day_name: resumedIdentity.current.dayName, workout_source: workoutSource,
-        workout_date: new Date().toISOString(), planned_exercises: workoutSource === 'manual' ? plannedExercises : sessionPlan, exercise_logs: logs, completed: counts.completed }) })
+        workout_date: new Date().toISOString(), planned_exercises: workoutSource === 'manual' ? plannedExercises : sessionPlan,
+        exercise_logs: logs.map((log, index) => {
+          const { input_draft: previousDraft, ...recorded } = log
+          const input = createWorkoutInputDraft(draft[index], log.session_key, weightUnit)
+          return input ? { ...recorded, input_draft: input } : recorded
+        }), completed: counts.completed }) })
       const payload = await response.json(); if (!response.ok) throw new Error(payload.error || 'Session could not be saved.')
       let evidence: ManualSaveEvidence | undefined
       if (final && workoutSource === 'manual') {
@@ -204,13 +222,13 @@ export default function ActivityWorkoutTracker({ clientId, program, dayName, exe
           if (log.set_logs.length) { setMessage('Equipment is locked for this exercise because sets have been recorded.'); return }
           const selected = changePrescriptionVariant(log, e.target.value)
           if (!selected) { setMessage('This saved prescription needs review before changing its equipment. Your recorded work is preserved.'); return }
-          patch(index, selected)
-          setDraft(current => current.map((d,i) => i === index ? { ...d, weight: selected.load_guidance_status ? NaN : activityDose(selected, weightUnit).weight, weightEdited: false } : d))
+          patch(index, { ...selected, prescription_variant_edited: true })
+          setDraft(current => current.map((d,i) => i === index ? { ...d, weight: selected.load_guidance_status ? NaN : activityDose(selected, weightUnit).weight, weightEdited: false, inputWeight: undefined } : d))
         }} disabled={!ready || saving || !canChangePrescriptionVariant(log)}>{!log.available_variants.some((v: any) => v.id === log.selected_variant_id) ? <option value="">Keep prescribed movement</option> : null}{log.available_variants.map((v: any) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>{log.set_logs.length ? <p>Equipment is locked after recording sets so your recorded work keeps its equipment and load.</p> : !canChangePrescriptionVariant(log) ? <p>This saved prescription needs review before changing its equipment. You can keep recording your actual sets.</p> : null}</div> : null}
         {!log.completed && !log.skipped ? <>
           <div className="activity-inputs">
-            {dose.kind === 'strength' && !isBodyweightExercise(log) ? <label>Weight ({dose.unit}, {dose.loadLabel})<input type="number" disabled={!ready || saving} min="0" step={weightInputIncrement(log, draft[index].weight, dose.unit)} inputMode="decimal" value={Number.isFinite(draft[index].weight) ? draft[index].weight : ''} onChange={e => { markDirty(); setDraft(current => current.map((d,i) => i === index ? { ...d, weight: e.target.value === '' ? NaN : Number(e.target.value), weightEdited: true } : d)) }}/></label> : null}
-            {dose.metric !== 'completion' ? <label>{isManualCardioExercise(log) ? `Actual duration (${dose.metric})` : dose.metric === 'minutes' ? 'Duration (minutes)' : dose.metric === 'seconds' ? 'Duration (seconds)' : dose.metric === 'breaths' ? 'Breaths completed' : 'Repetitions completed'}<input type="number" disabled={!ready || saving} min="0" step={dose.metric === 'minutes' ? 0.5 : 1} inputMode="decimal" value={draft[index].amount} onChange={e => { markDirty(); setDraft(current => current.map((d,i) => i === index ? { ...d, amount: Number(e.target.value), amountEdited: true } : d)) }}/></label> : <p>Confirm when you have completed this movement.</p>}
+            {dose.kind === 'strength' && !isBodyweightExercise(log) ? <label>Weight ({dose.unit}, {dose.loadLabel})<input type="number" disabled={!ready || saving} min="0" step={weightInputIncrement(log, draft[index].weight, dose.unit)} inputMode="decimal" value={Number.isFinite(draft[index].weight) ? draft[index].weight : ''} onChange={e => { markDirty(); setDraft(current => current.map((d,i) => i === index ? { ...d, weight: e.target.value === '' ? NaN : Number(e.target.value), weightEdited: true, inputWeight: { value: e.target.value === '' ? null : Number(e.target.value), unit: weightUnit } } : d)) }}/></label> : null}
+            {dose.metric !== 'completion' ? <label>{isManualCardioExercise(log) ? `Actual duration (${dose.metric})` : dose.metric === 'minutes' ? 'Duration (minutes)' : dose.metric === 'seconds' ? 'Duration (seconds)' : dose.metric === 'breaths' ? 'Breaths completed' : 'Repetitions completed'}<input type="number" disabled={!ready || saving} min="0" step={dose.metric === 'minutes' ? 0.5 : 1} inputMode="decimal" value={Number.isFinite(draft[index].amount) ? draft[index].amount : ''} onChange={e => { markDirty(); setDraft(current => current.map((d,i) => i === index ? { ...d, amount: e.target.value === '' ? NaN : Number(e.target.value), amountEdited: true } : d)) }}/></label> : <p>Confirm when you have completed this movement.</p>}
           </div>
           <div className="tier-action-row"><button type="button" onClick={() => confirm(index)} disabled={saving || !ready}>{dose.kind === 'strength' ? `Complete set ${log.set_logs.length+1}` : 'Confirm activity'}</button><button type="button" disabled={!ready || saving} onClick={() => patch(index, { skipped: true, completed: false })}>Skip exercise</button></div>
         </> : <button type="button" disabled={!ready || saving} onClick={() => patch(index, { completed: false, skipped: false })}>Edit activity</button>}

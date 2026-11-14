@@ -1,5 +1,7 @@
 import { activityDose, prescribedSetCount } from '@/lib/workout/activity'
 import { matchingWorkoutPlan, workoutSessionKeys } from '@/lib/workout/session'
+import { readWorkoutInputDraft } from '@/lib/workout/inputDraft'
+import { hasVerifiedSavedPrescription } from '@/lib/workout/issuedPrescription'
 
 const suppliedNumber = (value: unknown) => (typeof value === 'number' || typeof value === 'string' && value.trim() !== '') && Number.isFinite(Number(value))
 
@@ -34,13 +36,16 @@ export function inspectRetainedLocalPrescription({ keys, stored }: { keys: strin
     local.plannedExercises !== undefined && (!Array.isArray(local.plannedExercises) || local.plannedExercises.some((exercise: any) => !record(exercise)))) {
     return { status: 'incomplete' }
   }
+  if (Array.isArray(logs) && logs.some((log: any, index: number) => log.input_draft != null &&
+    !readWorkoutInputDraft(log.input_draft, keys[index]))) return { status: 'incomplete' }
   const retainedWork = Array.isArray(logs) && logs.some((log: any) => log && (
     log.completed || log.skipped || Array.isArray(log.set_logs) && log.set_logs.length > 0 ||
     ['actual_weight', 'actual_reps', 'actual_duration', 'actual_breaths'].some(field => Number(log[field]) > 0) ||
     log.activity_completed || log.confirmed_at
   ))
   const originalPlan = local.plannedExercises === undefined ? logs : local.plannedExercises
-  const retainedEdit = Array.isArray(local.draft) && local.draft.some((entry: any, index: number) =>
+  const retainedEdit = Array.isArray(logs) && logs.some((log: any, index: number) => readWorkoutInputDraft(log.input_draft, keys[index])) ||
+    Array.isArray(local.draft) && local.draft.some((entry: any, index: number) =>
     entry?.weightEdited === true || entry?.amountEdited === true ||
     // Legacy rep inputs had no edit marker. A departure from the saved dose
     // is user input, even after Save / pause cleared the dirty flag.
@@ -54,7 +59,7 @@ export function inspectRetainedLocalPrescription({ keys, stored }: { keys: strin
   return { status: 'coherent', plan }
 }
 
-/** Select only an already-started saved prescription. No current load is used
+/** Select a started or explicitly paused issued prescription. No current load is used
  * as a fallback when an old draft cannot prove its original set denominator.
  * Unknown load guidance is retained as unknown; actual load is entered in UI. */
 export function selectResumablePrescriptionSnapshot({ keys, stored, session }: { keys: string[]; stored: any; session: any }): { plan: any[]; source: 'local' | 'server' } | null {
@@ -68,13 +73,19 @@ export function selectResumablePrescriptionSnapshot({ keys, stored, session }: {
   const chosen = useLocal ? local : server
   if (!chosen) return null
   const logs = useLocal ? chosen.logs : chosen.exercise_logs
-  if (!logs.some(hasRecordedWork)) return null
   const savedPlan = useLocal ? chosen.plannedExercises : chosen.planned_exercises
   // Earlier browser drafts retained the prescription on each log instead of a
   // separate plan. It is usable only when every original dose is still explicit.
   const plan = savedPlan === undefined ? logs : savedPlan
   if (!matchingWorkoutPlan(plan, keys) || !plan.every(hasRecordedDose) ||
     !matchingWorkoutPlan(logs, workoutSessionKeys(plan))) return null
+  // A server row is an explicit Save / pause. Its verified issued suggestion
+  // is retained even before the first set; auto-created browser defaults are
+  // still free to use fresh guidance until work or an edit starts a session.
+  const savedIssued = !useLocal && plan.some((exercise: any) => exercise.issued_prescription) &&
+    plan.every((exercise: any) => !exercise.issued_prescription || hasVerifiedSavedPrescription(exercise))
+  if (!savedIssued && !logs.some(hasRecordedWork) &&
+    !logs.some((log: any, index: number) => readWorkoutInputDraft(log.input_draft, keys[index]))) return null
   return { plan, source: useLocal ? 'local' : 'server' }
 }
 
