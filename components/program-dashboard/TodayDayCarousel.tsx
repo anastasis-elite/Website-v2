@@ -15,7 +15,7 @@ function DayAction({ item, timezone, onOpen }: { item: TodayDayItem; timezone: s
   const timing = item.timing === 'all_day' ? 'All day' : item.startAt ? `${item.timing === 'suggested' ? 'Suggested · ' : ''}${item.continuesFromPreviousDay ? 'Continues from the previous day · ' : ''}${formatLocalTime(item.startAt, timezone)}${item.endAt ? ` – ${formatLocalTime(item.endAt, timezone)}` : ''}` : 'No set time'
   return <li data-day-item-id={item.id} data-event-id={item.eventId} data-activity-id={item.activityId}>
     <Link className={styles.action} href={item.href} onClick={() => onOpen(item.activityId || item.id)}>
-      {kind ? <CardArtwork kind={kind} className={styles.artwork} naturalProportions sizes="(max-width: 600px) 100vw, 50vw" /> : null}
+      {kind ? <CardArtwork kind={kind} className={styles.artwork} naturalProportions sizes="(max-width: 350px) 100vw, 50vw" /> : null}
       <span className={styles.actionCopy}>
         <small className={styles.timing}>{timing}</small>
         <strong>{item.title}</strong>
