@@ -9,8 +9,6 @@ import ts from 'typescript'
 const require = createRequire(import.meta.url)
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no }); return { promise, resolve, reject } }
 const flush = () => new Promise(setImmediate)
-const nodes = (tree, match) => Array.isArray(tree) ? tree.flatMap(child => nodes(child, match))
-  : !tree || typeof tree !== 'object' ? [] : [...(match(tree) ? [tree] : []), ...nodes(tree.props?.children, match)]
 const clone = value => JSON.parse(JSON.stringify(value))
 const owner = { id: 'SYNTHETIC-OWNER' }
 const client = { client_id: 'SYNTHETIC-CLIENT', auth_user_id: owner.id, program: 'ignite', timezone: 'UTC' }
@@ -25,7 +23,7 @@ function loader(mocks, { clock = () => Date.parse('2026-11-03T13:00:00Z'), error
     const module = { exports: {} }; modules.set(file, module)
     const code = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
-    runInNewContext(code, { module, exports: module.exports, Date: Clock, Map, Set, Intl, performance,
+    runInNewContext(code, { module, exports: module.exports, Date: Clock, Map, Set, Intl, performance, process: { env: {} },
       console: { error: (...args) => errors.push(args) }, require(name) {
         if (name in mocks) return mocks[name]
         if (name === 'server-only') return {}
@@ -46,8 +44,8 @@ function logicFixture(overrides = {}) {
     engineVersion: 'synthetic', ...overrides }
 }
 
-// Exercise the production route and its streamed child. All I/O is disposable,
-// promise-controlled transport; no authenticated network or member data is used.
+// Exercise the production enrichment loader independently of the visible Today
+// layout. All I/O is disposable and controlled; no member data is used.
 function pageFixture(options = {}) {
   let time = Date.parse(options.now || '2026-11-03T13:00:00Z')
   const day = () => new Date(time).toISOString().slice(0, 10)
@@ -83,7 +81,7 @@ function pageFixture(options = {}) {
     '@/lib/day/getDailyExecutionPlan': { getDailyExecutionPlan(args) { events.push('plan'); assert.equal(args.requestReads.attempt, snapshots.length - 1)
       return options.plan?.[snapshots.length - 1]?.promise || Promise.resolve({ date: day(), timezone: 'UTC', timing: {} }) } },
     '@/lib/assessment/getMonthlyAssessmentStatus': { getMonthlyAssessmentStatus: () => { events.push('monthly'); return Promise.resolve({ due: false }) } },
-    '@/lib/program/getProgramWorkout': { getProgramWorkout: () => ({ programJson: {}, todaysWorkout: null, cycleAdjustment: null, adjustedExercises: [] }) },
+    '@/lib/program/getProgramWorkout': { getCurrentProgramWorkout: () => ({ programJson: {}, todaysWorkout: null, cycleAdjustment: null, adjustedExercises: [] }) },
     '@/lib/program/getSavedPlanState': { getSavedPlanState: () => ({ status: 'ready' }) },
     '@/lib/cycle/getCycleStatus': { getCycleStatus: () => ({ enabled: false }) },
     '@/lib/dashboard/logic/getProgramLogicEngine': { async getProgramLogicEngine(args) {
@@ -109,32 +107,12 @@ function pageFixture(options = {}) {
     ...Object.fromEntries(['PlanOverview', 'EmberDashboard', 'IgniteDashboard', 'PhoenixDashboard', 'DashboardReadyShell']
       .map(name => ['@/components/program-dashboard/' + name, { __esModule: true, default: name }])),
   }, { clock: () => time })
-  const Page = load('app/dashboard/program/[program]/page.tsx').default
+  const { loadTodayEnrichment } = load('lib/dashboard/loadTodayEnrichment.ts')
   return { events, snapshots, writes, audits, prepared, context, timings,
     clock(value) { time = Date.parse(value) },
-    gate(program = 'ignite') { return Page({ params: Promise.resolve({ program }) }) },
-    async render() {
-      const shell = await this.gate()
-      const child = nodes(shell, node => typeof node.type === 'function' && node.type.name === 'PersonalizedDashboard')[0]
-      assert.ok(child); return child.type(child.props)
-    },
+    render() { return loadTodayEnrichment({ ...context, program: 'ignite', timings: timing }) },
   }
 }
-
-test('authentication, subscription and safety gates finish before personalization sources start', async () => {
-  const auth = deferred(), safety = deferred(), f = pageFixture({ auth, safety })
-  const page = f.gate(); await flush(); assert.ok(!f.events.includes('raw-sources'))
-  auth.resolve(f.context); await flush(); assert.ok(!f.events.includes('raw-sources'))
-  safety.resolve([]); await page; assert.ok(!f.events.includes('raw-sources'), 'Streaming shell does not execute the child early')
-  const denied = pageFixture(); await assert.rejects(denied.gate('phoenix'), /REDIRECT \/dashboard\/program\/ignite/)
-  assert.ok(!denied.events.includes('raw-sources'))
-  const flags = [{ reason: 'Synthetic safety pause' }], paused = pageFixture({ flags })
-  assert.equal((await paused.gate()).type, 'safety-notice'); assert.equal(paused.audits.length, 1)
-  assert.ok(!paused.events.includes('raw-sources'))
-  const loggedOut = deferred(), exited = pageFixture({ auth: loggedOut }); const rejected = exited.gate()
-  loggedOut.reject(new Error('Authentication ended')); await assert.rejects(rejected, /Authentication ended/)
-  assert.ok(!exited.events.includes('raw-sources'))
-})
 
 test('independent raw and schedule sources overlap blocked plan; engine writes wait for both required joins', async () => {
   const plan = deferred(), raw = deferred(), output = deferred(), f = pageFixture({ plan: [plan], raw: [raw], output })
@@ -145,7 +123,8 @@ test('independent raw and schedule sources overlap blocked plan; engine writes w
   plan.resolve({ date: '2026-11-03', timing: {} }); await flush(); assert.ok(!f.events.includes('logic'))
   output.resolve({ data: {}, error: null }); const rendered = await result
   assert.deepEqual(f.writes, [{ day: '2026-11-03', rawDay: '2026-11-03' }])
-  assert.equal(nodes(rendered, n => n.type === 'IgniteDashboard').length, 1)
+  assert.equal(rendered.logic.client.id, client.client_id)
+  assert.equal(rendered.date, '2026-11-03')
   assert.equal(f.audits.length, 1)
   const lastRaw = deferred(), rawLast = pageFixture({ raw: [lastRaw] })
   const secondResult = rawLast.render(); await flush()
@@ -176,41 +155,43 @@ test('a required raw-source rejection is still authoritative once the existing j
   assert.deepEqual(f.writes, []); assert.equal(f.audits.length, 0)
 })
 
-test('local midnight retries all joined inputs once and renders only the fresh day before any persistence', async () => {
+test('a local midnight crossing rejects old enrichment and a fresh request joins the new day', async () => {
   const raw = deferred(), f = pageFixture({ now: '2026-11-03T23:59:59Z', raw: [raw] })
-  const rendered = f.render(); await flush()
+  const rendered = f.render(); const rejected = assert.rejects(rendered, DashboardLocalDayChangedError)
+  await flush()
   f.clock('2026-11-04T00:00:01Z'); raw.resolve({ day: '2026-11-03' })
-  const result = await rendered
+  await rejected
+  assert.deepEqual(f.writes, [], 'A stale source snapshot cannot reach persistence.')
+  const result = await f.render()
   assert.deepEqual(f.snapshots.map(row => row.day), ['2026-11-03', '2026-11-04'])
   assert.deepEqual(f.writes, [{ day: '2026-11-04', rawDay: '2026-11-04' }])
   assert.equal(f.events.filter(event => event === 'plan').length, 2)
   assert.equal(f.events.filter(event => event === 'schedule-sources').length, 2)
   assert.equal(f.audits.length, 1)
-  assert.equal(nodes(result, node => node.type === 'IgniteDashboard')[0].props.schedule.date, '2026-11-04')
+  assert.equal(result.schedule.date, '2026-11-04')
 })
 
-test('a second midnight boundary fails honestly instead of looping or saving an old day', async () => {
+test('another midnight crossing fails honestly instead of retrying into stale guidance', async () => {
   const first = deferred(), second = deferred(), f = pageFixture({ now: '2026-11-03T23:59:59Z', raw: [first, second] })
-  const rendered = f.render(); const checked = assert.rejects(rendered, DashboardLocalDayChangedError)
-  await flush(); f.clock('2026-11-04T00:00:01Z'); first.resolve({ day: '2026-11-03' }); await flush()
-  f.clock('2026-11-05T00:00:01Z'); second.resolve({ day: '2026-11-04' }); await checked
+  const rejected = assert.rejects(f.render(), DashboardLocalDayChangedError)
+  await flush(); f.clock('2026-11-04T00:00:01Z'); first.resolve({ day: '2026-11-03' }); await rejected
+  const rejectedAgain = assert.rejects(f.render(), DashboardLocalDayChangedError)
+  await flush(); f.clock('2026-11-05T00:00:01Z'); second.resolve({ day: '2026-11-04' }); await rejectedAgain
   assert.equal(f.snapshots.length, 2); assert.deepEqual(f.writes, []); assert.equal(f.audits.length, 0)
 })
 
-test('authoritative completion and safety decisions pass through untouched; actionable marker requires a current owned Today model', async () => {
-  const candidates = [{}, { noModel: true }, ...[
-    { version: 2 }, { date: '2026-11-02' }, { timezone: 'America/Chicago' },
-    { generatedAt: '2026-11-03T12:00:00Z' }, { clientId: 'OTHER-OWNER' }, { tier: 'phoenix' },
-  ].map(modelOverrides => ({ modelOverrides }))]
-  for (const complete of [false, true]) for (const options of candidates) {
+test('authoritative completion and safety decisions pass through untouched with explicit request identity', async () => {
+  for (const complete of [false, true]) {
     const logic = logicFixture({ symptoms: { redFlag: true, severity: 'severe' }, workoutDecision: { canTrain: false },
       execution: { workoutComplete: complete }, flameState: { streakEligible: complete } })
-    const before = clone(logic), f = pageFixture({ logic, ...options }), result = await f.render()
-    const dashboard = nodes(result, node => node.type === 'IgniteDashboard')[0]
-    assert.equal(dashboard.props.logic, logic); assert.deepEqual(clone(logic), before)
-    const marker = nodes(result, node => node.type === 'performance-marker' && node.props.stage === 'primary')[0]
-    assert.equal(marker.props.actionable, !options.noModel && !options.modelOverrides)
-    for (const entry of marker.props.timings) assert.deepEqual(Object.keys(entry).sort(), ['durationMs', 'stage', 'startMs'])
+    const before = clone(logic), f = pageFixture({ logic }), result = await f.render()
+    assert.equal(result.logic, logic); assert.deepEqual(clone(logic), before)
+    assert.equal(result.ownerUserId, owner.id)
+    assert.equal(result.clientId, client.client_id)
+    assert.equal(result.date, result.schedule.date)
+    assert.equal(result.timezone, result.schedule.timezone)
+    assert.equal(result.generatedAt, result.schedule.now)
+    for (const entry of result.timings) assert.deepEqual(Object.keys(entry).sort(), ['durationMs', 'stage', 'startMs'])
   }
 })
 

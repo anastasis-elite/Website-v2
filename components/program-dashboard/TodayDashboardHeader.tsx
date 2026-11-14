@@ -3,7 +3,16 @@ import type { ProgramLogicOutput } from '@/lib/dashboard/logic/types'
 import type { DailyScheduleState } from '@/lib/schedule/types'
 import TodayStreakBadge from '@/components/program-dashboard/TodayStreakBadge'
 
-export default function TodayDashboardHeader({ logic, schedule, plan = false }: { logic: ProgramLogicOutput; schedule: DailyScheduleState; plan?: boolean }) {
+type HeaderProps = { logic: ProgramLogicOutput; schedule: DailyScheduleState; plan?: boolean } | {
+  memberName: string; schedule: { now: string; date: string; timezone: string }; streak?: { count?: number; available: boolean }; loading: boolean
+}
+
+export default function TodayDashboardHeader(props: HeaderProps) {
+  const { schedule } = props
+  const plan = 'plan' in props && props.plan
+  const name = 'logic' in props ? props.logic.client.name : props.memberName
+  const count = 'logic' in props ? props.logic.flameState?.streak : props.streak?.count
+  const available = 'logic' in props ? props.logic.streakAvailable === true : props.streak?.available === true
   const date = new Date(schedule.now)
   const greeting = getGreeting(date, schedule.timezone)
   const currentDay = new Date(`${schedule.date}T12:00:00Z`)
@@ -21,8 +30,8 @@ export default function TodayDashboardHeader({ logic, schedule, plan = false }: 
       <g filter="url(#today-satin-soft)"><path d="M-200-160C100 120 400 50 630 160S1000 250 1220-150L1250 300C1020 400 730 250 500 190S50 190-200-20Z" fill="url(#today-satin-fold)" opacity=".55"/><path d="M-200 10Q331 93 587 205T1200-173L1200 265Q864 260 654 230T-200 80Z" fill="url(#today-satin-fold)" opacity=".45"/></g>
     </svg>
     <div className="today-brand"><span>Anastasis</span><small>Elite</small></div>
-    {!plan && <TodayStreakBadge count={logic.flameState?.streak} available={logic.streakAvailable === true} />}
-    {!plan && <h1>{greeting}{logic.client.name ? `, ${logic.client.name}` : ''}.</h1>}
+    {!plan && <TodayStreakBadge count={count} available={available} loading={'loading' in props && props.loading} />}
+    {!plan && <h1>{greeting}{name ? `, ${name}` : ''}.</h1>}
     {plan ? <p className="today-week-range">{formatDay(week[0])} – {formatDay(week[6])}</p> : <time dateTime={schedule.date}>{new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: schedule.timezone }).format(date)}</time>}
     <ol className="today-week-strip" aria-label="This week">{week.map(day => <li key={day.toISOString()} aria-current={day.toISOString().slice(0, 10) === schedule.date ? 'date' : undefined}><span>{day.toLocaleDateString('en-US', { weekday: 'narrow', timeZone: 'UTC' })}</span><strong>{day.getUTCDate()}</strong></li>)}</ol>
   </header>

@@ -5,7 +5,7 @@ import { markDashboardStage, publishDashboardRequestTimings } from '@/lib/perfor
 import type { DashboardTimingEntry } from '@/lib/performance/dashboardTimingTypes'
 
 export default function DashboardPerformance({ stage, snapshot, timings, actionable }: {
-  stage: 'shell' | 'primary' | 'secondary'; snapshot?: string
+  stage: 'shell' | 'primary' | 'secondary' | 'today-layout-visible' | 'today-carousel-interactive' | 'today-check-in-clickable'; snapshot?: string
   timings?: readonly DashboardTimingEntry[]; actionable?: boolean
 }) {
   useEffect(() => {
@@ -26,6 +26,9 @@ export default function DashboardPerformance({ stage, snapshot, timings, actiona
       window.cancelAnimationFrame(first)
       window.cancelAnimationFrame(second)
       clearTimings?.()
+      if (stage.startsWith('today-')) {
+        try { performance.clearMarks(`anastasis:${stage}`) } catch { /* Optional local diagnostics. */ }
+      }
     }
   }, [stage, snapshot, timings, actionable])
   return null

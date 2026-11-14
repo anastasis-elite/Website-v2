@@ -42,7 +42,7 @@ function ActivityOptions({ activity, busy, onAction }: { activity: TodayActivity
   return null
 }
 
-export default function GuidedToday({ logic, schedule, presentation = 'step' }: { logic: ProgramLogicOutput; schedule: DailyScheduleState; presentation?: 'step' | 'section' }) {
+export default function GuidedToday({ logic, schedule, presentation = 'step', hideDayCarousel = false, manageRefresh = true }: { logic: ProgramLogicOutput; schedule: DailyScheduleState; presentation?: 'step' | 'section'; hideDayCarousel?: boolean; manageRefresh?: boolean }) {
   const router = useRouter()
   const [busy, setBusy] = useState<TodayActivityId | null>(null)
   const [message, setMessage] = useState('')
@@ -59,7 +59,7 @@ export default function GuidedToday({ logic, schedule, presentation = 'step' }: 
   const model = candidate?.version === 1 && candidate.date === schedule.date && candidate.timezone === schedule.timezone &&
     candidate.generatedAt === schedule.now && candidate.clientId === logic.client.id && candidate.tier === logic.program ? candidate : null
   const hasModel = Boolean(model && (presentation !== 'section' || model.daySections))
-  useDailyScheduleRefresh(schedule, true, model?.nextRefreshAt)
+  useDailyScheduleRefresh(schedule, manageRefresh, model?.nextRefreshAt)
   useEffect(() => {
     const key = `${logic.client.id}:${schedule.date}`
     if (!hasModel && missingModelRefresh.current !== key) {
@@ -97,6 +97,7 @@ export default function GuidedToday({ logic, schedule, presentation = 'step' }: 
       if (!response.ok) throw new Error(payload.error || 'Your choice could not be saved. Try again.')
       setMessage(action === 'defer' ? 'Saved for later today. Take the next step when you have room.' : action === 'skip' ? 'Skipped for today. You can review your options here.' : action === 'resume' ? 'Ready when you are.' : 'Schedule review saved. Return to your next step when you’re ready.')
       if (action !== 'review') trackEvent(action === 'defer' ? 'activity_deferred' : action === 'skip' ? 'activity_skipped' : 'activity_resumed', { activity: activityId, tier: logic.program })
+      window.dispatchEvent(new Event('anastasis:daily-plan-updated'))
       router.refresh()
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Your choice could not be saved. Check your connection and try again.')
@@ -146,7 +147,7 @@ export default function GuidedToday({ logic, schedule, presentation = 'step' }: 
 
     {inactiveWorkoutDay && workoutDayState !== 'rest' && workoutDayState !== 'unavailable' ? <p className="today-workout-status" role="status" data-workout-state={workoutDayState}><strong>{model.workout.title}</strong><span>{model.workout.reason}</span></p> : null}
 
-    {presentation === 'section' && model.daySections ? <TodayDayCarousel day={model.daySections} timezone={schedule.timezone} onOpen={id => openActivity(id)} /> : <section className="today-activities" data-testid="today-activities" aria-label="Your day at a glance" data-tutorial-id="dashboard-nutrition-progress">
+    {presentation === 'section' && model.daySections ? hideDayCarousel ? null : <TodayDayCarousel day={model.daySections} timezone={schedule.timezone} onOpen={id => openActivity(id)} /> : <section className="today-activities" data-testid="today-activities" aria-label="Your day at a glance" data-tutorial-id="dashboard-nutrition-progress">
       <div className="today-section-heading"><h2>At your pace.</h2><span>Go in your own order</span></div>
       {displayActivities.length ? <ul>{displayActivities.map(activity => <li key={activity.id} data-activity-id={activity.id} data-status={activity.status} data-illustrated={illustrated(activity.id) ? 'true' : undefined}>
         <Link href={activity.href} onClick={() => openActivity(activity.id, today.activities.some(record => record.id === activity.id && record.status === 'completed'))} data-tutorial-id={tutorialIds[activity.id]}>

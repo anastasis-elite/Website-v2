@@ -42,6 +42,7 @@ function browserPerformance() {
   return { entries, calls, now: () => now++,
     mark(name, options) { const entry = { name, startTime: now++, ...options }; entries.push(entry); calls.push(['mark', name, plain(options || {})]) },
     clearMarks(name) { calls.push(['clearMarks', name]); for (let index = entries.length - 1; index >= 0; index--) if (entries[index].name === name) entries.splice(index, 1) },
+    clearMeasures(name) { calls.push(['clearMeasures', name]); for (let index = entries.length - 1; index >= 0; index--) if (entries[index].name === name) entries.splice(index, 1) },
     getEntriesByName(name) { return entries.filter(entry => entry.name === name) },
     measure(name, options) { entries.push({ name, startTime: now++, ...options }); calls.push(['measure', name, plain(options || {})]) },
   }
@@ -168,6 +169,54 @@ test('unmount/navigation/logout cancellation fences even escaped late frame call
     for (const callback of escaped) callback()
     assert.equal(view.frames.size, 0)
     assert.deepEqual(performance.entries, [])
+  }
+})
+
+test('each Today startup resets bounded milestone records and measures relative to the current start', () => {
+  const performance = browserPerformance(), api = fixture({ performance }).load('lib/performance/dashboard.ts')
+  const stages = ['today-layout-visible', 'today-carousel-interactive', 'today-check-in-clickable']
+  api.beginTodayStartup()
+  for (const stage of stages) { api.markDashboardStage(stage); api.markDashboardStage(stage) }
+  assert.equal(performance.getEntriesByName('anastasis:today:start').length, 1)
+  for (const stage of stages) {
+    assert.equal(performance.getEntriesByName(`anastasis:${stage}`).length, 1)
+    assert.deepEqual(plain(performance.getEntriesByName(`anastasis:today:start-to-${stage}`)[0].start), 'anastasis:today:start')
+    assert.equal(performance.getEntriesByName(`anastasis:navigation-to-${stage}`).length, 1)
+  }
+  api.beginTodayStartup()
+  assert.deepEqual(performance.entries.map(entry => entry.name), ['anastasis:today:start'])
+  api.markDashboardStage('today-layout-visible')
+  assert.equal(performance.getEntriesByName('anastasis:today:start-to-today-layout-visible').length, 1)
+  assert.ok(performance.entries.every(entry => entry.detail === undefined), 'Milestone records contain no member context')
+  for (const unavailable of [undefined, {}, { clearMarks() { throw new Error('Restricted timing') } }]) {
+    assert.doesNotThrow(() => fixture({ performance: unavailable }).load('lib/performance/dashboard.ts').beginTodayStartup())
+  }
+})
+
+test('Today layout, carousel and check-in milestones require two committed frames and cancel on unmount', () => {
+  for (const stage of ['today-layout-visible', 'today-carousel-interactive', 'today-check-in-clickable']) {
+    const performance = browserPerformance(), view = fixture({ performance })
+    view.load('lib/performance/dashboard.ts').beginTodayStartup()
+    const cleanup = view.component({ stage, snapshot: 'current', timings: [{ stage: 'plan', startMs: 0, durationMs: 4 }], actionable: true })
+    assert.equal(performance.getEntriesByName(`anastasis:${stage}`).length, 0)
+    view.frame()
+    assert.equal(performance.getEntriesByName(`anastasis:${stage}`).length, 0)
+    view.frame()
+    assert.equal(performance.getEntriesByName(`anastasis:${stage}`).length, 1)
+    assert.equal(performance.getEntriesByName(`anastasis:today:start-to-${stage}`).length, 1)
+    assert.equal(performance.getEntriesByName('anastasis:today:actionable').length, 0, 'Only complete primary models publish authoritative readiness')
+    assert.equal(performance.getEntriesByName('anastasis:today:server:plan').length, 0)
+    cleanup()
+
+    const canceledBrowser = browserPerformance(), canceled = fixture({ performance: canceledBrowser })
+    canceled.load('lib/performance/dashboard.ts').beginTodayStartup()
+    const stop = canceled.component({ stage, snapshot: 'abandoned' })
+    canceled.frame()
+    const late = [...canceled.frames.values()]
+    stop()
+    for (const callback of late) callback()
+    assert.equal(canceled.frames.size, 0)
+    assert.equal(canceledBrowser.getEntriesByName(`anastasis:${stage}`).length, 0)
   }
 })
 

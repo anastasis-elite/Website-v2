@@ -18,8 +18,8 @@ function fixedClock(t, instant = '2026-11-03T19:00:00Z') {
   t.after(() => { globalThis.Date = OriginalDate })
   return next => { now = OriginalDate.parse(next) }
 }
-function database({ holdInitial, initialThrow, nutritionError, mealError, recoveryError, executionError, checkInError, workoutsError, checkIn } = {}) {
-  const queries = []
+function database({ holdInitial, initialThrow, nutritionError, mealError, recoveryError, executionError, checkInError, workoutsError, checkIn, photoRecord } = {}) {
+  const queries = [], signedPaths = []
   const supabase = { from(table) {
     const query = { table, ops: [] }; let pending
     function run(single) {
@@ -37,6 +37,7 @@ function database({ holdInitial, initialThrow, nutritionError, mealError, recove
         if (table === 'recovery_logs' && single) return { data: checkIn || null, error: checkInError || null }
         if (table === 'workout_logs') return { data: [], error: workoutsError || null }
         if (table === 'recovery_activity_logs') return { data: [], error: recoveryError || null }
+        if (table === 'assessment_photos') return { data: photoRecord || null, error: null }
         if (table === 'daily_execution_status') return { data: [], error: executionError || null }
         return { data: single ? null : [], error: null }
       })
@@ -47,8 +48,11 @@ function database({ holdInitial, initialThrow, nutritionError, mealError, recove
       builder[method] = (...args) => { query.ops.push([method, ...args]); return builder }
     }
     return builder
-  }, storage: { from() { return { createSignedUrl: async () => ({ data: null, error: null }) } } } }
-  return { supabase, queries }
+  }, storage: { from() { return { createSignedUrl: async path => {
+    signedPaths.push(path)
+    return { data: { signedUrl: `https://disposable.test/${path}` }, error: null }
+  } } } } }
+  return { supabase, queries, signedPaths }
 }
 function context(db, client = { ...member }) { return { supabase: db.supabase, user: owner, client, program: 'phoenix' } }
 function full(args, dailyPlan = { date: '2026-11-03', workoutCompleted: false, dailyTargets: { water: 80 }, dailyRemaining: { water: 80 } }) {
@@ -95,6 +99,22 @@ test('prepared/default assembly keeps query shapes, normalization and source-err
     assert.equal(prepared.recoveryActivitiesAvailable, !options.recoveryError)
     assert.equal(prepared.executionHistoryAvailable, !options.executionError)
   }
+})
+
+test('Today can skip display-only signed previews while retaining identical photo safety and assessment inputs', async t => {
+  fixedClock(t)
+  const photoRecord = { uploaded_at: '2026-10-01T12:00:00Z', posture_flags: { shoulder: true },
+    front_photo_url: 'owner/front.jpg', back_photo_url: 'owner/back.jpg', left_photo_url: 'owner/left.jpg' }
+  const normal = database({ photoRecord }), today = database({ photoRecord })
+  const normalArgs = full(context(normal)), todayArgs = full(context(today))
+  const withPreviews = await prepareProgramLogicInputs(normalArgs).resolve(normalArgs)
+  const withoutPreviews = await prepareProgramLogicInputs({ ...todayArgs, includePhotoPreviews: false }).resolve(todayArgs)
+  assert.equal(normal.signedPaths.length, 3)
+  assert.deepEqual(today.signedPaths, [], 'Today must not wait on storage URL signing that it cannot display.')
+  assert.deepEqual(withoutPreviews.photoUrls, [])
+  assert.deepEqual(withoutPreviews.photoRecord, photoRecord, 'Posture, structural filters and photo assessment age retain the real row.')
+  assert.deepEqual({ ...withPreviews, photoUrls: [] }, withoutPreviews, 'All calculation and current completion inputs stay identical.')
+  assert.deepEqual(normal.queries, today.queries, 'No safety row or historical calculation source is deferred.')
 })
 
 test('a rejected early read is handled immediately and rethrown unchanged only when its result is joined', async t => {

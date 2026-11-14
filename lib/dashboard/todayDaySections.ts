@@ -20,6 +20,7 @@ export type TodayDayItem = {
   startAt: string | null
   endAt: string | null
   timing: 'scheduled' | 'suggested' | 'all_day' | 'untimed'
+  timingPending?: boolean
   continuesFromPreviousDay: boolean
 }
 export type TodayDaySections = {
