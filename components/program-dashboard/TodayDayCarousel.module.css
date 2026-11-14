@@ -32,4 +32,3 @@
 @media (max-width: 350px) {
   .actions { grid-template-columns: 1fr; }
 }
-

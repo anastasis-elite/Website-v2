@@ -53,4 +53,3 @@ export default function TodayDayCarousel({ day, timezone, onOpen }: { day: Today
     </div>
   </section>
 }
-
